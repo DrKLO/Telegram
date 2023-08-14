@@ -32,6 +32,9 @@ public class SearchField extends FrameLayout {
     private final Theme.ResourcesProvider resourcesProvider;
 
     public SearchField(Context context, boolean supportRtl, Theme.ResourcesProvider resourcesProvider) {
+        this(context, supportRtl, 14, resourcesProvider);
+    }
+    public SearchField(Context context, boolean supportRtl, float horizontalMargin, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -40,9 +43,9 @@ public class SearchField extends FrameLayout {
         searchBackground = new View(context);
         searchBackground.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), getThemedColor(Theme.key_dialogSearchBackground)));
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, 36, Gravity.START | Gravity.TOP, 14, 11, 14, 0);
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, 36, Gravity.START | Gravity.TOP, horizontalMargin, 11, horizontalMargin, 0);
         } else {
-            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14, 0);
+            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, horizontalMargin, 11, horizontalMargin, 0);
         }
         addView(searchBackground, lp);
 
@@ -51,9 +54,9 @@ public class SearchField extends FrameLayout {
         searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
         searchIconImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.START | Gravity.TOP, 16, 11, 0, 0);
+            lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.START | Gravity.TOP, horizontalMargin + 2, 11, 0, 0);
         } else {
-            lp = LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 16, 11, 0, 0);
+            lp = LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, horizontalMargin + 2, 11, 0, 0);
         }
         addView(searchIconImageView, lp);
 
@@ -70,9 +73,9 @@ public class SearchField extends FrameLayout {
         clearSearchImageView.setScaleY(0.1f);
         clearSearchImageView.setAlpha(0.0f);
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.END | Gravity.TOP, 14, 11, 14, 0);
+            lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.END | Gravity.TOP, horizontalMargin, 11, horizontalMargin, 0);
         } else {
-            lp = LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0);
+            lp = LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, horizontalMargin, 11, horizontalMargin, 0);
         }
         addView(clearSearchImageView, lp);
         clearSearchImageView.setOnClickListener(v -> {
@@ -112,9 +115,9 @@ public class SearchField extends FrameLayout {
         searchEditText.setCursorSize(AndroidUtilities.dp(20));
         searchEditText.setCursorWidth(1.5f);
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, 40, Gravity.START | Gravity.TOP, 16 + 38, 9, 16 + 30, 0);
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, 40, Gravity.START | Gravity.TOP, horizontalMargin + 2 + 38, 9, horizontalMargin + 2 + 30, 0);
         } else {
-            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 16 + 38, 9, 16 + 30, 0);
+            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, horizontalMargin + 2 + 38, 9, horizontalMargin + 2 + 30, 0);
         }
         addView(searchEditText, lp);
         searchEditText.addTextChangedListener(new TextWatcher() {

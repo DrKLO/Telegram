@@ -23,7 +23,7 @@ public class LocationDirectionCell extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
 
         frameLayout = new FrameLayout(context);
-        frameLayout.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 4));
+        frameLayout.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 8));
         addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 16, 10, 16, 0));
 
         buttonTextView = new SimpleTextView(context);

@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -768,6 +769,10 @@ public class BottomSheet extends Dialog {
         }
         Insets insets = lastInsets.getSystemGestureInsets();
         return !keyboardVisible && drawNavigationBar && insets != null && (insets.left != 0 || insets.right != 0) ? insets.bottom : 0;
+    }
+
+    public boolean isKeyboardVisible() {
+        return keyboardVisible;
     }
 
     public interface BottomSheetDelegateInterface {
@@ -1903,6 +1908,11 @@ public class BottomSheet extends Dialog {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, openedLayerNum);
             }
         }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
+        return super.dispatchKeyEvent(event);
     }
 
     public void setImageReceiverNumLevel(int playingImages, int onShowing) {

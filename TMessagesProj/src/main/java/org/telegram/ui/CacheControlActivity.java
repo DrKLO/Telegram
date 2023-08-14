@@ -2595,7 +2595,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     } else {
                         selected = CacheControlActivity.this.selected[item.index];
                     }
-                    cell.setText(getCheckBoxTitle(item.headerName, percents[item.index < 0 ? 8 : item.index], item.index < 0), AndroidUtilities.formatFileSize(item.size), selected, item.index < 0 ? !collapsed : !item.last);
+                    cell.setText(getCheckBoxTitle(item.headerName, percents[item.index < 0 ? 9 : item.index], item.index < 0), AndroidUtilities.formatFileSize(item.size), selected, item.index < 0 ? !collapsed : !item.last);
                     cell.setCheckBoxColor(item.colorKey, Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_checkboxCheck);
                     cell.setCollapsed(item.index < 0 ? collapsed : null);
                     if (item.index == -1) {

@@ -34,6 +34,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -61,6 +62,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.text.util.Linkify;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.Transition;
@@ -68,6 +70,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.util.FloatProperty;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.Range;
@@ -153,6 +156,7 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageCustomParamsHelper;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -161,6 +165,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SecureDocument;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -215,6 +220,7 @@ import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.OptionsSpeedIconDrawable;
@@ -238,6 +244,7 @@ import org.telegram.ui.Components.SpeedIconDrawable;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.TextViewSwitcher;
 import org.telegram.ui.Components.Tooltip;
+import org.telegram.ui.Components.TranslateAlert2;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMentionPhotoViewer;
 import org.telegram.ui.Components.UndoView;
@@ -249,6 +256,8 @@ import org.telegram.ui.Components.VideoSeekPreviewImage;
 import org.telegram.ui.Components.VideoTimelinePlayView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.telegram.ui.Stories.StoryCaptionView;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -825,6 +834,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean dontChangeCaptionPosition;
     private boolean captionHwLayerEnabled;
     private ImageUpdater.AvatarFor setAvatarFor;
+    private boolean lastCaptionTranslating;
 
     private Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
 
@@ -1032,7 +1042,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     public void setCaption(CharSequence caption) {
         hasCaptionForAllMedia = true;
         captionForAllMedia = caption;
-        setCurrentCaption(null, caption, false);
+        setCurrentCaption(null, caption, false, false);
         updateCaptionTextForCurrentPhoto(null);
     }
 
@@ -1628,6 +1638,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean ignoreDidSetImage;
     private boolean dontAutoPlay;
     boolean fromCamera;
+    private boolean captionTranslated;
+    private String captionDetectedLanguage;
 
     private long avatarsDialogId;
     private boolean canEditAvatar;
@@ -1753,6 +1765,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private final static int gallery_menu_share2 = 18;
     private final static int gallery_menu_speed = 19;
     private final static int gallery_menu_paint = 20;
+    private final static int gallery_menu_translate = 21;
+    private final static int gallery_menu_hide_translation = 22;
 
     private static DecelerateInterpolator decelerateInterpolator;
     private static Paint progressPaint;
@@ -4412,6 +4426,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             @Override
             public boolean dispatchKeyEventPreIme(KeyEvent event) {
                 if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
+                    if (textSelectionHelper.isInSelectionMode()) {
+                        textSelectionHelper.clear();
+                    }
                     if (captionEditText.isPopupShowing() || captionEditText.isKeyboardVisible()) {
                         closeCaptionEnter(true);
                         return false;
@@ -4468,9 +4485,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
+                textSelectionHelper.getOverlayView(getContext()).checkCancelAction(ev);
                 if (textSelectionHelper.isInSelectionMode()) {
-                     textSelectionHelper.getOverlayView(getContext()).checkCancelAction(ev);
-
                     if (textSelectionHelper.getOverlayView(getContext()).onTouchEvent(ev)) {
                         return true;
                     }
@@ -5299,6 +5315,25 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         thumb = null;
                     }
                     placeProvider.openPhotoForEdit(f.getAbsolutePath(), thumb, isVideo);
+                } else if (id == gallery_menu_translate) {
+                    if (switchingToIndex < 0 || switchingToIndex >= imagesArr.size()) {
+                        return;
+                    }
+                    MessageObject messageObject = imagesArr.get(switchingToIndex);
+                    captionTranslated = true;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        menuItem.hideSubItem(gallery_menu_translate);
+                        menuItem.showSubItem(gallery_menu_hide_translation);
+                    }, 32);
+                    updateCaptionTranslated();
+                    MessagesController.getInstance(currentAccount).getTranslateController().translatePhoto(messageObject, PhotoViewer.this::updateCaptionTranslated);
+                } else if (id == gallery_menu_hide_translation) {
+                    captionTranslated = false;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        menuItem.showSubItem(gallery_menu_translate);
+                        menuItem.hideSubItem(gallery_menu_hide_translation);
+                    }, 32);
+                    updateCaptionTranslated();
                 }
             }
 
@@ -5379,9 +5414,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.addSubItem(gallery_menu_save, R.drawable.msg_gallery, LocaleController.getString("SaveToGallery", R.string.SaveToGallery)).setColors(0xfffafafa, 0xfffafafa);
         //menuItem.addSubItem(gallery_menu_edit_avatar, R.drawable.photo_paint, LocaleController.getString("EditPhoto", R.string.EditPhoto)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_set_as_main, R.drawable.msg_openprofile, LocaleController.getString("SetAsMain", R.string.SetAsMain)).setColors(0xfffafafa, 0xfffafafa);
+        menuItem.addSubItem(gallery_menu_translate, R.drawable.msg_translate, LocaleController.getString(R.string.TranslateMessage)).setColors(0xfffafafa, 0xfffafafa);
+        menuItem.addSubItem(gallery_menu_hide_translation, R.drawable.msg_translate, LocaleController.getString(R.string.HideTranslation)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_delete, R.drawable.msg_delete, LocaleController.getString("Delete", R.string.Delete)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_cancel_loading, R.drawable.msg_cancel, LocaleController.getString("StopDownload", R.string.StopDownload)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.redrawPopup(0xf9222222);
+        menuItem.hideSubItem(gallery_menu_translate);
+        menuItem.hideSubItem(gallery_menu_hide_translation);
         setMenuItemIcon(false, true);
         menuItem.setPopupItemsSelectorColor(0x0fffffff);
 
@@ -5522,7 +5561,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         captionTextViewSwitcher = new CaptionTextViewSwitcher(containerView.getContext());
-        captionTextViewSwitcher.setFactory(() -> createCaptionTextView());
+        captionTextViewSwitcher.setFactory(() -> new CaptionTextView(activityContext));
         captionTextViewSwitcher.setVisibility(View.INVISIBLE);
         setCaptionHwLayerEnabled(true);
 
@@ -6026,7 +6065,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (placeProvider != null && !placeProvider.allowSendingSubmenu()) {
                 return false;
             }
-            if (parentChatActivity == null || parentChatActivity.isInScheduleMode()) {
+            boolean isStoryViewer = parentFragment != null && parentFragment.storyViewer != null && parentFragment.storyViewer.isShown();
+            if (!isStoryViewer && (parentChatActivity == null || parentChatActivity.isInScheduleMode())) {
                 return false;
             }
             if (captionEditText.getCaptionLimitOffset() < 0) {
@@ -7056,7 +7096,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         doneButtonFullWidth.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
         doneButtonFullWidth.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
 
-        textSelectionHelper = new TextSelectionHelper.SimpleTextSelectionHelper(null, resourcesProvider);
+        textSelectionHelper = new TextSelectionHelper.SimpleTextSelectionHelper(null, new DarkThemeResourceProvider()) {
+            @Override
+            public int getParentBottomPadding() {
+                return 0;//AndroidUtilities.dp(80);
+            }
+        };
+        textSelectionHelper.allowScrollPrentRelative = true;
         textSelectionHelper.useMovingOffset = false;
         View overlay = textSelectionHelper.getOverlayView(windowView.getContext());
         if (overlay != null) {
@@ -7427,153 +7473,222 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }).start();
     }
 
-    private TextView createCaptionTextView() {
-        SpoilersTextView textView = new SpoilersTextView(activityContext) {
-
-            private LinkSpanDrawable<ClickableSpan> pressedLink;
-            private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
-
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                if (getLayout() == null) {
-                    return false;
+    private class CaptionTextView extends SpoilersTextView {
+        public CaptionTextView(Context context) {
+            super(context);
+            ViewHelper.setPadding(this, 16, 8, 16, 8);
+            setLinkTextColor(0xff79c4fc);
+            setTextColor(0xffffffff);
+            setHighlightColor(0x33ffffff);
+            setGravity(Gravity.CENTER_VERTICAL | LayoutHelper.getAbsoluteGravityStart());
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            setOnClickListener((v) -> {
+                if (!needCaptionLayout) {
+                    captionScrollView.smoothScrollBy(0, AndroidUtilities.dp(64));
+                    return;
                 }
-                if (textSelectionHelper != null && getStaticTextLayout() != null) {
-                    textSelectionHelper.setSelectabeleView(this);
-                    textSelectionHelper.update(getPaddingLeft(), getPaddingTop());
-                    textSelectionHelper.onTouchEvent(event);
-                }
-                boolean linkResult = false;
-                if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
-                    int x = (int) (event.getX() - getPaddingLeft());
-                    int y = (int) (event.getY() - getPaddingTop());
-                    final int line = getLayout().getLineForVertical(y);
-                    final int off = getLayout().getOffsetForHorizontal(line, x);
-                    final float left = getLayout().getLineLeft(line);
+                openCaptionEnter();
+            });
+        }
 
-                    ClickableSpan touchLink = null;
-                    if (left <= x && left + getLayout().getLineWidth(line) >= x && y >= 0 && y <= getLayout().getHeight()) {
-                        Spannable buffer = new SpannableString(getText());
-                        ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                        if (link.length != 0) {
-                            touchLink = link[0];
-                            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                linkResult = true;
-                                links.clear();
-                                pressedLink = new LinkSpanDrawable<>(link[0], null, event.getX(), event.getY());
-                                pressedLink.setColor(0x6662a9e3);
-                                links.addLink(pressedLink);
-                                int start = buffer.getSpanStart(pressedLink.getSpan());
-                                int end = buffer.getSpanEnd(pressedLink.getSpan());
-                                LinkPath path = pressedLink.obtainNewPath();
-                                path.setCurrentLayout(getLayout(), start, getPaddingTop());
-                                getLayout().getSelectionPath(start, end, path);
+        private LinkSpanDrawable<ClickableSpan> pressedLink;
+        private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
-                                final LinkSpanDrawable<ClickableSpan> savedPressedLink = pressedLink;
-                                postDelayed(() -> {
-                                    if (savedPressedLink == pressedLink && pressedLink != null && pressedLink.getSpan() instanceof URLSpan) {
-                                        onLinkLongPress((URLSpan) pressedLink.getSpan(), this, () -> links.clear());
-                                        pressedLink = null;
-                                    }
-                                }, ViewConfiguration.getLongPressTimeout());
-                            }
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (getLayout() == null) {
+                return false;
+            }
+            if (textSelectionHelper != null && getStaticTextLayout() != null) {
+                textSelectionHelper.setSelectabeleView(this);
+                textSelectionHelper.setScrollingParent(captionScrollView);
+                textSelectionHelper.update(getPaddingLeft(), getPaddingTop());
+                textSelectionHelper.onTouchEvent(event);
+            }
+            boolean linkResult = false;
+            if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
+                int x = (int) (event.getX() - getPaddingLeft());
+                int y = (int) (event.getY() - getPaddingTop());
+                final int line = getLayout().getLineForVertical(y);
+                final int off = getLayout().getOffsetForHorizontal(line, x);
+                final float left = getLayout().getLineLeft(line);
+
+                ClickableSpan touchLink = null;
+                if (left <= x && left + getLayout().getLineWidth(line) >= x && y >= 0 && y <= getLayout().getHeight()) {
+                    Spannable buffer = new SpannableString(getText());
+                    ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                    if (link.length != 0) {
+                        touchLink = link[0];
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            linkResult = true;
+                            links.clear();
+                            pressedLink = new LinkSpanDrawable<>(link[0], null, event.getX(), event.getY());
+                            pressedLink.setColor(0x6662a9e3);
+                            links.addLink(pressedLink);
+                            int start = buffer.getSpanStart(pressedLink.getSpan());
+                            int end = buffer.getSpanEnd(pressedLink.getSpan());
+                            LinkPath path = pressedLink.obtainNewPath();
+                            path.setCurrentLayout(getLayout(), start, getPaddingTop());
+                            getLayout().getSelectionPath(start, end, path);
+
+                            final LinkSpanDrawable<ClickableSpan> savedPressedLink = pressedLink;
+                            postDelayed(() -> {
+                                if (savedPressedLink == pressedLink && pressedLink != null && pressedLink.getSpan() instanceof URLSpan) {
+                                    onLinkLongPress((URLSpan) pressedLink.getSpan(), this, () -> links.clear());
+                                    pressedLink = null;
+                                }
+                            }, ViewConfiguration.getLongPressTimeout());
                         }
                     }
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        links.clear();
-                        if (pressedLink != null && pressedLink.getSpan() == touchLink) {
-                            onLinkClick(pressedLink.getSpan(), this);
-                        }
-                        pressedLink = null;
-                        linkResult = true;
-                    }
-                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                }
+                if (event.getAction() == MotionEvent.ACTION_UP) {
                     links.clear();
+                    if (pressedLink != null && pressedLink.getSpan() == touchLink) {
+                        onLinkClick(pressedLink.getSpan(), this);
+                    }
                     pressedLink = null;
                     linkResult = true;
                 }
-
-                boolean b = linkResult || super.onTouchEvent(event);
-                return bottomTouchEnabled && b;
+            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                links.clear();
+                pressedLink = null;
+                linkResult = true;
             }
 
+            boolean b = linkResult || super.onTouchEvent(event);
+            return bottomTouchEnabled && b;
+        }
 
-            @Override
-            public void setPressed(boolean pressed) {
-                final boolean needsRefresh = pressed != isPressed();
-                super.setPressed(pressed);
-                if (needsRefresh) {
-                    invalidate();
-                }
+        @Override
+        public void setPressed(boolean pressed) {
+            final boolean needsRefresh = pressed != isPressed();
+            super.setPressed(pressed);
+            if (needsRefresh) {
+                invalidate();
             }
+        }
 
-            private Layout lastLayout;
-            
-            @Override
-            protected void onDraw(Canvas canvas) {
-                if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
-                    canvas.save();
-                    canvas.translate(getPaddingLeft(), getPaddingTop());
-                    if (textSelectionHelper != null && getStaticTextLayout() != null && textSelectionHelper.isCurrent(this)) {
-                        textSelectionHelper.draw(canvas);
-                    }
-                    canvas.restore();
-                }
+        private Layout lastLayout;
 
-                canvas.save();
-                canvas.translate(getPaddingLeft(), 0);
-                if (links.draw(canvas)) {
-                    invalidate();
-                }
-                canvas.restore();
-                super.onDraw(canvas);
-                if (lastLayout != getLayout()) {
-                    animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiDrawables, getLayout());
-                    lastLayout = getLayout();
-                }
-            }
-
-            private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiDrawables;
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                AnimatedEmojiSpan.release(this, animatedEmojiDrawables);
-            }
-
-            @Override
-            protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
-                super.onTextChanged(text, start, lengthBefore, lengthAfter);
-                animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiDrawables, getLayout());
-            }
-
-            private final ColorFilter emojiTextColorFilter = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
                 canvas.save();
                 canvas.translate(getPaddingLeft(), getPaddingTop());
-                canvas.clipRect(0, getScrollY(), getWidth() - getPaddingRight(), getHeight() + getScrollY() - getPaddingBottom() * .75f);
-                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, null, 0, 0, 0, 1f);
+                if (textSelectionHelper != null && getStaticTextLayout() != null && textSelectionHelper.isCurrent(this)) {
+                    textSelectionHelper.draw(canvas);
+                }
                 canvas.restore();
             }
-        };
 
-        ViewHelper.setPadding(textView, 16, 8, 16, 8);
-        textView.setLinkTextColor(0xff79c4fc);
-        textView.setTextColor(0xffffffff);
-        textView.setHighlightColor(0x33ffffff);
-        textView.setGravity(Gravity.CENTER_VERTICAL | LayoutHelper.getAbsoluteGravityStart());
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setOnClickListener((v) -> {
-            if (!needCaptionLayout) {
-                captionScrollView.smoothScrollBy(0, AndroidUtilities.dp(64));
+            canvas.save();
+            canvas.translate(getPaddingLeft(), 0);
+            if (links.draw(canvas)) {
+                invalidate();
+            }
+            canvas.restore();
+            super.onDraw(canvas);
+            if (lastLayout != getLayout()) {
+                animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiDrawables, getLayout());
+                lastLayout = getLayout();
+            }
+        }
+
+        private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiDrawables;
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            AnimatedEmojiSpan.release(this, animatedEmojiDrawables);
+        }
+
+        @Override
+        protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
+            super.onTextChanged(text, start, lengthBefore, lengthAfter);
+            animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiDrawables, getLayout());
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            if (loading) {
+                checkLoadingPath();
+                if (loadingDrawable == null) {
+                    loadingDrawable = new LoadingDrawable();
+                    loadingDrawable.usePath(loadingPath);
+                    loadingDrawable.setRadiiDp(4);
+                    loadingDrawable.setColors(
+                        Theme.multAlpha(Color.WHITE, .3f),
+                        Theme.multAlpha(Color.WHITE, .1f),
+                        Theme.multAlpha(Color.WHITE, .2f),
+                        Theme.multAlpha(Color.WHITE, .7f)
+                    );
+                    loadingDrawable.setCallback(CaptionTextView.this);
+                }
+                loadingDrawable.setBounds(0, 0, getWidth(), getHeight());
+                loadingDrawable.draw(canvas);
+            }
+            if (loading) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xb2, Canvas.ALL_SAVE_FLAG);
+            }
+            super.dispatchDraw(canvas);
+            if (loading) {
+                canvas.restore();
+            }
+            canvas.save();
+            canvas.translate(getPaddingLeft(), getPaddingTop());
+            canvas.clipRect(0, getScrollY(), getWidth() - getPaddingRight(), getHeight() + getScrollY() - getPaddingBottom() * .75f);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, null, 0, 0, 0, 1f);
+            canvas.restore();
+        }
+
+        public void setLoading(boolean loading) {
+            if (this.loading == loading) {
                 return;
             }
-            openCaptionEnter();
-        });
-        return textView;
+            this.loading = loading;
+            invalidate();
+        }
+
+        private boolean loading;
+        private LoadingDrawable loadingDrawable;
+
+        private Layout lastLoadingLayout;
+        private Path loadingPath;
+        private void checkLoadingPath() {
+            Layout layout = getLayout();
+            if (loadingPath != null && lastLoadingLayout == layout) {
+                return;
+            }
+            if (loadingPath == null) {
+                loadingPath = new Path();
+            } else {
+                loadingPath.rewind();
+            }
+            if (layout != null) {
+                final float horizontalPadding = AndroidUtilities.dp(16);
+                final float verticalPadding = AndroidUtilities.dp(8);
+                float t = 0;
+                for (int i = 0; i < layout.getLineCount(); ++i) {
+                    float l = layout.getLineLeft(i) - horizontalPadding / 3f;
+                    float r = layout.getLineRight(i) + horizontalPadding / 3f;
+                    if (i == 0) {
+                        t = layout.getLineTop(i) - verticalPadding / 3f;
+                    }
+                    float b = layout.getLineBottom(i);
+                    if (i >= layout.getLineCount() - 1) {
+                        b += verticalPadding / 3f;
+                    }
+                    loadingPath.addRect(getPaddingLeft() + l, getPaddingTop() + t, getPaddingLeft() + r, getPaddingTop() + b, Path.Direction.CW);
+                    t = b;
+                }
+            }
+            lastLoadingLayout = layout;
+        }
+
+        @Override
+        protected boolean verifyDrawable(@NonNull Drawable who) {
+            return who == loadingDrawable || super.verifyDrawable(who);
+        }
     }
 
     private int getLeftInset() {
@@ -8428,7 +8543,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (placeProvider != null) {
                 placeProvider.onApplyCaption(caption);
             }
-            setCurrentCaption(null, result[0], false);
+            setCurrentCaption(null, result[0], false, false);
         }
         captionEditText.setTag(null);
         if (isCurrentVideo && customTitle == null) {
@@ -12100,6 +12215,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         boolean isVideo = false;
         CharSequence caption = null;
+        boolean captionTranslating = false;
         String newFileName = getFileName(index);
         MessageObject newMessageObject = null;
 
@@ -12147,7 +12263,47 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 caption = MessageObject.getMedia(newMessageObject.messageOwner).description;
                 allowShare = false;
 //                captionTextViewSwitcher.setTranslationY(AndroidUtilities.dp(48));
+                menuItem.hideSubItem(gallery_menu_translate);
+                menuItem.hideSubItem(gallery_menu_hide_translation);
             } else {
+                TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
+                if (wasIndex != switchingToIndex) {
+                    captionTranslated = false;
+                    captionDetectedLanguage = null;
+                }
+                if (translateController.isContextTranslateEnabled()) {
+                    final MessageObject messageObject = newMessageObject;
+                    translateController.detectPhotoLanguage(messageObject, lng -> {
+                        if (index != switchingToIndex) {
+                            return;
+                        }
+                        captionDetectedLanguage = lng;
+                        if (translateController.isContextTranslateEnabled() && translateController.canTranslatePhoto(messageObject, captionDetectedLanguage)) {
+                            if (captionTranslated) {
+                                menuItem.showSubItem(gallery_menu_hide_translation);
+                                menuItem.hideSubItem(gallery_menu_translate);
+                            } else {
+                                menuItem.showSubItem(gallery_menu_translate);
+                                menuItem.hideSubItem(gallery_menu_hide_translation);
+                            }
+                        } else {
+                            menuItem.hideSubItem(gallery_menu_translate);
+                            menuItem.hideSubItem(gallery_menu_hide_translation);
+                        }
+                    });
+                }
+                if (translateController.isContextTranslateEnabled() && translateController.canTranslatePhoto(newMessageObject, captionDetectedLanguage)) {
+                    if (captionTranslated) {
+                        menuItem.showSubItem(gallery_menu_hide_translation);
+                        menuItem.hideSubItem(gallery_menu_translate);
+                    } else {
+                        menuItem.showSubItem(gallery_menu_translate);
+                        menuItem.hideSubItem(gallery_menu_hide_translation);
+                    }
+                } else {
+                    menuItem.hideSubItem(gallery_menu_translate);
+                    menuItem.hideSubItem(gallery_menu_hide_translation);
+                }
                 allowShare = !noforwards;
                 if (newMessageObject.isNewGif() && allowShare && !DialogObject.isEncryptedDialog(newMessageObject.getDialogId())) {
                     menuItem.showSubItem(gallery_menu_savegif);
@@ -12203,8 +12359,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 String restrictionReason = MessagesController.getRestrictionReason(newMessageObject.messageOwner.restriction_reason);
                 if (!TextUtils.isEmpty(restrictionReason)) {
                     caption = restrictionReason;
+                } else if (captionTranslated && newMessageObject.messageOwner != null && newMessageObject.messageOwner.translatedText != null && TextUtils.equals(newMessageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage())) {
+                    caption = postProcessTranslated(newMessageObject);
                 } else {
                     caption = newMessageObject.caption;
+                    captionTranslating = captionTranslated;
                 }
             }
 
@@ -12320,6 +12479,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             allowShare = false;
             menuItem.showSubItem(gallery_menu_delete);
             menuItem.hideSubItem(gallery_menu_save);
+            menuItem.hideSubItem(gallery_menu_translate);
+            menuItem.hideSubItem(gallery_menu_hide_translation);
             if (countView != null) {
                 countView.updateShow(secureDocuments.size() > 1, true);
                 countView.set(switchingToIndex + 1, secureDocuments.size());
@@ -12331,6 +12492,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (index < 0 || index >= imagesArrLocations.size()) {
                 return;
             }
+            menuItem.hideSubItem(gallery_menu_translate);
+            menuItem.hideSubItem(gallery_menu_hide_translation);
             if (canEditAvatar && !avatarsArr.isEmpty()) {
                 menuItem.showSubItem(gallery_menu_edit_avatar);
                 boolean currentSet = isCurrentAvatarSet();
@@ -12379,6 +12542,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (index < 0 || index >= imagesArrLocals.size()) {
                 return;
             }
+            menuItem.hideSubItem(gallery_menu_translate);
+            menuItem.hideSubItem(gallery_menu_hide_translation);
             Object object = imagesArrLocals.get(index);
             int ttl = 0;
             boolean isFiltered = false;
@@ -12585,6 +12750,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (switchingToIndex < 0 || switchingToIndex >= size) {
                 return;
             }
+            menuItem.hideSubItem(gallery_menu_translate);
+            menuItem.hideSubItem(gallery_menu_hide_translation);
             allowShare = !MessagesController.getInstance(currentAccount).isChatNoForwards(-currentDialogId) && (currentMessageObject == null || !currentMessageObject.hasRevealedExtendedMedia());
             TLRPC.PageBlock pageBlock = pageBlocksAdapter.get(switchingToIndex);
             caption = pageBlocksAdapter.getCaption(switchingToIndex);
@@ -12638,6 +12805,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             groupedPhotosListView.fillList();
             pageBlocksAdapter.updateSlideshowCell(pageBlock);
+        } else {
+            menuItem.hideSubItem(gallery_menu_translate);
+            menuItem.hideSubItem(gallery_menu_hide_translation);
         }
         if (title != null) {
             if (animated) {
@@ -12650,7 +12820,48 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 actionBarContainer.setTitle(title);
             }
         }
-        setCurrentCaption(newMessageObject, caption, animateCaption);
+        setCurrentCaption(newMessageObject, caption, captionTranslating, animateCaption);
+    }
+
+    private void updateCaptionTranslated() {
+        if (!imagesArr.isEmpty()) {
+            if (switchingToIndex < 0 || switchingToIndex >= imagesArr.size()) {
+                return;
+            }
+            MessageObject messageObject = imagesArr.get(switchingToIndex);
+            if (messageObject == null) {
+                return;
+            }
+            if (captionTranslated && messageObject.messageOwner != null && messageObject.messageOwner.translatedText != null && TextUtils.equals(messageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage())) {
+                setCurrentCaption(messageObject, postProcessTranslated(messageObject), false, true);
+            } else {
+                setCurrentCaption(messageObject, messageObject.caption, captionTranslated, true);
+            }
+        }
+    }
+
+    private CharSequence postProcessTranslated(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return "";
+        }
+        CharSequence message = new SpannableStringBuilder(messageObject.messageOwner.translatedText.text);
+        message = Emoji.replaceEmoji(message, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        message = MessageObject.replaceAnimatedEmoji(message, messageObject.messageOwner.translatedText.entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
+        if (MessageObject.containsUrls(message)) {
+            try {
+                AndroidUtilities.addLinks((Spannable) message, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        MessageObject.addUrlsByPattern(messageObject.isOutOwner(), message, true, 0, 0, true);
+        MessageObject.addEntitiesToText(message, messageObject.messageOwner.translatedText.entities, messageObject.isOutOwner(), true, true, true);
+        if (messageObject.isVideo()) {
+            MessageObject.addUrlsByPattern(messageObject.isOutOwner(), message, true, 3, (int) messageObject.getDuration(), false);
+        } else if (messageObject.isMusic() || messageObject.isVoice()) {
+            MessageObject.addUrlsByPattern(messageObject.isOutOwner(), message, true, 4, (int) messageObject.getDuration(), false);
+        }
+        return message;
     }
 
     private void showVideoTimeline(boolean show, boolean animated) {
@@ -13053,7 +13264,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    private void setCurrentCaption(MessageObject messageObject, final CharSequence _caption, boolean animated) {
+    private void setCurrentCaption(MessageObject messageObject, final CharSequence _caption, boolean translating, boolean animated) {
         final CharSequence caption = AnimatedEmojiSpan.cloneSpans(_caption);
         if (needCaptionLayout) {
             if (captionTextViewSwitcher.getParent() != pickerView) {
@@ -13243,10 +13454,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
 
+        boolean switchedToNext = false;
         if (!isCaptionEmpty) {
             Theme.createChatResources(null, true);
             CharSequence str;
-            if (messageObject != null && !messageObject.messageOwner.entities.isEmpty()) {
+            if (messageObject != null && captionTranslated && messageObject.messageOwner != null && messageObject.messageOwner.translatedText != null && TextUtils.equals(messageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage())) {
+                str = caption;
+            } else if (messageObject != null && !messageObject.messageOwner.entities.isEmpty()) {
                 Spannable spannableString = new SpannableString(caption);
                 messageObject.addEntitiesToText(spannableString, true, false);
                 if (messageObject.isVideo()) {
@@ -13258,7 +13472,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             captionTextViewSwitcher.setTag(str);
             try {
-                captionTextViewSwitcher.setText(str, animated);
+                switchedToNext = captionTextViewSwitcher.setText(str, animated, lastCaptionTranslating != translating);
                 if (captionScrollView != null) {
                     captionScrollView.updateTopMargin();
                 }
@@ -13282,6 +13496,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 captionTextViewSwitcher.setTag(null);
             }
         }
+        if (captionTextViewSwitcher.getCurrentView() instanceof CaptionTextView) {
+            ((CaptionTextView) captionTextViewSwitcher.getCurrentView()).setLoading(translating);
+        }
+        lastCaptionTranslating = !isCaptionEmpty && translating;
     }
 
     private void setCaptionHwLayerEnabled(boolean enabled) {

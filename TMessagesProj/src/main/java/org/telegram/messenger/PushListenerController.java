@@ -868,7 +868,7 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "CHAT_DELETE_MEMBER": {
-                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1]);
+                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1], args.length <= 2 ? "" : args[2]);
                                             break;
                                         }
                                         case "CHAT_DELETE_YOU": {

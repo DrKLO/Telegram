@@ -5,6 +5,15 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,10 +21,16 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Scroller;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.StaticLayoutEx;
 
 import java.util.ArrayList;
 
@@ -41,6 +56,7 @@ public abstract class SelfStoriesPreviewView extends View {
 
     ArrayList<ImageHolder> imageReceiversTmp = new ArrayList<>();
     ArrayList<ImageHolder> lastDrawnImageReceivers = new ArrayList<>();
+    GradientDrawable gradientDrawable;
 
     GestureDetector gestureDetector = new GestureDetector(new GestureDetector.OnGestureListener() {
         @Override
@@ -101,6 +117,7 @@ public abstract class SelfStoriesPreviewView extends View {
             return false;
         }
     });
+    private float textWidth;
 
     public void onCenteredImageTap() {
 
@@ -111,6 +128,7 @@ public abstract class SelfStoriesPreviewView extends View {
     public SelfStoriesPreviewView(Context context) {
         super(context);
         scroller = new Scroller(context, new OvershootInterpolator());
+        gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, 160)});
     }
 
     @Override
@@ -119,12 +137,19 @@ public abstract class SelfStoriesPreviewView extends View {
         childPadding = AndroidUtilities.dp(8);
         viewH = (int) (AndroidUtilities.dp(180) / 1.2f);
         viewW = (int) ((viewH / 16f) * 9f);
+        float textWidthLocal = viewW - AndroidUtilities.dp(8);
         topPadding = ((AndroidUtilities.dp(180) - viewH) / 2f) + AndroidUtilities.dp(20);
         updateScrollParams();
         if (scrollToPositionInLayout >= 0 && getMeasuredWidth() > 0) {
             lastClosestPosition = -1;
             scrollToPosition(scrollToPositionInLayout, false, false);
             scrollToPositionInLayout = -1;
+        }
+        if (textWidth != textWidthLocal) {
+            textWidth  = textWidthLocal;
+            for (int i = 0; i < lastDrawnImageReceivers.size(); i++) {
+                lastDrawnImageReceivers.get(i).onBind(lastDrawnImageReceivers.get(i).position);
+            }
         }
     }
 
@@ -134,6 +159,7 @@ public abstract class SelfStoriesPreviewView extends View {
     }
 
     boolean checkScroll;
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -142,8 +168,8 @@ public abstract class SelfStoriesPreviewView extends View {
 //            if (Math.abs(scrollX - scroller.getCurrX()) < AndroidUtilities.dp(1)) {
 //                scroller.abortAnimation();
 //            } else {
-                scrollX = scroller.getCurrX();
-           // }
+            scrollX = scroller.getCurrX();
+            // }
             invalidate();
             checkScroll = true;
         } else if (checkScroll) {
@@ -198,6 +224,18 @@ public abstract class SelfStoriesPreviewView extends View {
             }
             if (!(progressToOpen != 1f && i == lastClosestPosition)) {
                 holder.receiver.draw(canvas);
+                if (holder.layout != null) {
+                    float alpha = 0.7f + 0.3f * k;//k;
+                    gradientDrawable.setAlpha((int) (255 * alpha));
+                    gradientDrawable.setBounds(
+                            (int) holder.receiver.getImageX(), (int) (holder.receiver.getImageY2() - AndroidUtilities.dp(24)), (int) holder.receiver.getImageX2(), (int) holder.receiver.getImageY2() + 2);
+                    gradientDrawable.draw(canvas);
+                    canvas.save();
+                    canvas.translate(holder.receiver.getCenterX() - textWidth / 2f, holder.receiver.getImageY2() - AndroidUtilities.dp(8) - holder.layout.getHeight());
+                    holder.paint.setAlpha((int) (255 * alpha));
+                    holder.layout.draw(canvas);
+                    canvas.restore();
+                }
             }
             lastDrawnImageReceivers.add(holder);
         }
@@ -238,6 +276,7 @@ public abstract class SelfStoriesPreviewView extends View {
     }
 
     ValueAnimator scrollAnimator;
+
     public void scrollToPosition(int p, boolean animated, boolean force) {
         if ((lastClosestPosition == p && !force) || getMeasuredHeight() <= 0) {
             return;
@@ -306,10 +345,10 @@ public abstract class SelfStoriesPreviewView extends View {
         return lastClosestPosition;
     }
 
-    public ImageReceiver getCenteredImageReciever() {
+    public ImageHolder getCenteredImageReciever() {
         for (int i = 0; i < lastDrawnImageReceivers.size(); i++) {
             if (lastDrawnImageReceivers.get(i).position == lastClosestPosition) {
-                return lastDrawnImageReceivers.get(i).receiver;
+                return lastDrawnImageReceivers.get(i);
             }
         }
         return null;
@@ -363,13 +402,17 @@ public abstract class SelfStoriesPreviewView extends View {
         invalidate();
     }
 
-    private class ImageHolder {
+    public class ImageHolder {
         ImageReceiver receiver = new ImageReceiver(SelfStoriesPreviewView.this);
         int position;
+        StaticLayout layout;
+        TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
         public ImageHolder() {
             receiver.setAllowLoadingOnAttachedOnly(true);
             receiver.setRoundRadius(AndroidUtilities.dp(6));
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(AndroidUtilities.dp(13));
         }
 
         void onBind(int position) {
@@ -382,11 +425,62 @@ public abstract class SelfStoriesPreviewView extends View {
             } else {
                 StoriesUtilities.setImage(receiver, storyItem.uploadingStory);
             }
-
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+            if (storyItem.storyItem != null) {
+                formatCounterText(spannableStringBuilder, storyItem.storyItem.views, false);
+            }
+            if (spannableStringBuilder.length() == 0) {
+                layout = null;
+            } else {
+                layout = StaticLayoutEx.createStaticLayout(spannableStringBuilder, paint, (int) (textWidth + 1), Layout.Alignment.ALIGN_CENTER, 1.0f, 0f, false, null, Integer.MAX_VALUE, 1);
+                if (layout.getLineCount() > 1) {
+                    spannableStringBuilder = new SpannableStringBuilder("");
+                    formatCounterText(spannableStringBuilder, storyItem.storyItem.views, true);
+                    layout = StaticLayoutEx.createStaticLayout(spannableStringBuilder, paint, (int) (textWidth + 1), Layout.Alignment.ALIGN_CENTER, 1.0f, 0f, false, null, Integer.MAX_VALUE, 2);
+                }
+            }
         }
 
         void onDetach() {
             receiver.onDetachedFromWindow();
+        }
+
+        public void draw(Canvas canvas, float alpha, float scale, int x, int y, int width, int height) {
+            receiver.setImageCoords(x, y, width, height);
+            receiver.setAlpha(alpha);
+            receiver.draw(canvas);
+            receiver.setAlpha(1f);
+            if (layout != null) {
+                paint.setAlpha((int) (255 * alpha));
+                gradientDrawable.setAlpha((int) (255 * alpha));
+                gradientDrawable.setBounds(
+                        (int) receiver.getImageX(), (int) (receiver.getImageY2() - AndroidUtilities.dp(24) * scale), (int) receiver.getImageX2(), (int) receiver.getImageY2() + 2);
+                gradientDrawable.draw(canvas);
+                canvas.save();
+                canvas.scale(scale, scale, receiver.getCenterX(), receiver.getImageY2() - AndroidUtilities.dp(8) * scale);
+                canvas.translate(receiver.getCenterX() - textWidth / 2f, receiver.getImageY2() - AndroidUtilities.dp(8) * scale - layout.getHeight());
+                layout.draw(canvas);
+                canvas.restore();
+            }
+        }
+    }
+
+    private void formatCounterText(SpannableStringBuilder spannableStringBuilder, TLRPC.StoryViews storyViews, boolean twoLines) {
+        int count = storyViews == null ? 0 : storyViews.views_count;
+        if (count > 0) {
+            spannableStringBuilder.append("d");
+            spannableStringBuilder.setSpan(new ColoredImageSpan(R.drawable.msg_views), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+            spannableStringBuilder.append(" ").append(
+                    AndroidUtilities.formatWholeNumber(count, 0)
+            );
+            if (storyViews != null && storyViews.reactions_count > 0) {
+                spannableStringBuilder.append(twoLines ? "\n" : "  ");
+                spannableStringBuilder.append("d");
+                spannableStringBuilder.setSpan(new ColoredImageSpan(R.drawable.mini_like_filled), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+                spannableStringBuilder.append(" ").append(
+                        AndroidUtilities.formatWholeNumber(storyViews.reactions_count, 0)
+                );
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
@@ -412,6 +413,9 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void bindRequestToGuid(int requestToken, int guid) {
+        if (guid == 0) {
+            return;
+        }
         native_bindRequestToGuid(currentAccount, requestToken, guid);
     }
 

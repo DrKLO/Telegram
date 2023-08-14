@@ -231,11 +231,13 @@ public class SharedConfig {
     public static boolean searchMessagesAsListUsed;
     public static boolean stickersReorderingHintUsed;
     public static int dayNightWallpaperSwitchHint;
+    public static boolean storyReactionsLongPressHint;
     public static boolean disableVoiceAudioEffects;
     public static boolean forceDisableTabletMode;
     public static boolean updateStickersOrderOnSend = true;
     public static boolean bigCameraForRound;
     public static boolean useSurfaceInStories;
+    public static int stealthModeSendMessageConfirm = 2;
     private static int lastLocalId = -210000;
 
     public static String storageCacheDir;
@@ -591,6 +593,7 @@ public class SharedConfig {
             searchMessagesAsListHintShows = preferences.getInt("searchMessagesAsListHintShows", 0);
             searchMessagesAsListUsed = preferences.getBoolean("searchMessagesAsListUsed", false);
             stickersReorderingHintUsed = preferences.getBoolean("stickersReorderingHintUsed", false);
+            storyReactionsLongPressHint = preferences.getBoolean("storyReactionsLongPressHint", false);
             textSelectionHintShows = preferences.getInt("textSelectionHintShows", 0);
             scheduledOrNoSoundHintShows = preferences.getInt("scheduledOrNoSoundHintShows", 0);
             forwardingOptionsHintShown = preferences.getBoolean("forwardingOptionsHintShown", false);
@@ -601,6 +604,7 @@ public class SharedConfig {
             messageSeenHintCount = preferences.getInt("messageSeenCount", 3);
             emojiInteractionsHintCount = preferences.getInt("emojiInteractionsHintCount", 3);
             dayNightThemeSwitchHintCount = preferences.getInt("dayNightThemeSwitchHintCount", 3);
+            stealthModeSendMessageConfirm = preferences.getInt("stealthModeSendMessageConfirm", 2);
             mediaColumnsCount = preferences.getInt("mediaColumnsCount", 3);
             storiesColumnsCount = preferences.getInt("storiesColumnsCount", 3);
             fastScrollHintCount = preferences.getInt("fastScrollHintCount", 3);
@@ -797,6 +801,7 @@ public class SharedConfig {
         messageSeenHintCount = 3;
         emojiInteractionsHintCount = 3;
         dayNightThemeSwitchHintCount = 3;
+        stealthModeSendMessageConfirm = 2;
         dayNightWallpaperSwitchHint = 0;
         saveConfig();
     }
@@ -822,6 +827,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("stickersReorderingHintUsed", stickersReorderingHintUsed);
+        editor.apply();
+    }
+
+    public static void setStoriesReactionsLongPressHintUsed(boolean value) {
+        storyReactionsLongPressHint = value;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("storyReactionsLongPressHint", storyReactionsLongPressHint);
         editor.apply();
     }
 
@@ -1421,6 +1434,12 @@ public class SharedConfig {
         dayNightThemeSwitchHintCount = count;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         preferences.edit().putInt("dayNightThemeSwitchHintCount", dayNightThemeSwitchHintCount).apply();
+    }
+
+    public static void updateStealthModeSendMessageConfirm(int count) {
+        stealthModeSendMessageConfirm = count;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().putInt("stealthModeSendMessageConfirm", stealthModeSendMessageConfirm).apply();
     }
 
     public final static int PERFORMANCE_CLASS_LOW = 0;

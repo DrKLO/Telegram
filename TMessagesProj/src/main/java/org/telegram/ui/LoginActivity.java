@@ -5783,7 +5783,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 .requestIdToken(BuildVars.GOOGLE_AUTH_CLIENT_ID)
                                 .requestEmail()
                                 .build());
-                googleClient.signOut().addOnCompleteListener(command -> getParentActivity().startActivityForResult(googleClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE));
+                googleClient.signOut().addOnCompleteListener(command -> {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    getParentActivity().startActivityForResult(googleClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE);
+                });
             });
 
             cantAccessEmailFrameLayout = new FrameLayout(context);
@@ -5956,6 +5961,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             req.phone_number = requestPhone;
             req.phone_code_hash = phoneHash;
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (getParentActivity() == null) {
+                    return;
+                }
                 requestingEmailReset = false;
                 if (response instanceof TLRPC.TL_auth_sentCode) {
                     TLRPC.TL_auth_sentCode sentCode = (TLRPC.TL_auth_sentCode) response;
@@ -8253,17 +8261,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         currentConnectionState = state;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String proxyAddress = preferences.getString("proxy_ip", "");
-        final boolean proxyEnabled = preferences.getBoolean("proxy_enabled", false);
+        final boolean proxyEnabled = preferences.getBoolean("proxy_enabled", false) && !TextUtils.isEmpty(proxyAddress);
         final boolean connected = currentConnectionState == ConnectionsManager.ConnectionStateConnected || currentConnectionState == ConnectionsManager.ConnectionStateUpdating;
         final boolean connecting = currentConnectionState == ConnectionsManager.ConnectionStateConnecting || currentConnectionState == ConnectionsManager.ConnectionStateWaitingForNetwork || currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy;
-        final boolean show = (proxyEnabled && !TextUtils.isEmpty(proxyAddress)) || getMessagesController().blockedCountry && !SharedConfig.proxyList.isEmpty() || connecting;
-        if (show) {
+        if (proxyEnabled) {
+            proxyDrawable.setConnected(true, connected, animated);
+            showProxyButton(true, animated);
+        } else if (getMessagesController().blockedCountry && !SharedConfig.proxyList.isEmpty() || connecting) {
+            proxyDrawable.setConnected(true, connected, animated);
             showProxyButtonDelayed();
         } else {
-            showProxyButton(show, animated);
-        }
-        if (show) {
-            proxyDrawable.setConnected(true, connected, animated);
+            showProxyButton(false, animated);
         }
     }
     

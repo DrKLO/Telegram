@@ -21,12 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PremiumAppIconsPreviewView extends FrameLayout implements PagerHeaderView {
+
+    private final Theme.ResourcesProvider resourcesProvider;
     private List<LauncherIconController.LauncherIcon> icons = new ArrayList<>();
     private AdaptiveIconImageView topIcon, bottomLeftIcon, bottomRightIcon;
     boolean isEmpty;
 
-    public PremiumAppIconsPreviewView(Context context) {
+    public PremiumAppIconsPreviewView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+
+        this.resourcesProvider = resourcesProvider;
 
         for (LauncherIconController.LauncherIcon icon : LauncherIconController.LauncherIcon.values()) {
             if (icon.premium) {
@@ -137,6 +141,7 @@ public class PremiumAppIconsPreviewView extends FrameLayout implements PagerHead
             }  if (i == 0) {
                 drawable.type = StarParticlesView.TYPE_APP_ICON_STAR_PREMIUM;
             }
+            drawable.resourcesProvider = resourcesProvider;
             drawable.colorKey = Theme.key_premiumStartSmallStarsColor2;
             drawable.init();
             paint.setColor(Color.WHITE);

@@ -59,6 +59,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -4792,7 +4794,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             animated = false;
         }
         int changed = 0;
-        if ((DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || isStoriesView())) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+        if ((DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || isStoriesView()) && includeStories()) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
             changed++;
         }
         if (!isStoriesView()) {
@@ -5385,7 +5387,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             } else if (selectedMode == TAB_STORIES || selectedMode == TAB_ARCHIVED_STORIES) {
                 StoriesController.StoriesList storiesList = (selectedMode == TAB_STORIES ? storiesAdapter : archivedStoriesAdapter).storiesList;
-                profileActivity.getOrCreateStoryViewer().open(getContext(), message.getId(), storiesList, StoriesListPlaceProvider.of(mediaPages[a].listView));
+                profileActivity.getOrCreateStoryViewer().open(getContext(), message.getId(), storiesList, StoriesListPlaceProvider.of(mediaPages[a].listView).with(forward -> {
+                    if (forward) {
+                        storiesList.load(false, 30);
+                    }
+                }));
             }
         }
         updateForwardItem();
@@ -6795,7 +6801,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         private void checkColumns() {
-            if ((!storiesColumnsCountSet || allowStoriesSingleColumn && storiesList.getCount() > 1) && storiesList.getCount() > 0 && !isStoriesView()) {
+            if (!isArchive && (!storiesColumnsCountSet || allowStoriesSingleColumn && storiesList.getCount() > 1) && storiesList.getCount() > 0 && !isStoriesView()) {
                 if (storiesList.getCount() < 5) {
                     mediaColumnsCount[1] = storiesList.getCount();
                     if (mediaPages != null && mediaPages[0] != null && mediaPages[1] != null && mediaPages[0].listView != null && mediaPages[1].listView != null) {

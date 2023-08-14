@@ -125,6 +125,11 @@ public class HuaweiMapsProvider implements IMapsProvider {
             return huaweiMap.getMaxZoomLevel();
         }
 
+        @Override
+        public float getMinZoomLevel() {
+            return huaweiMap.getMinZoomLevel();
+        }
+
         @SuppressLint("MissingPermission")
         @Override
         public void setMyLocationEnabled(boolean enabled) {
@@ -154,6 +159,11 @@ public class HuaweiMapsProvider implements IMapsProvider {
                 }
                 onCameraMoveStartedListener.onCameraMoveStarted(outReason);
             });
+        }
+
+        @Override
+        public void setOnCameraIdleListener(Runnable callback) {
+            huaweiMap.setOnCameraIdleListener(callback::run);
         }
 
         @Override

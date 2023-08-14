@@ -95,7 +95,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 127;
+    public final static int LAST_DB_VERSION = 128;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -202,6 +202,7 @@ public class MessagesStorage extends BaseController {
     public MessagesStorage(int instance) {
         super(instance);
         storageQueue = new DispatchQueue("storageQueue_" + instance);
+        storageQueue.setPriority(8);
         storageQueue.postRunnable(() -> openDatabase(1));
     }
 
@@ -671,7 +672,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE emoji_groups(type INTEGER PRIMARY KEY, data BLOB)").stepThis().dispose();
         database.executeFast("CREATE TABLE app_config(data BLOB)").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE stories (dialog_id INTEGER, story_id INTEGER, data BLOB, local_path TEXT, local_thumb_path TEXT, PRIMARY KEY (dialog_id, story_id));").stepThis().dispose();
+        database.executeFast("CREATE TABLE stories (dialog_id INTEGER, story_id INTEGER, data BLOB, local_path TEXT, local_thumb_path TEXT, custom_params BLOB, PRIMARY KEY (dialog_id, story_id));").stepThis().dispose();
         database.executeFast("CREATE TABLE stories_counter (dialog_id INTEGER PRIMARY KEY, count INTEGER, max_read INTEGER);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, PRIMARY KEY(dialog_id, story_id));").stepThis().dispose();

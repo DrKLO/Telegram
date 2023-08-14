@@ -57,12 +57,14 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.EditTextEffects;
 import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
+import org.telegram.ui.Components.Paint.Views.LocationMarker;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Rect;
@@ -556,10 +558,13 @@ public class TextureRenderer {
 
     private void drawEntity(VideoEditedInfo.MediaEntity entity, int textColor) {
         if (entity.ptr != 0) {
-            RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, stickerBitmap, 512, 512, stickerBitmap.getRowBytes(), true);
-            applyRoundRadius(entity, stickerBitmap, (entity.subType & 8) != 0 ? textColor : 0);
+            if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
+                return;
+            }
+            RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, entity.W, entity.H, entity.bitmap.getRowBytes(), true);
+            applyRoundRadius(entity, entity.bitmap, (entity.subType & 8) != 0 ? textColor : 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
-            GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
+            GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
             entity.currentFrame += entity.framesPerDraw;
             if (entity.currentFrame >= entity.metadata[0]) {
                 entity.currentFrame = 0;
@@ -594,7 +599,7 @@ public class TextureRenderer {
             if (entity.bitmap != null) {
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
                 GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
-                drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO && (entity.subType & 2) != 0);
+                drawTexture(false, stickerTexture[0], entity.x - entity.additionalWidth / 2f, entity.y - entity.additionalHeight / 2f, entity.width + entity.additionalWidth, entity.height + entity.additionalHeight, entity.rotation, entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO && (entity.subType & 2) != 0);
             }
             if (entity.entities != null && !entity.entities.isEmpty()) {
                 for (int i = 0; i < entity.entities.size(); ++i) {
@@ -899,6 +904,7 @@ public class TextureRenderer {
                         initStickerEntity(entity);
                     } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT) {
                         EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext);
+                        editText.getPaint().setAntiAlias(true);
                         editText.betterFraming = useMatrixForImagePath;
                         editText.drawAnimatedEmojiDrawables = false;
                         editText.setBackgroundColor(Color.TRANSPARENT);
@@ -916,7 +922,6 @@ public class TextureRenderer {
                             e.entity = new VideoEditedInfo.MediaEntity();
                             e.entity.text = e.documentAbsolutePath;
                             e.entity.subType = e.subType;
-                            initStickerEntity(e.entity);
                             AnimatedEmojiSpan span = new AnimatedEmojiSpan(0L, 1f, editText.getPaint().getFontMetricsInt()) {
                                 @Override
                                 public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
@@ -940,6 +945,9 @@ public class TextureRenderer {
                                     e.entity.x = tcx - e.entity.width / 2f;
                                     e.entity.y = tcy - e.entity.height / 2f;
                                     e.entity.rotation = entity.rotation;
+
+                                    if (e.entity.bitmap == null)
+                                        initStickerEntity(e.entity);
                                 }
                             };
                             text.setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1013,6 +1021,57 @@ public class TextureRenderer {
                         entity.bitmap = Bitmap.createBitmap(entity.viewWidth, entity.viewHeight, Bitmap.Config.ARGB_8888);
                         Canvas canvas = new Canvas(entity.bitmap);
                         editText.draw(canvas);
+                    } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_LOCATION) {
+                        LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, entity.density);
+                        marker.setText(entity.text);
+                        marker.setType(entity.subType, entity.color);
+                        marker.setMaxWidth(entity.viewWidth);
+                        if (entity.entities.size() == 1) {
+                            marker.forceEmoji();
+                        }
+                        marker.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
+                        marker.layout(0, 0, entity.viewWidth, entity.viewHeight);
+                        float scale = entity.width * transformedWidth / entity.viewWidth;
+                        int w = (int) (entity.viewWidth * scale), h = (int) (entity.viewHeight * scale), pad = 8;
+                        entity.bitmap = Bitmap.createBitmap(w + pad + pad, h + pad + pad, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(entity.bitmap);
+                        canvas.translate(pad, pad);
+                        canvas.scale(scale, scale);
+                        marker.draw(canvas);
+                        entity.additionalWidth = (2 * pad) * scale / transformedWidth;
+                        entity.additionalHeight = (2 * pad) * scale / transformedHeight;
+                        if (entity.entities.size() == 1) {
+                            VideoEditedInfo.EmojiEntity e = entity.entities.get(0);
+                            e.entity = new VideoEditedInfo.MediaEntity();
+                            e.entity.text = e.documentAbsolutePath;
+                            e.entity.subType = e.subType;
+
+                            RectF bounds = new RectF();
+                            marker.getEmojiBounds(bounds);
+
+                            float tcx = entity.x + (bounds.centerX()) / entity.viewWidth * entity.width;
+                            float tcy = entity.y + (bounds.centerY()) / entity.viewHeight * entity.height;
+
+                            if (entity.rotation != 0) {
+                                float mx = entity.x + entity.width / 2f;
+                                float my = entity.y + entity.height / 2f;
+                                float ratio = transformedWidth / (float) transformedHeight;
+                                float x1 = tcx - mx;
+                                float y1 = (tcy - my) / ratio;
+                                tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
+                                tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
+                            }
+
+                            e.entity.width =  (float) bounds.width() / entity.viewWidth * entity.width;
+                            e.entity.height = (float) bounds.height() / entity.viewHeight * entity.height;
+                            e.entity.width *= LocationMarker.SCALE;
+                            e.entity.height *= LocationMarker.SCALE;
+                            e.entity.x = tcx - e.entity.width / 2f;
+                            e.entity.y = tcy - e.entity.height / 2f;
+                            e.entity.rotation = entity.rotation;
+
+                            initStickerEntity(e.entity);
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -1022,9 +1081,23 @@ public class TextureRenderer {
     }
 
     private void initStickerEntity(VideoEditedInfo.MediaEntity entity) {
+        entity.W = (int) (entity.width * transformedWidth);
+        entity.H = (int) (entity.height * transformedHeight);
+        if (entity.W > 512) {
+            entity.H = (int) (entity.H / (float) entity.W * 512);
+            entity.W = 512;
+        }
+        if (entity.H > 512) {
+            entity.W = (int) (entity.W / (float) entity.H * 512);
+            entity.H = 512;
+        }
         if ((entity.subType & 1) != 0) {
+            if (entity.W <= 0 || entity.H <= 0) {
+                return;
+            }
+            entity.bitmap = Bitmap.createBitmap(entity.W, entity.H, Bitmap.Config.ARGB_8888);
             entity.metadata = new int[3];
-            entity.ptr = RLottieDrawable.create(entity.text, null, 512, 512, entity.metadata, false, null, false, 0);
+            entity.ptr = RLottieDrawable.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
             entity.framesPerDraw = entity.metadata[1] / videoFps;
         } else if ((entity.subType & 4) != 0) {
             entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512, null);
@@ -1148,6 +1221,10 @@ public class TextureRenderer {
                 }
                 if (entity.view instanceof EditTextEffects) {
                     ((EditTextEffects) entity.view).recycleEmojis();
+                }
+                if (entity.bitmap != null) {
+                    entity.bitmap.recycle();
+                    entity.bitmap = null;
                 }
             }
         }

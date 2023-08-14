@@ -709,7 +709,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void onLocationAddressAvailable(String address, String displayAddress, Location location) {
+    public void onLocationAddressAvailable(String address, String displayAddress, TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location) {
         currentGroupCreateAddress = address;
         currentGroupCreateDisplayAddress = displayAddress;
         currentGroupCreateLocation = location;

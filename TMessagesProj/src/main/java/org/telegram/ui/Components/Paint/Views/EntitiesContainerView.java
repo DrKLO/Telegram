@@ -42,11 +42,6 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
     }
 
     @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        return ev.getPointerCount() == 2 && delegate.shouldReceiveTouches();
-    }
-
-    @Override
     public boolean onTouchEvent(MotionEvent event) {
         EntityView selectedEntity = delegate.onSelectedEntityRequest();
         if (selectedEntity == null) {
@@ -65,8 +60,8 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
             }
         }
 
-        gestureDetector.onTouchEvent(event);
-        rotationGestureDetector.onTouchEvent(event);
+//        gestureDetector.onTouchEvent(event);
+//        rotationGestureDetector.onTouchEvent(event);
         return true;
     }
 

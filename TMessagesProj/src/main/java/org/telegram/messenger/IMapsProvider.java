@@ -37,8 +37,10 @@ public interface IMapsProvider {
         void animateCamera(ICameraUpdate update, int duration, ICancelableCallback callback);
         void moveCamera(ICameraUpdate update);
         float getMaxZoomLevel();
+        float getMinZoomLevel();
         void setMyLocationEnabled(boolean enabled);
         IUISettings getUiSettings();
+        void setOnCameraIdleListener(Runnable callback);
         void setOnCameraMoveStartedListener(OnCameraMoveStartedListener onCameraMoveStartedListener);
         CameraPosition getCameraPosition();
         void setOnMapLoadedCallback(Runnable callback);

@@ -4495,7 +4495,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 messageObject.resetLayout();
                 messages.add(messageObject);
 
-                if (dialogId != 0) {
+                if (dialogId != 0 && serverWallpaper == null) {
                     message = new TLRPC.TL_message();
                     message.message = "";
                     messageObject = new MessageObject(currentAccount, message, true, false);

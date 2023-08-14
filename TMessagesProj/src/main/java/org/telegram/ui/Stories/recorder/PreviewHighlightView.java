@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.text.SpannableString;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -22,6 +23,7 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -73,7 +75,9 @@ public class PreviewHighlightView extends FrameLayout {
         PeerStoriesView.PeerHeaderView headerView = new PeerStoriesView.PeerHeaderView(getContext(), null);
         headerView.backupImageView.getAvatarDrawable().setInfo(me);
         headerView.backupImageView.setForUserOrChat(me, headerView.backupImageView.getAvatarDrawable());
-        headerView.titleView.setText(UserObject.getUserName(me));
+        CharSequence text = UserObject.getUserName(me);
+        text = Emoji.replaceEmoji(text, headerView.titleView.getPaint().getFontMetricsInt(), false);
+        headerView.titleView.setText(text);
         headerView.setSubtitle(LocaleController.getString("RightNow", R.string.RightNow), false);
         top.addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 17, 0, 0));
 
@@ -139,8 +143,8 @@ public class PreviewHighlightView extends FrameLayout {
     }
 
     public void updateCaption(CharSequence caption) {
-        caption = AnimatedEmojiSpan.cloneSpans(caption);
-        storyCaptionView.captionTextview.setText(caption);
+        caption = AnimatedEmojiSpan.cloneSpans(new SpannableString(caption));
+        storyCaptionView.captionTextview.setText(caption, false, false);
     }
 
     private boolean shownTop = false, shownBottom = false;

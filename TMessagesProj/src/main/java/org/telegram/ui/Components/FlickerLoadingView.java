@@ -69,7 +69,7 @@ public class FlickerLoadingView extends View {
 
     private int colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
     private int colorKey2 = Theme.key_listSelector;
-    private int colorKey3;
+    private int colorKey3 = -1;
     private int itemsCount = 1;
     private final Theme.ResourcesProvider resourcesProvider;
 

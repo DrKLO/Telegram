@@ -1,7 +1,12 @@
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -12,6 +17,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -32,6 +38,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MessageSeenCheckDrawable;
 import org.telegram.ui.Components.Premium.PremiumGradient;
@@ -40,6 +47,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Stories.StoriesUtilities;
 
 public class ReactedUserHolderView extends FrameLayout {
+    public boolean drawDivider;
     int currentAccount;
 
     public static int STYLE_DEFAULT = 0;
@@ -57,12 +65,7 @@ public class ReactedUserHolderView extends FrameLayout {
     Theme.ResourcesProvider resourcesProvider;
     int style;
     public long dialogId;
-    public StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(false) {
-        @Override
-        public void openStory(long dialogId, Runnable onDone) {
-            ReactedUserHolderView.this.openStory(dialogId, onDone);
-        }
-    };
+    public StoriesUtilities.AvatarStoryParams params;
 
     public void openStory(long dialogId, Runnable onDone) {
 
@@ -76,6 +79,12 @@ public class ReactedUserHolderView extends FrameLayout {
         this.style = style;
         this.currentAccount = currentAccount;
         this.resourcesProvider = resourcesProvider;
+        this.params = new StoriesUtilities.AvatarStoryParams(false, resourcesProvider) {
+            @Override
+            public void openStory(long dialogId, Runnable onDone) {
+                ReactedUserHolderView.this.openStory(dialogId, onDone);
+            }
+        };
         setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(ITEM_HEIGHT_DP)));
 
         int avatarSize = style == STYLE_STORY ? 48 : 34;
@@ -140,7 +149,7 @@ public class ReactedUserHolderView extends FrameLayout {
         addView(overlaySelectorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 
-    public void setUserReaction(TLRPC.User user, TLRPC.Chat chat, TLRPC.Reaction reaction, long date, boolean dateIsSeen, boolean animated) {
+    public void setUserReaction(TLRPC.User user, TLRPC.Chat chat, TLRPC.Reaction reaction, boolean like, long date, boolean dateIsSeen, boolean animated) {
         TLObject u = user;
         if (u == null) {
             u = chat;
@@ -184,7 +193,13 @@ public class ReactedUserHolderView extends FrameLayout {
 
         String contentDescription;
         boolean hasReactImage = false;
-        if (reaction != null) {
+        if (like) {
+            hasReactImage = true;
+            Drawable likeDrawableFilled = ContextCompat.getDrawable(getContext(), R.drawable.media_like_active).mutate();
+            reactView.setColorFilter(new PorterDuffColorFilter(0xFFFF2E38, PorterDuff.Mode.MULTIPLY));
+            reactView.setImageDrawable(likeDrawableFilled);
+            contentDescription = LocaleController.formatString("AccDescrLike", R.string.AccDescrLike);
+        } else if (reaction != null) {
             ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction);
             if (visibleReaction.emojicon != null) {
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(visibleReaction.emojicon);
@@ -195,6 +210,7 @@ public class ReactedUserHolderView extends FrameLayout {
                 } else {
                     reactView.setImageDrawable(null);
                 }
+                reactView.setColorFilter(null);
             } else {
                 AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId);
                 drawable.setColorFilter(Theme.getAnimatedEmojiColorFilter(resourcesProvider));
@@ -203,6 +219,7 @@ public class ReactedUserHolderView extends FrameLayout {
             }
             contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), visibleReaction.emojicon != null ? visibleReaction.emojicon : reaction);
         } else {
+            reactView.setAnimatedEmojiDrawable(null);
             reactView.setImageDrawable(null);
             contentDescription = LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, titleView.getText());
         }
@@ -247,7 +264,7 @@ public class ReactedUserHolderView extends FrameLayout {
         } else {
             chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         }
-        setUserReaction(user, chat, reaction.reaction, reaction.date, reaction.dateIsSeen, false);
+        setUserReaction(user, chat, reaction.reaction, false, reaction.date, reaction.dateIsSeen, false);
     }
 
     @Override
@@ -281,5 +298,63 @@ public class ReactedUserHolderView extends FrameLayout {
 
     public void setObject(TLRPC.User user, long date, boolean b) {
 
+    }
+
+    private float alphaInternal = 1f;
+    private ValueAnimator alphaAnimator;
+    public void animateAlpha(float alpha, boolean animated) {
+        if (alphaAnimator != null) {
+            alphaAnimator.cancel();
+            alphaAnimator = null;
+        }
+        if (animated) {
+            alphaAnimator = ValueAnimator.ofFloat(alphaInternal, alpha);
+            alphaAnimator.addUpdateListener(anm -> {
+                alphaInternal = (float) anm.getAnimatedValue();
+                invalidate();
+            });
+            alphaAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    alphaInternal = alpha;
+                    invalidate();
+                }
+            });
+            alphaAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            alphaAnimator.setDuration(420);
+            alphaAnimator.start();
+        } else {
+            alphaInternal = alpha;
+            invalidate();
+        }
+    }
+
+    public float getAlphaInternal() {
+        return alphaInternal;
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        boolean restore = false;
+        if (alphaInternal < 1) {
+            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alphaInternal), Canvas.ALL_SAVE_FLAG);
+            restore = true;
+        }
+        super.dispatchDraw(canvas);
+        if (drawDivider) {
+            float leftMargin = AndroidUtilities.dp(style == STYLE_STORY ? 73 : 55);
+            if (LocaleController.isRTL) {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - leftMargin, getMeasuredHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
+            } else {
+                canvas.drawLine(leftMargin, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1,  Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
+            }
+        }
+        if (restore) {
+            canvas.restore();
+        }
+    }
+
+    public Theme.ResourcesProvider getResourcesProvider() {
+        return resourcesProvider;
     }
 }

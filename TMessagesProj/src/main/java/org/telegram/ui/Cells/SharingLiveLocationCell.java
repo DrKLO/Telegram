@@ -14,22 +14,30 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.IMapsProvider;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -38,7 +46,13 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LoadingSpan;
+import org.telegram.ui.Components.Paint.Views.LocationView;
 import org.telegram.ui.LocationActivity;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class SharingLiveLocationCell extends FrameLayout {
 
@@ -74,14 +88,16 @@ public class SharingLiveLocationCell extends FrameLayout {
         avatarDrawable = new AvatarDrawable();
 
         nameTextView = new SimpleTextView(context);
+        NotificationCenter.listenEmojiLoading(nameTextView);
         nameTextView.setTextSize(16);
         nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        nameTextView.setScrollNonFitText(true);
 
         if (distance) {
             addView(avatarImageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 0));
-            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 12, LocaleController.isRTL ? 73 : padding, 0));
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 12, LocaleController.isRTL ? 73 : 16, 0));
 
             distanceTextView = new SimpleTextView(context);
             distanceTextView.setTextSize(14);
@@ -141,6 +157,66 @@ public class SharingLiveLocationCell extends FrameLayout {
         distanceTextView.setText(address);
     }
 
+    private boolean loading;
+    private double lastLat, lastLong;
+    private SpannableString loadingString;
+    private CharSequence lastName = "";
+    private CharSequence getName(double lat, double _long) {
+        if (loading) {
+            return lastName;
+        }
+        if (Math.abs(lastLat - lat) > 0.000001d || Math.abs(lastLong - _long) > 0.000001d || TextUtils.isEmpty(lastName)) {
+            loading = true;
+            Utilities.globalQueue.postRunnable(() -> {
+                try {
+                    Geocoder geocoder = new Geocoder(ApplicationLoader.applicationContext, LocaleController.getInstance().getCurrentLocale());
+                    List<Address> addresses = geocoder.getFromLocation(lat, _long, 1);
+                    if (addresses.isEmpty()) {
+                        lastName = LocationController.detectOcean(_long, lat);
+                        if (lastName == null) {
+                            lastName = "";
+                        } else {
+                            lastName = "🌊 " + lastName;
+                        }
+                    } else {
+                        Address addr = addresses.get(0);
+
+                        StringBuilder sb = new StringBuilder();
+
+                        HashSet<String> parts = new HashSet<>();
+                        parts.add(addr.getSubAdminArea());
+                        parts.add(addr.getAdminArea());
+                        parts.add(addr.getLocality());
+                        parts.add(addr.getCountryName());
+                        for (String part : parts) {
+                            if (TextUtils.isEmpty(part)) {
+                                continue;
+                            }
+                            if (sb.length() > 0) {
+                                sb.append(", ");
+                            }
+                            sb.append(part);
+                        }
+                        lastName = sb.toString();
+                        String emoji = LocationController.countryCodeToEmoji(addr.getCountryCode());
+                        if (emoji != null && Emoji.getEmojiDrawable(emoji) != null) {
+                            lastName = emoji + " " + lastName;
+                        }
+                    }
+                } catch (Exception ignore) {}
+                AndroidUtilities.runOnUIThread(() -> {
+                    lastLat = lat;
+                    lastLong = _long;
+                    loading = false;
+                    lastName = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false);
+                    nameTextView.setText(lastName);
+                });
+            });
+        }
+        return lastName;
+    }
+
+
     public void setDialog(MessageObject messageObject, Location userLocation, boolean userLocationDenied) {
         long fromId = messageObject.getFromChatId();
         if (messageObject.isForwarded()) {
@@ -148,12 +224,49 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
         currentAccount = messageObject.currentAccount;
         String address = null;
-        String name;
+        CharSequence name = "";
         if (!TextUtils.isEmpty(messageObject.messageOwner.media.address)) {
             address = messageObject.messageOwner.media.address;
         }
-        if (!TextUtils.isEmpty(messageObject.messageOwner.media.title)) {
-            name = messageObject.messageOwner.media.title;
+        boolean noTitle = TextUtils.isEmpty(messageObject.messageOwner.media.title);
+        if (noTitle) {
+            name = "";
+            avatarDrawable = null;
+            if (fromId > 0) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
+                if (user != null) {
+                    avatarDrawable = new AvatarDrawable(user);
+                    name = UserObject.getUserName(user);
+                    avatarImageView.setForUserOrChat(user, avatarDrawable);
+                } else {
+                    noTitle = false;
+                    name = getName(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long);
+                }
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
+                if (chat != null) {
+                    avatarDrawable = new AvatarDrawable(chat);
+                    name = chat.title;
+                    avatarImageView.setForUserOrChat(chat, avatarDrawable);
+                } else {
+                    noTitle = false;
+                    name = getName(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long);
+                }
+            }
+        } else {
+            name = "";
+        }
+        if (TextUtils.isEmpty(name)) {
+            if (loadingString == null) {
+                loadingString = new SpannableString("dkaraush has been here");
+                loadingString.setSpan(new LoadingSpan(nameTextView, AndroidUtilities.dp(100), 0, resourcesProvider), 0, loadingString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            name = loadingString;
+        }
+        if (!noTitle) {
+            if (!TextUtils.isEmpty(messageObject.messageOwner.media.title)) {
+                name = messageObject.messageOwner.media.title;
+            }
 
             Drawable drawable = getResources().getDrawable(R.drawable.pin);
             drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
@@ -163,24 +276,6 @@ public class SharingLiveLocationCell extends FrameLayout {
             combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
             combinedDrawable.setIconSize(AndroidUtilities.dp(24), AndroidUtilities.dp(24));
             avatarImageView.setImageDrawable(combinedDrawable);
-        } else {
-            name = "";
-            avatarDrawable = null;
-            if (fromId > 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
-                if (user != null) {
-                    avatarDrawable = new AvatarDrawable(user);
-                    name = UserObject.getUserName(user);
-                    avatarImageView.setForUserOrChat(user, avatarDrawable);
-                }
-            } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
-                if (chat != null) {
-                    avatarDrawable = new AvatarDrawable(chat);
-                    name = chat.title;
-                    avatarImageView.setForUserOrChat(chat, avatarDrawable);
-                }
-            }
         }
         nameTextView.setText(name);
 

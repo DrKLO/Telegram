@@ -5,12 +5,15 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -20,6 +23,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -42,7 +46,9 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.OvershootInterpolator;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -51,30 +57,41 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.DispatchQueuePool;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
+import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StickerEmptyView;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,12 +103,19 @@ import java.util.HashMap;
 public class GalleryListView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount;
-    private Theme.ResourcesProvider resourcesProvider;
+    private final Theme.ResourcesProvider resourcesProvider;
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public final RecyclerListView listView;
     public final GridLayoutManager layoutManager;
     public final Adapter adapter;
+
+    private final FrameLayout searchContainer;
+    private final RecyclerListView searchListView;
+    private final GridLayoutManager searchLayoutManager;
+    private final SearchAdapter searchAdapterImages;
+    private final StickerEmptyView searchEmptyView;
+    private final KeyboardNotifier keyboardNotifier;
 
     private boolean actionBarShown;
     private final ActionBar actionBar;
@@ -99,6 +123,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     private final TextView dropDown;
     private final Drawable dropDownDrawable;
     private final ActionBarMenuItem dropDownContainer;
+    private final ActionBarMenuItem searchItem;
 
     public boolean ignoreScroll;
     public final boolean onlyPhotos;
@@ -242,9 +267,197 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         dropDown.setPadding(0, AndroidUtilities.statusBarHeight, AndroidUtilities.dp(10), 0);
         dropDownContainer.addView(dropDown, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
+        searchContainer = new FrameLayout(context);
+        searchContainer.setVisibility(View.GONE);
+        searchContainer.setAlpha(0f);
+        addView(searchContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        searchListView = new RecyclerListView(context, resourcesProvider);
+        searchListView.setLayoutManager(searchLayoutManager = new GridLayoutManager(context, 3));
+        searchListView.setAdapter(searchAdapterImages = new SearchAdapter() {
+            @Override
+            protected void onLoadingUpdate(boolean loading) {
+                if (searchItem != null) {
+                    searchItem.setShowSearchProgress(loading);
+                }
+                searchEmptyView.showProgress(loading, true);
+            }
+
+            @Override
+            public void notifyDataSetChanged() {
+                super.notifyDataSetChanged();
+                if (TextUtils.isEmpty(query)) {
+                    searchEmptyView.setStickerType(StickerEmptyView.STICKER_TYPE_ALBUM);
+                    searchEmptyView.title.setText(LocaleController.getString(R.string.SearchImagesType));
+                } else {
+                    searchEmptyView.setStickerType(StickerEmptyView.STICKER_TYPE_SEARCH);
+                    searchEmptyView.title.setText(LocaleController.formatString(R.string.NoResultFoundFor, query));
+                }
+            }
+        });
+        searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (searchListView.scrollingByUser && searchItem != null && searchItem.getSearchField() != null) {
+                    AndroidUtilities.hideKeyboard(searchItem.getSearchContainer());
+                }
+            }
+        });
+        searchListView.setClipToPadding(true);
+        searchListView.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                final int sz = AndroidUtilities.dp(4);
+                outRect.top = 0;
+                outRect.left = outRect.right = outRect.bottom = sz;
+                if ((parent.getChildAdapterPosition(view) % 3) != 2) {
+                    outRect.right = 0;
+                }
+            }
+        });
+        searchContainer.addView(searchListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context, resourcesProvider) {
+            @Override
+            public int getColumnsCount() {
+                return 3;
+            }
+        };
+        flickerLoadingView.setViewType(FlickerLoadingView.PHOTOS_TYPE);
+        flickerLoadingView.setAlpha(0f);
+        flickerLoadingView.setVisibility(View.GONE);
+        searchContainer.addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        searchEmptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_ALBUM, resourcesProvider);
+        searchEmptyView.title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        searchEmptyView.title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        searchEmptyView.title.setTypeface(null);
+        searchEmptyView.title.setText(LocaleController.getString(R.string.SearchImagesType));
+        keyboardNotifier = new KeyboardNotifier(this, h -> searchEmptyView.animate().translationY(-h / 2f + dp(80)).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start());
+        searchContainer.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        searchListView.setEmptyView(searchEmptyView);
+
+        searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+
+            private AnimatorSet animatorSet;
+
+            @Override
+            public void onSearchCollapse() {
+                if (animatorSet != null) {
+                    animatorSet.cancel();
+                }
+                ArrayList<Animator> animators = new ArrayList<>();
+
+                dropDownContainer.setVisibility(View.VISIBLE);
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, SCALE_X, 1f));
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, SCALE_Y, 1f));
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, ALPHA, 1f));
+
+                final View searchField = searchItem.getSearchField();
+                if (searchField != null) {
+                    animators.add(ObjectAnimator.ofFloat(searchField, SCALE_X, .8f));
+                    animators.add(ObjectAnimator.ofFloat(searchField, SCALE_Y, .8f));
+                    animators.add(ObjectAnimator.ofFloat(searchField, ALPHA, 0f));
+                }
+
+                listView.setVisibility(View.VISIBLE);
+                animators.add(ObjectAnimator.ofFloat(listView, ALPHA, 1f));
+                listView.setFastScrollVisible(true);
+                animators.add(ObjectAnimator.ofFloat(searchContainer, ALPHA, 0f));
+
+                ValueAnimator va = ValueAnimator.ofFloat(0, 1);
+                va.addUpdateListener(anm -> GalleryListView.this.invalidate());
+                animators.add(va);
+
+                animatorSet = new AnimatorSet();
+                animatorSet.setDuration(320);
+                animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                animatorSet.playTogether(animators);
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (searchField != null) {
+                            searchField.setVisibility(View.INVISIBLE);
+                        }
+                        searchContainer.setVisibility(View.GONE);
+                    }
+                });
+                animatorSet.start();
+            }
+
+            @Override
+            public void onSearchExpand() {
+                if (animatorSet != null) {
+                    animatorSet.cancel();
+                }
+                ArrayList<Animator> animators = new ArrayList<>();
+
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, SCALE_X, .8f));
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, SCALE_Y, .8f));
+                animators.add(ObjectAnimator.ofFloat(dropDownContainer, ALPHA, 0f));
+
+                final EditTextBoldCursor searchField = searchItem.getSearchField();
+                if (searchField != null) {
+                    searchField.setVisibility(View.VISIBLE);
+                    searchField.setHandlesColor(0xffffffff);
+                    animators.add(ObjectAnimator.ofFloat(searchField, SCALE_X, 1f));
+                    animators.add(ObjectAnimator.ofFloat(searchField, SCALE_Y, 1f));
+                    animators.add(ObjectAnimator.ofFloat(searchField, ALPHA, 1f));
+                }
+
+                searchContainer.setVisibility(View.VISIBLE);
+                animators.add(ObjectAnimator.ofFloat(listView, ALPHA, 0f));
+                listView.setFastScrollVisible(false);
+                animators.add(ObjectAnimator.ofFloat(searchContainer, ALPHA, 1f));
+                searchEmptyView.setVisibility(View.VISIBLE);
+
+                ValueAnimator va = ValueAnimator.ofFloat(0, 1);
+                va.addUpdateListener(anm -> GalleryListView.this.invalidate());
+                animators.add(va);
+
+                animatorSet = new AnimatorSet();
+                animatorSet.setDuration(320);
+                animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                animatorSet.playTogether(animators);
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        dropDownContainer.setVisibility(View.GONE);
+                        listView.setVisibility(View.GONE);
+                    }
+                });
+                animatorSet.start();
+            }
+
+            @Override
+            public void onTextChanged(EditText editText) {
+                final String query = editText.getText().toString();
+                searchAdapterImages.load(query);
+            }
+        });
+        searchItem.setVisibility(View.GONE);
+        searchItem.setSearchFieldHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+
+        searchListView.setOnItemClickListener((view, position) -> {
+            if (searchItem != null) {
+                AndroidUtilities.hideKeyboard(searchItem.getSearchContainer());
+            }
+            if (position < 0 || position >= searchAdapterImages.results.size()) {
+                return;
+            }
+            if (onSelectListener != null) {
+                onSelectListener.run(searchAdapterImages.results.get(position), null);
+            }
+        });
+
         drafts.clear();
         if (!onlyPhotos) {
-            drafts.addAll(MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts);
+            ArrayList<StoryEntry> draftArray = MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts;
+            for (StoryEntry draft : draftArray) {
+                if (!draft.isEdit) {
+                    drafts.add(draft);
+                }
+            }
         }
 
         updateAlbumsDropDown();
@@ -268,6 +481,10 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         }
     }
 
+    public void allowSearch(boolean allow) {
+        searchItem.setVisibility(allow ? View.VISIBLE : View.GONE);
+    }
+
     private ArrayList<MediaController.PhotoEntry> getPhotoEntries(MediaController.AlbumEntry album) {
         if (album == null) {
             return new ArrayList<>();
@@ -283,6 +500,23 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             }
         }
         return photos;
+    }
+
+    public void openSearch() {
+        actionBar.onSearchFieldVisibilityChanged(searchItem.toggleSearch(true));
+    }
+
+    public boolean onBackPressed() {
+        if (searchItem != null && searchItem.isSearchFieldVisible()) {
+            EditTextBoldCursor editText = searchItem.getSearchField();
+            if (keyboardNotifier.keyboardVisible()) {
+                AndroidUtilities.hideKeyboard(editText);
+                return true;
+            }
+            actionBar.onSearchFieldVisibilityChanged(searchItem.toggleSearch(true));
+            return true;
+        }
+        return false;
     }
 
     private final AnimatedFloat actionBarT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -323,6 +557,11 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         listView.setPinnedSectionOffsetY(AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight());
         listView.setPadding(dp(6), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), dp(1), AndroidUtilities.navigationBarHeight);
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) searchContainer.getLayoutParams();
+        lp.leftMargin = 0;
+        lp.topMargin = AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight();
+        lp.rightMargin = 0;
+        lp.bottomMargin = AndroidUtilities.navigationBarHeight;
         dropDown.setPadding(0, AndroidUtilities.statusBarHeight, AndroidUtilities.dp(10), 0);
         dropDown.setTextSize(!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? 18 : 20);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -924,16 +1163,30 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         }
     }
 
-    private static class HeaderView extends TextView {
+    private class HeaderView extends FrameLayout {
+
+        public TextView textView;
+        public ImageView searchButton;
+
         public HeaderView(Context context, boolean onlyPhotos) {
             super(context);
+            setPadding(dp(onlyPhotos ? 14 : 16), dp(16), dp(8), dp(10));
 
-            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            setTextColor(0xFFFFFFFF);
-            setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-            setPadding(dp(16), dp(16), dp(21), dp(10));
+            if (onlyPhotos) {
+                searchButton = new ImageView(context);
+                searchButton.setImageResource(R.drawable.ic_ab_search);
+                searchButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+                searchButton.setBackground(Theme.createSelectorDrawable(436207615));
+                searchButton.setOnClickListener(view -> openSearch());
+                addView(searchButton, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
+            }
 
-            setText(LocaleController.getString(onlyPhotos ? R.string.AddImage : R.string.ChoosePhotoOrVideo));
+            textView = new TextView(context);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            textView.setTextColor(0xFFFFFFFF);
+            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setText(LocaleController.getString(onlyPhotos ? R.string.AddImage : R.string.ChoosePhotoOrVideo));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, onlyPhotos ? 32 : 0, 0));
         }
     }
 
@@ -1081,20 +1334,26 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     }
 
     public int top() {
+        int resultTop;
         if (listView == null || listView.getChildCount() <= 0) {
-            return getPadding();
-        }
-        int top = Integer.MAX_VALUE;
-        if (listView != null) {
-            for (int i = 0; i < listView.getChildCount(); ++i) {
-                View child = listView.getChildAt(i);
-                int position = listView.getChildAdapterPosition(child);
-                if (position > 0) {
-                    top = Math.min(top, (int) child.getY());
+            resultTop = getPadding();
+        } else {
+            int top = Integer.MAX_VALUE;
+            if (listView != null) {
+                for (int i = 0; i < listView.getChildCount(); ++i) {
+                    View child = listView.getChildAt(i);
+                    int position = listView.getChildAdapterPosition(child);
+                    if (position > 0) {
+                        top = Math.min(top, (int) child.getY());
+                    }
                 }
             }
+            resultTop = Math.max(0, Math.min(top, getHeight()));
         }
-        return Math.max(0, Math.min(top, getHeight()));
+        if (listView == null) {
+            return resultTop;
+        }
+        return AndroidUtilities.lerp(0, resultTop, listView.getAlpha());
     }
 
     @Override
@@ -1145,7 +1404,12 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     public void updateDrafts() {
         drafts.clear();
         if (!onlyPhotos) {
-            drafts.addAll(MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts);
+            ArrayList<StoryEntry> draftArray = MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts;
+            for (StoryEntry draft : draftArray) {
+                if (!draft.isEdit) {
+                    drafts.add(draft);
+                }
+            }
         }
         updateAlbumsDropDown();
         updateContainsDrafts();
@@ -1157,5 +1421,166 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     private void updateContainsDrafts() {
         containsDraftFolder = dropDownAlbums != null && !dropDownAlbums.isEmpty() && dropDownAlbums.get(0) == selectedAlbum && drafts.size() > 2;
         containsDrafts = !containsDraftFolder && (selectedAlbum == draftsAlbum || dropDownAlbums != null && !dropDownAlbums.isEmpty() && dropDownAlbums.get(0) == selectedAlbum);
+    }
+
+    public static final int SEARCH_TYPE_IMAGES = 0;
+    public static final int SEARCH_TYPE_GIFS = 1;
+
+    private class SearchAdapter extends RecyclerListView.SelectionAdapter {
+
+        public int type;
+        public ArrayList<TLObject> results = new ArrayList<TLObject>();
+        private boolean full;
+        private boolean loading;
+
+        private int currentReqId = -1;
+        public String query;
+        private String lastOffset;
+
+        private TLRPC.User bot;
+        private boolean triedResolvingBot;
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new RecyclerListView.Holder(new BackupImageView(getContext()) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    final int size = MeasureSpec.getSize(widthMeasureSpec);
+                    setMeasuredDimension(size, size);
+                }
+            });
+        }
+
+        private Drawable loadingDrawable = new ColorDrawable(0x10ffffff);
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            BackupImageView imageView = ((BackupImageView) holder.itemView);
+            TLObject obj = results.get(position);
+            if (obj instanceof TLRPC.Document) {
+                imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) obj), "200_200", loadingDrawable, null);
+            } else if (obj instanceof TLRPC.Photo) {
+                TLRPC.Photo photo = (TLRPC.Photo) obj;
+                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 320);
+                imageView.setImage(ImageLocation.getForPhoto(photoSize, photo), "200_200", loadingDrawable, null);
+            } else if (obj instanceof TLRPC.BotInlineResult) {
+                TLRPC.BotInlineResult res = (TLRPC.BotInlineResult) obj;
+                if (res.thumb != null) {
+                    ImageLocation location = ImageLocation.getForPath(res.thumb.url);
+                    imageView.setImage(location, "200_200", loadingDrawable, res);
+                } else {
+                    imageView.clearImage();
+                }
+            } else {
+                imageView.clearImage();
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return results.size();
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+
+        public void load(String query) {
+            if (!TextUtils.equals(this.query, query)) {
+                if (currentReqId != -1) {
+                    ConnectionsManager.getInstance(currentAccount).cancelRequest(currentReqId, true);
+                    currentReqId = -1;
+                }
+                loading = false;
+                lastOffset = null;
+            }
+            this.query = query;
+            AndroidUtilities.cancelRunOnUIThread(searchRunnable);
+            if (TextUtils.isEmpty(query)) {
+                this.results.clear();
+                onLoadingUpdate(false);
+                notifyDataSetChanged();
+            } else {
+                onLoadingUpdate(true);
+                AndroidUtilities.runOnUIThread(searchRunnable, 1500);
+            }
+        }
+
+        private final Runnable searchRunnable = this::loadInternal;
+
+        private void loadInternal() {
+            if (loading) {
+                return;
+            }
+
+            onLoadingUpdate(loading = true);
+
+            final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+
+            final String botUsername = type == SEARCH_TYPE_GIFS ? messagesController.gifSearchBot : messagesController.imageSearchBot;
+            if (bot == null) {
+                TLObject c = messagesController.getUserOrChat(botUsername);
+                if (c instanceof TLRPC.User) {
+                    bot = (TLRPC.User) c;
+                }
+            }
+            if (bot == null && !triedResolvingBot) {
+                TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+                req.username = botUsername;
+                currentReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    triedResolvingBot = true;
+                    loading = false;
+                    if (res instanceof TLRPC.TL_contacts_resolvedPeer) {
+                        TLRPC.TL_contacts_resolvedPeer response = (TLRPC.TL_contacts_resolvedPeer) res;
+                        messagesController.putUsers(response.users, false);
+                        messagesController.putChats(response.chats, false);
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(response.users, response.chats, true, true);
+                        loadInternal();
+                    }
+                }));
+                return;
+            }
+            if (bot == null) {
+                return;
+            }
+
+            TLRPC.TL_messages_getInlineBotResults req = new TLRPC.TL_messages_getInlineBotResults();
+            req.bot = messagesController.getInputUser(bot);
+            req.query = query == null ? "" : query;
+            req.peer = new TLRPC.TL_inputPeerEmpty();
+            req.offset = lastOffset == null ? "" : lastOffset;
+            final boolean emptyOffset = TextUtils.isEmpty(req.offset);
+            currentReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (res instanceof TLRPC.messages_BotResults) {
+                    TLRPC.messages_BotResults response = (TLRPC.messages_BotResults) res;
+                    lastOffset = response.next_offset;
+
+                    if (emptyOffset) {
+                        results.clear();
+                    }
+
+                    for (int i = 0; i < response.results.size(); ++i) {
+                        TLRPC.BotInlineResult result = response.results.get(i);
+                        if (result.document != null) {
+                            results.add(result.document);
+                        } else if (result.photo != null) {
+                            results.add(result.photo);
+                        } else if (result.content != null) {
+                            results.add(result);
+                        }
+                    }
+
+                    onLoadingUpdate(loading = false);
+
+                    notifyDataSetChanged();
+                }
+            }));
+        }
+
+        protected void onLoadingUpdate(boolean loading) {
+
+        }
     }
 }

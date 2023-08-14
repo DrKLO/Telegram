@@ -186,6 +186,12 @@ public class Bulletin {
         }
     }
 
+    public static void hideVisible(ViewGroup container) {
+        if (visibleBulletin != null && visibleBulletin.containerLayout == container) {
+            visibleBulletin.hide();
+        }
+    }
+
     public Bulletin setDuration(int duration) {
         this.duration = duration;
         return this;
@@ -1745,32 +1751,20 @@ public class Bulletin {
     // to make bulletin above everything
     // use as BulletinFactory.of(BulletinWindow.make(context), resourcesProvider)...
     public static class BulletinWindow extends Dialog {
-        public static FrameLayout make(Context context) {
-            return new BulletinWindow(context).container;
+
+        public static BulletinWindowLayout make(Context context, Delegate delegate) {
+            return new BulletinWindow(context, delegate).container;
         }
 
-        private final FrameLayout container;
-        private BulletinWindow(Context context) {
+        public static BulletinWindowLayout make(Context context) {
+            return new BulletinWindow(context, null).container;
+        }
+
+        private final BulletinWindowLayout container;
+        private BulletinWindow(Context context, Delegate delegate) {
             super(context);
             setContentView(
-                container = new FrameLayout(context) {
-                    @Override
-                    public void addView(View child) {
-                        super.addView(child);
-                        BulletinWindow.this.show();
-                    }
-
-                    @Override
-                    public void removeView(View child) {
-                        super.removeView(child);
-                        try {
-                            BulletinWindow.this.dismiss();
-                        } catch (Exception ignore) {
-
-                        }
-                        removeDelegate(container);
-                    }
-                },
+                container = new BulletinWindowLayout(context),
                 new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             );
             if (Build.VERSION.SDK_INT >= 21) {
@@ -1794,12 +1788,17 @@ public class Bulletin {
             addDelegate(container, new Delegate() {
                 @Override
                 public int getBottomOffset(int tag) {
-                    return 0;
+                    return delegate == null ? 0 : delegate.getBottomOffset(tag);
                 }
 
                 @Override
                 public int getTopOffset(int tag) {
-                    return AndroidUtilities.statusBarHeight;
+                    return delegate == null ? AndroidUtilities.statusBarHeight : delegate.getTopOffset(tag);
+                }
+
+                @Override
+                public boolean clipWithGradient(int tag) {
+                    return delegate != null && delegate.clipWithGradient(tag);
                 }
             });
 
@@ -1807,8 +1806,9 @@ public class Bulletin {
                 Window window = getWindow();
                 window.setWindowAnimations(R.style.DialogNoAnimation);
                 window.setBackgroundDrawable(null);
-                WindowManager.LayoutParams params = window.getAttributes();
+                params = window.getAttributes();
                 params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 params.gravity = Gravity.TOP | Gravity.LEFT;
                 params.dimAmount = 0;
                 params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
@@ -1823,7 +1823,6 @@ public class Bulletin {
                             WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
                 }
                 params.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
-                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 if (Build.VERSION.SDK_INT >= 28) {
                     params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                 }
@@ -1841,6 +1840,52 @@ public class Bulletin {
                         insets.getSystemWindowInsetRight(),
                         insets.getSystemWindowInsetBottom()
                 );
+            }
+        }
+
+        private WindowManager.LayoutParams params;
+
+        public class BulletinWindowLayout extends FrameLayout {
+            public BulletinWindowLayout(Context context) {
+                super(context);
+            }
+
+            @Override
+            public void addView(View child) {
+                super.addView(child);
+                BulletinWindow.this.show();
+            }
+
+            @Override
+            public void removeView(View child) {
+                super.removeView(child);
+                try {
+                    BulletinWindow.this.dismiss();
+                } catch (Exception ignore) {
+
+                }
+                removeDelegate(container);
+            }
+
+            public void setTouchable(boolean touchable) {
+                if (params == null) {
+                    return;
+                }
+                if (!touchable) {
+                    params.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                } else {
+                    params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                }
+                BulletinWindow.this.getWindow().setAttributes(params);
+            }
+
+            @Nullable
+            public WindowManager.LayoutParams getLayout() {
+                return params;
+            }
+
+            public void updateLayout() {
+                BulletinWindow.this.getWindow().setAttributes(params);
             }
         }
     }

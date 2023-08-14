@@ -84,6 +84,15 @@ public class DispatchQueue extends Thread {
         return postRunnable(runnable, 0);
     }
 
+    public boolean postToFrontRunnable(Runnable runnable) {
+        try {
+            syncLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e, false);
+        }
+        return handler.postAtFrontOfQueue(runnable);
+    }
+
     public boolean postRunnable(Runnable runnable, long delay) {
         try {
             syncLatch.await();

@@ -7,6 +7,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -94,7 +95,17 @@ public class DraftsController {
                 ArrayList<StoryEntry> deleteEntries = new ArrayList<>();
                 for (int i = 0; i < savedDrafts.size(); ++i) {
                     StoryEntry entry = savedDrafts.get(i).toEntry();
-                    if (entry == null || entry.file == null || !entry.file.exists() || now - entry.draftDate > EXPIRATION_PERIOD) {
+                    if (entry == null) {
+                        continue;
+                    }
+                    if (
+                        entry.file == null ||
+                        !entry.file.exists() ||
+                        (entry.isEdit ?
+                            (now > entry.editExpireDate) :
+                            (now - entry.draftDate > EXPIRATION_PERIOD)
+                        )
+                    ) {
                         deleteEntries.add(entry);
                     } else {
                         drafts.add(entry);
@@ -205,7 +216,12 @@ public class DraftsController {
         final StoryDraft draft = new StoryDraft(entry);
         drafts.remove(entry);
         drafts.add(0, entry);
+        append(draft);
+    }
+
+    private void append(StoryDraft draft) {
         final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
+        FileLog.d("StoryDraft append " + draft.id + " (edit=" + draft.edit + (draft.edit ? ", storyId=" + draft.editStoryId + ", " + (draft.editDocumentId != 0 ? "documentId=" + draft.editDocumentId : "photoId=" + draft.editPhotoId) + ", expireDate=" + draft.editExpireDate : "") + ", now="+System.currentTimeMillis()+")");
         storage.getStorageQueue().postRunnable(() -> {
             SQLitePreparedStatement state = null;
             try {
@@ -218,7 +234,7 @@ public class DraftsController {
                 state.requery();
                 NativeByteBuffer data = new NativeByteBuffer(draft.getObjectSize());
                 draft.toStream(data);
-                state.bindLong(1, id);
+                state.bindLong(1, draft.id);
                 state.bindLong(2, draft.date);
                 state.bindByteBuffer(3, data);
                 state.step();
@@ -236,6 +252,81 @@ public class DraftsController {
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesDraftsUpdated);
     }
 
+    public void deleteForEdit(TLRPC.StoryItem storyItem) {
+        if (storyItem == null) {
+            return;
+        }
+        ArrayList<StoryEntry> toDelete = new ArrayList<>();
+        for (StoryEntry draft : drafts) {
+            if (draft.isEdit && draft.editStoryId == storyItem.id) {
+                FileLog.d("StoryDraft deleteForEdit storyId=" + storyItem.id);
+                toDelete.add(draft);
+            }
+        }
+        delete(toDelete);
+    }
+
+    public void deleteForEdit(long peerId, int storyId) {
+        ArrayList<StoryEntry> toDelete = new ArrayList<>();
+        for (StoryEntry draft : drafts) {
+            if (draft.isEdit && draft.editStoryId == storyId && draft.editStoryPeerId == peerId) {
+                FileLog.d("StoryDraft deleteForEdit (2) storyId=" + storyId);
+                toDelete.add(draft);
+            }
+        }
+        delete(toDelete);
+    }
+
+    public void saveForEdit(StoryEntry entry, long dialogId, TLRPC.StoryItem storyItem) {
+        if (entry == null || storyItem == null || storyItem.media == null) {
+            return;
+        }
+
+        ArrayList<StoryEntry> toDelete = new ArrayList<>();
+        for (StoryEntry draft : drafts) {
+            if (draft.isEdit && draft.editStoryId == storyItem.id) {
+                toDelete.add(draft);
+            }
+        }
+        delete(toDelete);
+
+        prepare(entry);
+        final long id = Utilities.random.nextLong();
+        entry.draftId = id;
+        final StoryDraft draft = new StoryDraft(entry);
+        draft.edit = entry.isEdit = true;
+        draft.editStoryPeerId = entry.editStoryPeerId = dialogId;
+        draft.editStoryId = entry.editStoryId = storyItem.id;
+        draft.editExpireDate = entry.editExpireDate = storyItem.expire_date * 1000L;
+        if (storyItem.media.document != null) {
+            draft.editDocumentId = entry.editDocumentId = storyItem.media.document.id;
+        } else if (storyItem.media.photo != null) {
+            draft.editPhotoId = entry.editPhotoId =storyItem.media.photo.id;
+        }
+        drafts.remove(entry);
+        drafts.add(0, entry);
+        append(draft);
+    }
+
+    public StoryEntry getForEdit(long dialogId, TLRPC.StoryItem storyItem) {
+        if (storyItem == null) {
+            return null;
+        }
+        for (StoryEntry draft : drafts) {
+            if (draft.isEdit && storyItem.id == draft.editStoryId && dialogId == draft.editStoryPeerId) {
+                if (storyItem.media.document != null && storyItem.media.document.id != draft.editDocumentId) {
+                    continue;
+                }
+                if (storyItem.media.photo != null && storyItem.media.photo.id != draft.editPhotoId) {
+                    continue;
+                }
+                draft.isEditSaved = true;
+                return draft;
+            }
+        }
+        return null;
+    }
+
     public void delete(StoryEntry entry) {
         ArrayList<StoryEntry> list = new ArrayList<>(1);
         list.add(entry);
@@ -247,7 +338,12 @@ public class DraftsController {
         ArrayList<StoryEntry> list = new ArrayList<>();
         for (int i = 0; i < drafts.size(); ++i) {
             StoryEntry entry = drafts.get(i);
-            if (entry != null && now - entry.draftDate > EXPIRATION_PERIOD) {
+            if (entry != null && (
+                entry.isEdit ?
+                    (now > entry.editExpireDate) :
+                    (now - entry.draftDate > EXPIRATION_PERIOD)
+            )) {
+                FileLog.d("StoryDraft deleteExpired " + entry.draftId);
                 list.add(entry);
             }
         }
@@ -262,9 +358,13 @@ public class DraftsController {
         for (int i = 0; i < entries.size(); ++i) {
             StoryEntry entry = entries.get(i);
             if (entry != null) {
+                FileLog.d("StoryDraft delete " + entry.draftId + " (edit=" + entry.isEdit + (entry.isEdit ? ", storyId=" + entry.editStoryId + ", " + (entry.editDocumentId != 0 ? "documentId=" + entry.editDocumentId : "photoId=" + entry.editPhotoId) + ", expireDate=" + entry.editExpireDate : "") + ", now="+System.currentTimeMillis()+")");
                 ids.add(entry.draftId);
                 entry.destroy(true);
             }
+        }
+        if (ids.isEmpty()) {
+            return;
         }
         drafts.removeAll(entries);
         final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
@@ -314,6 +414,7 @@ public class DraftsController {
         public final ArrayList<TLRPC.InputPrivacyRule> privacyRules = new ArrayList<>();
 
         public String paintFilePath;
+        public String paintEntitiesFilePath;
         public long averageDuration;
         public ArrayList<VideoEditedInfo.MediaEntity> mediaEntities;
         public List<TLRPC.InputDocument> stickers;
@@ -324,6 +425,13 @@ public class DraftsController {
         private int period;
 
         private final ArrayList<StoryEntry.Part> parts = new ArrayList<>();
+
+        public boolean edit;
+        public int editStoryId;
+        public long editStoryPeerId;
+        public long editDocumentId;
+        public long editPhotoId;
+        public long editExpireDate;
 
         public StoryDraft(@NonNull StoryEntry entry) {
             this.id = entry.draftId;
@@ -346,10 +454,11 @@ public class DraftsController {
             this.gradientTopColor = entry.gradientTopColor;
             this.gradientBottomColor = entry.gradientBottomColor;
             CharSequence caption = entry.caption;
-            this.captionEntities = MediaDataController.getInstance(entry.currentAccount).getEntities(new CharSequence[]{caption}, true);
+            this.captionEntities = entry.captionEntitiesAllowed ? MediaDataController.getInstance(entry.currentAccount).getEntities(new CharSequence[]{caption}, true) : null;
             this.caption = caption == null ? "" : caption.toString();
             this.privacyRules.addAll(entry.privacyRules);
             this.paintFilePath = entry.paintFile == null ? "" : entry.paintFile.toString();
+            this.paintEntitiesFilePath = entry.paintEntitiesFile == null ? "" : entry.paintEntitiesFile.toString();
             this.averageDuration = entry.averageDuration;
             this.mediaEntities = entry.mediaEntities;
             this.stickers = entry.stickers;
@@ -404,6 +513,9 @@ public class DraftsController {
             if (paintFilePath != null) {
                 entry.paintFile = new File(paintFilePath);
             }
+            if (paintEntitiesFilePath != null) {
+                entry.paintEntitiesFile = new File(paintEntitiesFilePath);
+            }
             entry.averageDuration = averageDuration;
             entry.mediaEntities = mediaEntities;
             entry.stickers = stickers;
@@ -418,6 +530,12 @@ public class DraftsController {
             for (int i = 0; i < parts.size(); ++i) {
                 entry.partsMaxId = Math.max(entry.partsMaxId, parts.get(i).id);
             }
+            entry.isEdit = edit;
+            entry.editStoryId = editStoryId;
+            entry.editStoryPeerId = editStoryPeerId;
+            entry.editExpireDate = editExpireDate;
+            entry.editPhotoId = editPhotoId;
+            entry.editDocumentId = editDocumentId;
             return entry;
         }
 
@@ -488,6 +606,13 @@ public class DraftsController {
             for (int i = 0; i < parts.size(); ++i) {
                 parts.get(i).serializeToStream(stream);
             }
+            stream.writeBool(edit);
+            stream.writeInt32(editStoryId);
+            stream.writeInt64(editStoryPeerId);
+            stream.writeInt64(editExpireDate);
+            stream.writeInt64(editPhotoId);
+            stream.writeInt64(editDocumentId);
+            stream.writeString(paintEntitiesFilePath);
         }
 
         public int getObjectSize() {
@@ -617,6 +742,20 @@ public class DraftsController {
                     StoryEntry.Part part = new StoryEntry.Part();
                     part.readParams(stream, exception);
                     parts.add(part);
+                }
+            }
+            if (stream.remaining() > 0) {
+                edit = stream.readBool(exception);
+                editStoryId = stream.readInt32(exception);
+                editStoryPeerId = stream.readInt64(exception);
+                editExpireDate = stream.readInt64(exception);
+                editPhotoId = stream.readInt64(exception);
+                editDocumentId = stream.readInt64(exception);
+            }
+            if (stream.remaining() > 0) {
+                paintEntitiesFilePath = stream.readString(exception);
+                if (paintEntitiesFilePath != null && paintEntitiesFilePath.length() == 0) {
+                    paintEntitiesFilePath = null;
                 }
             }
         }

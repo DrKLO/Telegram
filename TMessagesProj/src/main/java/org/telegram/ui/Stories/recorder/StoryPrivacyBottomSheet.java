@@ -22,6 +22,7 @@ import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableString;
@@ -114,6 +115,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.UsersSelectActivity;
 
 import java.util.ArrayList;
@@ -136,13 +138,19 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     private static final int PAGE_TYPE_CLOSE_FRIENDS = 1;
     private static final int PAGE_TYPE_EXCLUDE_CONTACTS = 2;
     private static final int PAGE_TYPE_SELECT_CONTACTS = 3;
+    private static final int PAGE_TYPE_EXCLUDE_EVERYONE = 4;
     private static final int PAGE_TYPE_SEND_AS_MESSAGE = 5;
+    private static final int PAGE_TYPE_BLOCKLIST = 6;
 
     public static final int TYPE_CLOSE_FRIENDS = 1;
     public static final int TYPE_CONTACTS = 2;
     public static final int TYPE_SELECTED_CONTACTS = 3;
     public static final int TYPE_EVERYONE = 4;
     public static final int TYPE_AS_MESSAGE = 5;
+
+    private final ArrayList<Long> excludedEveryone = new ArrayList<>();
+    private final HashMap<Long, ArrayList<Long>> excludedEveryoneByGroup = new HashMap<>();
+    private int excludedEveryoneCount = 0;
 
     private final ArrayList<Long> excludedContacts = new ArrayList<>();
     private final ArrayList<Long> selectedContacts = new ArrayList<>();
@@ -177,6 +185,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     private class Page extends FrameLayout implements View.OnClickListener, NotificationCenter.NotificationCenterDelegate {
         public int pageType;
 
+        private final LongSparseArray<Boolean> changelog = new LongSparseArray<>();
         private final ArrayList<Long> selectedUsers = new ArrayList<>();
         private final HashMap<Long, ArrayList<Long>> selectedUsersByGroup = new HashMap<>();
 
@@ -317,6 +326,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     contentView.invalidate();
                     containerView.invalidate();
+
+                    if (pageType == PAGE_TYPE_BLOCKLIST && listView.getChildCount() > 0) {
+                        int position = listView.getChildAdapterPosition(listView.getChildAt(0));
+                        if (position >= MessagesController.getInstance(currentAccount).getStoriesController().blocklist.size()) {
+                            MessagesController.getInstance(currentAccount).getStoriesController().loadBlocklist(false);
+                        }
+                    }
                 }
 
                 @Override
@@ -358,6 +374,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         selectedType = TYPE_CONTACTS;
                         updateCheckboxes(true);
                         return;
+                    } else if (item.type == TYPE_EVERYONE) {
+                        if (selectedType == TYPE_EVERYONE) {
+                            activePage = PAGE_TYPE_EXCLUDE_EVERYONE;
+                            viewPager.scrollToPosition(1);
+                        }
+                        selectedType = TYPE_EVERYONE;
+                        updateCheckboxes(true);
+                        return;
                     }
                     if (item.type > 0) {
                         selectedUsers.clear();
@@ -378,6 +402,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                 .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
                                 .show();
                         } else if (selectedUsersByGroup.containsKey(id)) {
+                            ArrayList<Long> userIds = selectedUsersByGroup.get(id);
+                            if (userIds != null) {
+                                for (long userId : userIds) {
+                                    changelog.put(userId, false);
+                                }
+                            }
                             selectedUsersByGroup.remove(id);
                             updateSpans(true);
                         } else {
@@ -426,7 +456,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                                         participantsObj.participants.add(chatParticipant);
                                                     }
                                                     selectChat(id, participantsObj);
-                                                });
+                                                }, 200);
                                             } else {
                                                 MessagesController.getInstance(currentAccount).loadFullChat(id, 0, true);
                                             }
@@ -458,6 +488,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                 }
                             }
                             userIds.remove(id);
+                            changelog.put(id, false);
                         } else {
                             Iterator<Map.Entry<Long, ArrayList<Long>>> iterator = selectedUsersByGroup.entrySet().iterator();
                             while (iterator.hasNext()) {
@@ -473,13 +504,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                 query = null;
                                 updateItems(false);
                             }
+                            changelog.put(id, true);
                         }
                         selectedUsers.clear();
                         selectedUsers.addAll(userIds);
                         updateSpans(true);
                     }
-                    updateButton(true);
                     updateCheckboxes(true);
+                    updateButton(true);
                     searchField.scrollToBottom();
                 } else if (item.viewType == VIEW_TYPE_CHECK) {
                     if (!(view instanceof TextCell)) {
@@ -690,6 +722,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         .setMessage(nonContactsUsers.size() + " members are not in your contact list")
                         .setPositiveButton("Add " + groupUsers.size() + " contacts", (di, a) -> {
                             selectedUsersByGroup.put(id, groupUsers);
+                            for (long userId : groupUsers) {
+                                changelog.put(userId, true);
+                            }
                             updateSpans(true);
                             updateButton(true);
                             updateCheckboxes(true);
@@ -701,6 +736,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
             } else {
                 selectedUsersByGroup.put(id, groupUsers);
+                for (long userId : groupUsers) {
+                    changelog.put(userId, true);
+                }
                 updateSpans(true);
                 updateButton(true);
                 updateCheckboxes(true);
@@ -712,6 +750,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             HashSet<Long> userIds = mergeUsers(selectedUsers, selectedUsersByGroup);
             if (pageType == PAGE_TYPE_SELECT_CONTACTS) {
                 selectedContactsCount = userIds.size();
+            } else if (pageType == PAGE_TYPE_EXCLUDE_EVERYONE) {
+                excludedEveryoneCount = userIds.size();
             }
 
             final MessagesController messagesController = MessagesController.getInstance(currentAccount);
@@ -807,6 +847,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         privacy.selectedUserIdsByGroup.putAll(selectedContactsByGroup);
                     } else if (selectedType == TYPE_CONTACTS) {
                         privacy = new StoryPrivacy(selectedType, currentAccount, excludedContacts);
+                    } else if (selectedType == TYPE_EVERYONE) {
+                        HashSet<Long> users = mergeUsers(excludedEveryone, excludedEveryoneByGroup);
+                        privacy = new StoryPrivacy(selectedType, currentAccount, new ArrayList<>(users));
+                        privacy.selectedUserIds.clear();
+                        privacy.selectedUserIds.addAll(excludedEveryone);
+                        privacy.selectedUserIdsByGroup.clear();
+                        privacy.selectedUserIdsByGroup.putAll(excludedEveryoneByGroup);
                     } else {
                         privacy = new StoryPrivacy(selectedType, currentAccount, null);
                     }
@@ -847,6 +894,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     closeKeyboard();
                     viewPager.scrollToPosition(0);
                 }
+            } else if (pageType == PAGE_TYPE_BLOCKLIST) {
+                HashSet<Long> users = mergeUsers(selectedUsers, selectedUsersByGroup);
+                button.setLoading(true);
+                MessagesController.getInstance(currentAccount).getStoriesController().updateBlockedUsers(users, () -> {
+                    button.setLoading(false);
+                    closeKeyboard();
+                    viewPager.scrollToPosition(0);
+                });
             } else {
                 selectedType = pageType;
                 closeKeyboard();
@@ -885,9 +940,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public void bind(int pageType) {
             this.pageType = pageType;
+            changelog.clear();
             selectedUsers.clear();
             selectedUsersByGroup.clear();
-            if (pageType == PAGE_TYPE_SEND_AS_MESSAGE) {
+            if (pageType == PAGE_TYPE_EXCLUDE_EVERYONE) {
+                selectedUsers.addAll(excludedEveryone);
+                selectedUsersByGroup.putAll(excludedEveryoneByGroup);
+            } else if (pageType == PAGE_TYPE_SEND_AS_MESSAGE) {
                 selectedUsers.addAll(messageUsers);
             } else if (pageType == PAGE_TYPE_CLOSE_FRIENDS) {
                 ArrayList<TLObject> closeFriends = getCloseFriends();
@@ -899,6 +958,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             } else if (pageType == PAGE_TYPE_SELECT_CONTACTS) {
                 selectedUsers.addAll(selectedContacts);
                 selectedUsersByGroup.putAll(selectedContactsByGroup);
+            } else if (pageType == PAGE_TYPE_BLOCKLIST) {
+                applyBlocklist(false);
             }
             layoutManager.setReverseLayout(adapter.reversedLayout = pageType == PAGE_TYPE_SHARE);
             updateSpans(false);
@@ -912,6 +973,33 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             scrollToTop();
             listView.requestLayout();
             lastSelectedType = -1;
+        }
+
+        public void applyBlocklist(boolean notify) {
+            if (pageType != PAGE_TYPE_BLOCKLIST) {
+                return;
+            }
+
+            selectedUsers.clear();
+            HashSet<Long> blocklist = MessagesController.getInstance(currentAccount).getStoriesController().blocklist;
+            selectedUsers.addAll(blocklist);
+            for (int i = 0; i < changelog.size(); ++i) {
+                long id = changelog.keyAt(i);
+                boolean blocked = changelog.valueAt(i);
+                if (blocked) {
+                    if (!selectedUsers.contains(id)) {
+                        selectedUsers.add(id);
+                    }
+                } else {
+                    selectedUsers.remove(id);
+                }
+            }
+
+            if (notify) {
+                updateItems(true);
+                updateButton(true);
+                updateCheckboxes(true);
+            }
         }
 
         private String query;
@@ -930,6 +1018,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             float h = 0;
             if (pageType == PAGE_TYPE_SHARE) {
+                ItemInner item;
                 containsHeader = false;
                 sectionCell.setVisibility(View.GONE);
 //                items.add(ItemInner.asPad(dp(84) + 4 * dp(56) + (sendAsMessageEnabled ? dp(120) : dp(64))));
@@ -941,8 +1030,19 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         LocaleController.formatPluralString("StoryPrivacyAlertSubtitle", storyPeriod / 3600) :
                         LocaleController.getString("StoryPrivacyAlertSubtitleProfile", R.string.StoryPrivacyAlertSubtitleProfile)
                 ));
-                items.add(ItemInner.asType(TYPE_EVERYONE, selectedType == TYPE_EVERYONE));
-                ItemInner item;
+                items.add(item = ItemInner.asType(TYPE_EVERYONE, selectedType == TYPE_EVERYONE, excludedEveryoneCount));
+                if (excludedEveryoneCount == 1) {
+                    if (excludedEveryone.size() == 1) {
+                        item.user = MessagesController.getInstance(currentAccount).getUser(excludedEveryone.get(0));
+                    } else {
+                        for (ArrayList<Long> userIds : excludedEveryoneByGroup.values()) {
+                            if (userIds.size() >= 1) {
+                                item.user = MessagesController.getInstance(currentAccount).getUser(userIds.get(0));
+                                break;
+                            }
+                        }
+                    }
+                }
                 items.add(item = ItemInner.asType(TYPE_CONTACTS, selectedType == TYPE_CONTACTS, excludedContacts.size()));
                 if (excludedContacts.size() == 1) {
                     item.user = MessagesController.getInstance(currentAccount).getUser(excludedContacts.get(0));
@@ -965,11 +1065,22 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         }
                     }
                 }
+                int blocklistCount = MessagesController.getInstance(currentAccount).getStoriesController().getBlocklistCount();
+                items.add(ItemInner.asShadow(AndroidUtilities.replaceSingleTag(
+                    blocklistCount <= 0 ?
+                        LocaleController.getString("StoryBlockListEmpty") :
+                        LocaleController.formatPluralString("StoryBlockList", blocklistCount),
+                    Theme.key_chat_messageLinkIn, 0,
+                    () -> {
+                        activePage = PAGE_TYPE_BLOCKLIST;
+                        viewPager.scrollToPosition(1);
+                    },
+                    resourcesProvider
+                )));
                 if (!isEdit) {
-                    items.add(ItemInner.asShadow(null));
                     items.add(ItemInner.asCheck(LocaleController.getString(R.string.StoryAllowScreenshots), 0, allowScreenshots));
                     items.add(ItemInner.asCheck(LocaleController.getString(R.string.StoryKeep), 1, keepOnMyPage));
-                    items.add(ItemInner.asShadow(LocaleController.formatPluralString("StoryKeepInfo", storyPeriod / 3600)));
+                    items.add(ItemInner.asShadow(LocaleController.formatPluralString("StoryKeepInfo", (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
                 }
             } else if (pageType == PAGE_TYPE_CLOSE_FRIENDS) {
                 headerView.setText(LocaleController.getString("StoryPrivacyAlertCloseFriendsTitle", R.string.StoryPrivacyAlertCloseFriendsTitle));
@@ -1031,6 +1142,36 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 sectionCell.setText(LocaleController.getString("StoryPrivacyAlertAsMessageSubtitle", R.string.StoryPrivacyAlertAsMessageSubtitle));
                 updateSectionCell(animated);
                 containsHeader = true;
+            } else if (pageType == PAGE_TYPE_BLOCKLIST) {
+                headerView.setText(LocaleController.getString("StoryPrivacyAlertBlocklistTitle", R.string.StoryPrivacyAlertBlocklistTitle));
+                headerView.setCloseImageVisible(true);
+                headerView.backDrawable.setRotation(0f, false);
+                items.add(ItemInner.asPad());
+                items.add(ItemInner.asHeader());
+                h += dp(56);
+                searchPosition = items.size();
+                items.add(ItemInner.asSearchField());
+                h += dp(150);
+                items.add(ItemInner.asSection());
+                h += dp(32);
+                sectionCell.setText(LocaleController.getString("StoryPrivacyAlertBlocklistSubtitle", R.string.StoryPrivacyAlertBlocklistSubtitle));
+                updateSectionCell(animated);
+                containsHeader = true;
+            } else if (pageType == PAGE_TYPE_EXCLUDE_EVERYONE) {
+                headerView.setText(LocaleController.getString("StoryPrivacyAlertExcludeFromEveryoneTitle", R.string.StoryPrivacyAlertExcludeFromEveryoneTitle));
+                headerView.setCloseImageVisible(true);
+                headerView.backDrawable.setRotation(0f, false);
+                items.add(ItemInner.asPad());
+                items.add(ItemInner.asHeader());
+                h += dp(56);
+                searchPosition = items.size();
+                items.add(ItemInner.asSearchField());
+                h += dp(150);
+                items.add(ItemInner.asSection());
+                h += dp(32);
+                sectionCell.setText(LocaleController.getString("StoryPrivacyAlertExcludeFromEveryoneSubtitle", R.string.StoryPrivacyAlertExcludeFromEveryoneSubtitle));
+                updateSectionCell(animated);
+                containsHeader = true;
             }
 
             boolean searching = !TextUtils.isEmpty(query);
@@ -1041,8 +1182,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 if (pageType == PAGE_TYPE_SEND_AS_MESSAGE) {
                     allOtherUsers = getChats();
                 } else {
-                    allOtherUsers = getUsers(pageType == PAGE_TYPE_CLOSE_FRIENDS || pageType == PAGE_TYPE_EXCLUDE_CONTACTS, allowSmallChats && pageType == PAGE_TYPE_SELECT_CONTACTS);
+                    allOtherUsers = getUsers(pageType == PAGE_TYPE_CLOSE_FRIENDS || pageType == PAGE_TYPE_EXCLUDE_CONTACTS, allowSmallChats && (pageType == PAGE_TYPE_SELECT_CONTACTS || pageType == PAGE_TYPE_BLOCKLIST));
                 }
+                HashSet<Long> allSelectedUsers = mergeUsers(selectedUsers, selectedUsersByGroup);
                 if (!searching) {
                     if (!animated) {
                         atTop.clear();
@@ -1065,12 +1207,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         TLObject object = atTop.get(i);
                         if (object instanceof TLRPC.User) {
                             TLRPC.User user = (TLRPC.User) object;
-                            items.add(ItemInner.asUser(user, selectedUsers.contains(user.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS));
+                            final boolean checked = selectedUsers.contains(user.id);
+                            final boolean halfChecked = !checked && allSelectedUsers.contains(user.id);
+                            items.add(ItemInner.asUser(user, checked, halfChecked).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS || pageType == PAGE_TYPE_EXCLUDE_EVERYONE));
                             h += dp(56);
                             count++;
                         } else if (object instanceof TLRPC.Chat) {
                             TLRPC.Chat chat = (TLRPC.Chat) object;
-                            items.add(ItemInner.asChat(chat, selectedUsersByGroup.containsKey(chat.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS));
+                            items.add(ItemInner.asChat(chat, selectedUsersByGroup.containsKey(chat.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS || pageType == PAGE_TYPE_EXCLUDE_EVERYONE));
                             h += dp(56);
                             count++;
                         }
@@ -1083,12 +1227,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     if (object instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) object;
-                        items.add(ItemInner.asUser(user, selectedUsers.contains(user.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS));
+                        final boolean checked = selectedUsers.contains(user.id);
+                        final boolean halfChecked = !checked && allSelectedUsers.contains(user.id);
+                        items.add(ItemInner.asUser(user, checked, halfChecked).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS || pageType == PAGE_TYPE_EXCLUDE_EVERYONE));
                         h += dp(56);
                         count++;
                     } else if (object instanceof TLRPC.Chat) {
                         TLRPC.Chat chat = (TLRPC.Chat) object;
-                        items.add(ItemInner.asChat(chat, selectedUsersByGroup.containsKey(chat.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS));
+                        items.add(ItemInner.asChat(chat, selectedUsersByGroup.containsKey(chat.id)).red(pageType == PAGE_TYPE_EXCLUDE_CONTACTS || pageType == PAGE_TYPE_EXCLUDE_EVERYONE));
                         h += dp(56);
                         count++;
                     }
@@ -1327,6 +1473,41 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 //                button.setText(LocaleController.formatPluralString("StoryPrivacyButtonMessageChats", selectedUsers.size()), animated);
                 button.setCount(selectedUsers.size(), animated);
                 button2.setVisibility(View.GONE);
+            } else if (pageType == PAGE_TYPE_BLOCKLIST) {
+                button.setShowZero(false);
+                button.setEnabled(true); // button.setEnabled(!selectedUsers.isEmpty());
+                button.setText(LocaleController.getString("StoryPrivacyButtonSaveCloseFriends", R.string.StoryPrivacyButtonSaveCloseFriends), animated);
+                StoriesController storiesController = MessagesController.getInstance(currentAccount).getStoriesController();
+                if (storiesController.blocklistFull) {
+                    button.setCount(selectedUsers.size(), animated);
+                } else {
+                    int count = storiesController.getBlocklistCount();
+                    for (int i = 0; i < changelog.size(); ++i) {
+                        long id = changelog.keyAt(i);
+                        boolean block = changelog.valueAt(i);
+                        if (storiesController.blocklist.contains(id)) {
+                            if (!block) {
+                                count--;
+                            }
+                        } else {
+                            if (block) {
+                                count++;
+                            } else {
+                                count--;
+                            }
+                        }
+                    }
+                }
+                button2.setVisibility(View.GONE);
+            } else if (pageType == PAGE_TYPE_EXCLUDE_EVERYONE) {
+                int count = excludedEveryoneCount = mergeUsers(excludedEveryone, excludedEveryoneByGroup).size();
+//                button.setText(LocaleController.formatPluralString("StoryPrivacyButtonContacts", count), animated);
+                button.setText(LocaleController.getString("StoryPrivacyButtonSave"), animated);
+                button.setShowZero(false);
+                buttonContainer.hide(false, animated);
+                button.setCount(count, animated);
+                button.setEnabled(true);
+                button2.setVisibility(View.GONE);
             }
         }
 
@@ -1335,7 +1516,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return;
             }
             if (mergeUsers(selectedUsers, selectedUsersByGroup).size() > 0) {
-                sectionCell.setRightText(LocaleController.getString(R.string.DeselectAll), true, v -> {
+                sectionCell.setRightText(LocaleController.getString(R.string.UsersDeselectAll), true, v -> {
+                    for (long userId : selectedUsers) {
+                        changelog.put(userId, false);
+                    }
+                    for (ArrayList<Long> userIds : selectedUsersByGroup.values()) {
+                        for (long userId : userIds) {
+                            changelog.put(userId, false);
+                        }
+                    }
                     selectedUsers.clear();
                     selectedUsersByGroup.clear();
                     messageUsers.clear();
@@ -1355,7 +1544,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         private int lastSelectedType = -1;
 
         public void updateCheckboxes(boolean animated) {
-            if (pageType == PAGE_TYPE_EXCLUDE_CONTACTS) {
+            if (pageType == PAGE_TYPE_EXCLUDE_EVERYONE) {
+                excludedEveryone.clear();
+                excludedEveryoneByGroup.clear();
+                excludedEveryone.addAll(selectedUsers);
+                excludedEveryoneByGroup.putAll(selectedUsersByGroup);
+            } else if (pageType == PAGE_TYPE_EXCLUDE_CONTACTS) {
                 excludedContacts.clear();
                 excludedContacts.addAll(selectedUsers);
             } else if (pageType == PAGE_TYPE_SELECT_CONTACTS) {
@@ -1377,15 +1571,20 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
             }
 
+            HashSet<Long> allSelectedUsers = mergeUsers(selectedUsers, selectedUsersByGroup);
+
             for (int position = 0; position < items.size(); ++position) {
                 ItemInner item = items.get(position);
                 if (item != null) {
                     if (item.type > 0) {
                         item.checked = selectedType == item.type;
+                        item.halfChecked = false;
                     } else if (item.user != null) {
                         item.checked = selectedUsers.contains(item.user.id);
+                        item.halfChecked = !item.checked && allSelectedUsers.contains(item.user.id);
                     } else if (item.chat != null) {
                         item.checked = selectedUsersByGroup.containsKey(item.chat.id);
+                        item.halfChecked = false;
                     }
                 }
             }
@@ -1394,11 +1593,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 View child = listView.getChildAt(i);
                 if (child instanceof UserCell) {
                     int position = listView.getChildAdapterPosition(child);
-                    if (position < 0 || position >= items.size()) {
+                    if (position < 0 || position >= items.size() || !(child instanceof UserCell)) {
                         continue;
                     }
                     ItemInner item = items.get(position);
-                    ((UserCell) child).setChecked(item.checked, animated);
+                    UserCell cell = (UserCell) child;
+                    cell.setChecked(item.checked || item.halfChecked, animated);
+                    cell.setCheckboxAlpha(item.halfChecked && !item.checked ? .5f : 1f, animated);
                 }
             }
 
@@ -1450,7 +1651,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return -1;
             }
             ItemInner item = items.get(position);
-            if (item.viewType != VIEW_TYPE_USER || item.type == TYPE_EVERYONE) {
+            if (item.viewType != VIEW_TYPE_USER) {
                 return -1;
             }
             if (LocaleController.isRTL ? e.getX() < getWidth() - AndroidUtilities.dp(100) : e.getX() > AndroidUtilities.dp(100)) {
@@ -1618,12 +1819,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     UserCell userCell = (UserCell) holder.itemView;
                     if (item.type > 0) {
                         userCell.setType(item.type, item.typeCount, item.user);
+                        userCell.setCheckboxAlpha(1f, false);
                     } else if (item.user != null) {
                         userCell.setUser(item.user);
+                        userCell.setCheckboxAlpha(item.halfChecked && !item.checked ? .5f : 1f, false);
                     } else if (item.chat != null) {
                         userCell.setChat(item.chat, getParticipantsCount(item.chat));
                     }
-                    userCell.setChecked(item.checked, false);
+                    userCell.setChecked(item.checked || item.halfChecked, false);
                     userCell.setDivider(divider);
                     userCell.setRedCheckbox(item.red);
                 } else if (viewType == VIEW_TYPE_SECTION) {
@@ -1739,6 +1942,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         });
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesBlocklistUpdate);
 
         backgroundPaint.setColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
         fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
@@ -1762,7 +1966,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     int page = ((Page) currentView).getTypeOn(e);
                     if (page != -1) {
                         activePage = page;
-                        if (page != TYPE_SELECTED_CONTACTS || !selectedContacts.isEmpty() && !selectedContactsByGroup.isEmpty()) {
+                        if (page == TYPE_SELECTED_CONTACTS) {
+                            if (!selectedContacts.isEmpty() && !selectedContactsByGroup.isEmpty()) {
+                                selectedType = page;
+                            }
+                        } else if (page == TYPE_EVERYONE) {
+                            if (!excludedEveryone.isEmpty() && !excludedEveryoneByGroup.isEmpty()) {
+                                selectedType = page;
+                            }
+                        } else {
                             selectedType = page;
                         }
                         ((Page) currentView).updateCheckboxes(true);
@@ -1790,6 +2002,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     @Override
     public void dismissInternal() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesBlocklistUpdate);
         super.dismissInternal();
     }
 
@@ -1901,6 +2114,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 privacy.selectedUserIds.addAll(selectedContacts);
                 privacy.selectedUserIdsByGroup.clear();
                 privacy.selectedUserIdsByGroup.putAll(selectedContactsByGroup);
+            } else if (selectedType == TYPE_EVERYONE) {
+                HashSet<Long> users = mergeUsers(excludedEveryone, excludedEveryoneByGroup);
+                privacy = new StoryPrivacy(selectedType, currentAccount, new ArrayList<>(users));
+                privacy.selectedUserIds.clear();
+                privacy.selectedUserIds.addAll(excludedEveryone);
+                privacy.selectedUserIdsByGroup.clear();
+                privacy.selectedUserIdsByGroup.putAll(excludedEveryoneByGroup);
             } else if (selectedType == TYPE_CONTACTS) {
                 privacy = new StoryPrivacy(selectedType, currentAccount, excludedContacts);
             } else {
@@ -2058,6 +2278,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             selectedContactsByGroup.clear();
             selectedContactsByGroup.putAll(privacy.selectedUserIdsByGroup);
             selectedContactsCount = mergeUsers(selectedContacts, selectedContactsByGroup).size();
+        } else if (selectedType == TYPE_EVERYONE) {
+            excludedEveryone.clear();
+            excludedEveryone.addAll(privacy.selectedUserIds);
+            excludedEveryoneByGroup.clear();
+            excludedEveryoneByGroup.putAll(privacy.selectedUserIdsByGroup);
+            excludedEveryoneCount = mergeUsers(excludedEveryone, excludedEveryoneByGroup).size();
         }
         if (privacy.isShare()) {
             startedFromSendAsMessage = true;
@@ -2096,6 +2322,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public int type;
         public int typeCount;
         public boolean checked;
+        public boolean halfChecked;
         public boolean red;
         public int subtractHeight;
         public int padHeight = -1;
@@ -2128,10 +2355,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             ItemInner item = new ItemInner(VIEW_TYPE_SECTION, false);
             return item;
         }
-        public static ItemInner asUser(TLRPC.User user, boolean checked) {
+        public static ItemInner asUser(TLRPC.User user, boolean checked, boolean halfChecked) {
             ItemInner item = new ItemInner(VIEW_TYPE_USER, true);
             item.user = user;
             item.checked = checked;
+            item.halfChecked = halfChecked;
             return item;
         }
         public static ItemInner asChat(TLRPC.Chat chat, boolean checked) {
@@ -2251,23 +2479,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         final HashMap<Long, Boolean> contains = new HashMap<>();
         final ArrayList<TLObject> users = new ArrayList<>();
         final ArrayList<TLRPC.Dialog> dialogs = messagesController.getAllDialogs();
-        final ConcurrentHashMap<Long, TLRPC.TL_contact> contacts;
-        if (onlyContacts) {
-            contacts = ContactsController.getInstance(currentAccount).contactsDict;
-            if (contacts == null || contacts.isEmpty()) {
-                if (!loadedContacts) {
-                    ContactsController.getInstance(currentAccount).loadContacts(false, 0);
-                }
-                loadedContacts = true;
+        final ConcurrentHashMap<Long, TLRPC.TL_contact> contacts = ContactsController.getInstance(currentAccount).contactsDict;
+        if (contacts == null || contacts.isEmpty()) {
+            if (!loadedContacts) {
+                ContactsController.getInstance(currentAccount).loadContacts(false, 0);
             }
-        } else {
-            contacts = null;
+            loadedContacts = true;
         }
         for (int i = 0; i < dialogs.size(); ++i) {
             TLRPC.Dialog dialog = dialogs.get(i);
             if (DialogObject.isUserDialog(dialog.id)) {
                 TLRPC.User user = messagesController.getUser(dialog.id);
-                if (user != null && !user.bot && user.id != 777000 && !UserObject.isUserSelf(user)) {
+                if (user != null && !user.bot && user.id != 777000 && !UserObject.isUserSelf(user) && !user.deleted) {
                     if (onlyContacts && (contacts == null || contacts.get(user.id) == null)) {
                         continue;
                     }
@@ -2279,11 +2502,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 if (chat == null || ChatObject.isForum(chat) || ChatObject.isChannelAndNotMegaGroup(chat)) {
                     continue;
                 }
-                int participants_count = getParticipantsCount(chat);
-                if (participants_count > 1) {
+//                int participants_count = getParticipantsCount(chat);
+//                if (participants_count > 1) {
                     contains.put(-chat.id, true);
                     users.add(chat);
-                }
+//                }
             }
         }
         if (contacts != null) {
@@ -2406,6 +2629,24 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
         }
 
+        public void setCheckboxAlpha(float alpha, boolean animated) {
+            if (animated) {
+                if (Math.abs(checkBox.getAlpha() - alpha) > .1) {
+                    checkBox.animate().cancel();
+                    checkBox.animate().alpha(alpha).start();
+                }
+                if (Math.abs(radioButton.getAlpha() - alpha) > .1) {
+                    radioButton.animate().cancel();
+                    radioButton.animate().alpha(alpha).start();
+                }
+            } else {
+                checkBox.animate().cancel();
+                checkBox.setAlpha(alpha);
+                radioButton.animate().cancel();
+                radioButton.setAlpha(alpha);
+            }
+        }
+
         private boolean[] isOnline = new boolean[1];
 
         public void setUser(TLRPC.User user) {
@@ -2461,8 +2702,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
 
             checkBox.setVisibility(View.VISIBLE);
-            checkBox.setAlpha(participants_count > 200 ? .3f : 1f);
             radioButton.setVisibility(View.GONE);
+            setCheckboxAlpha(participants_count > 200 ? .3f : 1f, false);
         }
 
         private CharSequence withArrow(CharSequence text) {
@@ -2479,7 +2720,16 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public void setType(int type, int count, TLRPC.User singleUser) {
             if (type == TYPE_EVERYONE) {
                 titleTextView.setText(LocaleController.getString("StoryPrivacyOptionEveryone", R.string.StoryPrivacyOptionEveryone));
-                setSubtitle(null);
+                if (count == 1 && singleUser != null) {
+                    CharSequence text = LocaleController.formatString(R.string.StoryPrivacyOptionExcludePerson, UserObject.getUserName(singleUser));
+                    text = Emoji.replaceEmoji(text, subtitleTextView.getPaint().getFontMetricsInt(), false);
+                    setSubtitle(withArrow(text));
+                } else if (count > 0) {
+                    setSubtitle(withArrow(LocaleController.formatPluralString("StoryPrivacyOptionExcludePeople", count)));
+                } else {
+                    setSubtitle(withArrow(LocaleController.getString("StoryPrivacyOptionContactsDetail", R.string.StoryPrivacyOptionContactsDetail)));
+                }
+                subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
                 avatarDrawable.setColor(0xFF16A5F2, 0xFF1180F7);
             } else if (type == TYPE_CONTACTS) {
@@ -2717,6 +2967,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     return super.onTouchEvent(event);
                 }
             };
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                editText.setRevealOnFocusHint(false);
+            }
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText, resourcesProvider));
             editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -2756,33 +3009,38 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 }
             });
-            editText.setOnKeyListener(new OnKeyListener() {
-                boolean wasEmpty;
-                @Override
-                public boolean onKey(View v, int keyCode, KeyEvent event) {
-                    if (keyCode == KeyEvent.KEYCODE_DEL) {
-                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                            wasEmpty = editText.length() == 0;
-                        } else if (event.getAction() == KeyEvent.ACTION_UP && wasEmpty) {
-                            if (!allSpans.isEmpty()) {
-                                GroupCreateSpan lastSpan = allSpans.get(allSpans.size() - 1);
-                                if (lastSpan == null) {
-                                    return false;
-                                }
-                                View[] viewPages = viewPager.getViewPages();
-                                if (viewPages[0] instanceof Page) {
-                                    ((Page) viewPages[0]).onClick(lastSpan);
-                                }
-                                if (viewPages[1] instanceof Page) {
-                                    ((Page) viewPages[1]).onClick(lastSpan);
-                                }
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                }
-            });
+//            editText.setOnKeyListener(new OnKeyListener() {
+//                boolean wasEmpty;
+//                @Override
+//                public boolean onKey(View v, int keyCode, KeyEvent event) {
+//                    if (keyCode == KeyEvent.KEYCODE_DEL) {
+//                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+//                            wasEmpty = editText.length() == 0;
+//                        } else if (event.getAction() == KeyEvent.ACTION_UP && wasEmpty) {
+//                            if (!allSpans.isEmpty()) {
+//                                GroupCreateSpan lastSpan = allSpans.get(allSpans.size() - 1);
+//                                if (lastSpan == null) {
+//                                    return false;
+//                                }
+//                                View[] viewPages = viewPager.getViewPages();
+//                                if (viewPages[0] instanceof Page) {
+//                                    ((Page) viewPages[0]).onClick(lastSpan);
+//                                }
+//                                if (viewPages[1] instanceof Page) {
+//                                    ((Page) viewPages[1]).onClick(lastSpan);
+//                                }
+//                                return true;
+//                            }
+//                        }
+//                    }
+//                    return false;
+//                }
+//            });
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event) {
+            return super.dispatchKeyEvent(event);
         }
 
         private final AnimatedFloat topGradientAlpha = new AnimatedFloat(this, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -2827,11 +3085,6 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             canvas.restore();
 
             canvas.restore();
-        }
-
-        @Override
-        public void requestChildFocus(View child, View focused) {
-
         }
 
         @Override
@@ -3009,16 +3262,20 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         if (updateHeight != null) {
                             updateHeight.run();
                         }
+                        if (scroll) {
+                            post(() -> fullScroll(View.FOCUS_DOWN));
+                            scroll = false;
+                        }
                     }
                     prevResultContainerHeight = resultContainerHeight;
                 } else if (currentAnimation != null) {
                     if (!ignoreScrollEvent && removingSpans.isEmpty()) {
                         editText.bringPointIntoView(editText.getSelectionStart());
                     }
-                }
-                if (scroll) {
-                    fullScroll(View.FOCUS_DOWN);
-                    scroll = false;
+                    if (scroll) {
+                        fullScroll(View.FOCUS_DOWN);
+                        scroll = false;
+                    }
                 }
                 setMeasuredDimension(width, (int) containerHeight);
             }
@@ -3050,6 +3307,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         editText.setAllowDrawCursor(true);
                         if (updateHeight != null) {
                             updateHeight.run();
+                        }
+                        if (scroll) {
+                            fullScroll(View.FOCUS_DOWN);
+                            scroll = false;
                         }
                     }
                 });
@@ -3095,6 +3356,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             editText.setAllowDrawCursor(true);
                             if (updateHeight != null) {
                                 updateHeight.run();
+                            }
+                            if (scroll) {
+                                fullScroll(View.FOCUS_DOWN);
+                                scroll = false;
                             }
                         }
                     });
@@ -3160,6 +3425,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             if (updateHeight != null) {
                                 updateHeight.run();
                             }
+                            if (scroll) {
+                                fullScroll(View.FOCUS_DOWN);
+                                scroll = false;
+                            }
                         }
                     });
                     animators.clear();
@@ -3218,6 +3487,22 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             if (containsRule(rules, TLRPC.TL_privacyValueAllowAll.class) != null) {
                 type = TYPE_EVERYONE;
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
+
+                TLRPC.TL_privacyValueDisallowUsers disallowUsers = containsRule(rules, TLRPC.TL_privacyValueDisallowUsers.class);
+                if (disallowUsers != null) {
+                    final TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
+                    final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+                    for (int i = 0; i < disallowUsers.users.size(); ++i) {
+                        long userId = disallowUsers.users.get(i);
+                        TLRPC.InputUser inputUser = messagesController.getInputUser(userId);
+                        if (!(inputUser instanceof TLRPC.TL_inputUserEmpty)) {
+                            rule.users.add(inputUser);
+                            selectedUserIds.add(userId);
+                            selectedInputUsers.add(inputUser);
+                        }
+                    }
+                    this.rules.add(rule);
+                }
             } else if (containsRule(rules, TLRPC.TL_privacyValueAllowCloseFriends.class) != null) {
                 type = TYPE_CLOSE_FRIENDS;
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowCloseFriends());
@@ -3265,6 +3550,16 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             TLRPC.TL_inputPrivacyValueAllowUsers allowUsers;
             if (containsInputRule(rules, TLRPC.TL_inputPrivacyValueAllowAll.class) != null) {
                 type = TYPE_EVERYONE;
+                TLRPC.TL_inputPrivacyValueDisallowUsers disallowUsers = containsInputRule(rules, TLRPC.TL_inputPrivacyValueDisallowUsers.class);
+                if (disallowUsers != null) {
+                    for (int i = 0; i < disallowUsers.users.size(); ++i) {
+                        TLRPC.InputUser inputUser = disallowUsers.users.get(i);
+                        if (inputUser != null) {
+                            selectedUserIds.add(inputUser.user_id);
+                            selectedInputUsers.add(inputUser);
+                        }
+                    }
+                }
             } else if (containsInputRule(rules, TLRPC.TL_inputPrivacyValueAllowCloseFriends.class) != null) {
                 type = TYPE_CLOSE_FRIENDS;
             } else if ((allowUsers = containsInputRule(rules, TLRPC.TL_inputPrivacyValueAllowUsers.class)) != null) {
@@ -3322,6 +3617,19 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             this.type = type;
             if (type == TYPE_EVERYONE) {
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
+                if (currentAccount >= 0 && userIds != null && !userIds.isEmpty()) {
+                    final TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
+                    for (int i = 0; i < userIds.size(); ++i) {
+                        long userId = userIds.get(i);
+                        selectedUserIds.add(userId);
+                        TLRPC.InputUser user = MessagesController.getInstance(currentAccount).getInputUser(userId);
+                        if (user != null && !(user instanceof TLRPC.TL_inputUserEmpty)) {
+                            rule.users.add(user);
+                            selectedInputUsers.add(user);
+                        }
+                    }
+                    this.rules.add(rule);
+                }
             } else if (type == TYPE_CLOSE_FRIENDS) {
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowCloseFriends());
             } else if (type == TYPE_CONTACTS) {
@@ -3364,6 +3672,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             this.type = type;
             if (type == TYPE_EVERYONE) {
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
+                if (inputUserIds != null && !inputUserIds.isEmpty()) {
+                    final TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
+                    for (int i = 0; i < inputUserIds.size(); ++i) {
+                        TLRPC.InputUser user = inputUserIds.get(i);
+                        if (user != null) {
+                            rule.users.add(user);
+                            selectedUserIds.add(user.user_id);
+                            selectedInputUsers.add(user);
+                        }
+                    }
+                    this.rules.add(rule);
+                }
             } else if (type == TYPE_CLOSE_FRIENDS) {
                 this.rules.add(new TLRPC.TL_inputPrivacyValueAllowCloseFriends());
             } else if (type == TYPE_CONTACTS) {
@@ -3428,6 +3748,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
             TLRPC.InputPrivacyRule rule1 = rules.get(0);
             if (type == TYPE_EVERYONE) {
+                TLRPC.InputPrivacyRule rule2 = rules.size() >= 2 ? rules.get(1) : null;
+                if (rule2 instanceof TLRPC.TL_inputPrivacyValueDisallowUsers) {
+                    final int usersCount = ((TLRPC.TL_inputPrivacyValueDisallowUsers) rule2).users.size();
+                    if (usersCount > 0) {
+                        return LocaleController.formatPluralString("StoryPrivacyEveryoneExclude", usersCount);
+                    }
+                }
                 return LocaleController.getString("StoryPrivacyEveryone", R.string.StoryPrivacyEveryone);
             } else if (type == TYPE_CLOSE_FRIENDS) {
                 return LocaleController.getString("StoryPrivacyCloseFriends", R.string.StoryPrivacyCloseFriends);
@@ -3566,9 +3893,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return false;
             }
             if (type == TYPE_EVERYONE) {
-                return true;
-            } else if (type == TYPE_CONTACTS) {
                 return !selectedUserIds.contains(user.id);
+            } else if (type == TYPE_CONTACTS) {
+                return !selectedUserIds.contains(user.id) && user.contact;
             } else if (type == TYPE_CLOSE_FRIENDS) {
                 return user.close_friend;
             } else if (type == TYPE_SELECTED_CONTACTS) {
@@ -3580,13 +3907,28 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.contactsDidLoad && viewPager != null) {
+        if (viewPager == null) {
+            return;
+        }
+        if (id == NotificationCenter.contactsDidLoad) {
             View[] views = viewPager.getViewPages();
             if (views[0] instanceof Page) {
                 ((Page) views[0]).updateItems(true);
             }
             if (views[1] instanceof Page) {
                 ((Page) views[1]).updateItems(true);
+            }
+        } else if (id == NotificationCenter.storiesBlocklistUpdate) {
+            View[] views = viewPager.getViewPages();
+            for (int i = 0; i < views.length; ++i) {
+                if (views[i] instanceof Page) {
+                    Page page = (Page) views[i];
+                    if (page.pageType == PAGE_TYPE_BLOCKLIST) {
+                        page.applyBlocklist(true);
+                    } else if (page.pageType == PAGE_TYPE_SHARE) {
+                        page.updateItems(true);
+                    }
+                }
             }
         }
     }
@@ -3626,6 +3968,40 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
         }
 
+        String excludedEveryoneString = MessagesController.getInstance(currentAccount).getMainSettings().getString("story_prv_everyoneexcept", null);
+        if (excludedEveryoneString != null) {
+            String[] parts = excludedEveryoneString.split(",");
+            excludedEveryone.clear();
+            for (int i = 0; i < parts.length; ++i) {
+                try {
+                    excludedEveryone.add(Long.parseLong(parts[i]));
+                } catch (Exception ignore) {}
+            }
+        }
+
+        String excludedEveryoneGroupsString = MessagesController.getInstance(currentAccount).getMainSettings().getString("story_prv_grpeveryoneexcept", null);
+        if (excludedEveryoneGroupsString != null) {
+            String[] parts = excludedEveryoneGroupsString.split(";");
+            excludedEveryoneByGroup.clear();
+            for (int i = 0; i < parts.length; ++i) {
+                String[] parts2 = parts[i].split(",");
+                if (parts2.length <= 0) {
+                    continue;
+                }
+                long id;
+                try {
+                    id = Long.parseLong(parts2[0]);
+                } catch (Exception ignore) {
+                    continue;
+                }
+                ArrayList<Long> userIds = new ArrayList<>();
+                for (int j = 1; j < parts2.length; ++j) {
+                    userIds.add(Long.parseLong(parts2[j]));
+                }
+                excludedEveryoneByGroup.put(id, userIds);
+            }
+        }
+
         String excludedContactsString = MessagesController.getInstance(currentAccount).getMainSettings().getString("story_prv_excluded", null);
         if (excludedContactsString != null) {
             String[] parts = excludedContactsString.split(",");
@@ -3638,9 +4014,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         }
 
         selectedContactsCount = mergeUsers(selectedContacts, selectedContactsByGroup).size();
+        excludedEveryoneCount = mergeUsers(excludedEveryone, excludedEveryoneByGroup).size();
 
         allowScreenshots = !MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("story_noforwards", false);
-        keepOnMyPage = MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("story_keep", false);
+        keepOnMyPage = MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("story_keep", true);
     }
 
     private void save() {
@@ -3651,7 +4028,16 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
             stringBuilder.append(entry.getKey()).append(",").append(TextUtils.join(",", entry.getValue()));
         }
+        StringBuilder stringBuilder2 = new StringBuilder();
+        for (Map.Entry<Long, ArrayList<Long>> entry : excludedEveryoneByGroup.entrySet()) {
+            if (stringBuilder2.length() > 0) {
+                stringBuilder2.append(";");
+            }
+            stringBuilder2.append(entry.getKey()).append(",").append(TextUtils.join(",", entry.getValue()));
+        }
         MessagesController.getInstance(currentAccount).getMainSettings().edit()
+            .putString("story_prv_everyoneexcept", TextUtils.join(",", excludedEveryone))
+            .putString("story_prv_grpeveryoneexcept", stringBuilder2.toString())
             .putString("story_prv_contacts", TextUtils.join(",", selectedContacts))
             .putString("story_prv_grpcontacts", stringBuilder.toString())
             .putString("story_prv_excluded", TextUtils.join(",", excludedContacts))

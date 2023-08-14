@@ -20,8 +20,6 @@ import android.text.TextPaint;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.EditTextBoldCursor;
 
-import java.util.Arrays;
-
 public class EditTextOutline extends EditTextBoldCursor {
 
     private Canvas mCanvas = new Canvas();
@@ -37,6 +35,7 @@ public class EditTextOutline extends EditTextBoldCursor {
     public boolean betterFraming;
 
     private RectF[] lines;
+    public RectF framePadding;
     private boolean isFrameDirty;
 
     public EditTextOutline(Context context) {
@@ -201,6 +200,21 @@ public class EditTextOutline extends EditTextBoldCursor {
                         lines[i - 1].bottom = lines[i].top;
                     }
                 }
+                if (framePadding == null) {
+                    framePadding = new RectF();
+                }
+                framePadding.left = getMeasuredWidth();
+                framePadding.top = getMeasuredHeight();
+                framePadding.bottom = 0;
+                framePadding.right = 0;
+                for (int i = 0; i < lines.length; ++i) {
+                    framePadding.left = Math.min(framePadding.left, getPaddingLeft() + lines[i].left);
+                    framePadding.top = Math.min(framePadding.top, getPaddingTop() + lines[i].top);
+                    framePadding.right = Math.max(framePadding.right, getPaddingLeft() + lines[i].right);
+                    framePadding.bottom = Math.max(framePadding.bottom, getPaddingTop() + lines[i].bottom);
+                }
+                framePadding.right = getMeasuredWidth() - framePadding.right;
+                framePadding.bottom = getMeasuredHeight() - framePadding.bottom;
             }
             path.rewind();
             float h = getHeight();
@@ -251,6 +265,8 @@ public class EditTextOutline extends EditTextBoldCursor {
             setFrameRoundRadius(r);
             canvas.drawPath(path, paint);
             canvas.restore();
+        } else {
+            framePadding = null;
         }
         super.onDraw(canvas);
     }

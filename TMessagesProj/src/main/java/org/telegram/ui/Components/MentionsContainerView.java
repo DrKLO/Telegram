@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.os.Build;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -26,19 +27,29 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.PaddedListAdapter;
+import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ContentPreviewViewer;
+import org.telegram.ui.PhotoViewer;
+
+import java.util.ArrayList;
 
 public class MentionsContainerView extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -56,6 +67,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
     private float containerTop, containerBottom, containerPadding, listViewPadding;
     private boolean allowBlur;
     private RecyclerListView.OnItemClickListener mentionsOnItemClickListener;
+    private Delegate delegate;
 
     public MentionsContainerView(@NonNull Context context, long dialogId, int threadMessageId, BaseFragment baseFragment, SizeNotifierFrameLayout container, Theme.ResourcesProvider resourcesProvider) {
         super(context, container);
@@ -418,7 +430,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
         if (listViewTranslationAnimator != null) {
             listViewTranslationAnimator.cancel();
         }
-        AndroidUtilities.runOnUIThread(updateVisibilityRunnable, baseFragment.getFragmentBeginToShow() ? 0 : 100);
+        AndroidUtilities.runOnUIThread(updateVisibilityRunnable, (baseFragment != null && baseFragment.getFragmentBeginToShow()) ? 0 : 100);
         if (show) {
             onOpen();
         } else {
@@ -529,7 +541,54 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
         adapter.setDialogId(dialogId);
     }
 
+    private ArrayList<Object> botContextResults;
+    private PhotoViewer.PhotoViewerProvider botContextProvider = new PhotoViewer.EmptyPhotoViewerProvider() {
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+            if (index < 0 || index >= botContextResults.size()) {
+                return null;
+            }
+            int count = getListView().getChildCount();
+            Object result = botContextResults.get(index);
+
+            for (int a = 0; a < count; a++) {
+                ImageReceiver imageReceiver = null;
+                View view = getListView().getChildAt(a);
+                if (view instanceof ContextLinkCell) {
+                    ContextLinkCell cell = (ContextLinkCell) view;
+                    if (cell.getResult() == result) {
+                        imageReceiver = cell.getPhotoImage();
+                    }
+                }
+
+                if (imageReceiver != null) {
+                    int[] coords = new int[2];
+                    view.getLocationInWindow(coords);
+                    PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                    object.viewX = coords[0];
+                    object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                    object.parentView = getListView();
+                    object.imageReceiver = imageReceiver;
+                    object.thumb = imageReceiver.getBitmapSafe();
+                    object.radius = imageReceiver.getRoundRadius();
+                    return object;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+            if (index < 0 || index >= botContextResults.size()) {
+                return;
+            }
+            delegate.sendBotInlineResult((TLRPC.BotInlineResult) botContextResults.get(index), notify, scheduleDate);
+        }
+    };
+
     public void withDelegate(Delegate delegate) {
+        this.delegate = delegate;
         getListView().setOnItemClickListener(mentionsOnItemClickListener = (view, position) -> {
             if (position == 0 || getAdapter().isBannedInline()) {
                 return;
@@ -596,10 +655,20 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                     delegate.replaceText(start, len, code, true);
                 }
                 updateVisibility(false);
+            } if (object instanceof TLRPC.BotInlineResult) {
+                TLRPC.BotInlineResult result = (TLRPC.BotInlineResult) object;
+                if ((result.type.equals("photo") && (result.photo != null || result.content != null) ||
+                        result.type.equals("gif") && (result.document != null || result.content != null) ||
+                        result.type.equals("video") && (result.document != null/* || result.content_url != null*/))) {
+                    ArrayList<Object> arrayList = botContextResults = new ArrayList<>(getAdapter().getSearchResultBotContext());
+                    PhotoViewer.getInstance().setParentActivity(baseFragment, resourcesProvider);
+                    PhotoViewer.getInstance().openPhotoForSelect(arrayList, getAdapter().getItemPosition(position), 3, false, botContextProvider, null);
+                } else {
+                    delegate.sendBotInlineResult(result, true, 0);
+                }
             }
         });
         getListView().setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, getListView(), 0, mentionsOnItemClickListener, null, resourcesProvider));
-
     }
 
     public class MentionsListView extends RecyclerListView {
@@ -784,6 +853,9 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
         default void addEmojiToRecent(String code) {
 
         }
+
+        default void sendBotInlineResult(TLRPC.BotInlineResult botInlineResult, boolean notify, int scheduleDate) {}
+
     }
 
     @Override

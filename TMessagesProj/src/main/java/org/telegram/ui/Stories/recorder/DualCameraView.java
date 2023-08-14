@@ -525,9 +525,13 @@ public class DualCameraView extends CameraView implements CameraController.Error
         -1155551678, // XIAOMI MARBLE
         1908524435,  // XIAOMI SURYA
         976847578,   // XIAOMI LAUREL_SPROUT
+        -1489198134, // XIAOMI ALIOTH
+        1910814392,  // XIAOMI VENUS
         -713271737,  // OPPO OP4F2F
         -2010722764, // SAMSUNG A52SXQ (A52s 5G)
         1407170066,  // SAMSUNG D2Q (Note10+)
+        -821405251,  // SAMSUNG BEYOND2
+        -1394190955, // SAMSUNG A71
         -1394190055, // SAMSUNG B4Q
         1407170066,  // HUAWEI HWNAM
         1407159934,  // HUAWEI HWCOR
@@ -539,6 +543,8 @@ public class DualCameraView extends CameraView implements CameraController.Error
         -1198092731, // MOTOROLA CYPRUS64
         -251277614,  // MOTOROLA HANOIP
         -2078385967, // MOTOROLA PSTAR
+        -2073158771, // MOTOROLA VICKY
+        1273004781   // MOTOROLA BLACKJACK
 //        -1426053134  // REALME REE2ADL1
     };
 

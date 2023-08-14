@@ -518,11 +518,14 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
-    public int getItemsMeasuredWidth() {
+    public int getItemsMeasuredWidth(boolean ignoreAlpha) {
         int w = 0;
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
+            if (!ignoreAlpha && (view.getAlpha() == 0 || view.getVisibility() != View.VISIBLE)) {
+                continue;
+            }
             if (view instanceof ActionBarMenuItem) {
                 w += view.getMeasuredWidth();
             }

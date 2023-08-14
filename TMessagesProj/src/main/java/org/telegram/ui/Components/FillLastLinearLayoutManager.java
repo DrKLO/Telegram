@@ -20,6 +20,7 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
     private boolean canScrollVertically = true;
     boolean fixedLastItemHeight;
     private int minimumHeight;
+    private boolean setMeassuredHeightToLastItem = true;
 
     public FillLastLinearLayoutManager(Context context, int h, RecyclerView recyclerView) {
         super(context);
@@ -163,11 +164,13 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
 
     @Override
     public void measureChildWithMargins(View child, int widthUsed, int heightUsed) {
-        RecyclerView.ViewHolder holder = listView.findContainingViewHolder(child);
-        int pos = holder.getAdapterPosition();
-        if (pos == getItemCount() - 1) {
-            RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) child.getLayoutParams();
-            layoutParams.height = Math.max(lastItemHeight, 0);
+        if (setMeassuredHeightToLastItem) {
+            RecyclerView.ViewHolder holder = listView.findContainingViewHolder(child);
+            int pos = holder.getAdapterPosition();
+            if (pos == getItemCount() - 1) {
+                RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) child.getLayoutParams();
+                layoutParams.height = Math.max(lastItemHeight, 0);
+            }
         }
         super.measureChildWithMargins(child, 0, 0);
     }
@@ -178,5 +181,13 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
 
     public void setMinimumLastViewHeight(int height) {
         minimumHeight = height;
+    }
+
+    public void setSetMeassuredHeightToLastItem(boolean setMeassuredHeightToLastItem) {
+        this.setMeassuredHeightToLastItem = setMeassuredHeightToLastItem;
+    }
+
+    public int getLastItemHeight() {
+        return lastItemHeight;
     }
 }

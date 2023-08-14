@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -55,6 +56,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
     float containerViewsProgress;
     float progressToFullscreenView;
+    float progressToGradient;
     boolean containerViewsForward;
     ViewPager viewPager;
     FrameLayout content;
@@ -67,6 +69,10 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     private final int startType;
     private final boolean onlySelectedType;
     private boolean forceAbout;
+
+    int selectedPosition;
+    int toPosition;
+    float progress;
 
     private PremiumPreviewFragment.SubscriptionTier selectedTier;
     private int gradientAlpha = 255;
@@ -87,14 +93,14 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     }
 
     public PremiumFeatureBottomSheet(BaseFragment fragment, Context context, int currentAccount, int startType, boolean onlySelectedType, PremiumPreviewFragment.SubscriptionTier subscriptionTier) {
-        super(context, false);
+        super(context, false, getResourceProvider(fragment));
         this.baseFragment = fragment;
         if (fragment == null) {
             throw new RuntimeException("fragmnet can't be null");
         }
         selectedTier = subscriptionTier;
 
-        fixNavigationBar();
+        fixNavigationBar(getThemedColor(Theme.key_dialogBackground));
         this.startType = startType;
         this.onlySelectedType = onlySelectedType;
 
@@ -115,27 +121,22 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
         PremiumPreviewFragment.fillPremiumFeaturesList(premiumFeatures, currentAccount);
 
-        int selectedPosition = 0;
+        int selectedPositionLocal = 0;
         for (int i = 0; i < premiumFeatures.size(); i++) {
-//            if (premiumFeatures.get(i).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
-//                premiumFeatures.remove(i);
-//                i--;
-//                continue;
-//            }
             if (premiumFeatures.get(i).type == startType) {
-                selectedPosition = i;
+                selectedPositionLocal = i;
                 break;
             }
         }
 
         if (onlySelectedType) {
-            PremiumPreviewFragment.PremiumFeatureData selectedFeature = premiumFeatures.get(selectedPosition);
+            PremiumPreviewFragment.PremiumFeatureData selectedFeature = premiumFeatures.get(selectedPositionLocal);
             premiumFeatures.clear();
             premiumFeatures.add(selectedFeature);
-            selectedPosition = 0;
+            selectedPositionLocal = 0;
         }
 
-        PremiumPreviewFragment.PremiumFeatureData featureData = premiumFeatures.get(selectedPosition);
+        PremiumPreviewFragment.PremiumFeatureData featureData = premiumFeatures.get(selectedPositionLocal);
 
         setApplyTopPadding(false);
         setApplyBottomPadding(false);
@@ -233,16 +234,12 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
         };
         viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(selectedPosition);
+        viewPager.setCurrentItem(selectedPosition = selectedPositionLocal);
         frameLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, 0, 0, 18, 0, 0));
 
         frameLayout.addView(closeLayout, LayoutHelper.createFrame(52, 52, Gravity.RIGHT | Gravity.TOP, 0, 24, 0, 0));
         BottomPagesView bottomPages = new BottomPagesView(getContext(), viewPager, premiumFeatures.size());
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-
-            int selectedPosition;
-            int toPosition;
-            float progress;
 
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -255,6 +252,13 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
             @Override
             public void onPageSelected(int i) {
+                if (premiumFeatures.get(i).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
+                    actionBar.setTitle(LocaleController.getString("DoubledLimits", R.string.DoubledLimits));
+                    actionBar.requestLayout();
+                } else if (premiumFeatures.get(i).type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES) {
+                    actionBar.setTitle(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
+                    actionBar.requestLayout();
+                }
                 checkPage();
             }
 
@@ -280,13 +284,19 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 }
                 containerViewsProgress = progress;
                 containerViewsForward = toPosition > selectedPosition;
-                if (selectedPosition >= 0 && selectedPosition < premiumFeatures.size() && premiumFeatures.get(selectedPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
-                    progressToFullscreenView = 1f - progress;
-                } else if (toPosition >= 0 && toPosition < premiumFeatures.size() && premiumFeatures.get(toPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
-                    progressToFullscreenView = progress;
+                boolean selectedFullscreen = selectedPosition >= 0 && selectedPosition < premiumFeatures.size() && isFullscreenType(premiumFeatures.get(selectedPosition).type);
+                boolean nextFullscreen = toPosition >= 0 && toPosition < premiumFeatures.size() && isFullscreenType(premiumFeatures.get(toPosition).type);
+                if (selectedFullscreen && nextFullscreen) {
+                    progressToGradient = 1f;
+                    progressToFullscreenView = progress == 0 ? 1f : progress;
+                } else if (selectedFullscreen) {
+                    progressToGradient = progressToFullscreenView = 1f - progress;
+                } else if (nextFullscreen) {
+                    progressToGradient = progressToFullscreenView = progress;
                 } else {
-                    progressToFullscreenView = 0;
+                    progressToGradient = progressToFullscreenView = 0;
                 }
+
                 int localGradientAlpha = (int) (255 * (1f - progressToFullscreenView));
                 if (localGradientAlpha != gradientAlpha) {
                     gradientAlpha = localGradientAlpha;
@@ -401,11 +411,16 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 }
             }
 
+            Path path = new Path();
+
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
                 if (child == scrollView) {
                     canvas.save();
-                    canvas.clipRect(0, topCurrentOffset + AndroidUtilities.dp(2), getMeasuredWidth(), getMeasuredHeight());
+                    path.rewind();
+                    AndroidUtilities.rectTmp.set(0, topCurrentOffset + AndroidUtilities.dp(18), getMeasuredWidth(), getMeasuredHeight());
+                    path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(18), AndroidUtilities.dp(18), Path.Direction.CW);
+                    canvas.clipPath(path);
                     super.drawChild(canvas, child, drawingTime);
                     canvas.restore();
                     return true;
@@ -424,6 +439,20 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
         };
         containerView.setPadding(backgroundPaddingLeft, backgroundPaddingTop - 1, backgroundPaddingLeft, 0);
+    }
+
+    private static Theme.ResourcesProvider getResourceProvider(BaseFragment fragment) {
+        if (fragment != null) {
+            if (fragment.storyViewer != null && fragment.storyViewer.isShown()) {
+                return fragment.storyViewer.getResourceProvider();
+            }
+            return fragment.getResourceProvider();
+        }
+        return null;
+    }
+
+    private boolean isFullscreenType(int type) {
+        return type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES;
     }
 
     public PremiumFeatureBottomSheet setForceAbout() {
@@ -486,8 +515,8 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
 
         actionBar.setCastShadows(true);
+        actionBar.setExtraHeight(AndroidUtilities.dp(2));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString("DoubledLimits", R.string.DoubledLimits));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -496,8 +525,17 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 }
             }
         });
-        containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, -backgroundPaddingTop, 0, 0));
+        containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
+        ((FrameLayout.LayoutParams) actionBar.getLayoutParams()).topMargin = -backgroundPaddingTop - AndroidUtilities.dp(2);
         AndroidUtilities.updateViewVisibilityAnimated(actionBar, false, 1f, false);
+
+        if (premiumFeatures.get(selectedPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES) {
+            actionBar.setTitle(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
+            actionBar.requestLayout();
+        } else {
+            actionBar.setTitle(LocaleController.getString("DoubledLimits", R.string.DoubledLimits));
+            actionBar.requestLayout();
+        }
     }
 
     @Override
@@ -543,7 +581,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
             title = new TextView(context);
             title.setGravity(Gravity.CENTER_HORIZONTAL);
-            title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            title.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
@@ -552,7 +590,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             description = new TextView(context);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            description.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             if (!onlySelectedType) {
                 description.setLines(2);
             }
@@ -563,8 +601,8 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             title.setVisibility(View.VISIBLE);
-            if (topView instanceof DoubleLimitsPageView) {
-                ((DoubleLimitsPageView) topView).setTopOffset(topGlobalOffset);
+            if (topView instanceof BaseListPageView) {
+                ((BaseListPageView) topView).setTopOffset(topGlobalOffset);
             }
             topView.getLayoutParams().height = contentHeight;
             description.setVisibility(isPortrait ? View.VISIBLE : View.GONE);
@@ -590,12 +628,12 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         @Override
         protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
             if (child == topView) {
-                if (child instanceof DoubleLimitsPageView) {
+                if (child instanceof BaseListPageView) {
                     setTranslationY(0);
                 } else {
                     setTranslationY(topGlobalOffset);
                 }
-                if (child instanceof CarouselView || child instanceof DoubleLimitsPageView) {
+                if (child instanceof CarouselView || child instanceof BaseListPageView) {
                     return super.drawChild(canvas, child, drawingTime);
                 }
                 canvas.save();
@@ -609,7 +647,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         }
 
         void setFeatureDate(PremiumPreviewFragment.PremiumFeatureData featureData) {
-            if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
+            if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES) {
                 title.setText("");
                 description.setText("");
                 topViewOnFullHeight = true;
@@ -650,15 +688,28 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     View getViewForPosition(Context context, int position) {
         PremiumPreviewFragment.PremiumFeatureData featureData = premiumFeatures.get(position);
         if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
-            DoubleLimitsPageView doubleLimitsPagerView = new DoubleLimitsPageView(context);
+            DoubleLimitsPageView doubleLimitsPagerView = new DoubleLimitsPageView(context, resourcesProvider);
             doubleLimitsPagerView.recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                     super.onScrolled(recyclerView, dx, dy);
+                    containerView.invalidate();
                     checkTopOffset();
                 }
             });
             return doubleLimitsPagerView;
+        }
+        if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES) {
+            StoriesPageView storiesPageView = new StoriesPageView(context, resourcesProvider);
+            storiesPageView.recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+                    containerView.invalidate();
+                    checkTopOffset();
+                }
+            });
+            return storiesPageView;
         }
         if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS) {
             PremiumStickersPreviewRecycler recyclerListView = new PremiumStickersPreviewRecycler(context, currentAccount) {
@@ -670,9 +721,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             };
             return recyclerListView;
         } else if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
-            return new PremiumAppIconsPreviewView(context);
+            return new PremiumAppIconsPreviewView(context, resourcesProvider);
         }
-        VideoScreenPreview preview = new VideoScreenPreview(context, svgIcon, currentAccount, featureData.type);
+        VideoScreenPreview preview = new VideoScreenPreview(context, svgIcon, currentAccount, featureData.type, resourcesProvider);
         return preview;
     }
 
@@ -709,35 +760,51 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     }
 
     void checkTopOffset() {
-        int viewOffset = -1;
+        int selectedViewOffset = -1;
+        int toViewOffset = -1;
         for (int i = 0; i < viewPager.getChildCount(); i++) {
-            if (((ViewPage) viewPager.getChildAt(i)).topView instanceof DoubleLimitsPageView) {
-                DoubleLimitsPageView doubleLimitsPagerView = (DoubleLimitsPageView) ((ViewPage) viewPager.getChildAt(i)).topView;
+            ViewPage viewPage = (ViewPage) viewPager.getChildAt(i);
+            if (viewPage.position == selectedPosition && viewPage.topView instanceof BaseListPageView) {
+                BaseListPageView doubleLimitsPagerView = (BaseListPageView) viewPage.topView;
                 View view = doubleLimitsPagerView.layoutManager.findViewByPosition(0);
                 if (view == null) {
-                    viewOffset = 0;
+                    selectedViewOffset = 0;
                 } else {
-                    viewOffset = view.getTop();
-                    if (viewOffset < 0) {
-                        viewOffset = 0;
+                    selectedViewOffset = view.getTop();
+                    if (selectedViewOffset < 0) {
+                        selectedViewOffset = 0;
                     }
                 }
-                break;
+            }
+            if (viewPage.position == toPosition && viewPage.topView instanceof BaseListPageView) {
+                BaseListPageView doubleLimitsPagerView = (BaseListPageView) viewPage.topView;
+                View view = doubleLimitsPagerView.layoutManager.findViewByPosition(0);
+                if (view == null) {
+                    toViewOffset = 0;
+                } else {
+                    toViewOffset = view.getTop();
+                    if (toViewOffset < 0) {
+                        toViewOffset = 0;
+                    }
+                }
             }
         }
-        int localOffset;
-        if (viewOffset >= 0) {
-            localOffset = (int) (viewOffset * progressToFullscreenView + topGlobalOffset * (1f - progressToFullscreenView));
-        } else {
-            localOffset = topGlobalOffset;
+        int localOffset = topGlobalOffset;
+        if (selectedViewOffset >= 0 ) {
+            float progressLocal = 1f - progress;
+            localOffset = Math.min(localOffset, (int) (selectedViewOffset * progressLocal + topGlobalOffset * (1f - progressLocal)));
         }
-        closeLayout.setAlpha(1f - progressToFullscreenView);
+        if (toViewOffset >= 0) {
+            float progressLocal = progress;
+            localOffset = Math.min(localOffset, (int) (toViewOffset * progressLocal + topGlobalOffset * (1f - progressLocal)));
+        }
+        closeLayout.setAlpha(1f - progressToGradient);
         if (progressToFullscreenView == 1) {
             closeLayout.setVisibility(View.INVISIBLE);
         } else {
             closeLayout.setVisibility(View.VISIBLE);
         }
-        content.setTranslationX(content.getMeasuredWidth() * progressToFullscreenView);
+        content.setTranslationX(content.getMeasuredWidth() * progressToGradient);
         if (localOffset != topCurrentOffset) {
             topCurrentOffset = localOffset;
             for (int i = 0; i < viewPager.getChildCount(); i++) {
@@ -763,6 +830,17 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     }
 
     private boolean isLightStatusBar() {
-        return ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground)) > 0.7f;
+        return ColorUtils.calculateLuminance(getThemedColor(Theme.key_dialogBackground)) > 0.7f;
+    }
+
+    @Override
+    protected boolean canDismissWithSwipe() {
+        for (int i = 0; i < viewPager.getChildCount(); i++) {
+            ViewPage viewPage = (ViewPage) viewPager.getChildAt(i);
+            if (viewPage.position == selectedPosition && viewPage.topView instanceof BaseListPageView) {
+                return !((BaseListPageView) viewPage.topView).recyclerListView.canScrollVertically(-1);
+            }
+        }
+        return true;
     }
 }

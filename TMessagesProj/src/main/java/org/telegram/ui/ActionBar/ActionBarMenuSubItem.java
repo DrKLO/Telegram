@@ -203,6 +203,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
         imageView.setImageResource(resId);
     }
 
+    public void setIcon(Drawable drawable) {
+        imageView.setImageDrawable(drawable);
+    }
+
     public void setAnimatedIcon(int resId) {
         imageView.setAnimation(resId, 24, 24);
     }

@@ -146,6 +146,9 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     }
                     File currentFileFast = loadOperation.getCurrentFileFast();
                     if (file == null || !Objects.equals(currentFile, currentFileFast)) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("check stream file " + currentFileFast);
+                        }
                         if (file != null) {
                             try {
                                 file.close();

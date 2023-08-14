@@ -12,9 +12,11 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaController;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -39,6 +41,7 @@ public class PhotoView extends EntityView {
         }
     }
 
+    private TLObject object;
     private String path;
     private int anchor = -1;
     private boolean mirrored = false;
@@ -68,6 +71,33 @@ public class PhotoView extends EntityView {
         centerImage.setOrientation(orientation, invert, true);
         final int side = Math.round(Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .8f / AndroidUtilities.density);
         centerImage.setImage(ImageLocation.getForPath(path), side + "_" + side, null, null, null, 1);
+        updatePosition();
+    }
+
+    public PhotoView(Context context, Point position, float angle, float scale, Size baseSize, TLObject obj) {
+        super(context, position);
+        setRotation(angle);
+        setScale(scale);
+
+        this.object = obj;
+        this.baseSize = baseSize;
+
+        containerView = new FrameLayoutDrawer(context);
+        addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        mirrorT = new AnimatedFloat(containerView, 0, 500, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        centerImage.setAspectFit(true);
+        centerImage.setInvalidateAll(true);
+        centerImage.setParentView(containerView);
+        centerImage.setRoundRadius(AndroidUtilities.dp(12));
+        final int side = Math.round(Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .8f / AndroidUtilities.density);
+        if (object instanceof TLRPC.Photo) {
+            TLRPC.Photo photo = (TLRPC.Photo) object;
+            TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 1000);
+            TLRPC.PhotoSize thumbPhotoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 90);
+            centerImage.setImage(ImageLocation.getForPhoto(photoSize, photo), side + "_" + side, ImageLocation.getForPhoto(thumbPhotoSize, photo), side + "_" + side, (String) null, null, 1);
+        }
         updatePosition();
     }
 
@@ -162,7 +192,13 @@ public class PhotoView extends EntityView {
         return new PhotoViewSelectionView(getContext());
     }
 
-    public String getPath() {
+    public String getPath(int currentAccount) {
+        if (object instanceof TLRPC.Photo) {
+            TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(((TLRPC.Photo) object).sizes, 1000);
+            try {
+                return FileLoader.getInstance(currentAccount).getPathToAttach(photoSize, true).getAbsolutePath();
+            } catch (Exception ignore) {}
+        }
         return path;
     }
 
@@ -209,6 +245,15 @@ public class PhotoView extends EntityView {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
+            int count = canvas.getSaveCount();
+
+            float alpha = getShowAlpha();
+            if (alpha <= 0) {
+                return;
+            } else if (alpha < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            }
+
             float thickness = AndroidUtilities.dp(2.0f);
             float radius = AndroidUtilities.dpf2(5.66f);
 
@@ -249,7 +294,7 @@ public class PhotoView extends EntityView {
             canvas.drawCircle(inset + width, inset + height / 2.0f, radius + AndroidUtilities.dp(1) - 1, clearPaint);
             canvas.drawCircle(inset, inset + height / 2.0f, radius + AndroidUtilities.dp(1) - 1, clearPaint);
 
-            canvas.restore();
+            canvas.restoreToCount(count);
         }
     }
 }

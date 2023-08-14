@@ -122,7 +122,7 @@ typedef struct VideoInfo {
             } else {
                 attached = false;
             }
-            DEBUG_DELREF("gifvideocpp stream");
+            DEBUG_DELREF("gifvideo.cpp stream");
             jniEnv->DeleteGlobalRef(stream);
             if (attached) {
                 javaVm->DetachCurrentThread();

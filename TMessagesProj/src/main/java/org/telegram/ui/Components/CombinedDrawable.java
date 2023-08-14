@@ -125,8 +125,10 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
 
     @Override
     public void draw(Canvas canvas) {
-        background.setBounds(getBounds());
-        background.draw(canvas);
+        if (background != null) {
+            background.setBounds(getBounds());
+            background.draw(canvas);
+        }
         if (icon != null) {
             if (fullSize) {
                 android.graphics.Rect bounds = getBounds();

@@ -1,6 +1,7 @@
 package org.telegram.ui.Stories;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -26,6 +27,12 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
     private final RecyclerListView recyclerListView;
     int[] clipPoint = new int[2];
     private boolean isHiddenArchive;
+    LoadNextInterface loadNextInterface;
+    public boolean hiddedStories;
+    public boolean onlyUnreadStories;
+    public boolean onlySelfStories;
+    public boolean hasPaginationParams;
+
 
     public static StoriesListPlaceProvider of(RecyclerListView recyclerListView) {
         return of(recyclerListView, false);
@@ -35,6 +42,11 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         return new StoriesListPlaceProvider(recyclerListView, hiddenArchive);
     }
 
+    public StoriesListPlaceProvider with(LoadNextInterface loadNextInterface) {
+        this.loadNextInterface = loadNextInterface;
+        return this;
+    }
+
     public StoriesListPlaceProvider(RecyclerListView recyclerListView, boolean hiddenArchive) {
         this.recyclerListView = recyclerListView;
         this.isHiddenArchive = hiddenArchive;
@@ -42,7 +54,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
     @Override
     public void preLayout(long currentDialogId, int messageId, Runnable r) {
-        if (recyclerListView.getParent() instanceof DialogStoriesCell) {
+        if (recyclerListView != null && recyclerListView.getParent() instanceof DialogStoriesCell) {
             DialogStoriesCell dilogsCell = (DialogStoriesCell) recyclerListView.getParent();
             if (dilogsCell.scrollTo(currentDialogId)) {
                 dilogsCell.afterNextLayout(r);
@@ -89,6 +101,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     DialogStoriesCell storiesCell = (DialogStoriesCell) cell.getParent().getParent();
                     holder.clipParent = storiesCell;
                     holder.clipTop = holder.clipBottom = 0;
+                    holder.alpha = 1;
                  //   updateClip(holder);
                     return true;
                 }
@@ -102,6 +115,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     if (isHiddenArchive) {
                         holder.crossfadeToAvatarImage = cell.avatarImage;
                     }
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -115,6 +129,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         holder.storyImage = cell.replyImageReceiver;
                     }
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -129,6 +144,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         holder.storyImage = cell.getPhotoImage();
                     }
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -156,6 +172,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         }
                     };
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -166,6 +183,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.params = cell.storyParams;
                     holder.avatarImage = cell.avatarImageView.getImageReceiver();
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -176,6 +194,11 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.params = cell.params;
                     holder.avatarImage = cell.avatarView.getImageReceiver();
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = cell.getAlpha() * cell.getAlphaInternal();
+                    if (holder.alpha < 1) {
+                        holder.bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        holder.bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground, cell.getResourcesProvider()));
+                    }
                     updateClip(holder);
                     return true;
                 }
@@ -186,6 +209,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.params = cell.avatarStoryParams;
                     holder.avatarImage = cell.avatarImage;
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -211,11 +235,30 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         }
     }
 
+    @Override
+    public void loadNext(boolean forward) {
+        if (loadNextInterface != null) {
+            loadNextInterface.loadNext(forward);
+        }
+    }
+
+    public StoryViewer.PlaceProvider setPaginationParaments(boolean hiddedStories, boolean onlyUnreadStories, boolean onlySelfStories) {
+        this.hiddedStories = hiddedStories;
+        this.onlyUnreadStories = onlyUnreadStories;
+        this.onlySelfStories = onlySelfStories;
+        hasPaginationParams = true;
+        return this;
+    }
+
     public interface ClippedView {
         void updateClip(int[] clip);
     }
 
     public interface AvatarOverlaysView {
         boolean drawAvatarOverlays(Canvas canvas);
+    }
+
+    public interface LoadNextInterface {
+        void loadNext(boolean forward);
     }
 }

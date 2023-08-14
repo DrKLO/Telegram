@@ -4015,6 +4015,13 @@ public class Theme {
     public static final int key_topics_unreadCounter = colorsCount++;
     public static final int key_topics_unreadCounterMuted = colorsCount++;
 
+    public static final int key_stories_circle1 = colorsCount++;
+    public static final int key_stories_circle2 = colorsCount++;
+    public static final int key_stories_circle_dialog1 = colorsCount++;
+    public static final int key_stories_circle_dialog2 = colorsCount++;
+    public static final int key_stories_circle_closeFriends1 = colorsCount++;
+    public static final int key_stories_circle_closeFriends2 = colorsCount++;
+
     public static final String key_drawable_botInline = "drawableBotInline";
     public static final String key_drawable_botLink = "drawableBotLink";
     public static final String key_drawable_botWebView = "drawableBotWebView";
@@ -4357,6 +4364,13 @@ public class Theme {
         themeAccentExclusionKeys.add(key_premiumStartSmallStarsColor);
         themeAccentExclusionKeys.add(key_premiumStartGradient1);
         themeAccentExclusionKeys.add(key_premiumStartGradient2);
+        themeAccentExclusionKeys.add(key_stories_circle1);
+        themeAccentExclusionKeys.add(key_stories_circle2);
+        themeAccentExclusionKeys.add(key_stories_circle_dialog1);
+        themeAccentExclusionKeys.add(key_stories_circle_dialog2);
+        themeAccentExclusionKeys.add(key_stories_circle_closeFriends1);
+        themeAccentExclusionKeys.add(key_stories_circle_closeFriends2);
+
 
         themes = new ArrayList<>();
         otherThemes = new ArrayList<>();

@@ -108,7 +108,9 @@ public class CacheChart extends View {
     private static long particlesStart = -1;
     class Sector {
 
-        Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG); {
+            particlePaint.setColor(0xFFFFFFFF);
+        }
         Bitmap particle;
 
         float angleCenter, angleSize;

@@ -31,7 +31,8 @@ public class BasePermissionsActivity extends Activity {
             REQUEST_CODE_VIDEO_MESSAGE = 150,
             REQUEST_CODE_EXTERNAL_STORAGE_FOR_AVATAR = 151,
             REQUEST_CODE_SIGN_IN_WITH_GOOGLE = 200,
-            REQUEST_CODE_PAYMENT_FORM = 210;
+            REQUEST_CODE_PAYMENT_FORM = 210,
+            REQUEST_CODE_MEDIA_GEO = 211;
 
     protected int currentAccount = -1;
 
@@ -95,6 +96,8 @@ public class BasePermissionsActivity extends Activity {
             }
         } else if (requestCode == REQUEST_CODE_GEOLOCATION) {
             NotificationCenter.getGlobalInstance().postNotificationName(granted ? NotificationCenter.locationPermissionGranted : NotificationCenter.locationPermissionDenied);
+        } else if (requestCode == REQUEST_CODE_MEDIA_GEO) {
+            NotificationCenter.getGlobalInstance().postNotificationName(granted ? NotificationCenter.locationPermissionGranted : NotificationCenter.locationPermissionDenied, 1);
         }
         return true;
     }

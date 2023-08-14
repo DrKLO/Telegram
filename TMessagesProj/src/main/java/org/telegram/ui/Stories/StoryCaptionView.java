@@ -1,5 +1,6 @@
 package org.telegram.ui.Stories;
 
+import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
@@ -9,11 +10,11 @@ import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.text.Layout;
@@ -21,6 +22,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
@@ -40,27 +42,26 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
-import org.telegram.ui.Components.spoilers.SpoilersTextView;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -83,6 +84,8 @@ public class StoryCaptionView extends NestedScrollView {
     private float velocitySign;
     private float velocityY;
 
+    private float startMotionX;
+    private float startMotionY;
     private float lastMotionX;
     private float lastMotionY;
 
@@ -247,12 +250,12 @@ public class StoryCaptionView extends NestedScrollView {
         }
 
         final StoryCaptionTextView textView = captionTextview;
-        final CharSequence text = textView.text;
+        final CharSequence text = textView.state[0].text;
 
         final int textHash = text.hashCode();
         final boolean isLandscape = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
 
-        if (this.textHash == textHash && this.isLandscape == isLandscape && this.prevHeight == height) {
+        if (this.textHash == textHash && this.isLandscape == isLandscape && this.prevHeight == height && !textView.updating) {
             return -1;
         }
 
@@ -262,17 +265,7 @@ public class StoryCaptionView extends NestedScrollView {
 
         textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
 
-        final Layout layout = textView.fullLayout;
-        final int lineCount = layout.getLineCount();
-
-        if (lineCount <= 3) {
-            return height - textView.getMeasuredHeight();
-        }
-
-        int i = Math.min(3, lineCount);
-
-        final int lineHeight = textView.textPaint.getFontMetricsInt(null);
-        return height - lineHeight * (i + 1);// - AndroidUtilities.dp(8);
+        return textView.collapsedTextHeight(height);
     }
 
     public void reset() {
@@ -479,19 +472,23 @@ public class StoryCaptionView extends NestedScrollView {
         return Utilities.clamp((getScrollY() - captionTextview.getTranslationY()) / maxHeight, 1f, 0);
     }
 
-    boolean expanded;
     public void expand() {
-        if (expanded) {
+        expand(false);
+    }
+
+    boolean expanded;
+    public void expand(boolean force) {
+        if (expanded && !force) {
             return;
         }
         expanded = true;
         float fromScrollY = getScrollY();
-        float toScrollY = (captionContainer.getBottom() - getMeasuredHeight());
         float fromP = captionTextview.progressToExpand;
         float toP = 1f;
         ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
         valueAnimator.addUpdateListener(animation -> {
             float value = (float) animation.getAnimatedValue();
+            final float toScrollY = (captionContainer.getBottom() - getMeasuredHeight());
             setScrollY((int) AndroidUtilities.lerp(fromScrollY, toScrollY, value));
             captionTextview.progressToExpand = AndroidUtilities.lerp(fromP, toP, value);
             captionTextview.invalidate();
@@ -546,56 +543,440 @@ public class StoryCaptionView extends NestedScrollView {
     }
 
     public void checkCancelTextSelection() {
-        if (textSelectionHelper.isInSelectionMode()) {
+        if (textSelectionHelper.isInSelectionMode() && Math.abs(startMotionX - lastMotionX) < AndroidUtilities.touchSlop && Math.abs(startMotionY - lastMotionY) < AndroidUtilities.touchSlop) {
             textSelectionHelper.getOverlayView(getContext()).checkCancel(lastMotionX, lastMotionY, false);
         }
     }
 
-    public class StoryCaptionTextView extends View implements TextSelectionHelper.SelectableView, TextSelectionHelper.SimpleSelectabeleView {
+    public class StoryCaptionTextView extends View implements TextSelectionHelper.SimpleSelectabeleView {
 
         private final PorterDuffColorFilter emojiColorFilter;
-        private LinkSpanDrawable<CharacterStyle> pressedLink;
-        private AnimatedEmojiSpan pressedEmoji;
-        private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         TextPaint showMorePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final Paint xRefPaint = new Paint();
         private final Paint xRefGradinetPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        int sizeCached = 0;
-        StaticLayout showMore;
-        StaticLayout fullLayout;
-        StaticLayout firstLayout;
-        LineInfo[] nextLinesLayouts;
-
-        CharSequence text = "";
-        int textHeight;
-        float textX;
-        float textY;
-        float progressToExpand;
         float showMoreY;
         float showMoreX;
 
+        public int collapsedTextHeight(int height) {
+            return AndroidUtilities.lerp(state[0].collapsedTextHeight(height), state[1] == null ? 0 : state[1].collapsedTextHeight(height), updateT);
+        }
+
+        public class TextState {
+            private LinkSpanDrawable<CharacterStyle> pressedLink;
+            private AnimatedEmojiSpan pressedEmoji;
+            private final LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(StoryCaptionTextView.this);
+
+            private AnimatedEmojiSpan.EmojiGroupedSpans fullLayoutEmoji;
+            StaticLayout fullLayout;
+            private AnimatedEmojiSpan.EmojiGroupedSpans firstLayoutEmoji;
+            StaticLayout firstLayout;
+            LineInfo[] nextLinesLayouts;
+
+            protected final List<SpoilerEffect> spoilers = new ArrayList<>();
+            private final Stack<SpoilerEffect> spoilersPool = new Stack<>();
+            private final SpoilersClickDetector clickDetector;
+
+            int textHeight;
+            CharSequence text = "";
+
+            public boolean translating;
+            public final AnimatedFloat translateT = new AnimatedFloat(StoryCaptionView.this, 0, 400, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final LoadingDrawable loadingDrawable;
+
+            private Path loadingPath = new Path();
+
+            public int collapsedTextHeight(int height) {
+                if (fullLayout == null) {
+                    return height - (verticalPadding * 2 + textHeight);
+                }
+                final Layout layout = fullLayout;
+                final int lineCount = layout.getLineCount();
+                if (lineCount <= 3) {
+                    return height - (verticalPadding * 2 + textHeight);
+                }
+                int i = Math.min(3, lineCount);
+                final int lineHeight = textPaint.getFontMetricsInt(null);
+                return height - lineHeight * (i + 1);
+            }
+
+            public TextState() {
+                clickDetector = new SpoilersClickDetector(StoryCaptionTextView.this, spoilers, (eff, x, y) -> {
+                    if (isSpoilersRevealed) return;
+
+                    eff.setOnRippleEndCallback(() -> post(() -> {
+                        isSpoilersRevealed = true;
+                        // invalidateSpoilers();
+                    }));
+
+                    float rad = (float) Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(getHeight(), 2));
+                    for (SpoilerEffect ef : spoilers)
+                        ef.startRipple(x, y, rad);
+                });
+
+                loadingDrawable = new LoadingDrawable();
+                loadingDrawable.usePath(loadingPath);
+                loadingDrawable.setRadiiDp(4);
+                loadingDrawable.setColors(
+                        Theme.multAlpha(Color.WHITE, .3f),
+                        Theme.multAlpha(Color.WHITE, .1f),
+                        Theme.multAlpha(Color.WHITE, .2f),
+                        Theme.multAlpha(Color.WHITE, .7f)
+                );
+                loadingDrawable.setCallback(StoryCaptionTextView.this);
+            }
+
+            public void setup(CharSequence text) {
+                this.text = text;
+                sizeCached = 0;
+                requestLayout();
+            }
+
+            public void measure(int width) {
+                if (TextUtils.isEmpty(text)) {
+                    fullLayout = null;
+                    textHeight = 0;
+                    if (this == state[0]) {
+                        showMore = null;
+                    }
+                    firstLayout = null;
+                    spoilersPool.addAll(spoilers);
+                    spoilers.clear();
+                    return;
+                }
+                fullLayout = makeTextLayout(textPaint, text, width);
+                textHeight = fullLayout.getHeight();
+                float space = textPaint.measureText(" ");
+                if (fullLayout.getLineCount() > 3) {
+                    float collapsedY = fullLayout.getLineTop(2) + fullLayout.getTopPadding();
+                    if (this == state[0]) {
+                        String showMoreText = LocaleController.getString("ShowMore", R.string.ShowMore);
+                        showMore = makeTextLayout(showMorePaint, showMoreText, width);
+
+                        showMoreY = verticalPadding + collapsedY - AndroidUtilities.dpf2(0.3f);
+                        showMoreX = width + horizontalPadding - showMorePaint.measureText(showMoreText);
+                    }
+
+                    firstLayout = makeTextLayout(textPaint, text.subSequence(0, fullLayout.getLineEnd(2)), width);
+                    spoilersPool.addAll(spoilers);
+                    spoilers.clear();
+                    SpoilerEffect.addSpoilers(StoryCaptionView.this, fullLayout, spoilersPool, spoilers);
+
+                    float x = fullLayout.getLineRight(2) + space;
+                    if (nextLinesLayouts != null) {
+                        for (int i = 0; i < nextLinesLayouts.length; i++) {
+                            if (nextLinesLayouts[i] == null) {
+                                continue;
+                            }
+                            AnimatedEmojiSpan.release(StoryCaptionView.this, nextLinesLayouts[i].layoutEmoji);
+                        }
+                    }
+                    nextLinesLayouts = new LineInfo[fullLayout.getLineCount() - 3];
+
+                    if (spoilers.isEmpty()) {
+                        for (int line = 3; line < fullLayout.getLineCount(); ++line) {
+                            int s = fullLayout.getLineStart(line), e = fullLayout.getLineEnd(line);
+                            CharSequence sequence = text.subSequence(Math.min(s, e), Math.max(s, e));
+                            if (TextUtils.isEmpty(sequence)) {
+                                nextLinesLayouts[line - 3] = null;
+                                continue;
+                            }
+                            final StaticLayout layout = makeTextLayout(textPaint, sequence, width);
+                            LineInfo lineInfo = new LineInfo();
+                            nextLinesLayouts[line - 3] = lineInfo;
+                            lineInfo.staticLayout = layout;
+                            lineInfo.finalX = fullLayout.getLineLeft(line);
+                            lineInfo.finalY = fullLayout.getLineTop(line) + fullLayout.getTopPadding();
+                            if (x < showMoreX - AndroidUtilities.dp(16)) {
+                                lineInfo.collapsedY = collapsedY;
+                                lineInfo.collapsedX = x;
+                                x += layout.getLineRight(0) + space;
+                            } else {
+                                lineInfo.collapsedY = lineInfo.finalY;
+                                lineInfo.collapsedX = lineInfo.finalX;
+                            }
+                        }
+                    }
+                } else {
+                    if (this == state[0]) {
+                        showMore = null;
+                    }
+                    firstLayout = null;
+                    spoilersPool.addAll(spoilers);
+                    spoilers.clear();
+                    SpoilerEffect.addSpoilers(StoryCaptionTextView.this, fullLayout, spoilersPool, spoilers);
+                }
+                clickDetector.setAdditionalOffsets(horizontalPadding, verticalPadding);
+            }
+
+            public void draw(Canvas canvas, float alpha) {
+                final float loadingT = this.translateT.set(translating);
+                if (alpha <= 0) {
+                    return;
+                }
+
+                alpha = AndroidUtilities.lerp(alpha, alpha * .7f, loadingT);
+                if (alpha >= 1) {
+                    drawInternal(canvas, loadingT);
+                } else {
+                    canvas.saveLayerAlpha(0, 0, StoryCaptionView.this.getWidth(), StoryCaptionView.this.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+                    drawInternal(canvas, loadingT);
+                    canvas.restore();
+                }
+
+                if (loadingT > 0 || translating) {
+                    loadingDrawable.setAlpha((int) (0xFF * loadingT * alpha));
+                    loadingDrawable.draw(canvas);
+                    StoryCaptionTextView.this.invalidate();
+                }
+            }
+
+            private void putLayoutRects(Layout layout, float tx, float ty) {
+                float t = 0;
+                for (int i = 0; i < layout.getLineCount(); ++i) {
+                    float l = layout.getLineLeft(i) - horizontalPadding / 3f;
+                    float r = layout.getLineRight(i) + horizontalPadding / 3f;
+                    if (i == 0) {
+                        t = layout.getLineTop(i) - verticalPadding / 3f;
+                    }
+                    float b = layout.getLineBottom(i);
+                    if (i >= layout.getLineCount() - 1) {
+                        b += verticalPadding / 3f;
+                    }
+                    loadingPath.addRect(tx + l, ty + t, tx + r, ty + b, Path.Direction.CW);
+                    t = b;
+                }
+            }
+
+            private void drawInternal(Canvas canvas, float loadingT) {
+                canvas.save();
+                canvas.translate(horizontalPadding, verticalPadding);
+                if (links.draw(canvas)) {
+                    invalidate();
+                }
+                canvas.restore();
+
+                final boolean drawLoading = loadingT > 0;
+                loadingPath.rewind();
+
+                if (!spoilers.isEmpty() || firstLayout == null) {
+                    if (fullLayout != null) {
+                        canvas.save();
+                        canvas.translate(horizontalPadding, verticalPadding);
+                        if (textSelectionHelper.isInSelectionMode()) {
+                            textSelectionHelper.draw(canvas);
+                        }
+                        drawLayout(fullLayout, canvas, spoilers);
+                        fullLayoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, StoryCaptionTextView.this, fullLayoutEmoji, fullLayout);
+                        AnimatedEmojiSpan.drawAnimatedEmojis(canvas, fullLayout, fullLayoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
+                        canvas.restore();
+
+                        if (drawLoading) {
+                            putLayoutRects(fullLayout, horizontalPadding, verticalPadding);
+                        }
+                    }
+                } else {
+                    if (textSelectionHelper.isInSelectionMode()) {
+                        canvas.save();
+                        canvas.translate(horizontalPadding, verticalPadding);
+                        textSelectionHelper.draw(canvas);
+                        canvas.restore();
+                    }
+                    if (firstLayout != null) {
+                        canvas.save();
+                        canvas.translate(horizontalPadding, verticalPadding);
+                        drawLayout(firstLayout, canvas, spoilers);
+                        firstLayoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, StoryCaptionTextView.this, firstLayoutEmoji, firstLayout);
+                        AnimatedEmojiSpan.drawAnimatedEmojis(canvas, firstLayout, firstLayoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
+                        canvas.restore();
+
+                        if (drawLoading) {
+                            putLayoutRects(firstLayout, horizontalPadding, verticalPadding);
+                        }
+                    }
+
+                    if (nextLinesLayouts != null) {
+                        for (int i = 0; i < nextLinesLayouts.length; i++) {
+                            LineInfo lineInfo = nextLinesLayouts[i];
+                            if (lineInfo == null) {
+                                continue;
+                            }
+                            canvas.save();
+                            if (lineInfo.collapsedX == lineInfo.finalX) {
+                                if (progressToExpand == 0) {
+                                    continue;
+                                }
+                                canvas.translate(horizontalPadding + lineInfo.finalX, verticalPadding + lineInfo.finalY);
+                                canvas.saveLayerAlpha(0, 0, lineInfo.staticLayout.getWidth(), lineInfo.staticLayout.getHeight(), (int) (255 * progressToExpand), Canvas.ALL_SAVE_FLAG);
+                                drawLayout(lineInfo.staticLayout, canvas, spoilers);
+
+                                if (drawLoading) {
+                                    putLayoutRects(lineInfo.staticLayout, horizontalPadding + lineInfo.finalX, verticalPadding + lineInfo.finalY);
+                                }
+
+                                lineInfo.staticLayout.draw(canvas);
+                                lineInfo.layoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, StoryCaptionTextView.this, lineInfo.layoutEmoji, lineInfo.staticLayout);
+                                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, lineInfo.staticLayout, lineInfo.layoutEmoji, 0, spoilers, 0, 0, 0, progressToExpand, emojiColorFilter);
+                                canvas.restore();
+                                //textPaint.setAlpha(255);
+                            } else {
+                                float offsetX = AndroidUtilities.lerp(lineInfo.collapsedX, lineInfo.finalX, progressToExpand);
+                                float offsetY = AndroidUtilities.lerp(lineInfo.collapsedY, lineInfo.finalY, CubicBezierInterpolator.EASE_OUT.getInterpolation(progressToExpand));
+                                canvas.translate(horizontalPadding + offsetX, verticalPadding + offsetY);
+                                //drawLayout(lineInfo.staticLayout, canvas, -offsetX, -offsetY);
+                                if (drawLoading) {
+                                    putLayoutRects(lineInfo.staticLayout, horizontalPadding + offsetX, verticalPadding + offsetY);
+                                }
+                                lineInfo.staticLayout.draw(canvas);
+                                lineInfo.layoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, StoryCaptionTextView.this, lineInfo.layoutEmoji, lineInfo.staticLayout);
+                                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, lineInfo.staticLayout, lineInfo.layoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
+                            }
+                            canvas.restore();
+                        }
+                    }
+                }
+            }
+
+            final AtomicReference<Layout> patchedLayout = new AtomicReference<>();
+
+            private void drawLayout(StaticLayout staticLayout, Canvas canvas, List<SpoilerEffect> spoilers) {
+                if (!spoilers.isEmpty()) {
+                    SpoilerEffect.renderWithRipple(StoryCaptionTextView.this, false, Color.WHITE, 0, patchedLayout, staticLayout, spoilers, canvas, false);
+                } else {
+                    staticLayout.draw(canvas);
+                }
+            }
+
+            public boolean touch(MotionEvent event) {
+                boolean allowIntercept = true;
+                if (showMore != null) {
+                    AndroidUtilities.rectTmp.set(showMoreX , showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
+                    if (AndroidUtilities.rectTmp.contains(event.getX(), event.getY())) {
+                        allowIntercept = false;
+                    }
+                }
+                boolean linkResult = false;
+                if (allowIntercept && event.getAction() == MotionEvent.ACTION_DOWN || (pressedLink != null || pressedEmoji != null) && event.getAction() == MotionEvent.ACTION_UP) {
+                    int x = (int) (event.getX() - horizontalPadding);
+                    int y = (int) (event.getY() - verticalPadding);
+                    final int line = fullLayout.getLineForVertical(y);
+                    final int off = fullLayout.getOffsetForHorizontal(line, x);
+                    final float left = fullLayout.getLineLeft(line);
+
+                    CharacterStyle touchLink = null;
+                    AnimatedEmojiSpan touchEmoji = null;
+                    if (left <= x && left + fullLayout.getLineWidth(line) >= x && y >= 0 && y <= fullLayout.getHeight()) {
+                        Spannable buffer = new SpannableString(text);
+                        CharacterStyle[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                        if (link == null || link.length == 0) {
+                            link = buffer.getSpans(off, off, URLSpanMono.class);
+                        }
+                        if (link != null && link.length != 0) {
+                            touchLink = link[0];
+                            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                linkResult = true;
+                                links.clear();
+                                pressedEmoji = null;
+                                pressedLink = new LinkSpanDrawable<>(link[0], null, event.getX(), event.getY());
+                                pressedLink.setColor(Theme.multAlpha(Color.WHITE, 0.2f));
+                                links.addLink(pressedLink);
+                                int start = buffer.getSpanStart(pressedLink.getSpan());
+                                int end = buffer.getSpanEnd(pressedLink.getSpan());
+                                LinkPath path = pressedLink.obtainNewPath();
+                                path.setCurrentLayout(fullLayout, start, getPaddingTop());
+                                fullLayout.getSelectionPath(start, end, path);
+
+                                final LinkSpanDrawable<CharacterStyle> savedPressedLink = pressedLink;
+                                textSelectionHelper.clear();
+                                postDelayed(() -> {
+
+                                    if (savedPressedLink == pressedLink && pressedLink != null && pressedLink.getSpan() instanceof URLSpan) {
+                                        onLinkLongPress((URLSpan) pressedLink.getSpan(), StoryCaptionTextView.this, links::clear);
+                                        pressedLink = null;
+                                    }
+                                }, ViewConfiguration.getLongPressTimeout());
+                            }
+                        }
+                        if (pressedLink == null && !linkResult) {
+                            AnimatedEmojiSpan[] emoji = buffer.getSpans(off, off, AnimatedEmojiSpan.class);
+                            if (emoji != null && emoji.length != 0) {
+                                touchEmoji = emoji[0];
+                                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                                    linkResult = true; // links.clear();
+                                    pressedLink = null;
+                                    pressedEmoji = emoji[0];
+                                }
+                            }
+                        }
+                    }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        links.clear();
+                        if (pressedLink != null && pressedLink.getSpan() == touchLink) {
+                            onLinkClick(pressedLink.getSpan(), StoryCaptionView.this);
+                        } else if (pressedEmoji != null && pressedEmoji == touchEmoji) {
+                            onEmojiClick(pressedEmoji);
+                        }
+                        pressedLink = null;
+                        pressedEmoji = null;
+                        linkResult = true;
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    clearPressedLinks();
+                    pressedEmoji = null;
+                    linkResult = true;
+                }
+                return linkResult;
+            }
+
+            public void detach() {
+                AnimatedEmojiSpan.release(StoryCaptionTextView.this, fullLayoutEmoji);
+                AnimatedEmojiSpan.release(StoryCaptionTextView.this, firstLayoutEmoji);
+                if (nextLinesLayouts != null) {
+                    for (int i = 0; i < nextLinesLayouts.length; i++) {
+                        if (nextLinesLayouts[i] == null) {
+                            continue;
+                        }
+                        AnimatedEmojiSpan.release(StoryCaptionTextView.this, nextLinesLayouts[i].layoutEmoji);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public CharSequence getText() {
+            return state[0].text;
+        }
+
+        @Override
+        public Layout getStaticTextLayout() {
+            return state[0].fullLayout;
+        }
+
+        TextState[] state = new TextState[2];
+
+        int sizeCached = 0;
+        StaticLayout showMore;
+
+        float progressToExpand;
+
         //spoilers
-        private SpoilersClickDetector clickDetector;
-        protected List<SpoilerEffect> spoilers = new ArrayList<>();
-        private Stack<SpoilerEffect> spoilersPool = new Stack<>();
         private boolean isSpoilersRevealed;
         private Path path = new Path();
         public boolean allowClickSpoilers = true;
 
         int horizontalPadding;
         int verticalPadding;
-        private AnimatedEmojiSpan.EmojiGroupedSpans fullLayoutEmoji;
-        private AnimatedEmojiSpan.EmojiGroupedSpans firstLayoutEmoji;
-
 
         public StoryCaptionTextView(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
+            state[0] = new TextState();
+            state[1] = null;
+
             textPaint.setColor(Color.WHITE);
-            textPaint.linkColor = Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
+            textPaint.linkColor = Color.WHITE;//Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
             textPaint.setTextSize(AndroidUtilities.dp(15));
 
             showMorePaint.setColor(Color.WHITE);
@@ -608,35 +989,82 @@ public class StoryCaptionView extends NestedScrollView {
             xRefGradinetPaint.setShader(new LinearGradient(0, 0, AndroidUtilities.dp(16), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             xRefGradinetPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
 
-            clickDetector = new SpoilersClickDetector(this, spoilers, (eff, x, y) -> {
-                if (isSpoilersRevealed) return;
-
-                eff.setOnRippleEndCallback(() -> post(() -> {
-                    isSpoilersRevealed = true;
-                    // invalidateSpoilers();
-                }));
-
-                float rad = (float) Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(getHeight(), 2));
-                for (SpoilerEffect ef : spoilers)
-                    ef.startRipple(x, y, rad);
-            });
-
             emojiColorFilter = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
         }
 
-        public void setText(CharSequence text) {
+        @Override
+        protected boolean verifyDrawable(@NonNull Drawable who) {
+            if (state[0] != null && state[0].loadingDrawable == who) {
+                return true;
+            }
+            if (state[1] != null && state[1].loadingDrawable == who) {
+                return true;
+            }
+            return super.verifyDrawable(who);
+        }
+
+        public void setText(CharSequence text, boolean translating, boolean animated) {
             if (text == null) {
                 text = "";
             }
-            isSpoilersRevealed = false;
-            //  invalidateSpoilers();
-            this.text = text;
-            sizeCached = 0;
-            if (getMeasuredWidth() > 0) {
-                createLayout(getMeasuredWidth());
+            if (TextUtils.equals(state[0].text, text)) {
+                state[0].translating = translating;
+                invalidate();
+                return;
             }
-            requestLayout();
-            invalidate();
+            isSpoilersRevealed = false;
+            if (updateAnimator != null) {
+                updateAnimator.cancel();
+            }
+            updating = false;
+            if (animated) {
+                if (state[1] == null) {
+                    state[1] = new TextState();
+                }
+                state[1].setup(state[0].text);
+                state[1].translating = state[0].translating;
+                state[1].translateT.set(state[0].translateT.get(), true);
+                state[0].setup(text);
+                state[0].translating = translating;
+                state[0].translateT.set(0, true);
+                updateT = 1;
+                animateUpdate();
+            } else {
+                state[0].setup(text);
+                state[0].translating = translating;
+                invalidate();
+                updateT = 0;
+            }
+        }
+
+        public float updateT;
+        public boolean updating = false;
+        private ValueAnimator updateAnimator;
+        public void animateUpdate() {
+            if (updateAnimator != null) {
+                updateAnimator.cancel();
+            }
+            updating = true;
+            updateAnimator = ValueAnimator.ofFloat(updateT, 0);
+            updateAnimator.addUpdateListener(anm -> {
+                updateT = (float) anm.getAnimatedValue();
+                invalidate();
+                StoryCaptionTextView.this.requestLayout();
+                StoryCaptionView.this.requestLayout();
+            });
+            updateAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    updating = false;
+                    updateT = 0;
+                    invalidate();
+                    StoryCaptionTextView.this.requestLayout();
+                    StoryCaptionView.this.requestLayout();
+                }
+            });
+            updateAnimator.setDuration(180);
+            updateAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+            updateAnimator.start();
         }
 
         @SuppressLint("DrawAllocation")
@@ -647,136 +1075,26 @@ public class StoryCaptionView extends NestedScrollView {
             verticalPadding = AndroidUtilities.dp(8);
             if (sizeCached != size) {
                 sizeCached = size;
-                createLayout(MeasureSpec.getSize(widthMeasureSpec));
-            }
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(verticalPadding * 2 + textHeight, MeasureSpec.EXACTLY));
-        }
-
-        private void createLayout(int measuredWidth) {
-            int width = measuredWidth - horizontalPadding * 2;
-            fullLayout = makeTextLayout(textPaint, text, width);
-            textHeight = fullLayout.getHeight();
-            textX = horizontalPadding;
-            textY = verticalPadding;
-            float space = textPaint.measureText(" ");
-            if (fullLayout.getLineCount() > 3) {
-                String showMoreText = LocaleController.getString("ShowMore", R.string.ShowMore);
-                showMore = makeTextLayout(showMorePaint, showMoreText, width);
-
-                float collapsedY = fullLayout.getLineTop(2) + fullLayout.getTopPadding();
-                showMoreY = textY + collapsedY - AndroidUtilities.dpf2(0.3f);
-                showMoreX = width - horizontalPadding - showMorePaint.measureText(showMoreText);
-                firstLayout = makeTextLayout(textPaint, text.subSequence(0, fullLayout.getLineEnd(2)), width);
-                spoilersPool.addAll(spoilers);
-                spoilers.clear();
-                SpoilerEffect.addSpoilers(this, fullLayout, spoilersPool, spoilers);
-
-                float x = fullLayout.getLineRight(2) + space;
-                if (nextLinesLayouts != null) {
-                    for (int i = 0; i < nextLinesLayouts.length; i++) {
-                        if (nextLinesLayouts[i] == null) {
-                            continue;
-                        }
-                        AnimatedEmojiSpan.release(this, nextLinesLayouts[i].layoutEmoji);
-                    }
+                int width = MeasureSpec.getSize(widthMeasureSpec) - horizontalPadding * 2;
+                state[0].measure(width);
+                if (state[1] != null) {
+                    state[1].measure(width);
                 }
-                nextLinesLayouts = new LineInfo[fullLayout.getLineCount() - 3];
-
-                if (spoilers.isEmpty()) {
-                    for (int line = 3; line < fullLayout.getLineCount(); ++line) {
-                        int s = fullLayout.getLineStart(line), e = fullLayout.getLineEnd(line);
-                        final StaticLayout layout = makeTextLayout(textPaint, text.subSequence(Math.min(s, e), Math.max(s, e)), width);
-                        LineInfo lineInfo = new LineInfo();
-                        nextLinesLayouts[line - 3] = lineInfo;
-                        lineInfo.staticLayout = layout;
-                        lineInfo.finalX = fullLayout.getLineLeft(line);
-                        lineInfo.finalY = fullLayout.getLineTop(line) + fullLayout.getTopPadding();
-                        if (x < showMoreX - AndroidUtilities.dp(16)) {
-                            lineInfo.collapsedY = collapsedY;
-                            lineInfo.collapsedX = x;
-                            x += layout.getLineRight(0) + space;
-                        } else {
-                            lineInfo.collapsedY = lineInfo.finalY;
-                            lineInfo.collapsedX = lineInfo.finalX;
-                        }
-                    }
-                }
-            } else {
-                showMore = null;
-                firstLayout = null;
-                spoilersPool.addAll(spoilers);
-                spoilers.clear();
-                SpoilerEffect.addSpoilers(this, fullLayout, spoilersPool, spoilers);
             }
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(verticalPadding * 2 + AndroidUtilities.lerp(state[0].textHeight, state[1] == null ? 0 : state[1].textHeight, updateT), MeasureSpec.EXACTLY));
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             if (showMore != null) {
-                canvas.saveLayerAlpha(textX - horizontalPadding, textY, getMeasuredWidth(), getMeasuredHeight() - verticalPadding, 255, Canvas.ALL_SAVE_FLAG);
+                canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
             } else {
                 canvas.save();
             }
 
-            canvas.save();
-            canvas.translate(textX, textY);
-            if (links.draw(canvas)) {
-                invalidate();
-            }
-            canvas.restore();
-
-            if (!spoilers.isEmpty() || firstLayout == null) {
-                if (fullLayout != null) {
-                    canvas.save();
-                    canvas.translate(textX, textY);
-                    if (textSelectionHelper.isInSelectionMode()) {
-                        textSelectionHelper.draw(canvas);
-                    }
-                    drawLayout(fullLayout, canvas);
-                    fullLayoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, fullLayoutEmoji, fullLayout);
-                    AnimatedEmojiSpan.drawAnimatedEmojis(canvas, fullLayout, fullLayoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
-                    canvas.restore();
-                }
-            } else {
-                if (textSelectionHelper.isInSelectionMode()) {
-                    canvas.save();
-                    canvas.translate(textX, textY);
-                    textSelectionHelper.draw(canvas);
-                    canvas.restore();
-                }
-                if (firstLayout != null) {
-                    canvas.save();
-                    canvas.translate(textX, textY);
-                    drawLayout(firstLayout, canvas);
-                    firstLayoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, firstLayoutEmoji, firstLayout);
-                    AnimatedEmojiSpan.drawAnimatedEmojis(canvas, firstLayout, firstLayoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
-                    canvas.restore();
-                }
-
-                if (nextLinesLayouts != null) {
-                    for (int i = 0; i < nextLinesLayouts.length; i++) {
-                        LineInfo lineInfo = nextLinesLayouts[i];
-                        canvas.save();
-                        if (lineInfo.collapsedX == lineInfo.finalX) {
-                            textPaint.setAlpha((int) (255 * progressToExpand));
-                            canvas.translate(textX + lineInfo.finalX, textY + lineInfo.finalY);
-                            drawLayout(lineInfo.staticLayout, canvas);
-                            lineInfo.staticLayout.draw(canvas);
-                            lineInfo.layoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, lineInfo.layoutEmoji, lineInfo.staticLayout);
-                            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, lineInfo.staticLayout, lineInfo.layoutEmoji, 0, spoilers, 0, 0, 0, progressToExpand, emojiColorFilter);
-                            textPaint.setAlpha(255);
-                        } else {
-                            float offsetX = AndroidUtilities.lerp(lineInfo.collapsedX, lineInfo.finalX, progressToExpand);
-                            float offsetY = AndroidUtilities.lerp(lineInfo.collapsedY, lineInfo.finalY, CubicBezierInterpolator.EASE_OUT.getInterpolation(progressToExpand));
-                            canvas.translate(textX + offsetX, textY + offsetY);
-                            //drawLayout(lineInfo.staticLayout, canvas, -offsetX, -offsetY);
-                            lineInfo.staticLayout.draw(canvas);
-                            lineInfo.layoutEmoji = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, lineInfo.layoutEmoji, lineInfo.staticLayout);
-                            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, lineInfo.staticLayout, lineInfo.layoutEmoji, 0, spoilers, 0, 0, 0, 1f, emojiColorFilter);
-                        }
-                        canvas.restore();
-                    }
-                }
+            state[0].draw(canvas, 1f - updateT);
+            if (state[1] != null) {
+                state[1].draw(canvas, updateT);
             }
 
             if (showMore != null) {
@@ -796,22 +1114,17 @@ public class StoryCaptionView extends NestedScrollView {
                 showMore.draw(canvas);
                 canvas.restore();
             }
+
             canvas.restore();
-        }
-
-        AtomicReference<Layout> patchedLayout = new AtomicReference<>();
-
-        private void drawLayout(StaticLayout staticLayout, Canvas canvas) {
-            if (!spoilers.isEmpty()) {
-                SpoilerEffect.renderWithRipple(this, false, Color.WHITE, 0, patchedLayout, staticLayout, spoilers, canvas, false);
-            } else {
-                staticLayout.draw(canvas);
-            }
         }
 
         private StaticLayout makeTextLayout(TextPaint textPaint, CharSequence string, int width) {
             if (Build.VERSION.SDK_INT >= 24) {
-                return StaticLayout.Builder.obtain(string, 0, string.length(), textPaint, width).setBreakStrategy(StaticLayout.BREAK_STRATEGY_SIMPLE).setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE).setAlignment(LocaleController.isRTL ? StaticLayoutEx.ALIGN_RIGHT() : StaticLayoutEx.ALIGN_LEFT()).build();
+                return StaticLayout.Builder.obtain(string, 0, string.length(), textPaint, width)
+                        .setBreakStrategy(StaticLayout.BREAK_STRATEGY_SIMPLE)
+                        .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
+                        .setAlignment(LocaleController.isRTL ? StaticLayoutEx.ALIGN_RIGHT() : StaticLayoutEx.ALIGN_LEFT())
+                        .build();
             } else {
                 return new StaticLayout(string, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
@@ -821,18 +1134,8 @@ public class StoryCaptionView extends NestedScrollView {
             return textPaint;
         }
 
-        @Override
-        public CharSequence getText() {
-            return text;
-        }
-
-        @Override
-        public StaticLayout getStaticTextLayout() {
-            return fullLayout;
-        }
-
         public class LineInfo {
-            private AnimatedEmojiSpan.EmojiGroupedSpans layoutEmoji;
+            public AnimatedEmojiSpan.EmojiGroupedSpans layoutEmoji;
             StaticLayout staticLayout;
             float collapsedX, collapsedY;
             float finalX, finalY;
@@ -840,85 +1143,13 @@ public class StoryCaptionView extends NestedScrollView {
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            if (fullLayout == null || disableTouches) {
+            if (disableTouches) {
                 return false;
             }
-            boolean allowIntercept = true;
-            if (showMore != null) {
-                AndroidUtilities.rectTmp.set(showMoreX , showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
-                if (AndroidUtilities.rectTmp.contains(event.getX(), event.getY())) {
-                    allowIntercept = false;
-                }
+            if (state == null || state[0].fullLayout == null) {
+                return false;
             }
-            boolean linkResult = false;
-            if (allowIntercept && event.getAction() == MotionEvent.ACTION_DOWN || (pressedLink != null || pressedEmoji != null) && event.getAction() == MotionEvent.ACTION_UP) {
-                int x = (int) (event.getX() - textX);
-                int y = (int) (event.getY() - textY);
-                final int line = fullLayout.getLineForVertical(y);
-                final int off = fullLayout.getOffsetForHorizontal(line, x);
-                final float left = fullLayout.getLineLeft(line);
-
-                CharacterStyle touchLink = null;
-                AnimatedEmojiSpan touchEmoji = null;
-                if (left <= x && left + fullLayout.getLineWidth(line) >= x && y >= 0 && y <= fullLayout.getHeight()) {
-                    Spannable buffer = new SpannableString(text);
-                    CharacterStyle[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                    if (link == null || link.length == 0) {
-                        link = buffer.getSpans(off, off, URLSpanMono.class);
-                    }
-                    if (link != null && link.length != 0) {
-                        touchLink = link[0];
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            linkResult = true;
-                            links.clear();
-                            pressedEmoji = null;
-                            pressedLink = new LinkSpanDrawable<>(link[0], null, event.getX(), event.getY());
-                            pressedLink.setColor(0x6662a9e3);
-                            links.addLink(pressedLink);
-                            int start = buffer.getSpanStart(pressedLink.getSpan());
-                            int end = buffer.getSpanEnd(pressedLink.getSpan());
-                            LinkPath path = pressedLink.obtainNewPath();
-                            path.setCurrentLayout(fullLayout, start, getPaddingTop());
-                            fullLayout.getSelectionPath(start, end, path);
-
-                            final LinkSpanDrawable<CharacterStyle> savedPressedLink = pressedLink;
-                            postDelayed(() -> {
-                                if (savedPressedLink == pressedLink && pressedLink != null && pressedLink.getSpan() instanceof URLSpan) {
-                                    onLinkLongPress((URLSpan) pressedLink.getSpan(), this, () -> links.clear());
-                                    pressedLink = null;
-                                }
-                            }, ViewConfiguration.getLongPressTimeout());
-                        }
-                    }
-                    if (pressedLink == null && !linkResult) {
-                        AnimatedEmojiSpan[] emoji = buffer.getSpans(off, off, AnimatedEmojiSpan.class);
-                        if (emoji != null && emoji.length != 0) {
-                            touchEmoji = emoji[0];
-                            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                linkResult = true; // links.clear();
-                                pressedLink = null;
-                                pressedEmoji = emoji[0];
-                            }
-                        }
-                    }
-                }
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    links.clear();
-                    if (pressedLink != null && pressedLink.getSpan() == touchLink) {
-                        onLinkClick(pressedLink.getSpan(), this);
-                    } else if (pressedEmoji != null && pressedEmoji == touchEmoji) {
-                        onEmojiClick(pressedEmoji);
-                    }
-                    pressedLink = null;
-                    pressedEmoji = null;
-                    linkResult = true;
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                clearPressedLinks();
-                pressedEmoji = null;
-                linkResult = true;
-            }
-
+            boolean linkResult = state[0].touch(event);
             boolean b = linkResult || super.onTouchEvent(event);
             return b;
         }
@@ -926,21 +1157,12 @@ public class StoryCaptionView extends NestedScrollView {
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
-            AnimatedEmojiSpan.release(this, fullLayoutEmoji);
-            AnimatedEmojiSpan.release(this, firstLayoutEmoji);
-            if (nextLinesLayouts != null) {
-                for (int i = 0; i < nextLinesLayouts.length; i++) {
-                    if (nextLinesLayouts[i] == null) {
-                        continue;
-                    }
-                    AnimatedEmojiSpan.release(this, nextLinesLayouts[i].layoutEmoji);
-                }
-            }
+            state[0].detach();
         }
 
         private void clearPressedLinks() {
-            links.clear();
-            pressedLink = null;
+            state[0].links.clear();
+            state[0].pressedLink = null;
             invalidate();
         }
 
@@ -964,19 +1186,27 @@ public class StoryCaptionView extends NestedScrollView {
         @Override
         public boolean dispatchTouchEvent(MotionEvent event) {
             boolean allowIntercept = true;
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                startMotionX = event.getX();
+                startMotionY = event.getY();
+            }
             lastMotionX = event.getX();
             lastMotionY = event.getY();
             if (showMore != null) {
-                AndroidUtilities.rectTmp.set(showMoreX , showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
+                AndroidUtilities.rectTmp.set(showMoreX, showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
                 if (AndroidUtilities.rectTmp.contains(event.getX(), event.getY())) {
                     allowIntercept = false;
                 }
             }
-            if (allowIntercept && allowClickSpoilers && clickDetector.onTouchEvent(event)) return true;
-//            if (allowIntercept && (expanded || firstLayout == null)) {
-//                textSelectionHelper.update(textX, textY);
-//                textSelectionHelper.onTouchEvent(event);
-//            }
+            if (allowIntercept && (expanded || state[0].firstLayout == null)) {
+                textSelectionHelper.update(horizontalPadding, verticalPadding);
+                textSelectionHelper.onTouchEvent(event);
+            }
+            if (!textSelectionHelper.isInSelectionMode() && allowIntercept && allowClickSpoilers && state[0].clickDetector.onTouchEvent(event)) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+                textSelectionHelper.clear();
+                return true;
+            }
             return super.dispatchTouchEvent(event);
         }
     }

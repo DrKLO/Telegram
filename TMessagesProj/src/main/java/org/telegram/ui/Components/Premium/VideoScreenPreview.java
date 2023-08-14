@@ -112,14 +112,14 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
 
     private TLRPC.Document document;
 
-    public VideoScreenPreview(Context context, SvgHelper.SvgDrawable svgDrawable, int currentAccount, int type) {
+    public VideoScreenPreview(Context context, SvgHelper.SvgDrawable svgDrawable, int currentAccount, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.currentAccount = currentAccount;
         this.type = type;
         this.svgIcon = svgDrawable;
 
         phoneFrame1.setColor(Color.BLACK);
-        phoneFrame2.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2), Color.BLACK, 0.5f));
+        phoneFrame2.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2, resourcesProvider), Color.BLACK, 0.5f));
         imageReceiver.setLayerNum(Integer.MAX_VALUE);
         setVideo();
 
@@ -147,6 +147,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             }
             starDrawable.k1 = starDrawable.k2 = starDrawable.k3 = 0.98f;
             starDrawable.speedScale = 4;
+            starDrawable.resourcesProvider = resourcesProvider;
             starDrawable.colorKey = Theme.key_premiumStartSmallStarsColor2;
             starDrawable.init();
         } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED) {
@@ -163,6 +164,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 particlesCount = 400;
             }
             starDrawable = new StarParticlesView.Drawable(particlesCount);
+            starDrawable.resourcesProvider = resourcesProvider;
             starDrawable.colorKey = Theme.key_premiumStartSmallStarsColor2;
             starDrawable.size1 = 8;
             starDrawable.size1 = 6;

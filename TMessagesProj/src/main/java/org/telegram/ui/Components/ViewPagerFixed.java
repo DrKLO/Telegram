@@ -56,7 +56,7 @@ import java.util.ArrayList;
 public class ViewPagerFixed extends FrameLayout {
 
     private Theme.ResourcesProvider resourcesProvider;
-    int currentPosition;
+    public int currentPosition;
     int nextPosition;
     protected View[] viewPages;
     private int[] viewTypes;

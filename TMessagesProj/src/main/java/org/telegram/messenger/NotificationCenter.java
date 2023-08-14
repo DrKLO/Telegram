@@ -110,6 +110,7 @@ public class NotificationCenter {
     public static final int paymentFinished = totalEvents++;
     public static final int channelRightsUpdated = totalEvents++;
     public static final int openArticle = totalEvents++;
+    public static final int articleClosed = totalEvents++;
     public static final int updateMentionsCount = totalEvents++;
     public static final int didUpdatePollResults = totalEvents++;
     public static final int chatOnlineCountDidLoad = totalEvents++;
@@ -211,6 +212,8 @@ public class NotificationCenter {
     public static final int didUpdatePremiumGiftStickers = totalEvents++;
     public static final int didUpdatePremiumGiftFieldIcon = totalEvents++;
     public static final int storiesEnabledUpdate = totalEvents++;
+    public static final int storiesBlocklistUpdate = totalEvents++;
+    public static final int storiesLimitUpdate = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

@@ -1,68 +1,181 @@
 package org.telegram.ui.Stories;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Consumer;
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.FixedHeightEmptyCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.CustomPopupMenu;
+import org.telegram.ui.Components.EmojiPacksAlert;
+import org.telegram.ui.Components.FillLastGridLayoutManager;
+import org.telegram.ui.Components.FillLastLinearLayoutManager;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.MessageContainsEmojiButton;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ReplaceableIconDrawable;
+import org.telegram.ui.Components.SearchField;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.RecyclerListViewScroller;
+import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Objects;
 
 public class SelfStoryViewsPage extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    private final static int TOP_PADDING = 46;
+    private final View shadowView;
+    private final View shadowView2;
+    private final FrameLayout topViewsContainer;
+    private final RecyclerListViewScroller scroller;
+    private int TOP_PADDING = 96;
     private static final int FIRST_PADDING_ITEM = 0;
     private static final int USER_ITEM = 1;
-    private static final int LAST_ITEM = 2;
     private static final int BUTTON_PADDING = 3;
     private static final int FLICKER_LOADING_ITEM = 4;
     private static final int EMPTY_VIEW = 5;
+    private static final int EMPTY_VIEW_SEARCH = 7;
+    private static final int EMPTY_VIEW_NO_CONTACTS = 8;
+    private static final int FLICKER_LOADING_ITEM_FULL = 6;
+    private static final int LAST_PADDING_VIEW = 9;
+    private static final int EMPTY_VIEW_SERVER_CANT_RETURN = 10;
+    private static final int SUBSCRIBE_TO_PREMIUM_TEXT_HINT = 11;
+    private static final int SERVER_CANT_RETURN_TEXT_HINT = 12;
+
+    private CustomPopupMenu popupMenu;
 
     private final TextView titleView;
     private int measuerdHeight;
 
     RecyclerListView recyclerListView;
+    RecyclerAnimationScrollHelper scrollHelper;
     Theme.ResourcesProvider resourcesProvider;
     int currentAccount;
     ListAdapter listAdapter;
 
-    public LinearLayoutManager layoutManager;
+    public FillLastLinearLayoutManager layoutManager;
     SelfStoryViewsView.StoryItemInternal storyItem;
-    ViewsModel model;
+    ViewsModel currentModel;
+    ViewsModel defaultModel;
+    ViewsModel filteredModel;
     private boolean isAttachedToWindow;
     RecyclerItemsEnterAnimator recyclerItemsEnterAnimator;
+    StoryViewer storyViewer;
+    SearchField searchField;
+    final FiltersState sharedFilterState;
+    Consumer<SelfStoryViewsPage> onSharedStateChanged;
+    final FiltersState state = new FiltersState();
+    HeaderView headerView;
+    boolean isSearchDebounce;
+    private boolean showSearch;
+    private boolean showReactionsSort;
+    private boolean showContactsFilter;
+    Drawable shadowDrawable;
+    private boolean checkAutoscroll;
+    private boolean showServerErrorText;
 
-    public SelfStoryViewsPage(StoryViewer storyViewer, @NonNull Context context) {
+    private boolean isStoryShownToUser(TLRPC.TL_storyView view) {
+        if (MessagesController.getInstance(currentAccount).getStoriesController().isBlocked(view)) {
+            return false;
+        }
+
+        if (MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(view.user_id) >= 0) {
+            return false;
+        }
+
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(view.user_id);
+
+        if (storyItem != null) {
+            if (storyItem.storyItem != null) {
+                if (storyItem.storyItem.parsedPrivacy == null) {
+                    storyItem.storyItem.parsedPrivacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, storyItem.storyItem.privacy);
+                }
+                return storyItem.storyItem.parsedPrivacy.containsUser(user);
+            } else if (storyItem.uploadingStory != null && storyItem.uploadingStory.entry != null && storyItem.uploadingStory.entry.privacy != null) {
+                return storyItem.uploadingStory.entry.privacy.containsUser(user);
+            }
+        }
+
+        return true;
+    }
+
+    public SelfStoryViewsPage(StoryViewer storyViewer, @NonNull Context context, FiltersState sharedFilterState, Consumer<SelfStoryViewsPage> onSharedStateChanged) {
         super(context);
+        this.sharedFilterState = sharedFilterState;
+        //this.sharedFilterState = null;
+        this.onSharedStateChanged = onSharedStateChanged;
         this.resourcesProvider = storyViewer.resourcesProvider;
+        this.storyViewer = storyViewer;
+
+        // state.set(sharedFilterState);
         currentAccount = storyViewer.currentAccount;
 
         titleView = new TextView(context);
@@ -71,46 +184,292 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
 
-        recyclerListView = new RecyclerListView(context) {
+        headerView = new HeaderView(getContext());
+
+        recyclerListView = new RecyclerListViewInner(context, resourcesProvider) {
+
             @Override
             protected void onMeasure(int widthSpec, int heightSpec) {
                 measuerdHeight = MeasureSpec.getSize(heightSpec);
                 super.onMeasure(widthSpec, heightSpec);
             }
+
+
         };
         recyclerListView.setClipToPadding(false);
         recyclerItemsEnterAnimator = new RecyclerItemsEnterAnimator(recyclerListView, true);
-        recyclerListView.setLayoutManager(layoutManager = new LinearLayoutManager(context));
+        recyclerListView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, 0, recyclerListView));
         recyclerListView.setNestedScrollingEnabled(true);
         recyclerListView.setAdapter(listAdapter = new ListAdapter());
+        scrollHelper = new RecyclerAnimationScrollHelper(recyclerListView, layoutManager);
+        scrollHelper.setScrollListener(new RecyclerAnimationScrollHelper.ScrollListener() {
+            @Override
+            public void onScroll() {
+                SelfStoryViewsPage.this.invalidate();
+            }
+        });
 
         addView(recyclerListView);
-
-
+        scroller = new RecyclerListViewScroller(recyclerListView);
         recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 checkLoadMore();
+                SelfStoryViewsPage.this.invalidate();
+            }
+
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == RecyclerListView.SCROLL_STATE_IDLE) {
+                    checkAutoscroll = true;
+                    invalidate();
+                }
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    checkAutoscroll = false;
+                    scroller.cancel();
+                    AndroidUtilities.hideKeyboard(SelfStoryViewsPage.this);
+                }
             }
         });
         recyclerListView.setOnItemClickListener((view, position) -> {
+            if (position < 0 || position >= listAdapter.items.size()) {
+                return;
+            }
             TLRPC.TL_storyView user = listAdapter.items.get(position).user;
             if (user != null) {
                 storyViewer.presentFragment(ProfileActivity.of(user.user_id));
             }
         });
+        recyclerListView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemClick(View view, int position) {
+                if (!(view instanceof ReactedUserHolderView)) {
+                    return false;
+                }
+                ReactedUserHolderView cell = (ReactedUserHolderView) view;
+                if (storyViewer == null || storyViewer.containerView == null) {
+                    return false;
+                }
+                TLRPC.TL_storyView viewUser = listAdapter.items.get(position).user;
+                if (viewUser == null) {
+                    return false;
+                }
+
+                MessagesController messagesController = MessagesController.getInstance(currentAccount);
+
+                TLRPC.User user = messagesController.getUser(viewUser.user_id);
+                if (user == null) {
+                    return false;
+                }
+
+                boolean isBlocked = messagesController.blockePeers.indexOfKey(user.id) >= 0;
+                boolean isContact = user != null && (user.contact || ContactsController.getInstance(currentAccount).contactsDict.get(user.id) != null);
+                boolean storiesShown = isStoryShownToUser(viewUser);
+                boolean storiesBlocked = messagesController.getStoriesController().isBlocked(viewUser);
+
+                String firstName = TextUtils.isEmpty(user.first_name) ? (TextUtils.isEmpty(user.last_name) ? "" : user.last_name) : user.first_name;
+                int index;
+                if ((index = firstName.indexOf(" ")) > 2) {
+                    firstName = firstName.substring(0, index);
+                }
+                final String firstNameFinal = firstName;
+
+                ItemOptions itemOptions = ItemOptions.makeOptions(storyViewer.containerView, resourcesProvider, view)
+                        .setGravity(Gravity.LEFT).ignoreX()
+                        .setScrimViewBackground(new ColorDrawable(Theme.getColor(Theme.key_dialogBackground, resourcesProvider)))
+                        .setDimAlpha(0x85)
+                        .addIf(storiesShown && !storiesBlocked && !isBlocked, R.drawable.msg_stories_myhide, LocaleController.formatString(R.string.StoryHideFrom, firstNameFinal), () -> {
+                            messagesController.getStoriesController().updateBlockUser(user.id, true);
+                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
+                                    .createSimpleBulletin(R.raw.ic_ban, LocaleController.formatString(R.string.StoryHidFromToast, firstNameFinal))
+                                    .show();
+                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+                        }).makeMultiline(false).cutTextInFancyHalf()
+                        .addIf(storiesBlocked && !isBlocked, R.drawable.msg_menu_stories, LocaleController.formatString(R.string.StoryShowBackTo, firstNameFinal), () -> {
+                            messagesController.getStoriesController().updateBlockUser(user.id, false);
+                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
+                                    .createSimpleBulletin(R.raw.contact_check, LocaleController.formatString(R.string.StoryShownBackToToast, firstNameFinal))
+                                    .show();
+                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+                        }).makeMultiline(false).cutTextInFancyHalf()
+//                        .addIf(!isContact, R.drawable.msg_contact_add, LocaleController.getString(R.string.AddContact), () -> {
+//                            messagesController.getStoriesController().updateBlockUser(user.id, false);
+//                            ContactsController.getInstance(currentAccount).addContact(user, false);
+//                            user.contact = true;
+//                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
+//                                    .createSimpleBulletin(R.raw.contact_check, LocaleController.formatString(R.string.AddContactToast, firstNameFinal))
+//                                    .show();
+//                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+//                        })
+                        .addIf(!isContact && !isBlocked, R.drawable.msg_user_remove, LocaleController.getString(R.string.BlockUser), true, () -> {
+                            messagesController.blockPeer(user.id);
+                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider).createBanBulletin(true).show();
+                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+                        })
+                        .addIf(!isContact && isBlocked, R.drawable.msg_block, LocaleController.getString(R.string.Unblock), () -> {
+                            messagesController.getStoriesController().updateBlockUser(user.id, false);
+                            messagesController.unblockPeer(user.id);
+                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider).createBanBulletin(false).show();
+                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+                        })
+                        .addIf(isContact, R.drawable.msg_user_remove, LocaleController.getString(R.string.StoryDeleteContact), true, () -> {
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
+                            users.add(user);
+                            ContactsController.getInstance(currentAccount).deleteContact(users, false);
+                            BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
+                                    .createSimpleBulletin(R.raw.ic_ban, LocaleController.formatString(R.string.DeletedFromYourContacts, firstNameFinal))
+                                    .show();
+                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
+                        });
+
+                if (viewUser.reaction instanceof TLRPC.TL_reactionCustomEmoji) {
+                    TLRPC.TL_reactionCustomEmoji customEmoji = (TLRPC.TL_reactionCustomEmoji) viewUser.reaction;
+                    TLRPC.InputStickerSet inputStickerSet = AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).findStickerSet(customEmoji.document_id);
+                    if (inputStickerSet != null) {
+                        itemOptions.addGap();
+                        ArrayList<TLRPC.InputStickerSet> arr = new ArrayList<TLRPC.InputStickerSet>();
+                        arr.add(inputStickerSet);
+                        MessageContainsEmojiButton button = new MessageContainsEmojiButton(currentAccount, getContext(), resourcesProvider, arr, MessageContainsEmojiButton.SINGLE_REACTION_TYPE);
+                        button.setOnClickListener(v -> {
+                            new EmojiPacksAlert(new BaseFragment() {
+                                @Override
+                                public int getCurrentAccount() {
+                                    return currentAccount;
+                                }
+
+                                @Override
+                                public Context getContext() {
+                                    return SelfStoryViewsPage.this.getContext();
+                                }
+
+                                @Override
+                                public Theme.ResourcesProvider getResourceProvider() {
+                                    return resourcesProvider;
+                                }
+                            }, getContext(), resourcesProvider, arr).show();
+                            itemOptions.dismiss();
+                        });
+                        itemOptions.addView(button);
+                    }
+                }
+
+                itemOptions.show();
+
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception ignore) {
+                }
+
+                return true;
+            }
+        });
 
         listAdapter.updateRows();
 
-        View shadowView = new View(getContext());
-        shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{ Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Color.TRANSPARENT }));
-        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8, 0, 0, TOP_PADDING - 8, 0, 0));
+        topViewsContainer = new FrameLayout(getContext());
+        shadowView = new View(getContext());
+        shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Color.TRANSPARENT}));
+        topViewsContainer.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8, 0, 0, TOP_PADDING - 8, 0, 0));
 
-        View shadowView2 = new View(getContext());
+        shadowView2 = new View(getContext());
         shadowView2.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
-        addView(shadowView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 10, 0, 0, TOP_PADDING - 17, 0, 0));
+        topViewsContainer.addView(shadowView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 10, 0, 0, TOP_PADDING - 17, 0, 0));
 
-        addView(titleView);
+        topViewsContainer.addView(headerView);
+        topViewsContainer.addView(titleView);
+        searchField = new SearchField(getContext(), true, 13, resourcesProvider) {
+            Runnable runnable;
+
+            @Override
+            public void onTextChange(String text) {
+                if (runnable != null) {
+                    AndroidUtilities.cancelRunOnUIThread(runnable);
+                }
+                runnable = () -> {
+                    runnable = null;
+                    isSearchDebounce = false;
+                    state.searchQuery = text.toLowerCase();
+                    reload();
+                    //layoutManager.scrollToPositionWithOffset(0, -recyclerListView.getPaddingTop());
+                };
+                if (!TextUtils.isEmpty(text)) {
+                    AndroidUtilities.runOnUIThread(runnable, 300);
+                } else {
+                    runnable.run();
+                }
+                if (runnable != null && !isSearchDebounce) {
+                    isSearchDebounce = true;
+                    listAdapter.updateRows();
+                    layoutManager.scrollToPositionWithOffset(0, -recyclerListView.getPaddingTop());
+                }
+            }
+        };
+        searchField.setHint(LocaleController.getString("Search", R.string.Search));
+        topViewsContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 36, 0, 0));
+
+        addView(topViewsContainer);
+    }
+
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        int minPosition = -1;
+        View minView = null;
+        for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+            View child = recyclerListView.getChildAt(i);
+            int childPosition = recyclerListView.getChildLayoutPosition(child);
+            if (childPosition < minPosition || minPosition == -1) {
+                minPosition = childPosition;
+                minView = child;
+            }
+        }
+        int paddingTop;
+        if (minPosition == 0) {
+            paddingTop = (int) Math.max(0, minView.getY());
+        } else if (minPosition > 0) {
+            paddingTop = 0;
+        } else {
+            paddingTop = recyclerListView.getPaddingTop();
+        }
+        if (topViewsContainer.getTranslationY() != paddingTop) {
+            topViewsContainer.setTranslationY(paddingTop);
+            onTopOffsetChanged(paddingTop);
+        }
+        shadowDrawable.setBounds(-AndroidUtilities.dp(6), paddingTop, getMeasuredWidth() + AndroidUtilities.dp(6), getMeasuredHeight());
+        shadowDrawable.draw(canvas);
+        if (checkAutoscroll) {
+            checkAutoscroll = false;
+            if (topViewsContainer.getTranslationY() != 0 && topViewsContainer.getTranslationY() != recyclerListView.getPaddingTop()) {
+                if (topViewsContainer.getTranslationY() > recyclerListView.getPaddingTop() / 2f) {
+                    scroller.smoothScrollBy((int) -(recyclerListView.getPaddingTop() - topViewsContainer.getTranslationY()));
+                } else {
+                    scroller.smoothScrollBy((int) topViewsContainer.getTranslationY());
+                }
+
+            }
+        }
+        super.dispatchDraw(canvas);
+    }
+
+    public void onTopOffsetChanged(int paddingTop) {
+
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (ev.getY() < topViewsContainer.getTranslationY()) {
+            return false;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (event.getY() < topViewsContainer.getTranslationY()) {
+            return false;
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override
@@ -126,33 +485,107 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
     }
 
     private void checkLoadMore() {
-        if (model != null && layoutManager.findLastVisibleItemPosition() > listAdapter.getItemCount() - 10) {
-            model.loadNext();
+        if (currentModel != null && layoutManager.findLastVisibleItemPosition() > listAdapter.getItemCount() - 10) {
+            currentModel.loadNext();
         }
     }
 
     public void setStoryItem(SelfStoryViewsView.StoryItemInternal storyItem) {
         this.storyItem = storyItem;
+        updateViewsVisibility();
+        updateViewState(false);
+    }
+
+    private void updateViewsVisibility() {
+        this.showSearch = false;
+        this.showContactsFilter = false;
+        this.showReactionsSort = false;
+        boolean forceHideTitle = false;
         if (storyItem.storyItem != null) {
             TLRPC.StoryItem serverItem = storyItem.storyItem;
-            model = MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.get(serverItem.id);
-            int totalCount = serverItem.views == null ? 0 : serverItem.views.views_count;
-            if (model == null || model.totalCount != totalCount) {
-                if (model != null) {
-                    model.release();
-                }
-                model = new ViewsModel(currentAccount, serverItem);
-                model.loadNext();
-                MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.put(serverItem.id, model);
+            if (serverItem.views != null) {
+                showSearch = serverItem.views.views_count >= 15;
+                showReactionsSort = serverItem.views.reactions_count >= (BuildVars.DEBUG_PRIVATE_VERSION ? 5 : 10);
+                showContactsFilter = serverItem.views.views_count >= 20 && !serverItem.contacts && !serverItem.close_friends && !serverItem.selected_contacts;
             }
-            if (serverItem.views == null || serverItem.views.views_count == 0) {
-                titleView.setText(LocaleController.getString("NobodyViewsTitle", R.string.NobodyViewsTitle));
+            defaultModel = MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.get(serverItem.id);
+            int totalCount = serverItem.views == null ? 0 : serverItem.views.views_count;
+            if (defaultModel == null || defaultModel.totalCount != totalCount) {
+                if (defaultModel != null) {
+                    defaultModel.release();
+                }
+                defaultModel = new ViewsModel(currentAccount, serverItem, true);
+                defaultModel.reloadIfNeed(state, showContactsFilter, showReactionsSort);
+                defaultModel.loadNext();
+                MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.put(serverItem.id, defaultModel);
             } else {
-                titleView.setText(LocaleController.formatPluralStringComma("Views", serverItem.views.views_count));
+                defaultModel.reloadIfNeed(state, showContactsFilter, showReactionsSort);
+            }
+            if (currentModel != null) {
+                currentModel.removeListener(this);
+            }
+            currentModel = defaultModel;
+            if (currentModel != null && isAttachedToWindow) {
+                currentModel.addListener(this);
+            }
+            if ((currentModel.isExpiredViews && !UserConfig.getInstance(currentAccount).isPremium()) || (!currentModel.loading && !currentModel.hasNext && currentModel.views.isEmpty() && TextUtils.isEmpty(currentModel.state.searchQuery))) {
+                showSearch = false;
+                showReactionsSort = false;
+                showContactsFilter = false;
+                titleView.setText(LocaleController.getString("Viewers", R.string.Viewers));
+                searchField.setVisibility(View.GONE);
+                headerView.setVisibility(View.GONE);
+                TOP_PADDING = 46;
+            } else if (serverItem.views == null || serverItem.views.views_count == 0) {
+                showSearch = false;
+                showReactionsSort = false;
+                showContactsFilter = false;
+                titleView.setText(LocaleController.getString("Viewers", R.string.Viewers));
+                searchField.setVisibility(View.GONE);
+                headerView.setVisibility(View.GONE);
+                TOP_PADDING = 46;
+            } else {
+                headerView.setVisibility(View.VISIBLE);
+                if (currentModel.showReactionOnly) {
+                    titleView.setText(LocaleController.formatPluralString("Likes", serverItem.views.reactions_count, serverItem.views.reactions_count));
+                    showSearch = false;
+                    showReactionsSort = false;
+                    showContactsFilter = false;
+                } else {
+                    if (currentModel.views.size() < 20 && currentModel.views.size() < serverItem.views.views_count && !currentModel.loading && !currentModel.hasNext) {
+                        showSearch = false;
+                        showReactionsSort = false;
+                        showContactsFilter = false;
+                        showServerErrorText = true;
+                    } else {
+                        showSearch = serverItem.views.views_count >= 15;
+                        showReactionsSort = serverItem.views.reactions_count >= (BuildVars.DEBUG_VERSION ? 5 : 10);
+                        showContactsFilter = serverItem.views.views_count >= 20 && !serverItem.contacts && !serverItem.close_friends && !serverItem.selected_contacts;
+                    }
+                    titleView.setText(LocaleController.getString("Viewers", R.string.Viewers));
+                }
+                searchField.setVisibility(showSearch ? View.VISIBLE : View.GONE);
+                TOP_PADDING = showSearch ? 96 : 46;
+
+                // titleView.setText(LocaleController.formatPluralStringComma("Views", serverItem.views.views_count));
             }
         } else {
+            TOP_PADDING = 46;
             titleView.setText(LocaleController.getString("UploadingStory", R.string.UploadingStory));
+            searchField.setVisibility(View.GONE);
+            headerView.setVisibility(View.GONE);
         }
+        headerView.buttonContainer.setVisibility(showReactionsSort ? View.VISIBLE : View.GONE);
+        headerView.allViewersView.setVisibility(showContactsFilter ? View.VISIBLE : View.GONE);
+        headerView.contactsViewersView.setVisibility(showContactsFilter ? View.VISIBLE : View.GONE);
+        if (!showContactsFilter && !forceHideTitle) {
+            titleView.setVisibility(View.VISIBLE);
+        } else {
+            titleView.setVisibility(View.GONE);
+        }
+
+        ((MarginLayoutParams) shadowView.getLayoutParams()).topMargin = AndroidUtilities.dp(TOP_PADDING - 8);
+        ((MarginLayoutParams) shadowView2.getLayoutParams()).topMargin = AndroidUtilities.dp(TOP_PADDING - 17);
     }
 
     public static void preload(int currentAccount, TLRPC.StoryItem storyItem) {
@@ -165,7 +598,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             if (model != null) {
                 model.release();
             }
-            model = new ViewsModel(currentAccount, storyItem);
+            model = new ViewsModel(currentAccount, storyItem, true);
             model.loadNext();
             MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.put(storyItem.id, model);
         }
@@ -174,35 +607,49 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (model != null) {
-            model.addListener(this);
-            model.animateDateForUsers.clear();
+        isAttachedToWindow = true;
+        if (currentModel != null) {
+            currentModel.addListener(this);
+            currentModel.animateDateForUsers.clear();
         }
         listAdapter.updateRows();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesUpdated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesBlocklistUpdate);
+        Bulletin.addDelegate(this, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                return recyclerListView.getPaddingBottom();
+            }
+        });
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (model != null) {
-            model.removeListener(this);
+        isAttachedToWindow = false;
+        if (currentModel != null) {
+            currentModel.removeListener(this);
         }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesBlocklistUpdate);
+        Bulletin.removeDelegate(this);
     }
 
-    public void onDataRecieved() {
-        NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+    public void onDataRecieved(ViewsModel model) {
+      //  NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
             int oldCount = listAdapter.getItemCount();
+            if (TextUtils.isEmpty(state.searchQuery) && !state.contactsOnly) {
+                updateViewsVisibility();
+            }
             listAdapter.updateRows();
             recyclerItemsEnterAnimator.showItemsAnimated(oldCount);
             checkLoadMore();
-        });
+     //   });
     }
 
     public void setListBottomPadding(float bottomPadding) {
         if (bottomPadding != recyclerListView.getPaddingBottom()) {
-            recyclerListView.setPadding(0, 0, 0, (int) bottomPadding);
+            recyclerListView.setPadding(0, (int) bottomPadding, 0, 0);
             recyclerListView.requestLayout();
         }
     }
@@ -224,7 +671,51 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     }
                 }
             }
+        } else if (id == NotificationCenter.storiesBlocklistUpdate) {
+            for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
+                View child = recyclerListView.getChildAt(i);
+                if (child instanceof ReactedUserHolderView) {
+                    int position = recyclerListView.getChildAdapterPosition(child);
+                    if (position < 0 || position >= listAdapter.items.size()) {
+                        continue;
+                    }
+                    ((ReactedUserHolderView) child).animateAlpha(isStoryShownToUser(listAdapter.items.get(position).user) ? 1 : .5f, true);
+                }
+            }
         }
+    }
+
+    protected void updateSharedState() {
+//        if (sharedFilterState != null) {
+//            state.sortByReactions = sharedFilterState.sortByReactions;
+//            state.contactsOnly = sharedFilterState.contactsOnly;
+//            reload();
+//            updateViewState(false);
+//        }
+    }
+
+    public void setShadowDrawable(Drawable shadowDrawable) {
+        this.shadowDrawable = shadowDrawable;
+    }
+
+    public void onKeyboardShown() {
+        recyclerListView.dispatchTouchEvent(AndroidUtilities.emptyMotionEvent());
+        if (topViewsContainer.getTranslationY() != 0) {
+            scroller.smoothScrollBy((int) topViewsContainer.getTranslationY(), AdjustPanLayoutHelper.keyboardDuration, AdjustPanLayoutHelper.keyboardInterpolator);
+        }
+    }
+
+    public boolean onBackPressed() {
+        if (Math.abs(topViewsContainer.getTranslationY() - recyclerListView.getPaddingTop()) > AndroidUtilities.dp(2)) {
+            recyclerListView.dispatchTouchEvent(AndroidUtilities.emptyMotionEvent());
+            recyclerListView.smoothScrollToPosition(0);
+            return true;
+        }
+        return false;
+    }
+
+    public float getTopOffset() {
+        return topViewsContainer.getTranslationY();
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -263,27 +754,94 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     loadingView.showDate(false);
                     view = loadingView;
                     break;
+                case FLICKER_LOADING_ITEM_FULL:
+                    loadingView = new FlickerLoadingView(getContext(), resourcesProvider);
+                    loadingView.setIsSingleCell(true);
+                    loadingView.setIgnoreHeightCheck(true);
+                    loadingView.setItemsCount(20);
+                    loadingView.setViewType(FlickerLoadingView.SOTRY_VIEWS_USER_TYPE);
+                    loadingView.showDate(false);
+                    view = loadingView;
+                    break;
+                case SERVER_CANT_RETURN_TEXT_HINT:
+                case SUBSCRIBE_TO_PREMIUM_TEXT_HINT:
+                    LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                    textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+                    int padding = AndroidUtilities.dp(16);
+                    int paddingHorizontal = AndroidUtilities.dp(21);
+                    textView.setPadding(paddingHorizontal, padding, paddingHorizontal, padding);
+                    textView.setMaxLines(Integer.MAX_VALUE);
+                    textView.setGravity(Gravity.CENTER);
+                    textView.setDisablePaddingsOffsetY(true);
+                    if (viewType == SUBSCRIBE_TO_PREMIUM_TEXT_HINT) {
+                        textView.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("StoryViewsPremiumHint", R.string.StoryViewsPremiumHint), () -> {
+                            showPremiumAlert();
+                        }));
+                    } else {
+                        textView.setText(LocaleController.getString("ServerErrorViewersFull", R.string.ServerErrorViewersFull));
+                    }
+                    textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    view = textView;
+                    break;
                 default:
-                case LAST_ITEM:
+                case LAST_PADDING_VIEW:
                     view = new View(getContext()) {
                         @Override
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                            int h = layoutManager.getLastItemHeight();
+                            if (h >= recyclerListView.getPaddingTop() && !showSearch) {
+                                h = 0;
+                            }
+                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY));
                         }
                     };
                     break;
+                case EMPTY_VIEW_NO_CONTACTS:
+                case EMPTY_VIEW_SEARCH:
                 case EMPTY_VIEW:
-                    StickerEmptyView emptyView = new StickerEmptyView(getContext(), null, model.isExpiredViews ? StickerEmptyView.STICKER_TYPE_PRIVACY : StickerEmptyView.STICKER_TYPE_NO_CONTACTS, resourcesProvider) {
+                case EMPTY_VIEW_SERVER_CANT_RETURN:
+                    int stickerType;
+                    if (defaultModel.isExpiredViews) {
+                        stickerType = StickerEmptyView.STICKER_TYPE_PRIVACY;
+                    } else if (viewType == EMPTY_VIEW_SERVER_CANT_RETURN || viewType == EMPTY_VIEW_SEARCH || viewType == EMPTY_VIEW_NO_CONTACTS || viewType == EMPTY_VIEW) {
+                        stickerType = StickerEmptyView.STICKER_TYPE_SEARCH;
+                    } else {
+                        stickerType = StickerEmptyView.STICKER_TYPE_NO_CONTACTS;
+                    }
+                    StickerEmptyView emptyView = new StickerEmptyView(getContext(), null, stickerType, resourcesProvider) {
                         @Override
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(measuerdHeight - recyclerListView.getPaddingBottom(), MeasureSpec.EXACTLY));
+                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(measuerdHeight - recyclerListView.getPaddingTop() - AndroidUtilities.dp(TOP_PADDING), MeasureSpec.EXACTLY));
                         }
                     };
-                    emptyView.title.setVisibility(View.GONE);
-                    if (model.isExpiredViews) {
-                        emptyView.subtitle.setText(AndroidUtilities.replaceTags(LocaleController.getString("ExpiredViewsStub", R.string.ExpiredViewsStub)));
+                    if (viewType == EMPTY_VIEW_SEARCH) {
+                        emptyView.title.setVisibility(View.GONE);
+                        emptyView.setSubtitle(LocaleController.getString("NoResult", R.string.NoResult));
+                    } else if (viewType == EMPTY_VIEW_NO_CONTACTS) {
+                        emptyView.title.setVisibility(View.GONE);
+                        emptyView.setSubtitle(LocaleController.getString("NoContactsViewed", R.string.NoContactsViewed));
+                    } else if (viewType == EMPTY_VIEW_SERVER_CANT_RETURN) {
+                        emptyView.title.setVisibility(View.VISIBLE);
+                        emptyView.title.setText(LocaleController.getString("ServerErrorViewersTitle", R.string.ServerErrorViewersTitle));
+                        emptyView.setSubtitle(LocaleController.getString("ServerErrorViewers", R.string.ServerErrorViewers));
+                    } else if (defaultModel.isExpiredViews) {
+                        emptyView.title.setVisibility(View.GONE);
+                        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                        spannableStringBuilder.append(AndroidUtilities.replaceTags(LocaleController.getString("ExpiredViewsStub", R.string.ExpiredViewsStub)));
+                        spannableStringBuilder.append("\n\n");
+                        spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("ExpiredViewsStubPremiumDescription", R.string.ExpiredViewsStubPremiumDescription), () -> {
+                            showPremiumAlert();
+                        }));
+                        emptyView.subtitle.setText(spannableStringBuilder);
+                        emptyView.createButtonLayout(LocaleController.getString("LearnMore", R.string.LearnMore), () -> {
+                            showPremiumAlert();
+                        });
                     } else {
-                        emptyView.subtitle.setText(LocaleController.getString("NoViewsStub", R.string.NoViewsStub));
+                        emptyView.title.setVisibility(View.VISIBLE);
+                        emptyView.title.setText(LocaleController.getString("NoViews", R.string.NoViews));
+                        emptyView.setSubtitle(LocaleController.getString("NoViewsStub", R.string.NoViewsStub));
                     }
                     emptyView.showProgress(false, false);
                     view = emptyView;
@@ -298,9 +856,18 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 ReactedUserHolderView view = (ReactedUserHolderView) holder.itemView;
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(items.get(position).user.user_id);
 
-                boolean animated = model.animateDateForUsers.remove(items.get(position).user.user_id);
-                view.setUserReaction(user, null, null, items.get(position).user.date, true, animated);
-                //   items.get(position + 1).viewType == USER_ITEM
+                boolean animated = defaultModel.animateDateForUsers.remove(items.get(position).user.user_id);
+                boolean like = false;
+                if (items.get(position).user.reaction != null) {
+                    ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(items.get(position).user.reaction);
+                    if (visibleReaction != null && visibleReaction.emojicon != null && visibleReaction.emojicon.equals("\u2764")) {
+                        like = true;
+                    }
+                }
+                view.setUserReaction(user, null, like ? null : items.get(position).user.reaction, like, items.get(position).user.date, true, animated);
+                int nextItemType = position < items.size() - 1 ? items.get(position + 1).viewType : -1;
+                view.drawDivider = nextItemType == USER_ITEM || nextItemType == SUBSCRIBE_TO_PREMIUM_TEXT_HINT || nextItemType == SERVER_CANT_RETURN_TEXT_HINT;
+                view.animateAlpha(isStoryShownToUser(items.get(position).user) ? 1f : .5f, false);
             }
         }
 
@@ -316,19 +883,44 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
         public void updateRows() {
             items.clear();
-            if (model != null && model.views.isEmpty() && (model.isExpiredViews || (!model.loading && !model.hasNext))) {
-                items.add(new Item(EMPTY_VIEW));
+            ViewsModel model = currentModel;
+            if (isSearchDebounce) {
+                items.add(new Item(FIRST_PADDING_ITEM));
+                items.add(new Item(FLICKER_LOADING_ITEM_FULL));
             } else {
                 items.add(new Item(FIRST_PADDING_ITEM));
-                if (model != null) {
-                    for (int i = 0; i < model.views.size(); i++) {
-                        items.add(new Item(USER_ITEM, model.views.get(i)));
+                if (model != null && model.views.isEmpty() && (model.isExpiredViews || (!model.loading && !model.hasNext))) {
+                    if (!TextUtils.isEmpty(model.state.searchQuery)) {
+                        items.add(new Item(EMPTY_VIEW_SEARCH));
+                    } else if (model.isExpiredViews) {
+                        items.add(new Item(EMPTY_VIEW));
+                    } else if (model.totalCount > 0 && model.state.contactsOnly) {
+                        items.add(new Item(EMPTY_VIEW_NO_CONTACTS));
+                    } else if (model.totalCount > 0) {
+                        items.add(new Item(EMPTY_VIEW_SERVER_CANT_RETURN));
+                    } else {
+                        items.add(new Item(EMPTY_VIEW));
+                    }
+                } else {
+                    if (model != null) {
+                        for (int i = 0; i < model.views.size(); i++) {
+                            items.add(new Item(USER_ITEM, model.views.get(i)));
+                        }
+                    }
+                    if (model != null && (model.loading || model.hasNext)) {
+                        if (model.views.isEmpty()) {
+                            items.add(new Item(FLICKER_LOADING_ITEM_FULL));
+                        } else {
+                            items.add(new Item(FLICKER_LOADING_ITEM));
+                        }
+                    } else if (model != null && model.showReactionOnly) {
+                        items.add(new Item(SUBSCRIBE_TO_PREMIUM_TEXT_HINT));
+                    } else if (model != null && model.views.size() < model.totalCount && TextUtils.isEmpty(model.state.searchQuery) && !model.state.contactsOnly) {
+                        items.add(new Item(SERVER_CANT_RETURN_TEXT_HINT));
                     }
                 }
-                if (model != null && (model.loading || model.hasNext)) {
-                    items.add(new Item(FLICKER_LOADING_ITEM));
-                }
             }
+            items.add(new Item(LAST_PADDING_VIEW));
             notifyDataSetChanged();
         }
 
@@ -336,6 +928,11 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         public int getItemViewType(int position) {
             return items.get(position).viewType;
         }
+    }
+
+    private void showPremiumAlert() {
+        PremiumFeatureBottomSheet sheet = new PremiumFeatureBottomSheet(storyViewer.fragment, PremiumPreviewFragment.PREMIUM_FEATURE_STORIES, false);
+        sheet.show();
     }
 
     private class Item {
@@ -359,27 +956,41 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         int currentAccount;
         boolean loading;
         ArrayList<TLRPC.TL_storyView> views = new ArrayList<>();
+        ArrayList<TLRPC.TL_storyView> originalViews = new ArrayList<>();
         boolean isExpiredViews;
+        boolean showReactionOnly;
         boolean initial;
         boolean hasNext = true;
-        long offsetId;
-        int offsetDate;
+        String offset;
         int reqId = -1;
         HashSet<Long> animateDateForUsers = new HashSet<>();
+        boolean useLocalFilters;
 
         ArrayList<SelfStoryViewsPage> listeners = new ArrayList<>();
+        FiltersState state = new FiltersState();
 
-        public ViewsModel(int currentAccount, TLRPC.StoryItem storyItem) {
+        public ViewsModel(int currentAccount, TLRPC.StoryItem storyItem, boolean isDefault) {
             this.currentAccount = currentAccount;
             this.storyItem = storyItem;
             this.totalCount = storyItem.views == null ? 0 : storyItem.views.views_count;
-            isExpiredViews = StoriesUtilities.hasExpiredViews(storyItem);
+            if (totalCount < 200) {
+                useLocalFilters = true;
+            }
+            isExpiredViews = StoriesUtilities.hasExpiredViews(storyItem) && !UserConfig.getInstance(currentAccount).isPremium();
+            if (isExpiredViews && storyItem.views != null && storyItem.views.reactions_count > 0) {
+                isExpiredViews = false;
+                showReactionOnly = true;
+            }
             if (!isExpiredViews) {
                 initial = true;
-                if (storyItem.views != null) {
+                if (storyItem.views != null && isDefault) {
                     for (int i = 0; i < storyItem.views.recent_viewers.size(); i++) {
+                        long uid = storyItem.views.recent_viewers.get(i);
+                        if (MessagesController.getInstance(currentAccount).getUser(uid) == null) {
+                            continue;
+                        }
                         TLRPC.TL_storyView storyView = new TLRPC.TL_storyView();
-                        storyView.user_id = storyItem.views.recent_viewers.get(i);
+                        storyView.user_id = uid;
                         storyView.date = 0;
                         views.add(storyView);
                     }
@@ -393,16 +1004,37 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             }
             TLRPC.TL_stories_getStoryViewsList req = new TLRPC.TL_stories_getStoryViewsList();
             req.id = storyItem.id;
-            req.limit = initial ? 20 : 100;
-            req.offset_id = offsetId;
-            req.offset_date = offsetDate;
+            if (useLocalFilters) {
+                req.q = "";
+                req.just_contacts = false;
+                req.reactions_first = true;
+            } else {
+                req.q = state.searchQuery;
+                if (!TextUtils.isEmpty(req.q)) {
+                    req.flags |= 2;
+                }
+                req.just_contacts = state.contactsOnly;
+                req.reactions_first = state.sortByReactions;
+            }
+            req.limit = (initial || views.size() < 20) ? 20 : 100;
+            req.offset = offset;
+            if (req.offset == null) {
+                req.offset = "";
+            }
 
             loading = true;
-            reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            int[] localReqId = new int[1];
+            FileLog.d("SelfStoryViewsPage load next " + storyItem.id + " " + initial + " offset=" + req.offset + " q" + req.q + " " + req.just_contacts + " " + req.reactions_first);
+            localReqId[0] = reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (localReqId[0] != reqId) {
+                    FileLog.d("SelfStoryViewsPage " + storyItem.id  + " localId != reqId");
+                    return;
+                }
                 loading = false;
                 reqId = -1;
                 if (response != null) {
                     TLRPC.TL_stories_storyViewsList res = (TLRPC.TL_stories_storyViewsList) response;
+                    MessagesController.getInstance(currentAccount).getStoriesController().applyStoryViewsBlocked(res);
                     MessagesController.getInstance(currentAccount).putUsers(res.users, false);
                     if (initial) {
                         initial = false;
@@ -410,15 +1042,22 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                             animateDateForUsers.add(views.get(i).user_id);
                         }
                         views.clear();
+                        originalViews.clear();
                     }
-                    views.addAll(res.views);
+                    if (useLocalFilters) {
+                        originalViews.addAll(res.views);
+                        applyLocalFilter();
+                    } else {
+                        views.addAll(res.views);
+                    }
 
                     if (!res.views.isEmpty()) {
-                        TLRPC.TL_storyView last = res.views.get(res.views.size() - 1);
-                        offsetDate = last.date;
-                        offsetId = last.user_id;
-                        hasNext = res.views.size() == req.limit;
+                        hasNext = true;
                     } else {
+                        hasNext = false;
+                    }
+                    offset = res.next_offset;
+                    if (TextUtils.isEmpty(offset)) {
                         hasNext = false;
                     }
 
@@ -435,11 +1074,49 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 } else {
                     hasNext = false;
                 }
+
+                FileLog.d("SelfStoryViewsPage " + storyItem.id  + " response  totalItems " + views.size() + " has next " + hasNext);
                 for (int i = 0; i < listeners.size(); i++) {
-                    listeners.get(i).onDataRecieved();
+                    listeners.get(i).onDataRecieved(this);
+                }
+                if (views.size() < 20 && hasNext) {
+                    loadNext();
                 }
             }));
+        }
 
+        private void applyLocalFilter() {
+            views.clear();
+            if (state.contactsOnly || !TextUtils.isEmpty(state.searchQuery)) {
+                String search1 = null;
+                String search2 = null;
+                if (!TextUtils.isEmpty(state.searchQuery)) {
+                    search1 = state.searchQuery.trim().toLowerCase();
+                    search2 = LocaleController.getInstance().getTranslitString(search1);
+                }
+                for (int i = 0; i < originalViews.size(); i++) {
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(originalViews.get(i).user_id);
+                    boolean canAdd = true;
+                    if (state.contactsOnly && (user == null || !user.contact)) {
+                        canAdd = false;
+                    }
+                    if (canAdd && search1 != null) {
+                        String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                        String username = UserObject.getPublicUsername(user);
+                        if (!(name.contains(search1) || name.contains(search2) || (username != null && (username.contains(search1) || username.contains(search2))))) {
+                            canAdd = false;
+                        }
+                    }
+                    if (canAdd) {
+                        views.add(originalViews.get(i));
+                    }
+                }
+            } else {
+                views.addAll(originalViews);
+            }
+            if (!state.sortByReactions) {
+                Collections.sort(views, Comparator.comparingInt(o -> -o.date));
+            }
         }
 
         public void addListener(SelfStoryViewsPage listener) {
@@ -457,6 +1134,305 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, false);
             }
             reqId = -1;
+        }
+
+        public void reloadIfNeed(FiltersState state, boolean showContactsFilter, boolean showReactionsSort) {
+            FiltersState localState = new FiltersState();
+            localState.set(state);
+            if (!showContactsFilter) {
+                localState.contactsOnly = false;
+            }
+            if (!showReactionsSort) {
+                localState.sortByReactions = true;
+            }
+            if (this.state.equals(localState)) {
+                return;
+            }
+            this.state.set(localState);
+            if (useLocalFilters) {
+                applyLocalFilter();
+                for (int i = 0; i < listeners.size(); i++) {
+                    listeners.get(i).onDataRecieved(this);
+                }
+            } else {
+                release();
+                views.clear();
+                initial = true;
+                loading = false;
+                hasNext = true;
+                offset = "";
+                loadNext();
+            }
+        }
+    }
+
+    private class HeaderView extends FrameLayout {
+
+        private final LinearLayout buttonContainer;
+        Paint selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        TextView allViewersView;
+        TextView contactsViewersView;
+
+        RectF animateFromRect = new RectF();
+        float animateFromAlpha1;
+        float animateFromAlpha2;
+
+        RectF rectF = new RectF();
+        float animationProgress = 1f;
+        int selected;
+        boolean lastSortType;
+        ReplaceableIconDrawable replacableDrawable;
+
+        public HeaderView(@NonNull Context context) {
+            super(context);
+            selectedPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+
+            LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+            allViewersView = new TextView(context);
+            allViewersView.setText(LocaleController.getString("AllViewers", R.string.AllViewers));
+            allViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            allViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            allViewersView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            allViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+
+            contactsViewersView = new TextView(context);
+            contactsViewersView.setText(LocaleController.getString("Contacts", R.string.Contacts));
+            contactsViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            contactsViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            contactsViewersView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            contactsViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+
+            linearLayout.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
+            linearLayout.addView(allViewersView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 13, 0, 0, 0));
+            linearLayout.addView(contactsViewersView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
+
+            buttonContainer = new LinearLayout(getContext());
+            buttonContainer.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
+            buttonContainer.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(26), Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+            buttonContainer.setOrientation(LinearLayout.HORIZONTAL);
+            replacableDrawable = new ReplaceableIconDrawable(getContext());
+            replacableDrawable.exactlyBounds = true;
+            lastSortType = true;
+            replacableDrawable.setIcon(R.drawable.menu_views_reactions3, false);
+            ImageView imageView = new ImageView(getContext());
+            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+            imageView.setImageDrawable(replacableDrawable);
+            buttonContainer.addView(imageView, LayoutHelper.createLinear(26, 26));
+
+            ImageView arrowImage = new ImageView(getContext());
+            arrowImage.setImageResource(R.drawable.arrow_more);
+            buttonContainer.addView(arrowImage, LayoutHelper.createLinear(16, 26));
+
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT, 13, 6, 13, 6));
+
+            allViewersView.setOnClickListener(v -> {
+                if (!state.contactsOnly) {
+                    return;
+                }
+                state.contactsOnly = false;
+                updateViewState(true);
+                reload();
+            });
+            contactsViewersView.setOnClickListener(v -> {
+                if (state.contactsOnly) {
+                    return;
+                }
+                state.contactsOnly = true;
+                updateViewState(true);
+                reload();
+            });
+            buttonContainer.setOnClickListener(v -> {
+                popupMenu = new CustomPopupMenu(getContext(), resourcesProvider, false) {
+                    @Override
+                    protected void onCreate(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout) {
+                        popupLayout.setBackgroundColor(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.18f));
+                        ActionBarMenuSubItem item = ActionBarMenuItem.addItem(popupLayout, state.sortByReactions ? R.drawable.menu_views_reactions2 : R.drawable.menu_views_reactions, LocaleController.getString("SortByReactions", R.string.SortByReactions), false, resourcesProvider);
+                        if (!state.sortByReactions) {
+                            item.setAlpha(0.5f);
+                        }
+                        item.setOnClickListener(v -> {
+                            if (!state.sortByReactions) {
+                                if (sharedFilterState != null) {
+                                    sharedFilterState.sortByReactions = state.sortByReactions = true;
+                                } else {
+                                    state.sortByReactions = true;
+                                }
+                                updateViewState(true);
+                                reload();
+                                onSharedStateChanged.accept(SelfStoryViewsPage.this);
+                            }
+                            if (popupMenu != null) {
+                                popupMenu.dismiss();
+                            }
+                        });
+
+                        item = ActionBarMenuItem.addItem(popupLayout, !state.sortByReactions ? R.drawable.menu_views_recent2 : R.drawable.menu_views_recent, LocaleController.getString("SortByTime", R.string.SortByTime), false, resourcesProvider);
+                        if (state.sortByReactions) {
+                            item.setAlpha(0.5f);
+                        }
+                        item.setOnClickListener(v -> {
+                            if (state.sortByReactions) {
+                                if (sharedFilterState != null) {
+                                    sharedFilterState.sortByReactions = state.sortByReactions = false;
+                                } else {
+                                    state.sortByReactions = false;
+                                }
+                                updateViewState(true);
+                                reload();
+                                onSharedStateChanged.accept(SelfStoryViewsPage.this);
+                            }
+                            if (popupMenu != null) {
+                                popupMenu.dismiss();
+                            }
+                        });
+                        ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(getContext(), resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
+                        gap.setTag(R.id.fit_width_tag, 1);
+                        popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                        ActionBarMenuItem.addText(popupLayout, LocaleController.getString("StoryViewsSortDescription", R.string.StoryViewsSortDescription), resourcesProvider);
+                    }
+
+                    @Override
+                    protected void onDismissed() {
+
+                    }
+                };
+                popupMenu.show(buttonContainer, 0, -buttonContainer.getMeasuredHeight() - AndroidUtilities.dp(8));
+            });
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            if (showContactsFilter) {
+                float allViewersAlpha, contactsAlpha;
+                if (selected == 0) {
+                    allViewersView.getHitRect(AndroidUtilities.rectTmp2);
+                    allViewersAlpha = 1f;
+                    contactsAlpha = 0.5f;
+                } else {
+                    contactsViewersView.getHitRect(AndroidUtilities.rectTmp2);
+                    allViewersAlpha = 0.5f;
+                    contactsAlpha = 1f;
+                }
+                rectF.set(AndroidUtilities.rectTmp2);
+                if (animationProgress != 1f) {
+                    allViewersAlpha = AndroidUtilities.lerp(animateFromAlpha1, allViewersAlpha, animationProgress);
+                    contactsAlpha = AndroidUtilities.lerp(animateFromAlpha2, contactsAlpha, animationProgress);
+                    AndroidUtilities.lerp(animateFromRect, rectF, animationProgress, rectF);
+                }
+                allViewersView.setAlpha(allViewersAlpha);
+                contactsViewersView.setAlpha(contactsAlpha);
+                float r = rectF.height() / 2f;
+                canvas.drawRoundRect(rectF, r, r, selectedPaint);
+            }
+            super.dispatchDraw(canvas);
+        }
+
+        ValueAnimator animator;
+
+        public void setState(boolean contactsOnly, boolean animate) {
+            int localSelected = contactsOnly ? 1 : 0;
+            if (localSelected == selected && animate) {
+                return;
+            }
+            if (animator != null) {
+                animator.removeAllListeners();
+                animator.cancel();
+            }
+            selected = localSelected;
+            if (!animate) {
+                animationProgress = 1f;
+                invalidate();
+                return;
+            } else {
+                animateFromRect.set(rectF);
+                animateFromAlpha1 = allViewersView.getAlpha();
+                animateFromAlpha2 = contactsViewersView.getAlpha();
+                animationProgress = 0;
+                invalidate();
+                animator = ValueAnimator.ofFloat(0, 1f);
+                animator.addUpdateListener(animation -> {
+                    animationProgress = (float) animator.getAnimatedValue();
+                    invalidate();
+                });
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        animator = null;
+                        animationProgress = 1f;
+                        invalidate();
+                    }
+                });
+                animator.setDuration(250);
+                animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                animator.start();
+            }
+        }
+    }
+
+    private void reload() {
+        if (currentModel != null) {
+            currentModel.removeListener(this);
+        }
+        currentModel = defaultModel;
+        if (currentModel == null) {
+            return;
+        }
+        currentModel.addListener(this);
+        currentModel.reloadIfNeed(state, showContactsFilter, showReactionsSort);
+        listAdapter.updateRows();
+        layoutManager.scrollToPositionWithOffset(0, (int) (getTopOffset() - recyclerListView.getPaddingTop()));
+    }
+
+    private void updateViewState(boolean animated) {
+        headerView.setState(state.contactsOnly, animated);
+        if (headerView.lastSortType != state.sortByReactions) {
+            headerView.lastSortType = state.sortByReactions;
+            headerView.replacableDrawable.setIcon(state.sortByReactions ? R.drawable.menu_views_reactions3 : R.drawable.menu_views_recent3, animated);
+        }
+    }
+
+    public static class FiltersState {
+        boolean sortByReactions = true;
+        boolean contactsOnly;
+        String searchQuery;
+
+        public boolean isDefault() {
+            return sortByReactions && !contactsOnly && TextUtils.isEmpty(searchQuery);
+        }
+
+        public void set(FiltersState state) {
+            sortByReactions = state.sortByReactions;
+            contactsOnly = state.contactsOnly;
+            searchQuery = state.searchQuery;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            FiltersState that = (FiltersState) o;
+            boolean textIsEquals = (TextUtils.isEmpty(searchQuery) && TextUtils.isEmpty(that.searchQuery)) || Objects.equals(searchQuery, that.searchQuery);
+            return sortByReactions == that.sortByReactions && contactsOnly == that.contactsOnly && textIsEquals;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(sortByReactions, contactsOnly, searchQuery);
+        }
+    }
+
+    private class RecyclerListViewInner extends RecyclerListView implements StoriesListPlaceProvider.ClippedView {
+        public RecyclerListViewInner(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+        }
+
+        @Override
+        public void updateClip(int[] clip) {
+            clip[0] = AndroidUtilities.dp(TOP_PADDING);
+            clip[1] = getMeasuredHeight();
         }
     }
 }
