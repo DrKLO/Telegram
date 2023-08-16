@@ -579,6 +579,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     args.putBoolean("createSecretChat", true);
                     args.putBoolean("allowBots", false);
                     args.putBoolean("allowSelf", false);
+                    args.putBoolean("createSecretChatSkipAnimation", true);
                     presentFragment(new ContactsActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 4) {

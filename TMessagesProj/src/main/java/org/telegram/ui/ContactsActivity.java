@@ -135,6 +135,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean destroyAfterSelect;
     private boolean returnAsResult;
     private boolean createSecretChat;
+    private boolean createSecretChatSkipAnimation;
     private boolean creatingChat;
     private boolean allowSelf = true;
     private boolean allowBots = true;
@@ -197,6 +198,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             destroyAfterSelect = arguments.getBoolean("destroyAfterSelect", false);
             returnAsResult = arguments.getBoolean("returnAsResult", false);
             createSecretChat = arguments.getBoolean("createSecretChat", false);
+            createSecretChatSkipAnimation = arguments.getBoolean("createSecretChatSkipAnimation", false);
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
             needForwardCount = arguments.getBoolean("needForwardCount", true);
@@ -1377,6 +1379,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
+        if (createSecretChatSkipAnimation) {
+            return null;
+        }
         ValueAnimator valueAnimator = isOpen ? ValueAnimator.ofFloat(1f, 0) : ValueAnimator.ofFloat(0, 1f);
         ViewGroup parent = (ViewGroup) fragmentView.getParent();
         BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1 ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) : null;
