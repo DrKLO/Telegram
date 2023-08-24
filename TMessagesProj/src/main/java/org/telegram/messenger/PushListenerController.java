@@ -77,12 +77,9 @@ public class PushListenerController {
                         req.events.add(event);
 
                         sendStat = false;
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (error != null) {
-                                SharedConfig.pushStatSent = true;
-                                SharedConfig.saveConfig();
-                            }
-                        }));
+                        SharedConfig.pushStatSent = true;
+                        SharedConfig.saveConfig();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                     }
                     AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(pushType, token));
                 }

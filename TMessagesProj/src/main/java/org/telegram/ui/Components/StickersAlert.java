@@ -634,19 +634,16 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             protected void onDraw(Canvas canvas) {
                 int y = scrollOffsetY - backgroundPaddingTop + AndroidUtilities.dp(6);
                 int top = scrollOffsetY - backgroundPaddingTop - AndroidUtilities.dp(13);
-                int height = getMeasuredHeight() + AndroidUtilities.dp(15) + backgroundPaddingTop;
                 int statusBarHeight = 0;
                 float radProgress = 1.0f;
                 if (Build.VERSION.SDK_INT >= 21) {
                     top += AndroidUtilities.statusBarHeight;
                     y += AndroidUtilities.statusBarHeight;
-                    height -= AndroidUtilities.statusBarHeight;
 
                     if (fullHeight) {
                         if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight * 2) {
                             int diff = Math.min(AndroidUtilities.statusBarHeight, AndroidUtilities.statusBarHeight * 2 - top - backgroundPaddingTop);
                             top -= diff;
-                            height += diff;
                             radProgress = 1.0f - Math.min(1.0f, (diff * 2) / (float) AndroidUtilities.statusBarHeight);
                         }
                         if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight) {
@@ -655,7 +652,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     }
                 }
 
-                shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
+                shadowDrawable.setBounds(0, top, getMeasuredWidth(), getMeasuredHeight());
                 shadowDrawable.draw(canvas);
 
                 if (radProgress != 1.0f) {
@@ -925,6 +922,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
         }
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
 
         updateFields();
         updateSendButton();
@@ -1142,9 +1140,10 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 premiumButtonView.setVisibility(View.INVISIBLE);
             }
 
+            final MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
             boolean notInstalled;
             if (stickerSet != null && stickerSet.set != null && stickerSet.set.emojis) {
-                ArrayList<TLRPC.TL_messages_stickerSet> sets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJIPACKS);
+                ArrayList<TLRPC.TL_messages_stickerSet> sets = mediaDataController.getStickerSets(MediaDataController.TYPE_EMOJIPACKS);
                 boolean has = false;
                 for (int i = 0; sets != null && i < sets.size(); ++i) {
                     if (sets.get(i) != null && sets.get(i).set != null && sets.get(i).set.id == stickerSet.set.id) {
@@ -1154,7 +1153,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 }
                 notInstalled = !has;
             } else {
-                notInstalled = stickerSet == null || stickerSet.set == null || !MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
+                notInstalled = stickerSet == null || stickerSet.set == null || !mediaDataController.isStickerPackInstalled(stickerSet.set.id);
             }
 
             if (customButtonDelegate != null) {
@@ -1163,7 +1162,22 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         dismiss();
                     }
                 }, customButtonDelegate.getCustomButtonText(), customButtonDelegate.getCustomButtonTextColorKey(), customButtonDelegate.getCustomButtonColorKey(), customButtonDelegate.getCustomButtonRippleColorKey());
-            } else if (notInstalled) {
+                return;
+            }
+            if (notInstalled) {
+                int type = MediaDataController.TYPE_IMAGE;
+                if (stickerSet != null && stickerSet.set != null && stickerSet.set.emojis) {
+                    type = MediaDataController.TYPE_EMOJIPACKS;
+                } else if (stickerSet != null && stickerSet.set != null && stickerSet.set.masks) {
+                    type = MediaDataController.TYPE_MASK;
+                }
+                if (!mediaDataController.areStickersLoaded(type)) {
+                    mediaDataController.checkStickers(type);
+                    setButton(null, "", -1, -1, -1);
+                    return;
+                }
+            }
+            if (notInstalled) {
                 String text;
                 if (stickerSet != null && stickerSet.set != null && stickerSet.set.masks) {
                     text = LocaleController.formatPluralString("AddManyMasksCount", stickerSet.documents == null ? 0 : stickerSet.documents.size());
@@ -1602,6 +1616,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
         }
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
     }
 
@@ -1674,6 +1689,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             if (uploadImportStickers.isEmpty()) {
                 updateFields();
             }
+        } else if (id == NotificationCenter.stickersDidLoad) {
+            updateFields();
         }
     }
 
@@ -1692,16 +1709,24 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         ViewGroup.MarginLayoutParams shadowParams = (ViewGroup.MarginLayoutParams) shadow[1].getLayoutParams();
         ViewGroup.MarginLayoutParams gridParams = (ViewGroup.MarginLayoutParams) gridView.getLayoutParams();
         ViewGroup.MarginLayoutParams emptyParams = (ViewGroup.MarginLayoutParams) emptyView.getLayoutParams();
-        if (backgroundColorKey >= 0 && backgroundSelectorColorKey >= 0) {
+        if (onClickListener == null) {
+            pickerBottomLayout.setAlpha(0f);
+        } else if (backgroundColorKey >= 0 && backgroundSelectorColorKey >= 0) {
             pickerBottomLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(6), getThemedColor(backgroundColorKey), getThemedColor(backgroundSelectorColorKey)));
             pickerBottomFrameLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
             params.leftMargin = params.topMargin = params.rightMargin = params.bottomMargin = dp(8);
             emptyParams.bottomMargin = gridParams.bottomMargin = shadowParams.bottomMargin = dp(64);
+            if (pickerBottomLayout.getAlpha() < 1f) {
+                pickerBottomLayout.animate().alpha(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(240).start();
+            }
         } else {
             pickerBottomLayout.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_dialogBackground), Theme.multAlpha(getThemedColor(Theme.key_text_RedBold), .1f)));
             pickerBottomFrameLayout.setBackgroundColor(Color.TRANSPARENT);
             params.leftMargin = params.topMargin = params.rightMargin = params.bottomMargin = 0;
             emptyParams.bottomMargin = gridParams.bottomMargin = shadowParams.bottomMargin = dp(48);
+            if (pickerBottomLayout.getAlpha() < 1f) {
+                pickerBottomLayout.animate().alpha(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(240).start();
+            }
         }
         containerView.requestLayout();
     }

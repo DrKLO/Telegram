@@ -62,6 +62,7 @@
     <string name="CancelLinkSuccess">The deletion process was cancelled for your account %1$s. You may close this window now.</string>
     <string name="OtherLoginCode">Your login code is **%1$s**. Enter it in the Telegram app where you are trying to log in.\n\nDo not give this code to anyone.</string>
     <string name="SmsAvailableIn">You can request an SMS in %1$d:%2$02d</string>
+    <string name="ResendSmsAvailableIn">You can request a new SMS in %1$d:%2$02d</string>
     <string name="RequestSmsButton">Get the code via SMS</string>
     <string name="CallAvailableIn">You can request a voice call in %1$d:%2$02d</string>
     <string name="RequestCallButton">Call me to dictate the code</string>
@@ -6685,6 +6686,10 @@
     <string name="StoryUploadError">Uploading story error</string>
     <string name="MyStory">My Story</string>
     <string name="UploadingStory">Uploading…</string>
+    <string name="FailedStory">Failed</string>
+    <string name="FailedToUploadStory">failed to upload</string>
+    <string name="StoryError">Couldn’t upload</string>
+    <string name="TryAgain">Try Again</string>
     <string name="Story">Story</string>
     <string name="MessageSent">Message sent.</string>
     <string name="RightNow">Just now</string>
@@ -7100,7 +7105,7 @@
     <string name="Likes_many">%d likes</string>
     <string name="Likes_other">%d likes</string>
     <string name="LimitReachedStoriesCount">You can post **%1$d** stories in **24** hours.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>
-    <string name="LimitReachedStoriesCountPremium">Sorry, you can’t post more than **%1$d** stories.</string>
+    <string name="LimitReachedStoriesCountPremium">Sorry, you can’t post more than **%1$d** stories in **24** hours.</string>
     <string name="LimitReachedStoriesWeekly">You can post **%1$d** stories in a week.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>
     <string name="LimitReachedStoriesWeeklyPremium">Sorry, you can’t post more than **%1$d** stories in a week.</string>
     <string name="LimitReachedStoriesMonthly">You can post **%1$d** stories in a month.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>

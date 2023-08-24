@@ -1708,10 +1708,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         }
                     }
 
-                    canvas.save();
-                    canvas.clipRect(backgroundPaddingLeft, actionBar.getY() + actionBar.getMeasuredHeight() - currentPanTranslationY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight());
-                    boolean result = super.drawChild(canvas, child, drawingTime);
-                    canvas.restore();
+                    boolean result;
+                    if (child != contactsLayout && child != audioLayout) {
+                        canvas.save();
+                        canvas.clipRect(backgroundPaddingLeft, actionBar.getY() + actionBar.getMeasuredHeight() - currentPanTranslationY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight());
+                        result = super.drawChild(canvas, child, drawingTime);
+                        canvas.restore();
+                    } else {
+                        result = super.drawChild(canvas, child, drawingTime);
+                    }
 
                     if (drawBackground) {
                         if (rad != 1.0f && actionBarType != 2) {
@@ -2113,11 +2118,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         buttonsRecyclerView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         containerView.addView(buttonsRecyclerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 84, Gravity.BOTTOM | Gravity.LEFT));
         buttonsRecyclerView.setOnItemClickListener((view, position) -> {
-            if (baseFragment != null && baseFragment.getParentActivity() == null) {
+            BaseFragment lastFragment = baseFragment;
+            if (lastFragment == null) {
+                lastFragment = LaunchActivity.getLastFragment();
+            }
+            if (lastFragment == null || lastFragment.getParentActivity() == null) {
                 return;
             }
             if (view instanceof AttachButton) {
-                final Activity activity = baseFragment.getParentActivity();
+                final Activity activity = lastFragment.getParentActivity();
                 int num = (Integer) view.getTag();
                 if (num == 1) {
                     if (!photosEnabled && !videosEnabled) {

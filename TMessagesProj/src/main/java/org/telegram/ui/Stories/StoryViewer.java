@@ -18,11 +18,11 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
-import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
+import android.text.Editable;
+import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -45,12 +45,11 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.util.Log;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileStreamLoadOperation;
@@ -62,6 +61,8 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.messenger.support.SparseLongArray;
+import org.telegram.messenger.video.VideoPlayerHolderBase;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -73,9 +74,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
@@ -106,6 +105,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     private static TLRPC.StoryItem lastStoryItem;
 
     Theme.ResourcesProvider resourcesProvider = new DarkThemeResourceProvider();
+    private boolean opening;
     ValueAnimator openCloseAnimator;
     ValueAnimator swipeToDissmissBackAnimator;
     ValueAnimator swipeToReplyBackAnimator;
@@ -220,6 +220,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     private Runnable onCloseListener;
     private boolean isLikesReactions;
     private float lastStoryContainerHeight;
+
+    LongSparseArray<CharSequence> replyDrafts = new LongSparseArray<>();
 
     public static boolean isShowingImage(MessageObject messageObject) {
         if (lastStoryItem == null || messageObject.type != MessageObject.TYPE_STORY && !messageObject.isWebpage() || runOpenAnimationAfterLayout) {
@@ -654,11 +656,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 transitionViewHolder.storyImage.setVisible(true, false);
                                 int r = canvas.getSaveCount();
                                 if (transitionViewHolder.drawClip != null) {
-                                    transitionViewHolder.drawClip.clip(canvas, rect3, 1f - progress2);
+                                    transitionViewHolder.drawClip.clip(canvas, rect3, 1f - progress2, opening);
                                 }
                                 transitionViewHolder.storyImage.draw(canvas);
                                 if (transitionViewHolder.drawAbove != null) {
-                                    transitionViewHolder.drawAbove.draw(canvas, rect3, 1f - progress2);
+                                    transitionViewHolder.drawAbove.draw(canvas, rect3, 1f - progress2, opening);
                                 }
                                 transitionViewHolder.storyImage.setVisible(wasVisible, false);
                                 transitionViewHolder.storyImage.setImageCoords(x, y, w, h);
@@ -686,23 +688,27 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 rect2.set(toX, toY, toX + headerView.backupImageView.getMeasuredWidth(), toY + headerView.backupImageView.getMeasuredHeight());
                             }
 
-                            AndroidUtilities.lerp(rect1, rect2, progressToOpen, AndroidUtilities.rectTmp);
+                            AndroidUtilities.lerp(rect1, rect2, progressToOpen, rect3);
 
+                            int r = canvas.getSaveCount();
+                            if (transitionViewHolder != null && transitionViewHolder.drawClip != null) {
+                                transitionViewHolder.drawClip.clip(canvas, rect3, 1f - progress2, opening);
+                            }
                             if (animateAvatar) {
                                 boolean crossfade = transitionViewHolder != null && transitionViewHolder.crossfadeToAvatarImage != null;
                                 if (!crossfade || progressToOpen != 0) {
-                                    headerView.backupImageView.getImageReceiver().setImageCoords(AndroidUtilities.rectTmp);
-                                    headerView.backupImageView.getImageReceiver().setRoundRadius((int) (AndroidUtilities.rectTmp.width() / 2f));
+                                    headerView.backupImageView.getImageReceiver().setImageCoords(rect3);
+                                    headerView.backupImageView.getImageReceiver().setRoundRadius((int) (rect3.width() / 2f));
                                     headerView.backupImageView.getImageReceiver().setVisible(true, false);
                                     final float alpha = crossfade ? progressToOpen : 1f;
                                     float thisAlpha = alpha;
                                     if (transitionViewHolder != null && transitionViewHolder.alpha < 1 && transitionViewHolder.bgPaint != null) {
                                         transitionViewHolder.bgPaint.setAlpha((int) (0xFF * (1f - progress2)));
-                                        canvas.drawCircle(AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY(), AndroidUtilities.rectTmp.width() / 2f, transitionViewHolder.bgPaint);
+                                        canvas.drawCircle(rect3.centerX(), rect3.centerY(), rect3.width() / 2f, transitionViewHolder.bgPaint);
                                         thisAlpha = AndroidUtilities.lerp(transitionViewHolder.alpha, thisAlpha, progress2);
                                     }
                                     headerView.backupImageView.getImageReceiver().setAlpha(thisAlpha);
-                                    headerView.drawUploadingProgress(canvas, AndroidUtilities.rectTmp, !runOpenAnimationAfterLayout, progressToOpen);
+                                    headerView.drawUploadingProgress(canvas, rect3, !runOpenAnimationAfterLayout, progressToOpen);
                                     headerView.backupImageView.getImageReceiver().draw(canvas);
                                     headerView.backupImageView.getImageReceiver().setAlpha(alpha);
                                     headerView.backupImageView.getImageReceiver().setVisible(false, false);
@@ -716,10 +722,10 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                     );
                                     int oldRadius = transitionViewHolder.crossfadeToAvatarImage.getRoundRadius()[0];
                                     boolean isVisible = transitionViewHolder.crossfadeToAvatarImage.getVisible();
-                                    transitionViewHolder.crossfadeToAvatarImage.setImageCoords(AndroidUtilities.rectTmp);
-                                    transitionViewHolder.crossfadeToAvatarImage.setRoundRadius((int) (AndroidUtilities.rectTmp.width() / 2f));
+                                    transitionViewHolder.crossfadeToAvatarImage.setImageCoords(rect3);
+                                    transitionViewHolder.crossfadeToAvatarImage.setRoundRadius((int) (rect3.width() / 2f));
                                     transitionViewHolder.crossfadeToAvatarImage.setVisible(true, false);
-                                    canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (255 * (1f - progressToOpen)), Canvas.ALL_SAVE_FLAG);
+                                    canvas.saveLayerAlpha(rect3, (int) (255 * (1f - progressToOpen)), Canvas.ALL_SAVE_FLAG);
                                     transitionViewHolder.crossfadeToAvatarImage.draw(canvas);
                                     canvas.restore();
                                     transitionViewHolder.crossfadeToAvatarImage.setVisible(isVisible, false);
@@ -728,6 +734,10 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                    // transitionViewHolder.crossfadeToAvatarImage.setVisible(false, false);
                                 }
                             }
+                            if (transitionViewHolder != null && transitionViewHolder.drawAbove != null) {
+                                transitionViewHolder.drawAbove.draw(canvas, rect3, 1f - progress2, opening);
+                            }
+                            canvas.restoreToCount(r);
                         }
 
 
@@ -1272,7 +1282,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 }
                             }
                             if (playerHolder == null) {
-                                playerHolder = new VideoPlayerHolder();
+                                playerHolder = new VideoPlayerHolder(surfaceView, textureView);
                                 playerHolder.document = document;
                             }
 //                            if (surfaceView != null) {
@@ -1412,7 +1422,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     for (int i = 0; i < uries.size(); i++) {
                         Uri uri = uries.get(i);
-                        VideoPlayerHolder playerHolder = new VideoPlayerHolder();
+                        VideoPlayerHolder playerHolder = new VideoPlayerHolder(surfaceView, textureView);
                         playerHolder.uri = uri;
                         playerHolder.document = documents.get(i);
                         FileStreamLoadOperation.setPriorityForDocument(playerHolder.document, FileLoader.PRIORITY_LOW);
@@ -1476,6 +1486,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 
         windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         if (ATTACH_TO_FRAGMENT) {
+            AndroidUtilities.removeFromParent(windowView);
             windowView.setFitsSystemWindows(true);
             fragment.getLayoutContainer().addView(windowView);
             AndroidUtilities.requestAdjustResize(fragment.getParentActivity(), fragment.getClassGuid());
@@ -1707,7 +1718,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     private void lockOrientation(boolean lock) {
         Activity activity = AndroidUtilities.findActivity(fragment.getContext());
         if (activity != null) {
-            activity.setRequestedOrientation(lock ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            try {
+                activity.setRequestedOrientation(lock ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            } catch (Exception ignore) {}
             if (lock) {
                 activity.getWindow().addFlags(FLAG_KEEP_SCREEN_ON);
             } else {
@@ -2001,6 +2014,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 peerStoriesView.headerView.radialProgress.copyParams(transitionViewHolder.radialProgressUpload);
             }
         }
+        opening = true;
         openCloseAnimator = ValueAnimator.ofFloat(0, 1f);
         openCloseAnimator.addUpdateListener(animation -> {
             progressToOpen = (float) animation.getAnimatedValue();
@@ -2095,6 +2109,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         updateTransitionParams();
         locker.lock();
         fromDismissOffset = swipeToDismissOffset;
+        opening = false;
         openCloseAnimator = ValueAnimator.ofFloat(progressToOpen, 0);
         openCloseAnimator.addUpdateListener(animation -> {
             progressToOpen = (float) animation.getAnimatedValue();
@@ -2117,6 +2132,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             layoutAndFindView();
         }
         AndroidUtilities.runOnUIThread(() -> {
+            if (openCloseAnimator == null) {
+                return;
+            }
             containerView.enableHwAcceleration();
             openCloseAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -2473,6 +2491,33 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    public void saveDraft(long dialogId, TLRPC.StoryItem storyItem, CharSequence text) {
+        if (dialogId == 0 || storyItem == null) {
+            return;
+        }
+        Log.d("kek", "saveDraft" + dialogId + "_" + storyItem.id + " " + text);
+        replyDrafts.put(draftHash(dialogId, storyItem), text);
+    }
+
+    public CharSequence getDraft(long dialogId, TLRPC.StoryItem storyItem) {
+        if (dialogId == 0 || storyItem == null) {
+            return "";
+        }
+        Log.d("kek", "getDraft " + dialogId + "_" + storyItem.id + " " + replyDrafts.get(draftHash(dialogId, storyItem), ""));
+        return replyDrafts.get(draftHash(dialogId, storyItem), "");
+    }
+
+    public void clearDraft(long dialogId, TLRPC.StoryItem storyItem) {
+        if (dialogId == 0 || storyItem == null) {
+            return;
+        }
+        replyDrafts.remove(draftHash(dialogId, storyItem));
+    }
+
+    private long draftHash(long dialogId, TLRPC.StoryItem oldStoryItem) {
+        return dialogId + (dialogId >> 16) + ((long) oldStoryItem.id << 16);
+    }
+
     public interface PlaceProvider {
         boolean findView(long dialogId, int messageId, int storyId, int type, TransitionViewHolder holder);
 
@@ -2483,11 +2528,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public interface HolderDrawAbove {
-        void draw(Canvas canvas, RectF bounds, float alpha);
+        void draw(Canvas canvas, RectF bounds, float alpha, boolean opening);
     }
 
     public interface HolderClip {
-        void clip(Canvas canvas, RectF bounds, float alpha);
+        void clip(Canvas canvas, RectF bounds, float alpha, boolean opening);
     }
 
     public static class TransitionViewHolder {
@@ -2527,356 +2572,55 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 
     static int queuePointer = 0;
 
-    public class VideoPlayerHolder {
+    public class VideoPlayerHolder extends VideoPlayerHolderBase {
 
-        public boolean paused;
-        public TLRPC.Document document;
-        VideoPlayer videoPlayer;
-        Runnable initRunnable;
-        volatile boolean released;
-        boolean firstFrameRendered;
-
-        float progress;
-        int lastState;
-        public long currentPosition;
-        long playerDuration;
-        boolean audioDisabled;
-        boolean stubAvailable;
         boolean logBuffering;
 
-        final DispatchQueue dispatchQueue = Utilities.getOrCreatePlayerQueue();
-        Uri uri;
-
-        Runnable progressRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (videoPlayer != null) {
-                    if (lastState == ExoPlayer.STATE_ENDED) {
-                        progress = 1f;
-                    } else {
-                        currentPosition = videoPlayer.getCurrentPosition();
-                        playerDuration = videoPlayer.getDuration();
-                    }
-                    if (lastState == ExoPlayer.STATE_READY) {
-                        dispatchQueue.cancelRunnable(progressRunnable);
-                        dispatchQueue.postRunnable(progressRunnable, 16);
-                    }
-                }
-            }
-        };
-
-        long startTime;
-
-        void preparePlayer(Uri uri, boolean audioDisabled) {
-            this.audioDisabled = audioDisabled;
-            paused = true;
-            if (initRunnable != null) {
-                dispatchQueue.cancelRunnable(initRunnable);
-            }
-            dispatchQueue.postRunnable(initRunnable = () -> {
-                if (released) {
-                    return;
-                }
-                ensurePlayerCreated(audioDisabled);
-                videoPlayer.preparePlayer(uri, "other", FileLoader.PRIORITY_LOW);
-                videoPlayer.setPlayWhenReady(false);
-                videoPlayer.setWorkerQueue(dispatchQueue);
-            });
-        }
-
-        void start(boolean paused, Uri uri, long t, boolean audioDisabled) {
-            startTime = System.currentTimeMillis();
-            this.audioDisabled = audioDisabled;
-            this.paused = paused;
-            dispatchQueue.postRunnable(initRunnable = () -> {
-                if (released) {
-                    return;
-                }
-                if (videoPlayer == null) {
-                    ensurePlayerCreated(audioDisabled);
-                    videoPlayer.preparePlayer(uri, "other");
-                    videoPlayer.setWorkerQueue(dispatchQueue);
-                    if (!paused) {
-                        if (USE_SURFACE_VIEW) {
-                            videoPlayer.setSurfaceView(surfaceView);
-                        } else {
-                            videoPlayer.setTextureView(textureView);
-                        }
-                        videoPlayer.setPlayWhenReady(true);
-                    }
-                } else {
-                    if (!paused) {
-                        if (USE_SURFACE_VIEW) {
-                            videoPlayer.setSurfaceView(surfaceView);
-                        } else {
-                            videoPlayer.setTextureView(textureView);
-                        }
-                        videoPlayer.play();
-                    }
-                }
-                if (t > 0) {
-                    videoPlayer.seekTo(t);
-                }
-
-                videoPlayer.setVolume(isInSilentMode ? 0 : 1f);
-                AndroidUtilities.runOnUIThread(() -> initRunnable = null);
-            });
-        }
-
-        private void ensurePlayerCreated(boolean audioDisabled) {
-            if (videoPlayer != null) {
-                videoPlayer.releasePlayer(true);
-            }
-            videoPlayer = new VideoPlayer(false, audioDisabled);
-            videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
-                @Override
-                public void onStateChanged(boolean playWhenReady, int playbackState) {
-                    lastState = playbackState;
-                    if (playbackState == ExoPlayer.STATE_READY || playbackState == ExoPlayer.STATE_BUFFERING) {
-                        dispatchQueue.cancelRunnable(progressRunnable);
-                        dispatchQueue.postRunnable(progressRunnable);
-                        if (firstFrameRendered && playbackState == ExoPlayer.STATE_BUFFERING) {
-                            logBuffering = true;
-                            AndroidUtilities.runOnUIThread(() -> {
-                                final PeerStoriesView storiesView = getCurrentPeerView();
-                                if (storiesView != null && storiesView.currentStory.storyItem != null) {
-                                    FileLog.d("StoryViewer displayed story buffering dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
-                                }
-                            });
-                        }
-                        if (logBuffering && playbackState == ExoPlayer.STATE_READY) {
-                            logBuffering = false;
-                            AndroidUtilities.runOnUIThread(() -> {
-                                final PeerStoriesView storiesView = getCurrentPeerView();
-                                if (storiesView != null && storiesView.currentStory.storyItem != null) {
-                                    FileLog.d("StoryViewer displayed story playing dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
-                                }
-                            });
-                        }
-
-
-                    } else if (playbackState == ExoPlayer.STATE_ENDED) {
-                        if (isCaptionPartVisible) {
-                            progress = 0;
-                            videoPlayer.seekTo(0);
-                            videoPlayer.play();
-                        } else {
-                            progress = 1f;
-                        }
-                    }
-                }
-
-                @Override
-                public void onError(VideoPlayer player, Exception e) {
-                    FileLog.e(e);
-                }
-
-                @Override
-                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-
-                }
-
-                @Override
-                public void onRenderedFirstFrame() {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (released || currentPlayerScope == null) {
-                            return;
-                        }
-                        firstFrameRendered = currentPlayerScope.firstFrameRendered = true;
-                        currentPlayerScope.invalidate();
-
-                        if (onReadyListener != null) {
-                            onReadyListener.run();
-                            onReadyListener = null;
-                        }
-                    }, 16);
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-            });
-            videoPlayer.setIsStory();
-        }
-
-        private Runnable onReadyListener;
-        public void setOnReadyListener(Runnable listener) {
-            onReadyListener = listener;
-        }
-
-        boolean release(Runnable whenReleased) {
-            TLRPC.Document document = this.document;
-            if (document != null) {
-                int priority = FileStreamLoadOperation.getStreamPrioriy(document);
-                if (priority != FileLoader.PRIORITY_LOW) {
-                    FileStreamLoadOperation.setPriorityForDocument(document, FileLoader.PRIORITY_LOW);
-                    FileLoader.getInstance(currentAccount).changePriority(FileLoader.PRIORITY_LOW, document, null, null, null, null, null);
-                   // FileLoader.getInstance(currentAccount).cancelLoadFile(document);
-                }
-              //  FileLoader.getInstance(currentAccount).changePriority(FileLoader.PRIORITY_LOW, document, null, null, null, null, null);
-            }
-            released = true;
-            dispatchQueue.cancelRunnable(initRunnable);
-            initRunnable = null;
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer != null) {
-                    try {
-                        videoPlayer.setTextureView(null);
-                        videoPlayer.setSurfaceView(null);
-                    } catch (Exception e) {
-
-                    }
-                    videoPlayer.releasePlayer(false);
-                }
-                if (document != null) {
-                    FileLoader.getInstance(currentAccount).cancelLoadFile(document);
-                    //  FileLoader.getInstance(currentAccount).changePriority(FileLoader.PRIORITY_LOW, document, null, null, null, null, null);
-                }
-                if (whenReleased != null) {
-                    AndroidUtilities.runOnUIThread(whenReleased);
-                }
-                videoPlayer = null;
-            });
-            if (playerStubBitmap != null) {
-                AndroidUtilities.recycleBitmap(playerStubBitmap);
-                playerStubBitmap = null;
-            }
-            return true;
-        }
-
-        public void pause() {
-            if (released) {
-                return;
-            }
-            if (paused) {
-                return;
-            }
-            paused = true;
-            if (USE_SURFACE_VIEW && surfaceView != null && firstFrameRendered && surfaceView.getHolder().getSurface().isValid()) {
-                stubAvailable = true;
-                if (playerStubBitmap == null) {
-                    playerStubBitmap = Bitmap.createBitmap(720, 1280, Bitmap.Config.ARGB_8888);
-                    playerStubPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    AndroidUtilities.getBitmapFromSurface(surfaceView, playerStubBitmap);
-                }
-            }
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer != null) {
-                    videoPlayer.pause();
-                }
-            });
-        }
-
-        public void play() {
-            if (released) {
-                return;
-            }
-            if (!paused) {
-                return;
-            }
-            paused = false;
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer != null) {
-                    if (USE_SURFACE_VIEW) {
-                        videoPlayer.setSurfaceView(surfaceView);
-                    } else {
-                        videoPlayer.setTextureView(textureView);
-                    }
-                    videoPlayer.setPlayWhenReady(true);
-                }
-            });
-        }
-
-        public void setAudioEnabled(boolean enabled, boolean prepared) {
-            boolean disabled = !enabled;
-            if (audioDisabled == disabled) {
-                return;
-            }
-            audioDisabled = disabled;
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer == null) {
-                    return;
-                }
-                boolean playing = videoPlayer.isPlaying();
-                if (enabled && !videoPlayer.createdWithAudioTrack()) {
-                    //release and create new with audio track
-                    videoPlayer.pause();
-                    long position = videoPlayer.getCurrentPosition();
-                    videoPlayer.releasePlayer(false);
-                    videoPlayer = null;
-                    ensurePlayerCreated(audioDisabled);
-                    videoPlayer.preparePlayer(uri, "other");
-                    videoPlayer.setWorkerQueue(dispatchQueue);
-                    if (!prepared) {
-                        if (USE_SURFACE_VIEW) {
-                            videoPlayer.setSurfaceView(surfaceView);
-                        } else  {
-                            videoPlayer.setTextureView(textureView);
-                        }
-                    }
-                //    videoPlayer.setTextureView(textureView);
-                    videoPlayer.seekTo(position + 50);
-                    if (playing && !prepared) {
-                        videoPlayer.setPlayWhenReady(true);
-                        videoPlayer.play();
-                    } else {
-                        videoPlayer.setPlayWhenReady(false);
-                        videoPlayer.pause();
-                    }
-                } else {
-                    videoPlayer.setVolume(enabled ? 1f : 0);
-                }
-            });
-        }
-
-        public float getPlaybackProgress(long totalDuration) {
-            if (lastState == ExoPlayer.STATE_ENDED) {
-                progress = 1f;
+        public VideoPlayerHolder(SurfaceView surfaceView, TextureView textureView) {
+            if (USE_SURFACE_VIEW) {
+                with(surfaceView);
             } else {
-                float localProgress;
-                if (totalDuration != 0) {
-                    localProgress = currentPosition / (float) totalDuration;
-                } else {
-                    localProgress = currentPosition / (float) playerDuration;
-                }
-                if (localProgress < progress) {
-                    return progress;
-                }
-                progress = localProgress;
+                with(textureView);
             }
-            return progress;
         }
 
-        public void loopBack() {
-            progress = 0;
-            lastState = ExoPlayer.STATE_IDLE;
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer != null) {
-                    videoPlayer.seekTo(0);
+
+        @Override
+        public boolean needRepeat() {
+            return isCaptionPartVisible;
+        }
+
+        @Override
+        public void onRenderedFirstFrame() {
+            if (currentPlayerScope == null) {
+                return;
+            }
+            firstFrameRendered = currentPlayerScope.firstFrameRendered = true;
+            currentPlayerScope.invalidate();
+        }
+
+        @Override
+        public void onStateChanged(boolean playWhenReady, int playbackState) {
+            if (playbackState == ExoPlayer.STATE_READY || playbackState == ExoPlayer.STATE_BUFFERING) {
+                if (firstFrameRendered && playbackState == ExoPlayer.STATE_BUFFERING) {
+                    logBuffering = true;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        final PeerStoriesView storiesView = getCurrentPeerView();
+                        if (storiesView != null && storiesView.currentStory.storyItem != null) {
+                            FileLog.d("StoryViewer displayed story buffering dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
+                        }
+                    });
                 }
-                progress = 0;
-                currentPosition = 0;
-            });
-        }
-
-        public void setVolume(float v) {
-            dispatchQueue.postRunnable(() -> {
-                if (videoPlayer != null) {
-                    videoPlayer.setVolume(v);
+                if (logBuffering && playbackState == ExoPlayer.STATE_READY) {
+                    logBuffering = false;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        final PeerStoriesView storiesView = getCurrentPeerView();
+                        if (storiesView != null && storiesView.currentStory.storyItem != null) {
+                            FileLog.d("StoryViewer displayed story playing dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
+                        }
+                    });
                 }
-            });
-        }
-
-        public boolean isBuffering() {
-            return !released && lastState == ExoPlayer.STATE_BUFFERING;
+            }
         }
     }
 }

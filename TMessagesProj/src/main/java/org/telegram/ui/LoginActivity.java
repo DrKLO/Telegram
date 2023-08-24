@@ -1624,6 +1624,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         ContactsController.getInstance(currentAccount).checkAppAccount();
         MessagesController.getInstance(currentAccount).checkPromoInfo(true);
         ConnectionsManager.getInstance(currentAccount).updateDcSettings();
+        MessagesController.getInstance(currentAccount).loadAppConfig();
 
         if (res.future_auth_token != null) {
             AuthTokensHelper.saveLogInToken(res);
@@ -4063,7 +4064,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 } else if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_MISSED_CALL) {
                     createTimer();
                 }
-            } else if (currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL)) {
+            } else if (currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL)) {
                 timeText.setText(LocaleController.formatString("CallAvailableIn", R.string.CallAvailableIn, 2, 0));
                 setProblemTextVisible(time < 1000);
                 timeText.setVisibility(time < 1000 ? GONE : VISIBLE);
@@ -4139,6 +4140,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             codeTime = 15000;
+            if (time > codeTime) {
+                codeTime = time;
+            }
             codeTimer = new Timer();
             lastCodeTime = System.currentTimeMillis();
             codeTimer.schedule(new TimerTask() {
@@ -4201,6 +4205,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             int seconds = time / 1000 - minutes * 60;
                             if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL || nextType == AUTH_TYPE_MISSED_CALL) {
                                 timeText.setText(LocaleController.formatString("CallAvailableIn", R.string.CallAvailableIn, minutes, seconds));
+                            } else if (currentType == AUTH_TYPE_SMS && nextType == AUTH_TYPE_SMS) {
+                                timeText.setText(LocaleController.formatString("ResendSmsAvailableIn", R.string.ResendSmsAvailableIn, minutes, seconds));
                             } else if (nextType == AUTH_TYPE_SMS) {
                                 timeText.setText(LocaleController.formatString("SmsAvailableIn", R.string.SmsAvailableIn, minutes, seconds));
                             }
@@ -4386,7 +4392,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         tryHideProgress(false);
                         nextPressed = false;
                         if (error == null) {
-                            animateSuccess(() -> new AlertDialog.Builder(getParentActivity())
+                            Activity activity = getParentActivity();
+                            if (activity == null) {
+                                return;
+                            }
+                            animateSuccess(() -> new AlertDialog.Builder(activity)
                                     .setTitle(LocaleController.getString(R.string.CancelLinkSuccessTitle))
                                     .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
                                     .setPositiveButton(LocaleController.getString(R.string.Close), null)

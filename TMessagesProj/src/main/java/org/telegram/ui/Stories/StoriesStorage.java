@@ -281,11 +281,11 @@ public class StoriesStorage {
             }
             if (!isNext) {
                 try {
-                    SQLiteCursor cursor = database.queryFinalized("SELECT dialog_id FROM stories");
+                    SQLiteCursor cursor = database.queryFinalized("SELECT DISTINCT dialog_id FROM stories");
 
                     ArrayList<Long> dialogsToDelete = new ArrayList<>();
                     while (cursor.next()) {
-                        long dialogId = cursor.longValue(1);
+                        long dialogId = cursor.longValue(0);
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                         if (user == null) {
                             user = MessagesStorage.getInstance(currentAccount).getUser(dialogId);

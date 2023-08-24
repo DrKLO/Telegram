@@ -413,7 +413,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         } else {
                             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(id);
                             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(id);
-                            if (chatFull != null && chatFull.participants != null && !chatFull.participants.participants.isEmpty()) {
+                            if (chatFull != null && chatFull.participants != null && chatFull.participants.participants != null && !chatFull.participants.participants.isEmpty() && chatFull.participants.participants.size() >= (chatFull.participants_count - 1)) {
                                 selectChat(id, chatFull.participants);
                             } else {
                                 if (progressDialog != null) {
@@ -427,7 +427,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                 storage.getStorageQueue().postRunnable(() -> {
                                     boolean isChannel = ChatObject.isChannel(chat);
                                     TLRPC.ChatFull info = storage.loadChatInfoInQueue(id, isChannel, true, true, 0);
-                                    if (info == null || info.participants == null) {
+                                    if (info == null || info.participants == null || info.participants.participants != null && info.participants.participants.size() < (info.participants_count - 1)) {
                                         AndroidUtilities.runOnUIThread(() -> {
                                             if (isChannel) {
                                                 MessagesController.getInstance(currentAccount).loadChannelParticipants(id, participants -> {
@@ -1599,7 +1599,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     ItemInner item = items.get(position);
                     UserCell cell = (UserCell) child;
                     cell.setChecked(item.checked || item.halfChecked, animated);
-                    cell.setCheckboxAlpha(item.halfChecked && !item.checked ? .5f : 1f, animated);
+                    if (item.chat != null) {
+                        cell.setCheckboxAlpha(getParticipantsCount(item.chat) > 200 ? .3f : 1f, animated);
+                    } else {
+                        cell.setCheckboxAlpha(item.halfChecked && !item.checked ? .5f : 1f, animated);
+                    }
                 }
             }
 
@@ -1929,6 +1933,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 smallChatsParticipantsCount.putAll(participantsCountByChat);
             });
         });
+
+        MessagesController.getInstance(currentAccount).getStoriesController().loadBlocklist(false);
     }
 
     private void init(Context context) {
@@ -2499,7 +2505,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
             } else if (includeSmallChats && DialogObject.isChatDialog(dialog.id)) {
                 TLRPC.Chat chat = messagesController.getChat(-dialog.id);
-                if (chat == null || ChatObject.isForum(chat) || ChatObject.isChannelAndNotMegaGroup(chat)) {
+                if (chat == null || ChatObject.isChannelAndNotMegaGroup(chat)) {
                     continue;
                 }
 //                int participants_count = getParticipantsCount(chat);
@@ -2583,7 +2589,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             avatarDrawable.setRoundRadius(AndroidUtilities.dp(40));
 
             imageView = new BackupImageView(context);
-            imageView.setRoundRadius(AndroidUtilities.dp(40));
+            imageView.setRoundRadius(AndroidUtilities.dp(20));
             addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 53, 0, 53, 0));
 
             titleTextView = new SimpleTextView(context);
@@ -2651,6 +2657,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public void setUser(TLRPC.User user) {
             avatarDrawable.setInfo(user);
+            imageView.setRoundRadius(dp(20));
             imageView.setForUserOrChat(user, avatarDrawable);
 
             CharSequence text = UserObject.getUserName(user);
@@ -2667,6 +2674,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public void setChat(TLRPC.Chat chat, int participants_count) {
             avatarDrawable.setInfo(chat);
+            imageView.setRoundRadius(dp(ChatObject.isForum(chat) ? 12 : 20));
             imageView.setForUserOrChat(chat, avatarDrawable);
 
             CharSequence text = chat.title;
@@ -2778,6 +2786,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             checkBox.setVisibility(View.GONE);
             radioButton.setVisibility(View.VISIBLE);
             imageView.setImageDrawable(avatarDrawable);
+            imageView.setRoundRadius(dp(20));
         }
 
         private void setSubtitle(CharSequence text) {

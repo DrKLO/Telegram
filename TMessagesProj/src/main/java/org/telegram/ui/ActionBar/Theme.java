@@ -1067,7 +1067,7 @@ public class Theme {
                 for (int a = 0, N = accents.size(); a < N; a++) {
                     ThemeAccent accent = accents.get(a);
                     File wallpaper = accent.getPathToWallpaper();
-                    if (wallpaper != null && wallpaper.exists()) {
+                    if (wallpaper != null && wallpaper.length() > 0) {
                         accents.remove(a);
                         a--;
                         N--;
@@ -9580,7 +9580,9 @@ public class Theme {
             int gradientToColor2 = currentColors.get(key_chat_wallpaper_gradient_to2);
             int gradientToColor1 = currentColors.get(key_chat_wallpaper_gradient_to1);
 
+            boolean bitmapCreated = false;
             if (wallpaperFile != null && wallpaperFile.exists()) {
+                bitmapCreated = true;
                 try {
                     if (backgroundColor != 0 && gradientToColor1 != 0 && gradientToColor2 != 0) {
                         MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
@@ -9591,6 +9593,9 @@ public class Theme {
                             Bitmap toRecycle = patternBitmap;
                             patternBitmap = patternBitmap.copy(Bitmap.Config.ALPHA_8, false);
                             toRecycle.recycle();
+                        }
+                        if (patternBitmap == null) {
+                            bitmapCreated = false;
                         }
                         motionBackgroundDrawable.setPatternBitmap(intensity, patternBitmap);
                         motionBackgroundDrawable.setPatternColorFilter(motionBackgroundDrawable.getPatternColor());
@@ -9604,6 +9609,9 @@ public class Theme {
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
+            }
+            if (bitmapCreated) {
+
             } else if (backgroundColor != 0) {
                 int rotation = currentColors.get(key_chat_wallpaper_gradient_rotation, -1);
                 if (rotation == -1) {
@@ -9620,7 +9628,9 @@ public class Theme {
                             FileOutputStream stream = null;
                             try {
                                 stream = new FileOutputStream(wallpaperFile);
-                                patternBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                                Bitmap bitmap = patternBitmap.copy(Bitmap.Config.ARGB_8888, true);
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                                bitmap.recycle();
                                 stream.close();
                             } catch (Exception e) {
                                 FileLog.e(e);

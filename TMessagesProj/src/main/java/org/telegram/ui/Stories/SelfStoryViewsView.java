@@ -312,7 +312,8 @@ public class SelfStoryViewsView extends FrameLayout {
         final PeerStoriesView currentView = storyViewer.getCurrentPeerView();
         if (oldProgressToOpen == 1f && progressToOpen != 1f) {
             if (storyViewer.storiesList != null) {
-                MessageObject object = storyViewer.storiesList.messageObjects.get(selfStoriesPreviewView.getClosestPosition());
+                int p = Utilities.clamp(selfStoriesPreviewView.getClosestPosition(), storyViewer.storiesList.messageObjects.size() - 1, 0);
+                MessageObject object = storyViewer.storiesList.messageObjects.get(p);
                 long date = StoriesController.StoriesList.day(object);
                 if (storyViewer.transitionViewHolder.storyImage != null) {
                     storyViewer.transitionViewHolder.storyImage.setVisible(true, true);

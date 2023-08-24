@@ -280,7 +280,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
     }
 
     public boolean showingBitmap() {
-        return imageView.getBitmap() != null;
+        return imageView.hasNotThumb();
     }
 
     public ImageReceiver getImageView() {

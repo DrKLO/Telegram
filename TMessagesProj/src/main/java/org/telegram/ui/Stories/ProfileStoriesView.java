@@ -840,7 +840,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
             if (a != null && b != null) {
                 final RectF aRect = new RectF(a.cachedRect), bRect = new RectF(b.cachedRect);
                 final StoryCircle circle = a, nextCircle = b;
-                holder.drawClip = (canvas, bounds, alpha) -> {
+                holder.drawClip = (canvas, bounds, alpha, opening) -> {
                     aRect.set(circle.cachedRect);
                     bRect.set(nextCircle.cachedRect);
                     circle.cachedRect.set(bounds);

@@ -3253,7 +3253,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 isRoundVideo || currentMessageObject.isAnimatedSticker() || (currentMessageObject.isDocument() && !currentMessageObject.isGif()) || currentMessageObject.needDrawBluredPreview()) {
             return false;
         }
-        return pinchToZoomHelper.checkPinchToZoom(ev, this, photoImage, currentMessageObject);
+        return pinchToZoomHelper.checkPinchToZoom(ev, this, photoImage, null, currentMessageObject);
     }
 
     private boolean checkTextSelection(MotionEvent event) {
@@ -6786,7 +6786,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         photoImage.setImage(null, null, thumb, null, messageObject, 0);
                     }
                     if (!reactionsLayoutInBubble.isSmall) {
-                        reactionsLayoutInBubble.measure(maxWidth, currentMessageObject.isOutOwner() && (currentMessageObject.isAnimatedEmoji() || currentMessageObject.isAnyKindOfSticker()) ? Gravity.RIGHT : Gravity.LEFT);
+                        reactionsLayoutInBubble.measure(maxWidth + AndroidUtilities.dp(36), currentMessageObject.isOutOwner() && (currentMessageObject.isAnimatedEmoji() || currentMessageObject.isAnyKindOfSticker()) ? Gravity.RIGHT : Gravity.LEFT);
                         reactionsLayoutInBubble.drawServiceShaderBackground = 1f;
                         reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + AndroidUtilities.dp(8);
                         additionHeight += reactionsLayoutInBubble.totalHeight;

@@ -2249,7 +2249,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean hasNotThumb() {
-        return currentImageDrawable != null || currentMediaDrawable != null || staticThumbDrawable instanceof VectorAvatarThumbDrawable;
+        return currentImageDrawable != null || currentMediaDrawable != null || staticThumbDrawable instanceof VectorAvatarThumbDrawable || (staticThumbDrawable != null && currentImageKey == null && currentMediaKey == null);
     }
 
     public boolean hasStaticThumb() {

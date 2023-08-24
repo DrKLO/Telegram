@@ -121,6 +121,8 @@ import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlobDrawable;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
@@ -152,6 +154,7 @@ import org.telegram.ui.Components.voip.GroupCallStatusIcon;
 import org.telegram.ui.Components.voip.PrivateVideoPreviewDialog;
 import org.telegram.ui.Components.voip.RTMPStreamPipOverlay;
 import org.telegram.ui.Components.voip.VoIPToggleButton;
+import org.webrtc.voiceengine.WebRtcAudioTrack;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8703,5 +8706,27 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     public boolean isRtmpStream() {
         return call != null && call.call.rtmp_stream;
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
+        if (parentActivity == null) {
+            return super.dispatchKeyEvent(event);
+        }
+        if (event.getAction() == KeyEvent.ACTION_DOWN && (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            if (VoIPService.getSharedInstance() != null) {
+                if (Build.VERSION.SDK_INT >= 32) {
+                    boolean oldValue = WebRtcAudioTrack.isSpeakerMuted();
+                    AudioManager am = (AudioManager) parentActivity.getSystemService(AUDIO_SERVICE);
+                    int minVolume = am.getStreamMinVolume(AudioManager.STREAM_VOICE_CALL);
+                    boolean mute = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL) == minVolume && event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN;
+                    WebRtcAudioTrack.setSpeakerMute(mute);
+                    if (oldValue != WebRtcAudioTrack.isSpeakerMuted()) {
+                        getUndoView().showWithAction(0, mute ? UndoView.ACTION_VOIP_SOUND_MUTED : UndoView.ACTION_VOIP_SOUND_UNMUTED, null);
+                    }
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event);
     }
 }

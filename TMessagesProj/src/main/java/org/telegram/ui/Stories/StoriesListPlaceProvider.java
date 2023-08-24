@@ -1,7 +1,11 @@
 package org.telegram.ui.Stories;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Region;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -9,6 +13,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -102,12 +107,23 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.clipParent = storiesCell;
                     holder.clipTop = holder.clipBottom = 0;
                     holder.alpha = 1;
+                    if (cell.isFail) {
+                        final Path path = new Path();
+                        holder.drawClip = (canvas, bounds, alpha, opening) -> {
+                            path.rewind();
+                            final float t = opening ? 1f - (float) Math.pow(1f - alpha, 2) : (float) Math.pow(alpha, 2);
+                            path.addCircle(bounds.right + dp(7) - dp(14) * t, bounds.bottom + dp(7) - dp(14) * t, dp(11), Path.Direction.CW);
+                            canvas.clipPath(path, Region.Op.DIFFERENCE);
+                        };
+                    } else {
+                        holder.drawClip = null;
+                    }
                  //   updateClip(holder);
                     return true;
                 }
             } else if (child instanceof DialogCell) {
                 DialogCell cell = (DialogCell) child;
-                if (cell.getDialogId() == dialogId || (isHiddenArchive && cell.isDialogFolder())) {
+                if ((cell.getDialogId() == dialogId && !isHiddenArchive) || (isHiddenArchive && cell.isDialogFolder())) {
                     holder.view = child;
                     holder.params = cell.storyParams;
                     holder.avatarImage = cell.avatarImage;
@@ -162,7 +178,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     }
                     holder.view = child;
                     holder.storyImage = cell.imageReceiver;
-                    holder.drawAbove = (canvas, bounds, alpha) -> {
+                    holder.drawAbove = (canvas, bounds, alpha, opening) -> {
                         cell.drawDuration(canvas, bounds, alpha);
                         if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
                             canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);

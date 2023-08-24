@@ -74,9 +74,18 @@ public class FileLoadOperation {
     public boolean checkPrefixPreloadFinished() {
         if (preloadPrefixSize > 0 && downloadedBytes > preloadPrefixSize) {
             long minStart = Long.MAX_VALUE;
-            for (int b = 0; b < notLoadedBytesRanges.size(); b++) {
-                Range range = notLoadedBytesRanges.get(b);
-                minStart = Math.min(minStart, range.start);
+            ArrayList<Range> array = notLoadedBytesRanges;
+            if (array == null) {
+                return true;
+            }
+            try {
+                for (int b = 0; b < array.size(); b++) {
+                    Range range = array.get(b);
+                    minStart = Math.min(minStart, range.start);
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+                return true;
             }
             if (minStart > preloadPrefixSize) {
                 return true;

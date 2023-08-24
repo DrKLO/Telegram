@@ -735,12 +735,28 @@ public class SharedConfig {
         if (updateVersionString == null) {
             updateVersionString = BuildVars.BUILD_VERSION_STRING;
         }
-        if (update.version == null || updateVersionString.compareTo(update.version) >= 0) {
+        if (update.version == null || versionBiggerOrEqual(updateVersionString, update.version)) {
             return false;
         }
         pendingAppUpdate = update;
         pendingAppUpdateBuildVersion = versionCode;
         saveConfig();
+        return true;
+    }
+
+    // returns a >= b
+    private static boolean versionBiggerOrEqual(String a, String b) {
+        String[] partsA = a.split("\\.");
+        String[] partsB = b.split("\\.");
+        for (int i = 0; i < Math.min(partsA.length, partsB.length); ++i) {
+            int numA = Integer.parseInt(partsA[i]);
+            int numB = Integer.parseInt(partsB[i]);
+            if (numA < numB) {
+                return false;
+            } else if (numA > numB) {
+                return true;
+            }
+        }
         return true;
     }
 

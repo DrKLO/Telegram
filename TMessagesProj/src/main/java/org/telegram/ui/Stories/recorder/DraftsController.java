@@ -1,13 +1,10 @@
 package org.telegram.ui.Stories.recorder;
 
-import android.net.wifi.WifiManager;
 import android.text.SpannableString;
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -15,27 +12,22 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class DraftsController {
@@ -46,27 +38,22 @@ public class DraftsController {
 
     public DraftsController(int currentAccount) {
         this.currentAccount = currentAccount;
+        loadFailed();
     }
 
-    private boolean loaded, loading;
     public final ArrayList<StoryEntry> drafts = new ArrayList<>();
 
-    public void load() {
-        if (loaded || loading) {
-            return;
-        }
-
-        loading = true;
+    private void loadInternal(final boolean failed, Utilities.Callback<ArrayList<StoryDraft>> callback) {
         final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
         storage.getStorageQueue().postRunnable(() -> {
             SQLiteCursor cursor = null;
-            final ArrayList<StoryDraft> savedDrafts = new ArrayList<>();
+            final ArrayList<StoryDraft> loadedDrafts = new ArrayList<>();
             try {
                 SQLiteDatabase database = storage.getDatabase();
                 if (database == null) {
                     return;
                 }
-                cursor = database.queryFinalized("SELECT id, data FROM story_drafts ORDER BY date DESC");
+                cursor = database.queryFinalized("SELECT id, data, type FROM story_drafts WHERE type = " + (failed ? "2" : "0 OR type = 1") + " ORDER BY date DESC");
                 while (cursor.next()) {
                     long id = cursor.longValue(0);
                     NativeByteBuffer buffer = cursor.byteBufferValue(1);
@@ -74,7 +61,7 @@ public class DraftsController {
                         try {
                             StoryDraft draft = new StoryDraft(buffer, true);
                             draft.id = id;
-                            savedDrafts.add(draft);
+                            loadedDrafts.add(draft);
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
@@ -89,36 +76,83 @@ public class DraftsController {
                 }
             }
 
-            AndroidUtilities.runOnUIThread(() -> {
-                final long now = System.currentTimeMillis();
-                ArrayList<Long> ids = new ArrayList<>();
-                ArrayList<StoryEntry> deleteEntries = new ArrayList<>();
-                for (int i = 0; i < savedDrafts.size(); ++i) {
-                    StoryEntry entry = savedDrafts.get(i).toEntry();
-                    if (entry == null) {
-                        continue;
-                    }
-                    if (
-                        entry.file == null ||
-                        !entry.file.exists() ||
-                        (entry.isEdit ?
-                            (now > entry.editExpireDate) :
-                            (now - entry.draftDate > EXPIRATION_PERIOD)
-                        )
-                    ) {
-                        deleteEntries.add(entry);
-                    } else {
-                        drafts.add(entry);
-                        ids.add(entry.draftId);
-                    }
+            AndroidUtilities.runOnUIThread(() -> callback.run(loadedDrafts));
+        });
+    }
+
+    private boolean loaded, loading;
+    public void load() {
+        if (loaded || loading) {
+            return;
+        }
+
+        loading = true;
+        loadInternal(false, loadedDrafts -> {
+            final long now = System.currentTimeMillis();
+            ArrayList<Long> ids = new ArrayList<>();
+            ArrayList<StoryEntry> deleteEntries = new ArrayList<>();
+            for (int i = 0; i < loadedDrafts.size(); ++i) {
+                StoryEntry entry = loadedDrafts.get(i).toEntry();
+                if (entry == null) {
+                    continue;
                 }
-                delete(deleteEntries);
+                if (
+                    entry.file == null ||
+                    !entry.file.exists() ||
+                    (entry.isEdit ?
+                        (now > entry.editExpireDate) :
+                        (now - entry.draftDate > EXPIRATION_PERIOD)
+                    )
+                ) {
+                    deleteEntries.add(entry);
+                } else {
+                    drafts.add(entry);
+                    ids.add(entry.draftId);
+                }
+            }
+            delete(deleteEntries);
 
-                loading = false;
-                loaded = true;
+            loading = false;
+            loaded = true;
 
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesDraftsUpdated);
-            });
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesDraftsUpdated);
+        });
+    }
+
+    private boolean loadedFailed, loadingFailed;
+    private void loadFailed() {
+        if (loadedFailed || loadingFailed) {
+            return;
+        }
+
+        loadingFailed = true;
+        loadInternal(true, loadedDrafts -> {
+            final long now = System.currentTimeMillis();
+            ArrayList<Long> ids = new ArrayList<>();
+            ArrayList<StoryEntry> deleteEntries = new ArrayList<>();
+            ArrayList<StoryEntry> appendEntries = new ArrayList<>();
+            for (int i = 0; i < loadedDrafts.size(); ++i) {
+                StoryEntry entry = loadedDrafts.get(i).toEntry();
+                if (entry == null) {
+                    continue;
+                }
+                if (
+                    entry.file == null ||
+                    !entry.file.exists() ||
+                    now - entry.draftDate > EXPIRATION_PERIOD
+                ) {
+                    deleteEntries.add(entry);
+                } else {
+                    appendEntries.add(entry);
+                    ids.add(entry.draftId);
+                }
+            }
+            delete(deleteEntries);
+
+            loadingFailed = false;
+            loadedFailed = true;
+
+            MessagesController.getInstance(currentAccount).getStoriesController().putUploadingDrafts(appendEntries);
         });
     }
 
@@ -128,7 +162,9 @@ public class DraftsController {
         }
         prepare(entry);
         drafts.remove(entry);
-        drafts.add(0, entry);
+        if (!entry.isError) {
+            drafts.add(0, entry);
+        }
         final StoryDraft draft = new StoryDraft(entry);
         final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
         storage.getStorageQueue().postRunnable(() -> {
@@ -139,13 +175,20 @@ public class DraftsController {
                     return;
                 }
 
-                state = database.executeFast("REPLACE INTO story_drafts VALUES (?, ?, ?)");
+                state = database.executeFast("REPLACE INTO story_drafts VALUES (?, ?, ?, ?)");
                 state.requery();
                 NativeByteBuffer data = new NativeByteBuffer(draft.getObjectSize());
                 draft.toStream(data);
                 state.bindLong(1, draft.id);
                 state.bindLong(2, draft.date);
                 state.bindByteBuffer(3, data);
+                int type = 0;
+                if (draft.isEdit) {
+                    type = 1;
+                } else if (draft.isError) {
+                    type = 2;
+                }
+                state.bindInteger(4, type);
                 state.step();
                 data.reuse();
                 state.dispose();
@@ -166,6 +209,8 @@ public class DraftsController {
             return;
         }
 
+        if (entry.draftId == 0)
+            entry.draftId = Utilities.random.nextLong();
         entry.draftDate = System.currentTimeMillis();
         entry.isDraft = true;
 
@@ -211,8 +256,7 @@ public class DraftsController {
             return;
         }
         prepare(entry);
-        final long id = Utilities.random.nextLong();
-        entry.draftId = id;
+        entry.draftId = Utilities.random.nextLong();
         final StoryDraft draft = new StoryDraft(entry);
         drafts.remove(entry);
         drafts.add(0, entry);
@@ -221,7 +265,7 @@ public class DraftsController {
 
     private void append(StoryDraft draft) {
         final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
-        FileLog.d("StoryDraft append " + draft.id + " (edit=" + draft.edit + (draft.edit ? ", storyId=" + draft.editStoryId + ", " + (draft.editDocumentId != 0 ? "documentId=" + draft.editDocumentId : "photoId=" + draft.editPhotoId) + ", expireDate=" + draft.editExpireDate : "") + ", now="+System.currentTimeMillis()+")");
+        FileLog.d("StoryDraft append " + draft.id + " (edit=" + draft.isEdit + (draft.isEdit ? ", storyId=" + draft.editStoryId + ", " + (draft.editDocumentId != 0 ? "documentId=" + draft.editDocumentId : "photoId=" + draft.editPhotoId) + ", expireDate=" + draft.editExpireDate : "") + ", now="+System.currentTimeMillis()+")");
         storage.getStorageQueue().postRunnable(() -> {
             SQLitePreparedStatement state = null;
             try {
@@ -230,13 +274,20 @@ public class DraftsController {
                     return;
                 }
 
-                state = database.executeFast("INSERT INTO story_drafts VALUES (?, ?, ?)");
+                state = database.executeFast("INSERT INTO story_drafts VALUES (?, ?, ?, ?)");
                 state.requery();
                 NativeByteBuffer data = new NativeByteBuffer(draft.getObjectSize());
                 draft.toStream(data);
                 state.bindLong(1, draft.id);
                 state.bindLong(2, draft.date);
                 state.bindByteBuffer(3, data);
+                int type = 0;
+                if (draft.isEdit) {
+                    type = 1;
+                } else if (draft.isError) {
+                    type = 2;
+                }
+                state.bindInteger(4, type);
                 state.step();
                 data.reuse();
                 state.dispose();
@@ -294,7 +345,7 @@ public class DraftsController {
         final long id = Utilities.random.nextLong();
         entry.draftId = id;
         final StoryDraft draft = new StoryDraft(entry);
-        draft.edit = entry.isEdit = true;
+        draft.isEdit = entry.isEdit = true;
         draft.editStoryPeerId = entry.editStoryPeerId = dialogId;
         draft.editStoryId = entry.editStoryId = storyItem.id;
         draft.editExpireDate = entry.editExpireDate = storyItem.expire_date * 1000L;
@@ -393,6 +444,7 @@ public class DraftsController {
         public long id;
         public long date;
         public String thumb;
+        public String fullThumb;
 
         public boolean isVideo;
         public String file;
@@ -426,17 +478,21 @@ public class DraftsController {
 
         private final ArrayList<StoryEntry.Part> parts = new ArrayList<>();
 
-        public boolean edit;
+        public boolean isEdit;
         public int editStoryId;
         public long editStoryPeerId;
         public long editDocumentId;
         public long editPhotoId;
         public long editExpireDate;
 
+        public boolean isError;
+        public TLRPC.TL_error error;
+
         public StoryDraft(@NonNull StoryEntry entry) {
             this.id = entry.draftId;
             this.date = entry.draftDate;
             this.thumb = entry.draftThumbFile == null ? "" : entry.draftThumbFile.toString();
+            this.fullThumb = entry.uploadThumbFile == null ? "" : entry.uploadThumbFile.toString();
             this.isVideo = entry.isVideo;
             this.file = entry.file == null ? "" : entry.file.toString();
             this.fileDeletable = entry.fileDeletable;
@@ -467,6 +523,8 @@ public class DraftsController {
             this.period = entry.period;
             this.parts.clear();
             this.parts.addAll(entry.parts);
+            this.isError = entry.isError;
+            this.error = entry.error;
         }
 
         public StoryEntry toEntry() {
@@ -474,8 +532,11 @@ public class DraftsController {
             entry.draftId = id;
             entry.isDraft = true;
             entry.draftDate = date;
-            if (thumb != null) {
+            if (!TextUtils.isEmpty(thumb)) {
                 entry.draftThumbFile = new File(thumb);
+            }
+            if (!TextUtils.isEmpty(fullThumb)) {
+                entry.uploadThumbFile = new File(fullThumb);
             }
             entry.isVideo = isVideo;
             if (file != null) {
@@ -530,12 +591,14 @@ public class DraftsController {
             for (int i = 0; i < parts.size(); ++i) {
                 entry.partsMaxId = Math.max(entry.partsMaxId, parts.get(i).id);
             }
-            entry.isEdit = edit;
+            entry.isEdit = isEdit;
             entry.editStoryId = editStoryId;
             entry.editStoryPeerId = editStoryPeerId;
             entry.editExpireDate = editExpireDate;
             entry.editPhotoId = editPhotoId;
             entry.editDocumentId = editDocumentId;
+            entry.isError = isError;
+            entry.error = error;
             return entry;
         }
 
@@ -606,13 +669,20 @@ public class DraftsController {
             for (int i = 0; i < parts.size(); ++i) {
                 parts.get(i).serializeToStream(stream);
             }
-            stream.writeBool(edit);
+            stream.writeBool(isEdit);
             stream.writeInt32(editStoryId);
             stream.writeInt64(editStoryPeerId);
             stream.writeInt64(editExpireDate);
             stream.writeInt64(editPhotoId);
             stream.writeInt64(editDocumentId);
             stream.writeString(paintEntitiesFilePath);
+            stream.writeBool(isError);
+            if (error == null) {
+                stream.writeInt32(TLRPC.TL_null.constructor);
+            } else {
+                error.serializeToStream(stream);
+            }
+            stream.writeString(fullThumb);
         }
 
         public int getObjectSize() {
@@ -745,7 +815,7 @@ public class DraftsController {
                 }
             }
             if (stream.remaining() > 0) {
-                edit = stream.readBool(exception);
+                isEdit = stream.readBool(exception);
                 editStoryId = stream.readInt32(exception);
                 editStoryPeerId = stream.readInt64(exception);
                 editExpireDate = stream.readInt64(exception);
@@ -757,6 +827,16 @@ public class DraftsController {
                 if (paintEntitiesFilePath != null && paintEntitiesFilePath.length() == 0) {
                     paintEntitiesFilePath = null;
                 }
+            }
+            if (stream.remaining() > 0) {
+                isError = stream.readBool(exception);
+                magic = stream.readInt32(exception);
+                if (magic == TLRPC.TL_null.constructor) {
+                    error = null;
+                } else {
+                    error = TLRPC.TL_error.TLdeserialize(stream, magic, exception);
+                }
+                fullThumb = stream.readString(exception);
             }
         }
     }

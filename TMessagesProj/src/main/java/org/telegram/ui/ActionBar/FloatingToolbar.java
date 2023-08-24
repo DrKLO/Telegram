@@ -65,6 +65,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -989,8 +990,12 @@ public final class FloatingToolbar {
                 });
             }
             final int size = menuItems.size();
+            final boolean premiumLocked = MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked;
             for (int i = 0; i < size; i++) {
-                overflowPanelAdapter.add(menuItems.get(i));
+                final MenuItem menuItem = menuItems.get(i);
+                if (!premiumOptions.contains(menuItem.getItemId()) || !premiumLocked) {
+                    overflowPanelAdapter.add(menuItem);
+                }
             }
             mOverflowPanel.setAdapter(overflowPanelAdapter);
             if (mOpenOverflowUpwards) {

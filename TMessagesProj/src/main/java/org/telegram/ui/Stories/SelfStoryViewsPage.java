@@ -642,7 +642,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 updateViewsVisibility();
             }
             listAdapter.updateRows();
-            recyclerItemsEnterAnimator.showItemsAnimated(oldCount);
+            recyclerItemsEnterAnimator.showItemsAnimated(oldCount - 1);
             checkLoadMore();
      //   });
     }
@@ -742,8 +742,15 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_STORY, currentAccount, getContext(), resourcesProvider) {
                         @Override
                         public void openStory(long dialogId, Runnable onDone) {
-                            LaunchActivity.getLastFragment().getOrCreateOverlayStoryViewer().doOnAnimationReady(onDone);
-                            LaunchActivity.getLastFragment().getOrCreateOverlayStoryViewer().open(getContext(), dialogId, StoriesListPlaceProvider.of(recyclerListView));
+                            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                            if (lastFragment == null) {
+                                return;
+                            }
+                            if (lastFragment.getOrCreateOverlayStoryViewer().isShowing) {
+                                return;
+                            }
+                            lastFragment.getOrCreateOverlayStoryViewer().doOnAnimationReady(onDone);
+                            lastFragment.getOrCreateOverlayStoryViewer().open(getContext(), dialogId, StoriesListPlaceProvider.of(recyclerListView));
                         }
                     };
                     break;
@@ -830,14 +837,12 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                         emptyView.title.setVisibility(View.GONE);
                         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                         spannableStringBuilder.append(AndroidUtilities.replaceTags(LocaleController.getString("ExpiredViewsStub", R.string.ExpiredViewsStub)));
-                        spannableStringBuilder.append("\n\n");
-                        spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("ExpiredViewsStubPremiumDescription", R.string.ExpiredViewsStubPremiumDescription), () -> {
-                            showPremiumAlert();
-                        }));
+                        if (!MessagesController.getInstance(currentAccount).premiumLocked) {
+                            spannableStringBuilder.append("\n\n");
+                            spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("ExpiredViewsStubPremiumDescription", R.string.ExpiredViewsStubPremiumDescription), SelfStoryViewsPage.this::showPremiumAlert));
+                            emptyView.createButtonLayout(LocaleController.getString("LearnMore", R.string.LearnMore), SelfStoryViewsPage.this::showPremiumAlert);
+                        }
                         emptyView.subtitle.setText(spannableStringBuilder);
-                        emptyView.createButtonLayout(LocaleController.getString("LearnMore", R.string.LearnMore), () -> {
-                            showPremiumAlert();
-                        });
                     } else {
                         emptyView.title.setVisibility(View.VISIBLE);
                         emptyView.title.setText(LocaleController.getString("NoViews", R.string.NoViews));

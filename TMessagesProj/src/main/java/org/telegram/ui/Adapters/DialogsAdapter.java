@@ -492,15 +492,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 } else {
                     tabsTranslation = 0;
                 }
-                if (hasHiddenArchive && position == 0 && recyclerListView.getPaddingTop() - view.getTop() - view.getMeasuredHeight() + tabsTranslation < 0) {
-                    position = 1;
-                    offset = tabsTranslation;
+                if (recyclerListView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING) {
+                    if (hasHiddenArchive && position == 0 && recyclerListView.getPaddingTop() - view.getTop() - view.getMeasuredHeight() + tabsTranslation < 0) {
+                        position = 1;
+                        offset = tabsTranslation;
+                    }
+                    layoutManager.scrollToPositionWithOffset(position, (int) offset);
                 }
-//                if (firstUpdate && hasStories) {
-//                    offset -= AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP);
-//                }
-//                firstUpdate = false;
-                layoutManager.scrollToPositionWithOffset(position, (int) offset);
             }
         }
         DiffUtil.calculateDiff(new DiffUtil.Callback() {
@@ -1110,7 +1108,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             }
         }
 
-        parentFragment.getOrCreateStoryViewer().open(mContext, null, peerIds, 0, null, null, StoriesListPlaceProvider.of(recyclerListView), false);
+        parentFragment.getOrCreateStoryViewer().open(mContext, null, peerIds, 0, null, null, StoriesListPlaceProvider.of(recyclerListView, true), false);
     }
 
     public void setIsTransitionSupport() {

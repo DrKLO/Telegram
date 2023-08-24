@@ -666,7 +666,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
             description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 24, 24));
+            addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 0, 24, 24));
 
             updatePremiumButtonText();
         }

@@ -454,7 +454,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         if (!onlyPhotos) {
             ArrayList<StoryEntry> draftArray = MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts;
             for (StoryEntry draft : draftArray) {
-                if (!draft.isEdit) {
+                if (!draft.isEdit && !draft.isError) {
                     drafts.add(draft);
                 }
             }
@@ -1406,7 +1406,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         if (!onlyPhotos) {
             ArrayList<StoryEntry> draftArray = MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().drafts;
             for (StoryEntry draft : draftArray) {
-                if (!draft.isEdit) {
+                if (!draft.isEdit && !draft.isError) {
                     drafts.add(draft);
                 }
             }

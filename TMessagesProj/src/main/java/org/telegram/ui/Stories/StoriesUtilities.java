@@ -59,6 +59,7 @@ public class StoriesUtilities {
     public static final int STATE_PROGRESS = 3;
     public static GradientTools[] storiesGradientTools = new GradientTools[2];
     public static GradientTools closeFriendsGradientTools;
+    public static GradientTools errorGradientTools;
     public static Paint grayPaint;
 
     public static Paint closeFriendsLastColor;
@@ -207,9 +208,9 @@ public class StoriesUtilities {
             float inset = params.isStoryCell ? -AndroidUtilities.dp(4) : 0;//AndroidUtilities.lerp(AndroidUtilities.dp(2), 0, imageScale);
             if (animateOut) {
                 inset += AndroidUtilities.dp(5) * progressToSate;
-                gradientTools.paint.setAlpha((int) (255 * (1f - progressToSate)));
+                gradientTools.paint.setAlpha((int) (0xFF * params.alpha * (1f - progressToSate)));
             } else {
-                gradientTools.paint.setAlpha((int) (255 * progressToSate));
+                gradientTools.paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += AndroidUtilities.dp(5) * (1f - progressToSate);
             }
             rectTmp.set(params.originalAvatarRect);
@@ -231,9 +232,9 @@ public class StoriesUtilities {
             Paint closeFriendsPaint = null;
             if (params.drawSegments) {
                 unreadPaint = getActiveCirclePaint(avatarImage, params.isStoryCell);
-                unreadPaint.setAlpha(255);
+                unreadPaint.setAlpha((int) (0xFF * params.alpha));
                 closeFriendsPaint = getCloseFriendsPaint(avatarImage);
-                closeFriendsPaint.setAlpha(255);
+                closeFriendsPaint.setAlpha((int) (0xFF * params.alpha));
                 checkGrayPaint(params.resourcesProvider);
             }
             float inset;
@@ -244,9 +245,9 @@ public class StoriesUtilities {
             }
             if (animateOut) {
                 inset += AndroidUtilities.dp(5) * progressToSate;
-                paint.setAlpha((int) (255 * (1f - progressToSate)));
+                paint.setAlpha((int) (0xFF * params.alpha * (1f - progressToSate)));
             } else {
-                paint.setAlpha((int) (255 * progressToSate));
+                paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += AndroidUtilities.dp(5) * (1f - progressToSate);
             }
             rectTmp.set(params.originalAvatarRect);
@@ -277,9 +278,9 @@ public class StoriesUtilities {
             Paint closeFriendsPaint = null;
             if (params.drawSegments) {
                 unreadPaint = getActiveCirclePaint(avatarImage, params.isStoryCell);
-                unreadPaint.setAlpha(255);
+                unreadPaint.setAlpha((int) (0xFF * params.alpha));
                 closeFriendsPaint = getCloseFriendsPaint(avatarImage);
-                closeFriendsPaint.setAlpha(255);
+                closeFriendsPaint.setAlpha((int) (0xFF * params.alpha));
                 checkGrayPaint(params.resourcesProvider);
             }
             float inset;
@@ -291,9 +292,9 @@ public class StoriesUtilities {
             boolean animateOut = params.prevState == STATE_PROGRESS && params.progressToSate != 1f;
             if (animateOut) {
                 inset += AndroidUtilities.dp(7) * progressToSate;
-                paint.setAlpha((int) (255 * (1f - progressToSate)));
+                paint.setAlpha((int) (0xFF * params.alpha * (1f - progressToSate)));
             } else {
-                paint.setAlpha((int) (255 * progressToSate));
+                paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += AndroidUtilities.dp(5) * (1f - progressToSate);
             }
             rectTmp.set(params.originalAvatarRect);
@@ -587,6 +588,12 @@ public class StoriesUtilities {
         if (storiesGradientTools[1] != null) {
             storiesGradientTools[1].setColors(Theme.getColor(Theme.key_stories_circle1), Theme.getColor(Theme.key_stories_circle2));
         }
+        if (errorGradientTools != null) {
+            int orange = Theme.getColor(Theme.key_color_orange);
+            final int red = Theme.getColor(Theme.key_text_RedBold);
+            orange = ColorUtils.blendARGB(orange, red, .25f);
+            errorGradientTools.setColors(orange, red);
+        }
     }
 
     public static Paint getCloseFriendsPaint(ImageReceiver avatarImage) {
@@ -595,12 +602,29 @@ public class StoriesUtilities {
             closeFriendsGradientTools.isDiagonal = true;
             closeFriendsGradientTools.isRotate = true;
             closeFriendsGradientTools.setColors(Theme.getColor(Theme.key_stories_circle_closeFriends1), Theme.getColor(Theme.key_stories_circle_closeFriends2));
-            closeFriendsGradientTools.paint.setStrokeWidth(AndroidUtilities.dp(2.3f));
+            closeFriendsGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
             closeFriendsGradientTools.paint.setStyle(Paint.Style.STROKE);
             closeFriendsGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
         }
         closeFriendsGradientTools.setBounds(avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageX2(), avatarImage.getImageY2());
         return closeFriendsGradientTools.paint;
+    }
+
+    public static Paint getErrorPaint(ImageReceiver avatarImage) {
+        if (errorGradientTools == null) {
+            errorGradientTools = new GradientTools();
+            errorGradientTools.isDiagonal = true;
+            errorGradientTools.isRotate = true;
+            int orange = Theme.getColor(Theme.key_color_orange);
+            final int red = Theme.getColor(Theme.key_text_RedBold);
+            orange = ColorUtils.blendARGB(orange, red, .25f);
+            errorGradientTools.setColors(orange, red);
+            errorGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            errorGradientTools.paint.setStyle(Paint.Style.STROKE);
+            errorGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
+        }
+        errorGradientTools.setBounds(avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageX2(), avatarImage.getImageY2());
+        return errorGradientTools.paint;
     }
 
     public static void setStoryMiniImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem) {
@@ -960,6 +984,7 @@ public class StoriesUtilities {
         public long crossfadeToDialog;
         public float crossfadeToDialogProgress;
         public float progressToProgressSegments;
+        public float alpha = 1f;
 
         private long dialogId;
         public int currentState;

@@ -7074,6 +7074,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         int keyCode = event.getKeyCode();
         if (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN) {
             BaseFragment baseFragment = getLastFragment();
+            if (baseFragment != null && baseFragment.overlayStoryViewer != null && baseFragment.overlayStoryViewer.isShown()) {
+                baseFragment.overlayStoryViewer.dispatchKeyEvent(event);
+                return true;
+            }
             if (baseFragment != null && baseFragment.storyViewer != null && baseFragment.storyViewer.isShown()) {
                 baseFragment.storyViewer.dispatchKeyEvent(event);
                 return true;
@@ -7406,14 +7410,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public void requestCustomNavigationBar() {
         if (customNavigationBar == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             customNavigationBar = drawerLayoutContainer.createNavigationBar();
-            if (customNavigationBar != null) {
-                FrameLayout decorView = (FrameLayout) getWindow().getDecorView();
-                decorView.addView(customNavigationBar);
-                if (customNavigationBar.getLayoutParams().height != AndroidUtilities.navigationBarHeight || ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin != customNavigationBar.getHeight()) {
-                    customNavigationBar.getLayoutParams().height = AndroidUtilities.navigationBarHeight;
-                    ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin = drawerLayoutContainer.getMeasuredHeight();
-                    customNavigationBar.requestLayout();
-                }
+            FrameLayout decorView = (FrameLayout) getWindow().getDecorView();
+            decorView.addView(customNavigationBar);
+        }
+        if (customNavigationBar != null) {
+            if (customNavigationBar.getLayoutParams().height != AndroidUtilities.navigationBarHeight || ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin != customNavigationBar.getHeight()) {
+                customNavigationBar.getLayoutParams().height = AndroidUtilities.navigationBarHeight;
+                ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin = drawerLayoutContainer.getMeasuredHeight();
+                customNavigationBar.requestLayout();
             }
         }
     }

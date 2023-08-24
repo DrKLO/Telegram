@@ -1309,11 +1309,11 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 request->startTime = 0;
                                 request->startTimeMillis = 0;
                                 request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 2);
-                            } else if (error->error_code == 420) {
+                            } else if (error->error_code == 420 && (request->requestFlags & RequestFlagIgnoreFloodWait) == 0 && error->error_message.find("STORY_SEND_FLOOD") == std::string::npos) {
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
                                 static std::string slowmodeWait = "SLOWMODE_WAIT_";
-                                discardResponse = (request->requestFlags & RequestFlagIgnoreFloodWait) == 0;
+                                discardResponse = true;
                                 if (error->error_message.find(floodWait) != std::string::npos) {
                                     std::string num = error->error_message.substr(floodWait.size(), error->error_message.size() - floodWait.size());
                                     waitTime = atoi(num.c_str());
@@ -3060,7 +3060,9 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround, bool 
         if (!workaround && updatingDcSettingsAgain && updatingDcSettingsAgainDcNum == dcNum) {
             updatingDcSettingsAgain = false;
             for (auto & datacenter : datacenters) {
-                datacenter.second->resetInitVersion();
+                if (datacenter.first == dcNum) {
+                    datacenter.second->resetInitVersion();
+                }
             }
             updateDcSettings(updatingDcSettingsAgainDcNum, false, false);
             return;

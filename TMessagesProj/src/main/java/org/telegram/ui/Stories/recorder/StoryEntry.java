@@ -65,6 +65,9 @@ public class StoryEntry extends IStoryPart {
     public boolean editedMedia, editedCaption, editedPrivacy;
     public ArrayList<TLRPC.MediaArea> editedMediaAreas;
 
+    public boolean isError;
+    public TLRPC.TL_error error;
+
     public long editDocumentId;
     public long editPhotoId;
     public long editExpireDate;
@@ -828,9 +831,10 @@ public class StoryEntry extends IStoryPart {
         public float minlum;
 
         public int getHDRType() {
-            if (maxlum <= 0 && minlum <= 0) {
-                return 0;
-            } else if (colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
+//            if (maxlum <= 0 && minlum <= 0) {
+//                return 0;
+//            } else
+            if (colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
                 if (colorTransfer == MediaFormat.COLOR_TRANSFER_HLG) {
                     return 1;
                 } else if (colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084) {

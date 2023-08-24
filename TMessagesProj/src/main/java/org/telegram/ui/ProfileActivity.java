@@ -7774,7 +7774,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             onlineTextView[2].setVisibility(View.VISIBLE);
-            onlineTextView[3].setVisibility(View.VISIBLE);
+            if (!searchMode) {
+                onlineTextView[3].setVisibility(View.VISIBLE);
+            }
 
             if (previousTransitionFragment != null) {
                 previousTransitionFragment.checkAndUpdateAvatar();
@@ -8420,6 +8422,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarContainer.setVisibility(View.VISIBLE);
         nameTextView[1].setVisibility(View.VISIBLE);
         onlineTextView[1].setVisibility(View.VISIBLE);
+        onlineTextView[3].setVisibility(View.VISIBLE);
 
         actionBar.onSearchFieldVisibilityChanged(searchTransitionProgress > 0.5f);
         int itemVisibility = searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE;
@@ -8469,6 +8472,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             nameTextView[1].setAlpha(progressHalf);
             onlineTextView[1].setAlpha(progressHalf);
+            onlineTextView[3].setAlpha(progressHalf);
 
             searchItem.getSearchField().setAlpha(progressHalfEnd);
             if (enter && searchTransitionProgress < 0.7f) {
@@ -8548,6 +8552,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         nameTextView[1].setVisibility(hide);
         onlineTextView[1].setVisibility(hide);
+        onlineTextView[3].setVisibility(hide);
 
         if (otherItem != null) {
             otherItem.setAlpha(1f);

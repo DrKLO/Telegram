@@ -194,6 +194,7 @@ public class ReactedUserHolderView extends FrameLayout {
         String contentDescription;
         boolean hasReactImage = false;
         if (like) {
+            reactView.setAnimatedEmojiDrawable(null);
             hasReactImage = true;
             Drawable likeDrawableFilled = ContextCompat.getDrawable(getContext(), R.drawable.media_like_active).mutate();
             reactView.setColorFilter(new PorterDuffColorFilter(0xFFFF2E38, PorterDuff.Mode.MULTIPLY));
@@ -202,6 +203,7 @@ public class ReactedUserHolderView extends FrameLayout {
         } else if (reaction != null) {
             ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction);
             if (visibleReaction.emojicon != null) {
+                reactView.setAnimatedEmojiDrawable(null);
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(visibleReaction.emojicon);
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);

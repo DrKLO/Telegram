@@ -205,7 +205,7 @@ public class CaptionContainerView extends FrameLayout {
                 limitTextView.cancelAnimation();
                 limitTextView.setText(limitText);
                 limitTextView.setTextColor(length >= limit ? 0xffEC7777 : 0xffffffff);
-                if (length > limit && !premium && length < MessagesController.getInstance(currentAccount).storyCaptionLengthLimitPremium && length > lastLength && captionLimitToast()) {
+                if (length > limit && !premium && length < MessagesController.getInstance(currentAccount).storyCaptionLengthLimitPremium && length > lastLength && (captionLimitToast() || MessagesController.getInstance(currentAccount).premiumLocked)) {
                     AndroidUtilities.shakeViewSpring(limitTextView, shiftDp = -shiftDp);
                     BotWebViewVibrationEffect.APP_ERROR.vibrate();
                 }
