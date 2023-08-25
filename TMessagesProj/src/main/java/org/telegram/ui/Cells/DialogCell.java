@@ -3830,7 +3830,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         if (avatarImage.getVisible()) {
-            needInvalidate = drawAvatarOverlays(canvas);
+            if (drawAvatarOverlays(canvas)) {
+                needInvalidate = true;
+            }
         }
 
         if (rightFragmentOpenedProgress > 0 && currentDialogFolderId == 0) {
