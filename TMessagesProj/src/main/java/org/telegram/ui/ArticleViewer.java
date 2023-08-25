@@ -11591,7 +11591,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 BlockVideoCell cell = (BlockVideoCell) view;
                 if (cell.currentBlock == pageBlock) {
                     view.getLocationInWindow(coords);
-                    if (cell == currentPlayer && videoPlayer != null && videoPlayer.firstFrameRendered) {
+                    if (cell == currentPlayer && videoPlayer != null && videoPlayer.firstFrameRendered && cell.textureView.getSurfaceTexture() != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                             Surface surface = new Surface(cell.textureView.getSurfaceTexture());
                             Bitmap bitmap = Bitmap.createBitmap(cell.textureView.getMeasuredWidth(), cell.textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
@@ -11651,14 +11651,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 videoCell.playFrom = player.getCurrentPosition();
                 videoCell.firstFrameRendered = false;
                 videoCell.textureView.setAlpha(0);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    Surface surface = new Surface(textureView.getSurfaceTexture());
-                    Bitmap bitmap = Bitmap.createBitmap(textureView.getMeasuredWidth(), textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
-                    AndroidUtilities.getBitmapFromSurface(surface, bitmap);
-                    surface.release();
-                    videoCell.imageView.setImageBitmap(bitmap);
-                } else {
-                    videoCell.imageView.setImageBitmap(textureView.getBitmap());
+                if (textureView.getSurfaceTexture() != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        Surface surface = new Surface(textureView.getSurfaceTexture());
+                        Bitmap bitmap = Bitmap.createBitmap(textureView.getMeasuredWidth(), textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                        AndroidUtilities.getBitmapFromSurface(surface, bitmap);
+                        surface.release();
+                        videoCell.imageView.setImageBitmap(bitmap);
+                    } else {
+                        videoCell.imageView.setImageBitmap(textureView.getBitmap());
+                    }
                 }
             }
             checkVideoPlayer();

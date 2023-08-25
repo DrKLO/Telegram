@@ -25,6 +25,20 @@
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
     </style>
 
+    <style name="Theme.TMessages.Dark" parent="@android:style/Theme.Holo">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBarOverlay">false</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:itemTextAppearance">@style/ActionBar.Transparent.TMessages.Item</item>
+        <item name="android:listViewStyle">@style/Theme.TMessages.ListView</item>
+        <item name="android:listChoiceBackgroundIndicator">@drawable/list_selector_ex</item>
+        <item name="android:actionBarItemBackground">@drawable/bar_selector_style</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+    </style>
+
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>

@@ -5460,4 +5460,12 @@ public class AndroidUtilities {
         clone.position(position);
         return clone;
     }
+
+    public static void checkAndroidTheme(Context context, boolean open) {
+        // this hack is done to support prefers-color-scheme in webviews 🤦
+        if (context == null) {
+            return;
+        }
+        context.setTheme(Theme.isCurrentThemeDark() && open ? R.style.Theme_TMessages_Dark : R.style.Theme_TMessages);
+    }
 }

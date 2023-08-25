@@ -487,10 +487,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean afterSignup;
     private boolean showSetPasswordConfirm;
     private int otherwiseReloginDays;
-    private boolean allowGroups, allowMegagroups, allowLegacyGroups;
-    private boolean allowChannels;
-    private boolean allowUsers;
-    private boolean allowBots;
+    public boolean allowGroups, allowMegagroups, allowLegacyGroups;
+    public boolean allowChannels;
+    public boolean allowUsers;
+    public boolean allowBots;
     private boolean closeFragment;
 
     private FrameLayout updateLayout;
@@ -3028,7 +3028,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 return !actionBar.isActionModeShowed() && databaseMigrationHint == null;// && !rightSlidingDialogContainer.hasFragment();
             }
         });
-        if (initialDialogsType == DIALOGS_TYPE_ADD_USERS_TO || initialDialogsType == DIALOGS_TYPE_START_ATTACH_BOT || isArchive() && getDialogsArray(currentAccount, initialDialogsType, folderId, false).isEmpty()) {
+        if (initialDialogsType == DIALOGS_TYPE_ADD_USERS_TO || isArchive() && getDialogsArray(currentAccount, initialDialogsType, folderId, false).isEmpty()) {
             searchItem.setVisibility(View.GONE);
         }
         if (isArchive()) {
@@ -6437,7 +6437,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 }
                             });
                             if (showDialog(sheet) == null) {
-                                sheet.show();
+                                try {
+                                    sheet.show();
+                                } catch (Throwable throwable) {
+                                    FileLog.e(throwable);
+                                }
                             }
                         } else if (hasNotContactsPermission && askAboutContacts && getUserConfig().syncContacts && activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
                             AlertDialog.Builder builder = AlertsCreator.createContactsPermissionDialog(activity, param -> {

@@ -3694,7 +3694,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             TLRPC.TL_attachMenuBotsBot attachMenuBotsBot = (TLRPC.TL_attachMenuBotsBot) response1;
                                             MessagesController.getInstance(intentAccount).putUsers(attachMenuBotsBot.users, false);
                                             TLRPC.TL_attachMenuBot attachMenuBot = attachMenuBotsBot.bot;
-                                            BaseFragment lastFragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            BaseFragment lastFragment_ = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            if (AndroidUtilities.isTablet() && !(lastFragment_ instanceof ChatActivity) && !rightFragmentsStack.isEmpty()) {
+                                                lastFragment_ = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
+                                            }
+                                            final BaseFragment lastFragment = lastFragment_;
 
                                             List<String> chooserTargets = new ArrayList<>();
                                             if (!TextUtils.isEmpty(attachMenuBotChoose)) {

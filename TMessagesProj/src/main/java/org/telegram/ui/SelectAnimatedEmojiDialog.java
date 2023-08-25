@@ -4442,7 +4442,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
                 @Override
                 protected boolean isTabIconsAnimationEnabled(boolean loaded) {
-                    return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) && (!loaded || type == TYPE_AVATAR_CONSTRUCTOR);
+                    return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) || type == TYPE_AVATAR_CONSTRUCTOR;
                 }
             };
             categoriesListView.setShownButtonsAtStart(type == TYPE_AVATAR_CONSTRUCTOR ? 6.5f : 4.5f);
