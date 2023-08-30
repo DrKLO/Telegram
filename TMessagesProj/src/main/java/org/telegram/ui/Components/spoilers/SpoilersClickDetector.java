@@ -12,6 +12,8 @@ import java.util.List;
 public class SpoilersClickDetector {
     private GestureDetectorCompat gestureDetector;
     private boolean trackingTap;
+    private int horizontalPadding;
+    private int verticalPadding;
 
     public SpoilersClickDetector(View v, List<SpoilerEffect> spoilers, OnSpoilerClickedListener clickedListener) {
         this(v, spoilers, true, clickedListener);
@@ -27,6 +29,8 @@ public class SpoilersClickDetector {
                     x -= v.getPaddingLeft();
                     y -= v.getPaddingTop();
                 }
+                x -= horizontalPadding;
+                y -= verticalPadding;
                 for (SpoilerEffect eff : spoilers) {
                     if (eff.getBounds().contains(x, y)) {
                         trackingTap = true;
@@ -48,6 +52,8 @@ public class SpoilersClickDetector {
                         x -= v.getPaddingLeft();
                         y -= v.getPaddingTop();
                     }
+                    x -= horizontalPadding;
+                    y -= verticalPadding;
                     for (SpoilerEffect eff : spoilers) {
                         if (eff.getBounds().contains(x, y)) {
                             clickedListener.onSpoilerClicked(eff, x, y);
@@ -62,6 +68,11 @@ public class SpoilersClickDetector {
 
     public boolean onTouchEvent(MotionEvent ev) {
         return gestureDetector.onTouchEvent(ev);
+    }
+
+    public void setAdditionalOffsets(int horizontalPadding, int verticalPadding) {
+        this.horizontalPadding = horizontalPadding;
+        this.verticalPadding = verticalPadding;
     }
 
     public interface OnSpoilerClickedListener {

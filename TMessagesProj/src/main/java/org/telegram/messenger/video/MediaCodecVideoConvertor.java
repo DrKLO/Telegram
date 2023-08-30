@@ -349,7 +349,6 @@ public class MediaCodecVideoConvertor {
                     long lastFramePts = -1;
 
                     if (videoIndex >= 0) {
-
                         try {
                             long videoTime = -1;
                             boolean outputDone = false;
@@ -444,27 +443,22 @@ public class MediaCodecVideoConvertor {
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 
-//                            boolean hasHDR = false;
-//                            int hdrType = 0;
-//                            int colorTransfer = 0, colorStandard = 0, colorRange = 0;
-//                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_TRANSFER)) {
-//                                    colorTransfer = videoFormat.getInteger(MediaFormat.KEY_COLOR_TRANSFER);
-//                                }
-//                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
-//                                    colorStandard = videoFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD);
-//                                }
-//                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_RANGE)) {
-//                                    colorRange = videoFormat.getInteger(MediaFormat.KEY_COLOR_RANGE);
-//                                }
-//                                if (videoFormat.containsKey(MediaFormat.KEY_HDR_STATIC_INFO)) {
-//                                    ByteBuffer bytes = videoFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO);
-//                                }
-//                                if ((colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084 || colorTransfer == MediaFormat.COLOR_TRANSFER_HLG) && colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
-//                                    hasHDR = true;
-//                                    hdrType = colorTransfer == MediaFormat.COLOR_TRANSFER_HLG ? 1 : 2;
-//                                }
-//                            }
+                            boolean hasHDR = false;
+                            int colorTransfer = 0, colorStandard = 0, colorRange = 0;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_TRANSFER)) {
+                                    colorTransfer = videoFormat.getInteger(MediaFormat.KEY_COLOR_TRANSFER);
+                                }
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
+                                    colorStandard = videoFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD);
+                                }
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_RANGE)) {
+                                    colorRange = videoFormat.getInteger(MediaFormat.KEY_COLOR_RANGE);
+                                }
+                                if ((colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084 || colorTransfer == MediaFormat.COLOR_TRANSFER_HLG) && colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
+                                    hasHDR = true;
+                                }
+                            }
 
                             if (Build.VERSION.SDK_INT < 23 && Math.min(h, w) <= 480 && !isAvatar) {
                                 if (bitrate > 921600) {
@@ -482,6 +476,15 @@ public class MediaCodecVideoConvertor {
                             encoder.start();
 
                             outputSurface = new OutputSurface(savedFilterState, null, paintPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, parts);
+                            if (hdrInfo == null && outputSurface.supportsEXTYUV() && hasHDR) {
+                                hdrInfo = new StoryEntry.HDRInfo();
+                                hdrInfo.colorTransfer = colorTransfer;
+                                hdrInfo.colorStandard = colorStandard;
+                                hdrInfo.colorRange = colorRange;
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+                                }
+                            }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0 && outputSurface.supportsEXTYUV()) {
                                 outputSurface.changeFragmentShader(
                                     hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
@@ -1164,6 +1167,7 @@ public class MediaCodecVideoConvertor {
             }
             shaderCode = shaderCode.replace("$dstWidth", dstWidth + ".0");
             shaderCode = shaderCode.replace("$dstHeight", dstHeight + ".0");
+            // TODO(@dkaraush): use minlum/maxlum
             return shaderCode + "\n" +
                 "in vec2 vTextureCoord;\n" +
                 "out vec4 fragColor;\n" +

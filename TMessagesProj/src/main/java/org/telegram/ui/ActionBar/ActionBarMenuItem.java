@@ -81,6 +81,17 @@ public class ActionBarMenuItem extends FrameLayout {
 
     private FrameLayout wrappedSearchFrameLayout;
 
+    public static void addText(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, String text, Theme.ResourcesProvider resourcesProvider) {
+        final TextView textView = new TextView(popupLayout.getContext());
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        textView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+        textView.setText(text);
+        textView.setTag(R.id.fit_width_tag, 1);
+        textView.setMaxWidth(AndroidUtilities.dp(200));
+        popupLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+    }
+
     public void setSearchPaddingStart(int padding) {
         searchItemPaddingStart = padding;
         if (searchContainer != null) {
@@ -525,6 +536,7 @@ public class ActionBarMenuItem extends FrameLayout {
         View cell = new View(popupLayout.getContext());
         cell.setTag(id);
         cell.setTag(R.id.object_tag, 1);
+        cell.setTag(R.id.fit_width_tag, 1);
         popupLayout.addView(cell);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
         if (LocaleController.isRTL) {

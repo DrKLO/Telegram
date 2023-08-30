@@ -8,7 +8,6 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Typeface;
-import android.graphics.Xfermode;
 import android.graphics.text.LineBreaker;
 import android.os.Build;
 import android.text.Editable;
@@ -22,16 +21,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
-import androidx.core.graphics.ColorUtils;
-
-import com.googlecode.mp4parser.authoring.Edit;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LayoutHelper;
@@ -140,6 +134,26 @@ public class TextPaintView extends EntityView {
                 editText.addTextChangedListener(this);
             }
         });
+    }
+
+    @Override
+    protected float getStickyPaddingLeft() {
+        return editText.framePadding == null ? 0 : editText.framePadding.left;
+    }
+
+    @Override
+    protected float getStickyPaddingRight() {
+        return editText.framePadding == null ? 0 : editText.framePadding.right;
+    }
+
+    @Override
+    protected float getStickyPaddingTop() {
+        return editText.framePadding == null ? 0 : editText.framePadding.top;
+    }
+
+    @Override
+    protected float getStickyPaddingBottom() {
+        return editText.framePadding == null ? 0 : editText.framePadding.bottom;
     }
 
     private void updateHint() {
@@ -412,6 +426,15 @@ public class TextPaintView extends EntityView {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
+            int count = canvas.getSaveCount();
+
+            float alpha = getShowAlpha();
+            if (alpha <= 0) {
+                return;
+            } else if (alpha < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            }
+
             float thickness = AndroidUtilities.dp(2.0f);
             float radius = AndroidUtilities.dpf2(5.66f);
 
@@ -452,7 +475,7 @@ public class TextPaintView extends EntityView {
             canvas.drawCircle(inset + width, inset + height / 2.0f, radius + AndroidUtilities.dp(1) - 1, clearPaint);
             canvas.drawCircle(inset, inset + height / 2.0f, radius + AndroidUtilities.dp(1) - 1, clearPaint);
 
-            canvas.restore();
+            canvas.restoreToCount(count);
         }
     }
 }

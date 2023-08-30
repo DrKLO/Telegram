@@ -177,11 +177,11 @@ public class ChatMessagesMetadataController {
 
     public void onFragmentDestroy() {
         for (int i = 0; i < reactionsRequests.size(); i++) {
-            chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.remove(i), false);
+            chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.get(i), false);
         }
         reactionsRequests.clear();
         for (int i = 0; i < extendedMediaRequests.size(); i++) {
-            chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.remove(i), false);
+            chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.get(i), false);
         }
         extendedMediaRequests.clear();
     }

@@ -77,12 +77,9 @@ public class PushListenerController {
                         req.events.add(event);
 
                         sendStat = false;
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (error != null) {
-                                SharedConfig.pushStatSent = true;
-                                SharedConfig.saveConfig();
-                            }
-                        }));
+                        SharedConfig.pushStatSent = true;
+                        SharedConfig.saveConfig();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                     }
                     AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(pushType, token));
                 }
@@ -868,7 +865,7 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "CHAT_DELETE_MEMBER": {
-                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1]);
+                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1], args.length <= 2 ? "" : args[2]);
                                             break;
                                         }
                                         case "CHAT_DELETE_YOU": {

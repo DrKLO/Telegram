@@ -26,6 +26,7 @@ import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -41,6 +42,7 @@ import org.telegram.ui.Components.VideoEditTextureView;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.VideoTimelinePlayView;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -289,7 +291,11 @@ public class PreviewView extends FrameLayout {
                 return;
             }
             if (bitmap == null) {
-                String path = entry.getOriginalFile().getPath();
+                File file = entry.getOriginalFile();
+                if (file == null) {
+                    return;
+                }
+                String path = file.getPath();
 
                 final long imageIdFinal = imageId;
                 bitmap = StoryEntry.getScaledBitmap(opts -> {
@@ -536,6 +542,7 @@ public class PreviewView extends FrameLayout {
             if (seekTo > 0) {
                 videoPlayer.seekTo(seekTo);
             }
+            videoPlayer.setMute(entry.muted);
 
             videoTimelineView.setVideoPath(uri.toString(), entry.left, entry.right);
         }
@@ -1080,5 +1087,13 @@ public class PreviewView extends FrameLayout {
         if (videoPlayer != null) {
             videoPlayer.setPlayWhenReady(pauseLinks.isEmpty());
         }
+    }
+
+    // ignores actual player and other reasons to pause a video
+    public boolean isPlaying() {
+        return !pauseLinks.contains(-9982);
+    }
+    public void play(boolean play) {
+        updatePauseReason(-9982, !play);
     }
 }

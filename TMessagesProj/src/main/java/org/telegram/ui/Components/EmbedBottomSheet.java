@@ -308,6 +308,18 @@ public class EmbedBottomSheet extends BottomSheet {
 
         webView = new WebView(context) {
             @Override
+            protected void onAttachedToWindow() {
+                AndroidUtilities.checkAndroidTheme(context, true);
+                super.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                AndroidUtilities.checkAndroidTheme(context, false);
+                super.onDetachedFromWindow();
+            }
+
+            @Override
             public boolean onTouchEvent(MotionEvent event) {
                 boolean result = super.onTouchEvent(event);
                 if (result) {

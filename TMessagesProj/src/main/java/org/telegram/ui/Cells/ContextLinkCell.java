@@ -47,8 +47,11 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimationProperties;
+import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.ActionBar.Theme;
@@ -119,9 +122,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private int buttonState;
     private RadialProgress2 radialProgress;
 
-    private long lastUpdateTime;
     private boolean scaled;
-    private float scale;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
 
     private boolean hideLoadProgress;
@@ -129,6 +130,8 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private CheckBox2 checkBox;
 
     private ContextLinkCellDelegate delegate;
+
+    private ButtonBounce buttonBounce;
 
     public ContextLinkCell(Context context) {
         this(context, false, null);
@@ -163,6 +166,12 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
         }
         setWillNotDraw(false);
+    }
+
+    public void allowButtonBounce(boolean allow) {
+        if (allow != (buttonBounce != null)) {
+            buttonBounce = allow ? new ButtonBounce(this, 1f, 3f).setReleaseDelay(120L) : null;
+        }
     }
 
     @SuppressLint("DrawAllocation")
@@ -591,8 +600,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     public void setScaled(boolean value) {
         scaled = value;
-        lastUpdateTime = System.currentTimeMillis();
-        invalidate();
+        if (buttonBounce != null) {
+            buttonBounce.setPressed(isPressed() || scaled);
+        }
     }
 
     public void setCanPreviewGif(boolean value) {
@@ -816,24 +826,11 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 linkImageView.setVisible(!PhotoViewer.isShowingImage(inlineResult), false);
             }
             canvas.save();
-            if (scaled && scale != 0.8f || !scaled && scale != 1.0f) {
-                long newTime = System.currentTimeMillis();
-                long dt = (newTime - lastUpdateTime);
-                lastUpdateTime = newTime;
-                if (scaled && scale != 0.8f) {
-                    scale -= dt / 400.0f;
-                    if (scale < 0.8f) {
-                        scale = 0.8f;
-                    }
-                } else {
-                    scale += dt / 400.0f;
-                    if (scale > 1.0f) {
-                        scale = 1.0f;
-                    }
-                }
-                invalidate();
+            float s = imageScale;
+            if (buttonBounce != null) {
+                s *= buttonBounce.getScale(.1f);
             }
-            canvas.scale(scale * imageScale, scale * imageScale, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
+            canvas.scale(s, s, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
             linkImageView.draw(canvas);
             canvas.restore();
         }
@@ -1146,6 +1143,14 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         } else {
             imageScale = checked ? 0.85f : 1.0f;
             invalidate();
+        }
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (buttonBounce != null) {
+            buttonBounce.setPressed(pressed || scaled);
         }
     }
 }

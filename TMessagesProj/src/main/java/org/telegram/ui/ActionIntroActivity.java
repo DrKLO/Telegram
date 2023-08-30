@@ -775,7 +775,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     }
 
     @Override
-    public void onLocationAddressAvailable(String address, String displayAddress, Location location) {
+    public void onLocationAddressAvailable(String address, String displayAddress,  TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location) {
         if (subtitleTextView == null) {
             return;
         }

@@ -179,6 +179,9 @@ public class StickerCategoriesListView extends RecyclerListView {
         } else if (view.getLeft() < minimumPadding) {
             smoothScrollBy(-(minimumPadding - view.getLeft()), 0, CubicBezierInterpolator.EASE_OUT_QUINT);
         }
+//        if (view instanceof CategoryButton) {
+//            ((CategoryButton) view).play(true);
+//        }
         if (onCategoryClick != null) {
             onCategoryClick.run(category);
         }
@@ -307,7 +310,7 @@ public class StickerCategoriesListView extends RecyclerListView {
                 int position = getChildAdapterPosition(child);
                 float childT = AndroidUtilities.cascade(t, getChildCount() - 1 - position, getChildCount() - 1, 3f);
                 if (childT > 0 && child.getAlpha() <= 0) {
-                    ((CategoryButton) child).play();
+                    ((CategoryButton) child).play(false);
                 }
                 child.setAlpha(childT);
                 child.setScaleX(childT);
@@ -558,7 +561,7 @@ public class StickerCategoriesListView extends RecyclerListView {
                 button.setAlpha(categoriesShownT);
                 button.setScaleX(categoriesShownT);
                 button.setScaleY(categoriesShownT);
-                button.play();
+                button.play(false);
             }
         }
 
@@ -568,7 +571,7 @@ public class StickerCategoriesListView extends RecyclerListView {
                 final CategoryButton button = (CategoryButton) holder.itemView;
                 final int position = holder.getAdapterPosition();
                 button.setSelected(selectedCategoryIndex == position - 1, false);
-                button.play();
+                button.play(false);
             }
         }
 
@@ -598,7 +601,7 @@ public class StickerCategoriesListView extends RecyclerListView {
     }
 
     protected boolean isTabIconsAnimationEnabled(boolean loaded) {
-        return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) && !loaded;
+        return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
     }
 
     static int loadedCategoryIcons = 0;
@@ -756,8 +759,8 @@ public class StickerCategoriesListView extends RecyclerListView {
         }
 
         private long lastPlayed;
-        public void play() {
-            if (System.currentTimeMillis() - lastPlayed > 250) {
+        public void play(boolean force) {
+            if (System.currentTimeMillis() - lastPlayed > 250 || force) {
                 lastPlayed = System.currentTimeMillis();
                 RLottieDrawable drawable = getAnimatedDrawable();
                 if (drawable == null && getImageReceiver() != null) {

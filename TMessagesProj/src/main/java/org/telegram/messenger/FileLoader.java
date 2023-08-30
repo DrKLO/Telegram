@@ -309,6 +309,9 @@ public class FileLoader extends BaseController {
     }
 
     public void cancelFileUpload(final String location, final boolean enc) {
+        if (location == null) {
+            return;
+        }
         fileLoaderQueue.postRunnable(() -> {
             FileUploadOperation operation;
             if (!enc) {

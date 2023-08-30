@@ -399,7 +399,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
                     SelectableAnimatedTextView lowerTextView = new SelectableAnimatedTextView(getContext());
                     lowerTextView.setTextSize(AndroidUtilities.dp(13));
-                    lowerTextView.setText(AndroidUtilities.formatFileSize(1024 * 512, true));
+                    lowerTextView.setText(AndroidUtilities.formatFileSize(1024 * 512, true, false));
                     textContainer.addView(lowerTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
                     SelectableAnimatedTextView midTextView = new SelectableAnimatedTextView(getContext());
@@ -409,7 +409,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
                     SelectableAnimatedTextView topTextView = new SelectableAnimatedTextView(getContext());
                     topTextView.setTextSize(AndroidUtilities.dp(13));
-                    topTextView.setText(AndroidUtilities.formatFileSize(SaveToGallerySettingsHelper.MAX_VIDEO_LIMIT, true));
+                    topTextView.setText(AndroidUtilities.formatFileSize(SaveToGallerySettingsHelper.MAX_VIDEO_LIMIT, true, false));
                     textContainer.addView(topTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM));
 
 
@@ -450,7 +450,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                             } else {
                                 midTextView.setText(
                                         LocaleController.formatString("UpToFileSize", R.string.UpToFileSize,
-                                                AndroidUtilities.formatFileSize(value, true)
+                                                AndroidUtilities.formatFileSize(value, true, false)
                                         ), false);
                                 lowerTextView.setSelectedInternal(false, animated);
                                 midTextView.setSelectedInternal(true, animated);

@@ -110,10 +110,18 @@ public class WallpaperUpdater {
 
     public void openGallery() {
         if (parentFragment != null) {
-            if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity() != null) {
-                if (parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
-                    return;
+            final Activity activity = parentFragment.getParentActivity();
+            if (activity != null) {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                        activity.requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
+                        return;
+                    }
+                } else if (Build.VERSION.SDK_INT >= 23) {
+                    if (activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
+                        return;
+                    }
                 }
             }
             PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER, false, false, null);

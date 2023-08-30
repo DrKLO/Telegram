@@ -1,6 +1,11 @@
 package org.telegram.ui.Stories;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Region;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -8,11 +13,13 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.UserCell;
@@ -25,6 +32,12 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
     private final RecyclerListView recyclerListView;
     int[] clipPoint = new int[2];
     private boolean isHiddenArchive;
+    LoadNextInterface loadNextInterface;
+    public boolean hiddedStories;
+    public boolean onlyUnreadStories;
+    public boolean onlySelfStories;
+    public boolean hasPaginationParams;
+
 
     public static StoriesListPlaceProvider of(RecyclerListView recyclerListView) {
         return of(recyclerListView, false);
@@ -34,6 +47,11 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         return new StoriesListPlaceProvider(recyclerListView, hiddenArchive);
     }
 
+    public StoriesListPlaceProvider with(LoadNextInterface loadNextInterface) {
+        this.loadNextInterface = loadNextInterface;
+        return this;
+    }
+
     public StoriesListPlaceProvider(RecyclerListView recyclerListView, boolean hiddenArchive) {
         this.recyclerListView = recyclerListView;
         this.isHiddenArchive = hiddenArchive;
@@ -41,7 +59,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
     @Override
     public void preLayout(long currentDialogId, int messageId, Runnable r) {
-        if (recyclerListView.getParent() instanceof DialogStoriesCell) {
+        if (recyclerListView != null && recyclerListView.getParent() instanceof DialogStoriesCell) {
             DialogStoriesCell dilogsCell = (DialogStoriesCell) recyclerListView.getParent();
             if (dilogsCell.scrollTo(currentDialogId)) {
                 dilogsCell.afterNextLayout(r);
@@ -88,12 +106,24 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     DialogStoriesCell storiesCell = (DialogStoriesCell) cell.getParent().getParent();
                     holder.clipParent = storiesCell;
                     holder.clipTop = holder.clipBottom = 0;
+                    holder.alpha = 1;
+                    if (cell.isFail) {
+                        final Path path = new Path();
+                        holder.drawClip = (canvas, bounds, alpha, opening) -> {
+                            path.rewind();
+                            final float t = opening ? 1f - (float) Math.pow(1f - alpha, 2) : (float) Math.pow(alpha, 2);
+                            path.addCircle(bounds.right + dp(7) - dp(14) * t, bounds.bottom + dp(7) - dp(14) * t, dp(11), Path.Direction.CW);
+                            canvas.clipPath(path, Region.Op.DIFFERENCE);
+                        };
+                    } else {
+                        holder.drawClip = null;
+                    }
                  //   updateClip(holder);
                     return true;
                 }
             } else if (child instanceof DialogCell) {
                 DialogCell cell = (DialogCell) child;
-                if (cell.getDialogId() == dialogId || (isHiddenArchive && cell.isDialogFolder())) {
+                if ((cell.getDialogId() == dialogId && !isHiddenArchive) || (isHiddenArchive && cell.isDialogFolder())) {
                     holder.view = child;
                     holder.params = cell.storyParams;
                     holder.avatarImage = cell.avatarImage;
@@ -101,6 +131,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     if (isHiddenArchive) {
                         holder.crossfadeToAvatarImage = cell.avatarImage;
                     }
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -114,6 +145,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         holder.storyImage = cell.replyImageReceiver;
                     }
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -128,6 +160,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         holder.storyImage = cell.getPhotoImage();
                     }
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -145,7 +178,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     }
                     holder.view = child;
                     holder.storyImage = cell.imageReceiver;
-                    holder.drawAbove = (canvas, bounds, alpha) -> {
+                    holder.drawAbove = (canvas, bounds, alpha, opening) -> {
                         cell.drawDuration(canvas, bounds, alpha);
                         if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
                             canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
@@ -155,6 +188,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                         }
                     };
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -165,6 +199,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.params = cell.storyParams;
                     holder.avatarImage = cell.avatarImageView.getImageReceiver();
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -175,6 +210,22 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.params = cell.params;
                     holder.avatarImage = cell.avatarView.getImageReceiver();
                     holder.clipParent = (View) cell.getParent();
+                    holder.alpha = cell.getAlpha() * cell.getAlphaInternal();
+                    if (holder.alpha < 1) {
+                        holder.bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        holder.bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground, cell.getResourcesProvider()));
+                    }
+                    updateClip(holder);
+                    return true;
+                }
+            } else if (child instanceof ProfileSearchCell) {
+                ProfileSearchCell cell = (ProfileSearchCell) child;
+                if (cell.getDialogId() == dialogId) {
+                    holder.view = cell;
+                    holder.params = cell.avatarStoryParams;
+                    holder.avatarImage = cell.avatarImage;
+                    holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
                     updateClip(holder);
                     return true;
                 }
@@ -200,11 +251,30 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         }
     }
 
+    @Override
+    public void loadNext(boolean forward) {
+        if (loadNextInterface != null) {
+            loadNextInterface.loadNext(forward);
+        }
+    }
+
+    public StoryViewer.PlaceProvider setPaginationParaments(boolean hiddedStories, boolean onlyUnreadStories, boolean onlySelfStories) {
+        this.hiddedStories = hiddedStories;
+        this.onlyUnreadStories = onlyUnreadStories;
+        this.onlySelfStories = onlySelfStories;
+        hasPaginationParams = true;
+        return this;
+    }
+
     public interface ClippedView {
         void updateClip(int[] clip);
     }
 
     public interface AvatarOverlaysView {
         boolean drawAvatarOverlays(Canvas canvas);
+    }
+
+    public interface LoadNextInterface {
+        void loadNext(boolean forward);
     }
 }

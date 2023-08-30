@@ -24,6 +24,8 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -71,6 +73,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
     @Override
     public long open(DataSpec dataSpec) throws IOException {
         uri = dataSpec.uri;
+        transferInitializing(dataSpec);
         currentAccount = Utilities.parseInt(uri.getQueryParameter("account"));
         parentObject = FileLoader.getInstance(currentAccount).getParentObject(Utilities.parseInt(uri.getQueryParameter("rid")));
         document = new TLRPC.TL_document();
@@ -124,6 +127,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
             return C.RESULT_END_OF_INPUT;
         } else {
             int availableLength = 0;
+            int bytesRead;
             try {
                 if (bytesRemaining < readLength) {
                     readLength = (int) bytesRemaining;
@@ -144,6 +148,9 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     }
                     File currentFileFast = loadOperation.getCurrentFileFast();
                     if (file == null || !Objects.equals(currentFile, currentFileFast)) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("check stream file " + currentFileFast);
+                        }
                         if (file != null) {
                             try {
                                 file.close();
@@ -165,14 +172,16 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 if (!opened) {
                     return 0;
                 }
-                file.readFully(buffer, offset, availableLength);
-                currentOffset += availableLength;
-                bytesRemaining -= availableLength;
-                bytesTransferred(availableLength);
+                bytesRead = file.read(buffer, offset, availableLength);
+                if (bytesRead > 0) {
+                    currentOffset += bytesRead;
+                    bytesRemaining -= bytesRead;
+                    bytesTransferred(bytesRead);
+                }
             } catch (Exception e) {
                 throw new IOException(e);
             }
-            return availableLength;
+            return bytesRead;
         }
     }
 
@@ -218,5 +227,30 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         if (document != null) {
             priorityMap.put(document.id, priority);
         }
+    }
+
+    @Nullable
+    public static Uri prepareUri(int currentAccount, TLRPC.Document document, Object parent) {
+        String attachFileName = FileLoader.getAttachFileName(document);
+        File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
+
+        if (file != null && file.exists()) {
+            return Uri.fromFile(file);
+        }
+        try {
+            String params = "?account=" + currentAccount +
+                    "&id=" + document.id +
+                    "&hash=" + document.access_hash +
+                    "&dc=" + document.dc_id +
+                    "&size=" + document.size +
+                    "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
+                    "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(parent) +
+                    "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
+                    "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
+            return Uri.parse("tg://" + attachFileName + params);
+        } catch (UnsupportedEncodingException e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 }

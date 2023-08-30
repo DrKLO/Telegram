@@ -94,7 +94,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             VIEW_TYPE_HEADER = 7,
             VIEW_TYPE_SHADOW = 8,
     //            VIEW_TYPE_ARCHIVE = 9,
-    VIEW_TYPE_LAST_EMPTY = 10,
+            VIEW_TYPE_LAST_EMPTY = 10,
             VIEW_TYPE_NEW_CHAT_HINT = 11,
             VIEW_TYPE_TEXT = 12,
             VIEW_TYPE_CONTACTS_FLICKER = 13,
@@ -312,7 +312,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
 
         public ItemInternal(int viewTypeEmpty) {
             super(viewTypeEmpty, true);
-            this.emptyType = emptyType;
+            this.emptyType = viewTypeEmpty;
             if (viewTypeEmpty == VIEW_TYPE_LAST_EMPTY) {
                 stableId = 1;
             } else {
@@ -492,15 +492,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 } else {
                     tabsTranslation = 0;
                 }
-                if (hasHiddenArchive && position == 0 && recyclerListView.getPaddingTop() - view.getTop() - view.getMeasuredHeight() + tabsTranslation < 0) {
-                    position = 1;
-                    offset = tabsTranslation;
+                if (recyclerListView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING) {
+                    if (hasHiddenArchive && position == 0 && recyclerListView.getPaddingTop() - view.getTop() - view.getMeasuredHeight() + tabsTranslation < 0) {
+                        position = 1;
+                        offset = tabsTranslation;
+                    }
+                    layoutManager.scrollToPositionWithOffset(position, (int) offset);
                 }
-//                if (firstUpdate && hasStories) {
-//                    offset -= AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP);
-//                }
-//                firstUpdate = false;
-                layoutManager.scrollToPositionWithOffset(position, (int) offset);
             }
         }
         DiffUtil.calculateDiff(new DiffUtil.Callback() {
@@ -728,14 +726,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             case VIEW_TYPE_FOLDER_UPDATE_HINT:
                 view = new DialogsHintCell(mContext);
                 break;
-            case VIEW_TYPE_TEXT:
-            default: {
-                view = new TextCell(mContext);
-                if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                }
-                break;
-            }
             case VIEW_TYPE_STORIES: {
                 view = new View(mContext) {
                     @Override
@@ -743,6 +733,14 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP), MeasureSpec.EXACTLY));
                     }
                 };
+                break;
+            }
+            case VIEW_TYPE_TEXT:
+            default: {
+                view = new TextCell(mContext);
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                }
                 break;
             }
         }
@@ -955,6 +953,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 break;
             }
             case VIEW_TYPE_TEXT: {
+                if (!(holder.itemView instanceof TextCell)) {
+                    return;
+                }
                 TextCell cell = (TextCell) holder.itemView;
                 cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
                 if (requestPeerType != null) {
@@ -1307,6 +1308,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                         } else {
                             dialogsHeight += cellHeight;
                         }
+                    } else  if (itemInternals.get(i).viewType == VIEW_TYPE_FLICKER) {
+                        dialogsHeight += cellHeight;
                     }
                 }
                 dialogsHeight += size - 1;
@@ -1480,6 +1483,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 if (dialogsCount != 0) {
                     itemInternals.add(new ItemInternal(VIEW_TYPE_FLICKER));
                 }
+                itemInternals.add(new ItemInternal(VIEW_TYPE_LAST_EMPTY));
             } else if (dialogsCount == 0) {
                 isEmpty = true;
                 if (requestPeerType != null) {

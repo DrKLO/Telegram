@@ -265,6 +265,18 @@ public class PhotoViewerWebView extends FrameLayout {
                     drawBlackBackground(canvas, getWidth(), getHeight());
                 }
             }
+
+            @Override
+            protected void onAttachedToWindow() {
+                AndroidUtilities.checkAndroidTheme(context, true);
+                super.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                AndroidUtilities.checkAndroidTheme(context, false);
+                super.onDetachedFromWindow();
+            }
         };
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);

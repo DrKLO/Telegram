@@ -236,6 +236,15 @@ public class StickerView extends EntityView {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
+            int count = canvas.getSaveCount();
+
+            float alpha = getShowAlpha();
+            if (alpha <= 0) {
+                return;
+            } else if (alpha < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            }
+
             float thickness = AndroidUtilities.dp(1.0f);
             float radius = AndroidUtilities.dpf2(5.66f);
 
@@ -251,6 +260,8 @@ public class StickerView extends EntityView {
 
             canvas.drawCircle(inset + mainRadius * 2, inset + mainRadius, radius, dotStrokePaint);
             canvas.drawCircle(inset + mainRadius * 2, inset + mainRadius, radius - AndroidUtilities.dp(1), dotPaint);
+
+            canvas.restoreToCount(count);
         }
     }
 }

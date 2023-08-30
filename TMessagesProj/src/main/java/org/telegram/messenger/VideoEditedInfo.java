@@ -107,6 +107,7 @@ public class VideoEditedInfo {
         public static final int TYPE_STICKER = 0;
         public static final int TYPE_TEXT = 1;
         public static final int TYPE_PHOTO = 2;
+        public static final int TYPE_LOCATION = 3;
 
         public byte type;
         public byte subType;
@@ -115,6 +116,7 @@ public class VideoEditedInfo {
         public float rotation;
         public float width;
         public float height;
+        public float additionalWidth, additionalHeight;
         public String text;
         public ArrayList<EmojiEntity> entities = new ArrayList<>();
         public int color;
@@ -145,6 +147,12 @@ public class VideoEditedInfo {
         public Canvas canvas;
         public AnimatedFileDrawable animatedFileDrawable;
         public Canvas roundRadiusCanvas;
+
+        public TLRPC.MediaArea mediaArea;
+        public TLRPC.MessageMedia mediaGeo;
+        public float density;
+
+        public int W, H;
 
         public MediaEntity() {
 
@@ -185,6 +193,20 @@ public class VideoEditedInfo {
                     document = TLRPC.Document.TLdeserialize(data, magic, false);
                 }
             }
+            if (type == TYPE_LOCATION) {
+                density = data.readFloat(false);
+                mediaArea = TLRPC.MediaArea.TLdeserialize(data, data.readInt32(false), false);
+                mediaGeo = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(false), false);
+                if (data.remaining() > 0) {
+                    int magic = data.readInt32(false);
+                    if (magic == 0xdeadbeef) {
+                        String emoji = data.readString(false);
+                        if (mediaGeo instanceof TLRPC.TL_messageMediaVenue) {
+                            ((TLRPC.TL_messageMediaVenue) mediaGeo).emoji = emoji;
+                        }
+                    }
+                }
+            }
         }
 
         public void serializeTo(AbstractSerializedData data, boolean full) {
@@ -216,6 +238,26 @@ public class VideoEditedInfo {
                     data.writeInt32(TLRPC.TL_null.constructor);
                 } else {
                     document.serializeToStream(data);
+                }
+            }
+            if (type == TYPE_LOCATION) {
+                data.writeFloat(density);
+                mediaArea.serializeToStream(data);
+                if (mediaGeo.provider == null) {
+                    mediaGeo.provider = "";
+                }
+                if (mediaGeo.venue_id == null) {
+                    mediaGeo.venue_id = "";
+                }
+                if (mediaGeo.venue_type == null) {
+                    mediaGeo.venue_type = "";
+                }
+                mediaGeo.serializeToStream(data);
+                if (mediaGeo instanceof TLRPC.TL_messageMediaVenue && ((TLRPC.TL_messageMediaVenue) mediaGeo).emoji != null) {
+                    data.writeInt32(0xdeadbeef);
+                    data.writeString(((TLRPC.TL_messageMediaVenue) mediaGeo).emoji);
+                } else {
+                    data.writeInt32(TLRPC.TL_null.constructor);
                 }
             }
         }

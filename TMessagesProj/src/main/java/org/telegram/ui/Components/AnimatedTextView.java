@@ -58,6 +58,10 @@ public class AnimatedTextView extends View {
         private Part[] oldParts;
         private CharSequence oldText;
 
+        public void setSplitByWords(boolean b) {
+            splitByWords = b;
+        }
+
         private static class Part {
             StaticLayout layout;
             float offset;

@@ -134,6 +134,12 @@ public class CheckBoxCell extends FrameLayout {
         updateTextColor();
     }
 
+    public void allowMultiline() {
+        textView.setLines(3);
+        textView.setMaxLines(3);
+        textView.setSingleLine(false);
+    }
+
     public void updateTextColor() {
         textView.setTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setLinkTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));

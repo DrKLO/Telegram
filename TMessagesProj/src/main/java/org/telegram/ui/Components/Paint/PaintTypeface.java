@@ -36,11 +36,12 @@ public class PaintTypeface {
     public static final PaintTypeface ROBOTO_MEDIUM = new PaintTypeface("roboto", "PhotoEditorTypefaceRoboto", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)));
     public static final PaintTypeface ROBOTO_ITALIC = new PaintTypeface("italic", "PhotoEditorTypefaceItalic", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC)));
     public static final PaintTypeface ROBOTO_SERIF = new PaintTypeface("serif", "PhotoEditorTypefaceSerif", new LazyTypeface(() -> Typeface.create("serif", Typeface.BOLD)));
+    public static final PaintTypeface ROBOTO_CONDENSED = new PaintTypeface("condensed", "PhotoEditorTypefaceCondensed", new LazyTypeface(() -> AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf")));
     public static final PaintTypeface ROBOTO_MONO = new PaintTypeface ("mono", "PhotoEditorTypefaceMono", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO)));
     public static final PaintTypeface MW_BOLD = new PaintTypeface("mw_bold", "PhotoEditorTypefaceMerriweather", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_MERRIWEATHER_BOLD)));
     public static final PaintTypeface COURIER_NEW_BOLD = new PaintTypeface("courier_new_bold", "PhotoEditorTypefaceCourierNew", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_COURIER_NEW_BOLD)));
 
-    public final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
+    public final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_CONDENSED, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
 
     private static final List<String> preferable = Arrays.asList(
         "Google Sans",

@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -112,6 +113,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
+import androidx.core.widget.NestedScrollView;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
@@ -157,6 +159,8 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stories.PeerStoriesView;
+import org.telegram.ui.Stories.StoryMediaAreasView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
 
@@ -174,6 +178,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.IDN;
@@ -246,9 +251,6 @@ public class AndroidUtilities {
     private static Boolean isTablet = null, wasTablet = null, isSmallScreen = null;
     private static int adjustOwnerClassGuid = 0;
     private static int altFocusableClassGuid = 0;
-
-    private static Paint roundPaint;
-    private static RectF bitmapRect;
 
     public static final RectF rectTmp = new RectF();
     public static final Rect rectTmp2 = new Rect();
@@ -456,6 +458,10 @@ public class AndroidUtilities {
     }
 
     public static SpannableStringBuilder replaceSingleTag(String str, int colorKey, int type, Runnable runnable) {
+        return replaceSingleTag(str, colorKey, type, runnable, null);
+    }
+
+    public static SpannableStringBuilder replaceSingleTag(String str, int colorKey, int type, Runnable runnable, Theme.ResourcesProvider resourcesProvider) {
         int startIndex = str.indexOf("**");
         int endIndex = str.indexOf("**", startIndex + 1);
         str = str.replace("**", "");
@@ -475,7 +481,7 @@ public class AndroidUtilities {
                         super.updateDrawState(ds);
                         ds.setUnderlineText(false);
                         if (colorKey >= 0) {
-                            ds.setColor(Theme.getColor(colorKey));
+                            ds.setColor(Theme.getColor(colorKey, resourcesProvider));
                         }
                     }
 
@@ -492,7 +498,7 @@ public class AndroidUtilities {
                     public void updateDrawState(TextPaint textPaint) {
                         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                         int wasAlpha = textPaint.getAlpha();
-                        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+                        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
                         textPaint.setAlpha(wasAlpha);
                     }
                 }, index, index + len, 0);
@@ -513,9 +519,17 @@ public class AndroidUtilities {
             return;
         }
         if (bitmapToRecycle != null && !bitmapToRecycle.isEmpty()) {
+            ArrayList<WeakReference<Bitmap>> bitmapsToRecycleRef = new ArrayList<>();
+            for (int i = 0; i < bitmapToRecycle.size(); i++) {
+                Bitmap bitmap = bitmapToRecycle.get(i);
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmapsToRecycleRef.add(new WeakReference<>(bitmap));
+                }
+            }
             AndroidUtilities.runOnUIThread(() -> Utilities.globalQueue.postRunnable(() -> {
-                for (int i = 0; i < bitmapToRecycle.size(); i++) {
-                    Bitmap bitmap = bitmapToRecycle.get(i);
+                for (int i = 0; i < bitmapsToRecycleRef.size(); i++) {
+                    Bitmap bitmap = bitmapsToRecycleRef.get(i).get();
+                    bitmapsToRecycleRef.get(i).clear();
                     if (bitmap != null && !bitmap.isRecycled()) {
                         try {
                             bitmap.recycle();
@@ -567,18 +581,25 @@ public class AndroidUtilities {
     }
 
     public static boolean findClickableView(ViewGroup container, float x, float y) {
+        return findClickableView(container, x, y, null);
+    }
+
+    public static boolean findClickableView(ViewGroup container, float x, float y, View onlyThisView) {
         if (container == null) {
             return false;
         }
         for (int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
-            if (child.getVisibility() != View.VISIBLE) {
+            if (child.getVisibility() != View.VISIBLE || child instanceof PeerStoriesView && child != onlyThisView) {
+                continue;
+            }
+            if (child instanceof StoryMediaAreasView.AreaView && !((StoryMediaAreasView) container).hasSelected() && (x < dp(60) || x > container.getWidth() - dp(60))) {
                 continue;
             }
             child.getHitRect(AndroidUtilities.rectTmp2);
             if (AndroidUtilities.rectTmp2.contains((int) x, (int) y) && child.isClickable()) {
                 return true;
-            } else if (child instanceof ViewGroup && findClickableView((ViewGroup) child, x - child.getX(), y - child.getY())) {
+            } else if (child instanceof ViewGroup && findClickableView((ViewGroup) child, x - child.getX(), y - child.getY(), onlyThisView)) {
                 return true;
             }
         }
@@ -680,6 +701,9 @@ public class AndroidUtilities {
     public static void getViewPositionInParent(View view, ViewGroup parent, float[] pointPosition) {
         pointPosition[0] = 0;
         pointPosition[1] = 0;
+        if (view == null || parent == null) {
+            return;
+        }
         View currentView = view;
         while (currentView != parent) {
             //fix strange offset inside view pager
@@ -713,6 +737,52 @@ public class AndroidUtilities {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static void getBitmapFromSurface(Surface surface, Bitmap surfaceBitmap) {
+        if (surface == null || !surface.isValid()) {
+            return;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        PixelCopy.request(surface, surfaceBitmap, copyResult -> {
+            countDownLatch.countDown();
+        }, Utilities.searchQueue.getHandler());
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static float[] getCoordinateInParent(ViewGroup parentView, View view) {
+        float x = 0, y = 0;
+        View child = view;
+        float yOffset = 0;
+        float xOffset = 0;
+        if (child != null && parentView != null) {
+            while (child != parentView) {
+                if (child == null) {
+                    xOffset = 0;
+                    yOffset = 0;
+                    break;
+                }
+                yOffset += child.getY();
+                xOffset += child.getX();
+                if (child instanceof NestedScrollView) {
+                    yOffset -= child.getScrollY();
+                    xOffset -= child.getScrollX();
+                }
+                if (child.getParent() instanceof View) {
+                    child = (View) child.getParent();
+                } else {
+                    xOffset = 0;
+                    yOffset = 0;
+                    break;
+                }
+            }
+        }
+        return new float[] {xOffset, yOffset};
     }
 
     private static class LinkSpec {
@@ -2976,7 +3046,17 @@ public class AndroidUtilities {
     }
 
     private static File getAlbumDir(boolean secretChat) {
-        if (secretChat || !BuildVars.NO_SCOPED_STORAGE || (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
+        if (
+            secretChat ||
+            !BuildVars.NO_SCOPED_STORAGE ||
+            (
+                Build.VERSION.SDK_INT >= 33 &&
+                ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED
+            ) || (
+                Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT <= 33 &&
+                ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+            )
+        ) {
             return FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE);
         }
         File storageDir = null;
@@ -3202,10 +3282,10 @@ public class AndroidUtilities {
     }
 
     public static String formatFileSize(long size) {
-        return formatFileSize(size, false);
+        return formatFileSize(size, false, false);
     }
 
-    public static String formatFileSize(long size, boolean removeZero) {
+    public static String formatFileSize(long size, boolean removeZero, boolean makeShort) {
         if (size == 0) {
             return String.format("%d KB", 0);
         } else if (size < 1024) {
@@ -3228,6 +3308,8 @@ public class AndroidUtilities {
             float value = (int) (size / 1024L / 1024L) / 1000.0f;
             if (removeZero && (value - (int) value) * 10 == 0) {
                 return String.format("%d GB", (int) value);
+            } else if (makeShort) {
+                return String.format("%.1f GB", value);
             } else {
                 return String.format("%.2f GB", value);
             }
@@ -5189,7 +5271,7 @@ public class AndroidUtilities {
     }
 
     public static boolean intersect1d(int x1, int x2, int y1, int y2) {
-        return Math.max(x1, x2) >= Math.min(y1, y2) && Math.max(y1, y2) >= Math.min(x1, x2);
+        return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
     }
 
     public static String getSysInfoString(String path) {
@@ -5370,10 +5452,20 @@ public class AndroidUtilities {
             System.gc();
             clone = ByteBuffer.allocate(original.capacity());
         }
+        int position = original.position();
         original.rewind();
         clone.put(original);
         original.rewind();
         clone.flip();
+        clone.position(position);
         return clone;
+    }
+
+    public static void checkAndroidTheme(Context context, boolean open) {
+        // this hack is done to support prefers-color-scheme in webviews 🤦
+        if (context == null) {
+            return;
+        }
+        context.setTheme(Theme.isCurrentThemeDark() && open ? R.style.Theme_TMessages_Dark : R.style.Theme_TMessages);
     }
 }

@@ -2017,8 +2017,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             params = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
                         }
                     } else {
+                        if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null) {
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false));
+                        }
                         params = SendMessagesHelper.SendMessageParams.of(null, key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
-                        params.caption = frameLayout2.getTag() != null && commentTextView.length()  > 0 && text[0] != null ? text[0].toString() : null;
                         params.sendingStory = storyItem;
                     }
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(params);

@@ -370,6 +370,7 @@ public class LoadingDrawable extends Drawable {
     @Override
     public void setAlpha(int i) {
         paint.setAlpha(i);
+        strokePaint.setAlpha(i);
         if (i > 0) {
             invalidateSelf();
         }

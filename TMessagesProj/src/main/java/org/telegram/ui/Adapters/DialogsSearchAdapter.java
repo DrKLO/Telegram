@@ -76,12 +76,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private Runnable searchRunnable;
     private Runnable searchRunnable2;
     private ArrayList<Object> searchResult = new ArrayList<>();
-    private ArrayList<ContactsController.Contact> searchContacts = new ArrayList<>();
-    private ArrayList<TLRPC.TL_forumTopic> searchTopics = new ArrayList<>();
+    private final ArrayList<ContactsController.Contact> searchContacts = new ArrayList<>();
+    private final ArrayList<TLRPC.TL_forumTopic> searchTopics = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
-    private ArrayList<MessageObject> searchForumResultMessages = new ArrayList<>();
-    private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
-    private ArrayList<String> searchResultHashtags = new ArrayList<>();
+    private final ArrayList<MessageObject> searchForumResultMessages = new ArrayList<>();
+    private final ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
+    private final ArrayList<String> searchResultHashtags = new ArrayList<>();
     private String lastSearchText;
     private boolean searchWas;
     private int reqId = 0;
@@ -111,12 +111,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     public View showMoreHeader;
     private Runnable cancelShowMoreAnimation;
     private ArrayList<Long> filterDialogIds;
+    private final DialogsActivity dialogsActivity;
 
     private int currentAccount = UserConfig.selectedAccount;
 
     private ArrayList<RecentSearchObject> recentSearchObjects = new ArrayList<>();
-    private ArrayList<RecentSearchObject> filteredRecentSearchObjects = new ArrayList<>();
-    private ArrayList<RecentSearchObject> filtered2RecentSearchObjects = new ArrayList<>();
+    private final ArrayList<RecentSearchObject> filteredRecentSearchObjects = new ArrayList<>();
+    private final ArrayList<RecentSearchObject> filtered2RecentSearchObjects = new ArrayList<>();
     private String filteredRecentQuery = null;
     private LongSparseArray<RecentSearchObject> recentSearchObjectsById = new LongSparseArray<>();
     private ArrayList<FiltersView.DateData> localTipDates = new ArrayList<>();
@@ -220,9 +221,38 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
-    public DialogsSearchAdapter(Context context, int messagesSearch, int type, DefaultItemAnimator itemAnimator, boolean allowGlobalSearch) {
+    private boolean filter(Object obj) {
+        if (dialogsType != DialogsActivity.DIALOGS_TYPE_START_ATTACH_BOT) {
+            return true;
+        }
+        // add more filters if needed
+        if (obj instanceof TLRPC.User) {
+            if (((TLRPC.User) obj).bot) {
+                return dialogsActivity.allowBots;
+            }
+            return dialogsActivity.allowUsers;
+        } else if (obj instanceof TLRPC.Chat) {
+            TLRPC.Chat chat = (TLRPC.Chat) obj;
+            if (ChatObject.isChannel(chat)) {
+                return dialogsActivity.allowChannels;
+            } else if (ChatObject.isMegagroup(chat)) {
+                return dialogsActivity.allowGroups || dialogsActivity.allowMegagroups;
+            } else {
+                return dialogsActivity.allowGroups || dialogsActivity.allowLegacyGroups;
+            }
+        }
+        return false;
+    }
+
+    public DialogsSearchAdapter(Context context, DialogsActivity dialogsActivity, int messagesSearch, int type, DefaultItemAnimator itemAnimator, boolean allowGlobalSearch) {
         this.itemAnimator = itemAnimator;
-        searchAdapterHelper = new SearchAdapterHelper(false);
+        this.dialogsActivity = dialogsActivity;
+        searchAdapterHelper = new SearchAdapterHelper(false) {
+            @Override
+            protected boolean filter(TLObject obj) {
+                return DialogsSearchAdapter.this.filter(obj);
+            }
+        };
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
             public void onDataSetChanged(int searchId) {
@@ -872,6 +902,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 searchResultMessages.clear();
             }
             searchWas = true;
+            for (int i = 0; i < result.size(); ++i) {
+                if (!filter(result.get(i))) {
+                    result.remove(i);
+                    i--;
+                }
+            }
             final int recentCount = filtered2RecentSearchObjects.size();
             for (int a = 0; a < result.size(); a++) {
                 Object obj = result.get(a);
@@ -1092,7 +1128,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     public int getRecentItemsCount() {
         ArrayList<RecentSearchObject> recent = searchWas ? filtered2RecentSearchObjects : filteredRecentSearchObjects;
-        return (!recent.isEmpty() ? recent.size() + 1 : 0) + (!searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
+        return (!recent.isEmpty() ? recent.size() + 1 : 0) + (hasHints() ? 1 : 0);
     }
 
     public int getRecentResultsCount() {
@@ -1175,7 +1211,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             }
         }
         if (isRecentSearchDisplayed()) {
-            int offset = (!searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
+            int offset = (hasHints() ? 1 : 0);
             ArrayList<RecentSearchObject> recent = searchWas ? filtered2RecentSearchObjects : filteredRecentSearchObjects;
             if (i > offset && i - 1 - offset < recent.size()) {
                 TLObject object = recent.get(i - 1 - offset).object;
@@ -1263,7 +1299,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             return false;
         }
         if (isRecentSearchDisplayed()) {
-            int offset = (!searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
+            int offset = (hasHints() ? 1 : 0);
             ArrayList<RecentSearchObject> recent = searchWas ? filtered2RecentSearchObjects : filteredRecentSearchObjects;
             if (i > offset && i - 1 - offset < recent.size()) {
                 return false;
@@ -1411,6 +1447,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         }
         return new RecyclerListView.Holder(view);
+    }
+
+    private boolean hasHints() {
+        return !searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() && (dialogsType != DialogsActivity.DIALOGS_TYPE_START_ATTACH_BOT || dialogsActivity.allowUsers);
     }
 
     @Override
@@ -1564,7 +1604,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 } else {
                     int rawPosition = position;
                     if (isRecentSearchDisplayed() || !searchTopics.isEmpty() || !searchContacts.isEmpty()) {
-                        int offset = (!searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
+                        int offset = hasHints() ? 1 : 0;
                         if (position < offset) {
                             cell.setText(LocaleController.getString("ChatHints", R.string.ChatHints));
                             return;
@@ -1768,7 +1808,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             return i == 0 ? VIEW_TYPE_GRAY_SECTION : VIEW_TYPE_HASHTAG_CELL;
         }
         if (isRecentSearchDisplayed()) {
-            int offset = (!searchWas && !MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
+            int offset = hasHints() ? 1 : 0;
             if (i < offset) {
                 return VIEW_TYPE_CATEGORY_LIST;
             }
@@ -1889,7 +1929,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             filteredRecentSearchObjects.clear();
             final int count = recentSearchObjects.size();
             for (int i = 0; i < count; ++i) {
-                if (delegate != null && delegate.getSearchForumDialogId() == recentSearchObjects.get(i).did) {
+                if (delegate != null && delegate.getSearchForumDialogId() == recentSearchObjects.get(i).did || !filter(recentSearchObjects.get(i).object)) {
                     continue;
                 }
                 filteredRecentSearchObjects.add(recentSearchObjects.get(i));
@@ -1903,7 +1943,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             if (obj == null || obj.object == null) {
                 continue;
             }
-            if (delegate != null && delegate.getSearchForumDialogId() == obj.did) {
+            if (delegate != null && delegate.getSearchForumDialogId() == obj.did || !filter(recentSearchObjects.get(i).object)) {
                 continue;
             }
             String title = null, username = null;

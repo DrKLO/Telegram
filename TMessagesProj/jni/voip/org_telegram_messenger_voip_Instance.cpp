@@ -924,7 +924,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onStreamP
         return;
     }
     auto context = (AndroidContext *) instance->_platformContext.get();
-    std::shared_ptr<BroadcastPartTask> task;
+    std::shared_ptr<BroadcastPartTask> task = nullptr;
     auto q = (VideoChannelDescription::Quality) quality;
     if (videoChannel != 0) {
         for (auto videoTaskIter = context->videoStreamTasks.begin(); videoTaskIter != context->videoStreamTasks.end(); videoTaskIter++) {

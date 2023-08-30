@@ -388,26 +388,27 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
                 long dt = Math.min(16, System.currentTimeMillis() - lastUpdate);
                 lastUpdate = System.currentTimeMillis();
-                boolean drawStickyX = false, drawStickyY = false;
+                int stickyX = EntityView.STICKY_NONE, stickyY = EntityView.STICKY_NONE;
 
                 if (currentEntityView != null && currentEntityView.hasTouchDown() && currentEntityView.hasPanned()) {
-                    drawStickyX = currentEntityView.hasStickyX();
-                    drawStickyY = currentEntityView.hasStickyY();
+                    stickyX = currentEntityView.getStickyX();
+                    stickyY = currentEntityView.getStickyY();
                 }
 
-                if (drawStickyX && stickyXAlpha != 1f) {
-                    stickyXAlpha = Math.min(1f, stickyXAlpha + dt / 150f);
+                final float STICKY_DURATION = 150;
+                if (stickyX != EntityView.STICKY_NONE && stickyXAlpha != 1f) {
+                    stickyXAlpha = Math.min(1f, stickyXAlpha + dt / STICKY_DURATION);
                     invalidate();
-                } else if (!drawStickyX && stickyXAlpha != 0f) {
-                    stickyXAlpha = Math.max(0f, stickyXAlpha - dt / 150f);
+                } else if (stickyX == EntityView.STICKY_NONE && stickyXAlpha != 0f) {
+                    stickyXAlpha = Math.max(0f, stickyXAlpha - dt / STICKY_DURATION);
                     invalidate();
                 }
 
-                if (drawStickyY && stickyYAlpha != 1f) {
-                    stickyYAlpha = Math.min(1f, stickyYAlpha + dt / 150f);
+                if (stickyY != EntityView.STICKY_NONE && stickyYAlpha != 1f) {
+                    stickyYAlpha = Math.min(1f, stickyYAlpha + dt / STICKY_DURATION);
                     invalidate();
-                } else if (!drawStickyY && stickyYAlpha != 0f) {
-                    stickyYAlpha = Math.max(0f, stickyYAlpha - dt / 150f);
+                } else if (stickyY == EntityView.STICKY_NONE && stickyYAlpha != 0f) {
+                    stickyYAlpha = Math.max(0f, stickyYAlpha - dt / STICKY_DURATION);
                     invalidate();
                 }
 
@@ -919,10 +920,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         Point position = startPositionRelativeToEntity(null);
         TextPaintView view = new TextPaintView(getContext(), position, (int) (paintingSize.width / 9), "", colorSwatch, selectedTextType);
         if (position.x == entitiesView.getMeasuredWidth() / 2f) {
-            view.setHasStickyX(true);
+            view.setStickyX(EntityView.STICKY_CENTER);
         }
         if (position.y == entitiesView.getMeasuredHeight() / 2f) {
-            view.setHasStickyY(true);
+            view.setStickyY(EntityView.STICKY_CENTER);
         }
         view.setDelegate(this);
         view.setMaxWidth((int) (paintingSize.width - 20));
@@ -2728,10 +2729,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         };
         view.centerImage.setLayerNum(4 + 8);
         if (position.position.x == entitiesView.getMeasuredWidth() / 2f) {
-            view.setHasStickyX(true);
+            view.setStickyX(EntityView.STICKY_CENTER);
         }
         if (position.position.y == entitiesView.getMeasuredHeight() / 2f) {
-            view.setHasStickyY(true);
+            view.setStickyY(EntityView.STICKY_CENTER);
         }
         view.setDelegate(this);
         entitiesView.addView(view);
@@ -2782,15 +2783,13 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         return true;
     }
 
-    private float[] temp = new float[2];
     @Override
-    public float[] getTransformedTouch(MotionEvent e, float x, float y) {
+    public void getTransformedTouch(float x, float y, float[] output) {
         float x2 = (x - AndroidUtilities.displaySize.x / 2f);
         float y2 = (y - AndroidUtilities.displaySize.y / 2f);
         float rotation = (float) Math.toRadians(-entitiesView.getRotation());
-        temp[0] = (float) (x2 * Math.cos(rotation) - y2 * Math.sin(rotation)) + AndroidUtilities.displaySize.x / 2f;
-        temp[1] = (float) (x2 * Math.sin(rotation) + y2 * Math.cos(rotation)) + AndroidUtilities.displaySize.y / 2f;
-        return temp;
+        output[0] = (float) (x2 * Math.cos(rotation) - y2 * Math.sin(rotation)) + AndroidUtilities.displaySize.x / 2f;
+        output[1] = (float) (x2 * Math.sin(rotation) + y2 * Math.cos(rotation)) + AndroidUtilities.displaySize.y / 2f;
     }
 
     @Override

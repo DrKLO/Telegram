@@ -171,6 +171,17 @@ public final class BulletinFactory {
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
+    public Bulletin createSimpleLargeBulletin(int iconRawId, CharSequence title, CharSequence subtitle) {
+        final Bulletin.TwoLineLayout layout = new Bulletin.TwoLineLayout(getContext(), resourcesProvider);
+        layout.imageView.setImageResource(iconRawId);
+        layout.titleTextView.setText(title);
+
+        layout.subtitleTextView.setText(subtitle);
+        layout.subtitleTextView.setSingleLine(false);
+        layout.subtitleTextView.setMaxLines(5);
+        return create(layout, Bulletin.DURATION_PROLONG);
+    }
+
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, int maxLines) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
@@ -1030,6 +1041,21 @@ public final class BulletinFactory {
         }
         layout.textView.setText(AndroidUtilities.replaceTags(text));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public Bulletin createBanBulletin(boolean banned) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        final String text;
+        if (banned) {
+            layout.setAnimation(R.raw.ic_ban, "Hand");
+            text = LocaleController.getString("UserBlocked", R.string.UserBlocked);
+        } else {
+            layout.setAnimation(R.raw.ic_unban, "Main", "Finger 1", "Finger 2", "Finger 3", "Finger 4");
+            text = LocaleController.getString("UserUnblocked", R.string.UserUnblocked);
+        }
+        layout.textView.setText(AndroidUtilities.replaceTags(text));
+        return create(layout, Bulletin.DURATION_SHORT);
     }
 
     @CheckResult

@@ -4,6 +4,7 @@ package org.telegram.ui.Components;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
@@ -11,15 +12,24 @@ public class ButtonBounce {
 
     private View view;
     private final float durationMultiplier;
+    private final float overshoot;
+    private long releaseDelay = 0;
 
     public ButtonBounce(View viewToInvalidate) {
         view = viewToInvalidate;
         durationMultiplier = 1f;
+        overshoot = 5.0f;
     }
 
-    public ButtonBounce(View viewToInvalidate, float durationMultiplier) {
+    public ButtonBounce(View viewToInvalidate, float durationMultiplier, float overshoot) {
         view = viewToInvalidate;
         this.durationMultiplier = durationMultiplier;
+        this.overshoot = overshoot;
+    }
+
+    public ButtonBounce setReleaseDelay(long releaseDelay) {
+        this.releaseDelay = releaseDelay;
+        return this;
     }
 
     public void setView(View view) {
@@ -33,8 +43,10 @@ public class ButtonBounce {
     public void setPressed(boolean pressed) {
         if (isPressed != pressed) {
             isPressed = pressed;
-            if (animator != null) {
-                animator.cancel();
+            ValueAnimator pastAnimator = animator;
+            animator = null;
+            if (pastAnimator != null) {
+                pastAnimator.cancel();
             }
             animator = ValueAnimator.ofFloat(pressedT, pressed ? 1 : 0);
             animator.addUpdateListener(anm -> {
@@ -44,17 +56,21 @@ public class ButtonBounce {
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    animator = null;
-                    pressedT = pressed ? 1 : 0;
-                    invalidate();
+                    if (animation == animator) {
+                        animator = null;
+                        pressedT = pressed ? 1 : 0;
+                        invalidate();
+                    }
                 }
             });
             if (isPressed) {
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 animator.setDuration((long) (60 * durationMultiplier));
+                animator.setStartDelay(0);
             } else {
-                animator.setInterpolator(new OvershootInterpolator(5.0f));
+                animator.setInterpolator(new OvershootInterpolator(overshoot));
                 animator.setDuration((long) (350 * durationMultiplier));
+                animator.setStartDelay(releaseDelay);
             }
             animator.start();
         }

@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.PointF;
+import android.media.MediaFormat;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;

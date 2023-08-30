@@ -1354,7 +1354,7 @@ public class MessageObject {
     }
 
     public void createStrippedThumb() {
-        if (photoThumbs == null || !canCreateStripedThubms() && !hasExtendedMediaPreview()) {
+        if (photoThumbs == null || !canCreateStripedThubms() && !hasExtendedMediaPreview() || strippedThumb != null) {
             return;
         }
         try {
@@ -4649,7 +4649,7 @@ public class MessageObject {
         return FileLoader.MEDIA_DIR_CACHE;
     }
 
-    private static boolean containsUrls(CharSequence message) {
+    public static boolean containsUrls(CharSequence message) {
         if (message == null || message.length() < 2 || message.length() > 1024 * 20) {
             return false;
         }
@@ -4835,7 +4835,17 @@ public class MessageObject {
         }
         String text = messageOwner.message;
         ArrayList<TLRPC.MessageEntity> entities = messageOwner.entities;
-        if (hasExtendedMedia()) {
+        boolean forceManualEntities = false;
+        if (type == TYPE_STORY) {
+            if (messageOwner.media != null && messageOwner.media.storyItem != null) {
+                text = messageOwner.media.storyItem.caption;
+                entities = messageOwner.media.storyItem.entities;
+                forceManualEntities = true;
+            } else {
+                text = "";
+                entities = new ArrayList<>();
+            }
+        } else if (hasExtendedMedia()) {
             text = messageOwner.message = messageOwner.media.description;
         }
         if (captionTranslated = translated) {
@@ -4844,7 +4854,7 @@ public class MessageObject {
         }
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
             caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-            caption = replaceAnimatedEmoji(caption, Theme.chat_msgTextPaint.getFontMetricsInt());
+            caption = replaceAnimatedEmoji(caption, entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
 
             boolean hasEntities;
             if (messageOwner.send_state != MESSAGE_SEND_STATE_SENT) {
@@ -4853,16 +4863,16 @@ public class MessageObject {
                 hasEntities = !entities.isEmpty();
             }
 
-            boolean useManualParse = !hasEntities && (
-                    eventId != 0 ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_old ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_layer68 ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_layer74 ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_old ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_layer68 ||
-                            getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_layer74 ||
-                            isOut() && messageOwner.send_state != MESSAGE_SEND_STATE_SENT ||
-                            messageOwner.id < 0
+            boolean useManualParse = forceManualEntities || !hasEntities && (
+                eventId != 0 ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_old ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_layer68 ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto_layer74 ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_old ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_layer68 ||
+                getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument_layer74 ||
+                isOut() && messageOwner.send_state != MESSAGE_SEND_STATE_SENT ||
+                messageOwner.id < 0
             );
 
             if (useManualParse) {
@@ -6993,7 +7003,7 @@ public class MessageObject {
     }
 
     public boolean shouldAnimateSending() {
-        return isSending() && (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || (isAnyKindOfSticker() && sendAnimationData != null) || (messageText != null && sendAnimationData != null));
+        return wasJustSent && (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || (isAnyKindOfSticker() && sendAnimationData != null) || (messageText != null && sendAnimationData != null));
     }
 
     public boolean hasAttachedStickers() {
@@ -7581,7 +7591,7 @@ public class MessageObject {
         if (type == TYPE_EXTENDED_MEDIA_PREVIEW) {
             TLRPC.TL_messageExtendedMediaPreview preview = (TLRPC.TL_messageExtendedMediaPreview) messageOwner.media.extended_media;
             if (preview.thumb != null) {
-                File file = FileLoader.getInstance(currentAccount).getPathToAttach(preview.thumb);
+                File file = FileLoader.getInstance(currentAccount).getPathToAttach(preview.thumb, useFileDatabaseQueue);
                 if (!mediaExists) {
                     mediaExists = file.exists() || preview.thumb instanceof TLRPC.TL_photoStrippedSize;
                 }

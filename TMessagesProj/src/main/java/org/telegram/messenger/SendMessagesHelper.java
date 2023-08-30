@@ -4736,11 +4736,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     reqSend.reply_to = SendMessagesHelper.creteReplyInput(replyToTopMsg.getId());
                     reqSend.flags |= 512;
                 }
+
                 if (newMsg.from_id != null) {
                     reqSend.send_as = getMessagesController().getInputPeer(newMsg.from_id);
                 }
                 reqSend.hide_via = !params.containsKey("bot");
-                if (newMsg.reply_to != null && newMsg.reply_to.reply_to_msg_id != 0) {
+                if (replyToStoryItem != null) {
+                    reqSend.reply_to = creteReplyInput(replyToStoryItem);
+                    reqSend.flags |= 1;
+                } else if (newMsg.reply_to != null && newMsg.reply_to.reply_to_msg_id != 0) {
                     reqSend.flags |= 1;
                     reqSend.reply_to = SendMessagesHelper.creteReplyInput(newMsg.reply_to.reply_to_msg_id);
                 }

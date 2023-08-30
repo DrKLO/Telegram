@@ -39,7 +39,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private float shadowAlpha = 1f;
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize) {
-        this(fragment, needFocus, hasFixedSize, false, null);
+        this(fragment, needFocus, hasFixedSize, false, fragment == null ? null : fragment.getResourceProvider());
     }
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {

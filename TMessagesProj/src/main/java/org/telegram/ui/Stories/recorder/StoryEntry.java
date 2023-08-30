@@ -57,10 +57,20 @@ public class StoryEntry extends IStoryPart {
     public boolean isDraft;
     public long draftDate;
 
+    public long editStoryPeerId;
     public int editStoryId;
     public boolean isEdit;
+    public boolean isEditSaved;
     public double fileDuration = -1;
     public boolean editedMedia, editedCaption, editedPrivacy;
+    public ArrayList<TLRPC.MediaArea> editedMediaAreas;
+
+    public boolean isError;
+    public TLRPC.TL_error error;
+
+    public long editDocumentId;
+    public long editPhotoId;
+    public long editExpireDate;
 
     public boolean isVideo;
     public File file;
@@ -81,6 +91,7 @@ public class StoryEntry extends IStoryPart {
 
     public int partsMaxId = 1;
     public final ArrayList<Part> parts = new ArrayList<>();
+
     public static class Part extends IStoryPart {
         public File file;
         public boolean fileDeletable;
@@ -120,10 +131,11 @@ public class StoryEntry extends IStoryPart {
     public int gradientTopColor, gradientBottomColor;
 
     public CharSequence caption;
+    public boolean captionEntitiesAllowed = true;
     public StoryPrivacyBottomSheet.StoryPrivacy privacy;
     public final ArrayList<TLRPC.InputPrivacyRule> privacyRules = new ArrayList<>();
 
-    public boolean pinned;
+    public boolean pinned = true;
     public boolean allowScreenshots;
 
     public int period = 86400;
@@ -139,6 +151,7 @@ public class StoryEntry extends IStoryPart {
 
     // paint
     public File paintFile;
+    public File paintEntitiesFile;
     public long averageDuration = 5000;
     public ArrayList<VideoEditedInfo.MediaEntity> mediaEntities;
     public List<TLRPC.InputDocument> stickers;
@@ -162,7 +175,7 @@ public class StoryEntry extends IStoryPart {
                     if (isAnimated(entity.document, entity.text)) {
                         return true;
                     }
-                } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT && entity.entities != null && !entity.entities.isEmpty()) {
+                } else if ((entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT/* || entity.type == VideoEditedInfo.MediaEntity.TYPE_LOCATION*/) && entity.entities != null && !entity.entities.isEmpty()) {
                     for (int j = 0; j < entity.entities.size(); ++j) {
                         VideoEditedInfo.EmojiEntity e = entity.entities.get(j);
                         if (isAnimated(e.document, e.documentAbsolutePath)) {
@@ -177,7 +190,7 @@ public class StoryEntry extends IStoryPart {
 
     private boolean isAnimated(TLRPC.Document document, String path) {
         return document != null && (
-            MessageObject.isAnimatedStickerDocument(document) ||
+            "video/webm".equals(document.mime_type) || "video/mp4".equals(document.mime_type) ||
             MessageObject.isAnimatedStickerDocument(document, true) && RLottieDrawable.getFramesCount(path, null) > 1
         );
     }
@@ -226,6 +239,20 @@ public class StoryEntry extends IStoryPart {
         if (paintFile != null) {
             try {
                 Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(paintFile.getPath(), opts), resultWidth, resultHeight, false);
+                canvas.save();
+                float scale = resultWidth / (float) paintBitmap.getWidth();
+                canvas.scale(scale, scale);
+                canvas.drawBitmap(paintBitmap, 0, 0, bitmapPaint);
+                canvas.restore();
+                paintBitmap.recycle();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        if (paintEntitiesFile != null) {
+            try {
+                Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(paintEntitiesFile.getPath(), opts), resultWidth, resultHeight, false);
                 canvas.save();
                 float scale = resultWidth / (float) paintBitmap.getWidth();
                 canvas.scale(scale, scale);
@@ -295,9 +322,9 @@ public class StoryEntry extends IStoryPart {
             shader.setLocalMatrix(matrix);
             canvas.drawRect(0, 0, w, h, paint);
 
-            if (allowBlur && blurRadius > 0) {
-                Utilities.stackBlurBitmap(scaledBitmap, blurRadius);
-            }
+//            if (allowBlur && blurRadius > 0) {
+//                Utilities.stackBlurBitmap(scaledBitmap, blurRadius);
+//            }
 
             return scaledBitmap;
         } else {
@@ -315,6 +342,17 @@ public class StoryEntry extends IStoryPart {
         return file;
     }
 
+    private String ext(File file) {
+        if (file == null) {
+            return null;
+        }
+        String s = file.getPath();
+        int i;
+        if ((i = s.lastIndexOf('.')) > 0)
+            return s.substring(i + 1);
+        return null;
+    }
+
     public void updateFilter(PhotoFilterView filterView, Runnable whenDone) {
         clearFilter();
 
@@ -329,6 +367,9 @@ public class StoryEntry extends IStoryPart {
 
             Bitmap bitmap = filterView.getBitmap();
             if (bitmap == null) {
+                if (whenDone != null) {
+                    whenDone.run();
+                }
                 return;
             }
 
@@ -345,11 +386,13 @@ public class StoryEntry extends IStoryPart {
             if (filterFile != null && filterFile.exists()) {
                 filterFile.delete();
             }
-            filterFile = makeCacheFile(currentAccount, "webp");
+            String ext = ext(file);
+            final boolean supportTransparent = "png".equals(ext) || "webp".equals(ext);
+            filterFile = makeCacheFile(currentAccount, supportTransparent ? "webp" : "jpg");
             if (whenDone == null) {
                 try {
                     FileOutputStream stream = new FileOutputStream(filterFile);
-                    rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                    rotatedBitmap.compress(supportTransparent ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG, 90, stream);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -358,14 +401,16 @@ public class StoryEntry extends IStoryPart {
                 Utilities.themeQueue.postRunnable(() -> {
                     try {
                         FileOutputStream stream = new FileOutputStream(filterFile);
-                        rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                        rotatedBitmap.compress(supportTransparent ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG, 90, stream);
                     } catch (Exception e) {
                         FileLog.e(e, false);
-                        try {
-                            FileOutputStream stream = new FileOutputStream(filterFile);
-                            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
-                        } catch (Exception e2) {
-                            FileLog.e(e2, false);
+                        if (supportTransparent) {
+                            try {
+                                FileOutputStream stream = new FileOutputStream(filterFile);
+                                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                            } catch (Exception e2) {
+                                FileLog.e(e2, false);
+                            }
                         }
                     }
                     rotatedBitmap.recycle();
@@ -390,6 +435,10 @@ public class StoryEntry extends IStoryPart {
         if (paintFile != null) {
             paintFile.delete();
             paintFile = null;
+        }
+        if (paintEntitiesFile != null) {
+            paintEntitiesFile.delete();
+            paintEntitiesFile = null;
         }
     }
 
@@ -483,6 +532,7 @@ public class StoryEntry extends IStoryPart {
         } catch (Exception ignore) {}
         entry.setupMatrix();
         entry.checkStickers(storyItem);
+        entry.editedMediaAreas = storyItem.media_areas;
         return entry;
     }
 
@@ -781,9 +831,10 @@ public class StoryEntry extends IStoryPart {
         public float minlum;
 
         public int getHDRType() {
-            if (maxlum <= 0 && minlum <= 0) {
-                return 0;
-            } else if (colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
+//            if (maxlum <= 0 && minlum <= 0) {
+//                return 0;
+//            } else
+            if (colorStandard == MediaFormat.COLOR_STANDARD_BT2020) {
                 if (colorTransfer == MediaFormat.COLOR_TRANSFER_HLG) {
                     return 1;
                 } else if (colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084) {

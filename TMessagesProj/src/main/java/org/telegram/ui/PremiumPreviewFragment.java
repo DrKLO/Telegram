@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -81,6 +82,7 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.PremiumNotAvailableBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumTierCell;
 import org.telegram.ui.Components.Premium.StarParticlesView;
+import org.telegram.ui.Components.Premium.StoriesPageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -149,6 +151,15 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_ANIMATED_EMOJI = 11;
     public final static int PREMIUM_FEATURE_EMOJI_STATUS = 12;
     public final static int PREMIUM_FEATURE_TRANSLATIONS = 13;
+    public final static int PREMIUM_FEATURE_STORIES = 14;
+    public final static int PREMIUM_FEATURE_STORIES_STEALTH_MODE = 15;
+    public final static int PREMIUM_FEATURE_STORIES_VIEWS_HISTORY = 16;
+    public final static int PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION = 17;
+    public final static int PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY = 18;
+    public final static int PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING = 19;
+    public static final int PREMIUM_FEATURE_STORIES_PRIORITY_ORDER = 20;
+    public static final int PREMIUM_FEATURE_STORIES_CAPTION = 21;
+
     private int statusBarHeight;
     private int firstViewHeight;
     private boolean isDialogVisible;
@@ -201,6 +212,22 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_EMOJI_STATUS;
             case "translations":
                 return PREMIUM_FEATURE_TRANSLATIONS;
+            case "stories":
+                return PREMIUM_FEATURE_STORIES;
+            case "stories__stealth_mode":
+                return PREMIUM_FEATURE_STORIES_STEALTH_MODE;
+            case "stories__permanent_views_history":
+                return PREMIUM_FEATURE_STORIES_VIEWS_HISTORY;
+            case "stories__expiration_durations":
+                return PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION;
+            case "stories__save_stories_to_gallery":
+                return PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY;
+            case "stories__links_and_formatting":
+                return PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING;
+            case "stories__priority_order":
+                return PREMIUM_FEATURE_STORIES_PRIORITY_ORDER;
+            case "stories__caption":
+                return PREMIUM_FEATURE_STORIES_CAPTION;
         }
         return -1;
     }
@@ -235,6 +262,22 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "emoji_status";
             case PREMIUM_FEATURE_TRANSLATIONS:
                 return "translations";
+            case PREMIUM_FEATURE_STORIES:
+                return "stories";
+            case PREMIUM_FEATURE_STORIES_STEALTH_MODE:
+                return "stories__stealth_mode";
+            case PREMIUM_FEATURE_STORIES_VIEWS_HISTORY:
+                return "stories__permanent_views_history";
+            case PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION:
+                return "stories__expiration_durations";
+            case PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY:
+                return "stories__save_stories_to_gallery";
+            case PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING:
+                return "stories__links_and_formatting";
+            case PREMIUM_FEATURE_STORIES_PRIORITY_ORDER:
+                return "stories__priority_order";
+            case PREMIUM_FEATURE_STORIES_CAPTION:
+                return "stories__caption";
         }
         return null;
     }
@@ -594,6 +637,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LIMITS, R.drawable.msg_premium_limits, LocaleController.getString("PremiumPreviewLimits", R.string.PremiumPreviewLimits), LocaleController.formatString("PremiumPreviewLimitsDescription", R.string.PremiumPreviewLimitsDescription,
                 messagesController.channelsLimitPremium, messagesController.dialogFiltersLimitPremium, messagesController.dialogFiltersPinnedLimitPremium, messagesController.publicLinksLimitPremium, 4)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STORIES, R.drawable.msg_filled_stories, applyNewSpan(LocaleController.getString("PremiumPreviewStories", R.string.PremiumPreviewStories)), LocaleController.formatString("PremiumPreviewStoriesDescription", R.string.PremiumPreviewStoriesDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_UPLOAD_LIMIT, R.drawable.msg_premium_uploads, LocaleController.getString("PremiumPreviewUploads", R.string.PremiumPreviewUploads), LocaleController.getString("PremiumPreviewUploadsDescription", R.string.PremiumPreviewUploadsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_DOWNLOAD_SPEED, R.drawable.msg_premium_speed, LocaleController.getString("PremiumPreviewDownloadSpeed", R.string.PremiumPreviewDownloadSpeed), LocaleController.getString("PremiumPreviewDownloadSpeedDescription", R.string.PremiumPreviewDownloadSpeedDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_VOICE_TO_TEXT, R.drawable.msg_premium_voice, LocaleController.getString("PremiumPreviewVoiceToText", R.string.PremiumPreviewVoiceToText), LocaleController.getString("PremiumPreviewVoiceToTextDescription", R.string.PremiumPreviewVoiceToTextDescription)));
@@ -622,6 +666,15 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             int type2 = messagesController.premiumFeaturesTypesToPosition.get(o2.type, Integer.MAX_VALUE);
             return type1 - type2;
         });
+    }
+
+    private static CharSequence applyNewSpan(String str) {
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        spannableStringBuilder.append("  d");
+        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(false);
+        span.setColor(Theme.getColor(Theme.key_premiumGradient1));
+        spannableStringBuilder.setSpan(span, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+        return spannableStringBuilder;
     }
 
     private void updateBackgroundImage() {
@@ -668,6 +721,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             if (promo != null) {
                 for (TLRPC.TL_premiumSubscriptionOption option : promo.period_options) {
                     if (option.months == 1) {
+                        tier = new SubscriptionTier(option);
+                    } else if (option.months == 12) {
                         tier = new SubscriptionTier(option);
                         break;
                     }
@@ -813,16 +868,28 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             if (BuildVars.useInvoiceBilling()) {
                 TLRPC.TL_help_premiumPromo premiumPromo = MediaDataController.getInstance(currentAccount).getPremiumPromo();
                 if (premiumPromo != null) {
-                    long amount = 0;
-                    String currency = "USD";
+                    TLRPC.TL_premiumSubscriptionOption selectedOption = null;
                     for (TLRPC.TL_premiumSubscriptionOption option : premiumPromo.period_options) {
-                        if (option.months == 1) {
-                            amount = option.amount;
-                            currency = option.currency;
+                        if (option.months == 12) {
+                            selectedOption = option;
+                            break;
+                        } else if (selectedOption == null && option.months == 1) {
+                            selectedOption = option;
                         }
                     }
 
-                    return LocaleController.formatString(R.string.SubscribeToPremium, BillingController.getInstance().formatCurrency(amount, currency));
+                    if (selectedOption == null) {
+                        return LocaleController.getString(R.string.SubscribeToPremiumNoPrice);
+                    }
+
+                    final String price;
+                    if (selectedOption.months == 12) {
+                        price = BillingController.getInstance().formatCurrency(selectedOption.amount / 12, selectedOption.currency);
+                    } else {
+                        price = BillingController.getInstance().formatCurrency(selectedOption.amount, selectedOption.currency);
+                    }
+
+                    return LocaleController.formatString(R.string.SubscribeToPremium, price);
                 }
 
                 return LocaleController.getString(R.string.SubscribeToPremiumNoPrice);
@@ -836,6 +903,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     for (ProductDetails.PricingPhase phase : offerDetails.getPricingPhases().getPricingPhaseList()) {
                         if (phase.getBillingPeriod().equals("P1M")) { // Once per month
                             price = phase.getFormattedPrice();
+                        } else if (phase.getBillingPeriod().equals("P1Y")) { // Once per year
+                            price = BillingController.getInstance().formatCurrency(phase.getPriceAmountMicros() / 12L, phase.getPriceCurrencyCode(), 6);
                             break;
                         }
                     }
@@ -851,8 +920,16 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             if (!BuildVars.useInvoiceBilling() && tier.getOfferDetails() == null) {
                 return LocaleController.getString(R.string.Loading);
             }
-            return LocaleController.formatString(UserConfig.getInstance(currentAccount).isPremium() ? tier.getMonths() == 12 ? R.string.UpgradePremiumPerYear : R.string.UpgradePremiumPerMonth :
-                    tier.getMonths() == 12 ? R.string.SubscribeToPremiumPerYear : R.string.SubscribeToPremium, tier.getMonths() == 12 ? tier.getFormattedPricePerYear() : tier.getFormattedPricePerMonth());
+            final boolean isPremium = UserConfig.getInstance(currentAccount).isPremium();
+            final boolean isYearTier = tier.getMonths() == 12;
+            final String price = isYearTier ? tier.getFormattedPricePerYear() : tier.getFormattedPricePerMonth();
+            final int resId;
+            if (isPremium) {
+                resId = isYearTier ? R.string.UpgradePremiumPerYear : R.string.UpgradePremiumPerMonth;
+            } else {
+                resId = isYearTier ? R.string.SubscribeToPremiumPerYear : R.string.SubscribeToPremium;
+            }
+            return LocaleController.formatString(resId, price);
         }
     }
 
@@ -1107,11 +1184,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public static class PremiumFeatureData {
         public final int type;
         public final int icon;
-        public final String title;
+        public final CharSequence title;
         public final String description;
         public int yOffset;
 
-        public PremiumFeatureData(int type, int icon, String title, String description) {
+        public PremiumFeatureData(int type, int icon, CharSequence title, String description) {
             this.type = type;
             this.icon = icon;
             this.title = title;

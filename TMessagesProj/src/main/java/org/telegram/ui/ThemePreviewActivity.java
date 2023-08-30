@@ -4495,7 +4495,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 messageObject.resetLayout();
                 messages.add(messageObject);
 
-                if (dialogId != 0) {
+                if (dialogId != 0 && serverWallpaper == null) {
                     message = new TLRPC.TL_message();
                     message.message = "";
                     messageObject = new MessageObject(currentAccount, message, true, false);
@@ -4860,7 +4860,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view;
             if (viewType == 0) {
-                view = new ChatMessageCell(mContext, false, new Theme.ResourcesProvider() {
+                view = new ChatMessageCell(mContext, false, null, new Theme.ResourcesProvider() {
                     @Override
                     public int getColor(int key) {
                         return getThemedColor(key);

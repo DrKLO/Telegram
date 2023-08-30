@@ -147,6 +147,8 @@ public class PremiumGradient {
     //help with update colors and position
     public static class PremiumGradientTools {
 
+        private final Theme.ResourcesProvider resourcesProvider;
+
         public float cx = 0.5f;
         public float cy = 0.5f;
         Shader shader;
@@ -168,6 +170,11 @@ public class PremiumGradient {
         }
 
         public PremiumGradientTools(int colorKey1, int colorKey2, int colorKey3, int colorKey4, int colorKey5) {
+            this(colorKey1, colorKey2, colorKey3, colorKey4, -1, null);
+        }
+
+        public PremiumGradientTools(int colorKey1, int colorKey2, int colorKey3, int colorKey4, int colorKey5, Theme.ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
             this.colorKey1 = colorKey1;
             this.colorKey2 = colorKey2;
             this.colorKey3 = colorKey3;
@@ -201,11 +208,11 @@ public class PremiumGradient {
         }
 
         private void chekColors() {
-            int c1 = Theme.getColor(colorKey1);
-            int c2 = Theme.getColor(colorKey2);
-            int c3 = colorKey3 < 0 ? 0 : Theme.getColor(colorKey3);
-            int c4 = colorKey4 < 0 ? 0 : Theme.getColor(colorKey4);
-            int c5 = colorKey5 < 0 ? 0 : Theme.getColor(colorKey5);
+            int c1 = Theme.getColor(colorKey1, resourcesProvider);
+            int c2 = Theme.getColor(colorKey2, resourcesProvider);
+            int c3 = colorKey3 < 0 ? 0 : Theme.getColor(colorKey3, resourcesProvider);
+            int c4 = colorKey4 < 0 ? 0 : Theme.getColor(colorKey4, resourcesProvider);
+            int c5 = colorKey5 < 0 ? 0 : Theme.getColor(colorKey5, resourcesProvider);
             if (colors[0] != c1 || colors[1] != c2 || colors[2] != c3 || colors[3] != c4 || colors[4] != c5) {
                 colors[0] = c1;
                 colors[1] = c2;

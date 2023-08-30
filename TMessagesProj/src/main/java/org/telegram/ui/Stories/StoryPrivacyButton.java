@@ -41,7 +41,7 @@ public class StoryPrivacyButton extends View {
     private final Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path arrowPath = new Path();
 
-    private final ButtonBounce bounce = new ButtonBounce(this, .6f);
+    private final ButtonBounce bounce = new ButtonBounce(this, .6f, 5f);
 
     public StoryPrivacyButton(Context context) {
         super(context);

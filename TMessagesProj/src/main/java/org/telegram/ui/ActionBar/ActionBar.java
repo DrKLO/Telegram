@@ -1226,8 +1226,8 @@ public class ActionBar extends FrameLayout {
             if (searchFieldIsVisible && !this.isSearchFieldVisible) {
                 menuWidth = MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST);
                 menu.measure(menuWidth, actionBarHeightSpec);
-                int itemsWidth = menu.getItemsMeasuredWidth();
-                menuWidth = MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) + menu.getItemsMeasuredWidth(), MeasureSpec.EXACTLY);
+                int itemsWidth = menu.getItemsMeasuredWidth(true);
+                menuWidth = MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) + menu.getItemsMeasuredWidth(true), MeasureSpec.EXACTLY);
                 if (!isMenuOffsetSuppressed) {
                     menu.translateXItems(-itemsWidth);
                 }

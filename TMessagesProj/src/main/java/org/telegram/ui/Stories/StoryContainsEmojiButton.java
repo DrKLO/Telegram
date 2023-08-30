@@ -363,11 +363,11 @@ public class StoryContainsEmojiButton extends View {
 
     private void set(int setsCount) {
         if (emoji && stickers) {
-            setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryContainsStickersEmoji", setsCount)));
+            setText(AndroidUtilities.replaceSingleTag(LocaleController.formatPluralString("StoryContainsStickersEmoji", setsCount), 0, Theme.getColor(Theme.key_chat_messageLinkIn, loadingDrawable.resourcesProvider), null));
         } else if (emoji) {
-            setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryContainsEmoji", setsCount)));
+            setText(AndroidUtilities.replaceSingleTag(LocaleController.formatPluralString("StoryContainsEmoji", setsCount), 0, Theme.getColor(Theme.key_chat_messageLinkIn, loadingDrawable.resourcesProvider), null));
         } else {
-            setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryContainsStickers", setsCount)));
+            setText(AndroidUtilities.replaceSingleTag(LocaleController.formatPluralString("StoryContainsStickers", setsCount), 0, Theme.getColor(Theme.key_chat_messageLinkIn, loadingDrawable.resourcesProvider), null));
         }
     }
 

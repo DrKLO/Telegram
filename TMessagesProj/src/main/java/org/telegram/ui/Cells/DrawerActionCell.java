@@ -50,21 +50,11 @@ public class DrawerActionCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setGravity(Gravity.CENTER_VERTICAL);
-        toggleRTL(true);
+        textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+        addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 72, 0, 16, 0));
 
         setWillNotDraw(false);
-    }
-
-    private boolean wasRTL;
-
-    public void toggleRTL(boolean force) {
-        if (wasRTL != LocaleController.isRTL || force) {
-            wasRTL = LocaleController.isRTL;
-            removeAllViews();
-            addView(imageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 19, 12, LocaleController.isRTL ? 19 : 0, 0));
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 16 : 72, 0, LocaleController.isRTL ? 72 : 16, 0));
-        }
     }
 
     @Override
@@ -76,7 +66,7 @@ public class DrawerActionCell extends FrameLayout {
             if (suggestions.contains("VALIDATE_PHONE_NUMBER") || suggestions.contains("VALIDATE_PASSWORD")) {
                 int countTop = AndroidUtilities.dp(12.5f);
                 int countWidth = AndroidUtilities.dp(9);
-                int countLeft = LocaleController.isRTL ? countWidth + AndroidUtilities.dp(25) : getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
+                int countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
 
                 int x = countLeft - AndroidUtilities.dp(5.5f);
                 rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(14), countTop + AndroidUtilities.dp(23));
@@ -103,7 +93,6 @@ public class DrawerActionCell extends FrameLayout {
     }
 
     public void setTextAndIcon(int id, String text, int resId) {
-        toggleRTL(false);
         currentId = id;
         try {
             textView.setText(text);

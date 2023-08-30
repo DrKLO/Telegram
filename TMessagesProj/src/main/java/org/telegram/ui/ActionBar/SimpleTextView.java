@@ -161,8 +161,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
         wasLayout = false;
     }
 
-    public void setTextSize(int size) {
-        int newSize = AndroidUtilities.dp(size);
+    public void setTextSize(int sizeInDp) {
+        int newSize = AndroidUtilities.dp(sizeInDp);
         if (newSize == textPaint.getTextSize()) {
             return;
         }

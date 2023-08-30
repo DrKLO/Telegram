@@ -7,15 +7,24 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -23,12 +32,14 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.util.Log;
+import android.util.StateSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -91,11 +102,14 @@ public class HintView2 extends View {
     private boolean shown;
     private AnimatedFloat show = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
+    private Drawable selectorDrawable;
+    private Paint cutSelectorPaint;
+
     public HintView2(Context context, int direction) {
         super(context);
         this.direction = direction;
 
-        backgroundPaint.setColor(0xcc282828);
+        backgroundPaint.setColor(0xe6282828);
         backgroundPaint.setPathEffect(new CornerPathEffect(rounding));
 
         textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
@@ -109,6 +123,9 @@ public class HintView2 extends View {
     public HintView2 setRounding(float roundingDp) {
         this.rounding = dp(roundingDp);
         backgroundPaint.setPathEffect(new CornerPathEffect(rounding));
+        if (cutSelectorPaint != null) {
+            cutSelectorPaint.setPathEffect(new CornerPathEffect(rounding));
+        }
         return this;
     }
 
@@ -186,53 +203,48 @@ public class HintView2 extends View {
         return this;
     }
 
-    private static boolean contains(CharSequence text, char c) {
-        if (text == null) {
-            return false;
-        }
-        for (int i = 0; i < text.length(); ++i) {
-            if (text.charAt(i) == c) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static int getTextWidth(CharSequence text, TextPaint paint) {
-        if (text instanceof Spannable) {
-            StaticLayout layout = new StaticLayout(text, paint, 99999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-            if (layout.getLineCount() > 0)
-                return (int) Math.ceil(layout.getLineWidth(0));
-            return 0;
-        }
-        return (int) paint.measureText(text.toString());
-    }
-
     // returns max width
     public static int cutInFancyHalf(CharSequence text, TextPaint paint) {
-        if (text == null) {
-            return 0;
-        }
-        float fullLineWidth = getTextWidth(text, paint);
-        final int L = text.toString().length(), m = L / 2;
-        if (L <= 0 || contains(text, '\n')) {
-            return (int) Math.ceil(fullLineWidth);
-        }
-        int l = m - 1, r = m + 1;
-        int c = m;
-        while (l >= 0 && r < L) {
-            if (text.charAt(l) == ' ') {
-                c = l;
+        int mid = text.length() / 2;
+        float leftWidth = 0, rightWidth = 0;
+        float prevLeftWidth = 0;
+        float prevRightWidth = Float.MAX_VALUE;
+
+        for (int i = 0; i < 10; ++i) {
+            // Adjust the mid to point to the nearest space on the left
+            while (mid > 0 && text.charAt(mid) != ' ') {
+                mid--;
+            }
+
+            leftWidth = paint.measureText(text.subSequence(0, mid).toString());
+            rightWidth = paint.measureText(text.subSequence(mid, text.length()).toString().trim());
+
+            // If we're not making progress, exit the loop.
+            // (This is a basic way to ensure termination when we can't improve the result.)
+            if (leftWidth == prevLeftWidth && rightWidth == prevRightWidth) {
                 break;
             }
-            if (text.charAt(r) == ' ') {
-                c = r;
+
+            prevLeftWidth = leftWidth;
+            prevRightWidth = rightWidth;
+
+            // If left side is shorter, move midpoint to the right.
+            if (leftWidth < rightWidth) {
+                mid++;
+            }
+            // If right side is shorter or equal, move midpoint to the left.
+            else {
+                mid--;
+            }
+
+            // Ensure mid doesn't go out of bounds
+            if (mid <= 0 || mid >= text.length()) {
                 break;
             }
-            l--;
-            r++;
         }
-        return (int) Math.ceil(Math.max(fullLineWidth * .3f, Math.max(c + .5f, L - c + .5f) / (float) L * fullLineWidth));
+
+        // Return the max width of the two parts.
+        return (int) Math.ceil(Math.max(leftWidth, rightWidth));
     }
 
     public HintView2 useScale(boolean enable) {
@@ -280,6 +292,37 @@ public class HintView2 extends View {
         return this;
     }
 
+    public HintView2 setSelectorColor(int selectorColor) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return this;
+        }
+        cutSelectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        cutSelectorPaint.setPathEffect(new CornerPathEffect(rounding));
+        ColorStateList colorStateList = new ColorStateList(
+                new int[][]{ StateSet.WILD_CARD },
+                new int[]{ selectorColor }
+        );
+        selectorDrawable = new RippleDrawable(colorStateList, null, new Drawable() {
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                canvas.save();
+//                canvas.translate(-boundsWithArrow.left, -boundsWithArrow.top);
+                canvas.drawPath(path, cutSelectorPaint);
+                canvas.restore();
+            }
+            @Override
+            public void setAlpha(int alpha) {}
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+        });
+        selectorDrawable.setCallback(this);
+        return this;
+    }
+
     public HintView2 setBounce(boolean enable) {
         repeatedBounce = enable;
         return this;
@@ -312,6 +355,16 @@ public class HintView2 extends View {
         }
         this.joint = joint;
         this.jointTranslate = dp(jointTranslateDp);
+        return this;
+    }
+
+    public HintView2 setJointPx(float joint, float jointTranslatePx) {
+        if (Math.abs(this.joint - joint) >= 1 || Math.abs(this.jointTranslate - jointTranslatePx) >= 1) {
+            this.pathSet = false;
+            invalidate();
+        }
+        this.joint = joint;
+        this.jointTranslate = jointTranslatePx;
         return this;
     }
 
@@ -449,9 +502,10 @@ public class HintView2 extends View {
         textLayoutLeft = left;
     }
 
-    private final ButtonBounce bounce = new ButtonBounce(this, 2f);
+    private final ButtonBounce bounce = new ButtonBounce(this, 2f, 5f);
     private float bounceX, bounceY;
 
+    private final Rect boundsWithArrow = new Rect();
     private final RectF bounds = new RectF();
     private final Path path = new Path();
     private float arrowX, arrowY;
@@ -517,6 +571,12 @@ public class HintView2 extends View {
         canvas.drawPath(path, backgroundPaint);
         backgroundPaint.setAlpha(wasAlpha);
 
+        if (selectorDrawable != null) {
+            selectorDrawable.setAlpha((int) (0xFF * alpha));
+            selectorDrawable.setBounds(boundsWithArrow);
+            selectorDrawable.draw(canvas);
+        }
+
         if (multiline) {
             canvas.saveLayerAlpha(0, 0, getWidth(), Math.max(getHeight(), height), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
             canvas.translate(textX = bounds.left + innerPadding.left - textLayoutLeft, textY = bounds.top + innerPadding.top);
@@ -579,6 +639,7 @@ public class HintView2 extends View {
                 bounds.set(getMeasuredWidth() - getPaddingRight() - arrowHeight - width, top, getMeasuredWidth() - getPaddingRight() - arrowHeight, bottom);
             }
         }
+        boundsWithArrow.set((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
 
         path.rewind();
         path.moveTo(bounds.left, bounds.bottom);
@@ -591,6 +652,7 @@ public class HintView2 extends View {
             path.lineTo(bounds.left - arrowHeight, arrowXY - dp(1));
             path.lineTo(bounds.left, arrowXY - arrowHalfWidth);
             path.lineTo(bounds.left, arrowXY - arrowHalfWidth - dp(2));
+            boundsWithArrow.left -= arrowHeight;
         }
         path.lineTo(bounds.left, bounds.top);
         if (direction == DIRECTION_TOP) {
@@ -602,6 +664,7 @@ public class HintView2 extends View {
             path.lineTo(arrowXY + dp(1), bounds.top - arrowHeight);
             path.lineTo(arrowXY + arrowHalfWidth, bounds.top);
             path.lineTo(arrowXY + arrowHalfWidth + dp(2), bounds.top);
+            boundsWithArrow.top -= arrowHeight;
         }
         path.lineTo(bounds.right, bounds.top);
         if (direction == DIRECTION_RIGHT) {
@@ -613,6 +676,7 @@ public class HintView2 extends View {
             path.lineTo(bounds.right + arrowHeight, arrowXY + dp(1));
             path.lineTo(bounds.right, arrowXY + arrowHalfWidth);
             path.lineTo(bounds.right, arrowXY + arrowHalfWidth + dp(2));
+            boundsWithArrow.right += arrowHeight;
         }
         path.lineTo(bounds.right, bounds.bottom);
         if (direction == DIRECTION_BOTTOM) {
@@ -624,6 +688,7 @@ public class HintView2 extends View {
             path.lineTo(arrowXY - dp(1), bounds.bottom + arrowHeight);
             path.lineTo(arrowXY - arrowHalfWidth, bounds.bottom);
             path.lineTo(arrowXY - arrowHalfWidth - dp(2), bounds.bottom);
+            boundsWithArrow.bottom += arrowHeight;
         }
         path.close();
         pathSet = true;
@@ -631,12 +696,12 @@ public class HintView2 extends View {
 
     @Override
     protected boolean verifyDrawable(@NonNull Drawable who) {
-        return who == textDrawable || super.verifyDrawable(who);
+        return who == textDrawable || who == selectorDrawable || super.verifyDrawable(who);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (!hideByTouch || !shown) {
+        if (!hideByTouch && !hasOnClickListeners() || !shown) {
             return false;
         }
         if (checkTouchLinks(event)) {
@@ -657,13 +722,27 @@ public class HintView2 extends View {
             bounceX = x;
             bounceY = y;
             bounce.setPressed(true);
+            if (selectorDrawable != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                selectorDrawable.setHotspot(x, y);
+                selectorDrawable.setState(new int[]{android.R.attr.state_pressed, android.R.attr.state_enabled});
+            }
             return true;
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            hide();
+            if (hasOnClickListeners()) {
+                performClick();
+            } else if (hideByTouch) {
+                hide();
+            }
             bounce.setPressed(false);
+            if (selectorDrawable != null) {
+                selectorDrawable.setState(new int[]{});
+            }
             return true;
         } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
             bounce.setPressed(false);
+            if (selectorDrawable != null) {
+                selectorDrawable.setState(new int[]{});
+            }
             return true;
         }
         return false;

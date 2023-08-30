@@ -503,11 +503,11 @@ public class AnimatedEmojiDrawable extends Drawable {
                 }
             };
             imageReceiver.setAllowLoadingOnAttachedOnly(true);
+            if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
+                imageReceiver.ignoreNotifications = true;
+            }
         };
 
-        if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
-            imageReceiver.ignoreNotifications = true;
-        }
         if (colorFilterToSet != null && canOverrideColor()) {
             imageReceiver.setColorFilter(colorFilterToSet);
         }

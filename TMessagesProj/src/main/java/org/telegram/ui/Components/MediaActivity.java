@@ -626,6 +626,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             protected void showActionMode(boolean show) {
+                if (type == TYPE_MEDIA) {
+                    super.showActionMode(show);
+                    return;
+                }
                 if (isActionModeShowed == show) {
                     return;
                 }
@@ -707,13 +711,15 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             protected void onActionModeSelectedUpdate(SparseArray<MessageObject> messageObjects) {
                 final int count = messageObjects.size();
                 actionModeMessageObjects = messageObjects;
-                selectedTextView.cancelAnimation();
-                selectedTextView.setText(LocaleController.formatPluralString("StoriesSelected", count), !LocaleController.isRTL);
-                if (button != null) {
-                    button.setEnabled(count > 0);
-                    button.setCount(count, true);
-                    if (sharedMediaLayout.getClosestTab() == SharedMediaLayout.TAB_STORIES) {
-                        button.setText(LocaleController.formatPluralString("ArchiveStories", count), true);
+                if (type == TYPE_STORIES) {
+                    selectedTextView.cancelAnimation();
+                    selectedTextView.setText(LocaleController.formatPluralString("StoriesSelected", count), !LocaleController.isRTL);
+                    if (button != null) {
+                        button.setEnabled(count > 0);
+                        button.setCount(count, true);
+                        if (sharedMediaLayout.getClosestTab() == SharedMediaLayout.TAB_STORIES) {
+                            button.setText(LocaleController.formatPluralString("ArchiveStories", count), true);
+                        }
                     }
                 }
             }
@@ -1106,6 +1112,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
     @Override
     public boolean isLightStatusBar() {
+        if (storyViewer != null && storyViewer.isShown()) {
+            return false;
+        }
         int color = Theme.getColor(Theme.key_windowBackgroundWhite);
         if (actionBar.isActionModeShowed()) {
             color = Theme.getColor(Theme.key_actionBarActionModeDefault);

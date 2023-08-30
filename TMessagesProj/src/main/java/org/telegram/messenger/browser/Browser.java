@@ -254,7 +254,7 @@ public class Browser {
         if (tryTelegraph) {
             try {
                 String host = AndroidUtilities.getHostAuthority(uri);
-                if (isTelegraphUrl(host, true) || uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy")) {
+                if (isTelegraphUrl(host, true) || "telegram.org".equalsIgnoreCase(host) && (uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy") || uri.toString().toLowerCase().contains("telegram.org/blog"))) {
                     final AlertDialog[] progressDialog = new AlertDialog[] {
                         new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER)
                     };
@@ -515,6 +515,8 @@ public class Browser {
                 }
                 return true;
             }
+        } else if ("telegram.org".equals(host) && uri != null && uri.getPath() != null && uri.getPath().startsWith("/blog/")) {
+            return true;
         } else if (all) {
             if (host.endsWith("telegram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe")) {
                 return true;

@@ -1326,6 +1326,20 @@ public class DatabaseMigrationHelper {
             version = 127;
         }
 
+        if (version == 127) {
+            database.executeFast("ALTER TABLE stories ADD COLUMN custom_params BLOB default NULL").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 128").stepThis().dispose();
+            version = 128;
+        }
+
+        if (version == 128) {
+            database.executeFast("ALTER TABLE story_drafts ADD COLUMN type INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 129").stepThis().dispose();
+            version = 129;
+        }
+
         return version;
     }
 

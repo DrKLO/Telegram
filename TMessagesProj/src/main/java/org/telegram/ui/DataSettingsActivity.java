@@ -836,14 +836,14 @@ public class DataSettingsActivity extends BaseFragment {
                                     builder.append(", ");
                                 }
                                 builder.append(LocaleController.getString("AutoDownloadVideosOn", R.string.AutoDownloadVideosOn));
-                                builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_VIDEO)], true)));
+                                builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_VIDEO)], true, false)));
                             }
                             if (files) {
                                 if (builder.length() > 0) {
                                     builder.append(", ");
                                 }
                                 builder.append(LocaleController.getString("AutoDownloadFilesOn", R.string.AutoDownloadFilesOn));
-                                builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT)], true)));
+                                builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT)], true, false)));
                             }
                         } else {
                             builder.append(LocaleController.getString("NoMediaAutoDownload", R.string.NoMediaAutoDownload));

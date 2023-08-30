@@ -964,7 +964,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (GroupCallPip.onBackPressed()) {
             return;
         }
-        if (currentActionBar != null && !currentActionBar.isActionModeShowed() && currentActionBar.isSearchFieldVisible) {
+        if (!storyViewerAttached() && currentActionBar != null && !currentActionBar.isActionModeShowed() && currentActionBar.isSearchFieldVisible) {
             currentActionBar.closeSearchField();
             return;
         }

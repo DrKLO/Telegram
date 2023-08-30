@@ -950,6 +950,9 @@ public abstract class BaseFragment {
     }
 
     public boolean isLightStatusBar() {
+        if (storyViewer != null && storyViewer.isShown()) {
+            return false;
+        }
         if (hasForceLightStatusBar() && !Theme.getCurrentTheme().isDark()) {
             return true;
         }

@@ -95,7 +95,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 127;
+    public final static int LAST_DB_VERSION = 129;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -202,6 +202,7 @@ public class MessagesStorage extends BaseController {
     public MessagesStorage(int instance) {
         super(instance);
         storageQueue = new DispatchQueue("storageQueue_" + instance);
+        storageQueue.setPriority(8);
         storageQueue.postRunnable(() -> openDatabase(1));
     }
 
@@ -671,13 +672,13 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE emoji_groups(type INTEGER PRIMARY KEY, data BLOB)").stepThis().dispose();
         database.executeFast("CREATE TABLE app_config(data BLOB)").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE stories (dialog_id INTEGER, story_id INTEGER, data BLOB, local_path TEXT, local_thumb_path TEXT, PRIMARY KEY (dialog_id, story_id));").stepThis().dispose();
+        database.executeFast("CREATE TABLE stories (dialog_id INTEGER, story_id INTEGER, data BLOB, local_path TEXT, local_thumb_path TEXT, custom_params BLOB, PRIMARY KEY (dialog_id, story_id));").stepThis().dispose();
         database.executeFast("CREATE TABLE stories_counter (dialog_id INTEGER PRIMARY KEY, count INTEGER, max_read INTEGER);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, PRIMARY KEY(dialog_id, story_id));").stepThis().dispose();
         database.executeFast("CREATE TABLE archived_stories (story_id INTEGER PRIMARY KEY, data BLOB);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB);").stepThis().dispose();
+        database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB, type INTEGER);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE story_pushes (uid INTEGER, sid INTEGER, date INTEGER, localName TEXT, flags INTEGER, expire_date INTEGER, PRIMARY KEY(uid, sid));").stepThis().dispose();
 
@@ -7729,7 +7730,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public Runnable getMessagesInternal(long dialogId, long mergeDialogId, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean scheduled, int threadMessageId, int loadIndex, boolean processMessages, boolean isTopic) {
+    public Runnable getMessagesInternal(long dialogId, long mergeDialogId, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean scheduled, int threadMessageId, int loadIndex, boolean processMessages, boolean isTopic, MessageLoaderLogger loaderLogger) {
         TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
         long currentUserId = getUserConfig().clientUserId;
         int count_unread = 0;
@@ -8623,7 +8624,7 @@ public class MessagesStorage extends BaseController {
             };
         } else {*/
         int finalMessagesCount = scheduled ? res.messages.size() : messagesCount;
-        return () -> getMessagesController().processLoadedMessages(res, finalMessagesCount, dialogId, mergeDialogId, countQueryFinal, maxIdOverrideFinal, offset_date, true, classGuid, minUnreadIdFinal, lastMessageIdFinal, countUnreadFinal, maxUnreadDateFinal, load_type, isEndFinal, scheduled ? 1 : 0, threadMessageId, loadIndex, queryFromServerFinal, mentionsUnreadFinal, processMessages, isTopic);
+        return () -> getMessagesController().processLoadedMessages(res, finalMessagesCount, dialogId, mergeDialogId, countQueryFinal, maxIdOverrideFinal, offset_date, true, classGuid, minUnreadIdFinal, lastMessageIdFinal, countUnreadFinal, maxUnreadDateFinal, load_type, isEndFinal, scheduled ? 1 : 0, threadMessageId, loadIndex, queryFromServerFinal, mentionsUnreadFinal, processMessages, isTopic, loaderLogger);
         //}
     }
 
@@ -8654,10 +8655,19 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public void getMessages(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean scheduled, int replyMessageId, int loadIndex, boolean processMessages, boolean isTopic) {
+    public void getMessages(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean scheduled, int replyMessageId, int loadIndex, boolean processMessages, boolean isTopic, MessageLoaderLogger loaderLogger) {
         storageQueue.postRunnable(() -> {
-            Runnable processMessagesRunnable = getMessagesInternal(dialogId, mergeDialogId, count, max_id, offset_date, minDate, classGuid, load_type, scheduled, replyMessageId, loadIndex, processMessages, isTopic);
+            if (loaderLogger != null) {
+                loaderLogger.logStorageQueuePost();
+            }
+            Runnable processMessagesRunnable = getMessagesInternal(dialogId, mergeDialogId, count, max_id, offset_date, minDate, classGuid, load_type, scheduled, replyMessageId, loadIndex, processMessages, isTopic, loaderLogger);
+            if (loaderLogger != null) {
+                loaderLogger.logStorageProccessing();
+            }
             Utilities.stageQueue.postRunnable(() -> {
+                if (loaderLogger != null) {
+                    loaderLogger.logStageQueuePost();
+                }
                 processMessagesRunnable.run();
             });
         });
@@ -9908,7 +9918,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void overwriteChannel(long channelId, TLRPC.TL_updates_channelDifferenceTooLong difference, int newDialogType) {
+    public void overwriteChannel(long channelId, TLRPC.TL_updates_channelDifferenceTooLong difference, int newDialogType, Runnable onDone) {
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             try {
@@ -9977,6 +9987,9 @@ public class MessagesStorage extends BaseController {
                 if (cursor != null) {
                     cursor.dispose();
                 }
+            }
+            if (onDone != null) {
+                onDone.run();
             }
         });
     }

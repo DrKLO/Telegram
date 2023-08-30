@@ -1924,10 +1924,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                     imageView.setDrawable(drawable);
 
-                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
-                        imageView.createPremiumLockView();
-                        imageView.premiumLockIconView.setVisibility(View.VISIBLE);
-                    }
+//                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
+//                        imageView.createPremiumLockView();
+//                        imageView.premiumLockIconView.setVisibility(View.VISIBLE);
+//                    }
                 }
             } else if (holder.getItemViewType() == VIEW_TYPE_EMOJI) {
                 ImageViewEmoji imageView = (ImageViewEmoji) holder.itemView;
@@ -2231,10 +2231,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                     imageView.setDrawable(drawable);
 
-                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
-                        imageView.createPremiumLockView();
-                        imageView.premiumLockIconView.setVisibility(View.VISIBLE);
-                    }
+//                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
+//                        imageView.createPremiumLockView();
+//                        imageView.premiumLockIconView.setVisibility(View.VISIBLE);
+//                    }
                 }
             } else if (viewType == VIEW_TYPE_EXPAND) {
                 EmojiPackExpand button = (EmojiPackExpand) holder.itemView;
@@ -4442,7 +4442,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
                 @Override
                 protected boolean isTabIconsAnimationEnabled(boolean loaded) {
-                    return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) && (!loaded || type == TYPE_AVATAR_CONSTRUCTOR);
+                    return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) || type == TYPE_AVATAR_CONSTRUCTOR;
                 }
             };
             categoriesListView.setShownButtonsAtStart(type == TYPE_AVATAR_CONSTRUCTOR ? 6.5f : 4.5f);

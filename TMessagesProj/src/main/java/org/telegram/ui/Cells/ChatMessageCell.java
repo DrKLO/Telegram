@@ -84,6 +84,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -1118,13 +1119,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean drawName;
     private boolean drawNameLayout;
 
-    private StaticLayout[] forwardedNameLayout = new StaticLayout[2];
+    private final StaticLayout[] forwardedNameLayout = new StaticLayout[2];
     private int forwardedNameWidth;
     private boolean drawForwardedName;
     private float forwardNameX;
     private int forwardNameY;
     private int forwardHeight;
-    private float[] forwardNameOffsetX = new float[2];
+    private final float[] forwardNameOffsetX = new float[2];
 
     private float drawTimeX;
     private float drawTimeY;
@@ -1287,24 +1288,29 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private Theme.ResourcesProvider resourcesProvider;
     private final boolean canDrawBackgroundInParent;
+    private ChatMessageSharedResources sharedResources;
 
     // Public for enter transition
     public List<SpoilerEffect> replySpoilers = new ArrayList<>();
-    private Stack<SpoilerEffect> replySpoilersPool = new Stack<>();
-    private List<SpoilerEffect> captionSpoilers = new ArrayList<>();
-    private Stack<SpoilerEffect> captionSpoilersPool = new Stack<>();
-    private AtomicReference<Layout> captionPatchedSpoilersLayout = new AtomicReference<>();
-    private Path sPath = new Path();
+    private final Stack<SpoilerEffect> replySpoilersPool = new Stack<>();
+    private final List<SpoilerEffect> captionSpoilers = new ArrayList<>();
+    private final Stack<SpoilerEffect> captionSpoilersPool = new Stack<>();
+    private final AtomicReference<Layout> captionPatchedSpoilersLayout = new AtomicReference<>();
+    private final Path sPath = new Path();
     public boolean isBlurred;
 
     public ChatMessageCell(Context context) {
-        this(context, false, null);
+        this(context, false, null, null);
     }
 
-    public ChatMessageCell(Context context, boolean canDrawBackgroundInParent, Theme.ResourcesProvider resourcesProvider) {
+    public ChatMessageCell(Context context, boolean canDrawBackgroundInParent, ChatMessageSharedResources sharedResources, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.canDrawBackgroundInParent = canDrawBackgroundInParent;
+        this.sharedResources = sharedResources;
+        if (this.sharedResources == null) {
+            this.sharedResources = new ChatMessageSharedResources(context);
+        }
 
         backgroundDrawable = new MessageBackgroundDrawable(this);
         avatarImage = new ImageReceiver();
@@ -3247,7 +3253,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 isRoundVideo || currentMessageObject.isAnimatedSticker() || (currentMessageObject.isDocument() && !currentMessageObject.isGif()) || currentMessageObject.needDrawBluredPreview()) {
             return false;
         }
-        return pinchToZoomHelper.checkPinchToZoom(ev, this, photoImage, currentMessageObject);
+        return pinchToZoomHelper.checkPinchToZoom(ev, this, photoImage, null, currentMessageObject);
     }
 
     private boolean checkTextSelection(MotionEvent event) {
@@ -6780,7 +6786,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         photoImage.setImage(null, null, thumb, null, messageObject, 0);
                     }
                     if (!reactionsLayoutInBubble.isSmall) {
-                        reactionsLayoutInBubble.measure(maxWidth, currentMessageObject.isOutOwner() && (currentMessageObject.isAnimatedEmoji() || currentMessageObject.isAnyKindOfSticker()) ? Gravity.RIGHT : Gravity.LEFT);
+                        reactionsLayoutInBubble.measure(maxWidth + AndroidUtilities.dp(36), currentMessageObject.isOutOwner() && (currentMessageObject.isAnimatedEmoji() || currentMessageObject.isAnyKindOfSticker()) ? Gravity.RIGHT : Gravity.LEFT);
                         reactionsLayoutInBubble.drawServiceShaderBackground = 1f;
                         reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + AndroidUtilities.dp(8);
                         additionHeight += reactionsLayoutInBubble.totalHeight;
@@ -7461,7 +7467,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         photoHeight += AndroidUtilities.dp(1);
                     }
                 } else if (currentPosition != null && currentMessageObject.isDocument()) {
-                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && !messageObject.isOutOwner()) {
+                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && !messageObject.isOutOwner() && !drawPhotoImage) {
                         totalHeight -= AndroidUtilities.dp(2);
                     }
                 }
@@ -10293,13 +10299,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
         if (currentMessageObject.type == MessageObject.TYPE_GEO && !(MessageObject.getMedia(currentMessageObject.messageOwner) instanceof TLRPC.TL_messageMediaGeoLive) && currentMapProvider == 2 && photoImage.hasNotThumb()) {
-            int w = (int) (Theme.chat_redLocationIcon.getIntrinsicWidth() * 0.8f);
-            int h = (int) (Theme.chat_redLocationIcon.getIntrinsicHeight() * 0.8f);
+            Drawable redLocationIcon = sharedResources.getRedLocationIcon();
+            int w = (int) (redLocationIcon.getIntrinsicWidth() * 0.8f);
+            int h = (int) (redLocationIcon.getIntrinsicHeight() * 0.8f);
             int x = (int) (photoImage.getImageX() + (photoImage.getImageWidth() - w) / 2);
             int y = (int) (photoImage.getImageY() + (photoImage.getImageHeight() / 2 - h) - AndroidUtilities.dp(16) * (1f - CubicBezierInterpolator.EASE_OUT_BACK.getInterpolation(photoImage.getCurrentAlpha())));
-            Theme.chat_redLocationIcon.setAlpha((int) (255 * Math.min(1, photoImage.getCurrentAlpha() * 5)));
-            Theme.chat_redLocationIcon.setBounds(x, y, x + w, y + h);
-            Theme.chat_redLocationIcon.draw(canvas);
+            redLocationIcon.setAlpha((int) (255 * Math.min(1, photoImage.getCurrentAlpha() * 5)));
+            redLocationIcon.setBounds(x, y, x + w, y + h);
+            redLocationIcon.draw(canvas);
             if (photoImage.getCurrentAlpha() < 1) {
                 invalidate();
             }
@@ -12714,7 +12721,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else {
                 currentNameString = "";
             }
-            CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace('\n', ' ').replace('\u200F', ' '), Theme.chat_namePaint, nameWidth - (viaBot ? viaWidth : 0), TextUtils.TruncateAt.END);
+            CharSequence nameStringFinal = currentNameString.replace('\n', ' ').replace('\u200F', ' ');
+            try {
+                nameStringFinal = Emoji.replaceEmoji(nameStringFinal, Theme.chat_namePaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
+            } catch (Exception ignore) {}
+            nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.chat_namePaint, nameWidth - (viaBot ? viaWidth : 0), TextUtils.TruncateAt.END);
             if (viaBot) {
                 viaNameWidth = (int) Math.ceil(Theme.chat_namePaint.measureText(nameStringFinal, 0, nameStringFinal.length()));
                 if (viaNameWidth != 0) {
@@ -12739,10 +12750,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     nameStringFinal = stringBuilder;
                 }
                 nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.chat_namePaint, nameWidth, TextUtils.TruncateAt.END);
-            }
-            try {
-                nameStringFinal = Emoji.replaceEmoji(nameStringFinal, Theme.chat_namePaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
-            } catch (Exception ignore) {
             }
             try {
                 nameLayout = new StaticLayout(nameStringFinal, Theme.chat_namePaint, nameWidth + AndroidUtilities.dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -13902,7 +13909,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (isDrawSelectionBackground() && (currentPosition == null || currentMessageObject.isMusic() || currentMessageObject.isDocument() || getBackground() != null)) {
                         if (currentPosition != null) {
                             canvas.save();
-//                            canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                            canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
                         }
                         currentSelectedBackgroundAlpha = 1f;
                         currentBackgroundSelectedDrawable.setAlpha((int) (255 * alphaInternal));
@@ -17192,9 +17199,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         int cx = (int) (photoImage.getImageX() + photoImage.getImageWidth() / 2 - AndroidUtilities.dp(31));
                         cy = (int) (photoImage.getImageY() + photoImage.getImageHeight() / 2 - AndroidUtilities.dp(38) - AndroidUtilities.dp(16) * (1f - CubicBezierInterpolator.EASE_OUT_BACK.getInterpolation(progress)));
 
-                        setDrawableBounds(Theme.chat_msgAvatarLiveLocationDrawable, cx, cy);
-                        Theme.chat_msgAvatarLiveLocationDrawable.setAlpha((int) (255 * Math.min(1, progress * 5)));
-                        Theme.chat_msgAvatarLiveLocationDrawable.draw(canvas);
+                        Drawable msgAvatarLiveLocation = sharedResources.getAvatarLiveLocation();
+                        setDrawableBounds(msgAvatarLiveLocation, cx, cy);
+                        msgAvatarLiveLocation.setAlpha((int) (255 * Math.min(1, progress * 5)));
+                        msgAvatarLiveLocation.draw(canvas);
 
                         locationImageReceiver.setImageCoords(cx + AndroidUtilities.dp(5.0f), cy + AndroidUtilities.dp(5.0f), AndroidUtilities.dp(52), AndroidUtilities.dp(52));
                         locationImageReceiver.setAlpha(Math.min(1, progress * 5));

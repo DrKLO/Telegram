@@ -53,6 +53,7 @@ public class PinchToZoomHelper {
     private ZoomOverlayView overlayView;
     private View child;
     private ImageReceiver childImage;
+    private TextureView childTextureView;
 
     private ImageReceiver fullImage = new ImageReceiver();
     private ImageReceiver blurImage = new ImageReceiver();
@@ -116,7 +117,7 @@ public class PinchToZoomHelper {
         this.isSimple = true;
     }
 
-    public void startZoom(View child, ImageReceiver image, MessageObject messageObject) {
+    public void startZoom(View child, ImageReceiver image, TextureView textureView, MessageObject messageObject) {
         this.child = child;
         this.messageObject = messageObject;
 
@@ -202,6 +203,7 @@ public class PinchToZoomHelper {
             } else {
                 isHardwareVideo = false;
                 this.childImage = new ImageReceiver();
+                this.childTextureView = textureView;
                 this.childImage.onAttachedToWindow();
                 Drawable drawable = image.getDrawable();
                 this.childImage.setImageBitmap(drawable);
@@ -584,6 +586,12 @@ public class PinchToZoomHelper {
                         fullImage.draw(canvas);
                     }
                 }
+                if (childTextureView != null) {
+                    canvas.save();
+                    canvas.translate(childImage.getImageX(), childImage.getImageY());
+                    childTextureView.draw(canvas);
+                    canvas.restore();
+                }
             } else {
                 videoPlayerContainer.setPivotX(pinchCenterX - imageX);
                 videoPlayerContainer.setPivotY(pinchCenterY - imageY);
@@ -708,7 +716,7 @@ public class PinchToZoomHelper {
         void getClipTopBottom(float[] topBottom);
     }
 
-    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, MessageObject messageObject) {
+    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, TextureView textureView, MessageObject messageObject) {
         if (!zoomEnabled(child, image)) {
             return false;
         }
@@ -749,7 +757,7 @@ public class PinchToZoomHelper {
                 pinchTranslationX = 0f;
                 pinchTranslationY = 0f;
                 child.getParent().requestDisallowInterceptTouchEvent(true);
-                startZoom(child, image, messageObject);
+                startZoom(child, image, textureView, messageObject);
 
             }
 

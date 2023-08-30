@@ -56,7 +56,7 @@ import java.util.ArrayList;
 public class ViewPagerFixed extends FrameLayout {
 
     private Theme.ResourcesProvider resourcesProvider;
-    int currentPosition;
+    public int currentPosition;
     int nextPosition;
     protected View[] viewPages;
     private int[] viewTypes;
@@ -235,10 +235,12 @@ public class ViewPagerFixed extends FrameLayout {
 
                 onTabPageSelected(page);
                 int trasnlationX = viewPages[0] != null ? viewPages[0].getMeasuredWidth() : 0;
-                if (forward) {
-                    viewPages[1].setTranslationX(trasnlationX);
-                } else {
-                    viewPages[1].setTranslationX(-trasnlationX);
+                if (viewPages[1] != null) {
+                    if (forward) {
+                        viewPages[1].setTranslationX(trasnlationX);
+                    } else {
+                        viewPages[1].setTranslationX(-trasnlationX);
+                    }
                 }
             }
 

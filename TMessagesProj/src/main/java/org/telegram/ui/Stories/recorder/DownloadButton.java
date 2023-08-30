@@ -137,16 +137,16 @@ public class DownloadButton extends ImageView {
             toast.hide();
             toast = null;
         }
+        if (buildingVideo != null) {
+            buildingVideo.stop(true);
+            buildingVideo = null;
+        }
         if (prepare != null) {
             preparing = true;
             prepare.run(this::onClickInternal);
         }
         if (currentEntry.wouldBeVideo()) {
             downloadingVideo = true;
-            if (buildingVideo != null) {
-                buildingVideo.stop(true);
-                buildingVideo = null;
-            }
             toast = new PreparingVideoToast(getContext());
             toast.setOnCancelListener(() -> {
                 preparing = false;
@@ -165,13 +165,16 @@ public class DownloadButton extends ImageView {
             downloadingVideo = false;
         }
         updateImage();
-        if (prepare == null) {
+        if (prepare != null) {
+            preparing = true;
+            prepare.run(this::onClickInternal);
+        } else {
             onClickInternal();
         }
     }
 
     private void onClickInternal() {
-        if (!preparing) {
+        if (!preparing || currentEntry == null) {
             return;
         }
         preparing = false;

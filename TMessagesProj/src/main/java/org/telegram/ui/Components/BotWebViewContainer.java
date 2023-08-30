@@ -20,7 +20,9 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Message;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -31,6 +33,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -267,6 +270,18 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 }
                 return super.onTouchEvent(event);
             }
+
+            @Override
+            protected void onAttachedToWindow() {
+                AndroidUtilities.checkAndroidTheme(getContext(), true);
+                super.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                AndroidUtilities.checkAndroidTheme(getContext(), false);
+                super.onDetachedFromWindow();
+            }
         };
         webView.setBackgroundColor(getColor(Theme.key_windowBackgroundWhite));
         WebSettings settings = webView.getSettings();
@@ -274,6 +289,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         settings.setGeolocationEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+        settings.setSupportMultipleWindows(true);
 
         // Hackfix text on some Xiaomi devices
         settings.setTextSize(WebSettings.TextSize.NORMAL);
@@ -288,21 +304,14 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                Uri uriOrig = Uri.parse(mUrl);
                 Uri uriNew = Uri.parse(url);
-
-                boolean override;
-                if (isPageLoaded && (!Objects.equals(uriOrig.getHost(), uriNew.getHost()) || !Objects.equals(uriOrig.getPath(), uriNew.getPath()))) {
-                    override = true;
-
+                if (Browser.isInternalUri(uriNew, null)) {
                     if (WHITELISTED_SCHEMES.contains(uriNew.getScheme())) {
                         onOpenUri(uriNew);
                     }
-                } else {
-                    override = false;
+                    return true;
                 }
-
-                return override;
+                return false;
             }
 
             @Override
@@ -312,6 +321,22 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         });
         webView.setWebChromeClient(new WebChromeClient() {
             private Dialog lastPermissionsDialog;
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                WebView newWebView = new WebView(view.getContext());
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        onOpenUri(Uri.parse(url));
+                        return true;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
 
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
@@ -489,17 +514,8 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
             } else {
                 Browser.openUrl(getContext(), uri, true, tryInstantView);
             }
-        } else if (suppressPopup) {
-            Browser.openUrl(getContext(), uri, true, tryInstantView);
         } else {
-            isRequestingPageOpen = true;
-            new AlertDialog.Builder(getContext(), resourcesProvider)
-                    .setTitle(LocaleController.getString(R.string.OpenUrlTitle))
-                    .setMessage(LocaleController.formatString(R.string.OpenUrlAlert2, uri.toString()))
-                    .setPositiveButton(LocaleController.getString(R.string.Open), (dialog, which) -> Browser.openUrl(getContext(), uri, true, tryInstantView))
-                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
-                    .setOnDismissListener(dialog -> isRequestingPageOpen = false)
-                    .show();
+            Browser.openUrl(getContext(), uri, true, tryInstantView);
         }
     }
 

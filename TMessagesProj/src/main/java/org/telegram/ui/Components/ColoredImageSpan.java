@@ -23,7 +23,9 @@ public class ColoredImageSpan extends ReplacementSpan {
     boolean usePaintColor = true;
     int colorKey;
     private int topOffset = 0;
-    private float translateX;
+    private float translateX, translateY;
+    private float alpha = 1f;
+    private int overrideColor;
 
     private int size;
     private int sizeWidth;
@@ -32,7 +34,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     public static final int ALIGN_BASELINE = 1;
     public static final int ALIGN_CENTER = 2;
     private final int verticalAlignment;
-    private float scale = 1f;
+    private float scaleX = 1f, scaleY = 1f;
     private Runnable checkColorDelegate;
 
     public ColoredImageSpan(int imageRes) {
@@ -59,8 +61,18 @@ public class ColoredImageSpan extends ReplacementSpan {
         this.size = size;
         drawable.setBounds(0, 0, size, size);
     }
+
     public void setTranslateX(float tx) {
         translateX = tx;
+    }
+
+    public void setTranslateY(float ty) {
+        translateY = ty;
+    }
+
+    public void translate(float tx, float ty) {
+        translateX = tx;
+        translateY = ty;
     }
 
     public void setWidth(int width) {
@@ -70,8 +82,8 @@ public class ColoredImageSpan extends ReplacementSpan {
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
         if (sizeWidth != 0)
-            return (int) (scale * sizeWidth);
-        return (int) (scale * (size != 0 ? size : drawable.getIntrinsicWidth()));
+            return (int) (Math.abs(scaleX) * sizeWidth);
+        return (int) (Math.abs(scaleX) * (size != 0 ? size : drawable.getIntrinsicWidth()));
     }
 
     @Override
@@ -80,7 +92,9 @@ public class ColoredImageSpan extends ReplacementSpan {
         if (checkColorDelegate != null) {
             checkColorDelegate.run();
         } else {
-            if (usePaintColor) {
+            if (overrideColor != 0) {
+                color = overrideColor;
+            } else if (usePaintColor) {
                 color = paint.getColor();
             } else {
                 color = Theme.getColor(colorKey);
@@ -103,10 +117,13 @@ public class ColoredImageSpan extends ReplacementSpan {
             int padding = (lineHeight - drawableHeight) / 2;
             transY = top + padding + AndroidUtilities.dp(topOffset);
         }
-        canvas.translate(x + translateX, transY);
+        canvas.translate(x + translateX, transY + translateY);
         if (drawable != null) {
-            if (scale != 1f) {
-                canvas.scale(scale, scale, 0, drawable.getBounds().centerY());
+            if (scaleX != 1f || scaleY != 1f) {
+                canvas.scale(scaleX, scaleY, 0, drawable.getBounds().centerY());
+            }
+            if (alpha != 1f) {
+                drawable.setAlpha((int) (alpha * 255));
             }
             drawable.draw(canvas);
         }
@@ -126,7 +143,20 @@ public class ColoredImageSpan extends ReplacementSpan {
         this.checkColorDelegate = checkColorDelegate;
     }
 
-    public void setScale(float v) {
-        scale = v;
+    public void setScale(float sx) {
+        scaleX = sx;
+    }
+
+    public void setScale(float sx, float sy) {
+        scaleX = sx;
+        scaleY = sy;
+    }
+
+    public void setOverrideColor(int red) {
+        overrideColor = red;
+    }
+
+    public void setAlpha(float v) {
+        this.alpha = v;
     }
 }
