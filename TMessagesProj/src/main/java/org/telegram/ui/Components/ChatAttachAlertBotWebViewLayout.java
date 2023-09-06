@@ -845,6 +845,11 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             if (scrollListener != null) {
                 scrollListener.run();
             }
+
+            if (Bulletin.getVisibleBulletin() != null) {
+                Bulletin bulletin = Bulletin.getVisibleBulletin();
+                bulletin.updatePosition();
+            }
         }
 
         public float getTopActionBarOffsetY() {

@@ -993,7 +993,7 @@ public final class FloatingToolbar {
             final boolean premiumLocked = MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked;
             for (int i = 0; i < size; i++) {
                 final MenuItem menuItem = menuItems.get(i);
-                if (!premiumOptions.contains(menuItem.getItemId()) || !premiumLocked) {
+                if (premiumLockClickListener == null || premiumLocked && !premiumOptions.contains(menuItem.getItemId())) {
                     overflowPanelAdapter.add(menuItem);
                 }
             }

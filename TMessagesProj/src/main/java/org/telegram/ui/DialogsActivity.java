@@ -1558,7 +1558,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBar.setTranslationY(0);
         } else {
             if (hasOnlySlefStories) {
-                dialogStoriesCell.setTranslationY(-AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP) + scrollYOffset);
+                dialogStoriesCell.setTranslationY(-AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP) + scrollYOffset - AndroidUtilities.dp(8));
                 dialogStoriesCell.setProgressToCollapse(1f);
                 dialogStoriesCell.setClipTop((int) (AndroidUtilities.statusBarHeight - dialogStoriesCell.getY()));
             }
@@ -5464,9 +5464,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
             dialogsHintCell.setOnClickListener(v -> {
-                if (dialogStoriesCell.getAlpha() == 0) {
-                    return;
-                }
                 presentFragment(new PremiumPreviewFragment("dialogs_hint").setSelectAnnualByDefault());
                 AndroidUtilities.runOnUIThread(() -> {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, isPremiumHintUpgrade ? "PREMIUM_UPGRADE" : "PREMIUM_ANNUAL");

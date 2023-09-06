@@ -393,7 +393,7 @@ public class PinchToZoomHelper {
                 return true;
             }
         }
-        return receiver.hasNotThumb();
+        return receiver.hasNotThumbOrOnlyStaticThumb();
     }
 
 

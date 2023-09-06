@@ -3823,7 +3823,9 @@ public class MessageObject {
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionBotAllowed) {
                     String domain = ((TLRPC.TL_messageActionBotAllowed) messageOwner.action).domain;
                     TLRPC.BotApp botApp = ((TLRPC.TL_messageActionBotAllowed) messageOwner.action).app;
-                    if (botApp != null) {
+                    if (((TLRPC.TL_messageActionBotAllowed) messageOwner.action).from_request) {
+                        messageText = LocaleController.getString(R.string.ActionBotAllowedWebapp);
+                    } else if (botApp != null) {
                         String botAppTitle = botApp.title;
                         String text = LocaleController.getString("ActionBotAllowedApp", R.string.ActionBotAllowedApp);
                         int start = text.indexOf("%1$s");

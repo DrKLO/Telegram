@@ -112,6 +112,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private boolean silent;
     private String buttonText;
 
+
     private Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint dimPaint = new Paint();
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -124,6 +125,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private ActionBar actionBar;
     private Drawable actionBarShadow;
     private ActionBarMenuSubItem settingsItem;
+    private TLRPC.BotApp currentWebApp;
 
     private boolean dismissed;
 
@@ -413,6 +415,14 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                                 }
                             }).start();
                 }
+            }
+
+            @Override
+            public String getWebAppName() {
+                if (currentWebApp != null) {
+                    return currentWebApp.title;
+                }
+                return null;
             }
         });
 
@@ -764,6 +774,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.replyToMsgId = replyToMsgId;
         this.silent = silent;
         this.buttonText = buttonText;
+        this.currentWebApp = app;
 
         actionBar.setTitle(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)));
         ActionBarMenu menu = actionBar.createMenu();

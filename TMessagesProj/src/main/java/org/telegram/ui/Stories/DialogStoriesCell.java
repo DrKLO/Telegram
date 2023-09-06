@@ -525,11 +525,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (clipTop > 0) {
             canvas.clipRect(0, clipTop, getMeasuredWidth(), getMeasuredHeight());
         }
-        float y = AndroidUtilities.lerp(0, getMeasuredHeight() - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(4) - AndroidUtilities.dp(FAKE_TOP_PADDING), collapsedProgress1);
+        float y = AndroidUtilities.lerp(0, getMeasuredHeight() - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(4), collapsedProgress1);
         recyclerListView.setTranslationY(y);
         listViewMini.setTranslationY(y);
         listViewMini.setTranslationX(AndroidUtilities.dp(68));
-        float progressHalf = Utilities.clamp((CubicBezierInterpolator.EASE_OUT.getInterpolation(collapsedProgress) - 0.5f) / 0.5f, 1f, 0);
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;

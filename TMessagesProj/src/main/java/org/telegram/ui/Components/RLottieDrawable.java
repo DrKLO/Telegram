@@ -1395,6 +1395,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         }
     }
 
+    public void setAllowDrawFramesWhileCacheGenerating(boolean allowDrawWhileCacheGenerating) {
+        //TODO
+    }
+
     private class NativePtrArgs {
         public int[] colorReplacement;
         public int fitzModifier;

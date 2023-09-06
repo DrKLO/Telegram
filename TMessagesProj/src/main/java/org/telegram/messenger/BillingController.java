@@ -101,6 +101,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     @SuppressWarnings("ConstantConditions")
     public int getCurrencyExp(String currency) {
+        BillingUtilities.extractCurrencyExp(currencyExpMap);
         return currencyExpMap.getOrDefault(currency, 0);
     }
 

@@ -3562,6 +3562,8 @@
     <string name="BotWebViewRequestDontAllow">Don\'t Allow</string>
     <string name="BotWebViewChangesMayNotBeSaved">Changes that you made may not be saved.</string>
     <string name="BotWebViewCloseAnyway">Close anyway</string>
+    <string name="BotWebViewRequestWriteTitle">Allow messaging</string>
+    <string name="BotWebViewRequestWriteMessage">Allow this bot to send you messages?</string>
     <!--button titles-->
     <string name="Done">Done</string>
     <string name="Open">Open</string>
@@ -3664,6 +3666,7 @@
     <string name="ActionGroupCallInvitedYou">un1 invited you to the voice chat</string>
     <string name="ActionBotAllowed">You allowed this bot to message you when you logged in on %1$s.</string>
     <string name="ActionBotAllowedApp">You allowed this bot to message you when you logged in on "%1$s" app.</string>
+    <string name="ActionBotAllowedWebapp">You allowed this bot to message you in its web-app</string>
     <string name="ActionBotDocuments">%1$s received the following documents: %2$s</string>
     <string name="ActionBotDocumentIdentity">Personal details</string>
     <string name="ActionBotDocumentAddress">Address</string>
@@ -3790,6 +3793,8 @@
     <string name="ShareYouLocationInline">This bot would like to know your location each time you send it a request. This can be used to provide location-specific results.</string>
     <string name="ShareYouPhoneNumberTitle">Share your phone number?</string>
     <string name="AreYouSureShareMyContactInfoBot">The bot will know your phone number. This can be useful for integration with other services.</string>
+    <string name="AreYouSureShareMyContactInfoWebapp">**%s** will know your phone number. This can be useful for integration with other services.</string>
+    <string name="AreYouSureShareMyContactInfoBotUnblock">This will also unblock the bot.</string>
     <string name="AreYouSureShareMyContactInfoUser">Are you sure you want to share your phone number %1$s with **%2$s**?</string>
     <string name="AreYouSureShareMyContactInfo">Are you sure you want to share your phone number?</string>
     <string name="AreYouSureBlockContact2">Are you sure you want to block **%1$s**?</string>
@@ -5750,6 +5755,8 @@
     <string name="BotWebViewRequestMicrophonePermissionWithHint">Allow **%1$s** to access to your microphone?\n\nThe developer of **%1$s** will be able to access your microphone when this web app is open.\n\nEnable microphone access in Settings > Permissions > Microphone.</string>
     <string name="BotWebViewRequestCameraPermission">Allow **%1$s** to access to your camera?\n\nThe developer of **%1$s** will be able to access your camera when this web app is open.</string>
     <string name="BotWebViewRequestCameraPermissionWithHint">Allow **%1$s** to access to your camera?\n\nThe developer of **%1$s** will be able to access your camera when this web app is open.\n\nEnable camera access in Settings > Permissions > Camera.</string>
+    <string name="BotWebViewRequestCameraMicPermission">Allow **%1$s** to access to your camera and microphone?\n\nThe developer of **%1$s** will be able to access your camera and microphone when this web app is open.</string>
+    <string name="BotWebViewRequestCameraMicPermissionWithHint">Allow **%1$s** to access to your camera and microphone?\n\nThe developer of **%1$s** will be able to access your camera and microphone when this web app is open.\n\nEnable camera access in Settings > Permissions > Camera.</string>
     <string name="ErrorRingtoneDurationTooLong">Length must be under %s seconds.</string>
     <string name="ErrorRingtoneSizeTooBig">Size must be under %s Kb.</string>
     <string name="ErrorRingtoneInvalidFormat">File must be mp3 or ogg format.</string>

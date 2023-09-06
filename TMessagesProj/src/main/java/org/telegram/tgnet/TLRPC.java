@@ -74,7 +74,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 161;
+    public static final int LAYER = 162;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -26688,12 +26688,14 @@ public class TLRPC {
         public static int constructor = 0xc516d679;
 
         public boolean attach_menu;
+        public boolean from_request;
         public String domain;
         public BotApp app;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             attach_menu = (flags & 2) != 0;
+            from_request = (flags & 8) != 0;
             if ((flags & 1) != 0) {
                 domain = stream.readString(exception);
             }
@@ -26705,6 +26707,7 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             flags = attach_menu ? (flags | 2) : (flags &~ 2);
+            flags = from_request ? (flags | 8) : (flags &~ 8);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
                 stream.writeString(domain);
@@ -71082,6 +71085,56 @@ public class TLRPC {
             reaction.serializeToStream(stream);
         }
     }
+
+    public static class TL_bots_canSendMessage extends TLObject {
+        public static int constructor = 0x1359f4e6;
+
+        public InputUser bot;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_bots_allowSendMessage extends TLObject {
+        public static int constructor = 0xf132e3ef;
+
+        public InputUser bot;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_bots_invokeWebViewCustomMethod extends TLObject {
+        public static int constructor = 0x87fc5e7;
+
+        public InputUser bot;
+        public String custom_method;
+        public TL_dataJSON params;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TL_dataJSON.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+            stream.writeString(custom_method);
+            params.serializeToStream(stream);
+        }
+    }
+
     //functions
 
     public static class Vector extends TLObject {

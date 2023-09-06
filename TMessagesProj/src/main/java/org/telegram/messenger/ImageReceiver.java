@@ -53,6 +53,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     List<ImageReceiver> preloadReceivers;
     private boolean allowCrossfadeWithImage = true;
+    private boolean allowDrawWhileCacheGenerating;
 
     public boolean updateThumbShaderMatrix() {
         if (currentThumbDrawable != null && thumbShader != null) {
@@ -82,6 +83,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         staticThumbShader = null;
         roundPaint.setShader(null);
         setStaticDrawable(new BitmapDrawable(bitmap));
+    }
+
+    public void setAllowDrawWhileCacheGenerating(boolean allow) {
+        allowDrawWhileCacheGenerating = allow;
     }
 
     public interface ImageReceiverDelegate {
@@ -2249,7 +2254,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean hasNotThumb() {
-        return currentImageDrawable != null || currentMediaDrawable != null || staticThumbDrawable instanceof VectorAvatarThumbDrawable || (staticThumbDrawable != null && currentImageKey == null && currentMediaKey == null);
+        return currentImageDrawable != null || currentMediaDrawable != null || staticThumbDrawable instanceof VectorAvatarThumbDrawable;
+    }
+
+    public boolean hasNotThumbOrOnlyStaticThumb() {
+        return currentImageDrawable != null || currentMediaDrawable != null || staticThumbDrawable instanceof VectorAvatarThumbDrawable || (staticThumbDrawable != null && !(staticThumbDrawable instanceof AvatarDrawable) && currentImageKey == null && currentMediaKey == null);
     }
 
     public boolean hasStaticThumb() {
@@ -2824,6 +2833,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             fileDrawable.setAutoRepeat(autoRepeat);
             fileDrawable.setAutoRepeatCount(autoRepeatCount);
             fileDrawable.setAutoRepeatTimeout(autoRepeatTimeout);
+            fileDrawable.setAllowDrawFramesWhileCacheGenerating(allowDrawWhileCacheGenerating);
             animationReadySent = false;
         }
         invalidate();

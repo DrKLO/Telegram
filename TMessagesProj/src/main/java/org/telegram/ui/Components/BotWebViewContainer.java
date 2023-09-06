@@ -21,8 +21,8 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Message;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -33,7 +33,6 @@ import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -49,17 +48,22 @@ import androidx.core.util.Consumer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -88,7 +92,6 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     private final static String DURGER_KING_USERNAME = "DurgerKingBot";
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000, REQUEST_CODE_QR_CAMERA_PERMISSION = 5000;
     private final static int DIALOG_SEQUENTIAL_COOLDOWN_TIME = 3000;
-    private final static boolean ENABLE_REQUEST_PHONE = false;
 
     private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https");
 
@@ -466,6 +469,30 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                             break;
                         }
                     }
+                } else if (
+                    resources.length == 2 &&
+                        (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0]) || PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resources[0])) &&
+                        (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[1]) || PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resources[1]))
+                ) {
+                    lastPermissionsDialog = AlertsCreator.createWebViewPermissionsRequestDialog(parentActivity, resourcesProvider, new String[] {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, R.raw.permission_request_camera, LocaleController.formatString(R.string.BotWebViewRequestCameraMicPermission, UserObject.getUserName(botUser)), LocaleController.formatString(R.string.BotWebViewRequestCameraMicPermissionWithHint, UserObject.getUserName(botUser)), allow -> {
+                        if (lastPermissionsDialog != null) {
+                            lastPermissionsDialog = null;
+
+                            if (allow) {
+                                runWithPermissions(new String[] {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, allowSystem -> {
+                                    if (allowSystem) {
+                                        request.grant(new String[] {resources[0], resources[1]});
+                                        hasUserPermissions = true;
+                                    } else {
+                                        request.deny();
+                                    }
+                                });
+                            } else {
+                                request.deny();
+                            }
+                        }
+                    });
+                    lastPermissionsDialog.show();
                 }
             }
 
@@ -866,6 +893,17 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.onActivityResultReceived);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.onRequestPermissionResultReceived);
+
+        Bulletin.addDelegate(this, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                if (getParent() instanceof ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer) {
+                    ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer swipeContainer = (ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer) getParent();
+                    return (int) (swipeContainer.getOffsetY() + swipeContainer.getSwipeOffsetY() - swipeContainer.getTopActionBarOffsetY());
+                }
+                return 0;
+            }
+        });
     }
 
     @Override
@@ -875,6 +913,8 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onActivityResultReceived);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onRequestPermissionResultReceived);
+
+        Bulletin.removeDelegate(this);
     }
 
     public void destroyWebView() {
@@ -1033,36 +1073,6 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 } catch (JSONException e) {
                     FileLog.e(e);
                 }
-                break;
-            }
-            case "web_app_request_phone": {
-                if (currentDialog != null || !ENABLE_REQUEST_PHONE) {
-                    break;
-                }
-
-                AtomicBoolean notifiedPhone = new AtomicBoolean(false);
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
-                        .setTitle(LocaleController.getString(R.string.ShareYouPhoneNumberTitle))
-                        .setMessage(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBot))
-                        .setPositiveButton(LocaleController.getString("ShareContact", R.string.ShareContact), (dialogInterface, i) -> {
-                            TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
-                            if (currentUser != null) {
-                                try {
-                                    notifyEvent("phone_requested", new JSONObject().put("phone_number", currentUser.phone));
-                                } catch (JSONException e) {
-                                    FileLog.e(e);
-                                }
-                                notifiedPhone.set(true);
-                            }
-                        }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
-                        .setOnDismissListener(dialog1 -> {
-                            if (!notifiedPhone.get()) {
-                                notifyEvent("phone_requested", new JSONObject());
-                            }
-                            currentDialog = null;
-                        });
-                currentDialog = builder.show();
-
                 break;
             }
             case "web_app_open_popup": {
@@ -1394,7 +1404,242 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 }
                 break;
             }
+            case "web_app_request_write_access": {
+                if (ignoreDialog(3)) {
+                    try {
+                        JSONObject data = new JSONObject();
+                        data.put("status", "cancelled");
+                        notifyEvent("write_access_requested", data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return;
+                }
+                TLRPC.TL_bots_canSendMessage req = new TLRPC.TL_bots_canSendMessage();
+                req.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (res instanceof TLRPC.TL_boolTrue) {
+                        try {
+                            JSONObject data = new JSONObject();
+                            data.put("status", "allowed");
+                            notifyEvent("write_access_requested", data);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        return;
+                    } else if (err != null) {
+                        unknownError(err.text);
+                        return;
+                    }
+
+                    final String[] status = new String[] { "cancelled" };
+                    showDialog(3, new AlertDialog.Builder(getContext())
+                        .setTitle(LocaleController.getString(R.string.BotWebViewRequestWriteTitle))
+                        .setMessage(LocaleController.getString(R.string.BotWebViewRequestWriteMessage))
+                        .setPositiveButton(LocaleController.getString(R.string.BotWebViewRequestAllow), (di, w) -> {
+                            TLRPC.TL_bots_allowSendMessage req2 = new TLRPC.TL_bots_allowSendMessage();
+                            req2.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
+                                if (res2 != null) {
+                                    status[0] = "allowed";
+                                }
+                                if (err2 != null) {
+                                    unknownError(err2.text);
+                                }
+                                di.dismiss();
+                            }));
+                        })
+                        .setNegativeButton(LocaleController.getString(R.string.BotWebViewRequestDontAllow), (di, w) -> {
+                            di.dismiss();
+                        })
+                        .create(),
+                        () -> {
+                            try {
+                                JSONObject data = new JSONObject();
+                                data.put("status", status[0]);
+                                notifyEvent("write_access_requested", data);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    );
+                }));
+                break;
+            }
+            case "web_app_invoke_custom_method": {
+                String reqId, method, paramsString;
+                try {
+                    JSONObject jsonObject = new JSONObject(eventData);
+                    reqId = jsonObject.getString("req_id");
+                    method = jsonObject.getString("method");
+                    Object params = jsonObject.get("params");
+                    paramsString = params.toString();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    if (e instanceof JSONException) {
+                        error("JSON Parse error");
+                    } else {
+                        unknownError();
+                    }
+                    return;
+                }
+
+                TLRPC.TL_bots_invokeWebViewCustomMethod req = new TLRPC.TL_bots_invokeWebViewCustomMethod();
+                req.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
+                req.custom_method = method;
+                req.params = new TLRPC.TL_dataJSON();
+                req.params.data = paramsString;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        JSONObject data = new JSONObject();
+                        data.put("req_id", reqId);
+                        if (res instanceof TLRPC.TL_dataJSON) {
+                            Object json = new JSONTokener(((TLRPC.TL_dataJSON) res).data).nextValue();
+                            data.put("result", json);
+                        } else if (err != null) {
+                            data.put("error", err.text);
+                        }
+                        notifyEvent("custom_method_invoked", data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        unknownError();
+                    }
+                }));
+                break;
+            }
+            case "web_app_request_phone": {
+                if (ignoreDialog(4)) {
+                    try {
+                        JSONObject data = new JSONObject();
+                        data.put("status", "cancelled");
+                        notifyEvent("phone_requested", data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return;
+                }
+
+                final String[] status = new String[] { "cancelled" };
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
+                builder.setTitle(LocaleController.getString("ShareYouPhoneNumberTitle", R.string.ShareYouPhoneNumberTitle));
+                SpannableStringBuilder message = new SpannableStringBuilder();
+                String botName = UserObject.getUserName(botUser);
+                if (!TextUtils.isEmpty(botName)) {
+                    message.append(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.AreYouSureShareMyContactInfoWebapp, botName)));
+                } else {
+                    message.append(AndroidUtilities.replaceTags(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBot)));
+                }
+                final boolean blocked = MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(botUser.id) >= 0;
+                if (blocked) {
+                    message.append("\n\n");
+                    message.append(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBotUnblock));
+                }
+                builder.setMessage(message);
+                builder.setPositiveButton(LocaleController.getString("ShareContact", R.string.ShareContact), (di, i) -> {
+                    status[0] = null;
+                    di.dismiss();
+
+                    if (blocked) {
+                        MessagesController.getInstance(currentAccount).unblockPeer(botUser.id, () -> {
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(UserConfig.getInstance(currentAccount).getCurrentUser(), botUser.id, null, null, null, null, true, 0));
+
+                            try {
+                                JSONObject data = new JSONObject();
+                                data.put("status", "sent");
+                                notifyEvent("phone_requested", data);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    } else {
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(UserConfig.getInstance(currentAccount).getCurrentUser(), botUser.id, null, null, null, null, true, 0));
+
+                        try {
+                            JSONObject data = new JSONObject();
+                            data.put("status", "sent");
+                            notifyEvent("phone_requested", data);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+                });
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (di, i) -> {
+                    di.dismiss();
+                });
+                showDialog(4, builder.create(), () -> {
+                    if (status[0] == null) {
+                        return;
+                    }
+                    try {
+                        JSONObject data = new JSONObject();
+                        data.put("status", status[0]);
+                        notifyEvent("phone_requested", data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                });
+                break;
+            }
+            default: {
+                FileLog.d("unknown webapp event " + eventType);
+                break;
+            }
         }
+    }
+
+    private void unknownError() {
+        unknownError(null);
+    }
+
+    private void unknownError(String errCode) {
+        error(LocaleController.getString("UnknownError", R.string.UnknownError) + (errCode != null ? ": " + errCode : ""));
+    }
+
+    private void error(String reason) {
+        BulletinFactory.of(this, resourcesProvider).createSimpleBulletin(R.raw.error, reason).show();
+    }
+
+    private int lastDialogType = -1;
+    private int shownDialogsCount = 0;
+    private long blockedDialogsUntil;
+
+    private boolean ignoreDialog(int type) {
+        if (currentDialog != null) {
+            return true;
+        }
+        if (blockedDialogsUntil > 0 && System.currentTimeMillis() < blockedDialogsUntil) {
+            return true;
+        }
+        if (lastDialogType == type && shownDialogsCount > 3) {
+            blockedDialogsUntil = System.currentTimeMillis() + 3 * 1000L;
+            shownDialogsCount = 0;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean showDialog(int type, AlertDialog dialog, Runnable onDismiss) {
+        if (dialog == null || ignoreDialog(type)) {
+            return false;
+        }
+        dialog.setOnDismissListener(di -> {
+            if (onDismiss != null) {
+                onDismiss.run();
+            }
+            currentDialog = null;
+        });
+        currentDialog = dialog;
+        currentDialog.setDismissDialogByButtons(false);
+        currentDialog.show();
+
+        if (lastDialogType != type) {
+            lastDialogType = type;
+            shownDialogsCount = 0;
+            blockedDialogsUntil = 0;
+        }
+        shownDialogsCount++;
+
+        return true;
     }
 
     private void openQrScanActivity() {
@@ -1556,6 +1801,10 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
          */
         default boolean isClipboardAvailable() {
             return false;
+        }
+
+        default String getWebAppName() {
+            return null;
         }
     }
 
