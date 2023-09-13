@@ -120,6 +120,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public native byte[] getWaveform2(short[] array, int length);
 
+    public static native byte[] getMp3Waveform(String path, int samplesCount);
+
     public boolean isBuffering() {
         if (audioPlayer != null) {
             return audioPlayer.isBuffering();
@@ -293,8 +295,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 Math.abs(vignetteValue) < 0.1f &&
                 Math.abs(grainValue) < 0.1f &&
                 blurType == 0 &&
-                Math.abs(sharpenValue) < 0.1f &&
-                Math.abs(blurExcludeSize) < 0.1f
+                Math.abs(sharpenValue) < 0.1f
             );
         }
     }
@@ -5278,7 +5279,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
 
         boolean needCompress = avatarStartTime != -1 || info.cropState != null || info.mediaEntities != null || info.paintPath != null || info.filterState != null ||
-                resultWidth != originalWidth || resultHeight != originalHeight || rotationValue != 0 || info.roundVideo || startTime != -1;
+                resultWidth != originalWidth || resultHeight != originalHeight || rotationValue != 0 || info.roundVideo || startTime != -1 || !info.mixedSoundInfos.isEmpty();
 
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("videoconvert", Activity.MODE_PRIVATE);
@@ -5315,7 +5316,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         info.videoConvertFirstWrite = true;
 
         MediaCodecVideoConvertor videoConvertor = new MediaCodecVideoConvertor();
-        boolean error = videoConvertor.convertVideo(videoPath, cacheFile,
+        MediaCodecVideoConvertor.ConvertVideoParams convertVideoParams = MediaCodecVideoConvertor.ConvertVideoParams.of(videoPath, cacheFile,
                 rotationValue, isSecret,
                 originalWidth, originalHeight,
                 resultWidth, resultHeight,
@@ -5324,6 +5325,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 needCompress, duration,
                 info.filterState,
                 info.paintPath,
+                info.blurPath,
                 info.mediaEntities,
                 info.isPhoto,
                 info.cropState,
@@ -5334,8 +5336,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 info.muted,
                 info.isStory,
                 info.hdrInfo,
-                info.parts
-        );
+                info.parts);
+        convertVideoParams.soundInfos.addAll(info.mixedSoundInfos);
+        boolean error = videoConvertor.convertVideo(convertVideoParams);
 
 
         boolean canceled = info.canceled;

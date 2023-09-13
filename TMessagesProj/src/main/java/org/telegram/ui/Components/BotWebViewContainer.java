@@ -88,7 +88,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BotWebViewContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public abstract class BotWebViewContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     private final static String DURGER_KING_USERNAME = "DurgerKingBot";
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000, REQUEST_CODE_QR_CAMERA_PERMISSION = 5000;
     private final static int DIALOG_SEQUENTIAL_COOLDOWN_TIME = 3000;
@@ -512,6 +512,8 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             webView.addJavascriptInterface(new WebViewProxy(), "TelegramWebviewProxy");
         }
+
+        onWebViewCreated();
     }
 
     private void onOpenUri(Uri uri) {
@@ -863,27 +865,29 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     }
 
     public void reload() {
-        checkCreateWebView();
-
-        isPageLoaded = false;
-        lastClickMs = 0;
-        hasUserPermissions = false;
-        if (webView != null) {
-            webView.reload();
-        }
+        NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+            checkCreateWebView();
+            isPageLoaded = false;
+            lastClickMs = 0;
+            hasUserPermissions = false;
+            if (webView != null) {
+                webView.reload();
+            }
+        });
     }
 
     public void loadUrl(int currentAccount, String url) {
-        checkCreateWebView();
-
         this.currentAccount = currentAccount;
-        isPageLoaded = false;
-        lastClickMs = 0;
-        hasUserPermissions = false;
-        mUrl = url;
-        if (webView != null) {
-            webView.loadUrl(url);
-        }
+        NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+            isPageLoaded = false;
+            lastClickMs = 0;
+            hasUserPermissions = false;
+            mUrl = url;
+            checkCreateWebView();
+            if (webView != null) {
+                webView.loadUrl(url);
+            }
+        });
     }
 
     @Override
@@ -937,22 +941,25 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
 
     @SuppressWarnings("deprecation")
     public void evaluateJs(String script, boolean create) {
-        if (create) {
-            checkCreateWebView();
-        }
-        if (webView == null) {
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webView.evaluateJavascript(script, value -> {});
-        } else {
-            try {
-                webView.loadUrl("javascript:" + URLEncoder.encode(script, "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                webView.loadUrl("javascript:" + URLEncoder.encode(script));
+        NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+            if (create) {
+                checkCreateWebView();
             }
-        }
+            if (webView == null) {
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                webView.evaluateJavascript(script, value -> {
+                });
+            } else {
+                try {
+                    webView.loadUrl("javascript:" + URLEncoder.encode(script, "UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    webView.loadUrl("javascript:" + URLEncoder.encode(script));
+                }
+            }
+        });
     }
 
     @Override
@@ -1442,6 +1449,9 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                             ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
                                 if (res2 != null) {
                                     status[0] = "allowed";
+                                    if (res2 instanceof TLRPC.Updates) {
+                                        MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res2, false);
+                                    }
                                 }
                                 if (err2 != null) {
                                     unknownError(err2.text);
@@ -1705,6 +1715,10 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
             hex = "0" + hex;
         }
         return hex;
+    }
+
+    public void onWebViewCreated() {
+
     }
 
     private class WebViewProxy {

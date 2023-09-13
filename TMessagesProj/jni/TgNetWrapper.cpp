@@ -126,7 +126,7 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
             }
         }
         if (onComplete != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime);
+            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime, msgId);
         }
         if (errorText != nullptr) {
             jniEnv[instanceNum]->DeleteLocalRef(errorText);

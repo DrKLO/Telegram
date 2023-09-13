@@ -25,6 +25,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -264,7 +265,6 @@ public abstract class SelfStoriesPreviewView extends View {
 
     private ImageHolder findOrCreateImageReceiver(int position, ArrayList<ImageHolder> imageReceivers) {
         for (int i = 0; i < imageReceivers.size(); i++) {
-            //TODO change to id
             if (imageReceivers.get(i).position == position) {
                 return imageReceivers.remove(i);
             }
@@ -407,6 +407,7 @@ public abstract class SelfStoriesPreviewView extends View {
         int position;
         StaticLayout layout;
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        SelfStoryViewsView.StoryItemInternal storyItem;
 
         public ImageHolder() {
             receiver.setAllowLoadingOnAttachedOnly(true);
@@ -416,7 +417,7 @@ public abstract class SelfStoriesPreviewView extends View {
         }
 
         void onBind(int position) {
-            SelfStoryViewsView.StoryItemInternal storyItem = storyItems.get(position);
+            storyItem = storyItems.get(position);
             if (isAttachedToWindow) {
                 receiver.onAttachedToWindow();
             }
@@ -425,6 +426,10 @@ public abstract class SelfStoriesPreviewView extends View {
             } else {
                 StoriesUtilities.setImage(receiver, storyItem.uploadingStory);
             }
+            updateLayout();
+        }
+
+        private void updateLayout() {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
             if (storyItem.storyItem != null) {
                 formatCounterText(spannableStringBuilder, storyItem.storyItem.views, false);
@@ -463,6 +468,10 @@ public abstract class SelfStoriesPreviewView extends View {
                 canvas.restore();
             }
         }
+
+        public void update() {
+            updateLayout();
+        }
     }
 
     private void formatCounterText(SpannableStringBuilder spannableStringBuilder, TLRPC.StoryViews storyViews, boolean twoLines) {
@@ -498,6 +507,12 @@ public abstract class SelfStoriesPreviewView extends View {
             lastDrawnImageReceivers.get(i).onDetach();
         }
         lastDrawnImageReceivers.clear();
+    }
+
+    public void update() {
+        for (int i = 0; i < lastDrawnImageReceivers.size(); i++) {
+            lastDrawnImageReceivers.get(i).update();
+        }
     }
 }
 

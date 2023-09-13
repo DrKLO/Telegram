@@ -542,7 +542,7 @@ public class DualCameraView extends CameraView implements CameraController.Error
         846150482,   // MOTOROLA CHANNEL
         -1198092731, // MOTOROLA CYPRUS64
         -251277614,  // MOTOROLA HANOIP
-        -2078385967, // MOTOROLA PSTAR
+//        -2078385967, // MOTOROLA PSTAR
         -2073158771, // MOTOROLA VICKY
         1273004781   // MOTOROLA BLACKJACK
 //        -1426053134  // REALME REE2ADL1

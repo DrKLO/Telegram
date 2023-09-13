@@ -945,8 +945,8 @@ public class AndroidUtilities {
         }
     }
 
-    public static void fillStatusBarHeight(Context context) {
-        if (context == null || AndroidUtilities.statusBarHeight > 0) {
+    public static void fillStatusBarHeight(Context context, boolean force) {
+        if (context == null || (AndroidUtilities.statusBarHeight > 0 && !force)) {
             return;
         }
         AndroidUtilities.statusBarHeight = getStatusBarHeight(context);
@@ -2291,10 +2291,8 @@ public class AndroidUtilities {
                 }
                 roundMessageInset = dp(2);
             }
+            fillStatusBarHeight(context, true);
             if (BuildVars.LOGS_ENABLED) {
-                if (statusBarHeight == 0) {
-                    fillStatusBarHeight(context);
-                }
                 FileLog.e("density = " + density + " display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi + ", screen layout: " + configuration.screenLayout + ", statusbar height: " + statusBarHeight + ", navbar height: " + navigationBarHeight);
             }
             ViewConfiguration vc = ViewConfiguration.get(context);
@@ -5377,6 +5375,18 @@ public class AndroidUtilities {
             FileLog.e(e);
         }
         return new Pair<>(0, 0);
+    }
+
+    public static void forEachViews(View view, Consumer<View> consumer) {
+        if (view instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                consumer.accept(view);
+                forEachViews(viewGroup.getChildAt(i), consumer);
+            }
+        } else {
+            consumer.accept(view);
+        }
     }
 
     public static void forEachViews(RecyclerView recyclerView, Consumer<View> consumer) {

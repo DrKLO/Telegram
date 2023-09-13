@@ -1,5 +1,8 @@
 package org.telegram.ui.Stories;
 
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.TLRPC;
 

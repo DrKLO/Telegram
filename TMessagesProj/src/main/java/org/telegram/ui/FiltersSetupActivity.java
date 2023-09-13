@@ -608,7 +608,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     return;
                 }
                 if (filter.locked) {
-                    showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount));
+                    showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
                 } else {
                     presentFragment(new FilterCreateActivity(filter));
                 }
@@ -618,7 +618,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     count - 1 >= getMessagesController().dialogFiltersLimitDefault && !getUserConfig().isPremium() ||
                     count >= getMessagesController().dialogFiltersLimitPremium
                 ) {
-                    showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount));
+                    showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
                 } else {
                     presentFragment(new FilterCreateActivity());
                 }
@@ -786,7 +786,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                         ItemOptions options = ItemOptions.makeOptions(FiltersSetupActivity.this, cell);
                         options.add(R.drawable.msg_edit, LocaleController.getString("FilterEditItem", R.string.FilterEditItem), () -> {
                             if (filter.locked) {
-                                showDialog(new LimitReachedBottomSheet(FiltersSetupActivity.this, mContext, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount));
+                                showDialog(new LimitReachedBottomSheet(FiltersSetupActivity.this, mContext, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
                             } else {
                                 presentFragment(new FilterCreateActivity(filter));
                             }

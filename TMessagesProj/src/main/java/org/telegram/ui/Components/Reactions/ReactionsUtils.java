@@ -22,6 +22,16 @@ public class ReactionsUtils {
         return false;
     }
 
+    public static boolean compare(TLRPC.Reaction reaction,  TLRPC.Reaction reaction2) {
+        if (reaction instanceof TLRPC.TL_reactionEmoji && reaction2 instanceof TLRPC.TL_reactionEmoji && TextUtils.equals(((TLRPC.TL_reactionEmoji) reaction).emoticon, ((TLRPC.TL_reactionEmoji) reaction2).emoticon)) {
+            return true;
+        }
+        if (reaction instanceof TLRPC.TL_reactionCustomEmoji && reaction2 instanceof TLRPC.TL_reactionCustomEmoji && ((TLRPC.TL_reactionCustomEmoji) reaction).document_id == ((TLRPC.TL_reactionCustomEmoji) reaction2).document_id) {
+            return true;
+        }
+        return false;
+    }
+
     public static TLRPC.Reaction toTLReaction(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
         if (visibleReaction.emojicon != null) {
             TLRPC.TL_reactionEmoji emoji = new TLRPC.TL_reactionEmoji();

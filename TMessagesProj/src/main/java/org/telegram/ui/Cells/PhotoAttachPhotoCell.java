@@ -57,6 +57,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
+import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.PhotoViewer;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
@@ -86,6 +87,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private final Theme.ResourcesProvider resourcesProvider;
 
     private SpoilerEffect spoilerEffect = new SpoilerEffect();
+    private SpoilerEffect2 spoilerEffect2;
     private boolean hasSpoiler;
 
     private Path path = new Path();
@@ -108,7 +110,30 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
         setWillNotDraw(false);
 
-        container = new FrameLayout(context);
+        container = new FrameLayout(context) {
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (spoilerEffect2 != null && child == imageView) {
+                    boolean r = super.drawChild(canvas, child, drawingTime);
+                    if (hasSpoiler && spoilerRevealProgress != 1f && (photoEntry == null || !photoEntry.isAttachSpoilerRevealed)) {
+                        if (spoilerRevealProgress != 0f) {
+                            canvas.save();
+                            path.rewind();
+                            path.addCircle(spoilerRevealX, spoilerRevealY, spoilerMaxRadius * spoilerRevealProgress, Path.Direction.CW);
+                            canvas.clipPath(path, Region.Op.DIFFERENCE);
+                        }
+                        float alphaProgress = CubicBezierInterpolator.DEFAULT.getInterpolation(1f - imageViewCrossfadeProgress);
+                        float alpha = hasSpoiler ? alphaProgress : 1f - alphaProgress;
+                        spoilerEffect2.draw(canvas, container, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+                        if (spoilerRevealProgress != 0f) {
+                            canvas.restore();
+                        }
+                    }
+                    return r;
+                }
+                return super.drawChild(canvas, child, drawingTime);
+            }
+        };
         addView(container, LayoutHelper.createFrame(80, 80));
 
         int sColor = Color.WHITE;
@@ -141,8 +166,10 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     }
 
                     blurImageReceiver.draw(canvas);
-                    spoilerEffect.setBounds(0, 0, getWidth(), getHeight());
-                    spoilerEffect.draw(canvas);
+                    if (spoilerEffect2 == null) {
+                        spoilerEffect.setBounds(0, 0, getWidth(), getHeight());
+                        spoilerEffect.draw(canvas);
+                    }
                     invalidate();
 
                     if (spoilerRevealProgress != 0f) {
@@ -158,12 +185,21 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     imageViewCrossfadeProgress = Math.min(1f, imageViewCrossfadeProgress + dt / duration);
                     lastUpdate = System.currentTimeMillis();
                     invalidate();
+                    if (spoilerEffect2 != null) {
+                        container.invalidate();
+                    }
                 } else if (imageViewCrossfadeProgress == 1f && imageViewCrossfadeSnapshot != null) {
                     imageViewCrossfadeSnapshot.recycle();
                     imageViewCrossfadeSnapshot = null;
                     crossfadeDuration = null;
                     invalidate();
                 }
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                updateSpoilers2(photoEntry != null && photoEntry.hasSpoiler);
             }
         };
         imageView.setBlurAllowed(true);
@@ -258,6 +294,45 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             this.crossfadeDuration = crossfadeDuration;
             imageView.setHasBlur(hasSpoiler);
             imageView.invalidate();
+            if (hasSpoiler) {
+                updateSpoilers2(hasSpoiler);
+            }
+        }
+    }
+
+    private void updateSpoilers2(boolean hasSpoiler) {
+        if (container == null || imageView == null || imageView.getMeasuredHeight() <= 0 || imageView.getMeasuredWidth() <= 0) {
+            return;
+        }
+        if (hasSpoiler && SpoilerEffect2.supports()) {
+            if (spoilerEffect2 == null) {
+                spoilerEffect2 = SpoilerEffect2.getInstance(container);
+            }
+        } else {
+            if (spoilerEffect2 != null) {
+                spoilerEffect2.detach(this);
+                spoilerEffect2 = null;
+            }
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (spoilerEffect2 != null) {
+            spoilerEffect2.detach(this);
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (spoilerEffect2 != null) {
+            if (spoilerEffect2.destroyed) {
+                spoilerEffect2 = SpoilerEffect2.getInstance(this);
+            } else {
+                spoilerEffect2.attach(this);
+            }
         }
     }
 

@@ -62,6 +62,16 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
         }
     }
 
+    public void setBackgroundDrawable(Drawable backgroundDrawable) {
+        background = backgroundDrawable;
+        invalidateSelf();
+    }
+
+    public void setIconDrawable(Drawable iconDrawable) {
+        icon = iconDrawable;
+        invalidateSelf();
+    }
+
     public void setCustomSize(int width, int height) {
         backWidth = width;
         backHeight = height;

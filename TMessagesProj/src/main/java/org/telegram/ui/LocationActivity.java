@@ -1592,7 +1592,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     private void openShareLiveLocation(int proximityRadius) {
-        if (delegate == null || getParentActivity() == null || myLocation == null || !checkGpsEnabled()) {
+        if (delegate == null || disablePermissionCheck() || getParentActivity() == null || myLocation == null || !checkGpsEnabled()) {
             return;
         }
         if (checkBackgroundPermission && Build.VERSION.SDK_INT >= 29) {
@@ -1915,6 +1915,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     private boolean checkGpsEnabled() {
+        if (disablePermissionCheck()) {
+            return false;
+        }
         if (!getParentActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
             return true;
         }
@@ -2707,7 +2710,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
         }
         fixLayoutInternal(true);
-        if (checkPermission && Build.VERSION.SDK_INT >= 23) {
+        if (disablePermissionCheck()) {
+            checkPermission = false;
+        } else if (checkPermission && Build.VERSION.SDK_INT >= 23) {
             Activity activity = getParentActivity();
             if (activity != null) {
                 checkPermission = false;
@@ -2720,6 +2725,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             AndroidUtilities.cancelRunOnUIThread(markAsReadRunnable);
             AndroidUtilities.runOnUIThread(markAsReadRunnable, 5000);
         }
+    }
+
+    protected boolean disablePermissionCheck() {
+        return false;
     }
 
     @Override

@@ -206,6 +206,26 @@ public class ShaderSet {
         "   gl_FragColor.rgb = (blurColor.rgb * srcAlpha + dst.rgb * dst.a * (1.0 - srcAlpha)) / outAlpha;" +
         "   gl_FragColor.a = outAlpha;" +
         "}";
+    private static final String PAINT_VIDEOBLUR_FSH =
+        "precision highp float;" +
+        "varying vec2 varTexcoord;" +
+        "uniform sampler2D texture;" +
+        "uniform sampler2D blured;" +
+        "uniform float eraser;" +
+        "uniform float flipy;" +
+        "uniform sampler2D mask;" +
+        "void main (void) {" +
+        "   vec2 uv = vec2(varTexcoord.x, flipy > 0. ? 1. - varTexcoord.y : varTexcoord.y);" +
+        "   vec4 dst = texture2D(texture, uv, 0.0);" +
+        "   vec4 blurColor = texture2D(blured, uv, 0.0);" +
+        "   gl_FragColor = dst.a <= 0. ? vec4(0.) : vec4(blurColor.rgb, 1.) * dst.a;" +
+        "   if (eraser > 0.) {" +
+        "       vec4 maskColor = texture2D(mask, uv, 0.0);" +
+        "       if (maskColor.a > 0.) {" +
+        "           gl_FragColor.rgba *= (1. - maskColor.a);" +
+        "       }" +
+        "   }" +
+        "}";
 
     // shapes
     private static final String PAINT_SHAPE_FSH =
@@ -352,6 +372,13 @@ public class ShaderSet {
         shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
         shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "mask", "blured", "color"});
         result.put("compositeWithMaskBlurer", Collections.unmodifiableMap(shader));
+
+        shader = new HashMap<>();
+        shader.put(VERTEX, PAINT_BLIT_VSH);
+        shader.put(FRAGMENT, PAINT_VIDEOBLUR_FSH);
+        shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
+        shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "blured", "eraser", "mask", "flipy"});
+        result.put("videoBlur", Collections.unmodifiableMap(shader));
 
         // neon
         shader = new HashMap<>();

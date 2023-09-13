@@ -1,8 +1,9 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
-import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 
@@ -18,6 +19,7 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
     private Rect viewRect = new Rect();
     private int videoWidth;
     private int videoHeight;
+
 
     public StoryEntry.HDRInfo hdrInfo;
     public void setHDRInfo(StoryEntry.HDRInfo hdrInfo) {
@@ -77,11 +79,12 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
                 }
                 Surface s = new Surface(surfaceTexture);
                 currentVideoPlayer.setSurface(s);
-            }, hdrInfo);
+            }, hdrInfo, uiBlurManager, width, height);
+            eglThread.updateUiBlurGradient(gradientTop, gradientBottom);
+            eglThread.updateUiBlurManager(uiBlurManager);
             if (videoWidth != 0 && videoHeight != 0) {
                 eglThread.setVideoSize(videoWidth, videoHeight);
             }
-            eglThread.setSurfaceTextureSize(width, height);
             eglThread.requestRender(true, true, false);
             if (delegate != null) {
                 delegate.onEGLThreadAvailable(eglThread);
@@ -132,5 +135,38 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
 
     public boolean containsPoint(float x, float y) {
         return x >= viewRect.x && x <= viewRect.x + viewRect.width && y >= viewRect.y && y <= viewRect.y + viewRect.height;
+    }
+
+    public Bitmap getUiBlurBitmap() {
+        if (eglThread == null) {
+            return null;
+        }
+        return eglThread.getUiBlurBitmap();
+    }
+
+    @Override
+    public void setTransform(@Nullable Matrix transform) {
+        super.setTransform(transform);
+        if (eglThread != null) {
+            eglThread.updateUiBlurTransform(transform, getWidth(), getHeight());
+        }
+    }
+
+    private int gradientTop, gradientBottom;
+    public void updateUiBlurGradient(int top, int bottom) {
+        if (eglThread == null) {
+            gradientTop = top;
+            gradientBottom = bottom;
+            return;
+        }
+        eglThread.updateUiBlurGradient(top, bottom);
+    }
+
+    private BlurringShader.BlurManager uiBlurManager;
+    public void updateUiBlurManager(BlurringShader.BlurManager uiBlurManager) {
+        this.uiBlurManager = uiBlurManager;
+        if (eglThread != null) {
+            eglThread.updateUiBlurManager(uiBlurManager);
+        }
     }
 }

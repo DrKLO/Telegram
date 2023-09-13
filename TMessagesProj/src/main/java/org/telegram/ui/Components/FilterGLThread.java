@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -37,6 +38,7 @@ public class FilterGLThread extends DispatchQueue {
     private EGLContext eglContext;
     private EGLSurface eglSurface;
     private boolean initied;
+    private boolean isVideo;
 
     private volatile int surfaceWidth;
     private volatile int surfaceHeight;
@@ -50,12 +52,22 @@ public class FilterGLThread extends DispatchQueue {
     private int[] videoTexture = new int[1];
     private boolean videoFrameAvailable;
 
+    private boolean uiBlurEnabled;
+    private final BlurringShader.BlurManager blurManager;
+    private BlurringShader uiBlur;
+
     private FilterShaders filterShaders;
 
     private int simpleShaderProgram;
     private int simplePositionHandle;
     private int simpleInputTexCoordHandle;
     private int simpleSourceImageHandle;
+
+    private int simpleOESShaderProgram;
+    private int simpleOESPositionHandle;
+    private int simpleOESMatrixHandle;
+    private int simpleOESInputTexCoordHandle;
+    private int simpleOESSourceImageHandle;
 
     private boolean blurred;
     private int renderBufferWidth;
@@ -75,16 +87,21 @@ public class FilterGLThread extends DispatchQueue {
 
     private FilterGLThreadVideoDelegate videoDelegate;
 
-    public FilterGLThread(SurfaceTexture surface, Bitmap bitmap, int bitmapOrientation, boolean mirror, StoryEntry.HDRInfo hdrInfo) {
-        this(surface, bitmap, bitmapOrientation, mirror, hdrInfo, true);
-    }
-
-    public FilterGLThread(SurfaceTexture surface, Bitmap bitmap, int bitmapOrientation, boolean mirror, StoryEntry.HDRInfo hdrInfo, boolean allowBitmapScaling) {
+    public FilterGLThread(SurfaceTexture surface, Bitmap bitmap, int bitmapOrientation, boolean mirror, StoryEntry.HDRInfo hdrInfo, boolean allowBitmapScaling, BlurringShader.BlurManager blurManager, int w, int h) {
         super("PhotoFilterGLThread", false);
         surfaceTexture = surface;
+        surfaceWidth = w;
+        surfaceHeight = h;
         currentBitmap = bitmap;
         orientation = bitmapOrientation;
-        filterShaders = new FilterShaders(false, hdrInfo);
+        this.blurManager = blurManager;
+        uiBlurEnabled = blurManager != null;
+        if (uiBlurEnabled) {
+            uiBlur = new BlurringShader(this);
+            uiBlur.setBlurManager(blurManager);
+        }
+
+        filterShaders = new FilterShaders(isVideo = false, hdrInfo);
         filterShaders.setScaleBitmap(allowBitmapScaling);
 
         float[] textureCoordinates = {
@@ -112,11 +129,19 @@ public class FilterGLThread extends DispatchQueue {
         start();
     }
 
-    public FilterGLThread(SurfaceTexture surface, FilterGLThreadVideoDelegate filterGLThreadVideoDelegate, StoryEntry.HDRInfo hdrInfo) {
+    public FilterGLThread(SurfaceTexture surface, FilterGLThreadVideoDelegate filterGLThreadVideoDelegate, StoryEntry.HDRInfo hdrInfo, BlurringShader.BlurManager blurManager, int w, int h) {
         super("VideoFilterGLThread", false);
         surfaceTexture = surface;
+        surfaceWidth = w;
+        surfaceHeight = h;
         videoDelegate = filterGLThreadVideoDelegate;
-        filterShaders = new FilterShaders(true, hdrInfo);
+        this.blurManager = blurManager;
+        uiBlurEnabled = blurManager != null;
+        if (uiBlurEnabled) {
+            uiBlur = new BlurringShader(this);
+            uiBlur.setBlurManager(blurManager);
+        }
+        filterShaders = new FilterShaders(isVideo = true, hdrInfo);
         start();
     }
 
@@ -182,13 +207,17 @@ public class FilterGLThread extends DispatchQueue {
         }
 
         int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
-        eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+        EGLContext parentContext = blurManager != null ? blurManager.getParentContext() : EGL10.EGL_NO_CONTEXT;
+        eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, parentContext, attrib_list);
         if (eglContext == null) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
             }
             finish();
             return false;
+        }
+        if (blurManager != null) {
+            blurManager.acquiredContext(eglContext);
         }
 
         if (surfaceTexture instanceof SurfaceTexture) {
@@ -237,6 +266,31 @@ public class FilterGLThread extends DispatchQueue {
             return false;
         }
 
+        vertexShader = FilterShaders.loadShader(GLES20.GL_VERTEX_SHADER, FilterShaders.simpleVertexVideoShaderCode);
+        fragmentShader = FilterShaders.loadShader(GLES20.GL_FRAGMENT_SHADER, "#extension GL_OES_EGL_image_external : require\n" + FilterShaders.simpleFragmentShaderCode.replace("sampler2D", "samplerExternalOES"));
+        if (vertexShader != 0 && fragmentShader != 0) {
+            simpleOESShaderProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(simpleOESShaderProgram, vertexShader);
+            GLES20.glAttachShader(simpleOESShaderProgram, fragmentShader);
+            GLES20.glBindAttribLocation(simpleOESShaderProgram, 0, "position");
+            GLES20.glBindAttribLocation(simpleOESShaderProgram, 1, "inputTexCoord");
+
+            GLES20.glLinkProgram(simpleOESShaderProgram);
+            int[] linkStatus = new int[1];
+            GLES20.glGetProgramiv(simpleOESShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+            if (linkStatus[0] == 0) {
+                GLES20.glDeleteProgram(simpleOESShaderProgram);
+                simpleOESShaderProgram = 0;
+            } else {
+                simpleOESPositionHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "position");
+                simpleOESInputTexCoordHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "inputTexCoord");
+                simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sourceImage");
+                simpleOESMatrixHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "videoMatrix");
+            }
+        } else {
+            return false;
+        }
+
         int w;
         int h;
         if (currentBitmap != null) {
@@ -261,6 +315,14 @@ public class FilterGLThread extends DispatchQueue {
             GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
 
             AndroidUtilities.runOnUIThread(() -> videoDelegate.onVideoSurfaceCreated(videoSurfaceTexture));
+        }
+
+        if (uiBlurEnabled && uiBlur != null) {
+            if (!uiBlur.setup(surfaceWidth / (float) surfaceHeight, true, blurManager.padding)) {
+                FileLog.e("Failed to create uiBlurFramebuffer");
+                uiBlurEnabled = false;
+                uiBlur = null;
+            }
         }
 
         if (!filterShaders.create()) {
@@ -295,8 +357,12 @@ public class FilterGLThread extends DispatchQueue {
                     break;
                 case SharedConfig.PERFORMANCE_CLASS_LOW:
                 default:
-                    maxSide = 1280;
+                    maxSide = 720;
                     break;
+            }
+            if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && (videoWidth > 1280 || videoHeight > 1280)) {
+                videoWidth /= 2;
+                videoHeight /= 2;
             }
             if (videoWidth > maxSide || videoHeight > maxSide) {
                 if (videoWidth > videoHeight) {
@@ -321,6 +387,9 @@ public class FilterGLThread extends DispatchQueue {
             eglSurface = null;
         }
         if (eglContext != null) {
+            if (blurManager != null) {
+                blurManager.destroyedContext(eglContext);
+            }
             egl10.eglDestroyContext(eglDisplay, eglContext);
             eglContext = null;
         }
@@ -356,55 +425,82 @@ public class FilterGLThread extends DispatchQueue {
 
     private boolean filterTextureAvailable;
 
-    private Runnable drawRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!initied) {
-                return;
+    private final Runnable drawRunnable = () -> {
+        if (!initied) {
+            return;
+        }
+
+        makeCurrentContext();
+
+        if (updateSurface) {
+            videoSurfaceTexture.updateTexImage();
+            videoSurfaceTexture.getTransformMatrix(videoTextureMatrix);
+            setRenderData();
+            updateSurface = false;
+            filterShaders.onVideoFrameUpdate(videoTextureMatrix);
+            videoFrameAvailable = true;
+        }
+
+        if (!renderDataSet) {
+            return;
+        }
+
+        if (isVideo && filterShaders.drawOriginal()) {
+            GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            GLES20.glUseProgram(simpleOESShaderProgram);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, videoTexture[0]);
+
+            GLES20.glUniform1i(simpleOESSourceImageHandle, 0);
+            GLES20.glEnableVertexAttribArray(simpleOESInputTexCoordHandle);
+            GLES20.glVertexAttribPointer(simpleOESInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer != null ? textureBuffer : filterShaders.getTextureBuffer());
+            GLES20.glEnableVertexAttribArray(simpleOESPositionHandle);
+            GLES20.glVertexAttribPointer(simpleOESPositionHandle, 2, GLES20.GL_FLOAT, false, 8, filterShaders.getVertexInvertBuffer());
+            GLES20.glUniformMatrix4fv(simpleOESMatrixHandle, 1, false, videoTextureMatrix, 0);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            egl10.eglSwapBuffers(eglDisplay, eglSurface);
+
+            if (uiBlur != null) {
+                uiBlur.draw(videoTextureMatrix, videoTexture[0], videoWidth, videoHeight);
             }
 
-            makeCurrentContext();
+            return;
+        }
 
-            if (updateSurface) {
-                videoSurfaceTexture.updateTexImage();
-                videoSurfaceTexture.getTransformMatrix(videoTextureMatrix);
-                setRenderData();
-                updateSurface = false;
-                filterShaders.onVideoFrameUpdate(videoTextureMatrix);
-                videoFrameAvailable = true;
+        if (videoDelegate == null || videoFrameAvailable) {
+            GLES20.glViewport(0, 0, renderBufferWidth, renderBufferHeight);
+            filterShaders.drawSkinSmoothPass();
+            filterShaders.drawEnhancePass();
+            if (videoDelegate == null) {
+                filterShaders.drawSharpenPass();
             }
+            filterShaders.drawCustomParamsPass();
+            blurred = filterShaders.drawBlurPass();
+            filterTextureAvailable = true;
+        }
 
-            if (!renderDataSet) {
-                return;
-            }
+        if (filterTextureAvailable) {
+            GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
 
-            if (videoDelegate == null || videoFrameAvailable) {
-                GLES20.glViewport(0, 0, renderBufferWidth, renderBufferHeight);
-                filterShaders.drawSkinSmoothPass();
-                filterShaders.drawEnhancePass();
-                if (videoDelegate == null) {
-                    filterShaders.drawSharpenPass();
-                }
-                filterShaders.drawCustomParamsPass();
-                blurred = filterShaders.drawBlurPass();
-                filterTextureAvailable = true;
-            }
+            int tex = filterShaders.getRenderTexture(blurred ? 0 : 1);
 
-            if (filterTextureAvailable) {
-                GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            GLES20.glUseProgram(simpleShaderProgram);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex);
 
-                GLES20.glUseProgram(simpleShaderProgram);
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, filterShaders.getRenderTexture(blurred ? 0 : 1));
+            GLES20.glUniform1i(simpleSourceImageHandle, 0);
+            GLES20.glEnableVertexAttribArray(simpleInputTexCoordHandle);
+            GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer != null ? textureBuffer : filterShaders.getTextureBuffer());
+            GLES20.glEnableVertexAttribArray(simplePositionHandle);
+            GLES20.glVertexAttribPointer(simplePositionHandle, 2, GLES20.GL_FLOAT, false, 8, filterShaders.getVertexBuffer());
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            egl10.eglSwapBuffers(eglDisplay, eglSurface);
 
-                GLES20.glUniform1i(simpleSourceImageHandle, 0);
-                GLES20.glEnableVertexAttribArray(simpleInputTexCoordHandle);
-                GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer != null ? textureBuffer : filterShaders.getTextureBuffer());
-                GLES20.glEnableVertexAttribArray(simplePositionHandle);
-                GLES20.glVertexAttribPointer(simplePositionHandle, 2, GLES20.GL_FLOAT, false, 8, filterShaders.getVertexBuffer());
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                egl10.eglSwapBuffers(eglDisplay, eglSurface);
+            if (uiBlur != null) {
+                uiBlur.draw(null, tex, renderBufferWidth, renderBufferHeight);
             }
         }
     };
@@ -418,6 +514,37 @@ public class FilterGLThread extends DispatchQueue {
         Bitmap bitmap = Bitmap.createBitmap(renderBufferWidth, renderBufferHeight, Bitmap.Config.ARGB_8888);
         bitmap.copyPixelsFromBuffer(buffer);
         return bitmap;
+    }
+
+    public Bitmap getUiBlurBitmap() {
+        if (uiBlur == null) {
+            return null;
+        }
+        return uiBlur.getBitmap();
+    }
+
+    public void updateUiBlurTransform(Matrix matrix, int w, int h) {
+        if (uiBlur == null) {
+            return;
+        }
+        uiBlur.updateTransform(matrix, w, h);
+        requestRender(false);
+    }
+
+    public void updateUiBlurGradient(int top, int bottom) {
+        if (uiBlur == null) {
+            return;
+        }
+        postRunnable(() -> {
+            uiBlur.updateGradient(top, bottom);
+        });
+    }
+
+    public void updateUiBlurManager(BlurringShader.BlurManager manager) {
+        if (uiBlur == null) {
+            return;
+        }
+        uiBlur.setBlurManager(manager);
     }
 
     public Bitmap getTexture() {

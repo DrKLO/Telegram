@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -14,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,12 +39,12 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.Stories.StoriesController;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -67,8 +70,11 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     public static final int TYPE_STORIES_COUNT = 14;
     public static final int TYPE_STORIES_WEEK = 15;
     public static final int TYPE_STORIES_MONTH = 16;
+    public static final int TYPE_BOOSTS = 17;
 
     private boolean canSendLink;
+    private int linkRow = -1;
+    private long dialogId;
 
     public static String limitTypeToServerString(int type) {
         switch (type) {
@@ -130,9 +136,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     private boolean isVeryLargeFile;
     private TLRPC.Chat fromChat;
 
-    public LimitReachedBottomSheet(BaseFragment fragment, Context context, int type, int currentAccount) {
-        super(fragment, false, hasFixedSize(type));
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+    public LimitReachedBottomSheet(BaseFragment fragment, Context context, int type, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
+        super(fragment, false, hasFixedSize(type), false, resourcesProvider);
+        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, this.resourcesProvider));
         this.parentFragment = fragment;
         this.currentAccount = currentAccount;
         this.type = type;
@@ -279,7 +285,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
     public void updatePremiumButtonText() {
         if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked || isVeryLargeFile) {
-            premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.OK));
+            premiumButtonView.buttonTextView.setText(LocaleController.getString("OK", R.string.OK));
             premiumButtonView.hideIcon();
         } else {
             premiumButtonView.buttonTextView.setText(LocaleController.getString("IncreaseLimit", R.string.IncreaseLimit));
@@ -360,7 +366,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private static boolean hasFixedSize(int type) {
-        if (type == TYPE_PIN_DIALOGS || type == TYPE_FOLDERS || type == TYPE_CHATS_IN_FOLDER || type == TYPE_LARGE_FILE || type == TYPE_ACCOUNTS || type == TYPE_FOLDER_INVITES || type == TYPE_SHARED_FOLDERS || type == TYPE_STORIES_COUNT || type == TYPE_STORIES_WEEK || type == TYPE_STORIES_MONTH) {
+        if (type == TYPE_PIN_DIALOGS || type == TYPE_FOLDERS || type == TYPE_CHATS_IN_FOLDER ||
+                type == TYPE_LARGE_FILE || type == TYPE_ACCOUNTS || type == TYPE_FOLDER_INVITES ||
+                type == TYPE_SHARED_FOLDERS || type == TYPE_STORIES_COUNT || type == TYPE_STORIES_WEEK ||
+                type == TYPE_STORIES_MONTH) {
             return true;
         }
         return false;
@@ -391,6 +400,21 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 View view;
                 Context context = parent.getContext();
                 switch (viewType) {
+                    case 7:
+                        FrameLayout frameLayout = new FrameLayout(getContext());
+                        TextView linkView = new TextView(context);
+                        linkView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(13), AndroidUtilities.dp(40), AndroidUtilities.dp(13));
+                        linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                        linkView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+                        linkView.setSingleLine(true);
+                        frameLayout.addView(linkView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 11, 0));
+                        linkView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
+                        linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+
+                        linkView.setText(getBoostLink());
+                        linkView.setGravity(Gravity.CENTER);
+                        view = frameLayout;
+                        break;
                     default:
                     case 0:
                         view = new HeaderView(context);
@@ -490,6 +514,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     return 5;
                 } else if (emptyViewDividerRow == position) {
                     return 6;
+                } else if (linkRow == position) {
+                    return 7;
                 }
                 if (type == TYPE_TO0_MANY_COMMUNITIES || type == TYPE_ADD_MEMBERS_RESTRICTED) {
                     return 4;
@@ -503,6 +529,11 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 return rowCount;
             }
         };
+    }
+
+    private String getBoostLink() {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        return "https://" + ChatObject.getPublicUsername(chat) +"?boost";
     }
 
     public void setCurrentValue(int currentValue) {
@@ -524,6 +555,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         }
         updateRows();
         updateButton();
+    }
+
+    public void setDialogId(long dialogId) {
+        this.dialogId = dialogId;
     }
 
     private class HeaderView extends LinearLayout {
@@ -810,6 +845,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         chatStartRow = -1;
         chatEndRow = -1;
         loadingRow = -1;
+        linkRow = -1;
         emptyViewDividerRow = -1;
         headerRow = rowCount++;
         if (!hasFixedSize(type)) {

@@ -13,6 +13,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.BitmapDrawable;
@@ -51,13 +52,15 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    private BackupImageView avatarImageView;
+    public boolean allowDrawStories;
+    public BackupImageView avatarImageView;
     private SimpleTextView titleTextView;
     private AtomicReference<SimpleTextView> titleTextLargerCopyView = new AtomicReference<>();
     private SimpleTextView subtitleTextView;
@@ -96,6 +99,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     public boolean premiumIconHiddable = false;
 
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
+
+    public void hideSubtitle() {
+        subtitleTextView.setVisibility(View.GONE);
+    }
 
     private class SimpleTextConnectedView extends SimpleTextView {
 
@@ -458,7 +465,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (subtitleTextLargerCopyView2 != null) {
                 removeView(subtitleTextLargerCopyView2);
                 this.subtitleTextLargerCopyView.set(null);
-                setClipChildren(true);
+                if (!allowDrawStories) {
+                    setClipChildren(true);
+                }
             }
         }).start();
         addView(subtitleTextLargerCopyView);

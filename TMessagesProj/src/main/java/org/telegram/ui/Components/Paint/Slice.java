@@ -15,11 +15,13 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 public class Slice {
-    private RectF bounds;
+    private final RectF bounds;
+    private final int texture;
     private File file;
 
-    public Slice(final ByteBuffer data, RectF rect, DispatchQueue queue) {
+    public Slice(final ByteBuffer data, int tex, RectF rect, DispatchQueue queue) {
         bounds = rect;
+        texture = tex;
 
         try {
             File outputDir = ApplicationLoader.applicationContext.getCacheDir();
@@ -121,5 +123,9 @@ public class Slice {
 
     public RectF getBounds() {
         return new RectF(bounds);
+    }
+
+    public int getTexture() {
+        return texture;
     }
 }

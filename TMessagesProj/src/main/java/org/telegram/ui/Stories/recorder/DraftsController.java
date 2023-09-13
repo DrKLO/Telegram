@@ -488,6 +488,13 @@ public class DraftsController {
         public boolean isError;
         public TLRPC.TL_error error;
 
+        public String audioPath;
+        public String audioAuthor, audioTitle;
+        public long audioDuration;
+        public long audioOffset;
+        public float audioLeft, audioRight = 1;
+        public float audioVolume = 1;
+
         public StoryDraft(@NonNull StoryEntry entry) {
             this.id = entry.draftId;
             this.date = entry.draftDate;
@@ -525,6 +532,15 @@ public class DraftsController {
             this.parts.addAll(entry.parts);
             this.isError = entry.isError;
             this.error = entry.error;
+
+            this.audioPath = entry.audioPath;
+            this.audioAuthor = entry.audioAuthor;
+            this.audioTitle = entry.audioTitle;
+            this.audioDuration = entry.audioDuration;
+            this.audioOffset = entry.audioOffset;
+            this.audioLeft = entry.audioLeft;
+            this.audioRight = entry.audioRight;
+            this.audioVolume = entry.audioVolume;
         }
 
         public StoryEntry toEntry() {
@@ -599,6 +615,15 @@ public class DraftsController {
             entry.editDocumentId = editDocumentId;
             entry.isError = isError;
             entry.error = error;
+
+            entry.audioPath = audioPath;
+            entry.audioAuthor = audioAuthor;
+            entry.audioTitle = audioTitle;
+            entry.audioDuration = audioDuration;
+            entry.audioOffset = audioOffset;
+            entry.audioLeft = audioLeft;
+            entry.audioRight = audioRight;
+            entry.audioVolume = audioVolume;
             return entry;
         }
 
@@ -683,6 +708,30 @@ public class DraftsController {
                 error.serializeToStream(stream);
             }
             stream.writeString(fullThumb);
+
+            if (audioPath == null) {
+                stream.writeInt32(TLRPC.TL_null.constructor);
+            } else {
+                stream.writeInt32(TLRPC.TL_documentAttributeAudio.constructor);
+                stream.writeString(audioPath);
+                if (audioAuthor == null) {
+                    stream.writeInt32(TLRPC.TL_null.constructor);
+                } else {
+                    stream.writeInt32(TLRPC.TL_jsonString.constructor);
+                    stream.writeString(audioAuthor);
+                }
+                if (audioTitle == null) {
+                    stream.writeInt32(TLRPC.TL_null.constructor);
+                } else {
+                    stream.writeInt32(TLRPC.TL_jsonString.constructor);
+                    stream.writeString(audioTitle);
+                }
+                stream.writeInt64(audioDuration);
+                stream.writeInt64(audioOffset);
+                stream.writeFloat(audioLeft);
+                stream.writeFloat(audioRight);
+                stream.writeFloat(audioVolume);
+            }
         }
 
         public int getObjectSize() {
@@ -837,6 +886,25 @@ public class DraftsController {
                     error = TLRPC.TL_error.TLdeserialize(stream, magic, exception);
                 }
                 fullThumb = stream.readString(exception);
+            }
+            if (stream.remaining() > 0) {
+                magic = stream.readInt32(exception);
+                if (magic == TLRPC.TL_documentAttributeAudio.constructor) {
+                    audioPath = stream.readString(exception);
+                    magic = stream.readInt32(exception);
+                    if (magic == TLRPC.TL_jsonString.constructor) {
+                        audioAuthor = stream.readString(exception);
+                    }
+                    magic = stream.readInt32(exception);
+                    if (magic == TLRPC.TL_jsonString.constructor) {
+                        audioTitle = stream.readString(exception);
+                    }
+                    audioDuration = stream.readInt64(exception);
+                    audioOffset = stream.readInt64(exception);
+                    audioLeft = stream.readFloat(exception);
+                    audioRight = stream.readFloat(exception);
+                    audioVolume = stream.readFloat(exception);
+                }
             }
         }
     }

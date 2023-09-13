@@ -70,6 +70,9 @@ public class BlurBehindDrawable {
     }
 
     public void draw(Canvas canvas) {
+        if (parentView == null || parentView.getMeasuredHeight() == 0 && parentView.getMeasuredWidth() == 0) {
+            return;
+        }
         if (type == 1 && !wasDraw && !animateAlpha) {
             generateBlurredBitmaps();
             invalidate = false;

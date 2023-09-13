@@ -11,13 +11,13 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.EmojiAnimationsOverlay;
 
 import java.util.ArrayList;
 
@@ -37,6 +37,7 @@ public class AnimatedEmojiEffect {
 
     ImageReceiver effectImageReceiver;
     int animationIndex = -1;
+    private static int currentIndex;
 
     private AnimatedEmojiEffect(AnimatedEmojiDrawable animatedEmojiDrawable, int currentAccount, boolean longAnimation, boolean showGeneric) {
         this.animatedEmojiDrawable = animatedEmojiDrawable;
@@ -44,8 +45,11 @@ public class AnimatedEmojiEffect {
         this.currentAccount = currentAccount;
         this.showGeneric = showGeneric;
         startTime = System.currentTimeMillis();
-        if (!longAnimation && showGeneric && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_CHAT)) {
+        if (showGeneric && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_CHAT)) {
             effectImageReceiver = new ImageReceiver();
+            if (longAnimation) {
+                effectImageReceiver.setAllowDrawWhileCacheGenerating(true);
+            }
         }
     }
 
@@ -84,7 +88,17 @@ public class AnimatedEmojiEffect {
             }
         }
         if (effectImageReceiver != null && showGeneric) {
-            effectImageReceiver.draw(canvas);
+            boolean isLastFrame = effectImageReceiver.getLottieAnimation() != null && effectImageReceiver.getLottieAnimation().isLastFrame();
+            if (!isLastFrame) {
+                if (longAnimation) {
+                    canvas.save();
+                    canvas.translate(bounds.width() / 3f, 0);
+                    effectImageReceiver.draw(canvas);
+                    canvas.restore();
+                } else {
+                    effectImageReceiver.draw(canvas);
+                }
+            }
         }
 
         canvas.save();
@@ -103,7 +117,7 @@ public class AnimatedEmojiEffect {
         firsDraw = false;
     }
 
-    public boolean done() {
+    public boolean isDone() {
         return System.currentTimeMillis() - startTime > 2500;
     }
 
@@ -118,7 +132,13 @@ public class AnimatedEmojiEffect {
             if (emojicon != null) {
                 TLRPC.TL_availableReaction reaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(emojicon);
                 if (reaction != null && reaction.around_animation != null) {
-                    effectImageReceiver.setImage(ImageLocation.getForDocument(reaction.around_animation), ReactionsEffectOverlay.getFilterForAroundAnimation(), null, null, reaction.around_animation, 0);
+                    if (longAnimation) {
+                        effectImageReceiver.setUniqKeyPrefix(currentIndex++ + " ");
+                        int w = EmojiAnimationsOverlay.getFilterWidth();
+                        effectImageReceiver.setImage(ImageLocation.getForDocument(reaction.around_animation), w + "_" + w + "_pcache_compress", null, null, reaction.around_animation, 0);
+                    } else {
+                        effectImageReceiver.setImage(ImageLocation.getForDocument(reaction.around_animation), ReactionsEffectOverlay.getFilterForAroundAnimation(), null, null, reaction.around_animation, 0);
+                    }
                     imageSet = true;
                 }
             }
@@ -136,7 +156,13 @@ public class AnimatedEmojiEffect {
                     if (animationIndex < 0) {
                         animationIndex = Math.abs(Utilities.fastRandom.nextInt() % set.documents.size());
                     }
-                    effectImageReceiver.setImage(ImageLocation.getForDocument(set.documents.get(animationIndex)), "60_60", null, null, set.documents.get(animationIndex), 0);
+                    if (longAnimation) {
+                        effectImageReceiver.setUniqKeyPrefix(currentIndex++ + " ");
+                        int w = EmojiAnimationsOverlay.getFilterWidth();
+                        effectImageReceiver.setImage(ImageLocation.getForDocument(set.documents.get(animationIndex)), w + "_" + w + "_pcache_compress", null, null, set.documents.get(animationIndex), 0);
+                    } else {
+                        effectImageReceiver.setImage(ImageLocation.getForDocument(set.documents.get(animationIndex)), "60_60", null, null, set.documents.get(animationIndex), 0);
+                    }
                 }
             }
 

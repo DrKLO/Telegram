@@ -193,7 +193,7 @@ public class FilterChatlistActivity extends BaseFragment {
                     ((GroupCreateUserCell) view).setChecked(false, true);
                 } else if (allowedPeers.contains(did)) {
                     if (selectedPeers.size() + 1 > getMaxChats()) {
-                        showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount));
+                        showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount, null));
                         return;
                     }
                     selectedPeers.add(did);
@@ -337,11 +337,11 @@ public class FilterChatlistActivity extends BaseFragment {
             updateDoneProgress(false);
             saving = false;
             if (err != null && "INVITES_TOO_MUCH".equals(err.text)) {
-                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_FOLDER_INVITES, currentAccount));
+                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_FOLDER_INVITES, currentAccount, null));
             } else if (err != null && "INVITE_PEERS_TOO_MUCH".equals(err.text)) {
-                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount));
+                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount, null));
             } else if (err != null && "CHATLISTS_TOO_MUCH".equals(err.text)) {
-                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_SHARED_FOLDERS, currentAccount));
+                showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_SHARED_FOLDERS, currentAccount, null));
             } else {
                 finishFragment();
             }

@@ -87,10 +87,12 @@ LIBS=" -L${PREFIX}/lib"
 --enable-decoder=gif \
 --enable-decoder=alac \
 --enable-decoder=opus \
+--enable-decoder=mp3 \
 --enable-demuxer=mov \
 --enable-demuxer=gif \
 --enable-demuxer=ogg \
 --enable-demuxer=matroska \
+--enable-demuxer=mp3 \
 --enable-hwaccels \
 --enable-runtime-cpudetect \
 $ADDITIONAL_CONFIGURE_FLAG

@@ -6,6 +6,7 @@ import com.google.android.exoplayer2.util.Log;
 
 import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -15,6 +16,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.Paint.Path;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ public class UserListPoller {
                     if (response != null) {
                         TLRPC.Vector vector = (TLRPC.Vector) response;
                         ArrayList<TLRPC.User> usersToUpdate = new ArrayList<>();
+                        ArrayList<TLRPC.Chat> chatsToUpdate = new ArrayList<>();
                         for (int i = 0; i < vector.objects.size(); i++) {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogsFinal.get(i));
                             if (user == null) {
@@ -92,6 +95,15 @@ public class UserListPoller {
             if (dialogId > 0) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                 if (user != null && !user.bot && !user.self && !user.contact && user.status != null && !(user.status instanceof TLRPC.TL_userStatusEmpty)) {
+                    long lastPollTime = userPollLastTime.get(dialogId, 0);
+                    if (currentTime - lastPollTime > 60 * 60 * 1000) {
+                        userPollLastTime.put(dialogId, currentTime);
+                        dialogIds.add(dialogId);
+                    }
+                }
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                if (ChatObject.isChannel(chat)) {
                     long lastPollTime = userPollLastTime.get(dialogId, 0);
                     if (currentTime - lastPollTime > 60 * 60 * 1000) {
                         userPollLastTime.put(dialogId, currentTime);

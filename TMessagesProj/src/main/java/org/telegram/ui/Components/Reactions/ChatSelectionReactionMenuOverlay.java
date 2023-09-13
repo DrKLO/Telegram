@@ -295,7 +295,13 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
+        return obj != null && !obj.needDrawBluredPreview() && (
+            MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null ||
+            obj.getDocument() != null && (
+                MessageObject.isVideoDocument(obj.getDocument()) ||
+                MessageObject.isGifDocument(obj.getDocument())
+            )
+        );
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {

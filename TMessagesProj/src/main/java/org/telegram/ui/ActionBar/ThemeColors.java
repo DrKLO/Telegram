@@ -47,7 +47,7 @@ public class ThemeColors {
         defaultColors[key_dialogButton] = 0xff4991cc;
         defaultColors[key_dialogButtonSelector] = 0x0f000000;
         defaultColors[key_dialogScrollGlow] = 0xfff5f6f7;
-        defaultColors[key_dialogRoundCheckBox] = 0xff4cb4f5;
+        defaultColors[key_dialogRoundCheckBox] = 0xff1A9CFF;
         defaultColors[key_dialogRoundCheckBoxCheck] = 0xffffffff;
         defaultColors[key_dialogCameraIcon] = 0xffffffff;
         defaultColors[key_dialog_inlineProgressBackground] = 0xf6f0f2f5;
@@ -56,7 +56,7 @@ public class ThemeColors {
         defaultColors[key_dialogSearchHint] = 0xff98a0a7;
         defaultColors[key_dialogSearchIcon] = 0xffa1a8af;
         defaultColors[key_dialogSearchText] = 0xff222222;
-        defaultColors[key_dialogFloatingButton] = 0xff4cb4f5;
+        defaultColors[key_dialogFloatingButton] = 0xff1A9CFF;
         defaultColors[key_dialogFloatingButtonPressed] = 0x0f000000;
         defaultColors[key_dialogFloatingIcon] = 0xffffffff;
         defaultColors[key_dialogShadowLine] = 0x12000000;

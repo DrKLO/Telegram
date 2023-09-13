@@ -49,6 +49,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_sheet_scrollUp, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f));
 
         sparseIntArray.put(Theme.key_dialogTextBlack, -592138);
+        sparseIntArray.put(Theme.key_dialogTextGray3, -8553091);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueIcon, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_emojiPanelStickerSetName, 0x73ffffff);
         sparseIntArray.put(Theme.key_chat_emojiPanelStickerSetNameIcon, 0x73ffffff);
@@ -96,19 +97,20 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_emojiPanelShadowLine, ColorUtils.setAlphaComponent(Color.BLACK, 30));
         sparseIntArray.put(Theme.key_chat_emojiPanelBackspace, ColorUtils.setAlphaComponent(Color.WHITE, 125));
         sparseIntArray.put(Theme.key_divider, 0xFF000000);
-        sparseIntArray.put(Theme.key_dialogFloatingButton, -10177041);
+        sparseIntArray.put(Theme.key_dialogFloatingButton, -15033089);
         sparseIntArray.put(Theme.key_dialogFloatingIcon, 0xffffffff);
         sparseIntArray.put(Theme.key_graySection, 0xFF292929);
         sparseIntArray.put(Theme.key_graySectionText, -8158332);
       //  sparseIntArray.put(Theme.key_windowBackgroundGray, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_windowBackgroundGray, Color.BLACK);
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueHeader, -9652488);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueHeader, 0xFF1A9CFF);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText3, ColorUtils.blendARGB(Color.WHITE, Color.BLACK, 0.3f));
         sparseIntArray.put(Theme.key_undo_background, 0xFF212426);
         sparseIntArray.put(Theme.key_undo_cancelColor, 0xFF8BC8F5);
         sparseIntArray.put(Theme.key_undo_infoColor, Color.WHITE);
         sparseIntArray.put(Theme.key_actionBarDefaultSubmenuSeparator, 0xF2151515);
         sparseIntArray.put(Theme.key_chat_emojiPanelStickerSetNameHighlight, Color.WHITE);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText4, 0xFF808080);
 
         sparseIntArray.put(Theme.key_switchTrack, 0xFF636363);
         sparseIntArray.put(Theme.key_switchTrackChecked, 0xFF1A9CFF);

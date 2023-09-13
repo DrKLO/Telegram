@@ -16,9 +16,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,7 +35,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -428,10 +425,11 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
     @Override
     protected void dispatchDraw(Canvas canvas) {
         float rright = rightAnimated.set(this.right);
-        float ax = avatarContainer.getX();
-        float ay = avatarContainer.getY();
-        float aw = avatarContainer.getWidth() * avatarContainer.getScaleX();
-        float ah = avatarContainer.getHeight() * avatarContainer.getScaleY();
+        float insetMain = 0;
+        float ax = avatarContainer.getX() + insetMain * avatarContainer.getScaleX();
+        float ay = avatarContainer.getY() + insetMain * avatarContainer.getScaleY();
+        float aw = (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX();
+        float ah = (avatarContainer.getHeight() - insetMain * 2) * avatarContainer.getScaleY();
         rect1.set(ax, ay, ax + aw, ay + ah);
 
         float maxX = this.left;

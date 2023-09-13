@@ -13,6 +13,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -23,7 +24,6 @@ import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -37,7 +37,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,7 +52,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.PhotoEditRadioCell;
 import org.telegram.ui.Cells.PhotoEditToolCell;
-import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.nio.ByteBuffer;
@@ -98,6 +97,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private float grainValue; //0 100
     private int blurType; //0 none, 1 radial, 2 linear
     private float sharpenValue; //0 100
+    private boolean filtersEmpty;
     private CurvesToolValue curvesToolValue;
     private float blurExcludeSize;
     private Point blurExcludePoint;
@@ -316,7 +316,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         }
     }
 
-    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, boolean ownLayout, Theme.ResourcesProvider resourcesProvider) {
+    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, boolean ownLayout, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.ownLayout = ownLayout;
         this.resourcesProvider = resourcesProvider;
@@ -372,6 +372,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             blurExcludeSize = state.blurExcludeSize;
             blurExcludePoint = state.blurExcludePoint;
             blurExcludeBlurSize = state.blurExcludeBlurSize;
+            filtersEmpty = state.isEmpty();
             blurAngle = state.blurAngle;
             lastState = state;
         } else {
@@ -380,6 +381,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             blurExcludePoint = new Point(0.5f, 0.5f);
             blurExcludeBlurSize = 0.15f;
             blurAngle = (float) Math.PI / 2.0f;
+            filtersEmpty = true;
         }
         bitmapToEdit = bitmap;
         orientation = rotation;
@@ -392,7 +394,15 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             });
         } else {
             ownsTextureView = true;
-            textureView = new TextureView(context);
+            textureView = new TextureView(context) {
+                @Override
+                public void setTransform(@Nullable Matrix transform) {
+                    super.setTransform(transform);
+                    if (eglThread != null) {
+                        eglThread.updateUiBlurTransform(transform, getWidth(), getHeight());
+                    }
+                }
+            };
             if (ownLayout) {
                 addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             }
@@ -401,7 +411,11 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                     if (eglThread == null && surface != null) {
-                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation, isMirrored, null, ownLayout);
+                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation, isMirrored, null, ownLayout, blurManager, width, height);
+                        if (!ownLayout) {
+                            eglThread.updateUiBlurGradient(gradientTop, gradientBottom);
+                            eglThread.updateUiBlurTransform(textureView.getTransform(null), textureView.getWidth(), textureView.getHeight());
+                        }
                         eglThread.setFilterGLThreadDelegate(PhotoFilterView.this);
                         eglThread.setSurfaceTextureSize(width, height);
                         eglThread.requestRender(true, true, false);
@@ -454,6 +468,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         curvesControl = new PhotoFilterCurvesControl(context, curvesToolValue);
         curvesControl.setDelegate(() -> {
+            updateFiltersEmpty();
             if (eglThread != null) {
                 eglThread.requestRender(false);
             }
@@ -834,6 +849,26 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         }
     }
 
+    private void updateFiltersEmpty() {
+        filtersEmpty =
+            Math.abs(enhanceValue) < 0.1f &&
+            Math.abs(softenSkinValue) < 0.1f &&
+            Math.abs(exposureValue) < 0.1f &&
+            Math.abs(contrastValue) < 0.1f &&
+            Math.abs(warmthValue) < 0.1f &&
+            Math.abs(saturationValue) < 0.1f &&
+            Math.abs(fadeValue) < 0.1f &&
+            tintShadowsColor == 0 &&
+            tintHighlightsColor == 0 &&
+            Math.abs(highlightsValue) < 0.1f &&
+            Math.abs(shadowsValue) < 0.1f &&
+            Math.abs(vignetteValue) < 0.1f &&
+            Math.abs(grainValue) < 0.1f &&
+            blurType == 0 &&
+            Math.abs(sharpenValue) < 0.1f &&
+            curvesToolValue.shouldBeSkipped();
+    }
+
     public void switchMode() {
         if (selectedTool == 0) {
             blurControl.setVisibility(INVISIBLE);
@@ -1098,7 +1133,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
     @Override
     public boolean shouldShowOriginal() {
-        return showOriginal;
+        return showOriginal || filtersEmpty;
     }
 
     @Override
@@ -1138,6 +1173,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
     public void setEnhanceValue(float value) {
         enhanceValue = value * 100f;
+        updateFiltersEmpty();
         for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
             View child = recyclerListView.getChildAt(i);
             if (child instanceof PhotoEditToolCell && recyclerListView.getChildAdapterPosition(child) == enhanceTool) {
@@ -1203,6 +1239,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                     if (eglThread != null) {
                         eglThread.requestRender(true);
                     }
+                    updateFiltersEmpty();
                 });
             } else {
                 view = new PhotoEditRadioCell(mContext);
@@ -1217,6 +1254,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                     if (eglThread != null) {
                         eglThread.requestRender(false);
                     }
+                    updateFiltersEmpty();
                 });
             }
             return new RecyclerListView.Holder(view);
@@ -1447,6 +1485,23 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
                 canvas.restore();
             }
+        }
+    }
+
+    public Bitmap getUiBlurBitmap() {
+        if (eglThread == null) {
+            return null;
+        }
+        return eglThread.getUiBlurBitmap();
+    }
+
+    private int gradientTop, gradientBottom;
+    public void updateUiBlurGradient(int top, int bottom) {
+        if (eglThread != null) {
+            eglThread.updateUiBlurGradient(top, bottom);
+        } else {
+            gradientTop = top;
+            gradientBottom = bottom;
         }
     }
 }

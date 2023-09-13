@@ -290,7 +290,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             ArrayList<ChatThemeBottomSheet.ChatThemeItem> themes = new ArrayList<>(MediaDataController.getInstance(parentFragment.getCurrentAccount()).defaultEmojiThemes);
             if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
 
-                EmojiThemes chatTheme = EmojiThemes.createPreviewCustom();
+                EmojiThemes chatTheme = EmojiThemes.createPreviewCustom(parentFragment.getCurrentAccount());
                 chatTheme.loadPreviewColors(parentFragment.getCurrentAccount());
                 ChatThemeBottomSheet.ChatThemeItem item = new ChatThemeBottomSheet.ChatThemeItem(chatTheme);
                 item.themeIndex = !Theme.isCurrentThemeDay() ? 2 : 0;

@@ -638,7 +638,8 @@ public class ReactionsEffectOverlay {
                         color = Color.WHITE;
                     }
                     animatedEmojiDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-                    effectImageView.setAnimatedEmojiEffect(AnimatedEmojiEffect.createFrom(animatedEmojiDrawable, animationType == LONG_ANIMATION, true));
+                    boolean longAnimation = animationType == LONG_ANIMATION;
+                    effectImageView.setAnimatedEmojiEffect(AnimatedEmojiEffect.createFrom(animatedEmojiDrawable, longAnimation, !longAnimation));
                     windowView.setClipChildren(false);
                 }
             }

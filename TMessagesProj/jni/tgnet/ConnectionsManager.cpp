@@ -970,7 +970,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
                 }
             } else {
                 if (delegate != nullptr) {
-                    delegate->onUnparsedMessageReceived(0, data, connection->getConnectionType(), instanceNum);
+                    delegate->onUnparsedMessageReceived(messageId, data, connection->getConnectionType(), instanceNum);
                 }
             }
         } else {
@@ -1128,7 +1128,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             if (innerMessage->unparsedBody != nullptr) {
                 if (LOGS_ENABLED) DEBUG_D("inner message %d id 0x%" PRIx64 " is unparsed", a, innerMessageId);
                 if (delegate != nullptr) {
-                    delegate->onUnparsedMessageReceived(0, innerMessage->unparsedBody.get(), connection->getConnectionType(), instanceNum);
+                    delegate->onUnparsedMessageReceived(innerMessageId, innerMessage->unparsedBody.get(), connection->getConnectionType(), instanceNum);
                 }
             } else {
                 if (LOGS_ENABLED) DEBUG_D("inner message %d id 0x%" PRIx64 " process", a, innerMessageId);
@@ -1643,7 +1643,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                 NativeByteBuffer *data = BuffersStorage::getInstance().getFreeBuffer(message->getObjectSize());
                 message->serializeToStream(data);
                 data->position(0);
-                delegate->onUnparsedMessageReceived(0, data, connection->getConnectionType(), instanceNum);
+                delegate->onUnparsedMessageReceived(messageId, data, connection->getConnectionType(), instanceNum);
                 data->reuse();
             }
         }

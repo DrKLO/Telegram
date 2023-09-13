@@ -999,5 +999,9 @@ public class ReactionsLayoutInBubble {
         public int hashCode() {
             return Objects.hash(emojicon, documentId);
         }
+
+        public boolean isSame(TLRPC.Reaction reaction) {
+            return false;
+        }
     }
 }

@@ -86,6 +86,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
     public static final int TYPE_MEDIA = 0;
     public static final int TYPE_STORIES = 1;
+    public static final int TYPE_ARCHIVED_CHANNEL_STORIES = 2;
 
     private int type;
 
@@ -129,7 +130,13 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     public boolean onFragmentCreate() {
         type = getArguments().getInt("type", TYPE_MEDIA);
         dialogId = getArguments().getLong("dialog_id");
-        initialTab = getArguments().getInt("start_from", type == TYPE_MEDIA ? SharedMediaLayout.TAB_PHOTOVIDEO : SharedMediaLayout.TAB_STORIES);
+        int defaultTab = SharedMediaLayout.TAB_PHOTOVIDEO;
+        if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
+            defaultTab = SharedMediaLayout.TAB_ARCHIVED_STORIES;
+        } else if (type == TYPE_STORIES) {
+            defaultTab = SharedMediaLayout.TAB_STORIES;
+        }
+        initialTab = getArguments().getInt("start_from", defaultTab);
         getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesEnabledUpdate);
@@ -273,7 +280,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         this.fragmentView = fragmentView;
 
         ActionBarMenu menu2 = actionBar.createMenu();
-        if (type == TYPE_STORIES) {
+        if (type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             FrameLayout menu = new FrameLayout(context);
             actionBar.addView(menu, LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.BOTTOM));
 
@@ -609,12 +616,17 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             protected boolean isStoriesView() {
-                return type == TYPE_STORIES;
+                return type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES;
             }
 
             @Override
             protected boolean includeStories() {
-                return type == TYPE_STORIES;
+                return type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES;
+            }
+
+            @Override
+            protected boolean isArchivedOnlyStoriesView() {
+                return type == TYPE_ARCHIVED_CHANNEL_STORIES;
             }
 
             @Override
@@ -637,7 +649,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 if (actionModeAnimation != null) {
                     actionModeAnimation.cancel();
                 }
-                if (type == TYPE_STORIES) {
+                if (type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES) {
                     disableScroll(show);
                 }
                 if (show) {
@@ -711,7 +723,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             protected void onActionModeSelectedUpdate(SparseArray<MessageObject> messageObjects) {
                 final int count = messageObjects.size();
                 actionModeMessageObjects = messageObjects;
-                if (type == TYPE_STORIES) {
+                if (type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES) {
                     selectedTextView.cancelAnimation();
                     selectedTextView.setText(LocaleController.formatPluralString("StoriesSelected", count), !LocaleController.isRTL);
                     if (button != null) {
@@ -749,7 +761,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         sharedMediaLayout.getSearchItem().setTranslationY(0);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);
 
-        if (type == TYPE_STORIES) {
+        if (type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             fragmentView.addView(sharedMediaLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 64));
         } else {
             fragmentView.addView(sharedMediaLayout);
@@ -773,7 +785,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         }
 
         TLObject avatarObject = null;
-        if (type == TYPE_STORIES) {
+        if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
+            nameTextView[0].setText(LocaleController.getString("ProfileStoriesArchive"));
+        } else if (type == TYPE_STORIES) {
             nameTextView[0].setText(LocaleController.getString("ProfileMyStories"));
             nameTextView[1].setText(LocaleController.getString("ProfileStoriesArchive"));
         } else if (DialogObject.isEncryptedDialog(dialogId)) {
@@ -1032,6 +1046,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     private final boolean[] firstSubtitleCheck = new boolean[] { true, true };
     private final ValueAnimator[] subtitleAnimator = new ValueAnimator[2];
     private void showSubtitle(int i, boolean show, boolean animated) {
+        if (i == 1 && type == TYPE_ARCHIVED_CHANNEL_STORIES) {
+            return;
+        }
         if (subtitleShown[i] == show && !firstSubtitleCheck[i]) {
             return;
         }
@@ -1134,258 +1151,27 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         );
     }
 
-    private class StoriesTabsView extends View {
-
-        private final Theme.ResourcesProvider resourcesProvider;
-        private final Tab[] tabs = new Tab[2];
-
-        class Tab {
-            final int i;
-            final RLottieDrawable drawable;
-            final Drawable ripple;
-
-            final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            final StaticLayout layout;
-            final float layoutWidth, layoutLeft;
-
-            final RectF clickRect = new RectF();
-
-            final AnimatedFloat nonscrollingT = new AnimatedFloat(StoriesTabsView.this, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
-
-            public Tab(int i, int resId, CharSequence text) {
-                this.i = i;
-
-                drawable = new RLottieDrawable(resId, "" + resId, dp(29), dp(29));
-                drawable.setMasterParent(StoriesTabsView.this);
-                drawable.setAllowDecodeSingleFrame(true);
-                drawable.setPlayInDirectionOfCustomEndFrame(true);
-                drawable.setAutoRepeat(0);
-
-                paint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-                paint.setTextSize(dp(12));
-                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                layout = new StaticLayout(text, paint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-                layoutWidth = layout.getLineCount() > 0 ? layout.getLineWidth(0) : 0;
-                layoutLeft = layout.getLineCount() > 0 ? layout.getLineLeft(0) : 0;
-
-                ripple = Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .1f), Theme.RIPPLE_MASK_ROUNDRECT_6DP, dp(16));
-            }
-
-            private boolean active;
-            public void setActive(boolean active, boolean animated) {
-                if (this.active == active) {
-                    return;
-                }
-
-                if (i == 0) {
-                    // 0 - 20
-                    // 20 - 40
-                    if (active) {
-                        drawable.setCustomEndFrame(20);
-                        if (drawable.getCurrentFrame() >= 38) {
-                            drawable.setCurrentFrame(0, false);
-                        }
-                        if (drawable.getCurrentFrame() <= 20) {
-                            drawable.start();
-                        } else {
-                            drawable.setCurrentFrame(20);
-                        }
-                    } else {
-                        if (drawable.getCurrentFrame() >= 19) {
-                            drawable.setCustomEndFrame(39);
-                            drawable.start();
-                        } else {
-                            drawable.setCustomEndFrame(0);
-                            drawable.setCurrentFrame(0);
-                        }
-                    }
-                } else if (i == 1 && active) {
-                    drawable.setCurrentFrame(0);
-                    if (animated) {
-                        drawable.start();
-                    }
-                }
-                this.active = active;
-            }
-
-            private int drawableColor = -1;
-            public void setColor(int color) {
-                paint.setColor(color);
-                if (drawableColor != color) {
-                    drawable.setColorFilter(new PorterDuffColorFilter(drawableColor = color, PorterDuff.Mode.SRC_IN));
-                }
-            }
-        }
-
-        private final Paint selectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        private float progress;
-        private int value;
-
-        private boolean scrolling;
-        private AnimatedFloat scrollingT = new AnimatedFloat(this, 0, 210, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private class StoriesTabsView extends BottomPagerTabs {
 
         public StoriesTabsView(Context context, Theme.ResourcesProvider resourcesProvider) {
-            super(context);
-            this.resourcesProvider = resourcesProvider;
-
-            tabs[0] = new Tab(0, R.raw.msg_stories_saved, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab));
-            tabs[1] = new Tab(1, R.raw.msg_stories_archive, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab));
-
-            setPadding(dp(12), 0, dp(12), 0);
-
-            setProgress(0, false);
-        }
-
-        public void setScrolling(boolean scrolling) {
-            if (this.scrolling == scrolling) {
-                return;
-            }
-            this.scrolling = scrolling;
-            invalidate();
-        }
-
-        public void setProgress(float progress) {
-            setProgress(progress, true);
-        }
-
-        private void setProgress(float progress, boolean animated) {
-            this.value = Math.round(this.progress = Utilities.clamp(progress, tabs.length, 0));
-            for (int i = 0; i < tabs.length; ++i) {
-                tabs[i].setActive(Math.abs(value - i) < (tabs[i].active ? .25f : .35f), animated);
-            }
-            invalidate();
-        }
-
-        private Utilities.Callback<Integer> onTabClick;
-        public void setOnTabClick(Utilities.Callback<Integer> listener) {
-            onTabClick = listener;
+            super(context, resourcesProvider);
         }
 
         @Override
-        protected void dispatchDraw(Canvas canvas) {
-            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-
-            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.getShadowHeight(), Theme.dividerPaint);
-
-            int tabFullWidth = (getWidth() - getPaddingLeft() - getPaddingRight()) / tabs.length;
-            int tabWidth = Math.min(dp(64), tabFullWidth);
-
-            float scrollingT = this.scrollingT.set(scrolling);
-
-            if (scrollingT > 0) {
-                double halfT = .4f + 2 * (1 - .4f) * Math.abs(.5f + Math.floor(progress) - progress);
-                selectPaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), (int) (0x12 * halfT * scrollingT)));
-                float sx = getPaddingLeft() + lerp(tabFullWidth * (float) Math.floor(progress) + tabFullWidth / 2f, tabFullWidth * (float) Math.ceil(progress) + tabFullWidth / 2f, progress - (int) progress);
-                AndroidUtilities.rectTmp.set(
-                    sx - tabWidth / 2f,
-                    dp(9),
-                    sx + tabWidth / 2f,
-                    dp(9 + 32)
-                );
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(16), dp(16), selectPaint);
-            }
-
-            for (int i = 0; i < tabs.length; ++i) {
-                Tab tab = tabs[i];
-                final int x = getPaddingLeft() + i * tabFullWidth;
-                tab.clickRect.set(x, 0, x + tabFullWidth, getHeight());
-
-                float t = 1f - Math.min(1, Math.abs(progress - i));
-                tab.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), t));
-
-                AndroidUtilities.rectTmp2.set(
-                    (int) (tab.clickRect.centerX() - tabWidth / 2f),
-                    dp(9),
-                    (int) (tab.clickRect.centerX() + tabWidth / 2f),
-                    dp(9 + 32)
-                );
-                final float T = tab.nonscrollingT.set(t > .6f);
-                if (scrollingT < 1) {
-                    selectPaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), (int) (0x12 * T * (1f - scrollingT))));
-                    AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(16), dp(16), selectPaint);
-                }
-
-                tab.ripple.setBounds(AndroidUtilities.rectTmp2);
-                tab.ripple.draw(canvas);
-
-                final int drawableSize = dp(29);
-                AndroidUtilities.rectTmp2.set(
-                    (int) (tab.clickRect.centerX() - drawableSize / 2f),
-                    (int) (dpf2(24.66f) - drawableSize / 2f),
-                    (int) (tab.clickRect.centerX() + drawableSize / 2f),
-                    (int) (dpf2(24.66f) + drawableSize / 2f)
-                );
-
-                tab.drawable.setBounds(AndroidUtilities.rectTmp2);
-                tab.drawable.draw(canvas);
-
-                canvas.save();
-                canvas.translate(tab.clickRect.centerX() - tab.layoutWidth / 2f - tab.layoutLeft, dp(50) - tab.layout.getHeight() / 2f);
-                tab.layout.draw(canvas);
-                canvas.restore();
-            }
+        public Tab[] createTabs() {
+            return new Tab[] {
+                    new Tab(0, R.raw.msg_stories_saved, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab)),
+                    new Tab(1, R.raw.msg_stories_archive, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab))
+            };
         }
+    }
 
-        private boolean touchDown;
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                touchDown = true;
-                return true;
-            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_MOVE) {
-                int index = -1;
-                final float x = event.getX();
-                for (int i = 0; i < tabs.length; ++i) {
-                    if (tabs[i].clickRect.left < x && tabs[i].clickRect.right > x) {
-                        if (event.getAction() != MotionEvent.ACTION_UP) {
-                            if (touchDown) {
-                                tabs[i].ripple.setState(new int[]{});
-                            }
-                            tabs[i].ripple.setState(new int[]{android.R.attr.state_pressed, android.R.attr.state_enabled});
-                        }
-                        index = i;
-                        break;
-                    }
-                }
-                for (int i = 0; i < tabs.length; ++i) {
-                    if (i != index || event.getAction() == MotionEvent.ACTION_UP) {
-                        tabs[i].ripple.setState(new int[] {});
-                    }
-                }
-                if (index >= 0 && value != index && onTabClick != null) {
-                    onTabClick.run(index);
-                }
-                touchDown = false;
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    for (int i = 0; i < tabs.length; ++i) {
-                        tabs[i].ripple.setState(new int[] {});
-                    }
-                }
-                touchDown = false;
-                return true;
-            }
-            return super.onTouchEvent(event);
+    @Override
+    public int getNavigationBarColor() {
+        int color = getThemedColor(Theme.key_windowBackgroundWhite);
+        if (storyViewer != null && storyViewer.attachedToParent()) {
+            return storyViewer.getNavigationBarColor(color);
         }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            setMeasuredDimension(
-                MeasureSpec.getSize(widthMeasureSpec),
-                dp(64) + AndroidUtilities.getShadowHeight()
-            );
-        }
-
-        @Override
-        protected boolean verifyDrawable(@NonNull Drawable who) {
-            for (int i = 0; i < tabs.length; ++i) {
-                if (tabs[i].ripple == who) {
-                    return true;
-                }
-            }
-            return super.verifyDrawable(who);
-        }
+        return color;
     }
 }

@@ -864,6 +864,10 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     }
 
     public static CharSequence cloneSpans(CharSequence text) {
+        return cloneSpans(text, -1);
+    }
+
+    public static CharSequence cloneSpans(CharSequence text, int newCacheType) {
         if (!(text instanceof Spanned)) {
             return text;
         }
@@ -888,7 +892,11 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
 
                 AnimatedEmojiSpan oldSpan = (AnimatedEmojiSpan) spans[i];
                 newText.removeSpan(oldSpan);
-                newText.setSpan(cloneSpan(oldSpan), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                AnimatedEmojiSpan newSpan = cloneSpan(oldSpan);
+                if (newCacheType != -1) {
+                    newSpan.cacheType = newCacheType;
+                }
+                newText.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
 //                newText.setSpan(spans[i], start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }

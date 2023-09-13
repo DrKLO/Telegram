@@ -123,6 +123,7 @@ public class BottomSheet extends Dialog {
     protected int behindKeyboardColor;
 
     private boolean canDismissWithSwipe = true;
+    private boolean canDismissWithTouchOutside = true;
 
     private boolean allowCustomAnimation = true;
     private boolean showWithoutAnimation;
@@ -980,6 +981,23 @@ public class BottomSheet extends Dialog {
                     container.requestApplyInsets();
                 }
             }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                Bulletin.addDelegate(this, new Bulletin.Delegate() {
+                    @Override
+                    public int getTopOffset(int tag) {
+                        return AndroidUtilities.statusBarHeight;
+                    }
+                });
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                Bulletin.removeDelegate(this);
+            }
         };
         container.setBackgroundDrawable(backDrawable);
         focusable = needFocus;
@@ -1321,7 +1339,11 @@ public class BottomSheet extends Dialog {
     }
 
     protected boolean canDismissWithTouchOutside() {
-        return true;
+        return canDismissWithTouchOutside;
+    }
+
+    public void setCanDismissWithTouchOutside(boolean value) {
+        canDismissWithTouchOutside = value;
     }
 
     public TextView getTitleView() {

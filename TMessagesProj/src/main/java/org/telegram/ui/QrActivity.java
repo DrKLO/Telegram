@@ -130,7 +130,7 @@ public class QrActivity extends BaseFragment {
     }
 
     private final ThemeResourcesProvider resourcesProvider = new ThemeResourcesProvider();
-    private final EmojiThemes homeTheme = EmojiThemes.createHomeQrTheme();
+    private final EmojiThemes homeTheme = EmojiThemes.createHomeQrTheme(currentAccount);
     private final Rect logoRect = new Rect();
     private final ArrayMap<String, Bitmap> emojiThemeDarkIcons = new ArrayMap<>();
     private int[] prevQrColors = null;
@@ -386,7 +386,7 @@ public class QrActivity extends BaseFragment {
         fragmentView.postDelayed(() -> {
             firstOpen = false;
             if (cachedThemes == null || cachedThemes.isEmpty()) {
-                ChatThemeController.requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
+                ChatThemeController.getInstance(currentAccount).requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
                     @Override
                     public void onComplete(List<EmojiThemes> result) {
                         onDataLoaded(result);
@@ -1464,10 +1464,11 @@ public class QrActivity extends BaseFragment {
         }
 
         public void onCreate() {
-            ChatThemeController.preloadAllWallpaperThumbs(true);
-            ChatThemeController.preloadAllWallpaperThumbs(false);
-            ChatThemeController.preloadAllWallpaperImages(true);
-            ChatThemeController.preloadAllWallpaperImages(false);
+            ChatThemeController chatThemeController = ChatThemeController.getInstance(currentAccount);
+            chatThemeController.preloadAllWallpaperThumbs(true);
+            chatThemeController.preloadAllWallpaperThumbs(false);
+            chatThemeController.preloadAllWallpaperImages(true);
+            chatThemeController.preloadAllWallpaperImages(false);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         }
 

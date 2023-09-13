@@ -67,7 +67,7 @@ public class PreviewButtons extends FrameLayout {
         shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] { 0x66000000, 0x00000000 }));
         addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        addButton(BUTTON_PAINT, R.drawable.msg_draw_pen, LocaleController.getString("AccDescrPaint", R.string.AccDescrPaint));
+        addButton(BUTTON_PAINT, R.drawable.media_draw, LocaleController.getString("AccDescrPaint", R.string.AccDescrPaint));
         addButton(BUTTON_STICKER, R.drawable.msg_photo_sticker, LocaleController.getString("AccDescrStickers", R.string.AccDescrStickers));
         addButton(BUTTON_TEXT, R.drawable.msg_photo_text2, LocaleController.getString("AccDescrPlaceText", R.string.AccDescrPlaceText));
         addButton(BUTTON_ADJUST, R.drawable.msg_photo_settings, LocaleController.getString("AccDescrPhotoAdjust", R.string.AccDescrPhotoAdjust));

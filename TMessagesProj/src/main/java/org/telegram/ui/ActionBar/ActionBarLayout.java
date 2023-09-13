@@ -490,7 +490,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     @Override
     public void drawHeaderShadow(Canvas canvas, int alpha, int y) {
-        if (headerShadowDrawable != null) {
+        if (headerShadowDrawable != null && SharedConfig.drawActionBarShadow) {
+            alpha = alpha / 2;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 if (headerShadowDrawable.getAlpha() != alpha) {
                     headerShadowDrawable.setAlpha(alpha);

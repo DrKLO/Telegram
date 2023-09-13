@@ -13,6 +13,7 @@ import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -20,6 +21,8 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.Paint.PaintTypeface;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.Point;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.util.ArrayList;
@@ -52,7 +55,7 @@ public class VideoEditedInfo {
     public byte[] key;
     public byte[] iv;
     public MediaController.SavedFilterState filterState;
-    public String paintPath;
+    public String paintPath, blurPath;
     public ArrayList<MediaEntity> mediaEntities;
     public MediaController.CropState cropState;
     public boolean isPhoto;
@@ -71,6 +74,8 @@ public class VideoEditedInfo {
     public boolean shouldLimitFps = true;
     public boolean tryUseHevc = false;
     public boolean fromCamera;
+
+    public ArrayList<MediaCodecVideoConvertor.MixedSoundInfo> mixedSoundInfos = new ArrayList<>();
 
     public static class EmojiEntity extends TLRPC.TL_messageEntityCustomEmoji {
 
@@ -108,6 +113,7 @@ public class VideoEditedInfo {
         public static final int TYPE_TEXT = 1;
         public static final int TYPE_PHOTO = 2;
         public static final int TYPE_LOCATION = 3;
+        public static final byte TYPE_REACTION = 4;
 
         public byte type;
         public byte subType;
@@ -117,7 +123,7 @@ public class VideoEditedInfo {
         public float width;
         public float height;
         public float additionalWidth, additionalHeight;
-        public String text;
+        public String text = "";
         public ArrayList<EmojiEntity> entities = new ArrayList<>();
         public int color;
         public int fontSize;
@@ -153,6 +159,7 @@ public class VideoEditedInfo {
         public float density;
 
         public int W, H;
+        public ReactionsLayoutInBubble.VisibleReaction visibleReaction;
 
         public MediaEntity() {
 
@@ -207,6 +214,9 @@ public class VideoEditedInfo {
                     }
                 }
             }
+            if (type == TYPE_REACTION) {
+                mediaArea = TLRPC.MediaArea.TLdeserialize(data, data.readInt32(false), false);
+            }
         }
 
         public void serializeTo(AbstractSerializedData data, boolean full) {
@@ -260,6 +270,9 @@ public class VideoEditedInfo {
                     data.writeInt32(TLRPC.TL_null.constructor);
                 }
             }
+            if (type == TYPE_REACTION) {
+                mediaArea.serializeToStream(data);
+            }
         }
 
         public MediaEntity copy() {
@@ -290,7 +303,7 @@ public class VideoEditedInfo {
 
     public String getString() {
         String filters;
-        if (avatarStartTime != -1 || filterState != null || paintPath != null || mediaEntities != null && !mediaEntities.isEmpty() || cropState != null) {
+        if (avatarStartTime != -1 || filterState != null || paintPath != null || blurPath != null || mediaEntities != null && !mediaEntities.isEmpty() || cropState != null) {
             int len = 10;
             if (filterState != null) {
                 len += 160;
@@ -302,8 +315,15 @@ public class VideoEditedInfo {
             } else {
                 paintPathBytes = null;
             }
+            byte[] blurPathBytes;
+            if (blurPath != null) {
+                blurPathBytes = blurPath.getBytes();
+                len += blurPathBytes.length;
+            } else {
+                blurPathBytes = null;
+            }
             SerializedData serializedData = new SerializedData(len);
-            serializedData.writeInt32(7);
+            serializedData.writeInt32(8);
             serializedData.writeInt64(avatarStartTime);
             serializedData.writeInt32(originalBitrate);
             if (filterState != null) {
@@ -395,6 +415,12 @@ public class VideoEditedInfo {
             }
             serializedData.writeBool(isStory);
             serializedData.writeBool(fromCamera);
+            if (blurPathBytes != null) {
+                serializedData.writeByte(1);
+                serializedData.writeByteArray(blurPathBytes);
+            } else {
+                serializedData.writeByte(0);
+            }
             filters = Utilities.bytesToHex(serializedData.toByteArray());
             serializedData.cleanup();
         } else {
@@ -519,6 +545,13 @@ public class VideoEditedInfo {
                             isStory = serializedData.readBool(false);
                             fromCamera = serializedData.readBool(false);
                         }
+                        if (version >= 8) {
+                            has = serializedData.readByte(false);
+                            if (has != 0) {
+                                byte[] bytes = serializedData.readByteArray(false);
+                                blurPath = new String(bytes);
+                            }
+                        }
                         serializedData.cleanup();
                     }
                 } else {
@@ -545,9 +578,9 @@ public class VideoEditedInfo {
             if (!fromCamera) {
                 return true;
             }
-            return mediaEntities != null || paintPath != null || filterState != null || (cropState != null && !cropState.isEmpty()) || startTime > 0 || endTime != -1 && endTime != estimatedDuration || originalHeight != resultHeight || originalWidth != resultWidth;
+            return !mixedSoundInfos.isEmpty() || mediaEntities != null || paintPath != null || blurPath != null || filterState != null || (cropState != null && !cropState.isEmpty()) || startTime > 0 || endTime != -1 && endTime != estimatedDuration || originalHeight != resultHeight || originalWidth != resultWidth;
         }
-        return mediaEntities != null || paintPath != null || filterState != null || cropState != null || !roundVideo || startTime > 0 || endTime != -1 && endTime != estimatedDuration;
+        return !mixedSoundInfos.isEmpty() || mediaEntities != null || paintPath != null || blurPath != null || filterState != null || cropState != null || !roundVideo || startTime > 0 || endTime != -1 && endTime != estimatedDuration;
     }
 
     public boolean canAutoPlaySourceVideo() {

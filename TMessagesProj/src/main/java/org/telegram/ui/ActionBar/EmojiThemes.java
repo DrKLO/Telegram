@@ -31,6 +31,7 @@ public class EmojiThemes {
     public TLRPC.WallPaper wallpaper;
     int currentIndex = 0;
     public ArrayList<ThemeItem> items = new ArrayList<>();
+    private final int currentAccount;
 
     private static final int[] previewColorKeys = new int[]{
             Theme.key_chat_inBubble,
@@ -43,10 +44,12 @@ public class EmojiThemes {
             Theme.key_chat_wallpaper_gradient_rotation
     };
 
-    public EmojiThemes() {
+    public EmojiThemes(int currentAccount) {
+        this.currentAccount = currentAccount;
     }
 
-    public EmojiThemes(TLRPC.TL_theme chatThemeObject, boolean isDefault) {
+    public EmojiThemes(int currentAccount, TLRPC.TL_theme chatThemeObject, boolean isDefault) {
+        this.currentAccount = currentAccount;
         this.showAsDefaultStub = isDefault;
         this.emoji = chatThemeObject.emoticon;
         if (!isDefault) {
@@ -62,8 +65,8 @@ public class EmojiThemes {
         }
     }
 
-    public static EmojiThemes createPreviewFullTheme(TLRPC.TL_theme tl_theme) {
-        EmojiThemes chatTheme = new EmojiThemes();
+    public static EmojiThemes createPreviewFullTheme(int currentAccount, TLRPC.TL_theme tl_theme) {
+        EmojiThemes chatTheme = new EmojiThemes(currentAccount);
         chatTheme.emoji = tl_theme.emoticon;
 
         for (int i = 0; i < tl_theme.settings.size(); i++) {
@@ -76,9 +79,9 @@ public class EmojiThemes {
     }
 
 
-    public static EmojiThemes createChatThemesDefault() {
+    public static EmojiThemes createChatThemesDefault(int currentAccount) {
 
-        EmojiThemes themeItem = new EmojiThemes();
+        EmojiThemes themeItem = new EmojiThemes(currentAccount);
         themeItem.emoji = "❌";
         themeItem.showAsDefaultStub = true;
 
@@ -93,8 +96,8 @@ public class EmojiThemes {
         return themeItem;
     }
 
-    public static EmojiThemes createPreviewCustom() {
-        EmojiThemes themeItem = new EmojiThemes();
+    public static EmojiThemes createPreviewCustom(int currentAccount) {
+        EmojiThemes themeItem = new EmojiThemes(currentAccount);
         themeItem.emoji = "\uD83C\uDFA8";
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
@@ -159,8 +162,8 @@ public class EmojiThemes {
         return themeItem;
     }
 
-    public static EmojiThemes createHomePreviewTheme() {
-        EmojiThemes themeItem = new EmojiThemes();
+    public static EmojiThemes createHomePreviewTheme(int currentAccount) {
+        EmojiThemes themeItem = new EmojiThemes(currentAccount);
         themeItem.emoji = "\uD83C\uDFE0";
 
         ThemeItem blue = new ThemeItem();
@@ -185,8 +188,8 @@ public class EmojiThemes {
         return themeItem;
     }
 
-    public static EmojiThemes createHomeQrTheme() {
-        EmojiThemes themeItem = new EmojiThemes();
+    public static EmojiThemes createHomeQrTheme(int currentAccount) {
+        EmojiThemes themeItem = new EmojiThemes(currentAccount);
         themeItem.emoji = "\uD83C\uDFE0";
 
         ThemeItem blue = new ThemeItem();
@@ -370,11 +373,11 @@ public class EmojiThemes {
         }
 
         long themeId = getTlTheme(index).id;
-        loadWallpaperImage(themeId, wallPaper, callback);
+        loadWallpaperImage(currentAccount, themeId, wallPaper, callback);
     }
 
-    public static void loadWallpaperImage(long hash, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback) {
-        ChatThemeController.getWallpaperBitmap(hash, cachedBitmap -> {
+    public static void loadWallpaperImage(int currentAccount, long hash, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback) {
+        ChatThemeController.getInstance(currentAccount).getWallpaperBitmap(hash, cachedBitmap -> {
             if (cachedBitmap != null && callback != null) {
                 callback.onComplete(new Pair<>(hash, cachedBitmap));
                 return;
@@ -401,7 +404,7 @@ public class EmojiThemes {
                 if (callback != null) {
                     callback.onComplete(new Pair<>(hash, bitmap));
                 }
-                ChatThemeController.saveWallpaperBitmap(bitmap, hash);
+                ChatThemeController.getInstance(currentAccount).saveWallpaperBitmap(bitmap, hash);
             });
             ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
         });
@@ -417,7 +420,7 @@ public class EmojiThemes {
         }
 
         long themeId = getTlTheme(index).id;
-        Bitmap bitmap = ChatThemeController.getWallpaperThumbBitmap(themeId);
+        Bitmap bitmap = ChatThemeController.getInstance(currentAccount).getWallpaperThumbBitmap(themeId);
         File file = getWallpaperThumbFile(themeId);
         if (bitmap == null && file.exists() && file.length() > 0) {
             try {

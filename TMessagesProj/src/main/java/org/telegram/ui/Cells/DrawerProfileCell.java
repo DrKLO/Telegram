@@ -358,7 +358,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
                         (int) ((getMeasuredHeight() + renderedEffectsSize) / 2f)
                     );
                     effect.draw(canvas);
-                    if (effect.done()) {
+                    if (effect.isDone()) {
                         effect.removeView(this);
                         animations.remove(effect);
                     }

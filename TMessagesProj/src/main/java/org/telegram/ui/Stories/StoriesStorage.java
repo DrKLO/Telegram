@@ -75,18 +75,14 @@ public class StoriesStorage {
                 for (int i = 0; i < dialogsCounter.size(); i++) {
                     long dialogId = dialogsCounter.keyAt(i);
                     int maxReadId = dialogsCounter.valueAt(i);
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, local_path, local_thumb_path, custom_params FROM stories WHERE dialog_id = %d", dialogId));
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, custom_params FROM stories WHERE dialog_id = %d", dialogId));
                     ArrayList<TLRPC.StoryItem> storyItems = new ArrayList<>();
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
-                        String path = cursor.stringValue(1);
-                        String firstFramePath = cursor.stringValue(2);
-                        NativeByteBuffer customData = cursor.byteBufferValue(3);
+                        NativeByteBuffer customData = cursor.byteBufferValue(1);
                         if (data != null) {
                             TLRPC.StoryItem storyItem = TLRPC.StoryItem.TLdeserialize(data, data.readInt32(true), true);
                             storyItem.dialogId = dialogId;
-                            storyItem.attachPath = path;
-                            storyItem.firstFramePath = firstFramePath;
                             StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                             storyItems.add(storyItem);
                             data.reuse();
@@ -171,18 +167,10 @@ public class StoriesStorage {
         try {
             if (userStories != null) {
                 ArrayList<TLRPC.StoryItem> storyItems = userStories.stories;
-                SQLitePreparedStatement state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?, ?, ?)");
+                SQLitePreparedStatement state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?)");
                 for (int i = 0; i < storyItems.size(); i++) {
                     state.requery();
                     TLRPC.StoryItem storyItem = storyItems.get(i);
-                    if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT local_path, local_thumb_path FROM stories WHERE dialog_id = %d AND story_id = %d", dialogId, storyItem.id));
-                        if (cursor.next()) {
-                            storyItem.attachPath = cursor.stringValue(1);
-                            storyItem.firstFramePath = cursor.stringValue(2);
-                        }
-                        cursor.dispose();
-                    }
                     if (storyItem instanceof TLRPC.TL_storyItemDeleted) {
                         FileLog.e("try write deleted story");
                         continue;
@@ -193,21 +181,11 @@ public class StoriesStorage {
                     NativeByteBuffer data = new NativeByteBuffer(storyItem.getObjectSize());
                     storyItem.serializeToStream(data);
                     state.bindByteBuffer(3, data);
-                    if (storyItem.attachPath == null) {
-                        state.bindNull(4);
-                    } else {
-                        state.bindString(4, storyItem.attachPath);
-                    }
-                    if (storyItem.firstFramePath == null) {
-                        state.bindNull(5);
-                    } else {
-                        state.bindString(5, storyItem.firstFramePath);
-                    }
                     NativeByteBuffer nativeByteBuffer = StoryCustomParamsHelper.writeLocalParams(storyItem);
                     if (nativeByteBuffer != null) {
-                        state.bindByteBuffer(6, nativeByteBuffer);
+                        state.bindByteBuffer(4, nativeByteBuffer);
                     } else {
-                        state.bindNull(6);
+                        state.bindNull(4);
                     }
                     if (nativeByteBuffer != null) {
                         nativeByteBuffer.reuse();
@@ -226,15 +204,7 @@ public class StoriesStorage {
     public void putStoryInternal(long dialogId, TLRPC.StoryItem storyItem) {
         SQLiteDatabase database = storage.getDatabase();
         try {
-            SQLitePreparedStatement state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?, ?, ?)");
-            if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT local_path, local_thumb_path FROM stories WHERE dialog_id = %d AND story_id = %d", dialogId, storyItem.id));
-                if (cursor.next()) {
-                    storyItem.attachPath = cursor.stringValue(1);
-                    storyItem.firstFramePath = cursor.stringValue(2);
-                }
-                cursor.dispose();
-            }
+            SQLitePreparedStatement state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?)");
             if (storyItem instanceof TLRPC.TL_storyItemDeleted) {
                 FileLog.e("putStoryInternal: try write deleted story");
                 return;
@@ -245,21 +215,11 @@ public class StoriesStorage {
             NativeByteBuffer data = new NativeByteBuffer(storyItem.getObjectSize());
             storyItem.serializeToStream(data);
             state.bindByteBuffer(3, data);
-            if (storyItem.attachPath == null) {
-                state.bindNull(4);
-            } else {
-                state.bindString(4, storyItem.attachPath);
-            }
-            if (storyItem.firstFramePath == null) {
-                state.bindNull(5);
-            } else {
-                state.bindString(5, storyItem.firstFramePath);
-            }
             NativeByteBuffer nativeByteBuffer = StoryCustomParamsHelper.writeLocalParams(storyItem);
             if (nativeByteBuffer != null) {
-                state.bindByteBuffer(6, nativeByteBuffer);
+                state.bindByteBuffer(4, nativeByteBuffer);
             } else {
-                state.bindNull(6);
+                state.bindNull(4);
             }
             if (nativeByteBuffer != null) {
                 nativeByteBuffer.reuse();
@@ -336,18 +296,14 @@ public class StoriesStorage {
         SQLiteCursor cursor = null;
         TLRPC.StoryItem storyItem = null;
         try {
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, local_path, local_thumb_path, custom_params FROM stories WHERE dialog_id = %d AND story_id = %d", user_id, storyId));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, custom_params FROM stories WHERE dialog_id = %d AND story_id = %d", user_id, storyId));
 
             if (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
-                String path = cursor.stringValue(1);
-                String thumbPath = cursor.stringValue(2);
-                NativeByteBuffer customData = cursor.byteBufferValue(3);
+                NativeByteBuffer customData = cursor.byteBufferValue(1);
                 if (data != null) {
                     storyItem = TLRPC.StoryItem.TLdeserialize(data, data.readInt32(true), true);
                     storyItem.dialogId = user_id;
-                    storyItem.attachPath = path;
-                    storyItem.firstFramePath = thumbPath;
                     data.reuse();
                 }
                 if (storyItem != null) {
@@ -387,17 +343,13 @@ public class StoriesStorage {
             cursor.dispose();
             cursor = null;
 
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, local_path, local_thumb_path, custom_params FROM stories WHERE dialog_id = %d", dialogId));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, custom_params FROM stories WHERE dialog_id = %d", dialogId));
             ArrayList<TLRPC.StoryItem> storyItems = new ArrayList<>();
             while (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
-                String path = cursor.stringValue(1);
-                String thumbPath = cursor.stringValue(2);
-                NativeByteBuffer customData = cursor.byteBufferValue(3);
+                NativeByteBuffer customData = cursor.byteBufferValue(1);
                 if (data != null) {
                     TLRPC.StoryItem storyItem = TLRPC.StoryItem.TLdeserialize(data, data.readInt32(true), true);
-                    storyItem.attachPath = path;
-                    storyItem.firstFramePath = thumbPath;
                     StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                     storyItems.add(storyItem);
                     data.reuse();
@@ -445,17 +397,7 @@ public class StoriesStorage {
         SQLiteDatabase database = storage.getDatabase();
         SQLitePreparedStatement state;
         try {
-            String attachPath = storyItem.attachPath;
-            String thumbPath = storyItem.firstFramePath;
-            if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT local_path, local_thumb_path FROM stories WHERE dialog_id = %d AND story_id = %d", dialogId, storyItem.id));
-                if (cursor.next()) {
-                    attachPath = cursor.stringValue(1);
-                    thumbPath = cursor.stringValue(2);
-                }
-                cursor.dispose();
-            }
-            state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?, ?, ?)");
+            state = database.executeFast("REPLACE INTO stories VALUES(?, ?, ?, ?)");
             state.requery();
 
             state.bindLong(1, dialogId);
@@ -464,21 +406,11 @@ public class StoriesStorage {
             NativeByteBuffer data = new NativeByteBuffer(storyItem.getObjectSize());
             storyItem.serializeToStream(data);
             state.bindByteBuffer(3, data);
-            if (attachPath == null) {
-                state.bindNull(4);
-            } else {
-                state.bindString(4, attachPath);
-            }
-            if (thumbPath == null) {
-                state.bindNull(5);
-            } else {
-                state.bindString(5, thumbPath);
-            }
             NativeByteBuffer nativeByteBuffer = StoryCustomParamsHelper.writeLocalParams(storyItem);
             if (nativeByteBuffer != null) {
-                state.bindByteBuffer(6, nativeByteBuffer);
+                state.bindByteBuffer(4, nativeByteBuffer);
             } else {
-                state.bindNull(6);
+                state.bindNull(4);
             }
             if (nativeByteBuffer != null) {
                 nativeByteBuffer.reuse();
@@ -516,16 +448,12 @@ public class StoriesStorage {
                 int storyId = updateStory.story.id;
                 boolean storyExist = false;
                 if (updateStory.story instanceof TLRPC.TL_storyItemDeleted) {
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, local_path, local_thumb_path, custom_params FROM stories WHERE dialog_id = %d AND story_id = %d", dialogId, storyId));
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, custom_params FROM stories WHERE dialog_id = %d AND story_id = %d", dialogId, storyId));
                     if (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
-                        String path = cursor.stringValue(1);
-                        String thumbPath = cursor.stringValue(2);
-                        NativeByteBuffer customData = cursor.byteBufferValue(3);
+                        NativeByteBuffer customData = cursor.byteBufferValue(1);
                         if (data != null) {
                             TLRPC.StoryItem storyItem = TLRPC.StoryItem.TLdeserialize(data, data.readInt32(true), true);
-                            storyItem.attachPath = path;
-                            storyItem.firstFramePath = thumbPath;
                             StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                             data.reuse();
                         }

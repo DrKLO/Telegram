@@ -62,7 +62,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
                 backgroundCanvas.translate(0, padding);
                 drawInBackground(backgroundCanvas);
                 backgroundCanvas.restore();
-
+                backgroundBitmap.prepareToDraw();
             } catch (Exception e) {
                 FileLog.e(e);
                 error = true;

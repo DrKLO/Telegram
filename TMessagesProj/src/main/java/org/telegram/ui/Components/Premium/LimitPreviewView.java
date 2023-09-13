@@ -64,6 +64,12 @@ public class LimitPreviewView extends LinearLayout {
     boolean animationCanPlay = true;
     FrameLayout limitsContainer;
     private boolean premiumLocked;
+    private final TextView defaultText;
+    private final TextView premiumText;
+    private boolean isBoostsStyle;
+
+    Theme.ResourcesProvider resourcesProvider;
+
 
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, Theme.ResourcesProvider resourcesProvider) {
         this(context, icon, currentValue, premiumLimit, .5f, resourcesProvider);
@@ -72,6 +78,7 @@ public class LimitPreviewView extends LinearLayout {
     @SuppressLint("SetTextI18n")
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, float inputPercent, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         final float percent = MathUtils.clamp(inputPercent, 0.1f, 0.9f);
         this.icon = icon;
         setOrientation(VERTICAL);
@@ -89,7 +96,7 @@ public class LimitPreviewView extends LinearLayout {
 
         final FrameLayout defaultLayout = new FrameLayout(context);
 
-        final TextView defaultText = new TextView(context);
+        defaultText = new TextView(context);
         defaultText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         defaultText.setText(LocaleController.getString("LimitFree", R.string.LimitFree));
         defaultText.setGravity(Gravity.CENTER_VERTICAL);
@@ -111,7 +118,7 @@ public class LimitPreviewView extends LinearLayout {
 
         final FrameLayout premiumLayout = new FrameLayout(context);
 
-        final TextView premiumText = new TextView(context);
+        premiumText = new TextView(context);
         premiumText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         premiumText.setText(LocaleController.getString("LimitPremium", R.string.LimitPremium));
         premiumText.setGravity(Gravity.CENTER_VERTICAL);
@@ -137,12 +144,18 @@ public class LimitPreviewView extends LinearLayout {
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                grayPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                if (isBoostsStyle) {
+                    grayPaint.setColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
+                } else {
+                    grayPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                }
                 AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), grayPaint);
 
                 canvas.save();
-                canvas.clipRect(width1, 0, getMeasuredWidth(), getMeasuredHeight());
+                if (!isBoostsStyle) {
+                    canvas.clipRect(width1, 0, getMeasuredWidth(), getMeasuredHeight());
+                }
                 Paint paint = PremiumGradient.getInstance().getMainGradientPaint();
                 if (parentVideForGradient != null) {
                     View parent = parentVideForGradient;
@@ -161,6 +174,9 @@ public class LimitPreviewView extends LinearLayout {
 
                 } else {
                     PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, LimitPreviewView.this.getMeasuredWidth(), LimitPreviewView.this.getMeasuredHeight(), getGlobalXOffset() - getLeft(), -getTop());
+                }
+                if (isBoostsStyle) {
+                    AndroidUtilities.rectTmp.set(0, 0, width1, getMeasuredHeight());
                 }
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), paint);
                 canvas.restore();

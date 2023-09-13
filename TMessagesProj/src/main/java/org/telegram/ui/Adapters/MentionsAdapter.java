@@ -1773,7 +1773,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         dialog_id = dialogId;
     }
 
-    public void setUserOrChar(TLRPC.User user, TLRPC.Chat chat) {
+    public void setUserOrChat(TLRPC.User user, TLRPC.Chat chat) {
         this.user = user;
         this.chat = chat;
     }

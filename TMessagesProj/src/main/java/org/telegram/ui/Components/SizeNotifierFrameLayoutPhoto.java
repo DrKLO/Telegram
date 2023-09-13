@@ -17,19 +17,14 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 
-public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
+public class SizeNotifierFrameLayoutPhoto extends SizeNotifierFrameLayout {
 
     private Activity activity;
     private Rect rect = new Rect();
     private int keyboardHeight;
-    private SizeNotifierFrameLayoutPhotoDelegate delegate;
     private WindowManager windowManager;
     private boolean withoutWindow;
     private boolean useSmoothKeyboard;
-
-    public interface SizeNotifierFrameLayoutPhotoDelegate {
-        void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
-    }
 
     public SizeNotifierFrameLayoutPhoto(Context context, Activity activity, boolean smoothKeyboard) {
         super(context);
@@ -39,10 +34,6 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
 
     public void setActivity(Activity activity) {
         this.activity = activity;
-    }
-
-    public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
-        delegate = sizeNotifierFrameLayoutPhotoDelegate;
     }
 
     public void setWithoutWindow(boolean value) {
@@ -55,10 +46,12 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         notifyHeightChanged();
     }
 
+    @Override
     public int getKeyboardHeight() {
        return keyboardHeight;
     }
 
+    @Override
     public int measureKeyboardHeight() {
         View rootView = getRootView();
         getWindowVisibleDisplayFrame(rect);
@@ -74,8 +67,9 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         }
     }
 
+    @Override
     public void notifyHeightChanged() {
-        if (delegate != null) {
+        if (super.delegate != null) {
             keyboardHeight = measureKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
             post(() -> {

@@ -402,16 +402,17 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ChatThemeController.preloadAllWallpaperThumbs(true);
-        ChatThemeController.preloadAllWallpaperThumbs(false);
-        ChatThemeController.preloadAllWallpaperImages(true);
-        ChatThemeController.preloadAllWallpaperImages(false);
+        ChatThemeController chatThemeController = ChatThemeController.getInstance(currentAccount);
+        chatThemeController.preloadAllWallpaperThumbs(true);
+        chatThemeController.preloadAllWallpaperThumbs(false);
+        chatThemeController.preloadAllWallpaperImages(true);
+        chatThemeController.preloadAllWallpaperImages(false);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
 
         isApplyClicked = false;
         List<EmojiThemes> cachedThemes = themeDelegate.getCachedThemes();
         if (cachedThemes == null || cachedThemes.isEmpty()) {
-            ChatThemeController.requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
+            chatThemeController.requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
                 @Override
                 public void onComplete(List<EmojiThemes> result) {
                     if (result != null && !result.isEmpty()) {

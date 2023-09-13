@@ -6,12 +6,15 @@ import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Nullable;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -28,7 +31,10 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.Reactions.AnimatedEmojiEffect;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersAlert;
@@ -43,6 +49,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     private final int ANIMATION_JSON_VERSION = 1;
     private final String INTERACTIONS_STICKER_PACK = "EmojiAnimations";
 
+    @Nullable
     ChatActivity chatActivity;
     int currentAccount;
     TLRPC.TL_messages_stickerSet set;
@@ -84,6 +91,10 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     long dialogId;
     int threadMsgId;
 
+    public EmojiAnimationsOverlay(FrameLayout frameLayout, int currentAccount) {
+        this.contentLayout = frameLayout;
+        this.currentAccount = currentAccount;
+    }
 
     public EmojiAnimationsOverlay(ChatActivity chatActivity, FrameLayout frameLayout, RecyclerListView chatListView, int currentAccount, long dialogId, int threadMsgId) {
         this.chatActivity = chatActivity;
@@ -94,19 +105,43 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         this.threadMsgId = threadMsgId;
     }
 
-    protected void onAttachedToWindow() {
+    public void onAttachedToWindow() {
         attached = true;
         checkStickerPack();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.onEmojiInteractionsReceived);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        for (int i = 0; i < drawingObjects.size(); i++) {
+            drawingObjects.get(i).imageReceiver.onAttachedToWindow();
+            if (drawingObjects.get(i).genericEffect != null) {
+                drawingObjects.get(i).genericEffect.setView(contentLayout);
+            }
+        }
     }
 
-    protected void onDetachedFromWindow() {
+    public void onDetachedFromWindow() {
         attached = false;
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.onEmojiInteractionsReceived);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
+        for (int i = 0; i < drawingObjects.size(); i++) {
+            drawingObjects.get(i).imageReceiver.onDetachedFromWindow();
+            if (drawingObjects.get(i).genericEffect != null) {
+                drawingObjects.get(i).genericEffect.removeView(contentLayout);
+            }
+        }
+        drawingObjects.clear();
+    }
+
+
+    public void clear() {
+        for (int i = 0; i < drawingObjects.size(); i++) {
+            drawingObjects.get(i).imageReceiver.onDetachedFromWindow();
+            if (drawingObjects.get(i).genericEffect != null) {
+                drawingObjects.get(i).genericEffect.removeView(contentLayout);
+            }
+        }
+        drawingObjects.clear();
     }
 
     public void checkStickerPack() {
@@ -157,6 +192,9 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                 checkStickerPack();
             }
         } else if (id == NotificationCenter.onEmojiInteractionsReceived) {
+            if (chatActivity == null) {
+                return;
+            }
             long dialogId = (long) args[0];
             TLRPC.TL_sendMessageEmojiInteraction action = (TLRPC.TL_sendMessageEmojiInteraction) args[1];
             if (dialogId == this.dialogId && supportedEmoji.contains(action.emoticon)) {
@@ -216,7 +254,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             }
         }
 
-        if (bestView != null) {
+        if (bestView != null && chatActivity != null) {
             chatActivity.restartSticker(bestView);
             if (!EmojiData.hasEmojiSupportVibration(bestView.getMessageObject().getStickerEmoji()) && !bestView.getMessageObject().isPremiumSticker() && !bestView.getMessageObject().isAnimatedAnimatedEmoji()) {
                 bestView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
@@ -229,88 +267,125 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (!drawingObjects.isEmpty()) {
             for (int i = 0; i < drawingObjects.size(); i++) {
                 DrawingObject drawingObject = drawingObjects.get(i);
-                drawingObject.viewFound = false;
-                float childY = 0;
-                for (int k = 0; k < listView.getChildCount(); k++) {
-                    View child = listView.getChildAt(k);
-                    ImageReceiver photoImage = null;
-                    MessageObject messageObject = null;
-                    if (child instanceof ChatMessageCell) {
-                        ChatMessageCell cell = (ChatMessageCell) child;
-                        messageObject = cell.getMessageObject();
-                        photoImage = cell.getPhotoImage();
-                    } else if (child instanceof ChatActionCell) {
-                        ChatActionCell cell = (ChatActionCell) child;
-                        messageObject = cell.getMessageObject();
-                        photoImage = cell.getPhotoImage();
-                    }
-                    if (messageObject != null && messageObject.getId() == drawingObject.messageId) {
-                        drawingObject.viewFound = true;
-                        float viewX = listView.getX() + child.getX();
-                        float viewY = listView.getY() + child.getY();
-                        childY = child.getY();
-                        if (drawingObject.isPremiumSticker) {
-                            drawingObject.lastX = viewX + photoImage.getImageX();
-                            drawingObject.lastY = viewY + photoImage.getImageY();
-                        } else {
-                            viewX += photoImage.getImageX();
-                            viewY += photoImage.getImageY();
-                            if (drawingObject.isOut) {
-                                viewX += -photoImage.getImageWidth() * 2 + AndroidUtilities.dp(24);
-                            } else {
-                                viewX += -AndroidUtilities.dp(24);
-                            }
-                            viewY -= photoImage.getImageWidth();
-                            drawingObject.lastX = viewX;
-                            drawingObject.lastY = viewY;
+                if (chatActivity != null) {
+                    drawingObject.viewFound = false;
+                    float childY = 0;
+                    for (int k = 0; k < listView.getChildCount(); k++) {
+                        View child = listView.getChildAt(k);
+                        ImageReceiver photoImage = null;
+                        MessageObject messageObject = null;
+                        if (child instanceof ChatMessageCell) {
+                            ChatMessageCell cell = (ChatMessageCell) child;
+                            messageObject = cell.getMessageObject();
+                            photoImage = cell.getPhotoImage();
+                        } else if (child instanceof ChatActionCell) {
+                            ChatActionCell cell = (ChatActionCell) child;
+                            messageObject = cell.getMessageObject();
+                            photoImage = cell.getPhotoImage();
                         }
-                        drawingObject.lastW = photoImage.getImageWidth();
-                        drawingObject.lastH = photoImage.getImageHeight();
-                        break;
+                        if (messageObject != null && messageObject.getId() == drawingObject.messageId) {
+                            drawingObject.viewFound = true;
+                            float viewX = listView.getX() + child.getX();
+                            float viewY = listView.getY() + child.getY();
+                            childY = child.getY();
+                            if (drawingObject.isPremiumSticker) {
+                                drawingObject.lastX = viewX + photoImage.getImageX();
+                                drawingObject.lastY = viewY + photoImage.getImageY();
+                            } else {
+                                viewX += photoImage.getImageX();
+                                viewY += photoImage.getImageY();
+                                if (drawingObject.isOut) {
+                                    viewX += -photoImage.getImageWidth() * 2 + AndroidUtilities.dp(24);
+                                } else {
+                                    viewX += -AndroidUtilities.dp(24);
+                                }
+                                viewY -= photoImage.getImageWidth();
+                                drawingObject.lastX = viewX;
+                                drawingObject.lastY = viewY;
+                            }
+                            drawingObject.lastW = photoImage.getImageWidth();
+                            drawingObject.lastH = photoImage.getImageHeight();
+                            break;
+                        }
+                    }
+
+                    if (!drawingObject.viewFound || childY + drawingObject.lastH < chatActivity.getChatListViewPadding() || childY > listView.getMeasuredHeight() - chatActivity.blurredViewBottomOffset) {
+                        drawingObject.removing = true;
+                    }
+
+                    if (drawingObject.isPremiumSticker) {
+                        float halfStickerHeight = drawingObject.lastH / 2f;
+                        boolean outsideDown = listView.getMeasuredHeight() - childY <= halfStickerHeight;
+                        boolean outsideUp = childY - chatActivity.getChatListViewPadding() + halfStickerHeight <= 0;
+                        if (outsideDown || outsideUp) {
+                            drawingObject.removing = true;
+                        }
+                    }
+
+                    if (drawingObject.removing && drawingObject.removeProgress != 1f) {
+                        drawingObject.removeProgress = Utilities.clamp(drawingObject.removeProgress + 16 / 150f, 1f, 0);
+                        drawingObject.imageReceiver.setAlpha(1f - drawingObject.removeProgress);
+                        chatActivity.contentView.invalidate();
                     }
                 }
 
-                if (!drawingObject.viewFound || childY + drawingObject.lastH < chatActivity.getChatListViewPadding() || childY > listView.getMeasuredHeight() - chatActivity.blurredViewBottomOffset) {
-                    drawingObject.removing = true;
-                }
+                boolean removeOnStart = !drawingObject.wasPlayed && drawingObject.removing;
+                if (!removeOnStart) {
+                    if (drawingObject.isPremiumSticker) {
+                        float size = drawingObject.lastH * 1.49926f;
+                        float paddingHorizontal = size * 0.0546875f;
+                        float centerY = drawingObject.lastY + drawingObject.lastH / 2f;
+                        float top = centerY - size / 2f - size * 0.00279f;
+                        if (!drawingObject.isOut) {
+                            drawingObject.imageReceiver.setImageCoords(drawingObject.lastX - paddingHorizontal, top, size, size);
+                        } else {
+                            drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.lastW - size + paddingHorizontal, top, size, size);
+                        }
 
-                if (drawingObject.removing && drawingObject.removeProgress != 1f) {
-                    drawingObject.removeProgress = Utilities.clamp(drawingObject.removeProgress + 16 / 150f, 1f, 0);
-                    drawingObject.imageReceiver.setAlpha(1f - drawingObject.removeProgress);
-                    chatActivity.contentView.invalidate();
-                }
-
-                if (drawingObject.isPremiumSticker) {
-                    float size = drawingObject.lastH * 1.49926f;
-                    float paddingHorizontal = size * 0.0546875f;
-                    float centerY = drawingObject.lastY + drawingObject.lastH / 2f;
-                    float top = centerY - size / 2f - size * 0.00279f;
-                    if (!drawingObject.isOut) {
-                        drawingObject.imageReceiver.setImageCoords(drawingObject.lastX - paddingHorizontal, top, size, size);
+                        if (!drawingObject.isOut) {
+                            canvas.save();
+                            canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
+                            drawingObject.imageReceiver.draw(canvas);
+                            canvas.restore();
+                        } else {
+                            drawingObject.imageReceiver.draw(canvas);
+                        }
                     } else {
-                        drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.lastW - size + paddingHorizontal, top, size, size);
+                        if (drawingObject.genericEffect != null) {
+                            float x = drawingObject.lastX + drawingObject.randomOffsetX;
+                            float y = drawingObject.lastY + drawingObject.randomOffsetY;
+                            float size = drawingObject.lastW * 3;
+                            drawingObject.genericEffect.setBounds((int) x, (int) y, (int) (x + size), (int) (y + size));
+                            drawingObject.genericEffect.draw(canvas);
+                        } else {
+                            drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
+                            if (!drawingObject.isOut) {
+                                canvas.save();
+                                canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
+                                drawingObject.imageReceiver.draw(canvas);
+                                canvas.restore();
+                            } else {
+                                drawingObject.imageReceiver.draw(canvas);
+                            }
+                        }
                     }
-                    if (!drawingObject.isOut) {
-                        canvas.save();
-                        canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
-                        drawingObject.imageReceiver.draw(canvas);
-                        canvas.restore();
-                    } else {
-                        drawingObject.imageReceiver.draw(canvas);
-                    }
+                }
+
+                boolean isDone;
+                if (drawingObject.genericEffect != null) {
+                    isDone = drawingObject.genericEffect.isDone();
                 } else {
-                    drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
-                    if (!drawingObject.isOut) {
-                        canvas.save();
-                        canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
-                        drawingObject.imageReceiver.draw(canvas);
-                        canvas.restore();
-                    } else {
-                        drawingObject.imageReceiver.draw(canvas);
-                    }
+                    isDone = (drawingObject.wasPlayed && drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().getCurrentFrame() >= drawingObject.imageReceiver.getLottieAnimation().getFramesCount() - 2);
                 }
-                if (drawingObject.removeProgress == 1f || (drawingObject.wasPlayed && drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().getCurrentFrame() >= drawingObject.imageReceiver.getLottieAnimation().getFramesCount() - 2)) {
-                    drawingObjects.remove(i);
+                if (drawingObject.removeProgress == 1f || isDone || removeOnStart) {
+                    DrawingObject toRemove = drawingObjects.remove(i);
+                    if (drawingObject.isPremiumSticker && drawingObject.imageReceiver.getLottieAnimation() != null) {
+                        toRemove.imageReceiver.getLottieAnimation().setCurrentFrame(0, true, true);
+                    }
+                    toRemove.imageReceiver.onDetachedFromWindow();
+                    if (toRemove.genericEffect != null) {
+                        toRemove.genericEffect.removeView(contentLayout);
+                    }
                     i--;
                 } else if (drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().isRunning()) {
                     drawingObject.wasPlayed = true;
@@ -423,7 +498,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         drawingObject.messageId = view.getMessageObject().getId();
         drawingObject.isOut = true;
         drawingObject.imageReceiver.setAllowStartAnimation(true);
-        int w = (int) (1.5f * imageW / AndroidUtilities.density);
+        int w = getFilterWidth();
         if (sameAnimationsCountDocumentId > 0) {
             Integer lastIndex = lastAnimationIndex.get(document.id);
             int currentIndex = lastIndex == null ? 0 : lastIndex;
@@ -442,8 +517,10 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             drawingObject.imageReceiver.getLottieAnimation().start();
         }
         drawingObjects.add(drawingObject);
-        drawingObject.imageReceiver.onAttachedToWindow();
-        drawingObject.imageReceiver.setParentView(contentLayout);
+        if (attached) {
+            drawingObject.imageReceiver.onAttachedToWindow();
+            drawingObject.imageReceiver.setParentView(contentLayout);
+        }
         contentLayout.invalidate();
         return true;
     }
@@ -465,15 +542,15 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
-        int size = (int) (2f * cell.getPhotoImage().getImageWidth() / AndroidUtilities.density);
         int preloadCount = Math.min(1, arrayList.size());
         for (int i = 0; i < preloadCount; ++i) {
-            this.preloadAnimation(arrayList.get(i), size);
+            this.preloadAnimation(arrayList.get(i));
         }
     }
 
     private HashMap<Long, Boolean> preloaded;
-    private void preloadAnimation(TLRPC.Document document, int size) {
+
+    private void preloadAnimation(TLRPC.Document document) {
         if (document == null) {
             return;
         }
@@ -484,7 +561,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             preloaded = new HashMap<>();
         }
         preloaded.put(document.id, true);
-        new ImageReceiver().setImage(ImageLocation.getForDocument(document), size + "_" + size, null, "tgs", set, 1);
+        MediaDataController.getInstance(currentAccount).preloadImage(ImageLocation.getForDocument(document), FileLoader.PRIORITY_NORMAL_UP);
     }
 
     private boolean showAnimationForCell(ChatMessageCell view, int animation, boolean sendTap, boolean sendSeen) {
@@ -509,21 +586,28 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         }
 
         emoji = unwrapEmoji(emoji);
-        boolean isPremiumSticker = messageObject.isPremiumSticker();
 
+        int viewId = view.getMessageObject().getId();
+        TLRPC.Document viewDocument = view.getMessageObject().getDocument();
+        boolean isOutOwner = view.getMessageObject().isOutOwner();
+        return createDrawingObject(emoji, viewId, viewDocument, messageObject, animation, sendTap, sendSeen, imageW, imageH, isOutOwner);
+    }
+
+    private boolean createDrawingObject(String emoji, int viewId, TLRPC.Document viewDocument, @Nullable MessageObject messageObject, int animation, boolean sendTap, boolean sendSeen, float imageW, float imageH, boolean isOutOwner) {
+        boolean isPremiumSticker = messageObject != null && messageObject.isPremiumSticker();
         if (supportedEmoji.contains(emoji) || isPremiumSticker) {
             ArrayList<TLRPC.Document> arrayList = emojiInteractionsStickersMap.get(emoji);
             if ((arrayList != null && !arrayList.isEmpty()) || isPremiumSticker) {
                 int sameAnimationsCountMessageId = 0;
                 int sameAnimationsCountDocumentId = 0;
                 for (int i = 0; i < drawingObjects.size(); i++) {
-                    if (drawingObjects.get(i).messageId == view.getMessageObject().getId()) {
+                    if (drawingObjects.get(i).messageId == viewId) {
                         sameAnimationsCountMessageId++;
                         if (drawingObjects.get(i).imageReceiver.getLottieAnimation() == null || drawingObjects.get(i).imageReceiver.getLottieAnimation().isGeneratingCache()) {
                             return false;
                         }
                     }
-                    if (drawingObjects.get(i).document != null && view.getMessageObject().getDocument() != null && drawingObjects.get(i).document.id == view.getMessageObject().getDocument().id) {
+                    if (drawingObjects.get(i).document != null && viewDocument != null && drawingObjects.get(i).document.id == viewDocument.id) {
                         sameAnimationsCountDocumentId++;
                     }
                 }
@@ -557,7 +641,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                 TLRPC.VideoSize videoSize = null;
                 if (isPremiumSticker) {
                     videoSize = messageObject.getPremiumStickerAnimation();
-                } else if (messageObject.isAnimatedAnimatedEmoji()) {
+                } else if (messageObject != null && messageObject.isAnimatedAnimatedEmoji()) {
                     if (animation < 0 || animation > arrayList.size() - 1) {
                         ArrayList<Integer> preloadedVariants = new ArrayList<>();
                         for (int i = 0; i < arrayList.size(); ++i) {
@@ -589,20 +673,21 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                 }
 
                 DrawingObject drawingObject = new DrawingObject();
-                drawingObject.isPremiumSticker = messageObject.isPremiumSticker();
+                drawingObject.isPremiumSticker = messageObject == null ? false : messageObject.isPremiumSticker();
                 drawingObject.randomOffsetX = imageW / 4 * ((random.nextInt() % 101) / 100f);
                 drawingObject.randomOffsetY = imageH / 4 * ((random.nextInt() % 101) / 100f);
-                drawingObject.messageId = view.getMessageObject().getId();
+                drawingObject.messageId = viewId;
                 drawingObject.document = document;
-                drawingObject.isOut = view.getMessageObject().isOutOwner();
+                drawingObject.isOut = isOutOwner;
                 drawingObject.imageReceiver.setAllowStartAnimation(true);
                 drawingObject.imageReceiver.setAllowLottieVibration(sendTap);
                 int w;
                 if (document != null) {
-                    w = (int) (2f * imageW / AndroidUtilities.density);
+                    w = getFilterWidth();
                     Integer lastIndex = lastAnimationIndex.get(document.id);
-                    int currentIndex = ((lastIndex == null ? 0 : lastIndex) + 1) % 4;
+                    int currentIndex = (lastIndex == null ? 0 : lastIndex) + 1;
                     lastAnimationIndex.put(document.id, currentIndex);
+                    //currentIndex = currentIndex % 4;
 
                     ImageLocation imageLocation = ImageLocation.getForDocument(document);
                     drawingObject.imageReceiver.setUniqKeyPrefix(currentIndex + "_" + drawingObject.messageId + "_");
@@ -610,11 +695,13 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                     drawingObject.imageReceiver.setImage(imageLocation, w + "_" + w + "_pcache_compress", null, "tgs", set, 1);
                     drawingObject.imageReceiver.setDelegate(new ImageReceiver.ImageReceiverDelegate() {
                         @Override
-                        public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache) {}
+                        public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache) {
+                        }
+
                         @Override
                         public void onAnimationReady(ImageReceiver imageReceiver) {
                             if (sendTap && messageObject.isAnimatedAnimatedEmoji() && imageReceiver.getLottieAnimation() != null && !imageReceiver.getLottieAnimation().hasVibrationPattern()) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                                contentLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                             }
                         }
                     });
@@ -622,7 +709,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                         drawingObject.imageReceiver.getLottieAnimation().setCurrentFrame(0, false, true);
                     }
                 } else {
-                    w = (int) (1.5f * imageW / AndroidUtilities.density);
+                    w = getFilterWidth();
                     if (sameAnimationsCountDocumentId > 0) {
                         Integer lastIndex = lastAnimationIndex.get(messageObject.getDocument().id);
                         int currentIndex = lastIndex == null ? 0 : lastIndex;
@@ -647,13 +734,13 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                 contentLayout.invalidate();
 
                 if (sendTap && !isPremiumSticker && UserConfig.getInstance(currentAccount).clientUserId != dialogId) {
-                    if (lastTappedMsgId != 0 && lastTappedMsgId != view.getMessageObject().getId()) {
+                    if (lastTappedMsgId != 0 && lastTappedMsgId != viewId) {
                         if (sentInteractionsRunnable != null) {
                             AndroidUtilities.cancelRunOnUIThread(sentInteractionsRunnable);
                             sentInteractionsRunnable.run();
                         }
                     }
-                    lastTappedMsgId = view.getMessageObject().getId();
+                    lastTappedMsgId = viewId;
                     lastTappedEmoji = emoji;
                     if (lastTappedTime == 0) {
                         lastTappedTime = System.currentTimeMillis();
@@ -684,7 +771,20 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         return false;
     }
 
+    public static int getFilterWidth() {
+        int w;
+        if (AndroidUtilities.isTablet()) {
+            w = (int) (AndroidUtilities.getMinTabletSide() * 0.4f);
+        } else {
+            w = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+        }
+        return (int) (2f * w / AndroidUtilities.density);
+    }
+
     private void showStickerSetBulletin(TLRPC.TL_messages_stickerSet stickerSet, MessageObject messageObject) {
+        if (chatActivity == null) {
+            return;
+        }
         if (MessagesController.getInstance(currentAccount).premiumLocked || chatActivity.getParentActivity() == null) {
             return;
         }
@@ -790,11 +890,33 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     }
 
     public void cancelAllAnimations() {
-
         for (int i = 0; i < drawingObjects.size(); i++) {
             drawingObjects.get(i).removing = true;
         }
+    }
 
+    public void setAccount(int currentAccount) {
+        this.currentAccount = currentAccount;
+    }
+
+    public void preload(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
+        String emoji = visibleReaction.emojicon;
+        if (emoji == null) {
+            TLRPC.Document document = AnimatedEmojiDrawable.findDocument(currentAccount, visibleReaction.documentId);
+            emoji = MessageObject.findAnimatedEmojiEmoticon(document);
+        }
+        if (emoji == null) {
+            return;
+        }
+
+        ArrayList<TLRPC.Document> arrayList = emojiInteractionsStickersMap.get(emoji);
+        if (arrayList == null || arrayList.isEmpty()) {
+            return;
+        }
+        int preloadCount = Math.min(1, arrayList.size());
+        for (int i = 0; i < preloadCount; ++i) {
+            this.preloadAnimation(arrayList.get(i));
+        }
     }
 
     private class DrawingObject {
@@ -806,6 +928,9 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         public float randomOffsetX;
         public float randomOffsetY;
         public boolean isPremiumSticker;
+        public boolean isReaction;
+        public AnimatedEmojiEffect genericEffect;
+        public long documentId;
         boolean wasPlayed;
         boolean isOut;
         boolean removing;
@@ -813,6 +938,11 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         int messageId;
         TLRPC.Document document;
         ImageReceiver imageReceiver = new ImageReceiver();
+
+        DrawingObject() {
+            imageReceiver.setAllowLoadingOnAttachedOnly(true);
+            imageReceiver.setAllowDrawWhileCacheGenerating(true);
+        }
     }
 
 }

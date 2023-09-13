@@ -934,8 +934,6 @@ public class NotificationsController extends BaseController {
                         storyPushMessagesDict.put(dialogId, notification);
                         getMessagesStorage().putStoryPushMessage(notification);
                     }
-                    TLRPC.TL_updateStory updateStory = new TLRPC.TL_updateStory();
-                    updateStory.story = new TLRPC.TL_storyItemSkipped();
 
                     Collections.sort(storyPushMessages, Comparator.comparingLong(n -> n.date));
                     continue;

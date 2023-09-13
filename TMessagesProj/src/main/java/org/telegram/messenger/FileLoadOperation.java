@@ -269,6 +269,7 @@ public class FileLoadOperation {
         void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize);
         void saveFilePath(FilePathDatabase.PathData pathSaveData, File cacheFileFinal);
         boolean hasAnotherRefOnFile(String path);
+        boolean isLocallyCreatedFile(String path);
     }
 
     private void updateParams() {
@@ -948,7 +949,7 @@ public class FileLoadOperation {
             }
         }
         boolean finalFileExist = cacheFileFinal.exists();
-        if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || (totalBytesCount != 0 && !ungzip && totalBytesCount != cacheFileFinal.length()))) {
+        if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || (totalBytesCount != 0 && !ungzip && totalBytesCount != cacheFileFinal.length())) && !delegate.isLocallyCreatedFile(cacheFileFinal.toString())) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("debug_loading: delete existing file cause file size mismatch " + cacheFileFinal.getName() + " totalSize=" + totalBytesCount + " existingFileSize=" + cacheFileFinal.length());
             }

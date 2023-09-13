@@ -24,15 +24,20 @@ import java.util.Locale;
 
 public class ChatThemeController extends BaseController {
 
-    private static final long reloadTimeoutMs = 2 * 60 * 60 * 1000;
+    private final long reloadTimeoutMs = 2 * 60 * 60 * 1000;
     public static volatile DispatchQueue chatThemeQueue = new DispatchQueue("chatThemeQueue");
 
-    private static final HashMap<Long, Bitmap> themeIdWallpaperThumbMap = new HashMap<>();
-    private static List<EmojiThemes> allChatThemes;
-    private static volatile long themesHash;
-    private static volatile long lastReloadTimeMs;
+    private final HashMap<Long, Bitmap> themeIdWallpaperThumbMap = new HashMap<>();
+    private List<EmojiThemes> allChatThemes;
+    private volatile long themesHash;
+    private volatile long lastReloadTimeMs;
 
-    public static void init() {
+    private ChatThemeController(int num) {
+        super(num);
+        init();
+    }
+
+    private void init() {
         SharedPreferences preferences = getSharedPreferences();
         themesHash = 0;
         lastReloadTimeMs = 0;
@@ -53,20 +58,20 @@ public class ChatThemeController extends BaseController {
         }
     }
 
-    private static void preloadSticker(String emojicon) {
+    private void preloadSticker(String emojicon) {
         ImageReceiver imageReceiver = new ImageReceiver();
         TLRPC.Document document = MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(emojicon);
         imageReceiver.setImage(ImageLocation.getForDocument(document), "50_50", null, null, null, 0);
         Emoji.preloadEmoji(emojicon);
     }
 
-    public static void requestAllChatThemes(final ResultCallback<List<EmojiThemes>> callback, boolean withDefault) {
+    public void requestAllChatThemes(final ResultCallback<List<EmojiThemes>> callback, boolean withDefault) {
         if (themesHash == 0 || lastReloadTimeMs == 0) {
             init();
         }
 
         boolean needReload = System.currentTimeMillis() - lastReloadTimeMs > reloadTimeoutMs;
-        if (true || allChatThemes == null || allChatThemes.isEmpty() || needReload) {
+        if (allChatThemes == null || allChatThemes.isEmpty() || needReload) {
             TLRPC.TL_account_getChatThemes request = new TLRPC.TL_account_getChatThemes();
             request.hash = themesHash;
             ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> chatThemeQueue.postRunnable(() -> {
@@ -89,7 +94,7 @@ public class ChatThemeController extends BaseController {
                         SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
                         tlChatTheme.serializeToStream(data);
                         editor.putString("theme_" + i, Utilities.bytesToHex(data.toByteArray()));
-                        EmojiThemes chatTheme = new EmojiThemes(tlChatTheme, false);
+                        EmojiThemes chatTheme = new EmojiThemes(currentAccount, tlChatTheme, false);
                         chatTheme.preloadWallpaper();
                         chatThemes.add(chatTheme);
                     }
@@ -107,7 +112,7 @@ public class ChatThemeController extends BaseController {
                 }
                 if (!isError) {
                     if (withDefault && !chatThemes.get(0).showAsDefaultStub) {
-                        chatThemes.add(0, EmojiThemes.createChatThemesDefault());
+                        chatThemes.add(0, EmojiThemes.createChatThemesDefault(currentAccount));
                     }
                     for (EmojiThemes theme : chatThemes) {
                         theme.initColors();
@@ -122,7 +127,7 @@ public class ChatThemeController extends BaseController {
         if (allChatThemes != null && !allChatThemes.isEmpty()) {
             List<EmojiThemes> chatThemes = new ArrayList<>(allChatThemes);
             if (withDefault && !chatThemes.get(0).showAsDefaultStub) {
-                chatThemes.add(0, EmojiThemes.createChatThemesDefault());
+                chatThemes.add(0, EmojiThemes.createChatThemesDefault(currentAccount));
             }
             for (EmojiThemes theme : chatThemes) {
                 theme.initColors();
@@ -131,15 +136,15 @@ public class ChatThemeController extends BaseController {
         }
     }
 
-    private static SharedPreferences getSharedPreferences() {
-        return ApplicationLoader.applicationContext.getSharedPreferences("chatthemeconfig", Context.MODE_PRIVATE);
+    private SharedPreferences getSharedPreferences() {
+        return ApplicationLoader.applicationContext.getSharedPreferences("chatthemeconfig_" + currentAccount, Context.MODE_PRIVATE);
     }
 
-    private static SharedPreferences getEmojiSharedPreferences() {
+    private SharedPreferences getEmojiSharedPreferences() {
         return ApplicationLoader.applicationContext.getSharedPreferences("chatthemeconfig_emoji", Context.MODE_PRIVATE);
     }
 
-    private static List<EmojiThemes> getAllChatThemesFromPrefs() {
+    private List<EmojiThemes> getAllChatThemesFromPrefs() {
         SharedPreferences preferences = getSharedPreferences();
         int count = preferences.getInt("count", 0);
         List<EmojiThemes> themes = new ArrayList<>(count);
@@ -149,7 +154,7 @@ public class ChatThemeController extends BaseController {
             try {
                 TLRPC.TL_theme chatTheme = TLRPC.Theme.TLdeserialize(serializedData, serializedData.readInt32(true), true);
                 if (chatTheme != null) {
-                    themes.add(new EmojiThemes(chatTheme, false));
+                    themes.add(new EmojiThemes(currentAccount, chatTheme, false));
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -158,7 +163,7 @@ public class ChatThemeController extends BaseController {
         return themes;
     }
 
-    public static void requestChatTheme(final String emoticon, final ResultCallback<EmojiThemes> callback) {
+    public void requestChatTheme(final String emoticon, final ResultCallback<EmojiThemes> callback) {
         if (TextUtils.isEmpty(emoticon)) {
             callback.onComplete(null);
             return;
@@ -200,10 +205,6 @@ public class ChatThemeController extends BaseController {
 
 
     private final LongSparseArray<String> dialogEmoticonsMap = new LongSparseArray<>();
-
-    public ChatThemeController(int num) {
-        super(num);
-    }
 
     public static boolean equals(TLRPC.WallPaper wallPaper, TLRPC.WallPaper oldWallpaper) {
         if (wallPaper == null && oldWallpaper == null) {
@@ -311,7 +312,7 @@ public class ChatThemeController extends BaseController {
         return null;
     }
 
-    public static void preloadAllWallpaperImages(boolean isDark) {
+    public void preloadAllWallpaperImages(boolean isDark) {
         for (EmojiThemes chatTheme : allChatThemes) {
             TLRPC.TL_theme theme = chatTheme.getTlTheme(isDark ? 1 : 0);
             if (theme == null) {
@@ -325,7 +326,7 @@ public class ChatThemeController extends BaseController {
         }
     }
 
-    public static void preloadAllWallpaperThumbs(boolean isDark) {
+    public void preloadAllWallpaperThumbs(boolean isDark) {
         for (EmojiThemes chatTheme : allChatThemes) {
             TLRPC.TL_theme theme = chatTheme.getTlTheme(isDark ? 1 : 0);
             if (theme == null) {
@@ -343,15 +344,15 @@ public class ChatThemeController extends BaseController {
         }
     }
 
-    public static void clearWallpaperImages() {
+    public void clearWallpaperImages() {
 
     }
 
-    public static void clearWallpaperThumbImages() {
+    public void clearWallpaperThumbImages() {
         themeIdWallpaperThumbMap.clear();
     }
 
-    public static void getWallpaperBitmap(long themeId, ResultCallback<Bitmap> callback) {
+    public void getWallpaperBitmap(long themeId, ResultCallback<Bitmap> callback) {
         if (themesHash == 0) {
             callback.onComplete(null);
             return;
@@ -375,11 +376,11 @@ public class ChatThemeController extends BaseController {
         });
     }
 
-    private static File getPatternFile(long themeId) {
+    private File getPatternFile(long themeId) {
         return new File(ApplicationLoader.getFilesDirFixed(), String.format(Locale.US, "%d_%d.jpg", themeId, themesHash));
     }
 
-    public static void saveWallpaperBitmap(Bitmap bitmap, long themeId) {
+    public void saveWallpaperBitmap(Bitmap bitmap, long themeId) {
         File file = getPatternFile(themeId);
         chatThemeQueue.postRunnable(() -> {
             try {
@@ -392,7 +393,7 @@ public class ChatThemeController extends BaseController {
         });
     }
 
-    public static Bitmap getWallpaperThumbBitmap(long themeId) {
+    public Bitmap getWallpaperThumbBitmap(long themeId) {
         return themeIdWallpaperThumbMap.get(themeId);
     }
 

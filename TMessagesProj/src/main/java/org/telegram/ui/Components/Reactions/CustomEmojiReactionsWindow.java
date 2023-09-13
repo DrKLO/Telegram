@@ -342,7 +342,7 @@ public class CustomEmojiReactionsWindow {
             reactionsContainerLayout.getLocationOnScreen(location);
         }
         windowView.getLocationOnScreen(windowLocation);
-        float y = location[1] - windowLocation[1] - AndroidUtilities.dp(44) - AndroidUtilities.dp(52) - (selectAnimatedEmojiDialog.includeHint ? AndroidUtilities.dp(26) : 0);
+        float y = location[1] - windowLocation[1] - AndroidUtilities.dp(44) - AndroidUtilities.dp(52) - (selectAnimatedEmojiDialog.includeHint ? AndroidUtilities.dp(26) : 0) + reactionsContainerLayout.getTopOffset();
         if (y + containerView.getMeasuredHeight() > windowView.getMeasuredHeight() - AndroidUtilities.dp(32)) {
             y = windowView.getMeasuredHeight() - AndroidUtilities.dp(32) - containerView.getMeasuredHeight();
         }
@@ -767,6 +767,14 @@ public class CustomEmojiReactionsWindow {
                 shadow.draw(canvas);
                 canvas.drawRoundRect(drawingRect, radius, radius, backgroundPaint);
             }
+            if (reactionsContainerLayout.hintView != null) {
+                canvas.save();
+                canvas.translate(drawingRect.left, drawingRect.top + reactionsContainerLayout.hintView.getY());
+                canvas.saveLayerAlpha( 0, 0, reactionsContainerLayout.hintView.getMeasuredWidth(), reactionsContainerLayout.hintView.getMeasuredHeight(), (int) (255 * reactionsContainerLayout.hintView.getAlpha() * (1f - enterTransitionProgress)), Canvas.ALL_SAVE_FLAG);
+                reactionsContainerLayout.hintView.draw(canvas);
+                canvas.restore();
+                canvas.restore();
+            }
 
             float rightDelta = drawingRect.left - reactionsContainerLayout.rect.left + (drawingRect.width() - reactionsContainerLayout.rect.width());
 
@@ -794,7 +802,7 @@ public class CustomEmojiReactionsWindow {
 
                 int restoreCount = canvas.save();
 
-                canvas.translate(drawingRect.left, drawingRect.top + reactionsContainerLayout.expandSize() * (1f - enterTransitionProgress));
+                canvas.translate(drawingRect.left, drawingRect.top + (reactionsContainerLayout.getTopOffset() + reactionsContainerLayout.expandSize()) * (1f - enterTransitionProgress));
 
                 float a = selectAnimatedEmojiDialog.emojiSearchGridView.getVisibility() == View.VISIBLE ? selectAnimatedEmojiDialog.emojiSearchGridView.getAlpha() : 0;
                 float alpha = Math.max(1f - a, 1f - enterTransitionProgress);
@@ -972,6 +980,13 @@ public class CustomEmojiReactionsWindow {
             }
             HwEmojis.exec();
         }
+    }
+
+    private float getBlurOffset() {
+        if (type == TYPE_STORY) {
+            return containerView.getY() - AndroidUtilities.statusBarHeight;
+        }
+        return containerView.getY() + windowView.getY();
     }
 
     public void setRecentReactions(List<ReactionsLayoutInBubble.VisibleReaction> reactions) {

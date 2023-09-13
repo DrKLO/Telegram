@@ -88,6 +88,9 @@ public class Input {
         }
 
         canFill = false;
+        if (brush instanceof Brush.Eraser) {
+            renderView.getPainting().hasBlur = false;
+        }
         renderView.getPainting().clearStroke();
         pointsCount = 0;
         realPointsCount = 0;

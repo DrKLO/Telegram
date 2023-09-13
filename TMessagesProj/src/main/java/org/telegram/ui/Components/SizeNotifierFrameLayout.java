@@ -16,6 +16,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -53,7 +55,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     protected int keyboardHeight;
     private int bottomClip;
-    private SizeNotifierFrameLayoutDelegate delegate;
+    protected SizeNotifierFrameLayoutDelegate delegate;
     private boolean occupyStatusBar = true;
     private WallpaperParallaxEffect parallaxEffect;
     private float translationX;
@@ -107,7 +109,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     //
 
     public void invalidateBlur() {
+        if (!SharedConfig.chatBlurEnabled()) {
+            return;
+        }
         invalidateBlur = true;
+        if (!blurIsRunning || blurGeneratingTuskIsRunning) {
+            return;
+        }
         invalidate();
     }
 

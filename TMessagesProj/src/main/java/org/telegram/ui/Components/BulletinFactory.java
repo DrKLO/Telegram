@@ -302,18 +302,18 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_PROLONG);
     }
 
-    public Bulletin createUsersBulletin(List<TLRPC.User> users, CharSequence text) {
+    public Bulletin createUsersBulletin(List<? extends TLObject> users, CharSequence text) {
        return createUsersBulletin(users, text, null, null);
     }
 
-    public Bulletin createUsersBulletin(List<TLRPC.User> users, CharSequence text, CharSequence subtitle, UndoObject undoObject) {
+    public Bulletin createUsersBulletin(List<? extends TLObject> users, CharSequence text, CharSequence subtitle, UndoObject undoObject) {
         final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), subtitle != null, resourcesProvider);
         int count = 0;
         if (users != null) {
             for (int i = 0; i < users.size(); ++i) {
                 if (count >= 3)
                     break;
-                TLRPC.User user = users.get(i);
+                TLObject user = users.get(i);
                 if (user != null) {
                     layout.avatarsImageView.setCount(++count);
                     layout.avatarsImageView.setObject(count - 1, UserConfig.selectedAccount, user);

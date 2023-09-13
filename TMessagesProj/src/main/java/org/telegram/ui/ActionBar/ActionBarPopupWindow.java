@@ -346,6 +346,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
         }
 
+        @Override
         public void setBackgroundDrawable(Drawable drawable) {
             backgroundColor = Color.WHITE;
             backgroundDrawable = drawable;

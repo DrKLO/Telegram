@@ -264,6 +264,7 @@ public class PollVotesAlert extends BottomSheet {
         private SimpleTextView nameTextView;
 
         private AvatarDrawable avatarDrawable;
+        private StatusBadgeComponent statusBadgeComponent;
         private TLRPC.User currentUser;
         private TLRPC.Chat currentChat;
 
@@ -297,13 +298,14 @@ public class PollVotesAlert extends BottomSheet {
             nameTextView.setTextSize(16);
             nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 65, 14, LocaleController.isRTL ? 65 : 28, 0));
+            statusBadgeComponent = new StatusBadgeComponent(nameTextView);
         }
 
         public void setData(TLObject object, int num, boolean divider) {
             if (object instanceof TLRPC.User) {
                 currentUser = (TLRPC.User) object;
                 currentChat = null;
-            } else if (object instanceof TLRPC.Chat){
+            } else if (object instanceof TLRPC.Chat) {
                 currentChat = (TLRPC.Chat) object;
                 currentUser = null;
             } else {
@@ -343,6 +345,18 @@ public class PollVotesAlert extends BottomSheet {
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            statusBadgeComponent.onAttachedToWindow();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            statusBadgeComponent.onDetachedFromWindow();
+            super.onDetachedFromWindow();
         }
 
         public void update(int mask) {
@@ -396,15 +410,15 @@ public class PollVotesAlert extends BottomSheet {
                 avatarDrawable.setInfo(currentChat);
             }
 
-
             if (currentUser != null) {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
-            } else if (currentChat != null){
+            } else if (currentChat != null) {
                 lastName = currentChat.title;
             } else {
                 lastName = "";
             }
             nameTextView.setText(lastName);
+            nameTextView.setRightDrawable(statusBadgeComponent.updateDrawable(currentUser, currentChat, Theme.getColor(Theme.key_chats_verifiedBackground), false));
 
             lastAvatar = photo;
             if (currentChat != null) {

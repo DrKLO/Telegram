@@ -14,7 +14,7 @@ import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.util.Log;
+import android.text.TextUtils;
 import android.util.Pair;
 import android.util.Size;
 import android.view.Gravity;
@@ -26,26 +26,21 @@ import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
+import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.VideoEditTextureView;
 import org.telegram.ui.Components.VideoPlayer;
-import org.telegram.ui.Components.VideoTimelinePlayView;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,8 +56,13 @@ public class PreviewView extends FrameLayout {
     private int videoWidth, videoHeight;
     private VideoEditTextureView textureView;
     public TextureView filterTextureView;
+    private PhotoFilterView photoFilterView;
+    public Runnable invalidateBlur;
 
-    private VideoTimelinePlayView videoTimelineView;
+    private VideoPlayer audioPlayer;
+
+//    private VideoTimelinePlayView videoTimelineView;
+    private TimelineView timelineView;
 
     private final Paint snapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -72,134 +72,12 @@ public class PreviewView extends FrameLayout {
     private final HashMap<Integer, Bitmap> partsBitmap = new HashMap<>();
     private final HashMap<Integer, ButtonBounce> partsBounce = new HashMap<>();
 
-    public PreviewView(Context context) {
+    private final BlurringShader.BlurManager blurManager;
+
+    public PreviewView(Context context, BlurringShader.BlurManager blurManager) {
         super(context);
 
-        videoTimelineView = new VideoTimelinePlayView(context);
-        videoTimelineView.setMode(VideoTimelinePlayView.MODE_VIDEO);
-        videoTimelineView.setDelegate(new VideoTimelinePlayView.VideoTimelineViewDelegate() {
-
-            private float durationOf(long ms) {
-                return (float) ms / (getDuration() == C.TIME_UNSET ? entry.duration : getDuration());
-            }
-
-            private long duration() {
-                return getDuration() == C.TIME_UNSET ? entry.duration : getDuration();
-            }
-
-            @Override
-            public void onLeftProgressChanged(float progress) {
-                if (videoPlayer != null) {
-                    if (videoPlayer.isPlaying()) {
-                        videoPlayer.pause();
-                    }
-                    entry.left = progress;
-                    entry.right = Utilities.clamp(Math.min(entry.right, entry.left + durationOf(MAX_DURATION)), 1, 0);
-                    entry.left = Utilities.clamp(Math.min(entry.left, entry.right - durationOf(MIN_DURATION)), 1, 0);
-                    videoTimelineView.setLeftRightProgress(entry.left, entry.right);
-                    seekTo(entry.left);
-                    videoTimelineView.setProgress(entry.left);
-                    drag((long) (entry.left * duration()));
-                }
-            }
-
-            @Override
-            public void onRightProgressChanged(float progress) {
-                if (videoPlayer != null) {
-                    if (videoPlayer.isPlaying()) {
-                        videoPlayer.pause();
-                    }
-                    entry.right = progress;
-                    entry.left = Utilities.clamp(Math.max(entry.left, entry.right - durationOf(MAX_DURATION)), 1, 0);
-                    entry.right = Utilities.clamp(Math.max(entry.right, entry.left + durationOf(MIN_DURATION)), 1, 0);
-                    videoTimelineView.setLeftRightProgress(entry.left, entry.right);
-                    seekTo(entry.right);
-                    videoTimelineView.setProgress(entry.right);
-                    drag((long) (entry.right * duration()));
-                }
-            }
-
-            @Override
-            public void onPlayProgressChanged(float progress) {
-                if (videoPlayer != null) {
-                    seekTo(progress);
-                }
-                drag((long) (progress * duration()));
-            }
-
-            private Runnable dragStart;
-            private boolean dragging;
-            private long lastDragTime;
-
-            private void drag(long t) {
-                lastDragTime = t;
-                if (dragging) {
-                    onTimeDrag(false, lastDragTime, false);
-                } else if (dragStart == null) {
-                    AndroidUtilities.runOnUIThread(dragStart = () -> {
-                        dragging = true;
-                        dragStart = null;
-                        onTimeDrag(true, lastDragTime, false);
-                    }, 150);
-                }
-            }
-
-            @Override
-            public void didStartDragging(int type) {
-                if (videoPlayer == null) {
-                    return;
-                }
-                updatePauseReason(-1, true);
-                drag((long) (videoTimelineView.getProgressOf(type) * duration()));
-            }
-
-            @Override
-            public void didStopDragging(int type) {
-                if (seekToRunnable != null) {
-                    AndroidUtilities.cancelRunOnUIThread(seekToRunnable);
-                    seekToRunnable.run();
-                }
-                if (videoPlayer != null && !videoPlayer.isPlaying()) {
-                    float currentProgress = videoPlayer.getCurrentPosition() / (float) getDuration();
-                    if (currentProgress < entry.left || currentProgress > entry.right) {
-                        seekTo(entry.left * getDuration());
-                    }
-                    updatePauseReason(-1, false);
-                }
-                dragging = false;
-                if (dragStart != null) {
-                    AndroidUtilities.cancelRunOnUIThread(dragStart);
-                    dragStart = null;
-                }
-                onTimeDrag(false, lastDragTime, true);
-            }
-
-            private Runnable seekToRunnable;
-            private int seekTo;
-            private boolean wasPlaying;
-
-            private void seekTo(float progress) {
-                if (videoPlayer == null) {
-                    return;
-                }
-                seekTo = (int) (getDuration() * progress);
-                if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
-                    if (videoPlayer != null) {
-                        videoPlayer.seekTo(seekTo);
-                    }
-                    applyMatrix();
-                    seekToRunnable = null;
-                } else if (seekToRunnable == null) {
-                    AndroidUtilities.runOnUIThread(seekToRunnable = () -> {
-                        if (videoPlayer != null) {
-                            videoPlayer.seekTo(seekTo);
-                        }
-                        applyMatrix();
-                        seekToRunnable = null;
-                    }, 100);
-                }
-            }
-        });
+        this.blurManager = blurManager;
 
         snapPaint.setStrokeWidth(AndroidUtilities.dp(1));
         snapPaint.setStyle(Paint.Style.STROKE);
@@ -213,14 +91,10 @@ public class PreviewView extends FrameLayout {
         if (entry != null && entry.fileDuration >= 0) {
             return (long) (1000 * entry.fileDuration);
         }
-        if (videoPlayer != null) {
+        if (videoPlayer != null && videoPlayer.getDuration() != C.TIME_UNSET) {
             return videoPlayer.getDuration();
         }
         return 0;
-    }
-
-    public VideoTimelinePlayView getTimelineView() {
-        return videoTimelineView;
     }
 
     public void set(StoryEntry entry) {
@@ -234,6 +108,7 @@ public class PreviewView extends FrameLayout {
             setupImage(null);
             setupParts(null);
             gradientPaint.setShader(null);
+            setupAudio((StoryEntry) null, false);
             return;
         }
         if (entry.isVideo) {
@@ -251,17 +126,203 @@ public class PreviewView extends FrameLayout {
         }
         setupParts(entry);
         applyMatrix();
+        setupAudio(entry, false);
+    }
+
+    public void setupAudio(StoryEntry entry, boolean animated) {
+        if (audioPlayer != null) {
+            audioPlayer.pause();
+            audioPlayer.releasePlayer(true);
+            audioPlayer = null;
+        }
+        if (entry == null) {
+            return;
+        }
+        if (timelineView != null) {
+            timelineView.setAudio(entry.audioPath, entry.audioAuthor, entry.audioTitle, entry.audioDuration, entry.audioOffset, entry.audioLeft, entry.audioRight, entry.audioVolume, animated);
+        }
+        if (entry.audioPath != null) {
+            audioPlayer = new VideoPlayer();
+            audioPlayer.allowMultipleInstances = true;
+            audioPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+                @Override
+                public void onStateChanged(boolean playWhenReady, int playbackState) {
+                    AndroidUtilities.cancelRunOnUIThread(updateAudioProgressRunnable);
+                    if (audioPlayer != null && audioPlayer.isPlaying()) {
+                        AndroidUtilities.runOnUIThread(updateAudioProgressRunnable);
+                    }
+                }
+
+                @Override
+                public void onError(VideoPlayer player, Exception e) {
+
+                }
+
+                @Override
+                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+
+                }
+
+                @Override
+                public void onRenderedFirstFrame() {
+
+                }
+
+                @Override
+                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                }
+
+                @Override
+                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
+                    return false;
+                }
+            });
+            audioPlayer.preparePlayer(Uri.fromFile(new File(entry.audioPath)), "other");
+            updateAudioPlayer(true);
+        }
+    }
+
+    public void setupAudio(MessageObject messageObject, boolean animated) {
+        if (entry != null) {
+            if (messageObject == null || messageObject.messageOwner == null) {
+                entry.audioPath = null;
+                entry.audioAuthor = null;
+                entry.audioTitle = null;
+                entry.audioDuration = entry.audioOffset = 0;
+                entry.audioLeft = 0;
+                entry.audioRight = 1;
+            } else {
+                entry.audioPath = messageObject.messageOwner.attachPath;
+                entry.audioAuthor = null;
+                entry.audioTitle = null;
+                TLRPC.Document audioDocument = messageObject.getDocument();
+                if (audioDocument != null) {
+                    for (TLRPC.DocumentAttribute attr : audioDocument.attributes) {
+                        if (attr instanceof TLRPC.TL_documentAttributeAudio) {
+                            entry.audioAuthor = attr.performer;
+                            if (!TextUtils.isEmpty(attr.title)) {
+                                entry.audioTitle = attr.title;
+                            }
+                            entry.audioDuration = (long) (attr.duration * 1000);
+                            break;
+                        } else if (attr instanceof TLRPC.TL_documentAttributeFilename) {
+                            entry.audioTitle = attr.file_name;
+                        }
+                    }
+                }
+                entry.audioOffset = 0;
+                entry.audioLeft = 0;
+                long scrollDuration = Math.min(entry != null && entry.isVideo ? getDuration() : entry.audioDuration, TimelineView.MAX_SCROLL_DURATION);
+                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(scrollDuration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
+            }
+        }
+        setupAudio(entry, animated);
+    }
+
+    private void seekTo(long position) {
+        if (videoPlayer != null) {
+            videoPlayer.seekTo(position, false);
+        } else if (audioPlayer != null) {
+            audioPlayer.seekTo(position, false);
+        }
+        updateAudioPlayer(true);
+    }
+
+    public void setVideoTimelineView(TimelineView timelineView) {
+        this.timelineView = timelineView;
+        if (timelineView != null) {
+            timelineView.setDelegate(new TimelineView.TimelineDelegate() {
+                @Override
+                public void onProgressDragChange(boolean dragging) {
+                    updatePauseReason(-4, dragging);
+                }
+
+                @Override
+                public void onProgressChange(long progress, boolean fast) {
+                    if (!fast) {
+                        seekTo(progress);
+                    } else if (videoPlayer != null) {
+                        videoPlayer.seekTo(progress, true);
+                    } else if (audioPlayer != null) {
+                        audioPlayer.seekTo(progress, false);
+                    }
+                }
+
+                @Override
+                public void onVideoLeftChange(float left) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.left = left;
+                    if (videoPlayer != null && videoPlayer.getDuration() != C.TIME_UNSET) {
+                        seekTo((long) (left * videoPlayer.getDuration()));
+                    }
+                }
+
+                @Override
+                public void onVideoRightChange(float right) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.right = right;
+                }
+
+                @Override
+                public void onAudioLeftChange(float left) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.audioLeft = left;
+                    updateAudioPlayer(true);
+                }
+
+                @Override
+                public void onAudioRightChange(float right) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.audioRight = right;
+                    updateAudioPlayer(true);
+                }
+
+                @Override
+                public void onAudioOffsetChange(long offset) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.audioOffset = offset;
+                    updateAudioPlayer(true);
+                }
+
+                @Override
+                public void onAudioRemove() {
+                    setupAudio((MessageObject) null, true);
+                }
+
+                @Override
+                public void onAudioVolumeChange(float volume) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.audioVolume = volume;
+                    if (audioPlayer != null) {
+                        audioPlayer.setVolume(volume);
+                    }
+                }
+            });
+        }
     }
 
     private void setupImage(StoryEntry entry) {
-        if (bitmap != null) {
+        if (bitmap != null && !bitmap.isRecycled()) {
             bitmap.recycle();
-            bitmap = null;
         }
-        if (thumbBitmap != null) {
+        bitmap = null;
+        if (thumbBitmap != null && !thumbBitmap.isRecycled()) {
             thumbBitmap.recycle();
-            thumbBitmap = null;
         }
+        thumbBitmap = null;
         if (entry != null) {
             final int rw = getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : getMeasuredWidth();
             final int rh = (int) (rw * 16 / 9f);
@@ -314,64 +375,26 @@ public class PreviewView extends FrameLayout {
                         return BitmapFactory.decodeFile(path, opts);
                     }
                 }, rw, rh, false);
-
-//                this.thumbAlpha.set(0, true);
-//                thumbBitmap = StoryEntry.getScaledBitmap(opts -> {
-//                    if (entry.isVideo) {
-//                        if (entry.thumbPath != null) {
-//                            return BitmapFactory.decodeFile(entry.thumbPath, opts);
-//                        } else {
-//                            try {
-//                                return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
-//                            } catch (Throwable e) {
-//                                invalidate();
-//                                return null;
-//                            }
-//                        }
-//                    } else {
-//                        return BitmapFactory.decodeFile(path, opts);
-//                    }
-//                }, rw / 4, rh / 4, false);
-//
-//                Utilities.themeQueue.postRunnable(() -> {
-//                    final Bitmap bitmapFinal = StoryEntry.getScaledBitmap(opts -> {
-//                        if (entry.isVideo) {
-//                            if (entry.thumbPath != null) {
-//                                return BitmapFactory.decodeFile(entry.thumbPath, opts);
-//                            } else {
-//                                try {
-//                                    return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
-//                                } catch (Throwable e) {
-//                                    invalidate();
-//                                    return null;
-//                                }
-//                            }
-//                        } else {
-//                            return BitmapFactory.decodeFile(path, opts);
-//                        }
-//                    }, rw, rh, true);
-//                    AndroidUtilities.runOnUIThread(() -> {
-//                        if (PreviewView.this.entry != entry) {
-//                            if (bitmapFinal != null) {
-//                                bitmapFinal.recycle();
-//                            }
-//                            return;
-//                        }
-//                        bitmap = bitmapFinal;
-//                        if (!entry.isDraft && entry.isVideo && bitmap != null && entry.width <= 0) {
-//                            entry.width = bitmap.getWidth();
-//                            entry.height = bitmap.getHeight();
-//                            entry.setupMatrix();
-//                        }
-//                        invalidate();
-//                    });
-//                });
+                if (entry != null && blurManager != null && bitmap != null) {
+                    blurManager.resetBitmap();
+                    blurManager.setFallbackBlur(entry.buildBitmap(0.2f, bitmap), 0);
+                    if (invalidateBlur != null) {
+                        invalidateBlur.run();
+                    }
+                }
                 return;
             }
             if (!entry.isDraft && entry.isVideo && bitmap != null) {
                 entry.width = bitmap.getWidth();
                 entry.height = bitmap.getHeight();
                 entry.setupMatrix();
+            }
+        }
+        if (entry != null && blurManager != null && bitmap != null) {
+            blurManager.resetBitmap();
+            blurManager.setFallbackBlur(entry.buildBitmap(0.2f, bitmap), 0);
+            if (invalidateBlur != null) {
+                invalidateBlur.run();
             }
         }
         invalidate();
@@ -382,23 +405,43 @@ public class PreviewView extends FrameLayout {
         if (entry.gradientTopColor == 0 || entry.gradientBottomColor == 0) {
             if (bitmap != null) {
                 DominantColors.getColors(true, bitmap, true, colors -> {
-                    entry.gradientTopColor = colors[0];
-                    entry.gradientBottomColor = colors[1];
+                    entry.gradientTopColor = gradientTop = colors[0];
+                    entry.gradientBottomColor = gradientBottom = colors[1];
                     gradientPaint.setShader(new LinearGradient(0, 0, 0, height, colors, new float[]{0, 1}, Shader.TileMode.CLAMP));
                     invalidate();
+
+                    if (textureView != null) {
+                        textureView.updateUiBlurGradient(gradientTop, gradientBottom);
+                    }
+                    if (photoFilterView != null) {
+                        photoFilterView.updateUiBlurGradient(gradientTop, gradientBottom);
+                    }
                 });
             } else if (thumbBitmap != null) {
                 DominantColors.getColors(true, thumbBitmap, true, colors -> {
-                    entry.gradientTopColor = colors[0];
-                    entry.gradientBottomColor = colors[1];
+                    entry.gradientTopColor = gradientTop = colors[0];
+                    entry.gradientBottomColor = gradientBottom = colors[1];
                     gradientPaint.setShader(new LinearGradient(0, 0, 0, height, colors, new float[]{0, 1}, Shader.TileMode.CLAMP));
                     invalidate();
+
+                    if (textureView != null) {
+                        textureView.updateUiBlurGradient(gradientTop, gradientBottom);
+                    }
+                    if (photoFilterView != null) {
+                        photoFilterView.updateUiBlurGradient(gradientTop, gradientBottom);
+                    }
                 });
             } else {
                 gradientPaint.setShader(null);
             }
         } else {
-            gradientPaint.setShader(new LinearGradient(0, 0, 0, height, new int[] { entry.gradientTopColor, entry.gradientBottomColor }, new float[]{0, 1}, Shader.TileMode.CLAMP));
+            gradientPaint.setShader(new LinearGradient(0, 0, 0, height, new int[] { gradientTop = entry.gradientTopColor, gradientBottom = entry.gradientBottomColor }, new float[]{0, 1}, Shader.TileMode.CLAMP));
+            if (textureView != null) {
+                textureView.updateUiBlurGradient(gradientTop, gradientBottom);
+            }
+            if (photoFilterView != null) {
+                photoFilterView.updateUiBlurGradient(gradientTop, gradientBottom);
+            }
         }
 
         invalidate();
@@ -421,6 +464,9 @@ public class PreviewView extends FrameLayout {
                     }
                 }).start();
             }
+            if (timelineView != null) {
+                timelineView.setVideo(null, 1);
+            }
             AndroidUtilities.cancelRunOnUIThread(updateProgressRunnable);
             if (whenReady != null) {
                 AndroidUtilities.runOnUIThread(whenReady);
@@ -434,6 +480,7 @@ public class PreviewView extends FrameLayout {
             final Runnable[] whenReadyFinal = new Runnable[] { whenReady };
 
             videoPlayer = new VideoPlayer();
+            videoPlayer.allowMultipleInstances = true;
             videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
                 @Override
                 public void onStateChanged(boolean playWhenReady, int playbackState) {
@@ -524,6 +571,8 @@ public class PreviewView extends FrameLayout {
             }
 
             textureView = new VideoEditTextureView(getContext(), videoPlayer);
+            blurManager.resetBitmap();
+            textureView.updateUiBlurManager(blurManager);
             textureView.setAlpha(whenReady == null ? 0f : 1f);
             textureView.setOpaque(false);
             applyMatrix();
@@ -543,12 +592,20 @@ public class PreviewView extends FrameLayout {
                 videoPlayer.seekTo(seekTo);
             }
             videoPlayer.setMute(entry.muted);
+            updateAudioPlayer(true);
 
-            videoTimelineView.setVideoPath(uri.toString(), entry.left, entry.right);
+            timelineView.setVideo(uri.toString(), getDuration());
+            timelineView.setVideoLeft(entry.left);
+            timelineView.setVideoRight(entry.right);
         }
     }
 
     public long release() {
+        if (audioPlayer != null) {
+            audioPlayer.pause();
+            audioPlayer.releasePlayer(true);
+            audioPlayer = null;
+        }
         if (videoPlayer != null) {
             long t = videoPlayer.getCurrentPosition();
             videoPlayer.pause();
@@ -606,34 +663,98 @@ public class PreviewView extends FrameLayout {
         }
     }
 
-    public void setFilterTextureView(TextureView view) {
+    public void setFilterTextureView(TextureView view, PhotoFilterView photoFilterView) {
         if (filterTextureView != null) {
             removeView(filterTextureView);
             filterTextureView = null;
         }
+        this.photoFilterView = photoFilterView;
         filterTextureView = view;
+        if (photoFilterView != null) {
+            photoFilterView.updateUiBlurGradient(gradientTop, gradientBottom);
+        }
         if (filterTextureView != null) {
             addView(filterTextureView);
         }
     }
 
+    private long lastPos;
     private long seekedLastTime;
     private final Runnable updateProgressRunnable = () -> {
-        if (videoPlayer == null) {
+        if (videoPlayer == null || timelineView == null) {
             return;
         }
-        float progress = videoPlayer.getCurrentPosition() / (float) getDuration();
-        if (!videoTimelineView.isDragging() && (progress < entry.left || progress > entry.right) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
-            seekedLastTime = System.currentTimeMillis();
-            videoPlayer.seekTo((long) (entry.left * getDuration()));
+
+        long pos = videoPlayer.getCurrentPosition();
+        if (getDuration() > 0) {
+            final float progress = pos / (float) getDuration();
+            if (!timelineView.isDragging() && (progress < entry.left || progress > entry.right) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
+                seekedLastTime = System.currentTimeMillis();
+                videoPlayer.seekTo(pos = (long) (entry.left * getDuration()));
+                updateAudioPlayer(true);
+            } else {
+                updateAudioPlayer(pos < lastPos);
+            }
+            timelineView.setProgress(videoPlayer.getCurrentPosition());
+        } else {
+            timelineView.setProgress(videoPlayer.getCurrentPosition());
         }
-        progress = Utilities.clamp(progress, videoTimelineView.getRightProgress(), videoTimelineView.getLeftProgress());
-        videoTimelineView.setProgress(progress);
         if (videoPlayer.isPlaying()) {
             AndroidUtilities.cancelRunOnUIThread(this.updateProgressRunnable);
             AndroidUtilities.runOnUIThread(this.updateProgressRunnable, (long) (1000L / AndroidUtilities.screenRefreshRate));
         }
+        lastPos = pos;
     };
+
+    private final Runnable updateAudioProgressRunnable = () -> {
+        if (audioPlayer == null || videoPlayer != null || timelineView == null) {
+            return;
+        }
+
+        long pos = audioPlayer.getCurrentPosition();
+        if (entry != null && (pos < entry.audioLeft * entry.audioDuration || pos > entry.audioRight * entry.audioDuration) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
+            seekedLastTime = System.currentTimeMillis();
+            audioPlayer.seekTo(pos = (long) (entry.audioLeft * entry.audioDuration));
+        }
+        timelineView.setProgress(pos);
+
+        if (audioPlayer.isPlaying()) {
+            AndroidUtilities.cancelRunOnUIThread(this.updateAudioProgressRunnable);
+            AndroidUtilities.runOnUIThread(this.updateAudioProgressRunnable, (long) (1000L / AndroidUtilities.screenRefreshRate));
+        }
+    };
+
+    private void updateAudioPlayer(boolean updateSeek) {
+        if (audioPlayer == null || entry == null) {
+            return;
+        }
+
+        if (videoPlayer == null) {
+            audioPlayer.setPlayWhenReady(pauseLinks.isEmpty());
+            audioPlayer.setLooping(true);
+
+            long pos = audioPlayer.getCurrentPosition();
+            if (updateSeek && audioPlayer.getDuration() != C.TIME_UNSET) {
+                final float progress = pos / (float) audioPlayer.getDuration();
+                if ((progress < entry.audioLeft || progress > entry.audioRight) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
+                    seekedLastTime = System.currentTimeMillis();
+                    audioPlayer.seekTo(pos = -entry.audioOffset);
+                }
+            }
+            return;
+        }
+
+        final long pos = videoPlayer.getCurrentPosition();
+        final long duration = (long) ((entry.audioRight - entry.audioLeft) * entry.audioDuration);
+        boolean shouldPlaying = videoPlayer.isPlaying() && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
+        long audioPos = pos - entry.audioOffset + (long) (entry.audioLeft * entry.audioDuration);
+        if (audioPlayer.isPlaying() != shouldPlaying) {
+            audioPlayer.setPlayWhenReady(shouldPlaying);
+            audioPlayer.seekTo(audioPos);
+        } else if (updateSeek && Math.abs(audioPlayer.getCurrentPosition() - audioPos) > 120) {
+            audioPlayer.seekTo(audioPos);
+        }
+    }
 
     private Runnable onErrorListener;
     public void whenError(Runnable listener) {
@@ -649,6 +770,7 @@ public class PreviewView extends FrameLayout {
 
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
     private final Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private int gradientTop, gradientBottom;
 
     private final Matrix matrix = new Matrix();
 
@@ -1087,6 +1209,7 @@ public class PreviewView extends FrameLayout {
         if (videoPlayer != null) {
             videoPlayer.setPlayWhenReady(pauseLinks.isEmpty());
         }
+        updateAudioPlayer(true);
     }
 
     // ignores actual player and other reasons to pause a video

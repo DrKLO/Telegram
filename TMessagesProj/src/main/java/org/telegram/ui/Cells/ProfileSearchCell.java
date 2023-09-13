@@ -752,6 +752,8 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         }
         if (user != null) {
             StoriesUtilities.drawAvatarWithStory(user.id, canvas, avatarImage, avatarStoryParams);
+        } else if (chat != null) {
+            StoriesUtilities.drawAvatarWithStory(-chat.id, canvas, avatarImage, avatarStoryParams);
         } else {
             avatarImage.setImageCoords(avatarStoryParams.originalAvatarRect);
             avatarImage.draw(canvas);

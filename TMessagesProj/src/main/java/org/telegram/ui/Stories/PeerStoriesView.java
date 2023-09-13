@@ -1813,7 +1813,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 }
                 if (mentionContainer.getAdapter() != null) {
                     mentionContainer.setDialogId(dialogId);
-                    mentionContainer.getAdapter().setUserOrChar(MessagesController.getInstance(currentAccount).getUser(dialogId), null);
+                    mentionContainer.getAdapter().setUserOrChat(MessagesController.getInstance(currentAccount).getUser(dialogId), null);
                     mentionContainer.getAdapter().searchUsernameOrHashtag(text, chatActivityEnterView.getCursorPosition(), null, false, false);
                 }
                 invalidate();
@@ -2723,7 +2723,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                    //emojiReactionEffect.setBounds(0, 0, size, size);
                     emojiReactionEffect.setBounds((int) (cX - size / 2f), (int) (cY - size / 2f), (int) (cX + size / 2f), (int) (cY + size / 2f));
                     emojiReactionEffect.draw(canvas);
-                    if (emojiReactionEffect.done()) {
+                    if (emojiReactionEffect.isDone()) {
                         emojiReactionEffect.removeView(this);
                         emojiReactionEffect = null;
                         drawReactionEffect = false;
@@ -2842,22 +2842,17 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 }
 
                 @Override
-                public Theme.ResourcesProvider getResourceProvider() {
-                    return new WrappedResourceProvider(resourcesProvider) {
-                        @Override
-                        public void appendColors() {
-                            sparseIntArray.append(Theme.key_dialogBackground, 0xFF1F1F1F);
-                            sparseIntArray.append(Theme.key_windowBackgroundGray, 0xFF333333);
-                        }
-                    };
-                }
-
-                @Override
                 public boolean presentFragment(BaseFragment fragment) {
                     storyViewer.presentFragment(fragment);
                     return true;
                 }
-            }, activity, storyLimit.getLimitReachedType(), currentAccount);
+            }, activity, storyLimit.getLimitReachedType(), currentAccount, new WrappedResourceProvider(resourcesProvider) {
+                @Override
+                public void appendColors() {
+                    sparseIntArray.append(Theme.key_dialogBackground, 0xFF1F1F1F);
+                    sparseIntArray.append(Theme.key_windowBackgroundGray, 0xFF333333);
+                }
+            });
             delegate.showDialog(sheet);
         }
     }

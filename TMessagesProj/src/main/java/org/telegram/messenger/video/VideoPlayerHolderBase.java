@@ -188,7 +188,7 @@ public class VideoPlayerHolderBase {
                         onReadyListener.run();
                         onReadyListener = null;
                     }
-                }, 16);
+                }, surfaceView == null ? 16 : 32);
             }
 
             @Override

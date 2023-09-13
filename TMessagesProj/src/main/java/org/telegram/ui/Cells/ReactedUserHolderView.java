@@ -44,6 +44,7 @@ import org.telegram.ui.Components.MessageSeenCheckDrawable;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.messenger.LocaleController;
+import org.telegram.ui.Components.StatusBadgeComponent;
 import org.telegram.ui.Stories.StoriesUtilities;
 
 public class ReactedUserHolderView extends FrameLayout {
@@ -59,7 +60,7 @@ public class ReactedUserHolderView extends FrameLayout {
     BackupImageView reactView;
     AvatarDrawable avatarDrawable = new AvatarDrawable();
     View overlaySelectorView;
-    AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable rightDrawable;
+    StatusBadgeComponent statusBadgeComponent;
     public final static int ITEM_HEIGHT_DP = 50;
     public final static int STORY_ITEM_HEIGHT_DP = 58;
     Theme.ResourcesProvider resourcesProvider;
@@ -128,9 +129,9 @@ public class ReactedUserHolderView extends FrameLayout {
         float leftMargin = style == STYLE_STORY ? 73 : 55;
         addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, leftMargin, topMargin, 12, 0));
 
-        rightDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(18));
+        statusBadgeComponent = new StatusBadgeComponent(this);
         titleView.setDrawablePadding(AndroidUtilities.dp(3));
-        titleView.setRightDrawable(rightDrawable);
+        titleView.setRightDrawable(statusBadgeComponent.getDrawable());
 
         subtitleView = new SimpleTextView(context);
         subtitleView.setTextSize(13);
@@ -158,17 +159,8 @@ public class ReactedUserHolderView extends FrameLayout {
             return;
         }
 
-        Long documentId = u instanceof TLRPC.User ? UserObject.getEmojiStatusDocumentId((TLRPC.User) u) : null;
-        if (documentId == null) {
-            if (user != null && user.premium) {
-                rightDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
-            } else {
-                rightDrawable.set((Drawable) null, false);
-            }
-        } else {
-            rightDrawable.set(documentId, false);
-        }
-        rightDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        int colorFilter = Theme.getColor(style == STYLE_STORY ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_chats_verifiedBackground, resourcesProvider);
+        statusBadgeComponent.updateDrawable(user, chat, colorFilter, false);
 
         avatarDrawable.setInfo(u);
         if (user != null) {
@@ -284,17 +276,13 @@ public class ReactedUserHolderView extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (rightDrawable != null) {
-            rightDrawable.attach();
-        }
+        statusBadgeComponent.onAttachedToWindow();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (rightDrawable != null) {
-            rightDrawable.detach();
-        }
+        statusBadgeComponent.onDetachedFromWindow();
         params.onDetachFromWindow();
     }
 

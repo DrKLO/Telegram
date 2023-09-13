@@ -22,7 +22,7 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 45;
+    private final static int LIB_VERSION = 46;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";
@@ -125,7 +125,7 @@ public class NativeLoader {
                 return;
             } catch (Error e) {
                 FileLog.e(e);
-                log.append("129: ").append(e).append("\n");
+                log.append("128: ").append(e).append("\n");
             }
 
             String folder = getAbiFolder();
@@ -173,7 +173,7 @@ public class NativeLoader {
             }
         } catch (Throwable e) {
             e.printStackTrace();
-            log.append("177: ").append(e).append("\n");
+            log.append("176: ").append(e).append("\n");
         }
 
         try {
@@ -181,7 +181,7 @@ public class NativeLoader {
             nativeLoaded = true;
         } catch (Error e) {
             FileLog.e(e);
-            log.append("185: ").append(e).append("\n");
+            log.append("184: ").append(e).append("\n");
         }
     }
 

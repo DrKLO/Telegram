@@ -24,6 +24,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
@@ -105,7 +106,7 @@ public class ChatBackgroundDrawable extends Drawable {
                     wallPaper.settings.third_background_color,
                     wallPaper.settings.fourth_background_color
             );
-            EmojiThemes.loadWallpaperImage(wallPaper.id, wallPaper, result -> {
+            EmojiThemes.loadWallpaperImage(UserConfig.selectedAccount, wallPaper.id, wallPaper, result -> {
                 motionBackgroundDrawable.setPatternBitmap(wallPaper.settings.intensity, result.second);
                 if (parent != null) {
                     parent.invalidate();

@@ -1444,7 +1444,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     }
                                 } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
                                     messageString = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
-                                } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaDocument && message.messageOwner.media.document instanceof TLRPC.TL_documentEmpty && message.messageOwner.media.ttl_seconds != 0) {
+                                } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaDocument && (message.messageOwner.media.document instanceof TLRPC.TL_documentEmpty || message.messageOwner.media.document == null) && message.messageOwner.media.ttl_seconds != 0) {
                                     messageString = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
                                 } else if (getCaptionMessage() != null) {
                                     MessageObject message = getCaptionMessage();
@@ -1545,7 +1545,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     }
                                 }
                                 if (message.isReplyToStory()) {
-                                    SpannableStringBuilder builder = SpannableStringBuilder.valueOf(messageString);
+                                    SpannableStringBuilder builder = new SpannableStringBuilder(messageString);
                                     builder.insert(0, "d ");
                                     builder.setSpan(new ColoredImageSpan(ContextCompat.getDrawable(getContext(), R.drawable.msg_mini_replystory).mutate()), 0, 1, 0);
                                     messageString = builder;
@@ -1581,7 +1581,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 }
                                 if (message.isForwarded()) {
                                     drawForwardIcon = true;
-                                    SpannableStringBuilder builder = SpannableStringBuilder.valueOf(messageString);
+                                    SpannableStringBuilder builder = new SpannableStringBuilder(messageString);
                                     builder.insert(0, "d ");
                                     ColoredImageSpan coloredImageSpan = new ColoredImageSpan(ContextCompat.getDrawable(getContext(), R.drawable.mini_forwarded).mutate());
                                     coloredImageSpan.setAlpha(0.9f);
@@ -3830,7 +3830,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         if (avatarImage.getVisible()) {
-            needInvalidate = drawAvatarOverlays(canvas);
+            if (drawAvatarOverlays(canvas)) {
+                needInvalidate = true;
+            }
         }
 
         if (rightFragmentOpenedProgress > 0 && currentDialogFolderId == 0) {
@@ -4010,6 +4012,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (avatarImage.updateThumbShaderMatrix()) {
                     if (avatarImage.thumbShader != null) {
                         timerPaint.setShader(avatarImage.thumbShader);
+                    } else if (avatarImage.staticThumbShader != null) {
+                        timerPaint.setShader(avatarImage.staticThumbShader);
                     }
                 } else {
                     timerPaint.setShader(null);

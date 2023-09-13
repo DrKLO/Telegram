@@ -32,6 +32,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -265,7 +266,7 @@ public class AnimatedTextView extends View {
                 ellipsizeGradientMatrix.postTranslate(bounds.right - rightPadding - w, 0);
                 ellipsizeGradient.setLocalMatrix(ellipsizeGradientMatrix);
                 canvas.save();
-                canvas.drawRect(bounds.right - rightPadding - w, bounds.top, bounds.right - rightPadding, bounds.bottom, ellipsizePaint);
+                canvas.drawRect(bounds.right - rightPadding - w, bounds.top, bounds.right - rightPadding + AndroidUtilities.dp(1), bounds.bottom, ellipsizePaint);
                 canvas.restore();
                 canvas.restore();
             }
@@ -879,6 +880,14 @@ public class AnimatedTextView extends View {
         @Override
         public Rect getDirtyBounds() {
             return this.bounds;
+        }
+
+        public float isNotEmpty() {
+            return AndroidUtilities.lerp(
+                oldText == null || oldText.length() <= 0 ? 0f : 1f,
+                currentText == null || currentText.length() <= 0 ? 0f : 1f,
+                oldText == null ? 1f : t
+            );
         }
     }
 

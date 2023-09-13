@@ -228,6 +228,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
         @Override
         public boolean onDeletePhoto(int index) {
+            if (userId == 0) {
+                return true;
+            }
             TLRPC.TL_photos_updateProfilePhoto req = new TLRPC.TL_photos_updateProfilePhoto();
             req.bot = getMessagesController().getInputUser(userId);
             req.flags |= 2;
@@ -248,6 +251,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 setAvatarCell.imageView.setTranslationX(-AndroidUtilities.dp(8));
                 setAvatarCell.imageView.setAnimation(cameraDrawable);
             }));
+
             return false;
         }
 

@@ -163,7 +163,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
         if (calendarType == TYPE_PROFILE_STORIES) {
             storiesList = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesList(dialogId, StoriesController.StoriesList.TYPE_PINNED);
         } else if (calendarType == TYPE_ARCHIVED_STORIES) {
-            storiesList = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesList(getUserConfig().clientUserId, StoriesController.StoriesList.TYPE_ARCHIVE);
+            storiesList = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesList(dialogId, StoriesController.StoriesList.TYPE_ARCHIVE);
         }
         if (storiesList != null) {
             storiesPlaceProvider = new StoryViewer.PlaceProvider() {

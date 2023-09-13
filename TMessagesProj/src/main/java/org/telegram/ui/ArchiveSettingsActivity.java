@@ -246,7 +246,7 @@ public class ArchiveSettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getItemViewType() != VIEW_TYPE_SHADOW;
+            return holder.getItemViewType() != VIEW_TYPE_SHADOW && holder.getItemViewType() != VIEW_TYPE_HEADER;
         }
 
         @Override

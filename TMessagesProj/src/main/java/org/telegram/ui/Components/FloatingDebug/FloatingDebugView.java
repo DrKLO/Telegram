@@ -50,6 +50,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BlurSettingsBottomSheet;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -483,6 +484,18 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
 
     private List<FloatingDebugController.DebugItem> getBuiltInDebugItems() {
         List<FloatingDebugController.DebugItem> items = new ArrayList<>();
+
+        items.add(new FloatingDebugController.DebugItem("Theme"));
+        items.add(new FloatingDebugController.DebugItem("Draw action bar shadow", () -> {
+            SharedConfig.drawActionBarShadow = !SharedConfig.drawActionBarShadow;
+            SharedConfig.saveDebugConfig();
+            AndroidUtilities.forEachViews(LaunchActivity.instance.drawerLayoutContainer.getRootView(), View::invalidate);
+        }));
+        items.add(new FloatingDebugController.DebugItem("Show blur settings", () -> {
+            BlurSettingsBottomSheet.show(LaunchActivity.getLastFragment());
+            showBigMenu(false);
+        }));
+
         items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugGeneral)));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             items.add(new FloatingDebugController.DebugItem(LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug : R.string.DebugMenuEnableWebViewDebug), ()->{
