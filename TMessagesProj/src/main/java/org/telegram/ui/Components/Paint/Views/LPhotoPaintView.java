@@ -2722,6 +2722,36 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 photoView.highlightSegmented();
             }
 
+            if (!(entityView instanceof LocationView)) {
+                float degrees = 0.0f;
+                final float r = entityView.getRotation();
+                if (r % 90.0f == 0) {
+                    degrees = r + 90.0f;
+                }
+                if (degrees >= 360) {
+                    degrees -= 360;
+                }
+                final float finalDegrees = degrees;
+        
+                TextView resetAngleView = new TextView(getContext());
+                resetAngleView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                resetAngleView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                resetAngleView.setGravity(Gravity.CENTER_VERTICAL);
+                resetAngleView.setEllipsize(TextUtils.TruncateAt.END);
+                resetAngleView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
+                resetAngleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                resetAngleView.setTag(3);
+                resetAngleView.setText((int)degrees + "°");
+                resetAngleView.setOnClickListener(v -> {
+                    entityView.setRotation(finalDegrees);
+        
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss(true);
+                    }
+                });
+                parent.addView(resetAngleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+            }
+
             popupLayout.addView(parent);
 
             LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) parent.getLayoutParams();
