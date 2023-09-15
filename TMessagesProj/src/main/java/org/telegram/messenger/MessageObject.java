@@ -3604,7 +3604,15 @@ public class MessageObject {
                             }
                             if (object == null && chats != null) {
                                 object = chats.get(action.auto_setting_from);
-                            } else {
+                            }
+                            if (object == null) {
+                                if (action.auto_setting_from > 0) {
+                                    object = MessagesController.getInstance(currentAccount).getUser(action.auto_setting_from);
+                                } else {
+                                    object = MessagesController.getInstance(currentAccount).getChat(-action.auto_setting_from);
+                                }
+                            }
+                            if (object == null) {
                                 object = fromObject;
                             }
                             messageText = replaceWithLink(AndroidUtilities.replaceTags(LocaleController.formatString("AutoDeleteGlobalAction", R.string.AutoDeleteGlobalAction, LocaleController.formatTTLString(action.period))), "un1", object);

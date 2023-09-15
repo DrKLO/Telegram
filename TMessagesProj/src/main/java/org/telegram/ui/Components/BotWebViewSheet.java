@@ -31,7 +31,6 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
-import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
@@ -75,6 +74,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
     public final static int FLAG_FROM_INLINE_SWITCH = 1;
     public final static int FLAG_FROM_SIDE_MENU = 2;
+    private int lineColor;
 
     public void showJustAddedBulletin() {
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
@@ -152,6 +152,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private int actionBarColor;
+    private boolean actionBarIsLight;
     private Paint actionBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private boolean overrideBackgroundColor;
@@ -202,6 +203,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     public BotWebViewSheet(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
+        lineColor = Theme.getColor(Theme.key_sheet_scrollUp);
 
         swipeContainer = new ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer(context) {
             @Override
@@ -279,28 +281,40 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
 
             @Override
-            public void onWebAppSetActionBarColor(int colorKey) {
+            public void onWebAppSetActionBarColor(int color, boolean isOverrideColor) {
                 int from = actionBarColor;
-                int to = getColor(colorKey);
+                int to = color;
+
+                BotWebViewMenuContainer.ActionBarColorsAnimating actionBarColorsAnimating = new BotWebViewMenuContainer.ActionBarColorsAnimating();
+                actionBarColorsAnimating.setFrom(overrideBackgroundColor ? actionBarColor : 0, resourcesProvider);
+                overrideBackgroundColor = isOverrideColor;
+                actionBarIsLight = ColorUtils.calculateLuminance(color) < 0.5f;
+                actionBarColorsAnimating.setTo(overrideBackgroundColor ? to : 0, resourcesProvider);
 
                 ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 animator.addUpdateListener(animation -> {
-                    actionBarColor = ColorUtils.blendARGB(from, to, (Float) animation.getAnimatedValue());
+                    float progress = (float) animation.getAnimatedValue();
+                    actionBarColor = ColorUtils.blendARGB(from, to, progress);
+                    actionBar.setBackgroundColor(actionBarColor);
+
+                    actionBarColorsAnimating.updateActionBar(actionBar, progress);
+                    lineColor = actionBarColorsAnimating.getColor(Theme.key_sheet_scrollUp);
+
                     frameLayout.invalidate();
                 });
                 animator.start();
+                updateLightStatusBar();
             }
 
             @Override
             public void onWebAppSetBackgroundColor(int color) {
-                overrideBackgroundColor = true;
-
                 int from = backgroundPaint.getColor();
                 ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 animator.addUpdateListener(animation -> {
                     backgroundPaint.setColor(ColorUtils.blendARGB(from, color, (Float) animation.getAnimatedValue()));
+                    updateActionBarColors();
                     frameLayout.invalidate();
                 });
                 animator.start();
@@ -488,7 +502,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
                     canvas.drawRect(AndroidUtilities.rectTmp, dimPaint);
 
-                    actionBarPaint.setColor(ColorUtils.blendARGB(actionBarColor, getColor(Theme.key_windowBackgroundWhite), actionBarTransitionProgress));
+                    actionBarPaint.setColor(actionBarColor);
                     float radius = AndroidUtilities.dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
                     AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
@@ -503,7 +517,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 super.draw(canvas);
 
                 float transitionProgress = AndroidUtilities.isTablet() ? 0 : actionBarTransitionProgress;
-                linePaint.setColor(Theme.getColor(Theme.key_sheet_scrollUp));
+                linePaint.setColor(lineColor);
                 linePaint.setAlpha((int) (linePaint.getAlpha() * (1f - Math.min(0.5f, transitionProgress) / 0.5f)));
 
                 canvas.save();
@@ -716,19 +730,25 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     private void updateActionBarColors() {
-        actionBar.setTitleColor(getColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setItemsColor(getColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsBackgroundColor(getColor(Theme.key_actionBarWhiteSelector), false);
-        actionBar.setPopupBackgroundColor(getColor(Theme.key_actionBarDefaultSubmenuBackground), false);
-        actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItem), false, false);
-        actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true, false);
-        actionBar.setPopupItemsSelectorColor(getColor(Theme.key_dialogButtonSelector), false);
+        if (!overrideBackgroundColor) {
+            actionBar.setTitleColor(getColor(Theme.key_windowBackgroundWhiteBlackText));
+            actionBar.setItemsColor(getColor(Theme.key_windowBackgroundWhiteBlackText), false);
+            actionBar.setItemsBackgroundColor(getColor(Theme.key_actionBarWhiteSelector), false);
+            actionBar.setPopupBackgroundColor(getColor(Theme.key_actionBarDefaultSubmenuBackground), false);
+            actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItem), false, false);
+            actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true, false);
+            actionBar.setPopupItemsSelectorColor(getColor(Theme.key_dialogButtonSelector), false);
+        }
     }
 
     private void updateLightStatusBar() {
-        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
-        boolean lightStatusBar = !AndroidUtilities.isTablet() && ColorUtils.calculateLuminance(color) >= 0.9 && actionBarTransitionProgress >= 0.85f;
-
+        boolean lightStatusBar;
+        if (overrideBackgroundColor) {
+            lightStatusBar = !actionBarIsLight;
+        } else {
+            int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+            lightStatusBar = !AndroidUtilities.isTablet() && ColorUtils.calculateLuminance(color) >= 0.9 && actionBarTransitionProgress >= 0.85f;
+        }
         if (wasLightStatusBar != null && wasLightStatusBar == lightStatusBar) {
             return;
         }
@@ -945,6 +965,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.theme_params.data = themeParams;
                     req.flags |= 1;
                 }
+                req.flags |= 8;
                 req.url = buttonUrl;
 
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -1037,7 +1058,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             return;
         }
         String botName = currentBot.short_name;
-        description = LocaleController.formatString("BotRemoveFromMenu", R.string.BotRemoveFromMenu, botName);
+        description = LocaleController.formatString("BotRemoveFromMenuAll", R.string.BotRemoveFromMenuAll, botName);
         TLRPC.TL_attachMenuBot finalCurrentBot = currentBot;
         new AlertDialog.Builder(LaunchActivity.getLastFragment().getContext())
                 .setTitle(LocaleController.getString(R.string.BotRemoveFromMenuTitle))

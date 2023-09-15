@@ -122,6 +122,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             }));
         }
     };
+    private boolean hasCustomActionBarBackground;
+    private int customActionBarBackground;
 
     public ChatAttachAlertBotWebViewLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
         super(alert, context, resourcesProvider);
@@ -277,6 +279,21 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     @Override
     public int getCustomBackground() {
         return customBackground;
+    }
+
+    @Override
+    boolean hasCustomActionBarBackground() {
+        return hasCustomActionBarBackground;
+    }
+
+    @Override
+    int getCustomActionBarBackground() {
+        return customActionBarBackground;
+    }
+
+    public void setCustomActionBarBackground(int customActionBarBackground) {
+        hasCustomActionBarBackground = true;
+        this.customActionBarBackground = customActionBarBackground;
     }
 
     public boolean canExpandByRequest() {

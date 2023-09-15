@@ -3681,57 +3681,38 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         if (!TextUtils.isEmpty(botAppMaybe)) {
                             TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             if (user != null && user.bot) {
-                                if (user.bot_attach_menu) {
+                                if (user.bot_attach_menu && !MediaDataController.getInstance(intentAccount).botInAttachMenu(user.id)) {
                                     TLRPC.TL_messages_getAttachMenuBot getAttachMenuBot = new TLRPC.TL_messages_getAttachMenuBot();
                                     getAttachMenuBot.bot = MessagesController.getInstance(intentAccount).getInputUser(peerId);
                                     ConnectionsManager.getInstance(intentAccount).sendRequest(getAttachMenuBot, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                        if (response1 instanceof TLRPC.TL_attachMenuBotsBot) {
-                                            processAttachMenuBot(intentAccount, peerId, attachMenuBotChoose, user, setAsAttachBot);
-                                            if (progress != null) {
-                                                progress.end();
-                                            }
-                                            AndroidUtilities.runOnUIThread(() -> {
+                                        try {
+                                            if (dismissLoading != null) {
                                                 dismissLoading.run();
-                                            });
+                                            }
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
+                                        if (response1 instanceof TLRPC.TL_attachMenuBotsBot) {
+                                            WebAppDisclaimerAlert.show(this, ignore -> {
+                                                user.inactive = false;
+                                                MediaDataController.getInstance(currentAccount).applyAttachMenuBot((TLRPC.TL_attachMenuBotsBot) response1);
+                                                processWebAppBot(intentAccount, username, group, sticker, emoji, botUser, botChat, botChannel, botChatAdminParams, message, contactToken, folderSlug, hasUrl, messageId, channelId, threadId, commentId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, inputInvoiceSlug, theme, voicechat, livestream, state, videoTimestamp, setAsAttachBot, attachMenuBotToOpen, attachMenuBotChoose, botAppMaybe, botAppStartParam, progress, false, storyId, true, user, dismissLoading);
+
+                                                TLRPC.TL_messages_toggleBotInAttachMenu botRequest = new TLRPC.TL_messages_toggleBotInAttachMenu();
+                                                botRequest.bot = MessagesController.getInstance(intentAccount).getInputUser(peerId);
+                                                botRequest.enabled = true;
+                                                botRequest.write_allowed = true;
+
+                                                ConnectionsManager.getInstance(intentAccount).sendRequest(botRequest, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                                    if (response2 instanceof TLRPC.TL_boolTrue) {
+                                                        MediaDataController.getInstance(intentAccount).loadAttachMenuBots(false, true, null);
+                                                    }
+                                                }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
+                                            }, null);
                                         }
                                     }));
                                 } else {
-                                    TLRPC.TL_messages_getBotApp getBotApp = new TLRPC.TL_messages_getBotApp();
-                                    TLRPC.TL_inputBotAppShortName app = new TLRPC.TL_inputBotAppShortName();
-                                    app.bot_id = MessagesController.getInstance(intentAccount).getInputUser(user);
-                                    app.short_name = botAppMaybe;
-                                    getBotApp.app = app;
-                                    ConnectionsManager.getInstance(intentAccount).sendRequest(getBotApp, (response1, error1) -> {
-                                        if (progress != null) {
-                                            progress.end();
-                                        }
-                                        if (error1 != null) {
-                                            AndroidUtilities.runOnUIThread(() -> runLinkRequest(intentAccount, username, group, sticker, emoji, botUser, botChat, botChannel, botChatAdminParams, message, contactToken, folderSlug, hasUrl, messageId, channelId, threadId, commentId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, inputInvoiceSlug, theme, voicechat, livestream, state, videoTimestamp, setAsAttachBot, attachMenuBotToOpen, attachMenuBotChoose, null, null, progress, forceNotInternalForApps, storyId));
-                                        } else {
-                                            TLRPC.TL_messages_botApp botApp = (TLRPC.TL_messages_botApp) response1;
-                                            AndroidUtilities.runOnUIThread(() -> {
-                                                dismissLoading.run();
-
-                                                AtomicBoolean allowWrite = new AtomicBoolean();
-                                                BaseFragment lastFragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                                                Runnable loadBotSheet = () -> {
-                                                    BotWebViewSheet sheet = new BotWebViewSheet(LaunchActivity.this, lastFragment.getResourceProvider());
-                                                    sheet.setParentActivity(LaunchActivity.this);
-                                                    sheet.requestWebView(intentAccount, user.id, user.id, null, null, BotWebViewSheet.TYPE_WEB_VIEW_BOT_APP, 0, false, lastFragment, botApp.app, allowWrite.get(), botAppStartParam, user);
-                                                    sheet.show();
-                                                    if (botApp.inactive || forceNotInternalForApps) {
-                                                        sheet.showJustAddedBulletin();
-                                                    }
-                                                };
-
-                                                if (botApp.inactive || forceNotInternalForApps) {
-                                                    AlertsCreator.createBotLaunchAlert(lastFragment, botApp, user, allowWrite, loadBotSheet);
-                                                } else {
-                                                    loadBotSheet.run();
-                                                }
-                                            });
-                                        }
-                                    });
+                                    processWebAppBot(intentAccount, username, group, sticker, emoji, botUser, botChat, botChannel, botChatAdminParams, message, contactToken, folderSlug, hasUrl, messageId, channelId, threadId, commentId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, inputInvoiceSlug, theme, voicechat, livestream, state, videoTimestamp, setAsAttachBot, attachMenuBotToOpen, attachMenuBotChoose, botAppMaybe, botAppStartParam, progress, false, storyId, false, user, dismissLoading);
                                 }
                                 return;
                             }
@@ -4654,6 +4635,87 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
             } catch (Exception ignore) {}
         }
+    }
+
+    private void processWebAppBot(final int intentAccount,
+                                  final String username,
+                                  final String group,
+                                  final String sticker,
+                                  final String emoji,
+                                  final String botUser,
+                                  final String botChat,
+                                  final String botChannel,
+                                  final String botChatAdminParams,
+                                  final String message,
+                                  final String contactToken,
+                                  final String folderSlug,
+                                  final boolean hasUrl,
+                                  final Integer messageId,
+                                  final Long channelId,
+                                  final Integer threadId,
+                                  final Integer commentId,
+                                  final String game,
+                                  final HashMap<String, String> auth,
+                                  final String lang,
+                                  final String unsupportedUrl,
+                                  final String code,
+                                  final String loginToken,
+                                  final TLRPC.TL_wallPaper wallPaper,
+                                  final String inputInvoiceSlug,
+                                  final String theme,
+                                  final String voicechat,
+                                  final String livestream,
+                                  final int state,
+                                  final int videoTimestamp,
+                                  final String setAsAttachBot,
+                                  final String attachMenuBotToOpen,
+                                  final String attachMenuBotChoose,
+                                  final String botAppMaybe,
+                                  final String botAppStartParam,
+                                  final Browser.Progress progress,
+                                  final boolean forceNotInternalForApps,
+                                  final int storyId,
+                                  boolean justAdded,
+                                  TLRPC.User user,
+                                  Runnable dismissLoading) {
+
+        TLRPC.TL_messages_getBotApp getBotApp = new TLRPC.TL_messages_getBotApp();
+        TLRPC.TL_inputBotAppShortName app = new TLRPC.TL_inputBotAppShortName();
+        app.bot_id = MessagesController.getInstance(intentAccount).getInputUser(user);
+        app.short_name = botAppMaybe;
+        getBotApp.app = app;
+        ConnectionsManager.getInstance(intentAccount).sendRequest(getBotApp, (response1, error1) -> {
+            if (progress != null) {
+                progress.end();
+            }
+            if (error1 != null) {
+                AndroidUtilities.runOnUIThread(() -> runLinkRequest(intentAccount, username, group, sticker, emoji, botUser, botChat, botChannel, botChatAdminParams, message, contactToken, folderSlug, hasUrl, messageId, channelId, threadId, commentId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, inputInvoiceSlug, theme, voicechat, livestream, state, videoTimestamp, setAsAttachBot, attachMenuBotToOpen, attachMenuBotChoose, null, null, progress, forceNotInternalForApps, storyId));
+            } else {
+                TLRPC.TL_messages_botApp botApp = (TLRPC.TL_messages_botApp) response1;
+                AndroidUtilities.runOnUIThread(() -> {
+                    dismissLoading.run();
+
+                    AtomicBoolean allowWrite = new AtomicBoolean();
+                    BaseFragment lastFragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                    Runnable loadBotSheet = () -> {
+                        BotWebViewSheet sheet = new BotWebViewSheet(LaunchActivity.this, lastFragment.getResourceProvider());
+                        sheet.setParentActivity(LaunchActivity.this);
+                        sheet.requestWebView(intentAccount, user.id, user.id, null, null, BotWebViewSheet.TYPE_WEB_VIEW_BOT_APP, 0, false, lastFragment, botApp.app, allowWrite.get(), botAppStartParam, user);
+                        sheet.show();
+                        if (justAdded) {
+                            sheet.showJustAddedBulletin();
+                        }
+                    };
+
+                    if (!user.bot_attach_menu && (botApp.inactive || forceNotInternalForApps)) {
+                        AlertsCreator.createBotLaunchAlert(lastFragment, botApp, user, allowWrite, loadBotSheet);
+                    } else {
+                        loadBotSheet.run();
+                    }
+                });
+            }
+        });
+
     }
 
     private void processAttachMenuBot(int intentAccount, long peerId, String attachMenuBotChoose, TLRPC.User user,  String setAsAttachBot) {

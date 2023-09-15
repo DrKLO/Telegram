@@ -5873,20 +5873,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         totalOffset += storiesOverscroll;
 
-        if (dialogsHintCell != null) {
+        if (dialogsHintCell != null && dialogsHintCell.getVisibility() == View.VISIBLE) {
             if (rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment()) {
                 totalOffset -= dialogsHintCell.getMeasuredHeight() * rightSlidingDialogContainer.openedProgress;
             }
             dialogsHintCell.setTranslationY(totalOffset);
             totalOffset += dialogsHintCell.getMeasuredHeight();
         }
-        if (authHintCell != null) {
+        if (authHintCell != null && authHintCell.getVisibility() == View.VISIBLE) {
             if (rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment()) {
                 totalOffset -= authHintCell.getMeasuredHeight() * rightSlidingDialogContainer.openedProgress;
             }
             float authHintCellTranslation = authHintCell.getMeasuredHeight() * (1f - authHintCellProgress);
             authHintCell.setTranslationY(-authHintCellTranslation + totalOffset);
-            totalOffset += authHintCellTranslation;
+            totalOffset += authHintCell.getMeasuredHeight() - authHintCellTranslation;
         }
         if (fragmentContextView != null) {
             float from = 0;
@@ -9726,7 +9726,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (Build.VERSION.SDK_INT >= 33) {
             permissons.add(Manifest.permission.READ_MEDIA_IMAGES);
             permissons.add(Manifest.permission.READ_MEDIA_VIDEO);
-            permissons.add(Manifest.permission.READ_MEDIA_AUDIO);
             permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         } else if ((Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             permissons.add(Manifest.permission.READ_EXTERNAL_STORAGE);

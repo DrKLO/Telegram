@@ -10561,7 +10561,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             startY = textY + currentMessageObject.textHeight + AndroidUtilities.dp(8);
             linkX = unmovedTextX + AndroidUtilities.dp(1);
         }
-        startY += (int) transitionParams.deltaBottom;
         int linkPreviewY = startY;
         int smallImageStartY = 0;
 

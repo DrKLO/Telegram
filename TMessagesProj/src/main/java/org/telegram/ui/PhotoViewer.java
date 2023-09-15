@@ -14680,14 +14680,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     photosCounterView.setTranslationY(-dp(32));
                     photosCounterView.animate().alpha(1).translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
 
-
                     pickerView.setTranslationY(dp(32));
                     pickerView.animate().alpha(1).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
                     pickerViewSendButton.setTranslationY(dp(32));
                     pickerViewSendButton.setAlpha(0f);
                     pickerViewSendButton.animate().alpha(1).translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-
-                    captionEdit.setAddPhotoVisible(true, true);
 
                     videoPreviewFrame.setTranslationY(dp(32));
                     videoPreviewFrame.animate().alpha(1).translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();

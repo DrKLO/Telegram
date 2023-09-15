@@ -3072,16 +3072,22 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             if (count == 0) {
                 parentAlert.selectedMenuItem.showSubItem(open_in);
                 parentAlert.selectedMenuItem.hideSubItem(compress);
-            } else {
+            } else if (documentsEnabled) {
                 parentAlert.selectedMenuItem.showSubItem(compress);
+            } else {
+                parentAlert.selectedMenuItem.hideSubItem(compress);
             }
         } else {
             parentAlert.selectedMenuItem.showSubItem(group);
+            if (documentsEnabled) {
+                parentAlert.selectedMenuItem.showSubItem(compress);
+            } else {
+                parentAlert.selectedMenuItem.hideSubItem(compress);
+            }
         }
         if (count != 0) {
             parentAlert.selectedMenuItem.hideSubItem(open_in);
         }
-        compressItem.setVisibility(documentsEnabled ? View.VISIBLE : View.GONE);
         if (count > 1) {
             parentAlert.selectedMenuItem.showSubItem(preview_gap);
             parentAlert.selectedMenuItem.showSubItem(preview);

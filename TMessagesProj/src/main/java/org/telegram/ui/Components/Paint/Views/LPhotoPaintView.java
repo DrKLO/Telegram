@@ -32,6 +32,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -93,6 +94,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayoutPhoto;
 import org.telegram.ui.Components.StickerMasksAlert;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Stories.recorder.EmojiBottomSheet;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -217,7 +219,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             } else if (key == Theme.key_actionBarDefaultSubmenuItem) {
                 return 0xFFFFFFFF;
             } else if (key == Theme.key_dialogBackground) {
-                return -14803426;
+                return 0xFF1F1F1F;
             } else if (key == Theme.key_dialogTextBlack) {
                 return -592138;
             } else if (key == Theme.key_dialogTextGray3) {
@@ -233,7 +235,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             } else if (key == Theme.key_chat_emojiPanelIcon) {
                 return -9539985;
             } else if (key == Theme.key_chat_emojiPanelIconSelected) {
-                return -10177041;
+                return 0xffffffff;
             } else if (key == Theme.key_windowBackgroundWhiteBlackText) {
                 return -1;
             } else if (key == Theme.key_featuredStickers_addedIcon) {
@@ -248,8 +250,13 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 return 0xFFFFFFFF;
             } else if (key == Theme.key_profile_tabSelector) {
                 return 0x14FFFFFF;
+            } else if (key == Theme.key_chat_emojiSearchIcon || key == Theme.key_featuredStickers_addedIcon) {
+                return 0xFF878787;
+            } else if (key == Theme.key_chat_emojiSearchBackground) {
+                return 0x2E878787;
+            } else if (key == Theme.key_windowBackgroundGray) {
+                return 0xFF0D0D0D;
             }
-
 
             if (resourcesProvider != null) {
                 return resourcesProvider.getColor(key);
@@ -1330,20 +1337,23 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 detectFaces();
             }
         }, 350);
-        StickerMasksAlert stickerMasksAlert = new StickerMasksAlert(getContext(), facesBitmap == null, resourcesProvider) {
+        EmojiBottomSheet emojiBottomSheet = new EmojiBottomSheet(getContext(), false, resourcesProvider) {
             @Override
-            public void onDismissAnimationStart() {
-                super.onDismissAnimationStart();
-                switchTab(wasSelectedIndex);
+            public boolean canShowWidget(Integer id) {
+                return false;
             }
         };
-        stickerMasksAlert.setImageReceiverNumLevel(4 + 8 + 16, 4 + 8 + 16);
-        stickerMasksAlert.setDelegate((parentObject, sticker) -> createSticker(parentObject, sticker, true));
-        stickerMasksAlert.setOnDismissListener(dialog -> {
+        emojiBottomSheet.whenDocumentSelected((parentObject, document, isGif) -> {
+            StickerView stickerView = createSticker(parentObject, document, true);
+            if (isGif) {
+                stickerView.setScale(1.5f);
+            }
+        });
+        emojiBottomSheet.setOnDismissListener(di -> {
             onOpenCloseStickersAlert(false);
             switchTab(wasSelectedIndex);
         });
-        stickerMasksAlert.show();
+        emojiBottomSheet.show();
         onOpenCloseStickersAlert(true);
     }
 
@@ -2754,6 +2764,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 LPhotoPaintView.this.didSetAnimatedSticker(drawable);
             }
         };
+        if (MessageObject.isTextColorEmoji(sticker)) {
+            view.centerImage.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.SRC_IN));
+        }
         view.centerImage.setLayerNum(4 + 8);
         if (position.position.x == entitiesView.getMeasuredWidth() / 2f) {
             view.setStickyX(EntityView.STICKY_CENTER);

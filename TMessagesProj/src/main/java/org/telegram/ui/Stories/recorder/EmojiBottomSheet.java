@@ -305,6 +305,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     view = new View(getContext());
                 } else {
                     ContextLinkCell cell = new ContextLinkCell(getContext());
+                    cell.getPhotoImage().setLayerNum(7);
                     cell.allowButtonBounce(true);
                     cell.setIsKeyboard(true);
                     cell.setCanPreviewGif(true);
@@ -825,8 +826,10 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 packs.clear();
                 int i = 0;
                 if (currentType == PAGE_TYPE_STICKERS) {
-                    documents.add(widgets);
-                    itemsCount++;
+                    if (hasWidgets()) {
+                        documents.add(widgets);
+                        itemsCount++;
+                    }
 
                     ArrayList<TLRPC.Document> favorites = mediaDataController.getRecentStickers(MediaDataController.TYPE_FAVE);
                     if (favorites != null && !favorites.isEmpty()) {
@@ -1266,6 +1269,10 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
     public boolean canShowWidget(Integer id) {
         return true;
+    }
+
+    public boolean hasWidgets() {
+        return canShowWidget(WIDGET_LOCATION) || canShowWidget(WIDGET_PHOTO);
     }
 
     @Override
@@ -2577,8 +2584,10 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             super(context);
             setPadding(dp(0), 0, dp(0), 0);
 
-            widgets.add(new Button(WIDGET_LOCATION, R.drawable.map_pin3, LocaleController.getString(R.string.StoryWidgetLocation)));
-            widgets.add(new Button(WIDGET_PHOTO, R.drawable.files_gallery, LocaleController.getString(R.string.StoryWidgetPhoto)));
+            if (canShowWidget(WIDGET_LOCATION))
+                widgets.add(new Button(WIDGET_LOCATION, R.drawable.map_pin3, LocaleController.getString(R.string.StoryWidgetLocation)));
+            if (canShowWidget(WIDGET_PHOTO))
+                widgets.add(new Button(WIDGET_PHOTO, R.drawable.files_gallery, LocaleController.getString(R.string.StoryWidgetPhoto)));
         }
 
         private abstract class BaseWidget {

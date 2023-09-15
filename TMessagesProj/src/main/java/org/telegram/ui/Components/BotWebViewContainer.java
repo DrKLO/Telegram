@@ -49,17 +49,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -1214,20 +1211,28 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             case "web_app_set_header_color": {
                 try {
                     JSONObject jsonObject = new JSONObject(eventData);
-                    String key = jsonObject.getString("color_key");
-                    int themeKey = -1;
-                    switch (key) {
-                        case "bg_color": {
-                            themeKey = Theme.key_windowBackgroundWhite;
-                            break;
+                    String overrideColorString = jsonObject.optString("color", null);
+                    if (!TextUtils.isEmpty(overrideColorString)) {
+                        int color = Color.parseColor(overrideColorString);
+                        if (color != 0) {
+                            delegate.onWebAppSetActionBarColor(color, true);
                         }
-                        case "secondary_bg_color": {
-                            themeKey = Theme.key_windowBackgroundGray;
-                            break;
+                    } else {
+                        String key = jsonObject.optString("color_key");
+                        int themeKey = -1;
+                        switch (key) {
+                            case "bg_color": {
+                                themeKey = Theme.key_windowBackgroundWhite;
+                                break;
+                            }
+                            case "secondary_bg_color": {
+                                themeKey = Theme.key_windowBackgroundGray;
+                                break;
+                            }
                         }
-                    }
-                    if (themeKey >= 0) {
-                        delegate.onWebAppSetActionBarColor(themeKey);
+                        if (themeKey >= 0) {
+                            delegate.onWebAppSetActionBarColor(Theme.getColor(themeKey, resourcesProvider), false);
+                        }
                     }
                 } catch (JSONException e) {
                     FileLog.e(e);
@@ -1763,8 +1768,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
          * Called when WebView requests to set action bar color
          *
          * @param colorKey  Color theme key
+         * @param isOverrideColor
          */
-        void onWebAppSetActionBarColor(int colorKey);
+        void onWebAppSetActionBarColor(int colorKey, boolean isOverrideColor);
 
         /**
          * Called when WebView requests to set background color

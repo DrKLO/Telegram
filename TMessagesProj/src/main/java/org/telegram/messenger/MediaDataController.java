@@ -2994,10 +2994,10 @@ public class MediaDataController extends BaseController {
      * @param toggle 0 - remove, 1 - archive, 2 - add
      */
     public void toggleStickerSet(Context context, TLObject stickerSetObject, int toggle, BaseFragment baseFragment, boolean showSettings, boolean showTooltip) {
-        toggleStickerSet(context, stickerSetObject, toggle, baseFragment, showSettings, showTooltip, null);
+        toggleStickerSet(context, stickerSetObject, toggle, baseFragment, showSettings, showTooltip, null, true);
     }
 
-    public void toggleStickerSet(Context context, TLObject stickerSetObject, int toggle, BaseFragment baseFragment, boolean showSettings, boolean showTooltip, Runnable onUndo) {
+    public void toggleStickerSet(Context context, TLObject stickerSetObject, int toggle, BaseFragment baseFragment, boolean showSettings, boolean showTooltip, Runnable onUndo, boolean forget) {
         TLRPC.StickerSet stickerSet;
         TLRPC.TL_messages_stickerSet messages_stickerSet;
 
@@ -3036,7 +3036,7 @@ public class MediaDataController extends BaseController {
                 stickerSets[type].remove(a);
                 if (toggle == 2) {
                     stickerSets[type].add(0, set);
-                } else {
+                } else if (forget) {
                     stickerSetsById.remove(set.set.id);
                     installedStickerSetsById.remove(set.set.id);
                     stickerSetsByName.remove(set.set.short_name);
@@ -7231,6 +7231,19 @@ public class MediaDataController extends BaseController {
                 }
             }
         }
+    }
+
+    public void applyAttachMenuBot(TLRPC.TL_attachMenuBotsBot attachMenuBot) {
+        attachMenuBots.bots.add(attachMenuBot.bot);
+    }
+
+    public boolean botInAttachMenu(long id) {
+        for (int i = 0; i < attachMenuBots.bots.size(); i++) {
+            if (attachMenuBots.bots.get(i).bot_id == id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     //---------------- BOT END ----------------

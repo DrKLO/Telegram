@@ -6,7 +6,11 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.FrameLayout;
 
-public class EntitiesContainerView extends FrameLayout implements ScaleGestureDetector.OnScaleGestureListener, RotationGestureDetector.OnRotationGestureListener {
+import com.google.zxing.common.detector.MathUtils;
+
+import org.telegram.messenger.AndroidUtilities;
+
+public class EntitiesContainerView extends FrameLayout {
 
     public interface EntitiesContainerViewDelegate {
         boolean shouldReceiveTouches();
@@ -15,17 +19,12 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
     }
 
     private EntitiesContainerViewDelegate delegate;
-    private ScaleGestureDetector gestureDetector;
-    private RotationGestureDetector rotationGestureDetector;
     private float previousScale = 1.0f;
     private float previousAngle;
     private boolean hasTransformed;
 
     public EntitiesContainerView(Context context, EntitiesContainerViewDelegate entitiesContainerViewDelegate) {
         super(context);
-
-        gestureDetector = new ScaleGestureDetector(context, this);
-        rotationGestureDetector = new RotationGestureDetector(this);
         delegate = entitiesContainerViewDelegate;
     }
 
@@ -41,6 +40,9 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
         return count;
     }
 
+    private float px, py;
+    private boolean cancelled;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         EntityView selectedEntity = delegate.onSelectedEntityRequest();
@@ -52,62 +54,38 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN) {
                 hasTransformed = false;
-            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_MOVE) {
+                selectedEntity.hasPanned = false;
+                selectedEntity.hasReleased = false;
+                px = event.getX();
+                py = event.getY();
+                cancelled = false;
+            } else if (!cancelled && action == MotionEvent.ACTION_MOVE) {
+                final float x = event.getX();
+                final float y = event.getY();
+                if (hasTransformed || MathUtils.distance(x, y, px, py) > AndroidUtilities.touchSlop) {
+                    hasTransformed = true;
+                    selectedEntity.hasPanned = true;
+                    selectedEntity.pan(x - px, y - py);
+                    px = x;
+                    py = y;
+                }
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                selectedEntity.hasPanned = false;
+                selectedEntity.hasReleased = true;
                 if (!hasTransformed && delegate != null) {
                     delegate.onEntityDeselect();
                 }
+                invalidate();
                 return false;
             }
+        } else {
+            selectedEntity.hasPanned = false;
+            selectedEntity.hasReleased = true;
+            hasTransformed = false;
+            cancelled = true;
+            invalidate();
         }
-
-//        gestureDetector.onTouchEvent(event);
-//        rotationGestureDetector.onTouchEvent(event);
         return true;
-    }
-
-    @Override
-    public boolean onScale(ScaleGestureDetector detector) {
-        float sf = detector.getScaleFactor();
-        float newScale = sf / previousScale;
-
-        EntityView view = delegate.onSelectedEntityRequest();
-        view.scale(newScale);
-
-        previousScale = sf;
-
-        return false;
-    }
-
-    @Override
-    public boolean onScaleBegin(ScaleGestureDetector detector) {
-        previousScale = 1.0f;
-        hasTransformed = true;
-        return true;
-    }
-
-    @Override
-    public void onScaleEnd(ScaleGestureDetector detector) {
-
-    }
-
-    @Override
-    public void onRotationBegin(RotationGestureDetector rotationDetector) {
-        previousAngle = rotationDetector.getStartAngle();
-        hasTransformed = true;
-    }
-
-    @Override
-    public void onRotation(RotationGestureDetector rotationDetector) {
-        EntityView view = delegate.onSelectedEntityRequest();
-        float angle = rotationDetector.getAngle();
-        float delta = previousAngle - angle;
-        view.rotate(view.getRotation() + delta);
-        previousAngle = angle;
-    }
-
-    @Override
-    public void onRotationEnd(RotationGestureDetector rotationDetector) {
-
     }
 
     @Override

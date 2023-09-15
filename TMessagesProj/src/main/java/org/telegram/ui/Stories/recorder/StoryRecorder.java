@@ -3259,6 +3259,8 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             previewView.updatePauseReason(5, false);
             previewView.updatePauseReason(7, false);
             videoTimeView.setVisibility(outputEntry != null && outputEntry.duration >= 30_000 ? View.VISIBLE : View.GONE);
+            captionContainer.setAlpha(1f);
+            captionContainer.setTranslationY(0);
         }
         if (toPage == PAGE_CAMERA && showSavedDraftHint) {
             getDraftSavedHint().setVisibility(View.VISIBLE);

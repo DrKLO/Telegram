@@ -68,8 +68,8 @@ public class EntityView extends FrameLayout {
     private float previousLocationX,  previousLocationY;
     private float previousLocationX2, previousLocationY2;
     private float previousLocationCX,  previousLocationCY;
-    private boolean hasPanned = false;
-    private boolean hasReleased = false;
+    public boolean hasPanned = false;
+    public boolean hasReleased = false;
     private boolean hasTransformed = false;
     private boolean announcedDrag = false;
     private boolean announcedMultitouchDrag = false;

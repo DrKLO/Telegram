@@ -994,18 +994,18 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }));
     }
 
-    public static void uninstallSet(BaseFragment fragment, TLRPC.TL_messages_stickerSet set, boolean showBulletin, Runnable onUndo) {
+    public static void uninstallSet(BaseFragment fragment, TLRPC.TL_messages_stickerSet set, boolean showBulletin, Runnable onUndo, boolean forget) {
         if (fragment == null || set == null || fragment.getFragmentView() == null) {
             return;
         }
-        MediaDataController.getInstance(fragment.getCurrentAccount()).toggleStickerSet(fragment.getFragmentView().getContext(), set, 0, fragment, true, showBulletin, onUndo);
+        MediaDataController.getInstance(fragment.getCurrentAccount()).toggleStickerSet(fragment.getFragmentView().getContext(), set, 0, fragment, true, showBulletin, onUndo, forget);
     }
 
     public static void uninstallSet(Context context, TLRPC.TL_messages_stickerSet set, boolean showBulletin, Runnable onUndo) {
         if (set == null) {
             return;
         }
-        MediaDataController.getInstance(UserConfig.selectedAccount).toggleStickerSet(context, set, 0, null, true, showBulletin, onUndo);
+        MediaDataController.getInstance(UserConfig.selectedAccount).toggleStickerSet(context, set, 0, null, true, showBulletin, onUndo, true);
     }
 
     private ValueAnimator loadAnimator;
@@ -1607,7 +1607,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 removeButtonView.setOnClickListener(e -> {
                     uninstallSet(dummyFragment, set, true, () -> {
                         toggle(true, true);
-                    });
+                    }, true);
                     toggle(false, true);
                 });
                 removeButtonView.setClickable(false);
