@@ -618,7 +618,7 @@ public class TranslateController extends BaseController {
 
     private ArrayList<Integer> pendingLanguageChecks = new ArrayList<>();
     private void checkLanguage(MessageObject messageObject) {
-        if (!LanguageDetector.hasSupport()) {
+        if (true) {
             return;
         }
         if (!isTranslatable(messageObject) || messageObject.messageOwner == null || TextUtils.isEmpty(messageObject.messageOwner.message)) {
@@ -641,20 +641,11 @@ public class TranslateController extends BaseController {
         pendingLanguageChecks.add(hash);
 
         Utilities.stageQueue.postRunnable(() -> {
-            LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
-                String detectedLanguage = lng;
-                if (detectedLanguage == null) {
-                    detectedLanguage = UNKNOWN_LANGUAGE;
-                }
-                messageObject.messageOwner.originalLanguage = detectedLanguage;
-                getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-                pendingLanguageChecks.remove((Integer) hash);
-                checkDialogTranslatable(messageObject);
-            }), err -> AndroidUtilities.runOnUIThread(() -> {
+            AndroidUtilities.runOnUIThread(() -> {
                 messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
                 getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
                 pendingLanguageChecks.remove((Integer) hash);
-            }));
+            });
         });
     }
 
@@ -1023,7 +1014,7 @@ public class TranslateController extends BaseController {
 
     // ensure dialogId in storyItem is valid
     public void detectStoryLanguage(TL_stories.StoryItem storyItem) {
-        if (storyItem == null || storyItem.detectedLng != null || storyItem.caption == null || storyItem.caption.length() == 0 || !LanguageDetector.hasSupport()) {
+        if (storyItem == null || storyItem.detectedLng != null || storyItem.caption == null || storyItem.caption.length() == 0 || true) {
             return;
         }
 
@@ -1033,15 +1024,15 @@ public class TranslateController extends BaseController {
         }
         detectingStories.add(key);
 
-        LanguageDetector.detectLanguage(storyItem.caption, lng -> AndroidUtilities.runOnUIThread(() -> {
+        /*LanguageDetector.detectLanguage(storyItem.caption, lng -> AndroidUtilities.runOnUIThread(() -> {
             storyItem.detectedLng = lng;
             getMessagesController().getStoriesController().getStoriesStorage().putStoryInternal(storyItem.dialogId, storyItem);
             detectingStories.remove(key);
-        }), err -> AndroidUtilities.runOnUIThread(() -> {
+        }), err -> AndroidUtilities.runOnUIThread(() -> {*/
             storyItem.detectedLng = UNKNOWN_LANGUAGE;
             getMessagesController().getStoriesController().getStoriesStorage().putStoryInternal(storyItem.dialogId, storyItem);
             detectingStories.remove(key);
-        }));
+        //}));
     }
 
     public boolean canTranslateStory(TL_stories.StoryItem storyItem) {
@@ -1142,7 +1133,7 @@ public class TranslateController extends BaseController {
     private final HashSet<MessageKey> translatingPhotos = new HashSet<>();
 
     public void detectPhotoLanguage(MessageObject messageObject, Utilities.Callback<String> done) {
-        if (messageObject == null || messageObject.messageOwner == null || !LanguageDetector.hasSupport() || TextUtils.isEmpty(messageObject.messageOwner.message)) {
+        if (messageObject == null || messageObject.messageOwner == null || true || TextUtils.isEmpty(messageObject.messageOwner.message)) {
             return;
         }
         if (!TextUtils.isEmpty(messageObject.messageOwner.originalLanguage)) {
@@ -1158,21 +1149,21 @@ public class TranslateController extends BaseController {
         }
         detectingPhotos.add(key);
 
-        LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
+        /*LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
             messageObject.messageOwner.originalLanguage = lng;
             getMessagesStorage().updateMessageCustomParams(key.dialogId, messageObject.messageOwner);
             detectingPhotos.remove(key);
             if (done != null) {
                 done.run(lng);
             }
-        }), err -> AndroidUtilities.runOnUIThread(() -> {
+        }), err -> AndroidUtilities.runOnUIThread(() -> {*/
             messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
             getMessagesStorage().updateMessageCustomParams(key.dialogId, messageObject.messageOwner);
             detectingPhotos.remove(key);
             if (done != null) {
                 done.run(UNKNOWN_LANGUAGE);
             }
-        }));
+        //}));
     }
 
     public boolean canTranslatePhoto(MessageObject messageObject, String detectedLanguage) {
