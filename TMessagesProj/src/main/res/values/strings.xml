@@ -8493,4 +8493,8 @@
     <string name="DisableLockedAnimatedEmoji">Hide locked animated emoji in panel</string>
     <string name="DisableParametersFromBotLinks">Disable parameters from bot links</string>
     <string name="LockPremium">Lock premium features</string>
+    <string name="DeleteAllUnpinnedMessages">Delete all unpinned messages</string>
+    <string name="DeleteAllUnpinnedMessagesInfo">Are you sure you want **delete all unpinned messages** from this chat?</string>
+    <string name="AddDeleteAllUnpinnedMessages">Add "Delete all unpinned messages" to menu</string>
+    <string name="AddDeleteAllUnpinnedMessagesInfo">EXPERIMENTAL.</string>
 </resources>
