@@ -403,7 +403,7 @@ public class StoriesUtilities {
                 drawSegment(canvas, rectTmp, globalPaint, startAngle, endAngle, params, isForum);
                 globalPaint.setAlpha(255);
             }
-            // canvas.drawCircle(rectTmp.centerX(), rectTmp.centerY(), rectTmp.width() / 2f, localPaint);
+            // *canvas.drawCircle(rectTmp.centerX(), rectTmp.centerY(), rectTmp.width() / 2f, localPaint);
         } else {
             float step = 360 / (float) storiesCount;
             int gap = storiesCount > 20 ? 3 : 5;
@@ -489,16 +489,16 @@ public class StoriesUtilities {
         view.invalidate();
 
         if (params.inc) {
-            canvas.drawArc(rectTmp, params.globalAngle, 360 * params.sweepAngle, false, paint);
+            drawArcFork(canvas, rectTmp, params.globalAngle, 360 * params.sweepAngle, false, paint);
         } else {
-            canvas.drawArc(rectTmp, params.globalAngle + 360, -360 * (params.sweepAngle), false, paint);
+            drawArcFork(canvas, rectTmp, params.globalAngle + 360, -360 * (params.sweepAngle), false, paint);
         }
 
         for (int i = 0; i < ANIMATION_SEGMENT_COUNT; i++) {
             float startAngle = i * len + 10;
             float endAngle = startAngle + len - 10;
             float segmentLen = endAngle - startAngle;
-            canvas.drawArc(rectTmp, params.globalAngle + startAngle, segmentLen, false, paint);
+            drawArcFork(canvas, rectTmp, params.globalAngle + startAngle, segmentLen, false, paint);
         }
     }
 
@@ -551,6 +551,51 @@ public class StoriesUtilities {
         }
     }
 
+    private final static android.graphics.Path pathTmp = new android.graphics.Path();
+    private final static double[] Radiuses = { 1, 1, 1, 1.001, 1.002, 1.003, 1.005, 1.007, 1.009, 1.012, 1.015, 1.018, 1.022, 1.026, 1.03, 1.035, 1.04, 1.045, 1.051, 1.057, 1.064, 1.071, 1.078, 1.086, 1.094, 1.103, 1.11201, 1.12201, 1.13201, 1.14301, 1.15401, 1.16601, 1.17801, 1.19201, 1.20601, 1.22001, 1.23501, 1.25101, 1.26801, 1.28601, 1.30501, 1.32402, 1.34502, 1.36602, 1.38902, 1.41302, 1.38902, 1.36602, 1.34502, 1.32402, 1.30501, 1.28601, 1.26801, 1.25101, 1.23501, 1.22001, 1.20601, 1.19201, 1.17801, 1.16601, 1.15401, 1.14301, 1.13201, 1.12201, 1.11201, 1.103, 1.094, 1.086, 1.078, 1.071, 1.064, 1.057, 1.051, 1.045, 1.04, 1.035, 1.03, 1.026, 1.022, 1.018, 1.015, 1.012, 1.009, 1.007, 1.005, 1.003, 1.002, 1.001, 1, 1 };
+    private final static short[][] CornersSign = new short[][]{ {-1, -1}, {-1 ,1}, {1, 1}, {1, -1} };
+    private final static short[] Corners = { 225, 315, 405, 495 };
+    private static void drawArcFork(Canvas canvas, RectF oval, float startAngle, float sweepAngle, boolean useCenter, Paint paint) {
+        if (!MessagesController.getGlobalMainSettings().getBoolean("squareAvatars", false)) {
+            canvas.drawArc(oval, startAngle, sweepAngle, useCenter, paint);
+            return;
+        }
+        // The range of passed values in startAngle is [-90, 270].
+        startAngle += 270;
+        float a = startAngle;
+        float b = startAngle + sweepAngle;
+        float r = oval.width() / 2;
+        if (a < 0 || b < 0) {
+            return;
+        }
+
+        double aRad = Math.PI / 2 - Math.toRadians(a);
+        double bRad = Math.PI / 2 - Math.toRadians(b);
+
+        double aR = Radiuses[(int)(a - ((int)(a / 90.0) * 90))] * r;
+        double aX = aR * Math.cos(aRad);
+        double aY = aR * Math.sin(aRad);
+
+        double bR = Radiuses[(int)(b - ((int)(b / 90.0) * 90))] * r;
+        double bX = bR * Math.cos(bRad);
+        double bY = bR * Math.sin(bRad);
+
+        pathTmp.reset();
+
+        float shiftX = oval.left + r;
+        float shiftY = oval.top + r;
+
+        pathTmp.moveTo(shiftX - (float)aX, shiftY + (float)aY);
+        for (short i = 0; i < CornersSign.length; i++) {
+            if (Corners[i] > a && Corners[i] < b) {
+                pathTmp.lineTo(shiftX - CornersSign[i][0] * r, shiftY + CornersSign[i][1] * r);
+            }
+        }
+        pathTmp.lineTo(shiftX - (float)bX, shiftY + (float)bY);
+
+        canvas.drawPath(pathTmp, paint);
+    }
+
     private static final RectF forumRect = new RectF();
 
     private static void drawCircleInternal(Canvas canvas, View view, AvatarStoryParams params, Paint paint, boolean isForum) {
@@ -561,9 +606,13 @@ public class StoriesUtilities {
             return;
         }
         if (params.progressToArc == 0) {
-            canvas.drawCircle(rectTmp.centerX(), rectTmp.centerY(), rectTmp.width() / 2f, paint);
+            if (MessagesController.getGlobalMainSettings().getBoolean("squareAvatars", false)) {
+                canvas.drawRect(rectTmp.left, rectTmp.top, rectTmp.right, rectTmp.bottom, paint);
+            } else {
+                canvas.drawCircle(rectTmp.centerX(), rectTmp.centerY(), rectTmp.width() / 2f, paint);
+            }
         } else {
-            canvas.drawArc(rectTmp, 360 + params.progressToArc / 2f, 360 - params.progressToArc, false, paint);
+            drawArcFork(canvas, rectTmp, 360 + params.progressToArc / 2f, 360 - params.progressToArc, false, paint);
         }
     }
 
@@ -604,10 +653,10 @@ public class StoriesUtilities {
         } else if (params.isLast) {
             drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2 + 180, params.progressToArc / 2 + 180);
         } else if (params.isFirst) {
-            // canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
+            // drawArcFork(canvas, rectTmp, startAngle, endAngle - startAngle, false, paint);
             drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2, params.progressToArc / 2);
         } else {
-            canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
+            drawArcFork(canvas, rectTmp, startAngle, endAngle - startAngle, false, paint);
         }
     }
 
@@ -914,19 +963,19 @@ public class StoriesUtilities {
         if (startAngle < excludeStartAngle && endAngle < excludeStartAngle + len) {
             float endAngle2 = Math.min(endAngle, excludeStartAngle);
             drawn = true;
-            canvas.drawArc(rect, startAngle, endAngle2 - startAngle, false, paint);
+            drawArcFork(canvas, rect, startAngle, endAngle2 - startAngle, false, paint);
         }
 
         startAngle = Math.max(startAngle, excludeAndAngle);
         endAngle = Math.min(endAngle, 360 + excludeStartAngle);
         if (endAngle < startAngle) {
             if (!drawn && !(originalStart > excludeStartAngle && originalEnd < excludeAndAngle)) {
-                canvas.drawArc(rect, originalStart, originalEnd - originalStart, false, paint);
+                drawArcFork(canvas, rect, originalStart, originalEnd - originalStart, false, paint);
             }
             return;
         }
 
-        canvas.drawArc(rect, startAngle, endAngle - startAngle, false, paint);
+        drawArcFork(canvas, rect, startAngle, endAngle - startAngle, false, paint);
     }
 
     public static boolean isExpired(int currentAccount, TL_stories.StoryItem storyItem) {

@@ -41,6 +41,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int rowCount;
     private int sectionRow1;
 
+    private int squareAvatarsRow;
     private int inappCameraRow;
 
     private int emptyRow;
@@ -52,6 +53,7 @@ public class ForkSettingsActivity extends BaseFragment {
         rowCount = 0;
         
         sectionRow1 = rowCount++;
+        squareAvatarsRow = rowCount++;
         inappCameraRow = rowCount++;
 
         return true;
@@ -94,7 +96,16 @@ public class ForkSettingsActivity extends BaseFragment {
         listView.setLayoutAnimation(null);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setOnItemClickListener((view, position, x, y) -> {
-            if (position == inappCameraRow) {
+            if (position == squareAvatarsRow) {
+                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                boolean squareAvatars = preferences.getBoolean("squareAvatars", true);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("squareAvatars", !squareAvatars);
+                editor.commit();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(!squareAvatars);
+                }
+            } else if (position == inappCameraRow) {
                 SharedConfig.toggleInappCamera();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.inappCamera);
@@ -136,7 +147,11 @@ public class ForkSettingsActivity extends BaseFragment {
                 case 3: {
                     TextCheckCell textCell = (TextCheckCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    if (position == inappCameraRow) {
+                    if (position == squareAvatarsRow) {
+                        String t = LocaleController.getString("SquareAvatars", R.string.SquareAvatars);
+                        String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("squareAvatars", true), false, false);
+                    } else if (position == inappCameraRow) {
                         String t = LocaleController.getString("InAppCamera", R.string.InAppCamera);
                         String info = LocaleController.getString("InAppCameraInfo", R.string.InAppCameraInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("inappCamera", true), false, false);
@@ -156,7 +171,7 @@ public class ForkSettingsActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            boolean fork = false
+            boolean fork = position == squareAvatarsRow
                         || position == inappCameraRow;
             return fork;
         }
@@ -199,7 +214,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 return 1;
             } else if (0 == 1) {
                 return 2;
-            } else if (false
+            } else if (position == squareAvatarsRow
                 || position == inappCameraRow) {
                 return 3;
             } else if (position == sectionRow1) {
