@@ -651,6 +651,23 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     args.putInt("type", MediaActivity.TYPE_STORIES);
                     drawerLayoutContainer.closeDrawer(true);
                     presentFragment(new MediaActivity(args, null));
+                } else if (id == DrawerLayoutAdapter.FORK_NEW_STORY_ITEM) {
+                        final StoriesController.StoryLimit storyLimit = MessagesController.getInstance(currentAccount).getStoriesController().checkStoryLimit();
+                        if (storyLimit != null) {
+                            BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
+                            LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(
+                                fragment,
+                                this,
+                                storyLimit.getLimitReachedType(),
+                                currentAccount,
+                                null);
+                            fragment.showDialog(limitReachedBottomSheet);
+                            limitReachedBottomSheet.onShowPremiumScreenRunnable = () -> drawerLayoutContainer.closeDrawer(false);
+                            return;
+                        }
+
+                        StoryRecorder.getInstance(LaunchActivity.this, currentAccount).open(null);
+                        drawerLayoutContainer.closeDrawer(true);
                 }
             }
         });
