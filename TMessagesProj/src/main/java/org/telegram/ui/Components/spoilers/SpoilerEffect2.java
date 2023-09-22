@@ -540,28 +540,20 @@ public class SpoilerEffect2 {
         }
 
         private void die() {
-            try {
-                if (particlesData != null) {
-                    GLES31.glDeleteBuffers(2, particlesData, 0);
-                    particlesData = null;
-                }
-                if (drawProgram != 0) {
-                    GLES31.glDeleteProgram(drawProgram);
-                    drawProgram = 0;
-                }
-                if (egl != null) {
-                    egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
-                    egl.eglDestroySurface(eglDisplay, eglSurface);
-                    egl.eglDestroyContext(eglDisplay, eglContext);
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (particlesData != null) {
+                GLES31.glDeleteBuffers(2, particlesData, 0);
+                particlesData = null;
             }
-            try {
-                surfaceTexture.release();
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (drawProgram != 0) {
+                GLES31.glDeleteProgram(drawProgram);
+                drawProgram = 0;
             }
+            if (egl != null) {
+                egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+                egl.eglDestroySurface(eglDisplay, eglSurface);
+                egl.eglDestroyContext(eglDisplay, eglContext);
+            }
+            surfaceTexture.release();
 
             checkGlErrors();
         }

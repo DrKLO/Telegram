@@ -13,9 +13,11 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 
@@ -32,6 +34,8 @@ public class VolumeSliderView extends View {
     private float minVolume = 0;
     private float maxVolume = 1.5f;
     private float value;
+    private boolean valueIsAnimated;
+    private AnimatedFloat valueAnimated = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
     private Utilities.Callback<Float> onValueChange;
 
     private final Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -95,8 +99,11 @@ public class VolumeSliderView extends View {
 
         canvas.save();
         AndroidUtilities.rectTmp.set(0, 0, w, h);
+        clipPath.rewind();
         clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
         canvas.clipPath(clipPath);
+
+        float value = valueIsAnimated ? valueAnimated.set(this.value) : this.value;
 
         canvas.saveLayerAlpha(0, 0, w, h, 0xFF, Canvas.ALL_SAVE_FLAG);
 
@@ -131,6 +138,7 @@ public class VolumeSliderView extends View {
 
 
     private float lastTouchX;
+    private long pressTime;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -139,18 +147,34 @@ public class VolumeSliderView extends View {
         }
 
         final float x = event.getX();
-        if (event.getAction() == MotionEvent.ACTION_MOVE || event.getAction() == MotionEvent.ACTION_UP) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            pressTime = System.currentTimeMillis();
+            valueIsAnimated = false;
+        } else if (event.getAction() == MotionEvent.ACTION_MOVE || event.getAction() == MotionEvent.ACTION_UP) {
             float pastVolume = this.maxVolume - this.minVolume != 0 ? this.minVolume + this.value * (this.maxVolume - this.minVolume) : 0;
-            value = Utilities.clamp(value + (x - lastTouchX) / w, 1, 0);
+            boolean vibrate = true;
+            if (event.getAction() == MotionEvent.ACTION_UP && (System.currentTimeMillis() - pressTime) < ViewConfiguration.getTapTimeout()) {
+                valueAnimated.set(value, true);
+                value = x / w;
+                valueIsAnimated = true;
+                vibrate = false;
+            } else {
+                value = Utilities.clamp(value + (x - lastTouchX) / w, 1, 0);
+                valueIsAnimated = false;
+            }
             final float volume = this.maxVolume - this.minVolume != 0 ? this.minVolume + this.value * (this.maxVolume - this.minVolume) : 0;
-            if (volume <= this.minVolume && pastVolume > volume || volume >= this.maxVolume && pastVolume < volume) {
-                try {
-                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                } catch (Exception ignore) {}
-            } else if (Math.floor(pastVolume * 5) != Math.floor(volume * 5)) {
-                try {
-                    performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                } catch (Exception ignore) {}
+            if (vibrate) {
+                if (volume <= this.minVolume && pastVolume > volume || volume >= this.maxVolume && pastVolume < volume) {
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                    } catch (Exception ignore) {
+                    }
+                } else if (Math.floor(pastVolume * 5) != Math.floor(volume * 5)) {
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                    } catch (Exception ignore) {
+                    }
+                }
             }
             updateText(volume);
             if (onValueChange != null) {
@@ -166,6 +190,7 @@ public class VolumeSliderView extends View {
         String string = Math.round(volume * 100) + "%";
         if (!TextUtils.equals(text.getText(), string)) {
             text.cancelAnimation();
+            text.setAnimationProperties(.3f, 0, valueIsAnimated ? 320 : 40, CubicBezierInterpolator.EASE_OUT_QUINT);
             text.setText(string);
         }
     }

@@ -220,40 +220,6 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
     }
 
-    public static void drawRawAnimatedEmojis(Canvas canvas, Layout layout, EmojiGroupedSpans stack, float offset, List<SpoilerEffect> spoilers, float boundTop, float boundBottom, float drawingYOffset, float alpha, int fps) {
-        if (canvas == null || layout == null || stack == null) {
-            return;
-        }
-
-        boolean needRestore = false;
-        if (Emoji.emojiDrawingYOffset != 0 || offset != 0) {
-            needRestore = true;
-            canvas.save();
-            canvas.translate(0, Emoji.emojiDrawingYOffset + AndroidUtilities.dp(20 * offset));
-        }
-
-        stack.rawIndex++;
-        for (int k = 0; k < stack.holders.size(); ++k) {
-            AnimatedEmojiHolder holder = stack.holders.get(k);
-            float halfSide = holder.span.measuredSize / 2f;
-            float cx, cy;
-            cx = holder.span.lastDrawnCx;
-            cy = holder.span.lastDrawnCy;
-            holder.drawableBounds.set((int) (cx - halfSide), (int) (cy - halfSide), (int) (cx + halfSide), (int) (cy + halfSide));
-            holder.drawable.setBounds(holder.drawableBounds);
-            boolean nextFrame = false;
-            if (holder.drawable.rawDrawIndex < stack.rawIndex) {
-                holder.drawable.rawDrawIndex = stack.rawIndex;
-                nextFrame = true;
-            }
-            holder.drawable.drawRaw(canvas, nextFrame, fps);
-        }
-
-        if (needRestore) {
-            canvas.restore();
-        }
-    }
-
     private static boolean isInsideSpoiler(Layout layout, int start, int end) {
         if (layout == null || !(layout.getText() instanceof Spanned)) {
             return false;

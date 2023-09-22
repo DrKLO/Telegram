@@ -234,8 +234,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 return -9539985;
             } else if (key == Theme.key_chat_emojiPanelIcon) {
                 return -9539985;
-            } else if (key == Theme.key_chat_emojiPanelIconSelected) {
-                return 0xffffffff;
+//                } else if (key == Theme.key_chat_emojiPanelIconSelected) {
+//                    return -10177041;
             } else if (key == Theme.key_windowBackgroundWhiteBlackText) {
                 return -1;
             } else if (key == Theme.key_featuredStickers_addedIcon) {
@@ -459,6 +459,14 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     }
                     CharSequence charSequence = text;
                     charSequence = Emoji.replaceEmoji(charSequence, textPaintView.getFontMetricsInt(), (int) (textPaintView.getFontSize() * .8f), false);
+                    if (charSequence instanceof Spanned) {
+                        Emoji.EmojiSpan[] spans = ((Spanned) charSequence).getSpans(0, charSequence.length(), Emoji.EmojiSpan.class);
+                        if (spans != null) {
+                            for (int i = 0; i < spans.length; ++i) {
+                                spans[i].scale = .85f;
+                            }
+                        }
+                    }
                     textPaintView.setText(charSequence);
                     setTextAlignment(textPaintView, entity.textAlign);
                     Swatch swatch = textPaintView.getSwatch();
@@ -471,8 +479,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 view.setX(entity.x * paintingSize.width - entity.viewWidth * (1 - entity.scale) / 2);
                 view.setY(entity.y * paintingSize.height - entity.viewHeight * (1 - entity.scale) / 2);
                 view.setPosition(new Point(view.getX() + entity.viewWidth / 2f, view.getY() + entity.viewHeight / 2f));
-                view.setScaleX(entity.scale);
-                view.setScaleY(entity.scale);
+                view.setScale(entity.scale);
                 view.setRotation((float) (-entity.rotation / Math.PI * 180));
             }
         }
@@ -934,11 +941,13 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         return currentEntityView instanceof TextPaintView;
     }
 
-    public float getSelectedEntityCenterY() {
+    public float getSelectedEntityBottom() {
         if (currentEntityView == null) {
-            return getY() + entitiesView.getTop() + entitiesView.getMeasuredHeight() / 2f;
+            return getY() + entitiesView.getMeasuredHeight();
         }
-        return getY() + entitiesView.getTop() + currentEntityView.getPositionY();
+        int[] loc = new int[2];
+        currentEntityView.getLocationInWindow(loc);
+        return loc[1] + currentEntityView.getHeight() * entitiesView.getScaleY();
     }
 
     private TextPaintView createText(boolean select) {
@@ -1148,7 +1157,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             int w = (int) (vw * currentCropState.cropPw * child.getScaleX() / currentCropState.cropScale);
             int h = (int) (vh * currentCropState.cropPh * child.getScaleY() / currentCropState.cropScale);
             float x = (float) Math.ceil((getMeasuredWidth() - w) / 2f) + transformX;
-            float y = (getMeasuredHeight() - actionBarHeight2 - AndroidUtilities.dp(48) + getAdditionalBottom() - h) / 2f + AndroidUtilities.dp(8) + status + transformY;
+            float y = (getMeasuredHeight() - emojiPadding - actionBarHeight2 - AndroidUtilities.dp(48) + getAdditionalBottom() - h) / 2f + AndroidUtilities.dp(8) + status + transformY;
 
             canvas.clipRect(Math.max(0, x), Math.max(0, y), Math.min(x + w, getMeasuredWidth()), Math.min(getMeasuredHeight(), y + h));
             restore = true;
@@ -1403,9 +1412,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         entitiesView.setScaleX(baseScale);
         entitiesView.setScaleY(baseScale);
         entitiesView.measure(MeasureSpec.makeMeasureSpec((int) paintingSize.width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) paintingSize.height, MeasureSpec.EXACTLY));
-        if (currentEntityView != null) {
-            currentEntityView.updateSelectionView();
-        }
+        updateEntitiesSelections();
         selectionContainerView.measure(MeasureSpec.makeMeasureSpec((int) renderWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) renderHeight, MeasureSpec.EXACTLY));
         measureChild(bottomLayout, widthMeasureSpec, heightMeasureSpec);
         measureChild(weightChooserView, widthMeasureSpec, heightMeasureSpec);
@@ -1939,7 +1946,17 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             view.setRotation(rotation);
             view.invalidate();
         }
+        updateEntitiesSelections();
         invalidate();
+    }
+
+    public void updateEntitiesSelections() {
+        for (int i = 0; i < entitiesView.getChildCount(); ++i) {
+            View child = entitiesView.getChildAt(i);
+            if (child == currentEntityView || child instanceof EntityView && ((EntityView) child).isSelectedProgress()) {
+                ((EntityView) child).updateSelectionView();
+            }
+        }
     }
 
     @Override
@@ -2477,6 +2494,26 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     }
                 });
                 parent.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+            }
+
+            if (entityView instanceof StickerView) {
+                TextView flipView = new TextView(getContext());
+                flipView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                flipView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                flipView.setGravity(Gravity.CENTER_VERTICAL);
+                flipView.setEllipsize(TextUtils.TruncateAt.END);
+                flipView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
+                flipView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                flipView.setTag(2);
+                flipView.setText(LocaleController.getString("Flip", R.string.Flip));
+                flipView.setOnClickListener(v -> {
+                    ((StickerView) entityView).mirror(true);
+
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss(true);
+                    }
+                });
+                parent.addView(flipView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
             }
 
             TextView duplicateView = new TextView(getContext());

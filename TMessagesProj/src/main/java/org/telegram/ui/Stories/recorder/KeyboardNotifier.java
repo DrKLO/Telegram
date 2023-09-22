@@ -76,11 +76,8 @@ public class KeyboardNotifier {
     }
 
     public void ignore(boolean ignore) {
-        final boolean update = ignoring && ignore;
         ignoring = ignore;
-        if (update) {
-            update();
-        }
+        update();
     }
 
     public void fire() {

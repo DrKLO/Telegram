@@ -342,19 +342,21 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void animateVisible(boolean visible) {
         if (visible) {
-            currentPrimaryObject = findPrimaryObject();
-            checkCreateReactionsLayout();
-            invalidatePosition(false);
-
             setVisibility(VISIBLE);
-            if (reactionsContainerLayout.isEnabled()) {
-                messageSet = true;
-                reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
-                reactionsContainerLayout.startEnterAnimation(false);
-            } else {
-                messageSet = false;
-                reactionsContainerLayout.setTransitionProgress(1f);
-            }
+            post(() -> {
+                currentPrimaryObject = findPrimaryObject();
+                checkCreateReactionsLayout();
+                invalidatePosition(false);
+
+                if (reactionsContainerLayout.isEnabled()) {
+                    messageSet = true;
+                    reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
+                    reactionsContainerLayout.startEnterAnimation(false);
+                } else {
+                    messageSet = false;
+                    reactionsContainerLayout.setTransitionProgress(1f);
+                }
+            });
         } else {
             messageSet = false;
             ValueAnimator animator = ValueAnimator.ofFloat(1, 0).setDuration(150);

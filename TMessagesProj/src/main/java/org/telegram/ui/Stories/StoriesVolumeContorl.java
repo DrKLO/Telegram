@@ -45,6 +45,27 @@ public class StoriesVolumeContorl extends View {
         return super.onKeyDown(keyCode, event);
     }
 
+    // unmutes only if muted
+    public void unmute() {
+        AudioManager audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        int minVolume = 0;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            minVolume = audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        }
+        int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        if (currentVolume <= minVolume) {
+            adjustVolume(true);
+        } else if (!isVisible) {
+            currentProgress = currentVolume / (float) maxVolume;
+            volumeProgress.set(currentProgress, true);
+            isVisible = true;
+            invalidate();
+            AndroidUtilities.cancelRunOnUIThread(hideRunnuble);
+            AndroidUtilities.runOnUIThread(hideRunnuble, 2000);
+        }
+    }
+
     private void adjustVolume(boolean increase) {
         AudioManager audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);

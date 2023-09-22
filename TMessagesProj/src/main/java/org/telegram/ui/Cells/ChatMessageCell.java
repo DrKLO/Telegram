@@ -4317,6 +4317,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             photoImage.setCrossfadeDuration(ImageReceiver.DEFAULT_CROSSFADE_DURATION);
             photoImage.setCrossfadeByScale(0);
             photoImage.setGradientBitmap(null);
+            photoImage.clearDecorators();
             lastTranslated = messageObject.translated;
             lastSendState = messageObject.messageOwner.send_state;
             lastDeleteDate = messageObject.messageOwner.destroyTime;
@@ -4688,7 +4689,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 TLRPC.StoryItem storyItem = null;
                 TLRPC.ThemeSettings androidThemeSettings = null;
                 if (!drawInstantView) {
-                    if ("telegram_livestream".equals(webpageType)) {
+                    if ("telegram_channel_boost".equals(webpageType)) {
+                        drawInstantView = true;
+                        drawInstantViewType = 18;
+                    } else if ("telegram_livestream".equals(webpageType)) {
                         drawInstantView = true;
                         drawInstantViewType = 11;
                     } else if ("telegram_voicechat".equals(webpageType)) {
@@ -4751,7 +4755,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             storyItem = attribute.storyItem;
                             if (storyItem != null) {
                                 storyItem.messageId = messageObject.getId();
-                                storyItem.dialogId = attribute.user_id;
+                                storyItem.dialogId = DialogObject.getPeerDialogId(attribute.peer);
                                 if (storyItem instanceof TLRPC.TL_storyItemDeleted) {
                                     drawInstantView = false;
                                     hasLinkPreview = false;
@@ -4977,8 +4981,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 "article".equals(type) || "telegram_bot".equals(type) ||
                                 "telegram_user".equals(type) || "telegram_channel".equals(type) ||
                                 "telegram_megagroup".equals(type) || "telegram_voicechat".equals(type) ||
-                                "telegram_livestream".equals(type);
-                        smallImage = !slideshow && (!drawInstantView || drawInstantViewType == 1 || drawInstantViewType == 2 || drawInstantViewType == 9 || drawInstantViewType == 11 || drawInstantViewType == 13) && document == null && isSmallImageType;
+                                "telegram_livestream".equals(type) || "telegram_channel_boost".equals(type);
+                        smallImage = !slideshow && (!drawInstantView || drawInstantViewType == 1 || drawInstantViewType == 2 || drawInstantViewType == 9 || drawInstantViewType == 11 || drawInstantViewType == 13 || drawInstantViewType == 18) && document == null && isSmallImageType;
                         isSmallImage = smallImage && type != null && currentMessageObject.photoThumbs != null;
                     } else if (hasInvoicePreview) {
                         TLRPC.TL_messageMediaInvoice invoice = (TLRPC.TL_messageMediaInvoice) MessageObject.getMedia(messageObject.messageOwner);
@@ -5011,7 +5015,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         isSmallImage = false;
                         smallImage = false;
                     }
-                    if (drawInstantViewType == 11) {
+                    if (drawInstantViewType == 18) {
+                        site_name = LocaleController.getString("BoostChannel", R.string.BoostChannel);
+                    } else if (drawInstantViewType == 11) {
                         site_name = LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat);
                     } else if (drawInstantViewType == 9) {
                         site_name = LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat);
@@ -9060,6 +9066,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 str = LocaleController.getString("OpenLink").toUpperCase();
             } else if (drawInstantViewType == 17) {
                 str = LocaleController.getString("ViewStory").toUpperCase();
+            } else if (drawInstantViewType == 18) {
+                str = LocaleController.getString("BoostLinkButton", R.string.BoostLinkButton);
             } else {
                 str = LocaleController.getString("InstantView", R.string.InstantView);
             }
@@ -10610,7 +10618,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             linkPreviewY += currentMessageObject.textHeight + AndroidUtilities.dp(4);
         }
 
-        if (drawPhotoImage && drawInstantView && drawInstantViewType != 9 && drawInstantViewType != 2 && drawInstantViewType != 13 && drawInstantViewType != 11 && drawInstantViewType != 1 || drawInstantViewType == 6 && imageBackgroundColor != 0) {
+        if (drawPhotoImage && drawInstantView && drawInstantViewType != 9 && drawInstantViewType != 2 && drawInstantViewType != 13 && drawInstantViewType != 11 && drawInstantViewType != 1 && drawInstantViewType != 18 || drawInstantViewType == 6 && imageBackgroundColor != 0) {
             if (linkPreviewY != startY) {
                 linkPreviewY += AndroidUtilities.dp(2);
             }
@@ -10791,7 +10799,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             linkPreviewY += descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1);
         }
 
-        if (drawPhotoImage && (!drawInstantView || drawInstantViewType == 9 || drawInstantViewType == 2 || drawInstantViewType == 11 || drawInstantViewType == 13 || drawInstantViewType == 1)) {
+        if (drawPhotoImage && (!drawInstantView || drawInstantViewType == 9 || drawInstantViewType == 2 || drawInstantViewType == 11 || drawInstantViewType == 13 || drawInstantViewType == 1 || drawInstantViewType == 18)) {
             if (linkPreviewY != startY) {
                 linkPreviewY += AndroidUtilities.dp(2);
             }
@@ -12897,7 +12905,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 CharSequence lastLine;
                 if (messageObject.type == MessageObject.TYPE_STORY) {
                     currentForwardNameString = forwardedString = LocaleController.getString("ForwardedStory", R.string.ForwardedStory);
-                    lastLine = AndroidUtilities.replaceTags(LocaleController.formatString("ForwardedStoryFrom", R.string.ForwardedStoryFrom, getNameFromDialogId(messageObject.messageOwner.media.user_id)));
+                    long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.media.peer);
+                    if (storyDialogId > 0) {
+                        currentForwardUser = MessagesController.getInstance(currentAccount).getUser(storyDialogId);
+                    } else {
+                        currentForwardChannel = MessagesController.getInstance(currentAccount).getChat(-storyDialogId);
+                    }
+                    String name = getNameFromDialogId(storyDialogId);
+                    if (storyDialogId < 0 && currentForwardChannel == null) {
+                        name = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate);
+                    }
+                    lastLine = AndroidUtilities.replaceTags(LocaleController.formatString("ForwardedStoryFrom", R.string.ForwardedStoryFrom, name));
                     forwardedNameWidth = getMaxNameWidth();
                 } else {
                     if (currentForwardChannel != null) {
@@ -15397,6 +15415,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             checkBoxAnimationProgress = visible ? 1.0f : 0.0f;
         }
         invalidate();
+    }
+
+    public boolean isCheckBoxVisible() {
+        return checkBoxVisible || checkBoxAnimationInProgress;
     }
 
     public void setChecked(boolean checked, boolean allChecked, boolean animated) {

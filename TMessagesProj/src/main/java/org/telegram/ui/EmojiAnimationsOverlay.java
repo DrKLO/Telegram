@@ -38,6 +38,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersAlert;
+import org.telegram.ui.Stories.StoryReactionWidgetView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -893,6 +894,82 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         for (int i = 0; i < drawingObjects.size(); i++) {
             drawingObjects.get(i).removing = true;
         }
+    }
+
+    public boolean showAnimationForWidget(StoryReactionWidgetView widgetView) {
+        if (drawingObjects.size() > 12) {
+            return false;
+        }
+        ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(widgetView.mediaArea.reaction);
+        String emoji = visibleReaction.emojicon;
+        if (emoji == null) {
+            TLRPC.Document document = AnimatedEmojiDrawable.findDocument(currentAccount, visibleReaction.documentId);
+            emoji = MessageObject.findAnimatedEmojiEmoticon(document);
+        }
+        MessageObject messageObject = null;
+
+
+        float imageH = widgetView.getMeasuredHeight();
+        float imageW = widgetView.getMeasuredWidth();
+        View parent = (View) widgetView.getParent();
+        if (imageW > parent.getWidth() * 0.5f) {
+            imageH = imageW = parent.getWidth() * 0.4f;
+        }
+//        if (imageH <= 0 || imageW <= 0) {
+//            return false;
+//        }
+
+        emoji = unwrapEmoji(emoji);
+
+        int viewId = widgetView.hashCode();
+        TLRPC.Document viewDocument = null;
+        boolean isOutOwner = widgetView.getTranslationX() > contentLayout.getMeasuredWidth() / 2f;//view.getMessageObject().isOutOwner();
+        if (visibleReaction.emojicon != null && createDrawingObject(emoji, viewId, viewDocument, messageObject, -1, false, false, imageW, imageH, isOutOwner)) {
+            if (!drawingObjects.isEmpty()) {
+                DrawingObject drawingObject = drawingObjects.get(drawingObjects.size() - 1);
+                drawingObject.isReaction = true;
+                drawingObject.lastH = imageH;
+                drawingObject.lastW = imageW;
+                drawingObject.lastX = widgetView.getTranslationX() - drawingObject.lastW / 2f;
+                drawingObject.lastY = widgetView.getTranslationY() - drawingObject.lastW * 1.5f;
+                if (drawingObject.isOut) {
+                    drawingObject.lastX += -drawingObject.lastW * 1.8f;
+                } else {
+                    drawingObject.lastX += -drawingObject.lastW * 0.2f;
+                }
+            }
+            return true;
+        } else if (visibleReaction.documentId !=  0 && widgetView.getAnimatedEmojiDrawable() != null) {
+            int sameAnimationCount = 0;
+            for (int i = 0; i < drawingObjects.size(); i++) {
+                if (drawingObjects.get(i).documentId == visibleReaction.documentId) {
+                    sameAnimationCount++;
+                }
+            }
+            if (sameAnimationCount >= 4) {
+                return false;
+            }
+            DrawingObject drawingObject = new DrawingObject();
+            drawingObject.genericEffect = AnimatedEmojiEffect.createFrom(widgetView.getAnimatedEmojiDrawable(), true, true);
+            drawingObject.randomOffsetX = imageW / 4 * ((random.nextInt() % 101) / 100f);
+            drawingObject.randomOffsetY = imageH / 4 * ((random.nextInt() % 101) / 100f);
+            drawingObject.messageId = viewId;
+            drawingObject.document = null;
+            drawingObject.documentId = visibleReaction.documentId;
+            drawingObject.isOut = isOutOwner;
+            drawingObject.isReaction = true;
+            drawingObject.lastH = imageH;
+            drawingObject.lastW = imageW;
+            drawingObject.lastX = widgetView.getTranslationX() - drawingObject.lastW / 2f;
+            drawingObject.lastY = widgetView.getTranslationY() - drawingObject.lastW * 1.5f;
+            drawingObject.lastX += -drawingObject.lastW * 1.8f;
+            if (attached) {
+                drawingObject.genericEffect.setView(contentLayout);
+            }
+            drawingObjects.add(drawingObject);
+            return true;
+        }
+        return false;
     }
 
     public void setAccount(int currentAccount) {

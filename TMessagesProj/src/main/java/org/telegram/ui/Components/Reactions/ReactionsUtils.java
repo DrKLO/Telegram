@@ -56,4 +56,36 @@ public class ReactionsUtils {
         }
         return "";
     }
+
+    public static void applyForStoryViews(TLRPC.Reaction oldReaction, TLRPC.Reaction newReaction, TLRPC.StoryViews views) {
+        boolean found = false;
+        if (views == null) {
+            return;
+        }
+        for (int i = 0; i < views.reactions.size(); i++) {
+            TLRPC.ReactionCount reactionCount = views.reactions.get(i);
+            if (oldReaction != null) {
+                if (compare(reactionCount.reaction, oldReaction)) {
+                    reactionCount.count--;
+                    if (reactionCount.count <= 0) {
+                        views.reactions.remove(i);
+                        i--;
+                        continue;
+                    }
+                }
+            }
+            if (newReaction != null) {
+                if (compare(reactionCount.reaction, newReaction)) {
+                    reactionCount.count++;
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            TLRPC.ReactionCount reactionCount = new TLRPC.TL_reactionCount();
+            reactionCount.count = 1;
+            reactionCount.reaction = newReaction;
+            views.reactions.add(reactionCount);
+        }
+    }
 }

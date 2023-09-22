@@ -495,6 +495,8 @@ public class DraftsController {
         public float audioLeft, audioRight = 1;
         public float audioVolume = 1;
 
+        public TLRPC.InputPeer peer;
+
         public StoryDraft(@NonNull StoryEntry entry) {
             this.id = entry.draftId;
             this.date = entry.draftDate;
@@ -541,6 +543,8 @@ public class DraftsController {
             this.audioLeft = entry.audioLeft;
             this.audioRight = entry.audioRight;
             this.audioVolume = entry.audioVolume;
+
+            this.peer = entry.peer;
         }
 
         public StoryEntry toEntry() {
@@ -624,6 +628,7 @@ public class DraftsController {
             entry.audioLeft = audioLeft;
             entry.audioRight = audioRight;
             entry.audioVolume = audioVolume;
+            entry.peer = peer;
             return entry;
         }
 
@@ -731,6 +736,11 @@ public class DraftsController {
                 stream.writeFloat(audioLeft);
                 stream.writeFloat(audioRight);
                 stream.writeFloat(audioVolume);
+            }
+            if (peer != null) {
+                peer.serializeToStream(stream);
+            } else {
+                new TLRPC.TL_inputPeerSelf().serializeToStream(stream);
             }
         }
 
@@ -905,6 +915,9 @@ public class DraftsController {
                     audioRight = stream.readFloat(exception);
                     audioVolume = stream.readFloat(exception);
                 }
+            }
+            if (stream.remaining() > 0) {
+                peer = TLRPC.InputPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
     }

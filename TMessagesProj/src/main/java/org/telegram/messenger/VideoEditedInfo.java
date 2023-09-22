@@ -284,19 +284,42 @@ public class VideoEditedInfo {
             entity.rotation = rotation;
             entity.width = width;
             entity.height = height;
+            entity.additionalHeight = additionalHeight;
             entity.text = text;
-            entity.entities.addAll(entities);
+            if (entities != null) {
+                entity.entities = new ArrayList<>();
+                entity.entities.addAll(entities);
+            }
             entity.color = color;
             entity.fontSize = fontSize;
+            entity.textTypeface = textTypeface;
+            entity.textTypefaceKey = textTypefaceKey;
+            entity.textAlign = textAlign;
             entity.viewWidth = viewWidth;
             entity.viewHeight = viewHeight;
+            entity.roundRadius = roundRadius;
             entity.scale = scale;
             entity.textViewWidth = textViewWidth;
             entity.textViewHeight = textViewHeight;
             entity.textViewX = textViewX;
             entity.textViewY = textViewY;
-            entity.textAlign = textAlign;
-            entity.textTypeface = textTypeface;
+            entity.document = document;
+            entity.parentObject = parentObject;
+            entity.metadata = metadata;
+            entity.ptr = ptr;
+            entity.currentFrame = currentFrame;
+            entity.framesPerDraw = framesPerDraw;
+            entity.bitmap = bitmap;
+            entity.view = view;
+            entity.canvas = canvas;
+            entity.animatedFileDrawable = animatedFileDrawable;
+            entity.roundRadiusCanvas = roundRadiusCanvas;
+            entity.mediaArea = mediaArea;
+            entity.mediaGeo = mediaGeo;
+            entity.density = density;
+            entity.W = W;
+            entity.H = H;
+            entity.visibleReaction = visibleReaction;
             return entity;
         }
     }

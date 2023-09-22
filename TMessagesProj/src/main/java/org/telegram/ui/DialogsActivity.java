@@ -83,6 +83,8 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -197,6 +199,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SearchViewPager;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SimpleThemeDescription;
@@ -352,6 +355,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuItem doneItem;
     private ProxyDrawable proxyDrawable;
     private HintView2 storyHint;
+    private boolean canShowStoryHint;
+    private boolean storyHintShown;
     private RLottieImageView floatingButton;
     private FrameLayout floatingButtonContainer;
     private RLottieImageView floatingButton2;
@@ -443,6 +448,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private DialogsHintCell dialogsHintCell;
     private UnconfirmedAuthHintCell authHintCell;
     private float authHintCellProgress;
+    private boolean authHintCellAnimating;
     private boolean dialogsHintCellVisible;
     private boolean authHintCellVisible;
     private Long cacheSize, deviceSize;
@@ -1622,6 +1628,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         float animateFromSelectorPosition;
         boolean animateSwitchingSelector;
         UserListPoller poller;
+        public int additionalPadding;
 
         public DialogsRecyclerView(Context context, ViewPage page) {
             super(context);
@@ -1959,15 +1966,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (hasStories && !actionModeFullyShowed) {
                     t += AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP);
                 }
-                if (authHintCell != null && authHintCellProgress != 0) {
-                    t += authHintCell.getMeasuredHeight() * authHintCellProgress;
+                additionalPadding = 0;
+                if (authHintCell != null && authHintCellProgress != 0 && !authHintCellAnimating) {
+                    t += authHintCell.getMeasuredHeight();
+                    additionalPadding += authHintCell.getMeasuredHeight();
                 }
-                setTopGlowOffset(t);
-                setPadding(0, t, 0, 0);
-                if (hasStories) {
-                    parentPage.progressView.setPaddingTop(t - AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP));
-                } else {
-                    parentPage.progressView.setPaddingTop(t);
+                if (t != getPaddingTop()) {
+                    setTopGlowOffset(t);
+                    setPadding(0, t, 0, 0);
+                    if (hasStories) {
+                        parentPage.progressView.setPaddingTop(t - AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP));
+                    } else {
+                        parentPage.progressView.setPaddingTop(t);
+                    }
+                    for (int i = 0; i < getChildCount(); i++) {
+                        if (getChildAt(i) instanceof DialogsAdapter.LastEmptyView) {
+                            getChildAt(i).requestLayout();
+                        }
+                    }
                 }
                 ignoreLayout = false;
             }
@@ -2220,17 +2236,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (anchorView != null) {
                 if (animationSupportListView != null) {
                     int topPadding = this.topPadding;
-//                    if (hasStories) {
-//                        topPadding -= AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP);
-//                    }
                     animationSupportListView.setPadding(getPaddingLeft(), topPadding, getPaddingLeft(), getPaddingBottom());
                     if (anchorView != null) {
                         DialogsAdapter adapter = (DialogsAdapter) animationSupportListView.getAdapter();
                         int p = adapter.findDialogPosition(anchorView.getDialogId());
                         int offset = (int) (anchorView.getTop() - anchorListView.getPaddingTop() + scrollOffset);
-//                        if (hasStories) {
-//                            offset += AndroidUtilities.dp(DialogStoriesCell.HEIGHT_IN_DP);
-//                        }
                         if (p >= 0) {
                             boolean hasArchive = parentPage.dialogsType == DIALOGS_TYPE_DEFAULT && parentPage.archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && hasHiddenArchive();
                             int fixedOffset = adapter.fixScrollGap(this, p, offset, hasArchive, hasStories, canShowFilterTabsView, opened);
@@ -2701,7 +2711,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         Long emojiStatusId = UserObject.getEmojiStatusDocumentId(user);
         if (emojiStatusId != null) {
             statusDrawable.set(emojiStatusId, animated);
-            actionBar.setRightDrawableOnClick(e -> showSelectStatusDialog());
+            actionBar.setRightDrawableOnClick(e -> {
+                if (dialogStoriesCellVisible && dialogStoriesCell != null && !dialogStoriesCell.isExpanded()) {
+                    scrollToTop(true, true);
+                    return;
+                }
+                showSelectStatusDialog();
+            });
             SelectAnimatedEmojiDialog.preload(currentAccount);
         } else if (user != null && MessagesController.getInstance(currentAccount).isPremiumUser(user)) {
             if (premiumStar == null) {
@@ -2718,7 +2734,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             premiumStar.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
             statusDrawable.set(premiumStar, animated);
-            actionBar.setRightDrawableOnClick(e -> showSelectStatusDialog());
+            actionBar.setRightDrawableOnClick(e -> {
+                if (dialogStoriesCellVisible && dialogStoriesCell != null && !dialogStoriesCell.isExpanded()) {
+                    scrollToTop(true, true);
+                    return;
+                }
+                showSelectStatusDialog();
+            });
             SelectAnimatedEmojiDialog.preload(currentAccount);
         } else {
             statusDrawable.set((Drawable) null, animated);
@@ -2877,6 +2899,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         authHintCellVisible = false;
         authHintCellProgress = 0f;
         authHintCell = null;
+        dialogsHintCell = null;
+        dialogsHintCellVisible = false;
 
         ActionBarMenu menu = actionBar.createMenu();
         if (!onlySelect && searchString == null && folderId == 0) {
@@ -4410,12 +4434,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 StoryRecorder.getInstance(getParentActivity(), currentAccount)
                         .closeToWhenSent(new StoryRecorder.ClosingViewProvider() {
                             @Override
-                            public void preLayout(Runnable runnable) {
+                            public void preLayout(long dialogId, Runnable runnable) {
                                 if (dialogStoriesCell != null) {
                                     scrollToTop(false, true);
                                     invalidateScrollY = true;
                                     fragmentView.invalidate();
-                                    dialogStoriesCell.scrollToFirstCell();
+                                    if (dialogId == 0 || dialogId == getUserConfig().getClientUserId()) {
+                                        dialogStoriesCell.scrollToFirstCell();
+                                    } else {
+                                        dialogStoriesCell.scrollTo(dialogId);
+                                    }
                                     viewPages[0].listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                                         @Override
                                         public boolean onPreDraw() {
@@ -4430,20 +4458,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
 
                             @Override
-                            public StoryRecorder.SourceView getView() {
-                                return StoryRecorder.SourceView.fromStoryCell(dialogStoriesCell != null ? dialogStoriesCell.findSelfStoryCell() : null);
+                            public StoryRecorder.SourceView getView(long dialogId) {
+                                return StoryRecorder.SourceView.fromStoryCell(dialogStoriesCell != null ? dialogStoriesCell.findStoryCell(dialogId) : null);
                             }
                         })
                         .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
             }
         });
 
-        boolean showStoryHint = false;
         if (!isArchive() && initialDialogsType == DIALOGS_TYPE_DEFAULT) {
             if (MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("storyhint", true)) {
                 storyHint = new HintView2(context, HintView2.DIRECTION_RIGHT)
                         .setRounding(8)
-                        .setDuration(-1)
+                        .setDuration(8_000)
                         .setCloseButton(true)
                         .setMaxWidth(165)
                         .setMultilineText(true)
@@ -4452,7 +4479,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         .setBgColor(getThemedColor(Theme.key_undo_background))
                         .setOnHiddenListener(() -> MessagesController.getInstance(currentAccount).getMainSettings().edit().putBoolean("storyhint", false).commit());
                 contentView.addView(storyHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 160, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 80, 0));
-                showStoryHint = true;
             }
         }
 
@@ -4483,9 +4509,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         updateFloatingButtonColor();
         updateStoriesPosting();
-        if (showStoryHint && storyHint != null && storiesEnabled) {
-            storyHint.show();
-        }
 
         searchTabsView = null;
 
@@ -5494,38 +5517,60 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 authHintCell.setVisibility(View.VISIBLE);
             }
             authHintCell.setAlpha(1f);
+
             viewPages[0].listView.requestLayout();
-            if (fragmentView != null) {
-                fragmentView.requestLayout();
-            }
+            fragmentView.requestLayout();
             notificationsLocker.lock();
+            authHintCellAnimating = true;
             ValueAnimator valueAnimator = ValueAnimator.ofFloat(authHintCellProgress, visible ? 1f : 0);
-            valueAnimator.addUpdateListener(animation -> {
-                authHintCellProgress = (float) animation.getAnimatedValue();
-                updateContextViewPosition();
-                viewPages[0].listView.requestLayout();
-            });
-            valueAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    notificationsLocker.unlock();
-                    if (fragmentView != null) {
-                        fragmentView.requestLayout();
-                    }
-                    authHintCellProgress = visible ? 1f : 0;
-                    if (!visible) {
-                        authHintCell.setVisibility(View.GONE);
+
+            int pos = viewPages[0].layoutManager.findFirstVisibleItemPosition();
+            int childTop = 0;
+            if (pos != RecyclerView.NO_POSITION) {
+                childTop = viewPages[0].layoutManager.findViewByPosition(pos).getTop();
+                childTop += visible ? 0 : -authHintCell.getMeasuredHeight();
+            }
+            int finalChildTop = childTop;
+            AndroidUtilities.doOnLayout(fragmentView, () -> {
+                float listDy = authHintCell.getMeasuredHeight();
+                if (!visible) {
+                    View view = viewPages[0].layoutManager.findViewByPosition(pos);
+                    //look at real visible views difference
+                    if (view != null) {
+                        int newTop = view.getTop();
+                        listDy += (finalChildTop - newTop);
                     }
                 }
+                float finalListDy = listDy;
+                viewPages[0].listView.setTranslationY(finalListDy * authHintCellProgress);
+                valueAnimator.addUpdateListener(animation -> {
+                    authHintCellProgress = (float) animation.getAnimatedValue();
+                    viewPages[0].listView.setTranslationY(finalListDy * authHintCellProgress);
+                    updateContextViewPosition();
+                });
+                valueAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        notificationsLocker.unlock();
+                        authHintCellAnimating = false;
+                        authHintCellProgress = visible ? 1f : 0;
+                        fragmentView.requestLayout();
+                        viewPages[0].listView.requestLayout();
+                        viewPages[0].listView.setTranslationY(0);
+                        if (!visible) {
+                            authHintCell.setVisibility(View.GONE);
+                        }
+                    }
+                });
+                valueAnimator.setDuration(250);
+                valueAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                valueAnimator.start();
             });
-            valueAnimator.setDuration(250);
-            valueAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            valueAnimator.start();
         }
     }
 
     private void updateDialogsHint() {
-        if (dialogsHintCell == null || getContext() == null) {
+        if (dialogsHintCell == null || fragmentView == null || getContext() == null) {
             return;
         }
         if (!getMessagesController().getUnconfirmedAuthController().auths.isEmpty() && folderId == 0 && initialDialogsType == DIALOGS_TYPE_DEFAULT) {
@@ -5533,9 +5578,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             dialogsHintCell.setVisibility(View.GONE);
             if (authHintCell == null) {
                 authHintCell = new UnconfirmedAuthHintCell(getContext());
-                if (fragmentView instanceof ContentView) {
-                    ((ContentView) fragmentView).addView(authHintCell);
-                }
+                ((ContentView) fragmentView).addView(authHintCell);
             }
             authHintCell.set(DialogsActivity.this, currentAccount);
             updateAuthHintCellVisibility(true);
@@ -6664,6 +6707,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
+        if (storyHint != null) {
+            storyHint.hide();
+        }
+        Bulletin.hideVisible();
         return b;
     }
 
@@ -6760,6 +6807,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             undoView[0].hide(true, 0);
         }
         super.onBecomeFullyHidden();
+        canShowStoryHint = true;
     }
 
     @Override
@@ -6784,6 +6832,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     optionsItem.showSubItem(6);
                 }
             }
+        }
+        updateFloatingButtonOffset();
+        if (canShowStoryHint && !storyHintShown && storyHint != null && storiesEnabled) {
+            storyHintShown = true;
+            canShowStoryHint = false;
+            storyHint.show();
         }
     }
 
@@ -9724,9 +9778,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             permissons.add(Manifest.permission.GET_ACCOUNTS);
         }
         if (Build.VERSION.SDK_INT >= 33) {
-            permissons.add(Manifest.permission.READ_MEDIA_IMAGES);
-            permissons.add(Manifest.permission.READ_MEDIA_VIDEO);
-            permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                permissons.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+            if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                permissons.add(Manifest.permission.READ_MEDIA_VIDEO);
+            }
+            if (activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
         } else if ((Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             permissons.add(Manifest.permission.READ_EXTERNAL_STORAGE);
             permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);

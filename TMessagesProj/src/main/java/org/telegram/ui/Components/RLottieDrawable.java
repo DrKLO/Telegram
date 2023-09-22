@@ -1365,15 +1365,23 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     }
 
     private int rawBackgroundBitmapFrame = -1;
-    public void drawFrame(Canvas canvas, int frame) {
-        if (rawBackgroundBitmapFrame != frame || backgroundBitmap == null) {
-            if (backgroundBitmap == null) {
-                backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    private Bitmap rawBackgroundBitmap;
+
+    public void cacheFrame(int frame) {
+        if (rawBackgroundBitmapFrame != frame || rawBackgroundBitmap == null) {
+            if (rawBackgroundBitmap == null) {
+                rawBackgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             }
-            int result = getFrame(nativePtr, rawBackgroundBitmapFrame = frame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
+            int result = getFrame(nativePtr, rawBackgroundBitmapFrame = frame, rawBackgroundBitmap, width, height, rawBackgroundBitmap.getRowBytes(), true);
         }
-        AndroidUtilities.rectTmp2.set(0, 0, width, height);
-        canvas.drawBitmap(backgroundBitmap, AndroidUtilities.rectTmp2, getBounds(), getPaint());
+    }
+
+    public void drawFrame(Canvas canvas, int frame) {
+        cacheFrame(frame);
+        if (rawBackgroundBitmap != null) {
+            AndroidUtilities.rectTmp2.set(0, 0, width, height);
+            canvas.drawBitmap(rawBackgroundBitmap, AndroidUtilities.rectTmp2, getBounds(), getPaint());
+        }
     }
 
     @Override

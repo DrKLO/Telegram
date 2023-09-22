@@ -59,6 +59,7 @@ public class SpoilerEffectBitmapFactory {
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
                     SpoilerEffect shaderSpoilerEffect = new SpoilerEffect();
+                    shaderSpoilerEffect.setSize(size);
                     shaderSpoilerEffect.setBounds(step * i, step * j - AndroidUtilities.dp(5), step * i + step +  AndroidUtilities.dp(3), step * j + step + AndroidUtilities.dp(5));
                     shaderSpoilerEffect.drawPoints = true;
                     shaderSpoilerEffect.particlePoints = new float[SpoilerEffect.ALPHAS.length][particleCount * 2];

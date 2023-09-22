@@ -2398,7 +2398,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                 });
 
-                if (paymentForm.invoice.recurring) {
+                if (paymentForm.invoice.terms_url != null) {
                     recurrentAcceptCell = new RecurrentPaymentsAcceptCell(context, getResourceProvider());
                     recurrentAcceptCell.setChecked(paymentForm.invoice.recurring && isAcceptTermsChecked);
                     String str = LocaleController.getString(R.string.PaymentCheckoutAcceptRecurrent);
@@ -2406,7 +2406,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     int firstIndex = str.indexOf('*'), lastIndex = str.lastIndexOf('*');
                     if (firstIndex != -1 && lastIndex != -1) {
                         SpannableString acceptTerms = new SpannableString(str.substring(firstIndex + 1, lastIndex));
-                        acceptTerms.setSpan(new URLSpanNoUnderline(paymentForm.invoice.recurring_terms_url), 0, acceptTerms.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        acceptTerms.setSpan(new URLSpanNoUnderline(paymentForm.invoice.terms_url), 0, acceptTerms.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         sb.replace(firstIndex, lastIndex + 1, acceptTerms);
                         str = str.substring(0, firstIndex) + acceptTerms + str.substring(lastIndex + 1);
                     }

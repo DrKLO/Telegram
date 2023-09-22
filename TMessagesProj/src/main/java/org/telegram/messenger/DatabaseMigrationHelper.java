@@ -1370,6 +1370,12 @@ public class DatabaseMigrationHelper {
             version = 133;
         }
 
+        if (version == 133) {
+            database.executeFast("ALTER TABLE unread_push_messages ADD COLUMN topicId INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 134").stepThis().dispose();
+            version = 134;
+        }
+
         return version;
     }
 

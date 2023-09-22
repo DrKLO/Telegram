@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
@@ -150,7 +152,7 @@ public class ItemOptions {
         }
 
         ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
-        subItem.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18 + (LocaleController.isRTL ? 0 : 8)), 0);
+        subItem.setPadding(dp(18), 0, dp(18 + (LocaleController.isRTL ? 0 : 8)), 0);
         subItem.setTextAndIcon(text, iconResId);
 
         subItem.setColors(Theme.getColor(textColorKey, resourcesProvider), Theme.getColor(iconColorKey, resourcesProvider));
@@ -165,7 +167,7 @@ public class ItemOptions {
             }
         });
         if (minWidthDp > 0) {
-            subItem.setMinimumWidth(AndroidUtilities.dp(minWidthDp));
+            subItem.setMinimumWidth(dp(minWidthDp));
             lastLayout.addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
         } else {
             lastLayout.addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -276,10 +278,10 @@ public class ItemOptions {
         final TextView textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        textView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+        textView.setPadding(dp(13), dp(8), dp(13), dp(8));
         textView.setText(text);
         textView.setTag(R.id.fit_width_tag, 1);
-        textView.setMaxWidth(AndroidUtilities.dp(200));
+        textView.setMaxWidth(dp(200));
         lastLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         return this;
     }
@@ -323,7 +325,7 @@ public class ItemOptions {
         if (layout instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
             layout.setBackgroundDrawable(
                 new BlurringShader.StoryBlurDrawer(blurManager, layout, BlurringShader.StoryBlurDrawer.BLUR_TYPE_MENU_BACKGROUND)
-                    .makeDrawable(offsetX + ox + layout.getX(), offsetY + oy + layout.getY(), baseDrawable)
+                    .makeDrawable(offsetX + ox + layout.getX(), offsetY + oy + layout.getY(), baseDrawable, dp(6))
             );
         } else {
             for (int i = 0; i < layout.getChildCount(); ++i) {
@@ -331,7 +333,7 @@ public class ItemOptions {
                 if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
                     child.setBackgroundDrawable(
                         new BlurringShader.StoryBlurDrawer(blurManager, child, BlurringShader.StoryBlurDrawer.BLUR_TYPE_MENU_BACKGROUND)
-                            .makeDrawable(offsetX + ox + layout.getX() + child.getX(), offsetY + oy + layout.getY() + child.getY(), baseDrawable)
+                            .makeDrawable(offsetX + ox + layout.getX() + child.getX(), offsetY + oy + layout.getY() + child.getY(), baseDrawable, dp(6))
                     );
                 }
             }
@@ -388,7 +390,7 @@ public class ItemOptions {
                 if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
                     ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = (ActionBarPopupWindow.ActionBarPopupWindowLayout) child;
                     for (int i = 0; i < popupLayout.getItemsCount(); ++i) {
-                        popupLayout.getItemAt(i).setMinimumWidth(AndroidUtilities.dp(minWidthDp));
+                        popupLayout.getItemAt(i).setMinimumWidth(dp(minWidthDp));
                     }
                 }
             }
@@ -460,7 +462,7 @@ public class ItemOptions {
         }
         int Y;
         if (scrimView != null) {
-            if (forceTop || y + layout.getMeasuredHeight() + AndroidUtilities.dp(16) > AndroidUtilities.displaySize.y) {
+            if (forceTop || y + layout.getMeasuredHeight() + dp(16) > AndroidUtilities.displaySize.y) {
                 // put above scrimView
                 y -= scrimView.getMeasuredHeight();
                 y -= layout.getMeasuredHeight();

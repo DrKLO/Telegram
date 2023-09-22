@@ -17,6 +17,7 @@ configurations.all {
 dependencies {
     implementation project(':TMessagesProj')
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.core:core:1.10.1'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 
@@ -87,12 +88,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
+        HA_hardcore {
+            debuggable false
+            jniDebuggable false
+            signingConfig signingConfigs.debug
+            applicationIdSuffix ".beta"
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+        }
     }
 
     sourceSets.HA_private {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
     sourceSets.HA_public {
+        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
+    }
+    sourceSets.HA_hardcore {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
 

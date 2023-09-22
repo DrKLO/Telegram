@@ -53,6 +53,7 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Stories.StoryWidgetsImageDecorator;
 import org.telegram.ui.Stories.recorder.DominantColors;
 
 public class SharedPhotoVideoCell2 extends FrameLayout {
@@ -192,6 +193,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         videoText = null;
         videoInfoLayot = null;
         showVideoLayout = false;
+        imageReceiver.clearDecorators();
         if (!TextUtils.isEmpty(restrictionReason)) {
             showImageStub = true;
         } else if (messageObject.storyItem != null && messageObject.storyItem.media instanceof TLRPC.TL_messageMediaUnsupported) {
@@ -269,6 +271,9 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
         if (imageReceiver.getBitmap() != null && currentMessageObject.hasMediaSpoilers() && !currentMessageObject.isMediaSpoilersRevealed) {
             blurImageReceiver.setImageBitmap(Utilities.stackBlurBitmapMax(imageReceiver.getBitmap()));
+        }
+        if (messageObject != null && messageObject.storyItem != null) {
+            imageReceiver.addDecorator(new StoryWidgetsImageDecorator(messageObject.storyItem));
         }
 
         invalidate();

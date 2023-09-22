@@ -22,6 +22,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
@@ -66,6 +67,18 @@ public final class BulletinFactory {
             return null;
         }
         return BulletinFactory.of(baseFragment);
+    }
+
+    public static void showForError(TLRPC.TL_error error) {
+        BulletinFactory bulletinFactory = BulletinFactory.global();
+        if (bulletinFactory == null) {
+            return;
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            bulletinFactory.createErrorBulletin(error.code + " " + error.text).show();
+        } else {
+            bulletinFactory.createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
+        }
     }
 
     public enum FileType {

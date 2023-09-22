@@ -248,7 +248,6 @@ public abstract class SelfStoriesPreviewView extends View {
             imageReceiversTmp.get(i).onDetach();
         }
         imageReceiversTmp.clear();
-        //  canvas.drawLine(getMeasuredWidth() / 2f, 0, getMeasuredWidth() / 2f, getMeasuredHeight(), new Paint());
     }
 
     abstract void onDragging();

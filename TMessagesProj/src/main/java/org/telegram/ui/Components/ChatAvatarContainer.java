@@ -148,6 +148,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
         avatarImageView = new BackupImageView(context) {
+
+            StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true);
+
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
@@ -158,6 +161,19 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     }
                 } else {
                     info.setVisibleToUser(false);
+                }
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (allowDrawStories && animatedEmojiDrawable == null) {
+                    params.originalAvatarRect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    params.drawSegments = true;
+                    params.drawInside = true;
+                    params.resourcesProvider = resourcesProvider;
+                    StoriesUtilities.drawAvatarWithStory(parentFragment.getDialogId(), canvas, imageReceiver, params);
+                } else {
+                    super.onDraw(canvas);
                 }
             }
         };

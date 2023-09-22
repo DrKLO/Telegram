@@ -1,6 +1,7 @@
 package org.telegram.messenger.video;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
@@ -251,6 +252,15 @@ public class VideoPlayerHolderBase {
             return;
         }
         paused = true;
+        prepareStub();
+        dispatchQueue.postRunnable(() -> {
+            if (videoPlayer != null) {
+                videoPlayer.pause();
+            }
+        });
+    }
+
+    public void prepareStub() {
         if (surfaceView != null && firstFrameRendered && surfaceView.getHolder().getSurface().isValid()) {
             stubAvailable = true;
             if (playerStubBitmap == null) {
@@ -259,13 +269,11 @@ public class VideoPlayerHolderBase {
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 AndroidUtilities.getBitmapFromSurface(surfaceView, playerStubBitmap);
+                if (playerStubBitmap.getPixel(0, 0) == Color.TRANSPARENT) {
+                    stubAvailable = false;
+                }
             }
         }
-        dispatchQueue.postRunnable(() -> {
-            if (videoPlayer != null) {
-                videoPlayer.pause();
-            }
-        });
     }
 
     public void play() {

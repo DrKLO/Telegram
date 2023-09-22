@@ -2864,6 +2864,9 @@ public class ContactsController extends BaseController {
     }
 
     public static String formatName(TLRPC.User user) {
+        if (user == null) {
+            return "";
+        }
         return formatName(user.first_name, user.last_name, 0);
     }
 

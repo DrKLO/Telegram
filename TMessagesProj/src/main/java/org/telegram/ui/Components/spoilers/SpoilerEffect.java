@@ -65,7 +65,7 @@ public class SpoilerEffect extends Drawable {
 
     private Stack<Particle> particlesPool = new Stack<>();
     private int maxParticles;
-    float[][] particlePoints = new float[ALPHAS.length][MAX_PARTICLES_PER_ENTITY * 2];
+    float[][] particlePoints = new float[ALPHAS.length][MAX_PARTICLES_PER_ENTITY * 5];
     private float[] particleRands = new float[RAND_REPEAT];
     private int[] renderCount = new int[ALPHAS.length];
 
@@ -99,6 +99,7 @@ public class SpoilerEffect extends Drawable {
     private int lastColor;
     public boolean drawPoints;
     private static Paint xRefPaint;
+    private int bitmapSize;
 
     private static int measureParticlesPerCharacter() {
         switch (SharedConfig.getDevicePerformanceClass()) {
@@ -320,11 +321,6 @@ public class SpoilerEffect extends Drawable {
                 float hdt = particle.velocity * dt / 500f;
                 particle.x += particle.vecX * hdt;
                 particle.y += particle.vecY * hdt;
-
-                int alphaIndex = particle.alpha;
-                particlePoints[alphaIndex][renderCount[alphaIndex] * 2] = particle.x;
-                particlePoints[alphaIndex][renderCount[alphaIndex] * 2 + 1] = particle.y;
-                renderCount[alphaIndex]++;
             }
 
             if (particles.size() < maxParticles) {
@@ -358,27 +354,56 @@ public class SpoilerEffect extends Drawable {
                     newParticle.alpha = Utilities.fastRandom.nextInt(ALPHAS.length);
                     particles.add(newParticle);
 
-                    int alphaIndex = newParticle.alpha;
-                    particlePoints[alphaIndex][renderCount[alphaIndex] * 2] = newParticle.x;
-                    particlePoints[alphaIndex][renderCount[alphaIndex] * 2 + 1] = newParticle.y;
-                    renderCount[alphaIndex]++;
                 }
             }
 
             for (int a = enableAlpha ? 0 : ALPHAS.length - 1; a < ALPHAS.length; a++) {
                 int renderCount = 0;
-                int off = 0;
+                float paintW = particlePaints[a].getStrokeWidth() / 2f;
                 for (int i = 0; i < particles.size(); i++) {
                     Particle p = particles.get(i);
 
                     if (visibleRect != null && !visibleRect.contains(p.x, p.y) || p.alpha != a && enableAlpha) {
-                        off++;
                         continue;
                     }
 
-                    particlePoints[a][(i - off) * 2] = p.x;
-                    particlePoints[a][(i - off) * 2 + 1] = p.y;
+                    particlePoints[a][renderCount] = p.x;
+                    particlePoints[a][renderCount + 1] = p.y;
                     renderCount += 2;
+                    if (p.x < paintW) {
+                        if (renderCount >= particlePoints[a].length - 2) {
+                            continue;
+                        }
+                        particlePoints[a][renderCount] = p.x + bitmapSize;
+                        particlePoints[a][renderCount + 1] = p.y;
+                        renderCount += 2;
+                    }
+                    if (p.x > bitmapSize - paintW) {
+                        if (renderCount >= particlePoints[a].length - 2) {
+                            continue;
+                        }
+                        particlePoints[a][renderCount] = p.x - bitmapSize;
+                        particlePoints[a][renderCount + 1] = p.y;
+                        renderCount += 2;
+                    }
+                    if (p.y < paintW) {
+                        if (renderCount >= particlePoints[a].length - 2) {
+                            continue;
+                        }
+                        particlePoints[a][renderCount] = p.x;
+                        particlePoints[a][renderCount + 1] = p.y + bitmapSize;
+                        renderCount += 2;
+                    }
+                    if (p.y > bitmapSize - paintW) {
+                        if (renderCount >= particlePoints[a].length - 2) {
+                            continue;
+                        }
+                        particlePoints[a][renderCount] = p.x;
+                        particlePoints[a][renderCount + 1] = p.y - bitmapSize;
+                        renderCount += 2;
+                    }
+
+
                 }
                 canvas.drawPoints(particlePoints[a], 0, renderCount, particlePaints[a]);
             }
@@ -754,6 +779,10 @@ public class SpoilerEffect extends Drawable {
             }
             canvas.restore();
         }
+    }
+
+    public void setSize(int bitmapSize) {
+        this.bitmapSize = bitmapSize;
     }
 
     private static class Particle {

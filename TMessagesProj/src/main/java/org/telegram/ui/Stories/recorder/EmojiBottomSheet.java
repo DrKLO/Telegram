@@ -96,6 +96,7 @@ import org.telegram.ui.Components.EmojiTabsStrip;
 import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
@@ -115,6 +116,8 @@ import org.telegram.ui.WrappedResourceProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1134,12 +1137,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     view = new NoEmojiView(getContext(), currentType == PAGE_TYPE_EMOJI);
                 } else if (viewType == VIEW_TYPE_WIDGETS) {
                     StoryWidgetsCell cell = new StoryWidgetsCell(getContext());
-                    cell.setOnButtonClickListener(id -> {
-                        if (canShowWidget(id)) {
-                            onWidgetSelected.run(id);
-                            dismiss();
-                        }
-                    });
+                    cell.setOnButtonClickListener(EmojiBottomSheet.this::onWidgetClick);
                     view = cell;
                 } else {
                     view = new EmojiListView.EmojiImageView(getContext(), listView);
@@ -1271,8 +1269,12 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         return true;
     }
 
+    public boolean canClickWidget(Integer id) {
+        return true;
+    }
+
     public boolean hasWidgets() {
-        return canShowWidget(WIDGET_LOCATION) || canShowWidget(WIDGET_PHOTO);
+        return canShowWidget(WIDGET_LOCATION) || canShowWidget(WIDGET_AUDIO) || canShowWidget(WIDGET_PHOTO) || canShowWidget(WIDGET_REACTION);
     }
 
     @Override
@@ -1292,6 +1294,22 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 }
             }
         }
+    }
+
+    private void onWidgetClick(int id) {
+        if (canClickWidget(id)) {
+            if (id == WIDGET_AUDIO) {
+                if (!checkAudioPermission(() -> onWidgetClick(id))) {
+                    return;
+                }
+            }
+            onWidgetSelected.run(id);
+            dismiss();
+        }
+    }
+
+    protected boolean checkAudioPermission(Runnable granted) {
+        return true;
     }
 
     private final ViewPagerFixed viewPager;
@@ -2565,7 +2583,9 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
     }
 
     public static final int WIDGET_LOCATION = 0;
+    public static final int WIDGET_AUDIO = 1;
     public static final int WIDGET_PHOTO = 2;
+    public static final int WIDGET_REACTION = 3;
 
     private class StoryWidgetsCell extends View {
 
@@ -2582,12 +2602,15 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         public StoryWidgetsCell(Context context) {
             super(context);
-            setPadding(dp(0), 0, dp(0), 0);
-
+            setPadding(0, 0, 0, 0);
             if (canShowWidget(WIDGET_LOCATION))
                 widgets.add(new Button(WIDGET_LOCATION, R.drawable.map_pin3, LocaleController.getString(R.string.StoryWidgetLocation)));
+            if (canShowWidget(WIDGET_AUDIO))
+                widgets.add(new Button(WIDGET_AUDIO, R.drawable.filled_widget_music, LocaleController.getString(R.string.StoryWidgetAudio)));
             if (canShowWidget(WIDGET_PHOTO))
                 widgets.add(new Button(WIDGET_PHOTO, R.drawable.files_gallery, LocaleController.getString(R.string.StoryWidgetPhoto)));
+            if (canShowWidget(WIDGET_REACTION))
+                widgets.add(new ReactionWidget());
         }
 
         private abstract class BaseWidget {
@@ -2641,6 +2664,109 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 canvas.translate(bounds.left + dp(6 + 24 + 4) - textLeft, bounds.top + height / 2 - layout.getHeight() / 2f);
                 layout.draw(canvas);
                 canvas.restore();
+            }
+        }
+
+        private class ReactionWidget extends BaseWidget {
+
+            ReactionImageHolder reactionHolder = new ReactionImageHolder(StoryWidgetsCell.this);
+            ReactionImageHolder nextReactionHolder = new ReactionImageHolder(StoryWidgetsCell.this);
+            int currentIndex;
+            AnimatedFloat progressToNext = new AnimatedFloat(StoryWidgetsCell.this);
+            Timer timeTimer;
+
+            StoryReactionWidgetBackground background = new StoryReactionWidgetBackground(StoryWidgetsCell.this);
+            ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions = new ArrayList<>();
+            ReactionWidget() {
+                id = WIDGET_REACTION;
+                width = AndroidUtilities.dp(44);
+                height = AndroidUtilities.dp(36);
+
+                List<TLRPC.TL_availableReaction> availableReactions = MediaDataController.getInstance(currentAccount).getReactionsList();
+                for (int i = 0; i < Math.min(availableReactions.size(), 8); i++) {
+                    visibleReactions.add(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(availableReactions.get(i)));
+                }
+                Collections.sort(visibleReactions, (o1, o2) -> {
+                    int i1 = o1.emojicon != null && o1.emojicon.equals("❤") ? -1 : 0;
+                    int i2 = o2.emojicon != null && o2.emojicon.equals("❤") ? -1 : 0;
+                    return i1 - i2;
+                });
+                if (!visibleReactions.isEmpty()) {
+                    reactionHolder.setVisibleReaction(visibleReactions.get(currentIndex));
+                }
+
+                progressToNext.set(1, true);
+            }
+
+            @Override
+            void draw(Canvas canvas, float left, float top) {
+                top -= AndroidUtilities.dp(4);
+                bounds.set((int) left, (int) top, (int) (left + width), (int) (top + width));
+                final float scale = bounce.getScale(.05f);
+                canvas.save();
+                canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
+                background.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+                background.draw(canvas);
+                float imageSize = AndroidUtilities.dp(30);
+                AndroidUtilities.rectTmp2.set(
+                        (int) (bounds.centerX() - imageSize / 2f),
+                        (int) (bounds.centerY() - imageSize / 2f),
+                        (int) (bounds.centerX() + imageSize / 2f),
+                        (int) (bounds.centerY() + imageSize / 2f)
+                );
+                float progress = progressToNext.set(1);
+                nextReactionHolder.setBounds(AndroidUtilities.rectTmp2);
+                reactionHolder.setBounds(AndroidUtilities.rectTmp2);
+                if (progress == 1) {
+                    reactionHolder.draw(canvas);
+                } else {
+                    canvas.save();
+                    canvas.scale(1f - progress, 1f - progress, bounds.centerX(), bounds.top);
+                    nextReactionHolder.setAlpha(1f - progress);
+                    nextReactionHolder.draw(canvas);
+                    canvas.restore();
+
+                    canvas.save();
+                    canvas.scale(progress, progress, bounds.centerX(), bounds.bottom);
+                    reactionHolder.setAlpha(progress);
+                    reactionHolder.draw(canvas);
+                    canvas.restore();
+                }
+                canvas.restore();
+            }
+
+            @Override
+            public void onAttachToWindow(boolean attached) {
+                super.onAttachToWindow(attached);
+                reactionHolder.onAttachedToWindow(attached);
+                nextReactionHolder.onAttachedToWindow(attached);
+                if (timeTimer != null) {
+                    timeTimer.cancel();
+                    timeTimer = null;
+                }
+                if (attached) {
+                    timeTimer = new Timer();
+                    timeTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (visibleReactions.isEmpty()) {
+                                    return;
+                                }
+                                progressToNext.set(0, true);
+                                currentIndex++;
+                                if (currentIndex > visibleReactions.size() - 1) {
+                                    currentIndex = 0;
+                                }
+                                ReactionImageHolder k = nextReactionHolder;
+                                nextReactionHolder.setVisibleReaction(visibleReactions.get(currentIndex));
+                                nextReactionHolder = reactionHolder;
+                                reactionHolder = k;
+                                invalidate();
+                            });
+                        }
+                    }, 2000, 2000);
+                }
             }
         }
 

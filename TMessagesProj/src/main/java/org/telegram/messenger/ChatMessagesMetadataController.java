@@ -87,7 +87,7 @@ public class ChatMessagesMetadataController {
                 continue;
             }
             long storyDialogId = storyItem.dialogId;
-            req.user_id = chatActivity.getMessagesController().getInputUser(storyDialogId);
+            req.peer = chatActivity.getMessagesController().getInputPeer(storyDialogId);
             req.id.add(storyItem.id);
             int storyId = storyItem.id;
             int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {

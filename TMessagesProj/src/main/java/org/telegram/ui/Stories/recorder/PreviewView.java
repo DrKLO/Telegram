@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 import android.view.Gravity;
@@ -94,7 +95,7 @@ public class PreviewView extends FrameLayout {
         if (videoPlayer != null && videoPlayer.getDuration() != C.TIME_UNSET) {
             return videoPlayer.getDuration();
         }
-        return 0;
+        return 1L;
     }
 
     public void set(StoryEntry entry) {
@@ -179,12 +180,19 @@ public class PreviewView extends FrameLayout {
                 }
             });
             audioPlayer.preparePlayer(Uri.fromFile(new File(entry.audioPath)), "other");
+
+            if (videoPlayer != null && getDuration() > 0) {
+                long startPos = (long) (entry.left * getDuration());
+                videoPlayer.seekTo(startPos);
+                timelineView.setProgress(startPos);
+            }
             updateAudioPlayer(true);
         }
     }
 
     public void setupAudio(MessageObject messageObject, boolean animated) {
         if (entry != null) {
+            entry.editedMedia = true;
             if (messageObject == null || messageObject.messageOwner == null) {
                 entry.audioPath = null;
                 entry.audioAuthor = null;
@@ -212,6 +220,9 @@ public class PreviewView extends FrameLayout {
                     }
                 }
                 entry.audioOffset = 0;
+                if (entry.isVideo) {
+                    entry.audioOffset = (long) (entry.left * getDuration());
+                }
                 entry.audioLeft = 0;
                 long scrollDuration = Math.min(entry != null && entry.isVideo ? getDuration() : entry.audioDuration, TimelineView.MAX_SCROLL_DURATION);
                 entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(scrollDuration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
@@ -255,6 +266,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.left = left;
+                    entry.editedMedia = true;
                     if (videoPlayer != null && videoPlayer.getDuration() != C.TIME_UNSET) {
                         seekTo((long) (left * videoPlayer.getDuration()));
                     }
@@ -266,6 +278,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.right = right;
+                    entry.editedMedia = true;
                 }
 
                 @Override
@@ -274,6 +287,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.audioLeft = left;
+                    entry.editedMedia = true;
                     updateAudioPlayer(true);
                 }
 
@@ -283,6 +297,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.audioRight = right;
+                    entry.editedMedia = true;
                     updateAudioPlayer(true);
                 }
 
@@ -292,6 +307,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.audioOffset = offset;
+                    entry.editedMedia = true;
                     updateAudioPlayer(true);
                 }
 
@@ -306,6 +322,7 @@ public class PreviewView extends FrameLayout {
                         return;
                     }
                     entry.audioVolume = volume;
+                    entry.editedMedia = true;
                     if (audioPlayer != null) {
                         audioPlayer.setVolume(volume);
                     }
@@ -594,7 +611,7 @@ public class PreviewView extends FrameLayout {
             videoPlayer.setMute(entry.muted);
             updateAudioPlayer(true);
 
-            timelineView.setVideo(uri.toString(), getDuration());
+            timelineView.setVideo(entry.getOriginalFile().getAbsolutePath(), getDuration());
             timelineView.setVideoLeft(entry.left);
             timelineView.setVideoRight(entry.right);
         }
@@ -1213,6 +1230,7 @@ public class PreviewView extends FrameLayout {
     }
 
     // ignores actual player and other reasons to pause a video
+    // (so that play button doesn't make it play when f.ex. popup is on)
     public boolean isPlaying() {
         return !pauseLinks.contains(-9982);
     }

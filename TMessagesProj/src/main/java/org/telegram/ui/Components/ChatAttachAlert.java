@@ -34,6 +34,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -76,6 +77,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -110,6 +112,8 @@ import org.telegram.ui.PaymentFormActivity;
 import org.telegram.ui.PhotoPickerActivity;
 import org.telegram.ui.PhotoPickerSearchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.telegram.ui.Stories.recorder.CaptionContainerView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -2463,6 +2467,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if ((count - before) >= 1) {
                     processChange = true;
                 }
+                if (mentionContainer == null) {
+                    createMentionsContainer();
+                }
+                if (mentionContainer.getAdapter() != null) {
+                    mentionContainer.getAdapter().searchUsernameOrHashtag(charSequence, commentTextView.getEditText().getSelectionStart(), null, false, false);
+                }
             }
 
             @Override
@@ -2796,6 +2806,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     public void updateCommentTextViewPosition() {
         commentTextView.getLocationOnScreen(commentTextViewLocation);
+        if (mentionContainer != null) {
+            float y = -commentTextView.getHeight();
+            if (mentionContainer.getY() != y) {
+                mentionContainer.setTranslationY(y);
+                mentionContainer.invalidate();
+            }
+        }
     }
 
     public int getCommentTextViewTop() {
@@ -4660,5 +4677,73 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     public void setDocumentsDelegate(ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate documentsDelegate) {
         this.documentsDelegate = documentsDelegate;
+    }
+
+    private void replaceWithText(int start, int len, CharSequence text, boolean parseEmoji) {
+        if (commentTextView == null) {
+            return;
+        }
+        try {
+            SpannableStringBuilder builder = new SpannableStringBuilder(commentTextView.getText());
+            builder.replace(start, start + len, text);
+            if (parseEmoji) {
+                Emoji.replaceEmoji(builder, commentTextView.getEditText().getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+            }
+            commentTextView.setText(builder);
+            commentTextView.setSelection(start + text.length());
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public MentionsContainerView mentionContainer;
+    private void createMentionsContainer() {
+        mentionContainer = new MentionsContainerView(getContext(), UserConfig.getInstance(currentAccount).getClientUserId(), 0, LaunchActivity.getLastFragment(), null, resourcesProvider) {
+            @Override
+            protected void onScrolled(boolean atTop, boolean atBottom) {
+                if (photoLayout != null) {
+                    photoLayout.checkCameraViewPosition();
+                }
+            }
+
+            @Override
+            protected void onAnimationScroll() {
+                if (photoLayout != null) {
+                    photoLayout.checkCameraViewPosition();
+                }
+            }
+        };
+        setupMentionContainer();
+        mentionContainer.withDelegate(new MentionsContainerView.Delegate() {
+
+            @Override
+            public void replaceText(int start, int len, CharSequence replacingString, boolean allowShort) {
+                replaceWithText(start, len, replacingString, allowShort);
+            }
+
+            @Override
+            public Paint.FontMetricsInt getFontMetrics() {
+                return commentTextView.getEditText().getPaint().getFontMetricsInt();
+            }
+        });
+        containerView.addView(mentionContainer, containerView.indexOfChild(frameLayout2), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
+        mentionContainer.setTranslationY(-commentTextView.getHeight());
+
+        setupMentionContainer();
+    }
+
+    protected void setupMentionContainer() {
+        mentionContainer.getAdapter().setAllowStickers(false);
+        mentionContainer.getAdapter().setAllowBots(false);
+        mentionContainer.getAdapter().setAllowChats(false);
+        mentionContainer.getAdapter().setSearchInDailogs(true);
+        if (baseFragment instanceof ChatActivity) {
+            mentionContainer.getAdapter().setChatInfo(((ChatActivity) baseFragment).getCurrentChatInfo());
+            mentionContainer.getAdapter().setNeedUsernames(((ChatActivity) baseFragment).getCurrentChat() != null);
+        } else {
+            mentionContainer.getAdapter().setChatInfo(null);
+            mentionContainer.getAdapter().setNeedUsernames(false);
+        }
+        mentionContainer.getAdapter().setNeedBotContext(false);
     }
 }

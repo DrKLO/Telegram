@@ -1,7 +1,7 @@
 package org.telegram.ui.Stories.recorder;
 
-import static android.view.View.GONE;
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.translitSafe;
 
 import android.animation.Animator;
@@ -9,40 +9,31 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.SpannedString;
-import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.TypedValue;
-import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -52,28 +43,20 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
-import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
-import com.google.zxing.common.detector.MathUtils;
+import com.google.android.exoplayer2.util.Consumer;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -88,7 +71,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -98,37 +80,32 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoriesController;
-import org.telegram.ui.UsersSelectActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
 public class StoryPrivacyBottomSheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -148,6 +125,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     public static final int TYPE_EVERYONE = 4;
     public static final int TYPE_AS_MESSAGE = 5;
 
+    public TLRPC.InputPeer selectedPeer;
+
     private final ArrayList<Long> excludedEveryone = new ArrayList<>();
     private final HashMap<Long, ArrayList<Long>> excludedEveryoneByGroup = new HashMap<>();
     private int excludedEveryoneCount = 0;
@@ -159,6 +138,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
     private boolean allowScreenshots = true;
     private boolean keepOnMyPage = false;
+    private boolean canChangePeer = true;
 
     private HashSet<Long> mergeUsers(ArrayList<Long> users, HashMap<Long, ArrayList<Long>> usersByGroup) {
         HashSet<Long> set = new HashSet<>();
@@ -257,59 +237,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             contentView.setClipToPadding(true);
             addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-            listView = new RecyclerListView(context, resourcesProvider) {
-//                private long tapTime;
-//                private float tapX, tapY;
-//                @Override
-//                public boolean dispatchTouchEvent(MotionEvent ev) {
-//                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-//                        tapTime = System.currentTimeMillis();
-//                        tapX = ev.getX();
-//                        tapY = ev.getY();
-//                    } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
-//                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) >= AndroidUtilities.touchSlop) {
-//                            tapTime = -1;
-//                            if (searchField.currentDeletingSpan != null) {
-//                                searchField.currentDeletingSpan.cancelDeleteAnimation();
-//                                searchField.currentDeletingSpan = null;
-//                            }
-//                        }
-//                    } else if (ev.getAction() == MotionEvent.ACTION_UP) {
-//                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) <= AndroidUtilities.touchSlop && System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && searchField != null && searchField.spansContainer != null) {
-//                            float x = ev.getX(), y = contentView.getPaddingTop() + ev.getY();
-//                            x -= searchField.getX();
-//                            y -= searchField.getY();
-//                            if (x < 0 || y < 0 || x > searchField.getWidth() || y > searchField.getHeight()) {
-//                                return super.dispatchTouchEvent(ev);
-//                            }
-//                            for (int i = 0; i < searchField.spansContainer.getChildCount(); ++i) {
-//                                View child = searchField.spansContainer.getChildAt(i);
-//                                if (x < child.getX() || y < child.getY() || x >= child.getX() + child.getWidth() || y >= child.getY() + child.getHeight() || !(child instanceof GroupCreateSpan)) {
-//                                    continue;
-//                                }
-//                                GroupCreateSpan span = (GroupCreateSpan) child;
-//                                onClick(span);
-//                                break;
-//                            }
-//                            tapTime = -1;
-//                            return true;
-//                        }
-//                        tapTime = -1;
-//                    } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
-//                        tapTime = -1;
-//                        if (searchField.currentDeletingSpan != null) {
-//                            searchField.currentDeletingSpan.cancelDeleteAnimation();
-//                            searchField.currentDeletingSpan = null;
-//                        }
-//                    }
-//                    return super.dispatchTouchEvent(ev);
-//                }
-//
-//                @Override
-//                public boolean onTouchEvent(MotionEvent e) {
-//                    return super.onTouchEvent(e);
-//                }
-            };
+            listView = new RecyclerListView(context, resourcesProvider);
             listView.setClipToPadding(false);
             listView.setTranslateSelector(true);
             listView.setAdapter(adapter = new Adapter(context, resourcesProvider, searchField, StoryPrivacyBottomSheet.this::onBackPressed));
@@ -349,6 +277,16 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
                 ItemInner item = items.get(position);
                 if (item.viewType == VIEW_TYPE_USER) {
+                    if (item.sendAs && canChangePeer) {
+                        new ChoosePeerSheet(context, currentAccount, selectedPeer, peer -> {
+                            selectedPeer = peer;
+                            if (onSelectedPeer != null) {
+                                onSelectedPeer.run(selectedPeer);
+                            }
+                            updateItems(true);
+                        }, resourcesProvider).show();
+                        return;
+                    }
 //                    boolean subtitle = LocaleController.isRTL ? x < view.getWidth() - AndroidUtilities.dp(100) : x > AndroidUtilities.dp(100);
                     if (item.type == TYPE_CLOSE_FRIENDS) {
                         if (selectedType == TYPE_CLOSE_FRIENDS || getCloseFriends().isEmpty()) {
@@ -536,14 +474,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         }
                     } else {
                         keepOnMyPage = cell.isChecked();
+                        final boolean isChannel = selectedPeer instanceof TLRPC.TL_inputPeerChannel;
                         if (keepOnMyPage) {
                             BulletinFactory.of(container, resourcesProvider)
-                                    .createSimpleBulletin(R.raw.msg_story_keep, LocaleController.getString(R.string.StoryEnableKeep), 4)
+                                    .createSimpleBulletin(R.raw.msg_story_keep, LocaleController.getString(isChannel ? R.string.StoryChannelEnableKeep : R.string.StoryEnableKeep), 4)
                                     .setDuration(5000)
                                     .show(true);
                         } else {
                             BulletinFactory.of(container, resourcesProvider)
-                                    .createSimpleBulletin(R.raw.fire_on, LocaleController.getString(R.string.StoryDisableKeep), 4)
+                                    .createSimpleBulletin(R.raw.fire_on, LocaleController.getString(isChannel ? R.string.StoryChannelDisableKeep : R.string.StoryDisableKeep), 4)
                                     .setDuration(5000)
                                     .show(true);
                         }
@@ -558,6 +497,24 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     containerView.invalidate();
                     contentView.invalidate();
                     listView.invalidate();
+                }
+
+                @Override
+                protected void onChangeAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    containerView.invalidate();
+                    contentView.invalidate();
+                }
+
+                @Override
+                protected void onAddAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    containerView.invalidate();
+                    contentView.invalidate();
+                }
+
+                @Override
+                protected void onRemoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    containerView.invalidate();
+                    contentView.invalidate();
                 }
 
                 @Override
@@ -928,7 +885,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             for (int i = 0; i < listView.getChildCount(); ++i) {
                 View child = listView.getChildAt(i);
                 if (layoutManager.getReverseLayout()) {
-                    top = Math.min(top, contentView.getPaddingTop() + child.getY());
+                    final float childTop = contentView.getPaddingTop() + child.getY();
+                    final float a = child.getAlpha();
+                    if (childTop < top) {
+                        top = AndroidUtilities.lerp(top, childTop, a);
+                    }
                 } else if (child.getTag() instanceof Integer && (int) child.getTag() == 33) {
                     return contentView.getPaddingTop() + child.getBottom() + child.getTranslationY();
                 } else if (child.getTag() instanceof Integer && (int) child.getTag() == 35) {
@@ -1004,9 +965,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         private String query;
 
-        private ArrayList<TLObject> atTop = new ArrayList<>();
-        private ArrayList<ItemInner> oldItems = new ArrayList<>();
-        private ArrayList<ItemInner> items = new ArrayList<>();
+        private final ArrayList<TLObject> atTop = new ArrayList<>();
+        private final ArrayList<ItemInner> oldItems = new ArrayList<>();
+        private final ArrayList<ItemInner> items = new ArrayList<>();
+
         public void updateItems(boolean animated) {
             updateItems(animated, true);
         }
@@ -1022,65 +984,94 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 containsHeader = false;
                 sectionCell.setVisibility(View.GONE);
 //                items.add(ItemInner.asPad(dp(84) + 4 * dp(56) + (sendAsMessageEnabled ? dp(120) : dp(64))));
-                items.add(ItemInner.asHeader2(
-                    isEdit ?
-                        LocaleController.getString("StoryPrivacyAlertEditTitle", R.string.StoryPrivacyAlertEditTitle) :
-                        LocaleController.getString("StoryPrivacyAlertTitle", R.string.StoryPrivacyAlertTitle),
-                    storyPeriod != Integer.MAX_VALUE ?
-                        LocaleController.formatPluralString("StoryPrivacyAlertSubtitle", storyPeriod / 3600) :
-                        LocaleController.getString("StoryPrivacyAlertSubtitleProfile", R.string.StoryPrivacyAlertSubtitleProfile)
-                ));
-                items.add(item = ItemInner.asType(TYPE_EVERYONE, selectedType == TYPE_EVERYONE, excludedEveryoneCount));
-                if (excludedEveryoneCount == 1) {
-                    if (excludedEveryone.size() == 1) {
-                        item.user = MessagesController.getInstance(currentAccount).getUser(excludedEveryone.get(0));
-                    } else {
-                        for (ArrayList<Long> userIds : excludedEveryoneByGroup.values()) {
-                            if (userIds.size() >= 1) {
-                                item.user = MessagesController.getInstance(currentAccount).getUser(userIds.get(0));
-                                break;
+                List<TLRPC.InputPeer> sendAs = MessagesController.getInstance(currentAccount).getStoriesController().sendAs;
+                boolean containsPrivacy = true;
+                if (canChangePeer && (isEdit || sendAs == null || sendAs.size() <= 1)) {
+                    items.add(ItemInner.asHeader2(
+                        isEdit ?
+                                LocaleController.getString("StoryPrivacyAlertEditTitle", R.string.StoryPrivacyAlertEditTitle) :
+                                LocaleController.getString("StoryPrivacyAlertTitle", R.string.StoryPrivacyAlertTitle),
+                        storyPeriod != Integer.MAX_VALUE ?
+                                LocaleController.formatPluralString("StoryPrivacyAlertSubtitle", storyPeriod / 3600) :
+                                LocaleController.getString("StoryPrivacyAlertSubtitleProfile", R.string.StoryPrivacyAlertSubtitleProfile)
+                    ));
+                } else {
+                    items.add(ItemInner.asHeaderCell(LocaleController.getString(R.string.StoryPrivacyPublishAs)));
+                    if (selectedPeer == null || selectedPeer instanceof TLRPC.TL_inputPeerSelf) {
+                        TLRPC.User me = UserConfig.getInstance(currentAccount).getCurrentUser();
+                        items.add(ItemInner.asUser(me, false, false).asSendAs());
+                    } else if (selectedPeer instanceof TLRPC.TL_inputPeerUser) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedPeer.user_id);
+                        items.add(ItemInner.asUser(user, false, false).asSendAs());
+                    } else if (selectedPeer instanceof TLRPC.TL_inputPeerChannel) {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(selectedPeer.channel_id);
+                        items.add(ItemInner.asChat(chat, false).asSendAs());
+                        containsPrivacy = false;
+                    } else if (selectedPeer instanceof TLRPC.TL_inputPeerChat) {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(selectedPeer.chat_id);
+                        items.add(ItemInner.asChat(chat, false).asSendAs());
+                        containsPrivacy = false;
+                    }
+                    ItemInner section = ItemInner.asShadow(null);
+                    section.resId = containsPrivacy ? 1 : 2;
+                    items.add(section);
+                    if (containsPrivacy) {
+                        items.add(ItemInner.asHeaderCell(LocaleController.getString(R.string.StoryPrivacyWhoCanView)));
+                    }
+                }
+                if (containsPrivacy) {
+                    items.add(item = ItemInner.asType(TYPE_EVERYONE, selectedType == TYPE_EVERYONE, excludedEveryoneCount));
+                    if (excludedEveryoneCount == 1) {
+                        if (excludedEveryone.size() == 1) {
+                            item.user = MessagesController.getInstance(currentAccount).getUser(excludedEveryone.get(0));
+                        } else {
+                            for (ArrayList<Long> userIds : excludedEveryoneByGroup.values()) {
+                                if (userIds.size() >= 1) {
+                                    item.user = MessagesController.getInstance(currentAccount).getUser(userIds.get(0));
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                items.add(item = ItemInner.asType(TYPE_CONTACTS, selectedType == TYPE_CONTACTS, excludedContacts.size()));
-                if (excludedContacts.size() == 1) {
-                    item.user = MessagesController.getInstance(currentAccount).getUser(excludedContacts.get(0));
-                }
-                ArrayList<TLObject> closeFriends = getCloseFriends();
-                items.add(item = ItemInner.asType(TYPE_CLOSE_FRIENDS, selectedType == TYPE_CLOSE_FRIENDS, closeFriends.size()));
-                if (closeFriends.size() == 1 && closeFriends.get(0) instanceof TLRPC.User) {
-                    item.user = (TLRPC.User) closeFriends.get(0);
-                }
-                items.add(item = ItemInner.asType(TYPE_SELECTED_CONTACTS, selectedType == TYPE_SELECTED_CONTACTS, selectedContactsCount));
-                if (selectedContactsCount == 1) {
-                    if (selectedContacts.size() == 1) {
-                        item.user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(0));
-                    } else {
-                        for (ArrayList<Long> userIds : selectedContactsByGroup.values()) {
-                            if (userIds.size() >= 1) {
-                                item.user = MessagesController.getInstance(currentAccount).getUser(userIds.get(0));
-                                break;
+                    items.add(item = ItemInner.asType(TYPE_CONTACTS, selectedType == TYPE_CONTACTS, excludedContacts.size()));
+                    if (excludedContacts.size() == 1) {
+                        item.user = MessagesController.getInstance(currentAccount).getUser(excludedContacts.get(0));
+                    }
+                    ArrayList<TLObject> closeFriends = getCloseFriends();
+                    items.add(item = ItemInner.asType(TYPE_CLOSE_FRIENDS, selectedType == TYPE_CLOSE_FRIENDS, closeFriends.size()));
+                    if (closeFriends.size() == 1 && closeFriends.get(0) instanceof TLRPC.User) {
+                        item.user = (TLRPC.User) closeFriends.get(0);
+                    }
+                    items.add(item = ItemInner.asType(TYPE_SELECTED_CONTACTS, selectedType == TYPE_SELECTED_CONTACTS, selectedContactsCount));
+                    if (selectedContactsCount == 1) {
+                        if (selectedContacts.size() == 1) {
+                            item.user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(0));
+                        } else {
+                            for (ArrayList<Long> userIds : selectedContactsByGroup.values()) {
+                                if (userIds.size() >= 1) {
+                                    item.user = MessagesController.getInstance(currentAccount).getUser(userIds.get(0));
+                                    break;
+                                }
                             }
                         }
                     }
+                    int blocklistCount = MessagesController.getInstance(currentAccount).getStoriesController().getBlocklistCount();
+                    items.add(ItemInner.asShadow(AndroidUtilities.replaceSingleTag(
+                        blocklistCount <= 0 ?
+                            LocaleController.getString("StoryBlockListEmpty") :
+                            LocaleController.formatPluralString("StoryBlockList", blocklistCount),
+                        Theme.key_chat_messageLinkIn, 0,
+                        () -> {
+                            activePage = PAGE_TYPE_BLOCKLIST;
+                            viewPager.scrollToPosition(1);
+                        },
+                        resourcesProvider
+                    )));
                 }
-                int blocklistCount = MessagesController.getInstance(currentAccount).getStoriesController().getBlocklistCount();
-                items.add(ItemInner.asShadow(AndroidUtilities.replaceSingleTag(
-                    blocklistCount <= 0 ?
-                        LocaleController.getString("StoryBlockListEmpty") :
-                        LocaleController.formatPluralString("StoryBlockList", blocklistCount),
-                    Theme.key_chat_messageLinkIn, 0,
-                    () -> {
-                        activePage = PAGE_TYPE_BLOCKLIST;
-                        viewPager.scrollToPosition(1);
-                    },
-                    resourcesProvider
-                )));
                 if (!isEdit) {
                     items.add(ItemInner.asCheck(LocaleController.getString(R.string.StoryAllowScreenshots), 0, allowScreenshots));
-                    items.add(ItemInner.asCheck(LocaleController.getString(R.string.StoryKeep), 1, keepOnMyPage));
-                    items.add(ItemInner.asShadow(LocaleController.formatPluralString("StoryKeepInfo", (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
+                    items.add(ItemInner.asCheck(LocaleController.getString(containsPrivacy ? R.string.StoryKeep : R.string.StoryKeepChannel), 1, keepOnMyPage));
+                    items.add(ItemInner.asShadow(LocaleController.formatPluralString(containsPrivacy ? "StoryKeepInfo" : "StoryKeepChannelInfo", (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
                 }
             } else if (pageType == PAGE_TYPE_CLOSE_FRIENDS) {
                 headerView.setText(LocaleController.getString("StoryPrivacyAlertCloseFriendsTitle", R.string.StoryPrivacyAlertCloseFriendsTitle));
@@ -1267,6 +1258,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     adapter.notifyDataSetChanged();
                 }
             }
+
+            this.contentView.invalidate();
         }
 
         private boolean match(TLObject obj, String q) {
@@ -1655,7 +1648,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return -1;
             }
             ItemInner item = items.get(position);
-            if (item.viewType != VIEW_TYPE_USER) {
+            if (item.viewType != VIEW_TYPE_USER || item.sendAs) {
                 return -1;
             }
             if (LocaleController.isRTL ? e.getX() < getWidth() - AndroidUtilities.dp(100) : e.getX() > AndroidUtilities.dp(100)) {
@@ -1677,7 +1670,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 keyboardHeight = StoryPrivacyBottomSheet.super.keyboardHeight;
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            contentView.setPadding(0, AndroidUtilities.statusBarHeight + AndroidUtilities.dp(56), 0, 0);
+            contentView.setPadding(0, AndroidUtilities.statusBarHeight + (pageType == PAGE_TYPE_SHARE ? 0 : dp(56)), 0, 0);
             if (wasKeyboardVisible != keyboardVisible) {
                 float searchFieldTop = getSearchFieldTop();
                 if (keyboardVisible && searchFieldTop + Math.min(dp(150), searchField.resultContainerHeight) > listView.getPaddingTop()) {
@@ -1769,7 +1762,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             @Override
             public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                return holder.getItemViewType() == VIEW_TYPE_USER || holder.getItemViewType() == VIEW_TYPE_CHECK;
+                return (holder.getItemViewType() == VIEW_TYPE_USER && canChangePeer) || holder.getItemViewType() == VIEW_TYPE_CHECK;
             }
 
             @NonNull
@@ -1788,6 +1781,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     view = new UserCell(context, resourcesProvider);
                 } else if (viewType == VIEW_TYPE_HEADER2) {
                     view = new HeaderCell2(context, resourcesProvider);
+                } else if (viewType == VIEW_TYPE_HEADER_CELL) {
+                    view = new org.telegram.ui.Cells.HeaderCell(context, resourcesProvider);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
                 } else if (viewType == VIEW_TYPE_NO_USERS) {
                     StickerEmptyView searchEmptyView = new StickerEmptyView(context, null, StickerEmptyView.STICKER_TYPE_SEARCH, resourcesProvider);
                     searchEmptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
@@ -1821,6 +1817,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 final boolean divider = neighbour != null && neighbour.viewType == viewType;
                 if (viewType == VIEW_TYPE_USER) {
                     UserCell userCell = (UserCell) holder.itemView;
+                    userCell.setIsSendAs(item.sendAs, !item.sendAs);
                     if (item.type > 0) {
                         userCell.setType(item.type, item.typeCount, item.user);
                         userCell.setCheckboxAlpha(1f, false);
@@ -1833,6 +1830,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     userCell.setChecked(item.checked || item.halfChecked, false);
                     userCell.setDivider(divider);
                     userCell.setRedCheckbox(item.red);
+                    userCell.drawArrow = canChangePeer;
                 } else if (viewType == VIEW_TYPE_SECTION) {
 
                 } else if (viewType == VIEW_TYPE_HEADER) {
@@ -1870,6 +1868,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 } else if (viewType == VIEW_TYPE_CHECK) {
                     ((TextCell) holder.itemView).setTextAndCheck(item.text, item.resId == 0 ? allowScreenshots : keepOnMyPage, divider);
+                } else if (viewType == VIEW_TYPE_HEADER_CELL) {
+                    ((org.telegram.ui.Cells.HeaderCell) holder.itemView).setText(item.text);
                 }
             }
 
@@ -1935,6 +1935,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         });
 
         MessagesController.getInstance(currentAccount).getStoriesController().loadBlocklist(false);
+        MessagesController.getInstance(currentAccount).getStoriesController().loadSendAs();
     }
 
     private void init(Context context) {
@@ -1949,6 +1950,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesBlocklistUpdate);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesSendAsUpdate);
 
         backgroundPaint.setColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
         fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
@@ -2009,6 +2011,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     public void dismissInternal() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesBlocklistUpdate);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesSendAsUpdate);
         super.dismissInternal();
     }
 
@@ -2096,7 +2099,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             button.setLoading(true);
         }
         if (onDone != null) {
-            onDone.run(privacy, allowScreenshots, keepOnMyPage, loaded != null ? () -> {
+            onDone.done(privacy, allowScreenshots, keepOnMyPage, selectedPeer, loaded != null ? () -> {
                 if (button != null) {
                     button.setLoading(false);
                 }
@@ -2149,6 +2152,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         private final AnimatedFloat isActionBar = new AnimatedFloat(this, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         private float top;
 
+        private final Path path = new Path();
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             View[] views = viewPager.getViewPages();
@@ -2172,7 +2177,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             final float r = AndroidUtilities.lerp(dp(14), 0, actionBarT);
             canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, backgroundPaint);
             canvas.save();
-            canvas.clipRect(AndroidUtilities.rectTmp);
+            path.rewind();
+            path.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+            canvas.clipPath(path);
             super.dispatchDraw(canvas);
             canvas.restore();
         }
@@ -2214,10 +2221,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         return true;
     }
 
+    public interface DoneCallback {
+        public void done(StoryPrivacy privacy, boolean allowScreenshots, boolean keepInProfile, TLRPC.InputPeer peer, Runnable loaded);
+    }
+
     private ArrayList<String> warnUsers;
-    private Utilities.Callback4<StoryPrivacy, Boolean, Boolean, Runnable> onDone;
+    private DoneCallback onDone;
     private Utilities.Callback<StoryPrivacy> onDismiss;
     private Utilities.Callback<ArrayList<Long>> onDone2;
+    private Utilities.Callback<TLRPC.InputPeer> onSelectedPeer;
     private boolean applyWhenDismiss = false;
     private boolean allowSmallChats = true;
     private boolean isEdit = false;
@@ -2225,13 +2237,17 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         this.onDismiss = listener;
         return this;
     }
-    public StoryPrivacyBottomSheet whenSelectedRules(Utilities.Callback4<StoryPrivacy, Boolean, Boolean, Runnable> onDone, boolean whenDismiss) {
+    public StoryPrivacyBottomSheet whenSelectedRules(DoneCallback onDone, boolean whenDismiss) {
         this.onDone = onDone;
         this.applyWhenDismiss = whenDismiss;
         return this;
     }
     private StoryPrivacyBottomSheet whenSelectedShare(Utilities.Callback<ArrayList<Long>> onDone2) {
         this.onDone2 = onDone2;
+        return this;
+    }
+    public StoryPrivacyBottomSheet whenSelectedPeer(Utilities.Callback<TLRPC.InputPeer> onSelectedPeer) {
+        this.onSelectedPeer = onSelectedPeer;
         return this;
     }
     public StoryPrivacyBottomSheet enableSharing(boolean enable) {
@@ -2267,6 +2283,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     }
     public StoryPrivacyBottomSheet setWarnUsers(ArrayList<String> users) {
         this.warnUsers = users;
+        return this;
+    }
+
+    public StoryPrivacyBottomSheet setPeer(TLRPC.InputPeer inputPeer) {
+        selectedPeer = inputPeer;
+        View[] viewPages = viewPager.getViewPages();
+        if (viewPages[0] instanceof Page) {
+            ((Page) viewPages[0]).bind(((Page) viewPages[0]).pageType);
+        }
+        if (viewPages[1] instanceof Page) {
+            ((Page) viewPages[1]).bind(((Page) viewPages[1]).pageType);
+        }
         return this;
     }
 
@@ -2318,6 +2346,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     public static final int VIEW_TYPE_EMPTY_VIEW = 5;
     public static final int VIEW_TYPE_SHADOW = 6;
     public static final int VIEW_TYPE_CHECK = 7;
+    public static final int VIEW_TYPE_HEADER_CELL = 8;
 
     private static class ItemInner extends AdapterWithDiffUtils.Item {
 
@@ -2330,6 +2359,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public boolean checked;
         public boolean halfChecked;
         public boolean red;
+        public boolean sendAs;
         public int subtractHeight;
         public int padHeight = -1;
 
@@ -2352,6 +2382,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             ItemInner item = new ItemInner(VIEW_TYPE_HEADER2, false);
             item.text = title;
             item.text2 = subtitle;
+            return item;
+        }
+        public static ItemInner asHeaderCell(CharSequence text) {
+            ItemInner item = new ItemInner(VIEW_TYPE_HEADER_CELL, false);
+            item.text = text;
             return item;
         }
         public static ItemInner asSearchField() {
@@ -2419,15 +2454,17 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
             if (viewType == VIEW_TYPE_PAD && (subtractHeight != i.subtractHeight || padHeight != i.padHeight)) {
                 return false;
-            } else if (viewType == VIEW_TYPE_USER && (user != i.user || chat != i.chat || type != i.type || typeCount != i.typeCount || checked != i.checked || red != i.red)) {
+            } else if (viewType == VIEW_TYPE_USER && (user != i.user || chat != i.chat || type != i.type || typeCount != i.typeCount || checked != i.checked || red != i.red || sendAs != i.sendAs)) {
                 return false;
             } else if (viewType == VIEW_TYPE_HEADER && resId != i.resId) {
                 return false;
             } else if (viewType == VIEW_TYPE_SECTION && !TextUtils.equals(text, i.text)) {
                 return false;
+            } else if (viewType == VIEW_TYPE_HEADER_CELL && !TextUtils.equals(text, i.text)) {
+                return false;
             } else if (viewType == VIEW_TYPE_HEADER2 && (!TextUtils.equals(text, i.text) || !TextUtils.equals(text2, i.text2))) {
                 return false;
-            } else if (viewType == VIEW_TYPE_SHADOW && (!TextUtils.equals(text, i.text))) {
+            } else if (viewType == VIEW_TYPE_SHADOW && (!TextUtils.equals(text, i.text) || resId != i.resId)) {
                 return false;
             } else if (viewType == VIEW_TYPE_CHECK && (resId != i.resId || !TextUtils.equals(text, i.text) || checked != i.checked)) {
                 return false;
@@ -2437,6 +2474,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public ItemInner red(boolean red) {
             this.red = red;
+            return this;
+        }
+
+        public ItemInner asSendAs() {
+            sendAs = true;
             return this;
         }
     }
@@ -2582,6 +2624,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+        private boolean sendAs = false;
+        private boolean needCheck = true;
+        private boolean drawArrow = true;
+
         public UserCell(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             this.resourcesProvider = resourcesProvider;
@@ -2590,7 +2636,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(AndroidUtilities.dp(20));
-            addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 53, 0, 53, 0));
+            addView(imageView);
 
             titleTextView = new SimpleTextView(context);
             titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
@@ -2598,28 +2644,51 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             NotificationCenter.listenEmojiLoading(titleTextView);
-            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 105, 0, LocaleController.isRTL ? 105 : 16, 0));
+            addView(titleTextView);
 
             subtitleTextView = new SimpleTextView(context);
             subtitleTextView.setTextSize(14);
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             subtitleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             NotificationCenter.listenEmojiLoading(subtitleTextView);
-            addView(subtitleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 105, 0, LocaleController.isRTL ? 105 : 16, 0));
+            addView(subtitleTextView);
 
             checkBox = new CheckBox2(context, 21, resourcesProvider);
             checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_checkboxDisabled, Theme.key_dialogRoundCheckBoxCheck);
             checkBox.setDrawUnchecked(true);
             checkBox.setDrawBackgroundAsArc(10);
-            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 14, 0, 14, 0));
+            addView(checkBox);
             checkBox.setChecked(false, false);
             checkBox.setVisibility(View.GONE);
 
             radioButton = new RadioButton(context);
             radioButton.setSize(AndroidUtilities.dp(20));
             radioButton.setColor(Theme.getColor(Theme.key_checkboxDisabled, resourcesProvider), Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider));
-            addView(radioButton, LayoutHelper.createFrame(22, 22, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 15, 0, 15, 0));
+            addView(radioButton);
             radioButton.setVisibility(View.GONE);
+
+            updateLayouts();
+        }
+
+        private void updateLayouts() {
+            imageView.setLayoutParams(LayoutHelper.createFrame(40, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), needCheck ? 53 : 16, 0, needCheck ? 53 : 16, 0));
+            titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 20 : (needCheck ? 105 : 68), 0, LocaleController.isRTL ? (needCheck ? 105 : 68) : 20, 0));
+            subtitleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 20 : (needCheck ? 105 : 68), 0, LocaleController.isRTL ? (needCheck ? 105 : 68) : 20, 0));
+            checkBox.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 13, 0, 14, 0));
+            radioButton.setLayoutParams(LayoutHelper.createFrame(22, 22, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 14, 0, 15, 0));
+        }
+
+        public void setIsSendAs(boolean isSendAs, boolean needsCheck) {
+            sendAs = isSendAs;
+            if (needsCheck != needCheck) {
+                this.needCheck = needsCheck;
+                updateLayouts();
+            }
+            if (!needCheck) {
+                radioButton.setVisibility(View.GONE);
+                checkBox.setVisibility(View.GONE);
+            }
+            setWillNotDraw(!(needDivider || (!needCheck && sendAs)));
         }
 
         public void setRedCheckbox(boolean red) {
@@ -2664,10 +2733,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             text = Emoji.replaceEmoji(text, titleTextView.getPaint().getFontMetricsInt(), false);
             titleTextView.setText(text);
             isOnline[0] = false;
-            setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
-            subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
+            if (sendAs) {
+                setSubtitle(LocaleController.getString(R.string.VoipGroupPersonalAccount));
+                subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+            } else {
+                setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
+                subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
+            }
 
-            checkBox.setVisibility(View.VISIBLE);
+            checkBox.setVisibility(needCheck ? View.VISIBLE : View.GONE);
             checkBox.setAlpha(1f);
             radioButton.setVisibility(View.GONE);
         }
@@ -2683,8 +2757,17 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             isOnline[0] = false;
             String subtitle;
-            if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                if (participants_count > 1) {
+            if (sendAs) {
+                if (participants_count <= 0) {
+                    participants_count = chat.participants_count;
+                }
+                if (participants_count >= 1) {
+                    subtitle = LocaleController.formatPluralString("Subscribers", participants_count);
+                } else {
+                    subtitle = LocaleController.getString(R.string.DiscussChannel);
+                }
+            } else if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                if (participants_count >= 1) {
                     subtitle = LocaleController.formatPluralStringComma("Subscribers", participants_count - 1);
                 } else {
                     if (!ChatObject.isPublic(chat)) {
@@ -2694,7 +2777,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 }
             } else {
-                if (participants_count > 1) {
+                if (participants_count >= 1) {
                     subtitle = LocaleController.formatPluralStringComma("Members", participants_count - 1);
                 } else {
                     if (chat.has_geo) {
@@ -2709,7 +2792,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             setSubtitle(subtitle);
             subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
 
-            checkBox.setVisibility(View.VISIBLE);
+            checkBox.setVisibility(needCheck ? View.VISIBLE : View.GONE);
             radioButton.setVisibility(View.GONE);
             setCheckboxAlpha(participants_count > 200 ? .3f : 1f, false);
         }
@@ -2784,7 +2867,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 avatarDrawable.setColor(0xFFFFB743, 0xFFF68E34);
             }
             checkBox.setVisibility(View.GONE);
-            radioButton.setVisibility(View.VISIBLE);
+            radioButton.setVisibility(needCheck ? View.VISIBLE : View.GONE);
             imageView.setImageDrawable(avatarDrawable);
             imageView.setRoundRadius(dp(20));
         }
@@ -2803,15 +2886,39 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         private boolean needDivider;
         public void setDivider(boolean divider) {
-            setWillNotDraw(!(needDivider = divider));
+            setWillNotDraw(!((needDivider = divider) || (!needCheck && sendAs)));
         }
+
+        private Path arrowPath;
+        private Paint arrowPaint;
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(sendAs && !needCheck ? 62 : 56), MeasureSpec.EXACTLY)
             );
+
+            if (!needCheck && sendAs) {
+                if (arrowPath == null) {
+                    arrowPath = new Path();
+                } else {
+                    arrowPath.rewind();
+                }
+                final float cx = LocaleController.isRTL ? dp(31) : getMeasuredWidth() - dp(31);
+                final float cy = getMeasuredHeight() / 2f;
+                final float m = LocaleController.isRTL ? -1 : 1;
+                arrowPath.moveTo(cx, cy - dp(6));
+                arrowPath.lineTo(cx + m * dp(6), cy);
+                arrowPath.lineTo(cx, cy + dp(6));
+                if (arrowPaint == null) {
+                    arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    arrowPaint.setStyle(Paint.Style.STROKE);
+                    arrowPaint.setStrokeCap(Paint.Cap.ROUND);
+                }
+                arrowPaint.setStrokeWidth(dpf2(1.86f));
+                arrowPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .3f));
+            }
         }
 
         @Override
@@ -2820,10 +2927,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             if (needDivider) {
                 dividerPaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
                 if (LocaleController.isRTL) {
-                    canvas.drawRect(0, getHeight() - 1, getWidth() - AndroidUtilities.dp(105), getHeight(), dividerPaint);
+                    canvas.drawRect(0, getHeight() - 1, getWidth() - dp(105), getHeight(), dividerPaint);
                 } else {
-                    canvas.drawRect(AndroidUtilities.dp(105), getHeight() - 1, getWidth(), getHeight(), dividerPaint);
+                    canvas.drawRect(dp(105), getHeight() - 1, getWidth(), getHeight(), dividerPaint);
                 }
+            }
+            if (arrowPath != null && arrowPaint != null && !needCheck && sendAs && drawArrow) {
+                canvas.drawPath(arrowPath, arrowPaint);
             }
         }
     }
@@ -3939,6 +4049,16 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 }
             }
+        } else if (id == NotificationCenter.storiesSendAsUpdate) {
+            View[] views = viewPager.getViewPages();
+            for (int i = 0; i < views.length; ++i) {
+                if (views[i] instanceof Page) {
+                    Page page = (Page) views[i];
+                    if (page.pageType == PAGE_TYPE_SHARE) {
+                        page.updateItems(true);
+                    }
+                }
+            }
         }
     }
 
@@ -4027,6 +4147,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         allowScreenshots = !MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("story_noforwards", false);
         keepOnMyPage = MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("story_keep", true);
+//
+//        long peerId = MessagesController.getInstance(currentAccount).getMainSettings().getLong("story_sendas", 0L);
+//        if (peerId != 0) {
+//            selectedPeer = new TLRPC.TL_inputPeerChannel();
+//            selectedPeer.channel_id = peerId;
+//        }
     }
 
     private void save() {
@@ -4052,6 +4178,194 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             .putString("story_prv_excluded", TextUtils.join(",", excludedContacts))
             .putBoolean("story_noforwards", !allowScreenshots)
             .putBoolean("story_keep", keepOnMyPage)
+//            .putLong("story_sendas", selectedPeer instanceof TLRPC.TL_inputPeerChannel ? selectedPeer.channel_id : 0)
             .apply();
+    }
+
+    public StoryPrivacyBottomSheet setCanChangePeer(boolean canChangePeer) {
+        this.canChangePeer = canChangePeer;
+        return this;
+    }
+
+    public static class ChoosePeerSheet extends BottomSheet {
+
+        private final int currentAccount;
+        private final List<TLRPC.InputPeer> peers;
+        private final TLRPC.InputPeer selectedPeer;
+        private final Utilities.Callback<TLRPC.InputPeer> onPeerSelected;
+
+        private final RecyclerListView listView;
+        private final TextView headerView;
+
+        public ChoosePeerSheet(Context context, int currentAccount, TLRPC.InputPeer selected, Utilities.Callback<TLRPC.InputPeer> onPeerSelected, Theme.ResourcesProvider resourcesProvider) {
+            super(context, false, resourcesProvider);
+            fixNavigationBar();
+
+            this.currentAccount = currentAccount;
+            this.peers = MessagesController.getInstance(currentAccount).getStoriesController().sendAs;
+            this.selectedPeer = selected;
+            this.onPeerSelected = onPeerSelected;
+
+            containerView = new FrameLayout(context) {
+                private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                private final AnimatedFloat statusBarT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    backgroundPaint.setColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+                    float top = Math.max(0, top());
+                    top = AndroidUtilities.lerp(top, 0, statusBarT.set(top < AndroidUtilities.statusBarHeight));
+                    AndroidUtilities.rectTmp.set(backgroundPaddingLeft, top, getWidth() - backgroundPaddingLeft, getHeight() + dp(14));
+                    final float r = dp(14) * (1f - statusBarT.get());
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, backgroundPaint);
+                    headerView.setTranslationY(Math.max(AndroidUtilities.statusBarHeight + dp(8), dp(14) + top));
+
+                    canvas.save();
+                    canvas.clipRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight + dp(14), getWidth() - backgroundPaddingLeft, getHeight());
+                    super.dispatchDraw(canvas);
+                    canvas.restore();
+                }
+
+                @Override
+                public boolean dispatchTouchEvent(MotionEvent ev) {
+                    if (ev.getY() < top()) {
+                        dismiss();
+                        return true;
+                    }
+                    return super.dispatchTouchEvent(ev);
+                }
+            };
+
+            listView = new RecyclerListView(context, resourcesProvider);
+            listView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
+            listView.setAdapter(new Adapter());
+            listView.setLayoutManager(new LinearLayoutManager(context));
+            containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+            listView.setOnItemClickListener((view, pos) -> {
+                if (pos <= 1) {
+                    return;
+                }
+                TLRPC.InputPeer peer = peers.get(pos - 2);
+                if (peer.channel_id == 0 && peer.chat_id == 0) {
+                    onPeerSelected.run(peer);
+                    dismiss();
+                    return;
+                }
+                AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER, resourcesProvider);
+                progressDialog.showDelayed(200);
+                MessagesController.getInstance(currentAccount).getStoriesController().canSendStoryFor(DialogObject.getPeerDialogId(peer), aBoolean -> {
+                    progressDialog.dismiss();
+                    if (aBoolean && onPeerSelected != null) {
+                        onPeerSelected.run(peer);
+                    }
+                }, true, resourcesProvider);
+                dismiss();
+
+            });
+            listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    containerView.invalidate();
+                }
+            });
+
+            headerView = new TextView(getContext());
+            headerView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            headerView.setPadding(backgroundPaddingLeft + dp(22), dp(2), backgroundPaddingLeft + dp(22), dp(14));
+            headerView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            headerView.setText(LocaleController.getString(R.string.StoryPrivacyPublishAs));
+            containerView.addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        private float top() {
+            float top = containerView.getMeasuredHeight();
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                View child = listView.getChildAt(i);
+                if (child == null) continue;
+                int position = listView.getChildAdapterPosition(child);
+                if (position == RecyclerView.NO_POSITION) continue;
+                if (position > 0) {
+                    top = Math.min(child.getY(), top);
+                }
+            }
+            return top;
+        }
+
+        @Override
+        protected boolean canDismissWithSwipe() {
+            return top() > (int) (AndroidUtilities.displaySize.y * .5f);
+        }
+
+        private class Adapter extends RecyclerListView.SelectionAdapter {
+            @Override
+            public boolean isEnabled(RecyclerView.ViewHolder holder) {
+                return holder.getItemViewType() == 2;
+            }
+
+            @NonNull
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View view;
+                if (viewType == 0 || viewType == 1) {
+                    view = new View(getContext());
+                    int height;
+                    if (viewType == 0) {
+                        height = AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight - dp(54 + 56 * 4.5f);
+                    } else {
+                        height = dp(54);
+                    }
+                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
+                } else {
+                    view = new UserCell(getContext(), resourcesProvider);
+                }
+                return new RecyclerListView.Holder(view);
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                if (position == 0) {
+                    return 0;
+                } else if (position == 1) {
+                    return 1;
+                }
+                return 2;
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+                if (holder.getItemViewType() == 2) {
+                    UserCell cell = (UserCell) holder.itemView;
+                    cell.setIsSendAs(true, true);
+                    TLRPC.InputPeer peer = peers.get(position - 2);
+                    if (peer instanceof TLRPC.TL_inputPeerSelf) {
+                        cell.setUser(UserConfig.getInstance(currentAccount).getCurrentUser());
+                    } else if (peer instanceof TLRPC.TL_inputPeerUser) {
+                        cell.setUser(MessagesController.getInstance(currentAccount).getUser(peer.user_id));
+                    } else if (peer instanceof TLRPC.TL_inputPeerChat) {
+                        cell.setChat(MessagesController.getInstance(currentAccount).getChat(peer.chat_id), 0);
+                    } else if (peer instanceof TLRPC.TL_inputPeerChannel) {
+                        cell.setChat(MessagesController.getInstance(currentAccount).getChat(peer.channel_id), 0);
+                    }
+                    cell.checkBox.setVisibility(View.GONE);
+                    cell.radioButton.setVisibility(View.VISIBLE);
+                    cell.setChecked(selectedPeer == null && position == 2 || did(selectedPeer) == did(peer), false);
+                    cell.setDivider(position != getItemCount() - 1);
+                }
+            }
+
+            private long did(TLRPC.InputPeer peer) {
+                if (peer instanceof TLRPC.TL_inputPeerSelf) {
+                    return UserConfig.getInstance(currentAccount).getClientUserId();
+                }
+                return DialogObject.getPeerDialogId(peer);
+            }
+
+            @Override
+            public int getItemCount() {
+                return 2 + peers.size();
+            }
+        }
     }
 }

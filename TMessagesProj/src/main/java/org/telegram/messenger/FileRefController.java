@@ -352,7 +352,7 @@ public class FileRefController extends BaseController {
         if (parentObject instanceof TLRPC.StoryItem) {
             TLRPC.StoryItem storyItem = (TLRPC.StoryItem) parentObject;
             TLRPC.TL_stories_getStoriesByID req = new TLRPC.TL_stories_getStoriesByID();
-            req.user_id = getMessagesController().getInputUser(storyItem.dialogId);
+            req.peer = getMessagesController().getInputPeer(storyItem.dialogId);
             req.id.add(storyItem.id);
             getConnectionsManager().sendRequest(req, (response, error) -> {
                 onRequestComplete(locationKey, parentKey, response, error, true, false);
@@ -911,35 +911,7 @@ public class FileRefController extends BaseController {
                 }
             } else if (response instanceof TLRPC.TL_help_appUpdate) {
                 TLRPC.TL_help_appUpdate appUpdate = (TLRPC.TL_help_appUpdate) response;
-                try {
-                    SharedConfig.pendingAppUpdate = appUpdate;
-                    SharedConfig.saveConfig();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                try {
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                try {
-                    if (appUpdate.document != null) {
-                        result = appUpdate.document.file_reference;
-                        TLRPC.TL_inputDocumentFileLocation location = new TLRPC.TL_inputDocumentFileLocation();
-                        location.id = appUpdate.document.id;
-                        location.access_hash = appUpdate.document.access_hash;
-                        location.file_reference = appUpdate.document.file_reference;
-                        location.thumb_size = "";
-                        locationReplacement = new TLRPC.InputFileLocation[1];
-                        locationReplacement[0] = location;
-                    }
-                } catch (Exception e) {
-                    result = null;
-                    FileLog.e(e);
-                }
-                if (result == null) {
-                    result = getFileReference(appUpdate.document, requester.location, needReplacement, locationReplacement);
-                }
+                result = getFileReference(appUpdate.document, requester.location, needReplacement, locationReplacement);
                 if (result == null) {
                     result = getFileReference(appUpdate.sticker, requester.location, needReplacement, locationReplacement);
                 }
@@ -1091,7 +1063,7 @@ public class FileRefController extends BaseController {
                         TLRPC.StoryItem storyItem = (TLRPC.StoryItem) operation.parentObject;
                         if (newStoryItem == null) {
                             TLRPC.TL_updateStory story = new TLRPC.TL_updateStory();
-                            story.user_id = storyItem.dialogId;
+                            story.peer = getMessagesController().getPeer(storyItem.dialogId);
                             story.story = new TLRPC.TL_storyItemDeleted();
                             story.story.id = storyItem.id;
                             ArrayList<TLRPC.Update> updates = new ArrayList<>();

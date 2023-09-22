@@ -22,6 +22,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
@@ -48,6 +49,7 @@ public class SelfStoryViewsView extends FrameLayout {
 
     int keyboardHeight;
     int animatedKeyboardHeight;
+    private long dialogId;
 
     ViewPagerInner viewPager;
     ArrayList<StoryItemInternal> storyItems = new ArrayList<>();
@@ -197,7 +199,7 @@ public class SelfStoryViewsView extends FrameLayout {
                 item.setTag(position);
                 item.setShadowDrawable(shadowDrawable);
                 item.setPadding(0, AndroidUtilities.dp(16), 0 , 0);
-                item.setStoryItem(storyItems.get(position));
+                item.setStoryItem(dialogId,storyItems.get(position));
                // bottomPadding = (selfStoriesPreviewView.getTop() + toHeight + AndroidUtilities.dp(24));
                 item.setListBottomPadding(bottomPadding);
 
@@ -346,14 +348,18 @@ public class SelfStoryViewsView extends FrameLayout {
         viewPagerContainer.setTranslationY(-bottomPadding + getMeasuredHeight() - selfStoriesViewsOffset);
     }
 
-    public void setItems(ArrayList<TLRPC.StoryItem> storyItems, int selectedPosition) {
+    public void setItems(long dialogId, ArrayList<TLRPC.StoryItem> storyItems, int selectedPosition) {
         this.storyItems.clear();
+        this.dialogId = dialogId;
         for (int i = 0; i < storyItems.size(); i++) {
             this.storyItems.add(new StoryItemInternal(storyItems.get(i)));
         }
-        ArrayList<StoriesController.UploadingStory> uploadingStories = MessagesController.getInstance(storyViewer.currentAccount).storiesController.getUploadingStories();
-        for (int i = 0; i < uploadingStories.size(); i++) {
-            this.storyItems.add(new StoryItemInternal(uploadingStories.get(i)));
+        long clientUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        ArrayList<StoriesController.UploadingStory> uploadingStories = MessagesController.getInstance(storyViewer.currentAccount).storiesController.getUploadingStories(clientUserId);
+        if (uploadingStories != null) {
+            for (int i = 0; i < uploadingStories.size(); i++) {
+                this.storyItems.add(new StoryItemInternal(uploadingStories.get(i)));
+            }
         }
         selfStoriesPreviewView.setItems(this.storyItems, selectedPosition);
         viewPager.setAdapter(null);

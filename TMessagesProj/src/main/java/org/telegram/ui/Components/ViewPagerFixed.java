@@ -56,7 +56,7 @@ public class ViewPagerFixed extends FrameLayout {
 
     private Theme.ResourcesProvider resourcesProvider;
     public int currentPosition;
-    public float currentProgress;
+    public float currentProgress = 1f;
     int nextPosition;
     protected View[] viewPages;
     private int[] viewTypes;
@@ -478,9 +478,9 @@ public class ViewPagerFixed extends FrameLayout {
                         viewPages[1].setTranslationX(animatingForward ? viewPages[0].getMeasuredWidth() : -viewPages[0].getMeasuredWidth());
                     }
                     nextPosition = 0;
-                    currentProgress = 0;
+                    currentProgress = 1f;
                     if (tabsView != null) {
-                        tabsView.selectTab(currentPosition, 0, 0);
+                        tabsView.selectTab(nextPosition, currentPosition, currentProgress);
                     }
                     onTabAnimationUpdate(false);
                 }
@@ -708,6 +708,10 @@ public class ViewPagerFixed extends FrameLayout {
     }
 
     public void setPosition(int position) {
+        if (adapter == null) {
+            currentPosition = position;
+            onTabAnimationUpdate(false);
+        }
         if (tabsAnimation != null) {
             tabsAnimation.cancel();
         }

@@ -233,7 +233,6 @@ public class MessageObject {
     public int lastLineWidth;
     public int textWidth;
     public int textHeight;
-    public int captionHeight;
     public boolean hasRtl;
     public float textXOffset;
 
@@ -1646,6 +1645,18 @@ public class MessageObject {
                     if (o.edit_messages != n.edit_messages) {
                         rights.append('\n').append(n.edit_messages ? '+' : '-').append(' ');
                         rights.append(LocaleController.getString("EventLogPromotedEditMessages", R.string.EventLogPromotedEditMessages));
+                    }
+                    if (o.post_stories != n.post_stories) {
+                        rights.append('\n').append(n.post_stories ? '+' : '-').append(' ');
+                        rights.append(LocaleController.getString("EventLogPromotedPostStories", R.string.EventLogPromotedPostStories));
+                    }
+                    if (o.edit_stories != n.edit_stories) {
+                        rights.append('\n').append(n.edit_messages ? '+' : '-').append(' ');
+                        rights.append(LocaleController.getString("EventLogPromotedEditStories", R.string.EventLogPromotedEditStories));
+                    }
+                    if (o.delete_stories != n.delete_stories) {
+                        rights.append('\n').append(n.delete_stories ? '+' : '-').append(' ');
+                        rights.append(LocaleController.getString("EventLogPromotedDeleteStories", R.string.EventLogPromotedDeleteStories));
                     }
                 }
                 if (o.delete_messages != n.delete_messages) {
@@ -4295,8 +4306,8 @@ public class MessageObject {
 
     public static boolean canPreviewDocument(TLRPC.Document document) {
         if (document != null && document.mime_type != null) {
-            String mime = document.mime_type.toLowerCase();
-            if (isDocumentHasThumb(document) && (mime.equals("image/png") || mime.equals("image/jpg") || mime.equals("image/jpeg")) || (Build.VERSION.SDK_INT >= 26 && (mime.equals("image/heic")))) {
+            String mime = document.mime_type;
+            if (isDocumentHasThumb(document) && (mime.equalsIgnoreCase("image/png") || mime.equalsIgnoreCase("image/jpg") || mime.equalsIgnoreCase("image/jpeg")) || (Build.VERSION.SDK_INT >= 26 && (mime.equalsIgnoreCase("image/heic")))) {
                 for (int a = 0; a < document.attributes.size(); a++) {
                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                     if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
@@ -4871,28 +4882,6 @@ public class MessageObject {
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
             caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             caption = replaceAnimatedEmoji(caption, entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
-
-            int maxWidth = getMaxMessageTextWidth();
-            final float lineSpacing = 1f;
-            final float lineAdd = 0;
-            Layout.Alignment align = Layout.Alignment.ALIGN_NORMAL;
-            StaticLayout captionLayout = null;
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    StaticLayout.Builder builder =
-                            StaticLayout.Builder.obtain(caption, 0, caption.length(), Theme.chat_msgTextPaint, maxWidth)
-                                    .setLineSpacing(lineAdd, lineSpacing)
-                                    .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
-                                    .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
-                                    .setAlignment(align);
-                    captionLayout = builder.build();
-                } else {
-                    captionLayout = new StaticLayout(caption, Theme.chat_msgTextPaint, maxWidth, align, lineSpacing, lineAdd, false);
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            captionHeight = captionLayout == null ? 0 : captionLayout.getHeight();
 
             boolean hasEntities;
             if (messageOwner.send_state != MESSAGE_SEND_STATE_SENT) {
@@ -6900,10 +6889,6 @@ public class MessageObject {
                 photoHeight = h;
             }
 
-            if (caption != null && !TextUtils.isEmpty(caption)) {
-                photoHeight += captionHeight;
-            }
-
             return photoHeight + AndroidUtilities.dp(14);
         }
     }
@@ -8080,7 +8065,7 @@ public class MessageObject {
         webpage.type = "telegram_story";
         TLRPC.TL_webPageAttributeStory attr = new TLRPC.TL_webPageAttributeStory();
         attr.id = messageOwner.media.id;
-        attr.user_id = messageOwner.media.user_id;
+        attr.peer = MessagesController.getInstance(currentAccount).getPeer(messageOwner.media.user_id);
         if (messageOwner.media.storyItem != null) {
             attr.flags |= 1;
             attr.storyItem = messageOwner.media.storyItem;

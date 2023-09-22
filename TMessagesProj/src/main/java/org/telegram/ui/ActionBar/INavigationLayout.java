@@ -277,6 +277,10 @@ public interface INavigationLayout {
         return null;
     }
 
+    void setIsSheet(boolean isSheet);
+
+    boolean isSheet();
+
     interface INavigationLayoutDelegate {
         default boolean needPresentFragment(INavigationLayout layout, NavigationParams params) {
             return needPresentFragment(params.fragment, params.removeLast, params.noAnimation, layout);

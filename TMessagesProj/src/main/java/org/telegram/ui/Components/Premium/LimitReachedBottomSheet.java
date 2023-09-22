@@ -1,26 +1,41 @@
 package org.telegram.ui.Components.Premium;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
+import android.transition.TransitionValues;
+import android.transition.Visibility;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
@@ -37,14 +52,22 @@ import org.telegram.ui.Cells.AdminedChannelCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.ChannelBoostUtilities;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -71,10 +94,16 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     public static final int TYPE_STORIES_WEEK = 15;
     public static final int TYPE_STORIES_MONTH = 16;
     public static final int TYPE_BOOSTS = 17;
+    public static final int TYPE_BOOSTS_FOR_POSTING = 18;
+    public static final int TYPE_BOOSTS_FOR_USERS = 19;
 
     private boolean canSendLink;
     private int linkRow = -1;
     private long dialogId;
+    private TLRPC.TL_stories_boostsStatus boostsStatus;
+    private ChannelBoostsController.CanApplyBoost canApplyBoost;
+    private HeaderView headerView;
+    private boolean isCurrentChat;
 
     public static String limitTypeToServerString(int type) {
         switch (type) {
@@ -135,6 +164,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     LimitParams limitParams;
     private boolean isVeryLargeFile;
     private TLRPC.Chat fromChat;
+    FireworksOverlay fireworksOverlay;
+    Runnable statisticClickRunnable;
 
     public LimitReachedBottomSheet(BaseFragment fragment, Context context, int type, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(fragment, false, hasFixedSize(type), false, resourcesProvider);
@@ -150,6 +181,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             loadInactiveChannels();
         }
         updatePremiumButtonText();
+        if (type == TYPE_BOOSTS_FOR_USERS) {
+            fireworksOverlay = new FireworksOverlay(getContext());
+            container.addView(fireworksOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
     }
 
     @Override
@@ -209,6 +244,125 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
                 return;
             }
+            if (type == TYPE_BOOSTS_FOR_USERS) {
+                canApplyBoost.checkTime();
+                if (!UserConfig.getInstance(currentAccount).isPremium()) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle(LocaleController.getString("PremiumNeeded", R.string.PremiumNeeded));
+                    builder.setSubtitle(AndroidUtilities.replaceTags(LocaleController.getString("PremiumNeededForBoosting", R.string.PremiumNeededForBoosting)));
+                    builder.setPositiveButton(LocaleController.getString("CheckPhoneNumberYes", R.string.CheckPhoneNumberYes), (dialog, which) -> {
+                        PremiumFeatureBottomSheet featureBottomSheet = new PremiumFeatureBottomSheet(parentFragment, PremiumPreviewFragment.PREMIUM_FEATURE_STORIES, false);
+                        parentFragment.showDialog(featureBottomSheet);
+                        LimitReachedBottomSheet.this.dismiss();
+                        dialog.dismiss();
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> dialog.dismiss());
+                    builder.show();
+                } else if (canApplyBoost.canApply && canApplyBoost.replaceDialogId == 0) {
+                    boostChannel();
+                } else if (canApplyBoost.giftedPremium) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle(LocaleController.getString("CantBoostWithGiftedPremium", R.string.CantBoostWithGiftedPremium));
+                    builder.setSubtitle(AndroidUtilities.replaceTags(LocaleController.formatString("CantBoostWithGiftedPremiumDescription ", R.string.CantBoostWithGiftedPremiumDescription)));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                        dialog.dismiss();
+                    });
+                    builder.show();
+                } else if (canApplyBoost.canApply) {
+                    FrameLayout frameLayout = new FrameLayout(getContext());
+                    BackupImageView fromAvatar = new BackupImageView(getContext());
+                    fromAvatar.setRoundRadius(AndroidUtilities.dp(30));
+                    frameLayout.addView(fromAvatar, LayoutHelper.createFrame(60, 60));
+                    frameLayout.setClipChildren(false);
+
+                    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    paint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                    Drawable boostDrawable = ContextCompat.getDrawable(getContext(), R.drawable.filled_limit_boost);
+                    View boostIcon = new View(getContext()) {
+                        @Override
+                        protected void onDraw(Canvas canvas) {
+                            float cx = getMeasuredWidth() / 2f;
+                            float cy = getMeasuredHeight() / 2f;
+                            canvas.drawCircle(cx, cy, getMeasuredWidth() / 2f, paint);
+                            PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -AndroidUtilities.dp(10), 0);
+                            canvas.drawCircle(cx, cy, getMeasuredWidth() / 2f - AndroidUtilities.dp(2), PremiumGradient.getInstance().getMainGradientPaint());
+                            float iconSizeHalf = AndroidUtilities.dp(18) / 2f;
+                            boostDrawable.setBounds(
+                                    (int) (cx - iconSizeHalf),
+                                    (int) (cy - iconSizeHalf),
+                                    (int) (cx + iconSizeHalf),
+                                    (int) (cy + iconSizeHalf)
+                            );
+                            boostDrawable.draw(canvas);
+                        }
+                    };
+                    frameLayout.addView(boostIcon, LayoutHelper.createFrame(28, 28, 0, 34, 34, 0, 0));
+
+                    ImageView imageView = new ImageView(getContext());
+                    imageView.setImageResource(R.drawable.msg_arrow_avatar);
+                    imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon));
+                    frameLayout.addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+
+                    BackupImageView toAvatar = new BackupImageView(getContext());
+                    toAvatar.setRoundRadius(AndroidUtilities.dp(30));
+                    frameLayout.addView(toAvatar, LayoutHelper.createFrame(60, 60, 0, 60 + 36, 0, 0, 0));
+                    FrameLayout containerLayout = new FrameLayout(getContext());
+                    containerLayout.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 60, Gravity.CENTER_HORIZONTAL));
+                    containerLayout.setClipChildren(false);
+                    TextView textView = new TextView(context);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        textView.setLetterSpacing(0.025f);
+                    }
+                    textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                    containerLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 80, 24, 0));
+
+                    AvatarDrawable fromAvatarDrawable = new AvatarDrawable();
+                    TLRPC.Chat fromChat = MessagesController.getInstance(currentAccount).getChat(-canApplyBoost.replaceDialogId);
+                    fromAvatarDrawable.setInfo(fromChat);
+                    fromAvatar.setForUserOrChat(fromChat, fromAvatarDrawable);
+
+                    AvatarDrawable toAvatarDrawable = new AvatarDrawable();
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                    toAvatarDrawable.setInfo(chat);
+                    toAvatar.setForUserOrChat(chat, toAvatarDrawable);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setView(containerLayout);
+                    textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("ReplaceBoostChannelDescription", R.string.ReplaceBoostChannelDescription,fromChat.title, chat.title)));
+                    builder.setPositiveButton(LocaleController.getString("Replace", R.string.Replace), (dialog, which) -> {
+                        dialog.dismiss();
+                        boostChannel();
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> dialog.dismiss());
+                    builder.show();
+                } else if (canApplyBoost.floodWait != 0) {
+                    String timeString;
+                    int time = canApplyBoost.floodWait;
+                    if (time < 60) {
+                        timeString = LocaleController.formatPluralString("Seconds", time);
+                    } else if (time < 60 * 60){
+                        timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                    } else if (time / 60 / 60 > 2) {
+                        timeString = LocaleController.formatPluralString("Hours", time / 60 / 60);
+                    } else {
+                        timeString = LocaleController.formatPluralString("Hours", time / 60 / 60) + " " + LocaleController.formatPluralString("Minutes", time % 60);
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle(LocaleController.getString("CantBoostTooOften", R.string.CantBoostTooOften));
+                    builder.setSubtitle(AndroidUtilities.replaceTags(LocaleController.formatString("CantBoostTooOftenDescription", R.string.CantBoostTooOftenDescription, timeString)));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                        dialog.dismiss();
+                    });
+                    builder.show();
+                }
+                return;
+            }
+            if (type == TYPE_BOOSTS_FOR_POSTING) {
+                AndroidUtilities.addToClipboard(getBoostLink());
+                dismiss();
+                return;
+            }
             if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked || isVeryLargeFile) {
                 dismiss();
                 return;
@@ -226,6 +380,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             dismiss();
         });
         premiumButtonView.overlayTextView.setOnClickListener(v -> {
+            if (type == TYPE_BOOSTS_FOR_USERS) {
+                dismiss();
+                return;
+            }
             if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
                 if (selectedChats.isEmpty()) {
                     dismiss();
@@ -244,6 +402,49 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             }
         });
         enterAnimator = new RecyclerItemsEnterAnimator(recyclerListView, true);
+    }
+
+    private void boostChannel() {
+        TransitionSet transitionSet = new TransitionSet();
+        transitionSet.addTransition(new Visibility() {
+            @Override
+            public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                AnimatorSet set = new AnimatorSet();
+                set.playTogether(
+                        ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
+                        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, AndroidUtilities.dp(20), 0)
+                );
+                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                return set;
+            }
+
+            @Override
+            public Animator onDisappear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                AnimatorSet set = new AnimatorSet();
+                set.playTogether(
+                        ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f),
+                        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0, -AndroidUtilities.dp(20))
+                );
+                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                return set;
+            }
+        });
+        transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
+        TransitionManager.beginDelayedTransition(headerView, transitionSet);
+        MessagesController.getInstance(currentAccount).getBoostsController().applyBoost(dialogId);
+        limitPreviewView.increaseCurrentValue((boostsStatus.boosts + 1) - boostsStatus.next_level_boosts * boostsStatus.level, boostsStatus.next_level_boosts - boostsStatus.next_level_boosts * boostsStatus.level);
+        boostsStatus.boosts++;
+        if (boostsStatus.next_level_boosts == boostsStatus.boosts) {
+            boostsStatus.level += 1;
+            boostsStatus.current_level_boosts = boostsStatus.boosts;
+        }
+        canApplyBoost.alreadyActive = true;
+        headerView.recreateTitleAndDescription();
+        headerView.title.setText(getBoostsTitleString());
+        headerView.description.setText(AndroidUtilities.replaceTags(getBoostsDescriptionString()));
+        updateButton();
+        fireworksOverlay.start();
+        fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
     }
 
     private void sendInviteMessages() {
@@ -267,7 +468,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         }
         AndroidUtilities.runOnUIThread(() -> {
             BulletinFactory factory = BulletinFactory.global();
-            if (factory != null)  {
+            if (factory != null) {
                 if (selectedChats.size() == 1) {
                     TLRPC.User user = (TLRPC.User) selectedChats.iterator().next();
                     factory.createSimpleBulletin(R.raw.voip_invite,
@@ -284,7 +485,14 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     public void updatePremiumButtonText() {
-        if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked || isVeryLargeFile) {
+        if (type == TYPE_BOOSTS_FOR_USERS) {
+            premiumButtonView.buttonTextView.setText(LocaleController.getString("BoostChannel", R.string.BoostChannel));
+        } else if (type == TYPE_BOOSTS_FOR_POSTING) {
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder("d ");
+            spannableStringBuilder.setSpan(new ColoredImageSpan(R.drawable.msg_copy_filled), 0, 1, 0);
+            spannableStringBuilder.append(LocaleController.getString("CopyLink", R.string.CopyLink));
+            premiumButtonView.buttonTextView.setText(spannableStringBuilder);
+        } else if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked || isVeryLargeFile) {
             premiumButtonView.buttonTextView.setText(LocaleController.getString("OK", R.string.OK));
             premiumButtonView.hideIcon();
         } else {
@@ -293,9 +501,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 if (limitParams.defaultLimit + 1 == limitParams.premiumLimit) {
                     premiumButtonView.setIcon(R.raw.addone_icon);
                 } else if (
-                    limitParams.defaultLimit != 0 && limitParams.premiumLimit != 0 &&
-                    limitParams.premiumLimit / (float) limitParams.defaultLimit >= 1.6f &&
-                    limitParams.premiumLimit / (float) limitParams.defaultLimit <= 2.5f
+                        limitParams.defaultLimit != 0 && limitParams.premiumLimit != 0 &&
+                                limitParams.premiumLimit / (float) limitParams.defaultLimit >= 1.6f &&
+                                limitParams.premiumLimit / (float) limitParams.defaultLimit <= 2.5f
                 ) {
                     premiumButtonView.setIcon(R.raw.double_icon);
                 } else {
@@ -339,7 +547,13 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private void updateButton() {
-        if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+        if (type == TYPE_BOOSTS_FOR_USERS) {
+            if (canApplyBoost.alreadyActive) {
+                premiumButtonView.setOverlayText(LocaleController.getString("OK", R.string.OK), true, true);
+            } else {
+                premiumButtonView.clearOverlayText();
+            }
+        } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
             premiumButtonView.checkCounterView();
             if (!canSendLink) {
                 premiumButtonView.setOverlayText(LocaleController.getString("Close", R.string.Close), true, true);
@@ -369,7 +583,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         if (type == TYPE_PIN_DIALOGS || type == TYPE_FOLDERS || type == TYPE_CHATS_IN_FOLDER ||
                 type == TYPE_LARGE_FILE || type == TYPE_ACCOUNTS || type == TYPE_FOLDER_INVITES ||
                 type == TYPE_SHARED_FOLDERS || type == TYPE_STORIES_COUNT || type == TYPE_STORIES_WEEK ||
-                type == TYPE_STORIES_MONTH) {
+                type == TYPE_STORIES_MONTH || type == TYPE_BOOSTS_FOR_POSTING || type == TYPE_BOOSTS_FOR_USERS) {
             return true;
         }
         return false;
@@ -403,21 +617,35 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     case 7:
                         FrameLayout frameLayout = new FrameLayout(getContext());
                         TextView linkView = new TextView(context);
-                        linkView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(13), AndroidUtilities.dp(40), AndroidUtilities.dp(13));
+                        linkView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(13), AndroidUtilities.dp(50), AndroidUtilities.dp(13));
                         linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         linkView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
                         linkView.setSingleLine(true);
                         frameLayout.addView(linkView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 11, 0));
                         linkView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
                         linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-
+                        linkView.setOnClickListener(v -> {
+                            AndroidUtilities.addToClipboard(getBoostLink());
+                        });
+                        if (statisticClickRunnable != null) {
+                            ImageView imageView = new ImageView(getContext());
+                            imageView.setImageResource(R.drawable.msg_stats);
+                            imageView.setColorFilter(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                            imageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+                            imageView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
+                            frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40 ,Gravity.RIGHT | Gravity.CENTER_VERTICAL, 15, 0, 15, 0));
+                            imageView.setOnClickListener(v -> {
+                                statisticClickRunnable.run();
+                                dismiss();
+                            });
+                        }
                         linkView.setText(getBoostLink());
                         linkView.setGravity(Gravity.CENTER);
                         view = frameLayout;
                         break;
                     default:
                     case 0:
-                        view = new HeaderView(context);
+                        view = headerView = new HeaderView(context);
                         break;
                     case 1:
                         view = new AdminedChannelCell(context, new View.OnClickListener() {
@@ -532,8 +760,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private String getBoostLink() {
-        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-        return "https://" + ChatObject.getPublicUsername(chat) +"?boost";
+        return ChannelBoostUtilities.createLink(currentAccount, dialogId);
     }
 
     public void setCurrentValue(int currentValue) {
@@ -561,7 +788,24 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         this.dialogId = dialogId;
     }
 
+    public void setBoostsStats(TLRPC.TL_stories_boostsStatus boostsStatus, boolean isCurrentChat) {
+        this.boostsStatus = boostsStatus;
+        this.isCurrentChat = isCurrentChat;
+    }
+
+    public void setCanApplyBoost(ChannelBoostsController.CanApplyBoost canApplyBoost) {
+        this.canApplyBoost = canApplyBoost;
+        updateButton();
+    }
+
+    public void showStatisticButtonInLink(Runnable runnable) {
+        this.statisticClickRunnable = runnable;
+    }
+
     private class HeaderView extends LinearLayout {
+
+        TextView title;
+        TextView description;
 
         @SuppressLint("SetTextI18n")
         public HeaderView(Context context) {
@@ -573,7 +817,14 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             int icon = limitParams.icon;
             String descriptionStr;
             boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumLocked;
-            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+            if (type == TYPE_BOOSTS_FOR_USERS) {
+                descriptionStr = getBoostsDescriptionString();
+            } else if (type == TYPE_BOOSTS_FOR_POSTING) {
+                descriptionStr = LocaleController.formatString(
+                        "ChannelNeedBoostsDescription", R.string.ChannelNeedBoostsDescription,
+                        LocaleController.formatPluralString("MoreBoosts",  boostsStatus.next_level_boosts,  boostsStatus.next_level_boosts)
+                );
+            } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
                 premiumLocked = true;
                 if (!canSendLink) {
                     if (ChatObject.isChannelAndNotMegaGroup(fromChat)) {
@@ -654,21 +905,31 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
             percent = defaultLimit / (float) premiumLimit;
 
+            if (type == TYPE_BOOSTS_FOR_POSTING || type == TYPE_BOOSTS_FOR_USERS) {
+                currentValue = 0;
+            }
+
             limitPreviewView = new LimitPreviewView(context, icon, currentValue, premiumLimit, percent, resourcesProvider);
-            limitPreviewView.setBagePosition(position);
-            limitPreviewView.setType(type);
-            limitPreviewView.defaultCount.setVisibility(View.GONE);
-            if (premiumLocked) {
-                limitPreviewView.setPremiumLocked();
+            if (type == TYPE_BOOSTS_FOR_POSTING || type == TYPE_BOOSTS_FOR_USERS) {
+                if (boostsStatus != null) {
+                    limitPreviewView.setBoosts(boostsStatus, canApplyBoost != null && canApplyBoost.alreadyActive);
+                }
             } else {
-                if (UserConfig.getInstance(currentAccount).isPremium() || isVeryLargeFile) {
-                    limitPreviewView.premiumCount.setVisibility(View.GONE);
-                    if (type == TYPE_LARGE_FILE) {
-                        limitPreviewView.defaultCount.setText("2 GB");
-                    } else {
-                        limitPreviewView.defaultCount.setText(Integer.toString(defaultLimit));
+                limitPreviewView.setBagePosition(position);
+                limitPreviewView.setType(type);
+                limitPreviewView.defaultCount.setVisibility(View.GONE);
+                if (premiumLocked) {
+                    limitPreviewView.setPremiumLocked();
+                } else {
+                    if (UserConfig.getInstance(currentAccount).isPremium() || isVeryLargeFile) {
+                        limitPreviewView.premiumCount.setVisibility(View.GONE);
+                        if (type == TYPE_LARGE_FILE) {
+                            limitPreviewView.defaultCount.setText("2 GB");
+                        } else {
+                            limitPreviewView.defaultCount.setText(Integer.toString(defaultLimit));
+                        }
+                        limitPreviewView.defaultCount.setVisibility(View.VISIBLE);
                     }
-                    limitPreviewView.defaultCount.setVisibility(View.VISIBLE);
                 }
             }
 
@@ -676,12 +937,15 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 limitPreviewView.setDelayedAnimation();
             }
 
-
             addView(limitPreviewView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0, 0));
 
-            TextView title = new TextView(context);
+            title = new TextView(context);
             title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+            if (type == TYPE_BOOSTS_FOR_USERS) {
+                title.setText(getBoostsTitleString());
+            } else if (type == TYPE_BOOSTS_FOR_POSTING) {
+                title.setText(LocaleController.getString("BoostingEnableStories", R.string.BoostingEnableStories));
+            } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
                 if (canSendLink) {
                     title.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink));
                 } else {
@@ -694,9 +958,35 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             }
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            title.setGravity(Gravity.CENTER);
             addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, premiumLocked ? 8 : 22, 0, 10));
 
-            TextView description = new TextView(context);
+            if (type == TYPE_BOOSTS_FOR_USERS && !isCurrentChat) {
+                FrameLayout frameLayout = new FrameLayout(getContext());
+                frameLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(14), Theme.getColor(Theme.key_windowBackgroundGray)));
+                BackupImageView backupImageView = new BackupImageView(getContext());
+                backupImageView.setRoundRadius(AndroidUtilities.dp(14));
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                AvatarDrawable avatarDrawable = new AvatarDrawable();
+                avatarDrawable.setInfo(chat);
+                backupImageView.setForUserOrChat(chat, avatarDrawable);
+                frameLayout.addView(backupImageView, LayoutHelper.createFrame(28, 28));
+                TextView textView = new TextView(getContext());
+                textView.setText(chat.title);
+                textView.setSingleLine(true);
+                textView.setMaxLines(1);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 36, 0, 8, 0));
+
+                addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 12));
+                ScaleStateListAnimator.apply(frameLayout);
+                frameLayout.setOnClickListener(v -> {
+                    getBaseFragment().presentFragment(ChatActivity.of(dialogId));
+                    dismiss();
+                });
+            }
+            description = new TextView(context);
             description.setText(AndroidUtilities.replaceTags(descriptionStr));
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -704,6 +994,86 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 0, 24, 24));
 
             updatePremiumButtonText();
+        }
+
+        public void recreateTitleAndDescription() {
+            int titleIndex = indexOfChild(title);
+            int descriptionIndex = indexOfChild(description);
+            removeView(title);
+
+            title = new TextView(getContext());
+            title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            title.setGravity(Gravity.CENTER);
+            addView(title, titleIndex, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 22, 0, 10));
+
+            removeView(description);
+            description = new TextView(getContext());
+            description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            description.setGravity(Gravity.CENTER_HORIZONTAL);
+            description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            addView(description, descriptionIndex, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 0, 24, 24));
+        }
+    }
+
+    private String getBoostsTitleString() {
+        if (boostsStatus.level > 0 && !canApplyBoost.alreadyActive) {
+            return LocaleController.getString("HelpUpgradeChannel", R.string.HelpUpgradeChannel);
+        } else if (boostsStatus.next_level_boosts == 0) {
+            return LocaleController.formatString("BoostsMaxLevelReached", R.string.BoostsMaxLevelReached);
+        } else if (isCurrentChat) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            if (canApplyBoost.alreadyActive) {
+                return LocaleController.formatString("YouBoostedChannel2", R.string.YouBoostedChannel2, chat.title);
+            } else {
+                return LocaleController.formatString("BoostingEnableStoriesForChannel2", R.string.BoostingEnableStoriesForChannel2, chat.title);
+            }
+        } else {
+            if (canApplyBoost.alreadyActive) {
+                return LocaleController.getString("YouBoostedChannel", R.string.YouBoostedChannel);
+            } else {
+                return LocaleController.getString("BoostingEnableStoriesForChannel", R.string.BoostingEnableStoriesForChannel);
+            }
+        }
+    }
+
+    private String getBoostsDescriptionString() {
+        boolean isZeroBoostsForNextLevel = boostsStatus.boosts == boostsStatus.current_level_boosts;
+        if (isZeroBoostsForNextLevel && canApplyBoost.alreadyActive) {
+            if (boostsStatus.level == 1) {
+                return LocaleController.formatString("ChannelBoostsJustReachedLevel1", R.string.ChannelBoostsJustReachedLevel1);
+            } else {
+                return LocaleController.formatString("ChannelBoostsJustReachedLevelNext", R.string.ChannelBoostsJustReachedLevelNext,
+                        boostsStatus.level,
+                        LocaleController.formatPluralString("BoostStories", boostsStatus.level));
+            }
+        } else {
+            if (canApplyBoost.alreadyActive) {
+                if (boostsStatus.level == 0) {
+                    return LocaleController.formatString(
+                            "ChannelNeedBoostsAlreadyBoostedDescriptionLevel1", R.string.ChannelNeedBoostsAlreadyBoostedDescriptionLevel1,
+                            LocaleController.formatPluralString("MoreBoosts",  boostsStatus.next_level_boosts - boostsStatus.boosts,  boostsStatus.next_level_boosts - boostsStatus.boosts)
+                    );
+                } else {
+                    return LocaleController.formatString("ChannelNeedBoostsDescriptionLevelNext", R.string.ChannelNeedBoostsDescriptionLevelNext,
+                            LocaleController.formatPluralString("MoreBoosts",  boostsStatus.next_level_boosts - boostsStatus.boosts,  boostsStatus.next_level_boosts - boostsStatus.boosts),
+                            LocaleController.formatPluralString("BoostStories", boostsStatus.level)
+                    );
+                }
+            } else {
+                if (boostsStatus.level == 0) {
+                    return LocaleController.formatString(
+                            "ChannelNeedBoostsDescriptionLevel1", R.string.ChannelNeedBoostsDescriptionLevel1,
+                            LocaleController.formatPluralString("MoreBoosts",  boostsStatus.next_level_boosts - boostsStatus.boosts,  boostsStatus.next_level_boosts - boostsStatus.boosts)
+                    );
+                } else {
+                    return LocaleController.formatString("ChannelNeedBoostsDescriptionLevelNext", R.string.ChannelNeedBoostsDescriptionLevelNext,
+                            LocaleController.formatPluralString("MoreBoosts",  boostsStatus.next_level_boosts - boostsStatus.boosts,  boostsStatus.next_level_boosts - boostsStatus.boosts),
+                            LocaleController.formatPluralString("BoostStories", boostsStatus.level)
+                    );
+                }
+            }
         }
     }
 
@@ -800,6 +1170,13 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             limitParams.descriptionStr = LocaleController.formatString("LimitReachedStoriesMonthly", R.string.LimitReachedStoriesMonthly, limitParams.defaultLimit, limitParams.premiumLimit);
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedStoriesMonthlyPremium", R.string.LimitReachedStoriesMonthlyPremium, limitParams.premiumLimit);
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedStoriesMonthlyPremium", R.string.LimitReachedStoriesMonthlyPremium, limitParams.defaultLimit);
+        } else if (type == TYPE_BOOSTS_FOR_POSTING || type == TYPE_BOOSTS_FOR_USERS) {
+            limitParams.defaultLimit = MessagesController.getInstance(currentAccount).storiesSentMonthlyLimitDefault;
+            limitParams.premiumLimit = MessagesController.getInstance(currentAccount).storiesSentMonthlyLimitPremium;
+            limitParams.icon = R.drawable.filled_limit_boost;
+            limitParams.descriptionStr = LocaleController.formatString("LimitReachedStoriesMonthly", R.string.LimitReachedStoriesMonthly, limitParams.defaultLimit, limitParams.premiumLimit);
+            limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedStoriesMonthlyPremium", R.string.LimitReachedStoriesMonthlyPremium, limitParams.premiumLimit);
+            limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedStoriesMonthlyPremium", R.string.LimitReachedStoriesMonthlyPremium, limitParams.defaultLimit);
         }
         return limitParams;
     }
@@ -833,7 +1210,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             }
 
             int currentValue = Math.max(chats.size(), limitParams.defaultLimit);
-            limitPreviewView.setIconValue(currentValue);
+            limitPreviewView.setIconValue(currentValue, false);
             limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
             limitPreviewView.startDelayedAnimation();
         }));
@@ -867,6 +1244,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     emptyViewDividerRow = rowCount++;
                 }
             }
+        }
+        if (type == TYPE_BOOSTS_FOR_POSTING) {
+            linkRow = rowCount++;
         }
         notifyDataSetChanged();
     }
@@ -976,7 +1356,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     }
                     int currentValue = Math.max(inactiveChats.size(), limitParams.defaultLimit);
                     if (limitPreviewView != null) {
-                        limitPreviewView.setIconValue(currentValue);
+                        limitPreviewView.setIconValue(currentValue, false);
                         limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
                         limitPreviewView.startDelayedAnimation();
                     }

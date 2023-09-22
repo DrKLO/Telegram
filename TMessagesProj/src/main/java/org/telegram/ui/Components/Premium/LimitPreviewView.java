@@ -34,6 +34,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -44,6 +45,9 @@ import java.util.ArrayList;
 
 public class LimitPreviewView extends LinearLayout {
 
+    private float percent;
+    private final int premiumLimit;
+    private int currentValue;
     public int gradientTotalHeight;
     boolean wasAnimation;
     CounterView limitIcon;
@@ -69,6 +73,10 @@ public class LimitPreviewView extends LinearLayout {
     private boolean isBoostsStyle;
 
     Theme.ResourcesProvider resourcesProvider;
+    private boolean animateIncrease;
+    private int animateIncreaseWidth;
+    float limitIconRotation;
+    public boolean isStatistic;
 
 
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, Theme.ResourcesProvider resourcesProvider) {
@@ -79,8 +87,10 @@ public class LimitPreviewView extends LinearLayout {
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, float inputPercent, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        final float percent = MathUtils.clamp(inputPercent, 0.1f, 0.9f);
+        this.percent = MathUtils.clamp(inputPercent, 0.1f, 0.9f);
         this.icon = icon;
+        this.currentValue = currentValue;
+        this.premiumLimit = premiumLimit;
         setOrientation(VERTICAL);
         setClipChildren(false);
         setClipToPadding(false);
@@ -88,7 +98,7 @@ public class LimitPreviewView extends LinearLayout {
             setPadding(0, dp(16), 0, 0);
             limitIcon = new CounterView(context);
 
-            setIconValue(currentValue);
+            setIconValue(currentValue, false);
 
             limitIcon.setPadding(dp(24), dp(6), dp(24), dp(14));
             addView(limitIcon, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.LEFT));
@@ -145,7 +155,11 @@ public class LimitPreviewView extends LinearLayout {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 if (isBoostsStyle) {
-                    grayPaint.setColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
+                    if (isStatistic) {
+                        grayPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+                    } else {
+                        grayPaint.setColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
+                    }
                 } else {
                     grayPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
                 }
@@ -200,16 +214,35 @@ public class LimitPreviewView extends LinearLayout {
                             MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
                             MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
                     );
-                    final int minWidth2 = Math.max(premiumLayout.getMeasuredWidth(), dp(24) + premiumText.getMeasuredWidth() + (premiumCount.getVisibility() == View.VISIBLE ? dp(24) + premiumCount.getMeasuredWidth() : 0));
-                    width1 = (int) Utilities.clamp(width * percent, width - minWidth2, minWidth1);
-                    defaultLayout.measure(
-                            MeasureSpec.makeMeasureSpec(width1, MeasureSpec.EXACTLY),
-                            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
-                    );
-                    premiumLayout.measure(
-                            MeasureSpec.makeMeasureSpec(width - width1, MeasureSpec.EXACTLY),
-                            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
-                    );
+                    if (isBoostsStyle) {
+                        if (percent == 0) {
+                            width1 = 0;
+                            premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                            defaultText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                        } else if (percent < 1f) {
+                            float leftWidth = defaultLayout.getMeasuredWidth() - AndroidUtilities.dp(8);
+                            float rightWidth = premiumLayout.getMeasuredWidth() - AndroidUtilities.dp(8);
+                            float availableWidth = width - leftWidth - rightWidth;
+                            width1 = (int) (leftWidth + availableWidth * percent);
+                            premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                            defaultText.setTextColor(Color.WHITE);
+                        } else {
+                            width1 = width;
+                            premiumCount.setTextColor(Color.WHITE);
+                            defaultText.setTextColor(Color.WHITE);
+                        }
+                    } else {
+                        final int minWidth2 = Math.max(premiumLayout.getMeasuredWidth(), dp(24) + premiumText.getMeasuredWidth() + (premiumCount.getVisibility() == View.VISIBLE ? dp(24) + premiumCount.getMeasuredWidth() : 0));
+                        width1 = (int) Utilities.clamp(width * percent, width - minWidth2, minWidth1);
+                        defaultLayout.measure(
+                                MeasureSpec.makeMeasureSpec(width1, MeasureSpec.EXACTLY),
+                                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+                        );
+                        premiumLayout.measure(
+                                MeasureSpec.makeMeasureSpec(width - width1, MeasureSpec.EXACTLY),
+                                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+                        );
+                    }
                     setMeasuredDimension(width, height);
                 } else {
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -234,11 +267,12 @@ public class LimitPreviewView extends LinearLayout {
         addView(limitsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 0, 0, 14, icon == 0 ? 0 : 12, 14, 0));
     }
 
-    public void setIconValue(int currentValue) {
+    public void setIconValue(int currentValue, boolean animated) {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("d ").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
         spannableStringBuilder.append(Integer.toString(currentValue));
-        limitIcon.setText(spannableStringBuilder);
+        limitIcon.setText(spannableStringBuilder, animated);
+        limitIcon.requestLayout();
     }
 
     private float getGlobalXOffset() {
@@ -267,12 +301,18 @@ public class LimitPreviewView extends LinearLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        if (!wasAnimation && limitIcon != null && animationCanPlay && !premiumLocked) {
+        if (animateIncrease || (!wasAnimation && limitIcon != null && animationCanPlay && !premiumLocked)) {
             int padding = dp(14);
-            float fromX = 0;
+            boolean animateIncreaseFinal = animateIncrease;
+            animateIncrease = false;
+            float fromX = animateIncreaseFinal ? limitIcon.getTranslationX() : 0;
             float toX = padding + Math.max(width1, (getMeasuredWidth() - padding * 2) * position) - limitIcon.getMeasuredWidth() / 2f;
             float fromProgressCenter = 0.5f;
             float toProgressCenter = 0.5f;
+            if (toX < padding) {
+                toX = padding;
+                fromProgressCenter = toProgressCenter = 0f;
+            }
             if (toX > getMeasuredWidth() - padding - limitIcon.getMeasuredWidth()) {
                 toX = getMeasuredWidth() - padding - limitIcon.getMeasuredWidth();
                 toProgressCenter = 1f;
@@ -281,13 +321,20 @@ public class LimitPreviewView extends LinearLayout {
             limitIcon.setTranslationX(fromX);
             limitIcon.setPivotX(limitIcon.getMeasuredWidth() / 2f);
             limitIcon.setPivotY(limitIcon.getMeasuredHeight());
-            limitIcon.setScaleX(0);
-            limitIcon.setScaleY(0);
-            limitIcon.createAnimationLayouts();
+            if (!animateIncreaseFinal) {
+                limitIcon.setScaleX(0);
+                limitIcon.setScaleY(0);
+                limitIcon.createAnimationLayouts();
+            }
 
             ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
             float finalToX = toX;
             float finalToProgressCenter = toProgressCenter;
+            float toWidth = width1;
+            if (animateIncreaseFinal) {
+                width1 = animateIncreaseWidth;
+            }
+            float finalFromProgressCenter = fromProgressCenter;
             valueAnimator.addUpdateListener(animation -> {
                 float v = (float) animation.getAnimatedValue();
                 float moveValue = Math.min(1f, v);
@@ -296,25 +343,47 @@ public class LimitPreviewView extends LinearLayout {
                         wasHaptic = true;
                         limitIcon.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     }
-                    limitIcon.setRotation((v - 1f) * 60);
+                    limitIcon.setRotation(limitIconRotation + (v - 1f) * 60);
                 } else {
-                    limitIcon.setRotation(0);
+                    limitIcon.setRotation(limitIconRotation);
                 }
                 limitIcon.setTranslationX(fromX * (1f - moveValue) + finalToX * moveValue);
-                float arrowCenter = fromProgressCenter * (1f - moveValue) + finalToProgressCenter * moveValue;
+                float arrowCenter = finalFromProgressCenter * (1f - moveValue) + finalToProgressCenter * moveValue;
                 limitIcon.setArrowCenter(arrowCenter);
                 float scale = Math.min(1, moveValue * 2f);
-                limitIcon.setScaleX(scale);
-                limitIcon.setScaleY(scale);
+                if (!animateIncreaseFinal) {
+                    limitIcon.setScaleX(scale);
+                    limitIcon.setScaleY(scale);
+                } else {
+                    width1 = (int) AndroidUtilities.lerp(animateIncreaseWidth, toWidth, moveValue);
+                    limitsContainer.invalidate();
+                }
                 limitIcon.setPivotX(limitIcon.getMeasuredWidth() * arrowCenter);
             });
 
             valueAnimator.setInterpolator(new OvershootInterpolator());
-            valueAnimator.setDuration(1000);
-            valueAnimator.setStartDelay(200);
+            if (animateIncreaseFinal) {
+                ValueAnimator valueAnimator1 = ValueAnimator.ofFloat(0, 1f);
+                valueAnimator1.addUpdateListener(animation -> {
+                    float p = (float) animation.getAnimatedValue();
+                    float k = 0.5f;
+                    float angle = -7;
+                    limitIconRotation = p < k ? p / k * angle : angle * (1f - (p - k) / (1f - k));
+                });
+                valueAnimator1.setDuration(500);
+                valueAnimator1.start();
+                valueAnimator.setDuration(600);
+            } else {
+                valueAnimator.setDuration(1000);
+                valueAnimator.setStartDelay(200);
+            }
             valueAnimator.start();
 
             wasAnimation = true;
+        } else if (isBoostsStyle) {
+            limitIcon.setAlpha(1f);
+            limitIcon.setScaleX(1f);
+            limitIcon.setScaleY(1f);
         } else if (premiumLocked) {
             int padding = dp(14);
             float toX = padding + (getMeasuredWidth() - padding * 2) * 0.5f - limitIcon.getMeasuredWidth() / 2f;
@@ -331,7 +400,7 @@ public class LimitPreviewView extends LinearLayout {
                 limitIcon.setScaleY(1f);
             }
             limitIcon.setTranslationX(toX);
-        } else if (limitIcon != null){
+        } else if (limitIcon != null) {
             limitIcon.setAlpha(0);
         }
     }
@@ -342,14 +411,14 @@ public class LimitPreviewView extends LinearLayout {
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                 spannableStringBuilder.append("d ").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
                 spannableStringBuilder.append(UserConfig.getInstance(UserConfig.selectedAccount).isPremium() ? "4 GB" : "2 GB");
-                limitIcon.setText(spannableStringBuilder);
+                limitIcon.setText(spannableStringBuilder, false);
             }
             premiumCount.setText("4 GB");
         } else if (type == LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED) {
             if (limitIcon != null) {
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                 spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
-                limitIcon.setText(spannableStringBuilder);
+                limitIcon.setText(spannableStringBuilder, false);
             }
             premiumCount.setText("");
         }
@@ -380,6 +449,41 @@ public class LimitPreviewView extends LinearLayout {
         limitsContainer.setVisibility(View.GONE);
         limitIcon.setPadding(dp(24), dp(3), dp(24), dp(3));
         premiumLocked = true;
+    }
+
+    public void setBoosts(TLRPC.TL_stories_boostsStatus boosts, boolean boosted) {
+        int k = boosts.current_level_boosts;
+        boolean isZeroLevelBoosts = boosts.current_level_boosts == boosts.boosts;
+        if ((isZeroLevelBoosts && boosted) || boosts.next_level_boosts == 0) {
+            percent = 1f;
+            defaultText.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level - 1));
+            premiumCount.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level));
+        } else {
+            percent = MathUtils.clamp((boosts.boosts - k) / (float) (boosts.next_level_boosts - k), 0, 1f);
+            defaultText.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level));
+            premiumCount.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level + 1));
+        }
+        setType(LimitReachedBottomSheet.TYPE_BOOSTS);
+        defaultCount.setVisibility(View.GONE);
+        premiumText.setVisibility(View.GONE);
+
+        premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(Color.WHITE);
+
+
+        setIconValue(boosts.boosts, false);
+        isBoostsStyle = true;
+    }
+
+    public void increaseCurrentValue(int value, int maxValue) {
+        currentValue++;
+        percent = MathUtils.clamp(value / (float) maxValue, 0f, 1f);
+        animateIncrease = true;
+        animateIncreaseWidth = width1;
+
+        setIconValue(currentValue, true);
+        limitsContainer.requestLayout();
+        requestLayout();
     }
 
     private class CounterView extends View {
@@ -418,12 +522,14 @@ public class LimitPreviewView extends LinearLayout {
             int h = getMeasuredHeight() - dp(8);
             float widthHalf = getMeasuredWidth() * arrowCenter;
             float x2 = Utilities.clamp(widthHalf + dp(8), getMeasuredWidth(), 0);
-            float x3 =  Utilities.clamp(widthHalf + dp(10), getMeasuredWidth(), 0);
+            float x3 = Utilities.clamp(widthHalf + dp(10), getMeasuredWidth(), AndroidUtilities.dp(24));
+            float x4 = Utilities.clamp(widthHalf - dp(24), getMeasuredWidth(), 0);
+            float x5 = Utilities.clamp(widthHalf - dp(8), getMeasuredWidth(), 0);
 
             path.rewind();
-            path.moveTo(widthHalf - dp(24), h - h / 2f - dp(2));
-            path.lineTo(widthHalf - dp(24), h);
-            path.lineTo(widthHalf - dp(8), h);
+            path.moveTo(x4, h - h / 2f - dp(2));
+            path.lineTo(x4, h);
+            path.lineTo(x5, h);
             path.lineTo(widthHalf, h + dp(8));
             if (arrowCenter < 0.7f) {
                 path.lineTo(x2, h);
@@ -476,7 +582,13 @@ public class LimitPreviewView extends LinearLayout {
                 for (int i = 0; i < animatedLayouts.size(); i++) {
                     AnimatedLayout animatedLayout = animatedLayouts.get(i);
                     canvas.save();
-                    if (animatedLayout.direction) {
+                    if (animatedLayout.replace) {
+                        canvas.translate(x + animatedLayout.x, y + h * (animatedLayout.progress) - h * (1 - animatedLayout.staticLayouts.size()));
+                        for (int j = 0; j < animatedLayout.staticLayouts.size(); j++) {
+                            canvas.translate(0, -h);
+                            animatedLayout.staticLayouts.get(j).draw(canvas);
+                        }
+                    } else if (animatedLayout.direction) {
                         canvas.translate(x + animatedLayout.x, y - h * 10 * animatedLayout.progress + h * (10 - animatedLayout.staticLayouts.size()));
                         for (int j = 0; j < animatedLayout.staticLayouts.size(); j++) {
                             canvas.translate(0, h);
@@ -506,6 +618,9 @@ public class LimitPreviewView extends LinearLayout {
 
         void createAnimationLayouts() {
             animatedLayouts.clear();
+            if (isBoostsStyle && currentValue == 0) {
+                return;
+            }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
 
             boolean direction = true;
@@ -561,6 +676,55 @@ public class LimitPreviewView extends LinearLayout {
             }
         }
 
+
+        void createAnimationLayoutsDiff(CharSequence oldText) {
+            animatedLayouts.clear();
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
+            int directionCount = 0;
+            for (int i = text.length() - 1; i >= 0; i--) {
+                char oldChar = i < oldText.length() ? oldText.charAt(i) : ' ';
+                if (oldChar != text.charAt(i) && Character.isDigit(text.charAt(i))) {
+                    AnimatedLayout animatedLayout = new AnimatedLayout();
+                    animatedLayouts.add(animatedLayout);
+                    animatedLayout.x = textLayout.getSecondaryHorizontal(i);
+                    animatedLayout.replace = true;
+                    if (directionCount >= 1) {
+                        directionCount = 0;
+                    }
+                    directionCount++;
+
+                    StaticLayout staticLayoutOld = new StaticLayout("" + oldChar, textPaint, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    animatedLayout.staticLayouts.add(staticLayoutOld);
+
+                    StaticLayout staticLayout = new StaticLayout("" + text.charAt(i), textPaint, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    animatedLayout.staticLayouts.add(staticLayout);
+                    spannableStringBuilder.setSpan(new EmptyStubSpan(), i, i + 1, 0);
+                }
+            }
+            animatedStableLayout = new StaticLayout(spannableStringBuilder, textPaint, (int) textWidth + dp(12), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            for (int i = 0; i < animatedLayouts.size(); i++) {
+                animationInProgress = true;
+                AnimatedLayout layout = animatedLayouts.get(i);
+                layout.valueAnimator = ValueAnimator.ofFloat(0, 1f);
+                layout.valueAnimator.addUpdateListener(animation -> {
+                    layout.progress = (float) animation.getAnimatedValue();
+                    invalidate();
+                });
+                layout.valueAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        layout.valueAnimator = null;
+                        checkAnimationComplete();
+                    }
+                });
+                layout.valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+                layout.valueAnimator.setDuration(250);
+                layout.valueAnimator.setStartDelay((animatedLayouts.size() - 1 - i) * 60L);
+                layout.valueAnimator.start();
+            }
+        }
+
+
         private void checkAnimationComplete() {
             for (int i = 0; i < animatedLayouts.size(); i++) {
                 if (animatedLayouts.get(i).valueAnimator != null) {
@@ -572,8 +736,14 @@ public class LimitPreviewView extends LinearLayout {
             invalidate();
         }
 
-        public void setText(CharSequence text) {
-            this.text = text;
+        public void setText(CharSequence text, boolean animated) {
+            if (!animated) {
+                this.text = text;
+            } else {
+                CharSequence oldText = this.text;
+                this.text = text;
+                createAnimationLayoutsDiff(oldText);
+            }
         }
 
         public void setArrowCenter(float v) {
@@ -585,6 +755,7 @@ public class LimitPreviewView extends LinearLayout {
         }
 
         private class AnimatedLayout {
+            public boolean replace;
             ArrayList<StaticLayout> staticLayouts = new ArrayList<>();
             float progress;
             public boolean direction;

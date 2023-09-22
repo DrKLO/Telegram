@@ -69,6 +69,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     public boolean highlightActionButtons = false;
     private boolean attached;
+    private boolean isSheet;
 
     @Override
     public void setHighlightActionButtons(boolean highlightActionButtons) {
@@ -438,6 +439,16 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         for (BaseFragment fragment : fragmentsStack) {
             fragment.setParentLayout(this);
         }
+    }
+
+    @Override
+    public void setIsSheet(boolean isSheet) {
+        this.isSheet = isSheet;
+    }
+
+    @Override
+    public boolean isSheet() {
+        return isSheet;
     }
 
     @Override
@@ -1213,7 +1224,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             return false;
         }
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("present fragment " + fragment.getClass().getSimpleName());
+            FileLog.d("present fragment " + fragment.getClass().getSimpleName() + " args=" + fragment.getArguments());
         }
         StoryViewer.closeGlobalInstances();
         if (inPreviewMode && transitionAnimationPreviewMode) {

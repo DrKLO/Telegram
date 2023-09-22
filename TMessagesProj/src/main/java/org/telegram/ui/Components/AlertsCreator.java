@@ -4183,7 +4183,7 @@ public class AlertsCreator {
         }
         if (storyId != 0) {
             TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
-            request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(peer.user_id);
+            request.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(peer.user_id);
             request.id.add(storyId);
             request.message = message;
             request.reason = reason;
@@ -4341,7 +4341,7 @@ public class AlertsCreator {
             if (storyId != 0) {
                 TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
                 request.id.add(storyId);
-                request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(dialog_id);
+                request.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialog_id);
                 request.message = "";
                 if (type == REPORT_TYPE_SPAM) {
                     request.reason = new TLRPC.TL_inputReportReasonSpam();

@@ -1263,7 +1263,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         int[] mediaCount = preloader.getLastMediaCount();
         topicId = sharedMediaPreloader.topicId;
         hasMedia = new int[]{mediaCount[0], mediaCount[1], mediaCount[2], mediaCount[3], mediaCount[4], mediaCount[5], topicId == 0 ? commonGroupsCount : 0};
-        if (userInfo != null && userInfo.stories_pinned_available || isStoriesView()) {
+        if (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView()) {
             initialTab = getInitialTab();
         } else if (membersFirst && topicId == 0) {
             initialTab = TAB_GROUPUSERS;
@@ -1496,6 +1496,28 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             }
                         }
                     });
+
+                    if (info != null && !isStoriesView()) {
+                        TLRPC.Chat chat = MessagesController.getInstance(profileActivity.getCurrentAccount()).getChat(info.id);
+                        if (chat != null && chat.admin_rights != null && chat.admin_rights.edit_stories) {
+                            ActionBarMenuSubItem openArchiveItem = new ActionBarMenuSubItem(context, false, true, resourcesProvider);
+                            openArchiveItem.setTextAndIcon(LocaleController.getString(R.string.OpenChannelArchiveStories), R.drawable.msg_archive);
+                            openArchiveItem.setOnClickListener(e -> {
+                                Bundle args = new Bundle();
+                                args.putInt("type", MediaActivity.TYPE_ARCHIVED_CHANNEL_STORIES);
+                                args.putLong("dialog_id", -info.id);
+                                MediaActivity fragment = new MediaActivity(args, null);
+                                fragment.setChatInfo(info);
+                                profileActivity.presentFragment(fragment);
+
+                                if (optionsWindow != null) {
+                                    optionsWindow.dismiss();
+                                }
+                            });
+
+                            popupLayout.addView(openArchiveItem);
+                        }
+                    }
 
                     if (hasDifferentTypes) {
                         popupLayout.addView(dividerView);
@@ -4717,6 +4739,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     public void setChatInfo(TLRPC.ChatFull chatInfo) {
+        boolean stories_pinned_available = this.info != null && this.info.stories_pinned_available;
         info = chatInfo;
         if (info != null && info.migrated_from_chat_id != 0 && mergeDialogId == 0) {
             mergeDialogId = -info.migrated_from_chat_id;
@@ -4724,6 +4747,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 sharedMediaData[a].max_id[1] = info.migrated_from_max_id;
                 sharedMediaData[a].endReached[1] = false;
             }
+        }
+        if (info != null && (stories_pinned_available != info.stories_pinned_available)) {
+            if (scrollSlidingTextTabStrip != null) {
+                scrollSlidingTextTabStrip.setInitialTabId(isArchivedOnlyStoriesView() ? TAB_ARCHIVED_STORIES : TAB_STORIES);
+            }
+            updateTabs(true);
+            switchToCurrentSelectedMode(false);
         }
     }
 
@@ -4813,7 +4843,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             animated = false;
         }
         int changed = 0;
-        if ((DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || isStoriesView()) && includeStories()) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+        if (((DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories()) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
             changed++;
         }
         if (!isStoriesView()) {
@@ -4887,15 +4917,22 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (changed > 3) {
                 idToView = null;
             }
-            if (DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || isStoriesView()) && includeStories()) {
-                if (!scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
-                    scrollSlidingTextTabStrip.addTextTab(TAB_STORIES, LocaleController.getString("ProfileStories", R.string.ProfileStories), idToView);
-                }
-                if (isStoriesView()) {
+            if ((DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories()) {
+                if (isArchivedOnlyStoriesView()) {
                     if (!scrollSlidingTextTabStrip.hasTab(TAB_ARCHIVED_STORIES)) {
                         scrollSlidingTextTabStrip.addTextTab(TAB_ARCHIVED_STORIES, LocaleController.getString("ProfileStories", R.string.ProfileStories), idToView);
                     }
                     scrollSlidingTextTabStrip.animationDuration = 420;
+                } else {
+                    if (!scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+                        scrollSlidingTextTabStrip.addTextTab(TAB_STORIES, LocaleController.getString("ProfileStories", R.string.ProfileStories), idToView);
+                    }
+                    if (isStoriesView()) {
+                        if (!scrollSlidingTextTabStrip.hasTab(TAB_ARCHIVED_STORIES)) {
+                            scrollSlidingTextTabStrip.addTextTab(TAB_ARCHIVED_STORIES, LocaleController.getString("ProfileStories", R.string.ProfileStories), idToView);
+                        }
+                        scrollSlidingTextTabStrip.animationDuration = 420;
+                    }
                 }
             }
             if (!isStoriesView()) {

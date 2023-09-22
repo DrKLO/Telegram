@@ -4018,6 +4018,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (currentType == AUTH_TYPE_MESSAGE) {
                     if (nextType == AUTH_TYPE_FLASH_CALL || nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_MISSED_CALL) {
                         problemText.setText(LocaleController.getString("DidNotGetTheCodePhone", R.string.DidNotGetTheCodePhone));
+                    } else if (nextType == AUTH_TYPE_FRAGMENT_SMS) {
+                        problemText.setText(LocaleController.getString("DidNotGetTheCodeFragment", R.string.DidNotGetTheCodeFragment));
                     } else if (nextType == 0) {
                         problemText.setText(LocaleController.getString("DidNotGetTheCode", R.string.DidNotGetTheCode));
                     } else {

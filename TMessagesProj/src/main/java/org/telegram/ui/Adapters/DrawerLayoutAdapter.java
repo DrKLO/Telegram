@@ -319,7 +319,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             }
             showDivider = true;
         }
-        boolean needDivider = false;
         if (MessagesController.getInstance(UserConfig.selectedAccount).storiesEnabled()) {
             items.add(new Item(16, LocaleController.getString("ProfileMyStories", R.string.ProfileMyStories), R.drawable.msg_menu_stories));
             showDivider = true;

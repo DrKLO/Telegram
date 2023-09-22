@@ -3654,6 +3654,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     }, resourcesProvider);
                 });
                 sendPopupLayout.addView(scheduleButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                SharedConfig.removeScheduledHint();
                 if (!self && dialog_id > 0) {
                     sendWhenOnlineButton = new ActionBarMenuSubItem(getContext(), true, !sendWithoutSoundButtonValue, resourcesProvider);
                     sendWhenOnlineButton.setTextAndIcon(LocaleController.getString("SendWhenOnline", R.string.SendWhenOnline), R.drawable.msg_online);

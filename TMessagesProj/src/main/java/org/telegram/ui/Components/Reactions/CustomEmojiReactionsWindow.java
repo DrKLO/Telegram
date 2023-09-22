@@ -258,10 +258,10 @@ public class CustomEmojiReactionsWindow {
         containerView.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 16, 16, 16, 16));
         windowView.setClipChildren(false);
-        if (type == TYPE_STORY) {
+        if (type == TYPE_STORY || (reactionsContainerLayout.getDelegate() != null && reactionsContainerLayout.getDelegate().drawBackground())) {
             selectAnimatedEmojiDialog.setBackgroundDelegate((canvas, left, top, right, bottom, x, y) -> {
                 AndroidUtilities.rectTmp.set(left, top, right, bottom);
-                reactionsContainerLayout.getDelegate().drawRoundRect(canvas, AndroidUtilities.rectTmp, 0, containerView.getX() + x, containerView.getY() - AndroidUtilities.statusBarHeight + y);
+                reactionsContainerLayout.getDelegate().drawRoundRect(canvas, AndroidUtilities.rectTmp, 0, containerView.getX() + x, getBlurOffset() + y, 255,true);
             });
         }
         if (attachToParent) {
@@ -715,7 +715,7 @@ public class CustomEmojiReactionsWindow {
         @Override
         public void invalidate() {
             super.invalidate();
-            if (type == TYPE_STORY) {
+            if (type == TYPE_STORY || (reactionsContainerLayout != null && reactionsContainerLayout.getDelegate() != null && reactionsContainerLayout.getDelegate().drawBackground())) {
                 selectAnimatedEmojiDialog.invalidateSearchBox();
             }
         }
@@ -759,8 +759,8 @@ public class CustomEmojiReactionsWindow {
 
 
             transitionReactions.clear();
-            if (type == TYPE_STORY) {
-                reactionsContainerLayout.getDelegate().drawRoundRect(canvas, drawingRect, radius, getX(), getY() - AndroidUtilities.statusBarHeight);
+            if (type == TYPE_STORY || (reactionsContainerLayout.getDelegate() != null && reactionsContainerLayout.getDelegate().drawBackground())) {
+                reactionsContainerLayout.getDelegate().drawRoundRect(canvas, drawingRect, radius, getX(), getBlurOffset(), 255, true);
             } else {
                 shadow.setAlpha((int) (Utilities.clamp(progressClpamped / 0.05f, 1f, 0f) * 255));
                 shadow.setBounds((int) drawingRect.left - shadowPad.left, (int) drawingRect.top - shadowPad.top, (int) drawingRect.right + shadowPad.right, (int) drawingRect.bottom + shadowPad.bottom);

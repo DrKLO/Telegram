@@ -44,6 +44,8 @@ public class BottomPagerTabs extends View {
         final RectF clickRect = new RectF();
 
         final AnimatedFloat nonscrollingT = new AnimatedFloat(BottomPagerTabs.this, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
+        public int customEndFrameMid;
+        public int customEndFrameEnd;
 
         public Tab(int i, int resId, CharSequence text) {
             this.i = i;
@@ -70,29 +72,27 @@ public class BottomPagerTabs extends View {
                 return;
             }
 
-            if (i == 0) {
-                // 0 - 20
-                // 20 - 40
+            if (tabs[i].customEndFrameMid != 0) {
                 if (active) {
-                    drawable.setCustomEndFrame(20);
-                    if (drawable.getCurrentFrame() >= 38) {
+                    drawable.setCustomEndFrame(customEndFrameMid);
+                    if (drawable.getCurrentFrame() >= customEndFrameEnd - 2) {
                         drawable.setCurrentFrame(0, false);
                     }
-                    if (drawable.getCurrentFrame() <= 20) {
+                    if (drawable.getCurrentFrame() <= customEndFrameMid) {
                         drawable.start();
                     } else {
-                        drawable.setCurrentFrame(20);
+                        drawable.setCurrentFrame(customEndFrameMid);
                     }
                 } else {
-                    if (drawable.getCurrentFrame() >= 19) {
-                        drawable.setCustomEndFrame(39);
+                    if (drawable.getCurrentFrame() >= customEndFrameMid - 1) {
+                        drawable.setCustomEndFrame(customEndFrameEnd - 1);
                         drawable.start();
                     } else {
                         drawable.setCustomEndFrame(0);
                         drawable.setCurrentFrame(0);
                     }
                 }
-            } else if (i == 1 && active) {
+            } else if (active) {
                 drawable.setCurrentFrame(0);
                 if (animated) {
                     drawable.start();

@@ -31,9 +31,12 @@ public class ReactionImageHolder {
     ReactionsLayoutInBubble.VisibleReaction reaction;
     private final int currentAccount = UserConfig.selectedAccount;
     ReactionsLayoutInBubble.VisibleReaction currentReaction;
-    private final View parent;
+    private View parent;
     private boolean attached;
     float alpha = 1f;
+    private boolean isStatic;
+    int lastColorForFilter;
+    ColorFilter colorFilter;
 
     public ReactionImageHolder(View parent) {
         this.parent = parent;
@@ -52,20 +55,28 @@ public class ReactionImageHolder {
         }
 
         this.currentReaction = currentReaction;
+        String filter = "60_60";
+        if (isStatic) {
+            filter += "_firstframe";
+        }
         if (currentReaction.emojicon != null) {
             TLRPC.TL_availableReaction defaultReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
             if (defaultReaction != null) {
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(defaultReaction.select_animation, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                imageReceiver.setImage(ImageLocation.getForDocument(defaultReaction.select_animation), "60_60", null, null, svgThumb, 0, "tgs", currentReaction, 0);
+                imageReceiver.setImage(ImageLocation.getForDocument(defaultReaction.select_animation), filter, null, null, svgThumb, 0, "tgs", currentReaction, 0);
 //                imageReceiver.setAllowStartAnimation(false);
 //                imageReceiver.setAutoRepeatCount(1);
             }
         } else {
-            animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, UserConfig.selectedAccount, currentReaction.documentId);
+            int type = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE;
+            if (isStatic) {
+                type = AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC;
+            }
+            animatedEmojiDrawable = new AnimatedEmojiDrawable(type, UserConfig.selectedAccount, currentReaction.documentId);
             if (attached) {
                 animatedEmojiDrawable.addView(parent);
             }
-            animatedEmojiDrawable.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_ATOP));
+            animatedEmojiDrawable.setColorFilter(colorFilter = new PorterDuffColorFilter(lastColorForFilter = Color.BLACK, PorterDuff.Mode.SRC_ATOP));
         }
     }
 
@@ -74,6 +85,7 @@ public class ReactionImageHolder {
             if (animatedEmojiDrawable.getImageReceiver() != null) {
                 animatedEmojiDrawable.getImageReceiver().setRoundRadius((int) (bounds.width() * 0.1f));
             }
+            animatedEmojiDrawable.setColorFilter(colorFilter);
             animatedEmojiDrawable.setBounds(bounds);
             animatedEmojiDrawable.setAlpha((int) (255 * alpha));
             animatedEmojiDrawable.draw(canvas);
@@ -109,5 +121,33 @@ public class ReactionImageHolder {
 
     public void play() {
         imageReceiver.startAnimation();
+    }
+
+    public void setParent(View parentView) {
+        if (this.parent == parentView) {
+            return;
+        }
+        if (attached) {
+            onAttachedToWindow(false);
+            this.parent = parentView;
+            onAttachedToWindow(true);
+        } else {
+            this.parent = parentView;
+        }
+
+    }
+
+    public void setStatic() {
+        isStatic = true;
+    }
+
+    public void setColor(int color) {
+        if (lastColorForFilter != color) {
+            lastColorForFilter = color;
+            colorFilter = new PorterDuffColorFilter(lastColorForFilter, PorterDuff.Mode.SRC_ATOP);
+            if (parent != null) {
+                parent.invalidate();
+            }
+        }
     }
 }

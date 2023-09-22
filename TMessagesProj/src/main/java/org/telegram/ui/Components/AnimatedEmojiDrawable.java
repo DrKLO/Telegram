@@ -662,28 +662,6 @@ public class AnimatedEmojiDrawable extends Drawable {
         imageReceiver.draw(canvas);
     }
 
-    public void drawRaw(Canvas canvas, boolean nextFrame, int fps) {
-        if (imageReceiver == null) {
-            return;
-        }
-        if (imageReceiver.getLottieAnimation() != null) {
-            RLottieDrawable rlottie = imageReceiver.getLottieAnimation();
-            if (nextFrame) {
-                int inc = (int) Math.round((float) rlottie.getFramesCount() / (rlottie.getDuration() / 1000f) / 30f);
-                rlottie.currentFrame = (rlottie.currentFrame + inc) % rlottie.getFramesCount();
-            }
-            rlottie.setBounds(getBounds());
-            rlottie.drawFrame(canvas, rlottie.currentFrame);
-        } else if (imageReceiver.getAnimation() != null) {
-            AnimatedFileDrawable webp = imageReceiver.getAnimation();
-            webp.drawFrame(canvas, nextFrame ? fps / 30 : 0);
-        } else {
-            imageReceiver.setImageCoords(getBounds());
-            imageReceiver.setAlpha(alpha);
-            imageReceiver.draw(canvas);
-        }
-    }
-
     public void draw(Canvas canvas, Rect drawableBounds, float alpha) {
         if (imageReceiver == null) {
             return;

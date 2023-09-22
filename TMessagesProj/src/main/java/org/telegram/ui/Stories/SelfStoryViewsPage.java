@@ -483,7 +483,8 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         }
     }
 
-    public void setStoryItem(SelfStoryViewsView.StoryItemInternal storyItem) {
+    public void setStoryItem(long dialogId, SelfStoryViewsView.StoryItemInternal storyItem) {
+        this.dialogId = dialogId;
         this.storyItem = storyItem;
         updateViewsVisibility();
         updateViewState(false);
@@ -507,7 +508,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 if (defaultModel != null) {
                     defaultModel.release();
                 }
-                defaultModel = new ViewsModel(currentAccount, serverItem, true);
+                defaultModel = new ViewsModel(currentAccount, dialogId, serverItem, true);
                 defaultModel.reloadIfNeed(state, showContactsFilter, showReactionsSort);
                 defaultModel.loadNext();
                 MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.put(serverItem.id, defaultModel);
@@ -581,7 +582,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         ((MarginLayoutParams) shadowView2.getLayoutParams()).topMargin = AndroidUtilities.dp(TOP_PADDING - 17);
     }
 
-    public static void preload(int currentAccount, TLRPC.StoryItem storyItem) {
+    public static void preload(int currentAccount, long dialogId, TLRPC.StoryItem storyItem) {
         if (storyItem == null) {
             return;
         }
@@ -591,7 +592,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             if (model != null) {
                 model.release();
             }
-            model = new ViewsModel(currentAccount, storyItem, true);
+            model = new ViewsModel(currentAccount, dialogId, storyItem, true);
             model.loadNext();
             MessagesController.getInstance(currentAccount).storiesController.selfViewsModel.put(storyItem.id, model);
         }
@@ -651,14 +652,14 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.storiesUpdated) {
             if (storyItem.uploadingStory != null) {
-                TLRPC.TL_userStories stories = MessagesController.getInstance(currentAccount).storiesController.getStories(UserConfig.getInstance(currentAccount).clientUserId);
+                TLRPC.PeerStories stories = MessagesController.getInstance(currentAccount).storiesController.getStories(UserConfig.getInstance(currentAccount).clientUserId);
                 if (stories != null) {
                     for (int i = 0; i < stories.stories.size(); i++) {
                         TLRPC.StoryItem storyItem = stories.stories.get(i);
                         if (storyItem.attachPath != null && storyItem.attachPath.equals(this.storyItem.uploadingStory.path)) {
                             this.storyItem.uploadingStory = null;
                             this.storyItem.storyItem = storyItem;
-                            setStoryItem(this.storyItem);
+                            setStoryItem(dialogId, this.storyItem);
                             break;
                         }
                     }
@@ -955,6 +956,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
         public int totalCount;
         TLRPC.StoryItem storyItem;
+        private long dialogId;
         int currentAccount;
         boolean loading;
         ArrayList<TLRPC.TL_storyView> views = new ArrayList<>();
@@ -971,9 +973,10 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         ArrayList<SelfStoryViewsPage> listeners = new ArrayList<>();
         FiltersState state = new FiltersState();
 
-        public ViewsModel(int currentAccount, TLRPC.StoryItem storyItem, boolean isDefault) {
+        public ViewsModel(int currentAccount, long dialogId, TLRPC.StoryItem storyItem, boolean isDefault) {
             this.currentAccount = currentAccount;
             this.storyItem = storyItem;
+            this.dialogId = dialogId;
             this.totalCount = storyItem.views == null ? 0 : storyItem.views.views_count;
             if (totalCount < 200) {
                 useLocalFilters = true;
@@ -1006,6 +1009,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             }
             TLRPC.TL_stories_getStoryViewsList req = new TLRPC.TL_stories_getStoryViewsList();
             req.id = storyItem.id;
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             if (useLocalFilters) {
                 req.q = "";
                 req.just_contacts = false;

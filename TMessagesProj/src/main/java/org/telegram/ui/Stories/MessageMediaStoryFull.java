@@ -15,6 +15,7 @@ public class MessageMediaStoryFull extends TLRPC.TL_messageMediaStory {
         id = stream.readInt32(exception);
         storyItem = TLRPC.StoryItem.TLdeserialize(stream, stream.readInt32(exception), exception);
         via_mention = stream.readBool(exception);
+        peer = MessagesController.getInstance(UserConfig.selectedAccount).getPeer(user_id);
     }
 
     public void serializeToStream(AbstractSerializedData stream) {

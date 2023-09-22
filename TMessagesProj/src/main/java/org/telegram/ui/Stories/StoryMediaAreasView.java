@@ -40,10 +40,12 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.EmojiAnimationsOverlay;
 import org.telegram.ui.LocationActivity;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.util.ArrayList;
 
@@ -67,6 +69,19 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         addView(hintsContainer = new FrameLayout(context));
     }
 
+    public static ArrayList<TLRPC.MediaArea> getMediaAreasFor(StoryEntry entry) {
+        if (entry == null || entry.mediaEntities == null) {
+            return null;
+        }
+        ArrayList<TLRPC.MediaArea> areas = new ArrayList<>();
+        for (int i = 0; i < entry.mediaEntities.size(); i++) {
+            if (entry.mediaEntities.get(i).mediaArea instanceof TLRPC.TL_mediaAreaSuggestedReaction) {
+                areas.add(entry.mediaEntities.get(i).mediaArea);
+            }
+        }
+        return areas;
+    }
+
     protected void onHintVisible(boolean hintVisible) {
 
     }
@@ -77,7 +92,12 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
     private ArrayList<TLRPC.MediaArea> lastMediaAreas;
 
-    public void set(ArrayList<TLRPC.MediaArea> mediaAreas) {
+    public void set(TLRPC.StoryItem storyItem, EmojiAnimationsOverlay animationsOverlay) {
+        ArrayList<TLRPC.MediaArea> mediaAreas = storyItem != null ? storyItem.media_areas : null;
+        set(storyItem, mediaAreas, animationsOverlay);
+    }
+
+    public void set(TLRPC.StoryItem storyItem, ArrayList<TLRPC.MediaArea> mediaAreas, EmojiAnimationsOverlay animationsOverlay) {
         if (mediaAreas == lastMediaAreas && (mediaAreas == null || lastMediaAreas == null || mediaAreas.size() == lastMediaAreas.size())) {
             return;
         }
@@ -112,7 +132,17 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         for (int i = 0; i < mediaAreas.size(); ++i) {
             TLRPC.MediaArea mediaArea = mediaAreas.get(i);
             if (mediaArea != null && mediaArea.coordinates != null) {
-                AreaView areaView = new AreaView(getContext(), this, mediaArea);
+                View areaView;
+                if (mediaArea instanceof TLRPC.TL_mediaAreaSuggestedReaction) {
+                    StoryReactionWidgetView storyReactionWidgetView = new StoryReactionWidgetView(getContext(), this, (TLRPC.TL_mediaAreaSuggestedReaction) mediaArea, animationsOverlay);
+                    areaView = storyReactionWidgetView;
+                    if (storyItem != null) {
+                        storyReactionWidgetView.setViews(storyItem.views, false);
+                    }
+                    ScaleStateListAnimator.apply(areaView);
+                } else {
+                    areaView = new AreaView(getContext(), this, mediaArea);
+                }
                 areaView.setOnClickListener(this);
                 addView(areaView);
 
@@ -152,6 +182,10 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
             return;
         }
 
+        if (v instanceof StoryReactionWidgetView) {
+            showEffect((StoryReactionWidgetView) v);
+            return;
+        }
         if (selectedArea == v) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (hintView != null) {
@@ -248,6 +282,10 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         hintsContainer.addView(hintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50));
         hintView.show();
         onHintVisible(true);
+    }
+
+    public void showEffect(StoryReactionWidgetView v) {
+
     }
 
     public void closeHint() {
@@ -365,6 +403,39 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
     public boolean hasSelected() {
         return selectedArea != null;
+    }
+
+    public void onStoryItemUpdated(TLRPC.StoryItem storyItem, boolean animated) {
+        if (storyItem == null) {
+            return;
+        }
+        for (int i = 0; i < getChildCount(); i++) {
+            if (getChildAt(i) instanceof StoryReactionWidgetView) {
+                StoryReactionWidgetView storyReactionWidgetView = (StoryReactionWidgetView) getChildAt(i);
+                storyReactionWidgetView.setViews(storyItem.views, animated);
+            }
+        }
+    }
+
+    public boolean hasClickableViews(float x, float y) {
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            if (child == hintsContainer) {
+                continue;
+            }
+            if (!(child instanceof StoryReactionWidgetView)) {
+                continue;
+            }
+            child.getMatrix().invert(matrix);
+            point[0] = x;
+            point[1] = y;
+            matrix.mapPoints(point);
+            if (point[0] >= child.getLeft() && point[0] <= child.getRight() &&
+                point[1] >= child.getTop() && point[1] <= child.getBottom()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static class AreaView extends View {

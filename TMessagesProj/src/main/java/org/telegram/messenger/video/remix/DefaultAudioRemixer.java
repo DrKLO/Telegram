@@ -9,7 +9,9 @@ public class DefaultAudioRemixer implements AudioRemixer {
     @Override
     public void remix(@NonNull ShortBuffer inputBuffer, int inputChannelCount, @NonNull ShortBuffer outputBuffer, int outputChannelCount) {
         AudioRemixer remixer;
-        if (inputChannelCount > outputChannelCount) {
+        if (inputChannelCount == 6 && outputChannelCount == 2) {
+            remixer = AudioRemixer.PASSTHROUGH;
+        } else if (inputChannelCount > outputChannelCount) {
             remixer = DOWNMIX;
         } else if (inputChannelCount < outputChannelCount) {
             remixer = AudioRemixer.UPMIX;
@@ -22,7 +24,9 @@ public class DefaultAudioRemixer implements AudioRemixer {
     @Override
     public int getRemixedSize(int inputSize, int inputChannelCount, int outputChannelCount) {
         AudioRemixer remixer;
-        if (inputChannelCount > outputChannelCount) {
+        if (inputChannelCount == 6 && outputChannelCount == 2) {
+            remixer = AudioRemixer.PASSTHROUGH;
+        } else if (inputChannelCount > outputChannelCount) {
             remixer = DOWNMIX;
         } else if (inputChannelCount < outputChannelCount) {
             remixer = AudioRemixer.UPMIX;

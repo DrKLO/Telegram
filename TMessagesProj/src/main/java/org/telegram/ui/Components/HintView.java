@@ -137,8 +137,9 @@ public class HintView extends FrameLayout {
         imageView.setImageResource(R.drawable.msg_mini_close_tooltip);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_gifSaveHintText), 125), PorterDuff.Mode.MULTIPLY));
-        imageView.setOnClickListener(v -> hide(true));
         addView(imageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, isTopArrow ? 3 : 0, 0, isTopArrow ? 0 : 3));
+
+        setOnClickListener(v -> hide(true));
     }
 
     public void setBackgroundColor(int background, int text) {

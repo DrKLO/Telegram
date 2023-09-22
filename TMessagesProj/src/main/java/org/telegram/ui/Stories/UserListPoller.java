@@ -50,9 +50,9 @@ public class UserListPoller {
             if (!collectedDialogIds.isEmpty()) {
                 ArrayList<Long> dialogsFinal = new ArrayList<>(collectedDialogIds);
                 collectedDialogIds.clear();
-                TLRPC.TL_users_getStoriesMaxIDs request = new TLRPC.TL_users_getStoriesMaxIDs();
+                TLRPC.TL_stories_getPeerMaxIDs request = new TLRPC.TL_stories_getPeerMaxIDs();
                 for (int i = 0; i < dialogsFinal.size(); i++) {
-                    request.id.add(MessagesController.getInstance(currentAccount).getInputUser(dialogsFinal.get(i)));
+                    request.id.add(MessagesController.getInstance(currentAccount).getInputPeer(dialogsFinal.get(i)));
                 }
                 ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response != null) {
@@ -60,19 +60,33 @@ public class UserListPoller {
                         ArrayList<TLRPC.User> usersToUpdate = new ArrayList<>();
                         ArrayList<TLRPC.Chat> chatsToUpdate = new ArrayList<>();
                         for (int i = 0; i < vector.objects.size(); i++) {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogsFinal.get(i));
-                            if (user == null) {
-                                continue;
-                            }
-                            user.stories_max_id = (int) vector.objects.get(i);
-                            if (user.stories_max_id != 0) {
-                                user.flags2 |= 32;
+                            if (dialogsFinal.get(i) > 0) {
+                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogsFinal.get(i));
+                                if (user == null) {
+                                    continue;
+                                }
+                                user.stories_max_id = (int) vector.objects.get(i);
+                                if (user.stories_max_id != 0) {
+                                    user.flags2 |= 32;
+                                } else {
+                                    user.flags2 &= ~32;
+                                }
+                                usersToUpdate.add(user);
                             } else {
-                                user.flags2 &= ~32;
+                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(dialogsFinal.get(i));
+                                if (chat == null) {
+                                    continue;
+                                }
+                                chat.stories_max_id = (int) vector.objects.get(i);
+                                if (chat.stories_max_id != 0) {
+                                    chat.flags2 |= 16;
+                                } else {
+                                    chat.flags2 &= ~16;
+                                }
+                                chatsToUpdate.add(chat);
                             }
-                            usersToUpdate.add(user);
                         }
-                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(usersToUpdate, null, true, true);
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(usersToUpdate, chatsToUpdate, true, true);
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
                     }
                 }));

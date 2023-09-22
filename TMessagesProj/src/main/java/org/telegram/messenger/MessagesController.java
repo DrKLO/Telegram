@@ -146,6 +146,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private boolean hasArchivedChats;
     private boolean hasStories;
     public long storiesChangelogUserId = 777000;
+    private ChannelBoostsController channelBoostsControler;
 
     public static TLRPC.Peer getPeerFromInputPeer(TLRPC.InputPeer peer) {
         if (peer.chat_id != 0) {
@@ -161,6 +162,19 @@ public class MessagesController extends BaseController implements NotificationCe
             peerUser.user_id = peer.user_id;
             return peerUser;
         }
+    }
+
+    public ChannelBoostsController getBoostsController() {
+        if (channelBoostsControler != null) {
+            return channelBoostsControler;
+        }
+        synchronized (lockObjects[currentAccount]) {
+            if (channelBoostsControler != null) {
+                return channelBoostsControler;
+            }
+            channelBoostsControler = new ChannelBoostsController(currentAccount);
+        }
+        return channelBoostsControler;
     }
 
     class ChatlistUpdatesStat {
@@ -4707,6 +4721,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         oldChat.flags &= ~16384;
                     } else {
                         oldChat.flags |= 16384;
+                    }
+                    if (!chat.stories_hidden_min) {
+                        chat.stories_hidden = oldChat.stories_hidden;
                     }
                     if (oldFlags != newFlags || oldFlags2 != newFlags2) {
                         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.channelRightsUpdated, chat));
@@ -14788,7 +14805,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateReadStories) {
                 TLRPC.TL_updateReadStories updateReadStories = (TLRPC.TL_updateReadStories) baseUpdate;
-                getStoriesController().markStoriesAsReadFromServer(updateReadStories.user_id, updateReadStories.max_id);
+                long dialogId = DialogObject.getPeerDialogId(updateReadStories.peer);
+                getStoriesController().markStoriesAsReadFromServer(dialogId, updateReadStories.max_id);
             } else if (baseUpdate instanceof TLRPC.TL_updatePeerSettings) {
                 TLRPC.TL_updatePeerSettings update = (TLRPC.TL_updatePeerSettings) baseUpdate;
                 if (contactsIds == null) {
@@ -16308,7 +16326,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                         }
                     } else if (baseUpdate instanceof TLRPC.TL_updateSentStoryReaction) {
-                        getStoriesController().updateStoryReaction(((TLRPC.TL_updateSentStoryReaction) baseUpdate).user_id, ((TLRPC.TL_updateSentStoryReaction) baseUpdate).story_id, ((TLRPC.TL_updateSentStoryReaction) baseUpdate).reaction);
+                        TLRPC.TL_updateSentStoryReaction updateReaction = (TLRPC.TL_updateSentStoryReaction) baseUpdate;
+                        long dialogId = DialogObject.getPeerDialogId(updateReaction.peer);
+                        getStoriesController().updateStoryReaction(dialogId, updateReaction.story_id, updateReaction.reaction);
                     }
                 }
                 if (editor != null) {

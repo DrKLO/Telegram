@@ -143,7 +143,7 @@ public class DrawerActionCell extends FrameLayout {
             } else {
                 textView.setText(bot.short_name);
             }
-            TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideMenuBotIcon(bot);
+            TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
             if (botIcon != null) {
                 imageView.setImage(ImageLocation.getForDocument(botIcon.icon), "24_24", (Drawable) null, bot);
             } else {

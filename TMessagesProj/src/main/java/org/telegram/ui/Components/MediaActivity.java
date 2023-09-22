@@ -467,7 +467,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 getMessagesController().getStoriesController().updateStoriesInLists(dialogId, storyItems);
                 final boolean[] undone = new boolean[] { false };
                 applyBulletin = () -> {
-                    getMessagesController().getStoriesController().updateStoriesPinned(storyItems, pin, null);
+                    getMessagesController().getStoriesController().updateStoriesPinned(dialogId, storyItems, pin, null);
                 };
                 final Runnable undo = () -> {
                     undone[0] = true;
@@ -1159,10 +1159,13 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
         @Override
         public Tab[] createTabs() {
-            return new Tab[] {
+            Tab[] tabs = new Tab[] {
                     new Tab(0, R.raw.msg_stories_saved, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab)),
                     new Tab(1, R.raw.msg_stories_archive, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab))
             };
+            tabs[0].customEndFrameMid = 20;
+            tabs[0].customEndFrameEnd = 40;
+            return tabs;
         }
     }
 

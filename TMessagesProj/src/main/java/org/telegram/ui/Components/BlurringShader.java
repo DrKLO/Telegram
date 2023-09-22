@@ -931,14 +931,11 @@ public class BlurringShader {
             return true;
         }
 
-        public Drawable makeDrawable(float offsetX, float offsetY, Drawable base) {
+        public Drawable makeDrawable(float offsetX, float offsetY, Drawable base, float r) {
             return new Drawable() {
 
                 float alpha = 1f;
                 private final Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                {
-                    dimPaint.setColor(0x52000000);
-                }
 
                 @Nullable
                 private Paint getPaint() {
@@ -971,22 +968,47 @@ public class BlurringShader {
 
                     Rect bounds = getBounds();
                     if (paint != null) {
-                        canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
+                        if (base != null) {
+                            canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
+                            base.setBounds(bounds);
+                            base.draw(canvas);
+                            canvas.drawRect(bounds, paint);
+                            canvas.restore();
+                            getPadding(AndroidUtilities.rectTmp2);
+                            AndroidUtilities.rectTmp.set(
+                                bounds.left + AndroidUtilities.rectTmp2.left,
+                                bounds.top + AndroidUtilities.rectTmp2.top,
+                                bounds.right - AndroidUtilities.rectTmp2.right,
+                                bounds.bottom - AndroidUtilities.rectTmp2.bottom
+                            );
+                            dimPaint.setColor(0x66000000);
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, dimPaint);
+                        } else {
+                            if (r > 0) {
+                                AndroidUtilities.rectTmp.set(bounds);
+                                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
+                            } else {
+                                canvas.drawRect(bounds, paint);
+                            }
+                            dimPaint.setColor(0x66000000);
+                            if (r > 0) {
+                                AndroidUtilities.rectTmp.set(bounds);
+                                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, dimPaint);
+                            } else {
+                                canvas.drawRect(bounds, dimPaint);
+                            }
+                        }
+                    } else if (base != null) {
                         base.setBounds(bounds);
                         base.draw(canvas);
-                        canvas.drawRect(bounds, paint);
-                        canvas.restore();
-                        getPadding(AndroidUtilities.rectTmp2);
-                        AndroidUtilities.rectTmp.set(
-                            bounds.left + AndroidUtilities.rectTmp2.left,
-                            bounds.top + AndroidUtilities.rectTmp2.top,
-                            bounds.right - AndroidUtilities.rectTmp2.right,
-                            bounds.bottom - AndroidUtilities.rectTmp2.bottom
-                        );
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), dimPaint);
                     } else {
-                        base.setBounds(bounds);
-                        base.draw(canvas);
+                        dimPaint.setColor(-14145495);
+                        if (r > 0) {
+                            AndroidUtilities.rectTmp.set(bounds);
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, dimPaint);
+                        } else {
+                            canvas.drawRect(bounds, dimPaint);
+                        }
                     }
                 }
 
@@ -1005,7 +1027,12 @@ public class BlurringShader {
 
                 @Override
                 public boolean getPadding(@NonNull Rect padding) {
-                    return base.getPadding(padding);
+                    if (base != null) {
+                        return base.getPadding(padding);
+                    } else {
+                        padding.set(0, 0, 0, 0);
+                        return true;
+                    }
                 }
             };
         }

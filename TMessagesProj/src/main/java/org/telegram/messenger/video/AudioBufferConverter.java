@@ -68,7 +68,9 @@ public class AudioBufferConverter {
     }
 
     private void checkChannels(int inputChannelCount, int outputChannelCount){
-        // Check channel count.
+        if (inputChannelCount == 6 && outputChannelCount == 2) {
+            return;
+        }
         if (inputChannelCount != 1 && inputChannelCount != 2) {
             throw new UnsupportedOperationException("Input channel count (" + inputChannelCount + ") not supported.");
         }

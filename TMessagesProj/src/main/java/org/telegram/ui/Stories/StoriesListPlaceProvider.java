@@ -107,11 +107,12 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.clipParent = storiesCell;
                     holder.clipTop = holder.clipBottom = 0;
                     holder.alpha = 1;
-                    if (cell.isFail) {
+                    if (cell.isFail && storiesCell.isExpanded()) {
                         final Path path = new Path();
                         holder.drawClip = (canvas, bounds, alpha, opening) -> {
+                            if (opening) return;
                             path.rewind();
-                            final float t = opening ? 1f - (float) Math.pow(1f - alpha, 2) : (float) Math.pow(alpha, 2);
+                            final float t = (float) Math.pow(alpha, 2);
                             path.addCircle(bounds.right + dp(7) - dp(14) * t, bounds.bottom + dp(7) - dp(14) * t, dp(11), Path.Direction.CW);
                             canvas.clipPath(path, Region.Op.DIFFERENCE);
                         };

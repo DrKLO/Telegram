@@ -131,9 +131,6 @@ android {
             sourceSets.release {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
-            sourceSets.standalone {
-                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_standalone.xml'
-            }
             minSdkVersion 23
             ext {
                 abiVersionCode = 2

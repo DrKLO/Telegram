@@ -435,6 +435,13 @@ public class LinkActionView extends LinearLayout {
         }
     }
 
+    public void hideOptions() {
+        optionsView.setVisibility(View.GONE);
+        linkView.setGravity(Gravity.CENTER);
+        removeView.setVisibility(View.GONE);
+        avatarsContainer.setVisibility(View.GONE);
+    }
+
     private class AvatarsContainer extends FrameLayout {
 
         TextView countTextView;

@@ -19,6 +19,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -79,6 +80,7 @@ public class CaptionContainerView extends FrameLayout {
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     public final EditTextEmoji editText;
+    private Drawable applyButtonCheck;
     private CombinedDrawable applyButtonDrawable;
     public ImageView applyButton;
     public FrameLayout limitTextContainer;
@@ -287,7 +289,9 @@ public class CaptionContainerView extends FrameLayout {
 
         applyButton = new BounceableImageView(context);
         ScaleStateListAnimator.apply(applyButton, 0.05f, 1.25f);
-        applyButtonDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider)), context.getResources().getDrawable(R.drawable.input_done).mutate(), 0, AndroidUtilities.dp(1));
+        applyButtonCheck = context.getResources().getDrawable(R.drawable.input_done).mutate();
+        applyButtonCheck.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.SRC_IN));
+        applyButtonDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider)), applyButtonCheck, 0, AndroidUtilities.dp(1));
         applyButtonDrawable.setCustomSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
         applyButton.setImageDrawable(applyButtonDrawable);
         applyButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -364,7 +368,7 @@ public class CaptionContainerView extends FrameLayout {
                 }
             }
             editText.getEditText().requestFocus();
-            editText.getEditText().setSelection(editText.getEditText().length(), editText.getEditText().length());
+//            editText.getEditText().setSelection(editText.getEditText().length(), editText.getEditText().length());
             editText.openKeyboard();
             editText.getEditText().setScrollY(0);
             return true;
@@ -632,22 +636,22 @@ public class CaptionContainerView extends FrameLayout {
             ignoreDraw = true;
             drawBlurBitmap(blurBitmap, 12);
             ignoreDraw = false;
-            if (blurBitmap != null && blurBitmap.isRecycled()) {
-                blurBitmap = null;
-                return;
-            }
-            blurBitmapShader = new BitmapShader(blurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-            if (blurBitmapMatrix == null) {
-                blurBitmapMatrix = new Matrix();
+            if (blurBitmap != null && !blurBitmap.isRecycled()) {
+                blurBitmapShader = new BitmapShader(blurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                if (blurBitmapMatrix == null) {
+                    blurBitmapMatrix = new Matrix();
+                } else {
+                    blurBitmapMatrix.reset();
+                }
+                blurBitmapShader.setLocalMatrix(blurBitmapMatrix);
+                if (blurPaint == null) {
+                    blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+                    blurPaint.setColor(0xffffffff);
+                }
+                blurPaint.setShader(blurBitmapShader);
             } else {
-                blurBitmapMatrix.reset();
+                blurBitmap = null;
             }
-            blurBitmapShader.setLocalMatrix(blurBitmapMatrix);
-            if (blurPaint == null) {
-                blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-                blurPaint.setColor(0xffffffff);
-            }
-            blurPaint.setShader(blurBitmapShader);
         }
     }
 
@@ -957,6 +961,7 @@ public class CaptionContainerView extends FrameLayout {
 
     public void updateColors(Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
+        applyButtonCheck.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.SRC_IN));
         applyButtonDrawable.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider)));
     }
 

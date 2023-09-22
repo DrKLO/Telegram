@@ -785,6 +785,16 @@ public class AndroidUtilities {
         return new float[] {xOffset, yOffset};
     }
 
+    public static void doOnLayout(View view, Runnable runnable) {
+        view.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                view.removeOnLayoutChangeListener(this);
+                runnable.run();
+            }
+        });
+    }
+
     private static class LinkSpec {
         String url;
         int start;

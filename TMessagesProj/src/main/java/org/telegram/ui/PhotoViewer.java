@@ -1777,10 +1777,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 windowLayoutParams.flags =
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                     WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                    WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
                     WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-            } else {
-                windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
             }
             windowLayoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE | WindowManager.LayoutParams.SOFT_INPUT_IS_FORWARD_NAVIGATION;
             windowView.setFocusable(false);
@@ -4607,7 +4604,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     navigationBarLayoutParams.bottomMargin = -navigationBarHeight / 2;
                     navigationBar.setLayoutParams(navigationBarLayoutParams);
                 }
-                containerView.setPadding(insets.left, 0, insets.right, 0);
+                containerView.setPadding(newInsets.getSystemWindowInsetLeft(), 0, newInsets.getSystemWindowInsetRight(), 0);
                 if (actionBar != null) {
                     AndroidUtilities.cancelRunOnUIThread(updateContainerFlagsRunnable);
                     if (isVisible && animationInProgress == 0) {
@@ -4636,10 +4633,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             windowLayoutParams.flags =
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                 WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-        } else {
-            windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         }
 
         paintingOverlay = new PaintingOverlay(parentActivity);
@@ -6045,6 +6039,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             protected void setupMentionContainer() {
+                if (parentChatActivity != null) {
+                    return;
+                }
+                mentionContainer.getAdapter().setAllowStickers(false);
+                mentionContainer.getAdapter().setAllowBots(false);
+                mentionContainer.getAdapter().setAllowChats(false);
+                mentionContainer.getAdapter().setSearchInDailogs(true);
                 if (parentChatActivity != null) {
                     mentionContainer.getAdapter().setChatInfo(parentChatActivity.chatInfo);
                     mentionContainer.getAdapter().setNeedUsernames(parentChatActivity.currentChat != null);
@@ -10534,7 +10535,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 photoPaintView.keyboardVisible = paintKeyboardNotifier.keyboardVisible();
                 containerView.invalidate();
                 height = Math.max(height, photoPaintView.getEmojiPadding(false));
-                translateY(photoPaintView.isCurrentText() && height > 0 ? ((AndroidUtilities.displaySize.y - height) / 2f - photoPaintView.getSelectedEntityCenterY()) / 2.5f : 0);
+                translateY(photoPaintView.isCurrentText() && height > 0 ? (AndroidUtilities.displaySize.y - height - dp(80) - photoPaintView.getSelectedEntityBottom()) : 0);
 
                 if (paintKeyboardAnimator != null) {
                     paintKeyboardAnimator.cancel();
@@ -14270,10 +14271,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 windowLayoutParams.flags =
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                     WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                    WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
                     WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-            } else {
-                windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
             }
             if (chatActivity != null && chatActivity.getCurrentEncryptedChat() != null ||
                     avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isChatNoForwards(-avatarsDialogId) ||
@@ -16984,100 +16982,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 canvas.rotate(rotation);
             } else {
                 canvas.rotate(rotation * cropAnimationValue);
-            }
-        }
-        tempInt[0] = bitmapWidth;
-        tempInt[1] = bitmapHeight;
-        return tempInt;
-    }
-
-    private int[] applyCrop(Matrix matrix, int containerWidth, int containerHeight, int bitmapWidth, int bitmapHeight, float currentScale, CropTransform cropTransform, MediaController.CropState cropState) {
-        int originalWidth = bitmapWidth;
-        int originalHeight = bitmapHeight;
-        float scale = Math.min(containerWidth / (float) originalWidth, containerHeight / (float) originalHeight);
-        int rotatedWidth = originalWidth;
-        int rotatedHeight = originalHeight;
-        int orientation = cropTransform.getOrientation();
-        if (orientation == 90 || orientation == 270) {
-            int temp = bitmapWidth;
-            bitmapWidth = bitmapHeight;
-            bitmapHeight = temp;
-
-            temp = rotatedWidth;
-            rotatedWidth = rotatedHeight;
-            rotatedHeight = temp;
-        }
-        float cropAnimationValue;
-        if (sendPhotoType != SELECT_TYPE_AVATAR && (currentEditMode == EDIT_MODE_PAINT || switchingToMode == EDIT_MODE_PAINT)) {
-            cropAnimationValue = 1.0f;
-        } else if (imageMoveAnimation != null && switchingToMode != -1) {
-            if (currentEditMode == EDIT_MODE_CROP || switchingToMode == EDIT_MODE_CROP || (currentEditMode == EDIT_MODE_FILTER || currentEditMode == EDIT_MODE_PAINT) && switchingToMode == -1) {
-                cropAnimationValue = 1.0f;
-            } else if (switchingToMode == EDIT_MODE_NONE) {
-                cropAnimationValue = animationValue;
-            } else {
-                cropAnimationValue = 1.0f - animationValue;
-            }
-        } else {
-            cropAnimationValue = currentEditMode == EDIT_MODE_FILTER || currentEditMode == EDIT_MODE_PAINT ? 0.0f : 1.0f;
-        }
-        float cropPw = cropTransform.getCropPw();
-        float cropPh = cropTransform.getCropPh();
-        bitmapWidth *= cropPw + (1.0f - cropPw) * (1.0f - cropAnimationValue);
-        bitmapHeight *= cropPh + (1.0f - cropPh) * (1.0f - cropAnimationValue);
-        float scaleToFitX = containerWidth / (float) bitmapWidth;
-        if (scaleToFitX * bitmapHeight > containerHeight) {
-            scaleToFitX = containerHeight / (float) bitmapHeight;
-        }
-//        if (sendPhotoType != SELECT_TYPE_AVATAR && (currentEditMode != EDIT_MODE_CROP || switchingToMode == EDIT_MODE_NONE) && cropState != null) {
-//            float startW = bitmapWidth * scaleToFitX;
-//            float startH = bitmapHeight * scaleToFitX;
-//            float originalScaleToFitX = containerWidth / (float) originalWidth;
-//            if (originalScaleToFitX * originalHeight > containerHeight) {
-//                originalScaleToFitX = containerHeight / (float) originalHeight;
-//            }
-//            float finalW = originalWidth * originalScaleToFitX / currentScale;
-//            float finalH = originalHeight * originalScaleToFitX / currentScale;
-//
-//            float w = startW + (finalW - startW) * (1.0f - cropAnimationValue);
-//            float h = startH + (finalH - startH) * (1.0f - cropAnimationValue);
-//
-//            canvas.clipRect(-w / 2, -h / 2, w / 2, h / 2);
-//        }
-        if (sendPhotoType == SELECT_TYPE_AVATAR || cropTransform.hasViewTransform()) {
-            float cropScale;
-            if (currentEditMode == EDIT_MODE_CROP || sendPhotoType == SELECT_TYPE_AVATAR) {
-                float trueScale = 1.0f + (cropTransform.getTrueCropScale() - 1.0f) * (1.0f - cropAnimationValue);
-                cropScale = cropTransform.getScale() / trueScale;
-                float scaleToFit = containerWidth / (float) rotatedWidth;
-                if (scaleToFit * rotatedHeight > containerHeight) {
-                    scaleToFit = containerHeight / (float) rotatedHeight;
-                }
-                cropScale *= scaleToFit / scale;
-                if (sendPhotoType == SELECT_TYPE_AVATAR) {
-                    if (currentEditMode == EDIT_MODE_PAINT || switchingToMode == EDIT_MODE_PAINT) {
-                        cropScale /= 1.0f + (cropTransform.getMinScale() - 1.0f) * (1.0f - cropAnimationValue);
-                    } else if (switchingToMode == EDIT_MODE_NONE) {
-                        cropScale /= cropTransform.getMinScale();
-                    }
-                }
-            } else {
-                cropScale = cropState != null ? cropState.cropScale : 1.0f;
-                float trueScale = 1.0f + (cropScale - 1.0f) * (1.0f - cropAnimationValue);
-                cropScale *= scaleToFitX / scale / trueScale;
-            }
-
-            matrix.postTranslate(cropTransform.getCropAreaX() * cropAnimationValue, cropTransform.getCropAreaY() * cropAnimationValue);
-            matrix.postScale(cropScale, cropScale);
-            matrix.postTranslate(cropTransform.getCropPx() * rotatedWidth * scale * cropAnimationValue, cropTransform.getCropPy() * rotatedHeight * scale * cropAnimationValue);
-            float rotation = (cropTransform.getRotation() + orientation);
-            if (rotation > 180) {
-                rotation -= 360;
-            }
-            if (sendPhotoType == SELECT_TYPE_AVATAR && (currentEditMode == EDIT_MODE_PAINT || switchingToMode == EDIT_MODE_PAINT)) {
-                matrix.postRotate(rotation);
-            } else {
-                matrix.postRotate(rotation * cropAnimationValue);
             }
         }
         tempInt[0] = bitmapWidth;

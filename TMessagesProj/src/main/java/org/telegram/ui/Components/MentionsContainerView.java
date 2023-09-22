@@ -270,6 +270,10 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
 
     }
 
+    protected void onAnimationScroll() {
+
+    }
+
     public MentionsListView getListView() {
         return listView;
     }
@@ -321,6 +325,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
         containerPadding = AndroidUtilities.dp(2 + (topPadding ? 2 : 0));
 
         float r = AndroidUtilities.dp(6);
+        float wasContainerTop = containerTop;
         if (reversed) {
             int paddingViewTop = paddedAdapter.paddingViewAttached ? paddedAdapter.paddingView.getTop() : getHeight();
             float top = Math.max(0, paddingViewTop + listView.getTranslationY()) + containerPadding;
@@ -343,6 +348,9 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
             if (r > 0) {
                 rect.bottom += (int) r;
             }
+        }
+        if (Math.abs(wasContainerTop - containerTop) > 0.1f) {
+            onAnimationScroll();
         }
 
         if (paint == null) {
@@ -504,6 +512,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                         );
                 listViewTranslationAnimator.addUpdateListener((anm, val, vel) -> {
                     listView.setTranslationY(val);
+                    onAnimationScroll();
                     hideT = AndroidUtilities.lerp(fromHideT, toHideT, (val - fromTranslation) / (toTranslation - fromTranslation));
                 });
                 if (forceZeroHeight) {

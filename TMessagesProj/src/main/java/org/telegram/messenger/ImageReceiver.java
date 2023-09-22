@@ -54,6 +54,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     List<ImageReceiver> preloadReceivers;
     private boolean allowCrossfadeWithImage = true;
     private boolean allowDrawWhileCacheGenerating;
+    private ArrayList<Decorator> decorators;
 
     public boolean updateThumbShaderMatrix() {
         if (currentThumbDrawable != null && thumbShader != null) {
@@ -1080,6 +1081,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (lottieDrawable != null) {
             lottieDrawable.removeParentView(this);
         }
+        if (decorators != null) {
+            for (int i = 0; i < decorators.size(); i++) {
+                decorators.get(i).onDetachedFromWidnow();
+            }
+        }
     }
 
     public boolean setBackupImage() {
@@ -1162,6 +1168,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
         if (staticThumbDrawable instanceof AttachableDrawable) {
             ((AttachableDrawable) staticThumbDrawable).onAttachedToWindow(this);
+        }
+        if (decorators != null) {
+            for (int i = 0; i < decorators.size(); i++) {
+                decorators.get(i).onAttachedToWindow(this);
+            }
         }
         return false;
     }
@@ -2027,6 +2038,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
         if (gradientBitmap != null && currentImageKey != null) {
             canvas.restore();
+        }
+        if (result && isVisible && decorators != null) {
+            for (int i = 0; i < decorators.size(); i++) {
+                decorators.get(i).onDraw(canvas, this);
+            }
         }
         return result;
     }
@@ -3142,6 +3158,26 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return holder;
     }
 
+    public void clearDecorators() {
+        if (decorators != null) {
+            if (attachedToWindow) {
+                for (int i = 0; i < decorators.size(); i++) {
+                    decorators.get(i).onDetachedFromWidnow();
+                }
+            }
+            decorators.clear();
+        }
+    }
+    public void addDecorator(Decorator decorator) {
+        if (decorators == null) {
+            decorators = new ArrayList<>();
+        }
+        decorators.add(decorator);
+        if (attachedToWindow) {
+            decorator.onAttachedToWindow(this);
+        }
+    }
+
     public static class BackgroundThreadDrawHolder {
         public boolean animationNotReady;
         public float overrideAlpha;
@@ -3222,6 +3258,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
         public ReactionLastFrame(Bitmap bitmap) {
             super(bitmap);
+        }
+    }
+
+    public static abstract class Decorator {
+        protected abstract void onDraw(Canvas canvas, ImageReceiver imageReceiver);
+        public void onAttachedToWindow(ImageReceiver imageReceiver) {
+
+        }
+        public void onDetachedFromWidnow() {
+
         }
     }
 }

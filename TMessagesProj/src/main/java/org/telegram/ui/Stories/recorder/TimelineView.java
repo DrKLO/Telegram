@@ -28,6 +28,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -133,7 +134,7 @@ public class TimelineView extends View {
     private final RectF audioBounds = new RectF();
     private final Path audioClipPath = new Path();
     private final Paint waveformPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path waveformPath = new Path();
+    private final WaveformPath waveformPath = new WaveformPath();
 
     private final Paint audioDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Drawable audioIcon;
@@ -212,7 +213,7 @@ public class TimelineView extends View {
                     })
                     .setGravity(Gravity.RIGHT)
                     .forceTop(true)
-                    .translate(dp(6) - (w - uiRight), dp(4) + (!hasVideo ? dp(audioSelected ? 35 : 40) : 0))
+                    .translate(-(w - uiRight) + dp(18), dp(4) + (!hasVideo ? dp(audioSelected ? 35 : 40) : 0))
                     .show();
                 itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
 
@@ -260,12 +261,14 @@ public class TimelineView extends View {
         }
     }
 
-    private final AnimatedFloat loopProgress = new AnimatedFloat(0, this, 0, 200, CubicBezierInterpolator.EASE_BOTH);
+    private final AnimatedFloat loopProgress = new AnimatedFloat(0, this, 0, 340, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private long loopProgressFrom = -1;
     public void setProgress(long progress) {
         if (
             hasVideo && progress < this.progress && progress <= videoDuration * videoLeft + 240 && this.progress + 240 >= videoDuration * videoRight ||
             hasAudio && progress < this.progress && progress <= audioDuration * audioLeft + 240 && this.progress + 240 >= audioDuration * audioRight
         ) {
+            loopProgressFrom = -1;
             loopProgress.set(1, true);
         }
         this.progress = progress;
@@ -283,14 +286,17 @@ public class TimelineView extends View {
     }
 
     public void setAudio(String audioPath, String audioAuthorText, String audioTitleText, long duration, long offset, float left, float right, float volume, boolean animated) {
-        this.audioPath = audioPath;
-        if (waveform != null) {
-            waveform.destroy();
-            waveform = null;
-            waveformIsLoaded = false;
-            waveformLoaded.set(0, true);
+        if (!TextUtils.equals(this.audioPath, audioPath)) {
+            if (waveform != null) {
+                waveform.destroy();
+                waveform = null;
+                waveformIsLoaded = false;
+                waveformLoaded.set(0, true);
+            }
+            this.audioPath = audioPath;
+            setupAudioWaveform();
         }
-        setupAudioWaveform();
+        this.audioPath = audioPath;
         hasAudio = !TextUtils.isEmpty(audioPath);
         if (!hasAudio) {
             audioSelected = false;
@@ -389,7 +395,7 @@ public class TimelineView extends View {
                     final float maxDuration = Math.min(MAX_SCROLL_DURATION, getBaseDuration());
                     final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
                     final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + maxDuration) / (float) audioDuration);
-                    if (audioLeft > minLeft + .01f || audioRight < maxRight - .01f) {
+                    if (!hasVideo) {
                         return HANDLE_AUDIO_REGION;
                     } else {
                         return HANDLE_AUDIO_SCROLL;
@@ -423,19 +429,19 @@ public class TimelineView extends View {
     }
 
     private Runnable askExactSeek;
-    private void setProgressAt(float x, boolean fast) {
+    private boolean setProgressAt(float x, boolean fast) {
         if (!hasVideo && !hasAudio) {
-            return;
+            return false;
         }
 
         final long scrollWidth = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
         final float t = (x - px - ph) / sw;
         long progress = (long) Utilities.clamp(t * scrollWidth + (!hasVideo ? -audioOffset : 0) + scroll, hasVideo ? videoDuration : audioDuration, 0);
         if (hasVideo && (progress / (float) videoDuration < videoLeft || progress / (float) videoDuration > videoRight)) {
-            return;
+            return false;
         }
         if (hasAudio && !hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
-            return;
+            return false;
         }
         this.progress = progress;
         invalidate();
@@ -453,6 +459,7 @@ public class TimelineView extends View {
                 }
             }, 150);
         }
+        return true;
     }
 
     private float getVideoHeight() {
@@ -476,10 +483,15 @@ public class TimelineView extends View {
     private boolean hadDragChange;
     private VelocityTracker velocityTracker;
     private boolean scrollingVideo = true;
+    private boolean scrolling = false;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!hasVideo && !hasAudio) {
+            return false;
+        }
+
+        if (hasVideo && !hasAudio && event.getY() < h - py - getVideoHeight() - py && event.getAction() == MotionEvent.ACTION_DOWN) {
             return false;
         }
 
@@ -564,7 +576,7 @@ public class TimelineView extends View {
                 } else if (pressHandle == HANDLE_AUDIO_LEFT || pressHandle == HANDLE_AUDIO_RIGHT || pressHandle == HANDLE_AUDIO_REGION) {
                     float d = Δx / sw * (videoScrollDuration / (float) audioDuration);
                     if (pressHandle == HANDLE_AUDIO_LEFT) {
-                        float maxValue = audioRight - MIN_SELECT_DURATION / (float) audioDuration;
+                        float maxValue = audioRight - minAudioSelect() / (float) audioDuration;
                         float minValue = Math.max(0, scroll - audioOffset) / (float) audioDuration;
                         if (!hasVideo) {
                             minValue = Math.max(minValue, audioRight - MAX_SELECT_DURATION / (float) audioDuration);
@@ -585,7 +597,7 @@ public class TimelineView extends View {
                         }
                     } else if (pressHandle == HANDLE_AUDIO_RIGHT) {
                         float maxValue = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
-                        float minValue = audioLeft + MIN_SELECT_DURATION / (float) audioDuration;
+                        float minValue = audioLeft + minAudioSelect() / (float) audioDuration;
                         if (!hasVideo) {
                             maxValue = Math.min(maxValue, audioLeft + MAX_SELECT_DURATION / (float) audioDuration);
                             if (!hadDragChange && d > 0 && audioRight >= (audioLeft + MAX_SELECT_DURATION / (float) audioDuration)) {
@@ -617,10 +629,14 @@ public class TimelineView extends View {
                             delegate.onAudioOffsetChange(audioOffset + (long) (audioLeft * audioDuration));
                             delegate.onAudioRightChange(audioRight);
                         }
+                        if (delegate != null) {
+                            delegate.onProgressDragChange(true);
+                        }
                     }
                     if (!hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
                         progress = (long) (audioLeft * audioDuration);
                         if (delegate != null) {
+                            delegate.onProgressDragChange(true);
                             delegate.onProgressChange(progress, false);
                         }
                     }
@@ -629,46 +645,7 @@ public class TimelineView extends View {
                     draggingProgress = false;
                 } else if (pressHandle == HANDLE_AUDIO_SCROLL) {
                     float d = Δx / sw * videoScrollDuration;
-                    if (!hasVideo) {
-                        audioOffset = Utilities.clamp(audioOffset + (long) d, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
-                    } else if (audioSelected) {
-                        final long mx = (long) Math.max(getBaseDuration(), audioDuration);
-                        final long mn = (long) Math.min(getBaseDuration(), audioDuration);
-                        audioOffset = Utilities.clamp(audioOffset + (long) d, (long) (getBaseDuration() - audioDuration * audioRight), mn - mx);
-                    } else {
-                        audioOffset = Utilities.clamp(audioOffset + (long) d, (long) (getBaseDuration() - audioDuration * audioRight), (long) (-audioLeft * audioDuration));
-                    }
-                    final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-                    final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
-                    boolean changedLeftRight = false;
-                    final float pastDuration = audioRight - audioLeft;
-                    if (audioLeft < minLeft) {
-                        audioLeft = minLeft;
-                        audioRight = Math.min(1, audioLeft + pastDuration);
-                        changedLeftRight = true;
-                    }
-                    if (audioRight > maxRight) {
-                        audioRight = maxRight;
-                        audioLeft = Math.max(0, audioRight - pastDuration);
-                        changedLeftRight = true;
-                    }
-                    if (delegate != null && changedLeftRight) {
-                        delegate.onAudioLeftChange(audioLeft);
-                        delegate.onAudioRightChange(audioRight);
-                    }
-                    if (!hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
-                        progress = (long) (audioLeft * audioDuration);
-                        if (delegate != null) {
-                            delegate.onProgressChange(progress, false);
-                        }
-                    }
-                    invalidate();
-                    if (delegate != null) {
-                        delegate.onAudioOffsetChange(audioOffset + (long) (audioLeft * audioDuration));
-                    }
-                    if (!dragged && delegate != null) {
-                        delegate.onProgressDragChange(true);
-                    }
+                    moveAudioOffset(d);
                     dragged = true;
                     draggingProgress = false;
                 } else if (draggingProgress) {
@@ -689,6 +666,7 @@ public class TimelineView extends View {
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
             AndroidUtilities.cancelRunOnUIThread(this.onLongPress);
             scroller.abortAnimation();
+            boolean scrollStopped = true;
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (System.currentTimeMillis() - pressTime <= ViewConfiguration.getTapTimeout() && !dragged) {
                     if (!pressVideo && !audioSelected) {
@@ -698,7 +676,12 @@ public class TimelineView extends View {
                         audioSelected = false;
                         invalidate();
                     } else {
-                        setProgressAt(event.getX(), false);
+                        long wasProgress = progress;
+                        if (setProgressAt(event.getX(), false) && Math.abs(progress - wasProgress) > 400) {
+                            loopProgressFrom = wasProgress;
+                            loopProgress.set(1, true);
+                            invalidate();
+                        }
                     }
                 } else if (pressHandle == HANDLE_VIDEO_SCROLL && velocityTracker != null) {
                     velocityTracker.computeCurrentVelocity(1000);
@@ -708,7 +691,9 @@ public class TimelineView extends View {
                         final long videoScrollDuration = Math.min(videoDuration, MAX_SCROLL_DURATION);
                         final int scrollX = (int) (px + scroll / (float) videoScrollDuration * sw);
                         final int maxScrollX = (int) (px + (videoDuration - videoScrollDuration) / (float) videoScrollDuration * sw);
-                        scroller.fling(scrollX, 0, -velocity, 0, px, maxScrollX, 0, 0);
+                        scrolling = true;
+                        scroller.fling(wasScrollX = scrollX, 0, -velocity, 0, px, maxScrollX, 0, 0);
+                        scrollStopped = false;
                     }
                 } else if ((pressHandle == HANDLE_AUDIO_SCROLL || pressHandle == HANDLE_AUDIO_REGION && !dragged) && hasVideo && audioSelected && velocityTracker != null) {
                     velocityTracker.computeCurrentVelocity(1000);
@@ -716,10 +701,12 @@ public class TimelineView extends View {
                     scrollingVideo = false;
                     if (Math.abs(velocity) > dp(100)) {
                         final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-                        final int scrollX = (int) (px + audioOffset / (float) videoScrollDuration * sw);
+                        final int scrollX = (int) (px + ph + audioOffset / (float) videoScrollDuration * sw);
                         final long mx = (long) Math.max(getBaseDuration(), audioDuration);
                         final long mn = (long) Math.min(getBaseDuration(), audioDuration);
-                        scroller.fling(scrollX, 0, velocity, 0, (int) (px + ph + (mn - mx) / (float) videoScrollDuration * sw), px + ph, 0, 0);
+                        scrolling = true;
+                        scroller.fling(wasScrollX = scrollX, 0, velocity, 0, (int) (px + ph + (long) ((videoLeft * videoDuration) - (1 * audioDuration)) / (float) videoScrollDuration * sw), (int) (px + ph + (long) ((videoRight * videoDuration) - (0 * audioDuration)) / (float) videoScrollDuration * sw), 0, 0);
+                        scrollStopped = false;
                     }
                 }
             }
@@ -727,7 +714,7 @@ public class TimelineView extends View {
                 AndroidUtilities.cancelRunOnUIThread(askExactSeek);
                 askExactSeek = null;
             }
-            if (dragged && delegate != null) {
+            if (dragged && scrollStopped && delegate != null) {
                 delegate.onProgressDragChange(false);
             }
             dragged = false;
@@ -743,10 +730,104 @@ public class TimelineView extends View {
         return true;
     }
 
+    private long minAudioSelect() {
+        return (long) Math.max(MIN_SELECT_DURATION, Math.min(videoDuration, MAX_SELECT_DURATION) * 0.25f);
+    }
+
+    private void moveAudioOffset(final float d) {
+        final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+        if (!hasVideo) {
+            audioOffset = Utilities.clamp(audioOffset + (long) d, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+        } else if (audioSelected) {
+            long mx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
+            long mn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
+            final float wasDuration = Math.min(audioRight - audioLeft, (videoRight - videoLeft) * videoDuration / (float) audioDuration);
+            if (audioOffset + (long) d > mx) {
+                audioRight = Utilities.clamp((videoRight * videoDuration - audioOffset - (long) d) / (float) audioDuration, 1, wasDuration);
+                audioLeft = Utilities.clamp(audioRight - wasDuration, 1, 0);
+                long mmx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
+                long mmn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                audioOffset = Utilities.clamp(audioOffset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onAudioRightChange(audioRight);
+                }
+            } else if (audioOffset + (long) d < mn) {
+                audioLeft = Utilities.clamp((videoLeft * videoDuration - audioOffset - (long) d) / (float) audioDuration, 1 - wasDuration, 0);
+                audioRight = Utilities.clamp(audioLeft + wasDuration, 1, 0);
+                long mmx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
+                long mmn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                audioOffset = Utilities.clamp(audioOffset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onAudioLeftChange(audioLeft);
+                }
+            } else {
+                audioOffset += (long) d;
+            }
+        } else {
+            audioOffset = Utilities.clamp(audioOffset + (long) d, (long) (getBaseDuration() - audioDuration * audioRight), (long) (-audioLeft * audioDuration));
+        }
+//        final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
+//        final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
+//        boolean changedLeftRight = false;
+//        final float pastDuration = audioRight - audioLeft;
+//        if (audioLeft < minLeft) {
+//            audioLeft = minLeft;
+//            audioRight = Math.min(1, audioLeft + pastDuration);
+//            changedLeftRight = true;
+//        }
+//        if (audioRight > maxRight) {
+//            audioRight = maxRight;
+//            audioLeft = Math.max(0, audioRight - pastDuration);
+//            changedLeftRight = true;
+//        }
+//        if (delegate != null && changedLeftRight) {
+//            delegate.onAudioLeftChange(audioLeft);
+//            delegate.onAudioRightChange(audioRight);
+//        }
+        if (!hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
+            progress = (long) (audioLeft * audioDuration);
+            if (delegate != null) {
+                delegate.onProgressChange(progress, false);
+            }
+        }
+        invalidate();
+        if (delegate != null) {
+            delegate.onAudioOffsetChange(audioOffset + (long) (audioLeft * audioDuration));
+        }
+        if (!dragged && delegate != null) {
+            delegate.onProgressDragChange(true);
+
+            if (hasVideo) {
+                long progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+                if (Math.abs(progress - progressToStart) > 400) {
+                    loopProgressFrom = progress;
+                    loopProgress.set(1, true);
+                }
+                delegate.onProgressChange(progress = progressToStart, false);
+            }
+        } else if ((dragged || scrolling) && hasVideo) {
+            progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            if (delegate != null) {
+                delegate.onProgressChange(progress, false);
+            }
+        }
+    }
+
+    private int wasScrollX;
     @Override
     public void computeScroll() {
         if (scroller.computeScrollOffset()) {
-            float scrollX = scroller.getCurrX();
+            int scrollX = scroller.getCurrX();
             final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
             if (scrollingVideo) {
                 long wasScroll = scroll;
@@ -758,27 +839,105 @@ public class TimelineView extends View {
 //                    delegate.onVideoRightChange(videoRight);
 //                }
             } else {
-                audioOffset = (long) ((scrollX - px - ph) / (float) sw * videoScrollDuration);
-                final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-                final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
-                boolean changedLeftRight = false;
-                final float pastDuration = audioRight - audioLeft;
-                if (audioLeft < minLeft) {
-                    audioLeft = minLeft;
-                    audioRight = Math.min(1, audioLeft + pastDuration);
-                    changedLeftRight = true;
-                }
-                if (audioRight > maxRight) {
-                    audioRight = maxRight;
-                    audioLeft = Math.max(0, audioRight - pastDuration);
-                    changedLeftRight = true;
-                }
-                if (delegate != null && changedLeftRight) {
-                    delegate.onAudioLeftChange(audioLeft);
-                    delegate.onAudioRightChange(audioRight);
-                }
+                final float d = ((scrollX - px - ph) / (float) sw * videoScrollDuration) - ((wasScrollX - px - ph) / (float) sw * videoScrollDuration);
+                moveAudioOffset(d);
             }
             invalidate();
+            wasScrollX = scrollX;
+        } else if (scrolling) {
+            scrolling = false;
+            if (delegate != null) {
+                delegate.onProgressDragChange(false);
+            }
+        }
+    }
+
+    class WaveformPath extends Path {
+
+        private int lastWaveformCount;
+        private float lastAnimatedLoaded;
+        private long lastScrollDuration;
+        private float lastAudioHeight;
+        private float lastMaxBar;
+        private float lastAudioSelected;
+        private float lastBottom;
+        private float lastStart;
+        private float lastLeft;
+        private float lastRight;
+
+        public void check(
+            float start, float left, float right,
+            float audioSelected,
+            float animatedLoaded,
+            long scrollDuration,
+            float audioHeight,
+            float maxBar,
+            float bottom
+        ) {
+            if (waveform == null) {
+                rewind();
+                return;
+            }
+            if (lastWaveformCount != waveform.getCount() ||
+                Math.abs(lastAnimatedLoaded - animatedLoaded) > 0.01f ||
+                lastScrollDuration != scrollDuration ||
+                Math.abs(lastAudioHeight - audioHeight) > 1f ||
+                Math.abs(lastMaxBar - maxBar) > 0.01f ||
+                Math.abs(lastAudioSelected - audioSelected) > 0.1f ||
+                Math.abs(lastBottom - bottom) > 1f ||
+                Math.abs(lastStart - start) > 1f ||
+                Math.abs(lastLeft - left) > 1f ||
+                Math.abs(lastRight - right) > 1f
+            ) {
+                lastWaveformCount = waveform.getCount();
+                layout(
+                    lastStart = start, lastLeft = left, lastRight = right,
+                    lastAudioSelected = audioSelected,
+                    lastAnimatedLoaded = animatedLoaded,
+                    lastScrollDuration = scrollDuration,
+                    lastMaxBar = maxBar,
+                    lastAudioHeight = audioHeight,
+                    lastBottom = bottom
+                );
+            }
+        }
+
+        private void layout(
+            float start, float left, float right,
+            float audioSelected,
+            float animatedLoaded,
+            long scrollDuration,
+            float maxBar,
+            float audioHeight,
+            float bottom
+        ) {
+            waveformPath.rewind();
+            final float barWidth = Math.round(dpf2(3.3333f));
+            int from = Math.max(0, (int) ((left - ph - start) / barWidth));
+            int to = Math.min(waveform.getCount() - 1, (int) Math.ceil((right + ph - start) / barWidth));
+            for (int i = from; i <= to; ++i) {
+                float x = start + i * barWidth + dp(2);
+                float h = maxBar <= 0 ? 0 : waveform.getBar(i) / (float) maxBar * audioHeight * .6f;
+                if (i < animatedLoaded && i + 1 > animatedLoaded) {
+                    h *= (animatedLoaded - i);
+                } else if (i > animatedLoaded) {
+                    h = 0;
+                }
+                if (x < left || x > right) {
+                    h *= audioSelected;
+                    if (h <= 0) {
+                        continue;
+                    }
+                }
+                h = Math.max(h, lerp(dpf2(0.66f), dpf2(1.5f), audioSelected));
+                AndroidUtilities.rectTmp.set(
+                        x,
+                        lerp(bottom - h, bottom - (audioHeight + h) / 2f, audioSelected),
+                        x + dpf2(1.66f),
+                        lerp(bottom, bottom - (audioHeight - h) / 2f, audioSelected)
+                );
+                waveformPath.addRoundRect(AndroidUtilities.rectTmp, waveformRadii, Path.Direction.CW);
+            }
         }
     }
 
@@ -859,7 +1018,7 @@ public class TimelineView extends View {
                 Path.Direction.CW
             );
             canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
-            canvas.drawColor(0x80000000);
+            canvas.drawColor(0x50000000);
             canvas.restore();
         }
 
@@ -902,34 +1061,8 @@ public class TimelineView extends View {
                 final float maxBar = waveformMax.set(waveform.getMaxBar(), !waveformIsLoaded);
                 waveformIsLoaded = waveform.getLoadedCount() > 0;
                 final float animatedLoaded = waveformLoaded.set(waveform.getLoadedCount());
-                final float barWidth = Math.round(dpf2(3.3333f));
-                waveformPath.rewind();
                 final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
-                int from = Math.max(0, (int) ((left - ph - start) / barWidth));
-                int to = Math.min(waveform.getCount() - 1, (int) Math.ceil((right + ph - start) / barWidth));
-                for (int i = from; i <= to; ++i) {
-                    float x = start + i * barWidth + dp(2);
-                    float h = maxBar <= 0 ? 0 : waveform.getBar(i) / (float) maxBar * audioHeight * .6f;
-                    if (i < animatedLoaded && i + 1 > animatedLoaded) {
-                        h *= (animatedLoaded - i);
-                    } else if (i > animatedLoaded) {
-                        h = 0;
-                    }
-                    if (x < left || x > right) {
-                        h *= audioSelected;
-                        if (h <= 0) {
-                            continue;
-                        }
-                    }
-                    h = Math.max(h, lerp(dpf2(0.66f), dpf2(1.5f), audioSelected));
-                    AndroidUtilities.rectTmp.set(
-                        x,
-                        lerp(bottom - h, bottom - (audioHeight + h) / 2f, audioSelected),
-                        x + dpf2(1.66f),
-                        lerp(bottom, bottom - (audioHeight - h) / 2f, audioSelected)
-                    );
-                    waveformPath.addRoundRect(AndroidUtilities.rectTmp, waveformRadii, Path.Direction.CW);
-                }
+                waveformPath.check(start, left, right, audioSelected, animatedLoaded, scrollDuration, audioHeight, maxBar, bottom);
                 canvas.drawPath(waveformPath, paint);
             }
 
@@ -994,21 +1127,33 @@ public class TimelineView extends View {
         final float right = lerp(videoRight * videoDuration, audioOffset + audioRight * audioDuration, hasVideo ? audioSelected : 1);
         float leftX = px + ph + (left - scroll) / (float) scrollDuration * sw;
         float rightX = px + ph + (right - scroll) / (float) scrollDuration * sw;
+        float progressAlpha = (hasAudio && !hasVideo ? audioT : videoT);
         if (audioT > 0. || videoT > 0.) {
-            drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, hasVideo ? 1 : lerp(.6f, 1f, audioSelected) * audioT);
+            drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, (hasVideo ? 1 : lerp(.6f, 1f, audioSelected) * audioT) * progressAlpha);
+            if (hasVideo && hasAudio && audioSelected > 0) {
+                drawRegion(
+                    canvas,
+                    blurPaint,
+                    h - py - videoHeight,
+                    h - py,
+                    ph + px + (videoLeft * videoDuration - scroll) / (float) scrollDuration * sw,
+                    ph + px + (videoRight * videoDuration - scroll) / (float) scrollDuration * sw,
+                    .8f
+                );
+            }
 
             // draw progress
             float loopT = loopProgress.set(0);
             final float y1 = h - py - videoHeight - (audioHeight + p * videoT) * audioT - dpf2(4.3f);
             final float y2 = h - py + dpf2(4.3f);
             if (loopT > 0) {
-                drawProgress(canvas, y1, y2, (long) (hasVideo ? videoDuration * videoRight : audioDuration * audioRight), loopT);
+                drawProgress(canvas, y1, y2, loopProgressFrom != -1 ? loopProgressFrom : (long) (hasVideo ? videoDuration * videoRight : audioDuration * audioRight), loopT * progressAlpha);
             }
-            drawProgress(canvas, y1, y2, progress, 1f - loopT);
+            drawProgress(canvas, y1, y2, progress, (1f - loopT) * progressAlpha);
         }
 
         if (dragged) {
-            long Δd = (long) (dp(86) / (float) sw * scrollDuration * (1f / (1000f / AndroidUtilities.screenRefreshRate)));
+            long Δd = (long) (dp(32) / (float) sw * scrollDuration * (1f / (1000f / AndroidUtilities.screenRefreshRate)));
             if (pressHandle == HANDLE_VIDEO_REGION) {
                 int direction = 0;
                 if (videoLeft < (scroll / (float) videoDuration)) {
@@ -1032,35 +1177,47 @@ public class TimelineView extends View {
                     delegate.onVideoRightChange(videoRight);
                 }
                 invalidate();
-            } else if (!hasVideo && pressHandle == HANDLE_AUDIO_REGION) {
+            } else if (pressHandle == HANDLE_AUDIO_REGION) {
                 int direction = 0;
                 if (audioLeft < ((-audioOffset + 100) / (float) audioDuration)) {
                     direction = -1;
                 } else if (audioRight >= ((-audioOffset + scrollDuration - 100) / (float) audioDuration)) {
                     direction = +1;
                 }
-                long wasOffset = audioOffset;
-                audioOffset = Utilities.clamp(audioOffset - direction * Δd, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
-                float d = -(audioOffset - wasOffset) / (float) audioDuration;
-                if (d > 0) {
-                    d = Math.min(1 - audioRight, d);
-                } else {
-                    d = Math.max(0 - audioLeft, d);
+                if (direction != 0) {
+                    long wasOffset = audioOffset;
+                    if (this.audioSelected && hasVideo) {
+                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((videoRight * videoDuration) - (audioLeft * audioDuration)), (long) ((videoLeft * videoDuration) - (audioRight * audioDuration)));
+                    } else {
+                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+                    }
+                    float d = -(audioOffset - wasOffset) / (float) audioDuration;
+                    if (d > 0) {
+                        d = Math.min(1 - audioRight, d);
+                    } else {
+                        d = Math.max(0 - audioLeft, d);
+                    }
+                    if (!hasVideo) {
+                        progress = (long) Utilities.clamp(progress + d * audioDuration, audioDuration, 0);
+                    }
+                    audioLeft = Utilities.clamp(audioLeft + d, 1, 0);
+                    audioRight = Utilities.clamp(audioRight + d, 1, 0);
+                    if (delegate != null) {
+                        delegate.onAudioLeftChange(audioLeft);
+                        delegate.onAudioRightChange(audioRight);
+                        delegate.onProgressChange(progress, false);
+                    }
+                    invalidate();
                 }
-                progress = (long) Utilities.clamp(progress + d * audioDuration, audioDuration, 0);
-                audioLeft = Utilities.clamp(audioLeft + d, 1, 0);
-                audioRight = Utilities.clamp(audioRight + d, 1, 0);
-                if (delegate != null) {
-                    delegate.onAudioLeftChange(audioLeft);
-                    delegate.onAudioRightChange(audioRight);
-                    delegate.onProgressChange(progress, false);
-                }
-                invalidate();
             }
         }
     }
 
     private void drawRegion(Canvas canvas, Paint blurPaint, float top, float bottom, float left, float right, float alpha) {
+        if (alpha <= 0) {
+            return;
+        }
+
         AndroidUtilities.rectTmp.set(left - dp(10), top, right + dp(10), bottom);
         canvas.saveLayerAlpha(0, 0, w, h, 0xFF, Canvas.ALL_SAVE_FLAG);
         regionPaint.setAlpha((int) (0xFF * alpha));
@@ -1070,6 +1227,7 @@ public class TimelineView extends View {
 
         final float hw = dp(2), hh = dp(10);
         Paint handlePaint = blurPaint != null ? blurPaint : regionHandlePaint;
+        regionHandlePaint.setAlpha(0xFF);
         handlePaint.setAlpha((int) (0xFF * alpha));
         AndroidUtilities.rectTmp.set(
                 left - (dp(10) - hw) / 2f,
@@ -1078,6 +1236,10 @@ public class TimelineView extends View {
                 (top + bottom + hh) / 2f
         );
         canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
+        if (blurPaint != null) {
+            regionHandlePaint.setAlpha((int) (0x30 * alpha));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+        }
         AndroidUtilities.rectTmp.set(
                 right + (dp(10) - hw) / 2f,
                 (top + bottom - hh) / 2f,
@@ -1085,6 +1247,10 @@ public class TimelineView extends View {
                 (top + bottom + hh) / 2f
         );
         canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
+        if (blurPaint != null) {
+            regionHandlePaint.setAlpha((int) (0x30 * alpha));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+        }
 
         canvas.restore();
     }

@@ -96,7 +96,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 133;
+    public final static int LAST_DB_VERSION = 134;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -619,7 +619,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE wallpapers2(uid INTEGER PRIMARY KEY, data BLOB, num INTEGER)").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS wallpapers_num ON wallpapers2(num);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE unread_push_messages(uid INTEGER, mid INTEGER, random INTEGER, date INTEGER, data BLOB, fm TEXT, name TEXT, uname TEXT, flags INTEGER, PRIMARY KEY(uid, mid))").stepThis().dispose();
+        database.executeFast("CREATE TABLE unread_push_messages(uid INTEGER, mid INTEGER, random INTEGER, date INTEGER, data BLOB, fm TEXT, name TEXT, uname TEXT, flags INTEGER, topicId INTEGER, PRIMARY KEY(uid, mid))").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS unread_push_messages_idx_date ON unread_push_messages(date);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS unread_push_messages_idx_random ON unread_push_messages(random);").stepThis().dispose();
 
@@ -1273,7 +1273,7 @@ public class MessagesStorage extends BaseController {
                     flags |= 2;
                 }
 
-                SQLitePreparedStatement state = database.executeFast("REPLACE INTO unread_push_messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                SQLitePreparedStatement state = database.executeFast("REPLACE INTO unread_push_messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 state.requery();
                 state.bindLong(1, message.getDialogId());
                 state.bindInteger(2, message.getId());
@@ -1296,6 +1296,7 @@ public class MessagesStorage extends BaseController {
                     state.bindString(8, message.localUserName);
                 }
                 state.bindInteger(9, flags);
+                state.bindInteger(10, MessageObject.getTopicId(message.messageOwner, false));
                 state.step();
 
                 data.reuse();
@@ -3510,7 +3511,7 @@ public class MessagesStorage extends BaseController {
                     cursor = null;
 
                     database.executeFast("DELETE FROM unread_push_messages WHERE date <= " + maxDate).stepThis().dispose();
-                    cursor = database.queryFinalized("SELECT data, mid, date, uid, random, fm, name, uname, flags FROM unread_push_messages WHERE 1 ORDER BY date DESC LIMIT 50");
+                    cursor = database.queryFinalized("SELECT data, mid, date, uid, random, fm, name, uname, flags, topicId FROM unread_push_messages WHERE 1 ORDER BY date DESC LIMIT 50");
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
@@ -3524,6 +3525,7 @@ public class MessagesStorage extends BaseController {
                             String name = cursor.isNull(6) ? null : cursor.stringValue(6);
                             String userName = cursor.isNull(7) ? null : cursor.stringValue(7);
                             int flags = cursor.intValue(8);
+                            int topicId = cursor.intValue(9);
                             if (MessageObject.getFromChatId(message) == 0) {
                                 if (DialogObject.isUserDialog(message.dialog_id)) {
                                     message.from_id = new TLRPC.TL_peerUser();
@@ -3538,6 +3540,11 @@ public class MessagesStorage extends BaseController {
                                 if (!chatsToLoad.contains(-message.dialog_id)) {
                                     chatsToLoad.add(-message.dialog_id);
                                 }
+                            }
+                            if (topicId != 0) {
+                                message.reply_to = new TLRPC.TL_messageReplyHeader();
+                                message.reply_to.forum_topic = true;
+                                message.reply_to.reply_to_top_id = topicId;
                             }
 
                             pushMessages.add(new MessageObject(currentAccount, message, messageText, name, userName, (flags & 1) != 0, (flags & 2) != 0, (message.flags & 0x80000000) != 0, false));
@@ -14228,6 +14235,15 @@ public class MessagesStorage extends BaseController {
                             chatsToLoad.add(-peer.channel_id);
                         }
                     }
+                }
+            }
+            if (message.media.peer != null) {
+                long dialogId = DialogObject.getPeerDialogId(message.media.peer);
+                if (dialogId > 0) {
+                    usersToLoad.add(dialogId);
+                }
+                if (dialogId < 0) {
+                    chatsToLoad.add(-dialogId);
                 }
             }
         }

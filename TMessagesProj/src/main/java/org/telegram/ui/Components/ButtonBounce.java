@@ -11,19 +11,27 @@ import android.view.animation.OvershootInterpolator;
 public class ButtonBounce {
 
     private View view;
-    private final float durationMultiplier;
+    private final float durationPressMultiplier;
+    private final float durationReleaseMultiplier;
     private final float overshoot;
     private long releaseDelay = 0;
 
     public ButtonBounce(View viewToInvalidate) {
         view = viewToInvalidate;
-        durationMultiplier = 1f;
+        durationPressMultiplier = durationReleaseMultiplier = 1f;
         overshoot = 5.0f;
     }
 
     public ButtonBounce(View viewToInvalidate, float durationMultiplier, float overshoot) {
         view = viewToInvalidate;
-        this.durationMultiplier = durationMultiplier;
+        this.durationPressMultiplier = this.durationReleaseMultiplier = durationMultiplier;
+        this.overshoot = overshoot;
+    }
+
+    public ButtonBounce(View viewToInvalidate, float durationPressMultiplier, float durationReleaseMultiplier, float overshoot) {
+        view = viewToInvalidate;
+        this.durationPressMultiplier = durationPressMultiplier;
+        this.durationReleaseMultiplier = durationReleaseMultiplier;
         this.overshoot = overshoot;
     }
 
@@ -65,11 +73,11 @@ public class ButtonBounce {
             });
             if (isPressed) {
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                animator.setDuration((long) (60 * durationMultiplier));
+                animator.setDuration((long) (60 * durationPressMultiplier));
                 animator.setStartDelay(0);
             } else {
                 animator.setInterpolator(new OvershootInterpolator(overshoot));
-                animator.setDuration((long) (350 * durationMultiplier));
+                animator.setDuration((long) (350 * durationReleaseMultiplier));
                 animator.setStartDelay(releaseDelay);
             }
             animator.start();
