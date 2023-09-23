@@ -2572,6 +2572,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 Integer colorKey = (Integer) secondary[i].getTag();
                 if (colorKey != null) {
                     secondary[i].setTextColor(Theme.getColor(colorKey));
+                } else {
+                    secondary[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 }
             }
         }

@@ -171,8 +171,9 @@ public class ChannelBoostLayout extends FrameLayout {
                 StatisticActivity.OverviewCell overviewCell = (StatisticActivity.OverviewCell) holder.itemView;
 
                 overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString("BoostsLevel2", R.string.BoostsLevel2));
-                if (boostsStatus.premium_audience != null || boostsStatus.premium_audience.total == 0) {
-                    overviewCell.setData(1, "~" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", (float) boostsStatus.premium_audience.part / (float) boostsStatus.premium_audience.total) + "%", LocaleController.getString("PremiumSubscribers", R.string.PremiumSubscribers));
+                if (boostsStatus.premium_audience != null && boostsStatus.premium_audience.total == 0) {
+                    float percent = (((float) boostsStatus.premium_audience.part / (float) boostsStatus.premium_audience.total) * 100f);
+                    overviewCell.setData(1, "~" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f",percent) + "%", LocaleController.getString("PremiumSubscribers", R.string.PremiumSubscribers));
                 } else {
                     overviewCell.setData(1, "~0", "0%", LocaleController.getString("PremiumSubscribers", R.string.PremiumSubscribers));
                 }
@@ -303,6 +304,7 @@ public class ChannelBoostLayout extends FrameLayout {
             usersLoading = false;
             if (response != null) {
                 TLRPC.TL_stories_boostersList list = (TLRPC.TL_stories_boostersList) response;
+                MessagesController.getInstance(currentAccount).putUsers(list.users, false);
                 boosters.addAll(list.boosters);
                 hasNext = !TextUtils.isEmpty(list.next_offset) && boosters.size() < list.count;
                 nextRemaining = list.count - boosters.size();

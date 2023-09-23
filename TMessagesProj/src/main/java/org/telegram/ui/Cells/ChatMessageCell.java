@@ -782,7 +782,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int descriptionX;
     private int titleX;
     private int authorX;
-    private boolean siteNameRtl;
+    private float siteNameLeft, siteNameLayoutWidth;
     private int siteNameWidth;
     private StaticLayout siteNameLayout;
     private StaticLayout titleLayout;
@@ -5046,7 +5046,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 siteNameLayout = generateStaticLayout(site_name, Theme.chat_replyNamePaint, linkPreviewMaxWidth, linkPreviewMaxWidth - smallImageSide - smallSideMargin, restLinesCount, 1);
                                 restLinesCount -= siteNameLayout.getLineCount();
                             }
-                            siteNameRtl = Math.max(siteNameLayout.getLineLeft(0), 0) != 0;
+                            siteNameLeft = siteNameLayoutWidth = 0;
+                            for (int i = 0; i < siteNameLayout.getLineCount(); ++i) {
+                                siteNameLeft = siteNameLayout.getLineLeft(i);
+                                siteNameLayoutWidth = siteNameLayout.getLineWidth(i);
+                            }
                             int height = siteNameLayout.getLineBottom(siteNameLayout.getLineCount() - 1);
                             linkPreviewHeight += height;
                             totalHeight += height;
@@ -7675,7 +7679,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 try {
                     int width = siteNameWidth = (int) Math.ceil(Theme.chat_replyNamePaint.measureText(webPage.site_name) + 1);
                     siteNameLayout = new StaticLayout(webPage.site_name, Theme.chat_replyNamePaint, Math.min(width, linkPreviewMaxWidth), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                    siteNameRtl = siteNameLayout.getLineLeft(0) != 0;
+                    siteNameLeft = siteNameLayoutWidth = 0;
+                    for (int i = 0; i < siteNameLayout.getLineCount(); ++i) {
+                        siteNameLeft = siteNameLayout.getLineLeft(i);
+                        siteNameLayoutWidth = siteNameLayout.getLineWidth(i);
+                    }
                     int height = siteNameLayout.getLineBottom(siteNameLayout.getLineCount() - 1);
                     linkPreviewHeight += height;
                     totalHeight += height;
@@ -10233,12 +10241,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (siteNameLayout != null) {
                 Theme.chat_replyNamePaint.setColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outSiteNameText : Theme.key_chat_inSiteNameText));
                 canvas.save();
-                int x;
-                if (siteNameRtl) {
-                    x = backgroundWidth - siteNameWidth - AndroidUtilities.dp(32);
-                } else {
-                    x = (hasInvoicePreview ? 0 : AndroidUtilities.dp(10));
-                }
+                float x = -siteNameLeft + (hasInvoicePreview ? 0 : AndroidUtilities.dp(10));
                 canvas.translate(linkX + x, linkPreviewY - AndroidUtilities.dp(3));
                 siteNameLayout.draw(canvas);
                 canvas.restore();
@@ -10599,15 +10602,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 Theme.chat_replyNamePaint.setAlpha((int) (alpha * Theme.chat_replyLinePaint.getAlpha()));
             }
             canvas.save();
-            int x;
-            if (siteNameRtl) {
-                x = backgroundWidth - siteNameWidth - AndroidUtilities.dp(32);
-                if (isSmallImage) {
-                    x -= AndroidUtilities.dp(48 + 6);
-                }
-            } else {
-                x = (hasInvoicePreview ? 0 : AndroidUtilities.dp(10));
-            }
+            float x = -siteNameLeft + (hasInvoicePreview ? 0 : AndroidUtilities.dp(10));
             canvas.translate(linkX + x, linkPreviewY - AndroidUtilities.dp(3));
             siteNameLayout.draw(canvas);
             canvas.restore();

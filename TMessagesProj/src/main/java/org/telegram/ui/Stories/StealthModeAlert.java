@@ -110,7 +110,7 @@ public class StealthModeAlert extends BottomSheet {
 
         linearLayout.addView(itemCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,0, 0, 10, 0, 0));
 
-        button = new PremiumButtonView(context, AndroidUtilities.dp(8), true);
+        button = new PremiumButtonView(context, AndroidUtilities.dp(8), true, resourcesProvider);
         button.drawGradient = false;
         button.overlayTextView.getDrawable().setSplitByWords(false);
         button.setIcon(R.raw.unlock_icon);

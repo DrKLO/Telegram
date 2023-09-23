@@ -367,6 +367,9 @@ public class SpoilerEffect extends Drawable {
                         continue;
                     }
 
+                    if (renderCount >= particlePoints[a].length - 2) {
+                        continue;
+                    }
                     particlePoints[a][renderCount] = p.x;
                     particlePoints[a][renderCount + 1] = p.y;
                     renderCount += 2;

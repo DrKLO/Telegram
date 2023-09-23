@@ -149,7 +149,7 @@ public class StickerSetCell extends FrameLayout {
         removeButtonView.setOnClickListener(e -> onRemoveButtonClick());
         sideButtons.addView(removeButtonView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 32, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 0, -2, 0, 0));
 
-        premiumButtonView = new PremiumButtonView(context, AndroidUtilities.dp(4), false);
+        premiumButtonView = new PremiumButtonView(context, AndroidUtilities.dp(4), false, resourcesProvider);
         premiumButtonView.setIcon(R.raw.unlock_icon);
         premiumButtonView.setButton(LocaleController.getString("Unlock", R.string.Unlock), e -> onPremiumButtonClick());
         try {

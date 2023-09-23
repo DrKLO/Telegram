@@ -1035,8 +1035,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 if (popupMenu != null) {
                                     popupMenu.dismiss();
                                 }
-                                setActive(false);
-                                final Runnable openEdit = () -> {
+                                Runnable openEdit = () -> {
                                     StoryRecorder editor = StoryRecorder.getInstance(activity, currentAccount);
                                     long time = 0;
                                     if (playerSharedScope != null && playerSharedScope.player != null) {
@@ -1051,11 +1050,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                         entry = entry.copy();
                                     }
                                     editor.openEdit(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
+                                    editor.setOnFullyOpenListener(() -> {
+                                        editOpened = true;
+                                        setActive(false);
+                                    });
                                     editor.setOnPrepareCloseListener((t, close, sent) -> {
                                         final long start = System.currentTimeMillis();
                                         if (playerSharedScope.player == null) {
                                             delegate.setPopupIsVisible(false);
                                             setActive(true);
+                                            editOpened = false;
                                             onImageReceiverThumbLoaded = () -> {
                                                 AndroidUtilities.cancelRunOnUIThread(close);
                                                 AndroidUtilities.runOnUIThread(close);
@@ -1075,10 +1079,11 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                         if (muteIconView != null) {
                                             muteIconView.setAnimation(sharedResources.muteDrawable);
                                         }
-                                        if (videoDuration > 0 && t > videoDuration * .4f) {
+                                        if (videoDuration > 0 && t > videoDuration - 1400) {
                                             t = 0L;
                                         }
                                         setActive(t, true);
+                                        editOpened = false;
                                         AndroidUtilities.runOnUIThread(close, 400);
                                         if (sent) {
                                             updatePosition();
@@ -1721,10 +1726,27 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     }
 
     private void toggleArchiveForStory(long dialogId) {
-        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-        boolean hide = !user.stories_hidden;
+        boolean hide;
+        TLRPC.User user = null;
+        TLRPC.Chat chat = null;
+        TLObject object = null;
+        String name = null;
+        if (dialogId > 0) {
+            user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+            object = user;
+            name = user.first_name;
+            hide = !user.stories_hidden;
+        } else {
+            chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            object = chat;
+            name = chat.title;
+            hide = !chat.stories_hidden;
+        }
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
 
+        TLObject finalObject = object;
+
+        String finalName = name;
         AndroidUtilities.runOnUIThread(() -> {
             messagesController.getStoriesController().toggleHidden(dialogId, hide, false, true);
             BulletinFactory.UndoObject undoObject = new BulletinFactory.UndoObject();
@@ -1736,11 +1758,11 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             };
             CharSequence str;
             if (!hide) {
-                str = AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToDialogs", R.string.StoriesMovedToDialogs, ContactsController.formatName(user.first_name, null, 10)));
+                str = AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToDialogs", R.string.StoriesMovedToDialogs, ContactsController.formatName(finalName, null, 10)));
             } else {
-                str = AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToContacts", R.string.StoriesMovedToContacts, ContactsController.formatName(user.first_name, null, 10)));
+                str = AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToContacts", R.string.StoriesMovedToContacts, ContactsController.formatName(finalName, null, 10)));
             }
-            BulletinFactory.of(storyContainer, resourcesProvider).createUsersBulletin(Arrays.asList(user), str, null, undoObject).setTag(2).show();
+            BulletinFactory.of(storyContainer, resourcesProvider).createUsersBulletin(Arrays.asList(finalObject), str, null, undoObject).setTag(2).show();
         }, 200);
     }
 
@@ -3174,8 +3196,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         if (thumbDrawable == null) {
                             thumbDrawable = ImageLoader.createStripedBitmap(storyItem.media.document.thumbs);
                         }
-                       // imageReceiver.setImage(null, null, ImageLocation.getForDocument(storyItem.media.document), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.document), filter, thumbDrawable, 0, null, storyItem, 0);
-                        imageReceiver.setImage(null, null, ImageLocation.getForDocument(size, storyItem.media.document), filter, null, null, thumbDrawable, 0, null, storyItem, 0);
+                        imageReceiver.setImage(null, null, ImageLocation.getForDocument(storyItem.media.document), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.document), filter, thumbDrawable, 0, null, storyItem, 0);
                     } else {
                         TLRPC.Photo photo = storyItem.media != null ? storyItem.media.photo : null;
                         if (photo != null && photo.sizes != null) {
@@ -3183,12 +3204,12 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 thumbDrawable = ImageLoader.createStripedBitmap(photo.sizes);
                             }
                             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, Integer.MAX_VALUE);
-//                            TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 800);
+                            TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 800);
 //                            if (thumbSize != size) {
-//                                imageReceiver.setImage(ImageLocation.getForPhoto(size, photo), filter, ImageLocation.getForPhoto(thumbSize, photo), filter, null, null, thumbDrawable, 0, null, storyItem, 0);
+//                                imageReceiver.setImage(null, null, ImageLocation.getForPhoto(size, photo), filter, ImageLocation.getForPhoto(thumbSize, photo), filter, thumbDrawable, 0, null, storyItem, 0);
 //                            } else {
                                 imageReceiver.setImage(null, null, ImageLocation.getForPhoto(size, photo), filter, null, null, thumbDrawable, 0, null, storyItem, 0);
-                           // }
+                          //  }
                         } else {
                             imageReceiver.clearImage();
                         }
@@ -3999,6 +4020,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         }
     }
 
+    public boolean editOpened;
+
     public void setActive(boolean active) {
         setActive(0, active);
     }
@@ -4570,7 +4593,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 caption = Emoji.replaceEmoji(caption, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
                 SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(caption);
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                if (MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
+                if (dialogId < 0 || MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
                     MessageObject.addLinks(true, spannableStringBuilder);
                 }
             } else if (currentStory.storyItem != null) {
@@ -4584,7 +4607,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         spannableStringBuilder = SpannableStringBuilder.valueOf(MessageObject.replaceAnimatedEmoji(spannableStringBuilder, text.entities, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), false));
                         SpannableStringBuilder.valueOf(Emoji.replaceEmoji(spannableStringBuilder, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), false));
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                        if (MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
+                        if (dialogId < 0 || MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
                             MessageObject.addLinks(true, spannableStringBuilder);
                             MessageObject.addEntitiesToText(spannableStringBuilder, text.entities, false, true, true, false);
                         }
@@ -4598,7 +4621,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         spannableStringBuilder = SpannableStringBuilder.valueOf(MessageObject.replaceAnimatedEmoji(spannableStringBuilder, currentStory.storyItem.entities, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), false));
                         SpannableStringBuilder.valueOf(Emoji.replaceEmoji(spannableStringBuilder, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), false));
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                        if (MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
+                        if (dialogId < 0 || MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
                             MessageObject.addLinks(true, spannableStringBuilder);
                             MessageObject.addEntitiesToText(spannableStringBuilder, currentStory.storyItem.entities, false, true, true, false);
                         }
@@ -4713,15 +4736,14 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 if (UserObject.getPublicUsername(user) == null) {
                     return null;
                 }
-                return String.format(Locale.US, "https://t.me/%s/s/%s", UserObject.getPublicUsername(user), currentStory.storyItem.id);
+                return String.format(Locale.US, "https://t.me/%1$s/s/%2$s", UserObject.getPublicUsername(user), currentStory.storyItem.id);
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                 if (ChatObject.getPublicUsername(chat) == null) {
                     return null;
                 }
-                return String.format(Locale.US, "https://t.me/%s/s/%s", ChatObject.getPublicUsername(chat), currentStory.storyItem.id);
+                return String.format(Locale.US, "https://t.me/%1$s/s/%2$s", ChatObject.getPublicUsername(chat), currentStory.storyItem.id);
             }
-          //  return  String.format(Locale.US, "tg://resolve?domain=%s&story=%s", user.username, currentStory.storyItem.id);
         }
 
         public File getPath() {

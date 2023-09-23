@@ -269,7 +269,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         inBubbleMode = context instanceof BubbleActivity;
 
         PersistColorPalette palette = PersistColorPalette.getInstance(currentAccount);
-        colorSwatch.color = palette.getColor(0);
+        palette.resetCurrentColor();
+        colorSwatch.color = palette.getCurrentColor();
         colorSwatch.brushWeight = palette.getCurrentWeight();
 
         queue = new DispatchQueue("Paint");
@@ -664,6 +665,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                         int childWidth = child.getWidth() - child.getPaddingLeft() - child.getPaddingRight();
                         int childHeight = child.getHeight() - child.getPaddingTop() - child.getPaddingBottom();
                         float cx = child.getX() + child.getPaddingLeft() + childWidth / 2f, cy = child.getY() + child.getPaddingTop() + childHeight / 2f;
+                        int colorCircle = colorSwatch.color;
                         if (tabsNewSelectedIndex != -1) {
                             ViewGroup barView2 = (ViewGroup) getBarView(tabsNewSelectedIndex);
                             View newView = (barView2 == null ? barView : barView2).getChildAt(0);
@@ -677,6 +679,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                             View animateToView = colorsListView.getChildAt(0);
                             cx = AndroidUtilities.lerp(cx, colorsListView.getX() - barView.getLeft() + animateToView.getX() + animateToView.getWidth() / 2f, toolsTransformProgress);
                             cy = AndroidUtilities.lerp(cy, colorsListView.getY() - barView.getTop() + animateToView.getY() + animateToView.getHeight() / 2f, toolsTransformProgress);
+                            int paletteFirstColor = palette.getColor(0);
+                            colorCircle = ColorUtils.blendARGB(colorSwatch.color, paletteFirstColor, toolsTransformProgress);
                         }
                         checkRainbow(cx, cy);
 
@@ -688,16 +692,21 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                         AndroidUtilities.rectTmp.set(cx - rad, cy - rad, cx + rad, cy + rad);
                         canvas.drawArc(AndroidUtilities.rectTmp, 0, 360, false, colorPickerRainbowPaint);
 
-                        colorSwatchPaint.setColor(colorSwatch.color);
+                        colorSwatchPaint.setColor(colorCircle);
                         colorSwatchPaint.setAlpha((int) (colorSwatchPaint.getAlpha() * child.getAlpha()));
-                        colorSwatchOutlinePaint.setColor(colorSwatch.color);
+                        colorSwatchOutlinePaint.setColor(colorCircle);
                         colorSwatchOutlinePaint.setAlpha((int) (0xFF * child.getAlpha()));
 
                         float rad2 = rad - AndroidUtilities.dp(3f);
+                        if (colorsListView != null && colorsListView.getSelectedColorIndex() != 0) {
+                            rad2 = AndroidUtilities.lerp(rad - AndroidUtilities.dp(3f), rad + AndroidUtilities.dp(2), toolsTransformProgress);
+                        }
                         PaintColorsListView.drawColorCircle(canvas, cx, cy, rad2, colorSwatchPaint.getColor());
 
-                        colorSwatchOutlinePaint.setAlpha((int) (colorSwatchOutlinePaint.getAlpha() * toolsTransformProgress * child.getAlpha()));
-                        canvas.drawCircle(cx, cy, rad - (AndroidUtilities.dp(3f) + colorSwatchOutlinePaint.getStrokeWidth()) * (1f - toolsTransformProgress), colorSwatchOutlinePaint);
+                        if (colorsListView != null && colorsListView.getSelectedColorIndex() == 0) {
+                            colorSwatchOutlinePaint.setAlpha((int) (colorSwatchOutlinePaint.getAlpha() * toolsTransformProgress * child.getAlpha()));
+                            canvas.drawCircle(cx, cy, rad - (AndroidUtilities.dp(3f) + colorSwatchOutlinePaint.getStrokeWidth()) * (1f - toolsTransformProgress), colorSwatchOutlinePaint);
+                        }
                     }
 
                     canvas.restore();
@@ -867,16 +876,18 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     @Override
                     public void onColorSelected(int color) {
                         showColorList(false);
+                        palette.selectColor(color);
+                        palette.saveColors();
 
-                        PersistColorPalette.getInstance(currentAccount).selectColor(color);
-                        PersistColorPalette.getInstance(currentAccount).saveColors();
                         setNewColor(color);
+                        colorsListView.setSelectedColorIndex(palette.getCurrentColorPosition());
                         colorsListView.getAdapter().notifyDataSetChanged();
                     }
                 }).setColorListener(color -> {
-                    PersistColorPalette.getInstance(currentAccount).selectColor(color);
-                    PersistColorPalette.getInstance(currentAccount).saveColors();
+                    palette.selectColor(color);
+                    palette.saveColors();
                     setNewColor(color);
+                    colorsListView.setSelectedColorIndex(palette.getCurrentColorPosition());
                     colorsListView.getAdapter().notifyDataSetChanged();
                 }).show();
                 return;
@@ -1274,6 +1285,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         final View view = getBarView(tabsSelectedIndex);
         tabsNewSelectedIndex = index;
         final View newView = getBarView(tabsNewSelectedIndex);
+
+        PersistColorPalette.getInstance(currentAccount).setInTextMode(index == 2);
+        colorSwatch.color = PersistColorPalette.getInstance(currentAccount).getCurrentColor();
+        setCurrentSwatch(colorSwatch, true);
 
         tabsSelectionAnimator = ValueAnimator.ofFloat(0, 1).setDuration(300);
         tabsSelectionAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -2028,8 +2043,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             ignoreToolChangeAnimationOnce = true;
         }
         renderView.setBrush(brush);
+        int wasColor = colorSwatch.color;
+        colorSwatch.color = PersistColorPalette.getInstance(currentAccount).getCurrentColor();
         colorSwatch.brushWeight = weightDefaultValueOverride.get();
-        setCurrentSwatch(colorSwatch, true);
+        setCurrentSwatch(colorSwatch, true, wasColor);
         renderInputView.invalidate();
     }
 
@@ -2141,12 +2158,16 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
             if (show) {
                 colorsListView.setVisibility(VISIBLE);
-                colorsListView.setSelectedColorIndex(0);
+                colorsListView.setSelectedColorIndex(PersistColorPalette.getInstance(currentAccount).getCurrentColorPosition());
             }
         }
     }
 
     private void setCurrentSwatch(Swatch swatch, boolean updateInterface) {
+        setCurrentSwatch(swatch, updateInterface, null);
+    }
+
+    private void setCurrentSwatch(Swatch swatch, boolean updateInterface, Integer prevColor) {
         if (colorSwatch != swatch) {
             colorSwatch.color = swatch.color;
             colorSwatch.colorLocation = swatch.colorLocation;
@@ -2160,7 +2181,18 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         renderView.setBrushSize(swatch.brushWeight);
 
         if (updateInterface) {
-            if (bottomLayout != null) {
+            int newColor = colorSwatch.color;
+            if (prevColor != null && prevColor != newColor) {
+                ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f).setDuration(150);
+                animator.addUpdateListener(animation -> {
+                    float val = (float) animation.getAnimatedValue();
+                    colorSwatch.color = ColorUtils.blendARGB(prevColor, newColor, val);
+                    if (bottomLayout != null) {
+                        bottomLayout.invalidate();
+                    }
+                });
+                animator.start();
+            } else if (bottomLayout != null) {
                 bottomLayout.invalidate();
             }
         }

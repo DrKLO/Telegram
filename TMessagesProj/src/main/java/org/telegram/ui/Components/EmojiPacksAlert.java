@@ -514,7 +514,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         removeButtonView.setClickable(true);
         buttonsView.addView(removeButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM, 0, 0, 0, 19));
 
-        premiumButtonView = new PremiumButtonView(context, false);
+        premiumButtonView = new PremiumButtonView(context, false, resourcesProvider);
         premiumButtonView.setButton(LocaleController.getString("UnlockPremiumEmoji", R.string.UnlockPremiumEmoji), ev -> {
             showPremiumAlert();
         });
@@ -1560,7 +1560,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             float endMarginDp = 8;
             if (!single) {
                 if (!UserConfig.getInstance(currentAccount).isPremium()) {
-                    unlockButtonView = new PremiumButtonView(context, AndroidUtilities.dp(4), false);
+                    unlockButtonView = new PremiumButtonView(context, AndroidUtilities.dp(4), false, resourcesProvider);
                     unlockButtonView.setButton(LocaleController.getString("Unlock", R.string.Unlock), ev -> {
                         premiumButtonClicked = SystemClock.elapsedRealtime();
                         showPremiumAlert();

@@ -583,7 +583,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         });
         contentView.addView(listView);
 
-        premiumButtonView = new PremiumButtonView(context, false);
+        premiumButtonView = new PremiumButtonView(context, false, getResourceProvider());
         updateButtonText(false);
         buttonContainer = new FrameLayout(context);
 

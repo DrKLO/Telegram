@@ -2855,7 +2855,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 break;
             }
         }
-        description = LocaleController.formatString("BotRemoveFromMenuAll", R.string.BotRemoveFromMenuAll, botName);
+        description = LocaleController.formatString("BotRemoveFromMenu", R.string.BotRemoveFromMenu, botName);
         new AlertDialog.Builder(getContext())
                 .setTitle(LocaleController.getString(R.string.BotRemoveFromMenuTitle))
                 .setMessage(AndroidUtilities.replaceTags(attachMenuBot != null ? description : LocaleController.formatString("BotRemoveInlineFromMenu", R.string.BotRemoveInlineFromMenu, botName)))

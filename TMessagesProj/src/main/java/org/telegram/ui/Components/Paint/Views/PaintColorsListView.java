@@ -25,7 +25,7 @@ public class PaintColorsListView extends RecyclerListView {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private int selectedColorIndex = 0;
+    private int selectedColorIndex = -1;
 
     private PersistColorPalette colorPalette;
     private Consumer<Integer> colorListener;
@@ -69,7 +69,7 @@ public class PaintColorsListView extends RecyclerListView {
         setOverScrollMode(OVER_SCROLL_NEVER);
         setOnItemClickListener((view, position) -> {
             colorListener.accept(colorPalette.getColor(position));
-            colorPalette.selectColorIndex(position);
+            colorPalette.setCurrentBrushColorByColorIndex(position);
         });
     }
 
@@ -127,6 +127,10 @@ public class PaintColorsListView extends RecyclerListView {
     public void setSelectedColorIndex(int selectedColorIndex) {
         this.selectedColorIndex = selectedColorIndex;
         getAdapter().notifyDataSetChanged();
+    }
+
+    public int getSelectedColorIndex() {
+        return selectedColorIndex;
     }
 
     public void setProgress(float progress, boolean toShow) {

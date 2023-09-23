@@ -463,6 +463,7 @@ public class LimitPreviewView extends LinearLayout {
             defaultText.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level));
             premiumCount.setText(LocaleController.formatString("BoostsLevel", R.string.BoostsLevel, boosts.level + 1));
         }
+        ((FrameLayout.LayoutParams) premiumCount.getLayoutParams()).gravity = Gravity.RIGHT;
         setType(LimitReachedBottomSheet.TYPE_BOOSTS);
         defaultCount.setVisibility(View.GONE);
         premiumText.setVisibility(View.GONE);

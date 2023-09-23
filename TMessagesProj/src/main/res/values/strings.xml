@@ -5758,7 +5758,6 @@
     <string name="BotCantAddToAttachMenu">This bot can\'t be added to the attachment menu.</string>
     <string name="BotAlreadyAddedToAttachMenu">This bot is already in your attachment menu.</string>
     <string name="BotRemoveFromMenu">This will remove **%1$s** shortcuts from all menus.</string>
-    <string name="BotRemoveFromMenuAll">This will remove **%1$s** shortcuts from all menus.</string>
     <string name="BotRemoveInlineFromMenu">Remove **%1$s** from suggestions?</string>
     <string name="BotWebViewRequestGeolocationPermission">Allow **%1$s** to access to your location?\n\nThe developer of **%1$s** will be able to access your location when this web app is open.</string>
     <string name="BotWebViewRequestGeolocationPermissionWithHint">Allow **%1$s** to access to your location?\n\nThe developer of **%1$s** will be able to access your location when this web app is open.\n\nGo to Settings > Permissions and turn **Location** on to share location data.</string>
@@ -7223,6 +7222,7 @@
     <string name="TermsOfUse">Terms of Use</string>
     <string name="BoostExpireOn">boost expires on %s</string>
     <string name="ChannelNeedBoostsDescription">Your channel need %s to enable posting stories.\n\nAsk your Premium subscribers to boost your channel with this link:</string>
+    <string name="ChannelNeedBoostsDescriptionNextLevel">Your channel need %1$s to be able post **%2$s** per day.\n\nAsk your Premium subscribers to boost your channel with this link:</string>
     <string name="ChannelNeedBoostsDescriptionLevel1">This channel need %s to enable stories. Help make it possible!</string>
     <string name="ChannelNeedBoostsDescriptionLevelNext">This channel need %1$s to be able post **%2$s** per day. Help make it possible!</string>
     <string name="ChannelNeedBoostsAlreadyBoostedDescriptionLevel1">This channel need %s more boosts to enable stories.</string>
@@ -7245,4 +7245,5 @@
     <string name="BoostStories_few">**%d**&#160;stories</string>
     <string name="BoostStories_many">**%d**&#160;stories</string>
     <string name="BoostStories_other">**%d**&#160;stories</string>
+    <string name="BoostingIncreaseLevel">Increase Story Limit</string>
 </resources>

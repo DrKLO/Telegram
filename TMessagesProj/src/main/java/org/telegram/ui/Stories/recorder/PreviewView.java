@@ -180,6 +180,7 @@ public class PreviewView extends FrameLayout {
                 }
             });
             audioPlayer.preparePlayer(Uri.fromFile(new File(entry.audioPath)), "other");
+            audioPlayer.setVolume(entry.audioVolume);
 
             if (videoPlayer != null && getDuration() > 0) {
                 long startPos = (long) (entry.left * getDuration());
@@ -605,6 +606,9 @@ public class PreviewView extends FrameLayout {
             videoPlayer.preparePlayer(uri, "other");
             videoPlayer.setPlayWhenReady(pauseLinks.isEmpty());
             videoPlayer.setLooping(true);
+            if (entry.isEditSaved) {
+                seekTo = (long) ((entry.left * entry.duration) + seekTo);
+            }
             if (seekTo > 0) {
                 videoPlayer.seekTo(seekTo);
             }
@@ -614,6 +618,9 @@ public class PreviewView extends FrameLayout {
             timelineView.setVideo(entry.getOriginalFile().getAbsolutePath(), getDuration());
             timelineView.setVideoLeft(entry.left);
             timelineView.setVideoRight(entry.right);
+            if (timelineView != null && seekTo > 0) {
+                timelineView.setProgress(seekTo);
+            }
         }
     }
 
@@ -703,7 +710,7 @@ public class PreviewView extends FrameLayout {
         }
 
         long pos = videoPlayer.getCurrentPosition();
-        if (getDuration() > 0) {
+        if (getDuration() > 1) {
             final float progress = pos / (float) getDuration();
             if (!timelineView.isDragging() && (progress < entry.left || progress > entry.right) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
                 seekedLastTime = System.currentTimeMillis();

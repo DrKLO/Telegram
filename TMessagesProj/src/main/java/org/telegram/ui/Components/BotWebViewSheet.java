@@ -959,14 +959,20 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 req.from_switch_webview = (flags & FLAG_FROM_INLINE_SWITCH) != 0;
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                 req.platform = "android";
-                req.from_side_menu = (flags & FLAG_FROM_SIDE_MENU) != 0;;
+                req.from_side_menu = (flags & FLAG_FROM_SIDE_MENU) != 0;
                 if (hasThemeParams) {
                     req.theme_params = new TLRPC.TL_dataJSON();
                     req.theme_params.data = themeParams;
                     req.flags |= 1;
                 }
-                req.flags |= 8;
-                req.url = buttonUrl;
+                if (!TextUtils.isEmpty(buttonUrl)) {
+                    req.flags |= 8;
+                    req.url = buttonUrl;
+                }
+                if (!TextUtils.isEmpty(startParam)) {
+                    req.start_param = startParam;
+                    req.flags |= 16;
+                }
 
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response instanceof TLRPC.TL_simpleWebViewResultUrl) {
@@ -1058,7 +1064,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             return;
         }
         String botName = currentBot.short_name;
-        description = LocaleController.formatString("BotRemoveFromMenuAll", R.string.BotRemoveFromMenuAll, botName);
+        description = LocaleController.formatString("BotRemoveFromMenu", R.string.BotRemoveFromMenu, botName);
         TLRPC.TL_attachMenuBot finalCurrentBot = currentBot;
         new AlertDialog.Builder(LaunchActivity.getLastFragment().getContext())
                 .setTitle(LocaleController.getString(R.string.BotRemoveFromMenuTitle))

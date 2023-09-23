@@ -76,6 +76,10 @@ public class ReactedUserHolderView extends FrameLayout {
     public static final MessageSeenCheckDrawable reactDrawable = new MessageSeenCheckDrawable(R.drawable.msg_reactions, Theme.key_windowBackgroundWhiteGrayText, 16, 16, 5.66f);
 
     public ReactedUserHolderView(int style, int currentAccount, @NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(style, currentAccount, context, resourcesProvider, true);
+    }
+
+    public ReactedUserHolderView(int style, int currentAccount, @NonNull Context context, Theme.ResourcesProvider resourcesProvider, boolean useOverlaySelector) {
         super(context);
         this.style = style;
         this.currentAccount = currentAccount;
@@ -145,9 +149,11 @@ public class ReactedUserHolderView extends FrameLayout {
         reactView = new BackupImageView(context);
         addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
-        overlaySelectorView = new View(context);
-        overlaySelectorView.setBackground(Theme.getSelectorDrawable(false));
-        addView(overlaySelectorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (useOverlaySelector) {
+            overlaySelectorView = new View(context);
+            overlaySelectorView.setBackground(Theme.getSelectorDrawable(false));
+            addView(overlaySelectorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
     }
 
     public void setUserReaction(TLRPC.User user, TLRPC.Chat chat, TLRPC.Reaction reaction, boolean like, long date, boolean dateIsSeen, boolean animated) {

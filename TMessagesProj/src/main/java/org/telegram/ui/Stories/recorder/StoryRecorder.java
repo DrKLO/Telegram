@@ -578,6 +578,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     NotificationCenter.getGlobalInstance().runDelayedNotifications();
                     checkBackgroundVisibility();
+
+                    if (onFullyOpenListener != null) {
+                        onFullyOpenListener.run();
+                        onFullyOpenListener = null;
+                    }
                 }
             });
             if (value < 1 && wasSend) {
@@ -677,6 +682,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     private Runnable onCloseListener;
     public void setOnCloseListener(Runnable listener) {
         onCloseListener = listener;
+    }
+
+    private Runnable onFullyOpenListener;
+    public void setOnFullyOpenListener(Runnable listener) {
+        onFullyOpenListener = listener;
     }
 
     private Utilities.Callback3<Long, Runnable, Boolean> onClosePrepareListener;
@@ -2311,7 +2321,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
         file = StoryEntry.makeCacheFile(currentAccount, false);
         try {
-            bitmap.compress(Bitmap.CompressFormat.JPEG, forDraft ? 95 : 75, new FileOutputStream(file));
+            bitmap.compress(Bitmap.CompressFormat.JPEG, forDraft ? 95 : 99, new FileOutputStream(file));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -2764,10 +2774,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         } else if (currentEditMode > EDIT_MODE_NONE) {
             switchToEditMode(EDIT_MODE_NONE, true);
             return false;
-        } else if (currentPage == PAGE_PREVIEW && (outputEntry == null || !outputEntry.isEdit)) {
-            if (paintView != null && paintView.onBackPressed()){
+        } else if (currentPage == PAGE_PREVIEW && (outputEntry == null || !outputEntry.isEdit || (paintView != null && paintView.hasChanges()) || outputEntry.editedMedia || outputEntry.editedCaption)) {
+            if (paintView != null && paintView.onBackPressed()) {
                 return false;
-            } else if (fromGallery && (paintView == null || !paintView.hasChanges()) && (outputEntry == null || outputEntry.filterFile == null) || !previewButtons.isShareEnabled()) {
+            } else if ((fromGallery && (paintView == null || !paintView.hasChanges()) && (outputEntry == null || outputEntry.filterFile == null) || !previewButtons.isShareEnabled()) && (outputEntry == null || !outputEntry.isEdit)) {
                 navigateTo(PAGE_CAMERA, true);
             } else {
                 showDismissEntry();
@@ -4179,7 +4189,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
         builder.setTitle(LocaleController.getString("DiscardChanges", R.string.DiscardChanges));
         builder.setMessage(LocaleController.getString("PhotoEditorDiscardAlert", R.string.PhotoEditorDiscardAlert));
-        if (outputEntry != null) {
+        if (outputEntry != null && !outputEntry.isEdit) {
             builder.setNeutralButton(outputEntry.isDraft ? LocaleController.getString("StoryKeepDraft") : LocaleController.getString("StorySaveDraft"), (di, i) -> {
                 if (outputEntry == null) {
                     return;
@@ -4203,12 +4213,16 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 navigateTo(PAGE_CAMERA, true);
             });
         }
-        builder.setPositiveButton(outputEntry != null && outputEntry.isDraft ? LocaleController.getString("StoryDeleteDraft") : LocaleController.getString("Discard", R.string.Discard), (dialogInterface, i) -> {
-            if (outputEntry != null && outputEntry.isDraft) {
+        builder.setPositiveButton(outputEntry != null && outputEntry.isDraft && !outputEntry.isEdit ? LocaleController.getString("StoryDeleteDraft") : LocaleController.getString("Discard", R.string.Discard), (dialogInterface, i) -> {
+            if (outputEntry != null && !outputEntry.isEdit && outputEntry.isDraft) {
                 MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().delete(outputEntry);
                 outputEntry = null;
             }
-            navigateTo(PAGE_CAMERA, true);
+            if (outputEntry != null && outputEntry.isEdit) {
+                close(true);
+            } else {
+                navigateTo(PAGE_CAMERA, true);
+            }
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         AlertDialog dialog = builder.create();

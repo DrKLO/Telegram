@@ -56,11 +56,11 @@ public class PremiumButtonView extends FrameLayout {
     CounterView counterView;
     public boolean drawGradient = true;
 
-    public PremiumButtonView(@NonNull Context context, boolean createOverlayTextView) {
-        this(context, AndroidUtilities.dp(8), createOverlayTextView);
+    public PremiumButtonView(@NonNull Context context, boolean createOverlayTextView, Theme.ResourcesProvider resourcesProvider) {
+        this(context, AndroidUtilities.dp(8), createOverlayTextView, resourcesProvider);
     }
 
-    public PremiumButtonView(@NonNull Context context, int radius, boolean createOverlayTextView) {
+    public PremiumButtonView(@NonNull Context context, int radius, boolean createOverlayTextView, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.radius = radius;
 
@@ -93,14 +93,14 @@ public class PremiumButtonView extends FrameLayout {
             overlayTextView = new AnimatedTextView(context, true, true, true);
             overlayTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             overlayTextView.setGravity(Gravity.CENTER);
-            overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             overlayTextView.setTextSize(AndroidUtilities.dp(14));
             overlayTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             overlayTextView.getDrawable().setAllowCancel(true);
             overlayTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 120)));
             addView(overlayTextView);
 
-            paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+            paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
             updateOverlayProgress();
         }
     }

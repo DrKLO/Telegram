@@ -44,6 +44,7 @@ import android.media.AudioManager;
 import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -284,6 +285,24 @@ public class NotificationsController extends BaseController {
     private static final LongSparseArray<String> sharedPrefCachedKeys = new LongSparseArray<>();
 
     public static String getSharedPrefKey(long dialog_id, int topicId) {
+        return getSharedPrefKey(dialog_id, topicId, false);
+    }
+
+    public static String getSharedPrefKey(long dialog_id, int topicId, boolean backgroundThread) {
+        if (backgroundThread) {
+            String key;
+            if (topicId != 0) {
+                key = String.format(Locale.US, "%d_%d",dialog_id, topicId);
+            } else {
+                key = String.valueOf(dialog_id);
+            }
+            return key;
+        }
+//        if (BuildVars.DEBUG_PRIVATE_VERSION) {
+//            if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
+//                throw new IllegalStateException("Not on main thread!");
+//            }
+//        }
         long hash = dialog_id + ((long) topicId << 12);
         int index = sharedPrefCachedKeys.indexOfKey(hash);
         if (index >= 0) {

@@ -491,7 +491,11 @@ public class TimelineView extends View {
             return false;
         }
 
-        if (hasVideo && !hasAudio && event.getY() < h - py - getVideoHeight() - py && event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (hasVideo && !hasAudio && event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < h - py - getVideoHeight() - py) {
+            return false;
+        }
+
+        if (hasAudio && !hasVideo && event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < h - py - getAudioHeight() - py) {
             return false;
         }
 
@@ -583,6 +587,8 @@ public class TimelineView extends View {
                             if (!hadDragChange && d < 0 && audioLeft <= (audioRight - MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
+                        } else {
+                            minValue = Math.max(minValue, (videoLeft * videoDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioLeft = audioLeft;
                         audioLeft = Utilities.clamp(audioLeft + d, maxValue, minValue);
@@ -603,6 +609,8 @@ public class TimelineView extends View {
                             if (!hadDragChange && d > 0 && audioRight >= (audioLeft + MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
+                        } else {
+                            maxValue = Math.min(maxValue, (videoRight * videoDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioRight = audioRight;
                         audioRight = Utilities.clamp(audioRight + d, maxValue, minValue);
@@ -731,7 +739,7 @@ public class TimelineView extends View {
     }
 
     private long minAudioSelect() {
-        return (long) Math.max(MIN_SELECT_DURATION, Math.min(videoDuration, MAX_SELECT_DURATION) * 0.25f);
+        return (long) Math.max(MIN_SELECT_DURATION, Math.min(videoDuration, MAX_SELECT_DURATION) * 0.15f);
     }
 
     private void moveAudioOffset(final float d) {
@@ -754,6 +762,7 @@ public class TimelineView extends View {
                 }
                 audioOffset = Utilities.clamp(audioOffset + (long) d, mmx, mmn);
                 if (delegate != null) {
+                    delegate.onAudioLeftChange(audioLeft);
                     delegate.onAudioRightChange(audioRight);
                 }
             } else if (audioOffset + (long) d < mn) {
@@ -769,6 +778,7 @@ public class TimelineView extends View {
                 audioOffset = Utilities.clamp(audioOffset + (long) d, mmx, mmn);
                 if (delegate != null) {
                     delegate.onAudioLeftChange(audioLeft);
+                    delegate.onAudioRightChange(audioRight);
                 }
             } else {
                 audioOffset += (long) d;
@@ -776,24 +786,6 @@ public class TimelineView extends View {
         } else {
             audioOffset = Utilities.clamp(audioOffset + (long) d, (long) (getBaseDuration() - audioDuration * audioRight), (long) (-audioLeft * audioDuration));
         }
-//        final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-//        final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
-//        boolean changedLeftRight = false;
-//        final float pastDuration = audioRight - audioLeft;
-//        if (audioLeft < minLeft) {
-//            audioLeft = minLeft;
-//            audioRight = Math.min(1, audioLeft + pastDuration);
-//            changedLeftRight = true;
-//        }
-//        if (audioRight > maxRight) {
-//            audioRight = maxRight;
-//            audioLeft = Math.max(0, audioRight - pastDuration);
-//            changedLeftRight = true;
-//        }
-//        if (delegate != null && changedLeftRight) {
-//            delegate.onAudioLeftChange(audioLeft);
-//            delegate.onAudioRightChange(audioRight);
-//        }
         if (!hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
             progress = (long) (audioLeft * audioDuration);
             if (delegate != null) {

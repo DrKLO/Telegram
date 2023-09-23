@@ -3208,7 +3208,7 @@ public class StoriesController {
     public boolean canPostStories(long dialogId) {
         if (dialogId < 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-            if (chat == null) {
+            if (chat == null || !ChatObject.isChannelAndNotMegaGroup(chat)) {
                 return false;
             }
             return chat.creator || chat.admin_rights != null && chat.admin_rights.post_stories;

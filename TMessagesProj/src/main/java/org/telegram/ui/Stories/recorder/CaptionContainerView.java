@@ -217,6 +217,7 @@ public class CaptionContainerView extends FrameLayout {
         editText.setFocusableInTouchMode(true);
         editText.getEditText().hintLayoutYFix = true;
         editText.getEditText().drawHint = this::drawHint;
+        editText.getEditText().setSupportRtlHint(true);
         captionBlur = new BlurringShader.StoryBlurDrawer(blurManager, editText.getEditText(), customBlur() ? BlurringShader.StoryBlurDrawer.BLUR_TYPE_CAPTION : BlurringShader.StoryBlurDrawer.BLUR_TYPE_CAPTION_XFER);
         editText.getEditText().setHintColor(0x80ffffff);
         editText.getEditText().setHintText(LocaleController.getString("AddCaption", R.string.AddCaption), false);
@@ -800,6 +801,7 @@ public class CaptionContainerView extends FrameLayout {
                 return;
             }
             final EditTextCaption e = editText.getEditText();
+            canvas.translate(-e.hintLayoutX, 0);
             canvas.saveLayerAlpha(0, 0, hintTextBitmap.getWidth(), hintTextBitmap.getHeight(), 0xff, Canvas.ALL_SAVE_FLAG);
             rectF.set(0, 1, hintTextBitmap.getWidth(), hintTextBitmap.getHeight() - 1);
             drawBlur(captionBlur, canvas, rectF, 0, true, -editText.getX() - e.getPaddingLeft(), -editText.getY() - e.getPaddingTop() - e.getExtendedPaddingTop(), true);

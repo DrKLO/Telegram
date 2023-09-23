@@ -104,10 +104,13 @@ public class VideoPlayerHolderBase {
         });
     }
 
-    public void start(boolean paused, Uri uri, long t, boolean audioDisabled) {
+    public void start(boolean paused, Uri uri, long position, boolean audioDisabled) {
         startTime = System.currentTimeMillis();
         this.audioDisabled = audioDisabled;
         this.paused = paused;
+        if (position > 0) {
+            currentPosition = position;
+        }
         dispatchQueue.postRunnable(initRunnable = () -> {
             if (released) {
                 return;
@@ -134,8 +137,8 @@ public class VideoPlayerHolderBase {
                     videoPlayer.play();
                 }
             }
-            if (t > 0) {
-                videoPlayer.seekTo(t);
+            if (position > 0) {
+                videoPlayer.seekTo(position);
             }
 
            // videoPlayer.setVolume(isInSilentMode ? 0 : 1f);

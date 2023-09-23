@@ -185,6 +185,9 @@ public class Input {
 
         long dt = System.currentTimeMillis() - lastVelocityUpdate;
         velocity = MathUtils.clamp(velocity - dt / 125f, 0.6f, 1f);
+        if (renderView.getCurrentBrush() != null && renderView.getCurrentBrush() instanceof Brush.Arrow) {
+            velocity = 1 - velocity;
+        }
         lastScale = scale;
         lastVelocityUpdate = System.currentTimeMillis();
 
@@ -195,7 +198,7 @@ public class Input {
             stylusToolPressed = (event.getButtonState() & MotionEvent.BUTTON_STYLUS_PRIMARY) == MotionEvent.BUTTON_STYLUS_PRIMARY;
         }
         if (renderView.getCurrentBrush() != null) {
-            weight = 1 + (weight - 1) * AndroidUtilities.lerp(1, renderView.getCurrentBrush().getSmoothThicknessRate(), MathUtils.clamp(realPointsCount / 16f, 0, 1));
+            weight = 1 + (weight - 1) * AndroidUtilities.lerp(renderView.getCurrentBrush().getSmoothThicknessRate(), 1, MathUtils.clamp(realPointsCount / 16f, 0, 1));
         }
         Point location = new Point(tempPoint[0], tempPoint[1], weight);
 
@@ -299,7 +302,7 @@ public class Input {
                             float angle = lastAngle;
                             final Point loc = points[pointsCount - 1];
                             double z = lastThickLocation == null ? location.z : lastThickLocation.z;
-                            float arrowLength = renderView.getCurrentWeight() * (float) z * 4.5f;
+                            float arrowLength = renderView.getCurrentWeight() * (float) z * 12f;
 
                             commit = false;
                             if (arrowAnimator != null) {
@@ -311,13 +314,17 @@ public class Input {
                             arrowAnimator.addUpdateListener(anm -> {
                                 float t = (float) anm.getAnimatedValue();
 
+                                double leftCos = Math.cos(angle - Math.PI / 4 * 3.3);
+                                double leftSin = Math.sin(angle - Math.PI / 4 * 3.5);
                                 paintPath(new Path(new Point[]{
-                                    new Point(loc.x + Math.cos(angle - Math.PI / 4 * 3) * arrowLength * lastT[0], loc.y + Math.sin(angle - Math.PI / 4 * 3.2) * arrowLength * lastT[0], z),
-                                    new Point(loc.x + Math.cos(angle - Math.PI / 4 * 3) * arrowLength * t, loc.y + Math.sin(angle - Math.PI / 4 * 3.2) * arrowLength * t, z, true)
+                                    new Point(loc.x + leftCos * arrowLength * lastT[0], loc.y + leftSin * arrowLength * lastT[0], z),
+                                    new Point(loc.x + leftCos * arrowLength * t, loc.y + leftSin * arrowLength * t, z, true)
                                 }));
+                                double rightCos = Math.cos(angle + Math.PI / 4 * 3.3);
+                                double rightSin = Math.sin(angle + Math.PI / 4 * 3.5);
                                 paintPath(new Path(new Point[]{
-                                    new Point(loc.x + Math.cos(angle + Math.PI / 4 * 3) * arrowLength * lastT[0], loc.y + Math.sin(angle + Math.PI / 4 * 3.2) * arrowLength * lastT[0], z),
-                                    new Point(loc.x + Math.cos(angle + Math.PI / 4 * 3) * arrowLength * t, loc.y + Math.sin(angle + Math.PI / 4 * 3.2) * arrowLength * t, z, true)
+                                    new Point(loc.x + rightCos * arrowLength * lastT[0], loc.y + rightSin * arrowLength * lastT[0], z),
+                                    new Point(loc.x + rightCos * arrowLength * t, loc.y + rightSin * arrowLength * t, z, true)
                                 }));
 
                                 if (!vibrated[0] && t > .4f) {
@@ -467,7 +474,7 @@ public class Input {
         double x = midPoint1.x * minus_t_squard + 2 * prev1.x * t * (1 - t) + midPoint2.x * t_squared;
         double y = midPoint1.y * minus_t_squard + 2 * prev1.y * t * (1 - t) + midPoint2.y * t_squared;
         double z = midPoint1.z * a1 + prev1.z * a2 + midPoint2.z * a3;
-        z = 1 + (z - 1) * AndroidUtilities.lerp(1, smoothThickness, MathUtils.clamp(realPointsCount / 16f, 0, 1));
+        z = 1 + (z - 1) * AndroidUtilities.lerp(smoothThickness, 1, MathUtils.clamp(realPointsCount / 16f, 0, 1));
 
         return new Point(x, y, z);
     }

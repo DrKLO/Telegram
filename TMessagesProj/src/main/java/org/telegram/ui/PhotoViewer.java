@@ -2715,6 +2715,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         default void onPreOpen() {}
         default void onPreClose() {}
+        default void onEditModeChanged(boolean isEditMode) {}
         default boolean onDeletePhoto(int index) {
             return true;
         }
@@ -6039,9 +6040,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             protected void setupMentionContainer() {
-                if (parentChatActivity != null) {
-                    return;
-                }
                 mentionContainer.getAdapter().setAllowStickers(false);
                 mentionContainer.getAdapter().setAllowBots(false);
                 mentionContainer.getAdapter().setAllowChats(false);
@@ -9874,6 +9872,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     public void switchToEditMode(final int mode) {
         if (currentEditMode == mode || (isCurrentVideo && photoProgressViews[0].backgroundState != 3) && !isCurrentVideo && (centerImage.getBitmap() == null || photoProgressViews[0].backgroundState != -1) || changeModeAnimation != null || imageMoveAnimation != null || isCaptionOpen()) {
             return;
+        }
+        if (placeProvider != null && (currentEditMode == EDIT_MODE_NONE || mode == EDIT_MODE_NONE)) {
+            placeProvider.onEditModeChanged(mode != EDIT_MODE_NONE);
         }
         windowView.setClipChildren(mode == EDIT_MODE_FILTER);
         int navigationBarColorFrom = 0x7f000000;

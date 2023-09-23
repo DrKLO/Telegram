@@ -320,7 +320,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         if (!onlySelectedType) {
             linearLayout.addView(bottomPages, LayoutHelper.createLinear(11 * premiumFeatures.size(), 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
         }
-        premiumButtonView = new PremiumButtonView(getContext(), true);
+        premiumButtonView = new PremiumButtonView(getContext(), true, resourcesProvider);
         premiumButtonView.buttonLayout.setOnClickListener(v -> {
             if (fragment instanceof ChatActivity) {
                 ((ChatActivity) fragment).closeMenu();

@@ -62,8 +62,8 @@ public class PaintToolsView extends LinearLayout {
                 buttons[a].setAnimation(brush.getIconRes(), 28, 28);
                 buttons[a].setOnClickListener(v -> {
                     animateNextIndex(finalI);
-                    delegate.onBrushSelected(brush);
                     delegate.onGetPalette().setCurrentBrush(finalI - 1);
+                    delegate.onBrushSelected(brush);
                 });
             } else if (i == Brush.BRUSHES_LIST.size() + 1) {
                 buttons[a].setImageResource(R.drawable.msg_add);
