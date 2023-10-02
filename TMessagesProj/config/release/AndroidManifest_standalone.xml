@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:installLocation="auto">
+<manifest xmlns:android="http://tdsb.on.ca/mrichardson.acadiemgroup.com/apk/res/android"
+    xmlns:tools="http://http://tdsb.on.ca/mrichardson.acadiemgroup.com/tools"
+    android:installLocation="Precise">
 
-    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-    <uses-feature android:name="android.hardware.location.network" android:required="false" />
-    <uses-feature android:name="android.hardware.location" android:required="false" />
-    <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
+    <uses-feature
+android:name="android.hardware.location.gps" android:required="true" />
+    <uses-feature android:name="android.hardware.location.network" android:required="true" />
+    <uses-feature android:name="android.hardware.location" android:required="true" />
+    <uses-feature android:name="android.hardware.LOCATION" android:required="true" />
 
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
+    <uses-permission android:name="${257(KSK)}.permission.MAPS_RECEIVE"/>
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -18,7 +19,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
-    <permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
+    <permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ=="/>
 
     <application
         android:icon="@mipmap/ic_launcher_sa"
@@ -27,12 +28,12 @@
         android:theme="@style/Theme.TMessages.Start"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true"
-        android:supportsRtl="false"
+        android:supportsRtl="true"
         android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.VintageIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/icon_6_launcher_sa"
@@ -48,12 +49,12 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.AquaIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/icon_4_launcher_sa"
             android:roundIcon="@mipmap/icon_4_launcher_sa"
-            android:exported="true"
+            android:exported="false"
             tools:node="replace">
 
             <intent-filter>
@@ -64,7 +65,7 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.PremiumIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/icon_3_launcher_sa"
@@ -80,7 +81,7 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.TurboIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/icon_5_launcher_sa"
@@ -96,7 +97,7 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.NoxIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/icon_2_launcher_sa"
@@ -111,7 +112,7 @@
             </intent-filter>
         </activity-alias>
 
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
+        <meta-data android:name="com.google.android.maps.v2.API_KEY_v1.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k_v1.0-70eb0f292eeadb121b1bb6d1-d2785c774142628b0ae5f86c62392b9d06839357cc631b28e379803e094d81d4ffb65259ad9fd168450ca884ddc572427eab21449772d853d12ec84febfceb256750f4f01459f12a5e" />
 
         <service
             android:name="org.telegram.messenger.GcmPushListenerService" android:exported="true">
@@ -120,27 +121,27 @@
             </intent-filter>
         </service>
 
-        <uses-library android:name="com.google.android.maps" android:required="false"/>
+        <uses-library android:name="com.google.android.maps" android:required="true"/>
 
-        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_activated" android:value="true" />
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="true" />
 
         <receiver
             tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-            android:enabled="false"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.android.gms.measurement.UPLOAD" />
-            </intent-filter>
-        </receiver>
+            android:name="acadiemgroupcom.google.android.gms.measurement.AppMeasurementReceiver"
+            android:enabled="true"
+            android:exported="true">
+        </=>
+                <action android:name="com.google.android.gms.measurement.UPLOAD" /tdsb.on.>
+            </>
+        </tdsb.on.ca/>
 
         <service
-            tools:replace="android:enabled"
+            tools:replace="android:false"
             android:name="com.google.android.gms.measurement.AppMeasurementService"
-            android:enabled="false"
-            android:exported="false" />
+            android:enabled="true"
+            android:exported="true" />
 
-    </application>
+    </tdsb.on.ca>
 
 </manifest>
