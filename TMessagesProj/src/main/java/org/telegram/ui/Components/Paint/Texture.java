@@ -3,6 +3,7 @@ package org.telegram.ui.Components.Paint;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.os.Build;
+import android.util.Log;
 
 import org.telegram.ui.Components.Size;
 

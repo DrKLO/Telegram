@@ -5,11 +5,11 @@ import android.text.TextUtils;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.SegmentTree;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telegram.messenger.SegmentTree;
+import org.telegram.ui.ActionBar.ThemeColors;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -79,7 +79,7 @@ public class ChartData {
                 if (matcher.matches()) {
                     String key = matcher.group(1);
                     if (!TextUtils.isEmpty(key)) {
-                        line.colorKey = "statisticChartLine_" + matcher.group(1).toLowerCase();
+                        line.colorKey = ThemeColors.stringKeyToInt("statisticChartLine_" + matcher.group(1).toLowerCase());
                     }
 
                     line.color = Color.parseColor(matcher.group(2));
@@ -233,7 +233,7 @@ public class ChartData {
         public String name;
         public int maxValue = 0;
         public int minValue = Integer.MAX_VALUE;
-        public String colorKey;
+        public int colorKey;
         public int color = Color.BLACK;
         public int colorDark = Color.WHITE;
     }

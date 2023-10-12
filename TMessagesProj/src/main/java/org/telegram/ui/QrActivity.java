@@ -32,6 +32,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -105,6 +106,7 @@ import java.util.List;
 public class QrActivity extends BaseFragment {
 
     private static final ArrayMap<String, int[]> qrColorsMap = new ArrayMap<>();
+    private static final int LOGO_OPTIMAL_FRAME = 33;
     private static List<EmojiThemes> cachedThemes;
 
     static {
@@ -129,7 +131,7 @@ public class QrActivity extends BaseFragment {
     }
 
     private final ThemeResourcesProvider resourcesProvider = new ThemeResourcesProvider();
-    private final EmojiThemes homeTheme = EmojiThemes.createHomeQrTheme();
+    private final EmojiThemes homeTheme = EmojiThemes.createHomeQrTheme(currentAccount);
     private final Rect logoRect = new Rect();
     private final ArrayMap<String, Bitmap> emojiThemeDarkIcons = new ArrayMap<>();
     private int[] prevQrColors = null;
@@ -379,13 +381,14 @@ public class QrActivity extends BaseFragment {
             }
             fragmentView.postDelayed(() -> {
                 onItemSelected(currentTheme, 0, true);
+                logoImageView.getAnimatedDrawable().cacheFrame(LOGO_OPTIMAL_FRAME);
             }, 17);
         }, 25);
 
         fragmentView.postDelayed(() -> {
             firstOpen = false;
             if (cachedThemes == null || cachedThemes.isEmpty()) {
-                ChatThemeController.requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
+                ChatThemeController.getInstance(currentAccount).requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
                     @Override
                     public void onComplete(List<EmojiThemes> result) {
                         onDataLoaded(result);
@@ -485,11 +488,6 @@ public class QrActivity extends BaseFragment {
         if (getParentActivity() != null) {
             getParentActivity().getWindow().getDecorView().setSystemUiVisibility(prevSystemUiVisibility);
         }
-    }
-
-    @Override
-    public int getNavigationBarColor() {
-        return getThemedColor(Theme.key_windowBackgroundGray);
     }
 
     @Override
@@ -718,10 +716,8 @@ public class QrActivity extends BaseFragment {
 
         themeLayout.setVisibility(View.GONE);
         closeImageView.setVisibility(View.GONE);
-        logoImageView.stopAnimation();
+        logoImageView.setVisibility(View.GONE);
         RLottieDrawable drawable = logoImageView.getAnimatedDrawable();
-        int currentFrame = drawable.getCurrentFrame();
-        drawable.setCurrentFrame(33, false);
 
         if (qrView != null) {
             qrView.setForShare(true);
@@ -730,12 +726,13 @@ public class QrActivity extends BaseFragment {
         fragmentView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
         fragmentView.layout(0, 0, width, height);
         fragmentView.draw(canvas);
+        drawable.setBounds(logoImageView.getLeft(), logoImageView.getTop(), logoImageView.getRight(), logoImageView.getBottom());
+        drawable.drawFrame(canvas, LOGO_OPTIMAL_FRAME);
         canvas.setBitmap(null);
 
         themeLayout.setVisibility(View.VISIBLE);
         closeImageView.setVisibility(View.VISIBLE);
-        drawable.setCurrentFrame(currentFrame, false);
-        logoImageView.playAnimation();
+        logoImageView.setVisibility(View.VISIBLE);
 
         ViewGroup parent = (ViewGroup) fragmentView.getParent();
         fragmentView.layout(0, 0, parent.getWidth(), parent.getHeight());
@@ -780,15 +777,15 @@ public class QrActivity extends BaseFragment {
 
     private class ThemeResourcesProvider implements Theme.ResourcesProvider {
 
-        private HashMap<String, Integer> colors;
+        private SparseIntArray colors;
 
         void initColors(EmojiThemes theme, boolean isDark) {
             colors = theme.createColors(currentAccount, isDark ? 1 : 0);
         }
 
         @Override
-        public Integer getColor(String key) {
-            return colors != null ? colors.get(key) : null;
+        public int getColor(int key) {
+            return colors != null ? colors.get(key) : Theme.getColor(key);
         }
     }
 
@@ -1468,10 +1465,11 @@ public class QrActivity extends BaseFragment {
         }
 
         public void onCreate() {
-            ChatThemeController.preloadAllWallpaperThumbs(true);
-            ChatThemeController.preloadAllWallpaperThumbs(false);
-            ChatThemeController.preloadAllWallpaperImages(true);
-            ChatThemeController.preloadAllWallpaperImages(false);
+            ChatThemeController chatThemeController = ChatThemeController.getInstance(currentAccount);
+            chatThemeController.preloadAllWallpaperThumbs(true);
+            chatThemeController.preloadAllWallpaperThumbs(false);
+            chatThemeController.preloadAllWallpaperImages(true);
+            chatThemeController.preloadAllWallpaperImages(false);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         }
 

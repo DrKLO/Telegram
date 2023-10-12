@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
@@ -997,7 +998,7 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     public interface LocationFetchCallback {
-        void onLocationAddressAvailable(String address, String displayAddress, Location location);
+        void onLocationAddressAvailable(String address, String displayAddress, TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location);
     }
 
     private static HashMap<LocationFetchCallback, Runnable> callbacks = new HashMap<>();
@@ -1011,15 +1012,24 @@ public class LocationController extends BaseController implements NotificationCe
             callbacks.remove(callback);
         }
         if (location == null) {
-            callback.onLocationAddressAvailable(null, null, null);
+            callback.onLocationAddressAvailable(null, null, null, null, null);
             return;
         }
 
+        Locale locale;
+        try {
+            locale = LocaleController.getInstance().getCurrentLocale();
+        } catch (Exception ignore) {
+            locale = LocaleController.getInstance().getSystemDefaultLocale();
+        }
+        final Locale finalLocale = locale;
         Utilities.globalQueue.postRunnable(fetchLocationRunnable = () -> {
-            String name;
-            String displayName;
+            String name, displayName, city, street, countryCode = null;
+            boolean onlyCountry = true;
+            TLRPC.TL_messageMediaVenue cityLocation = null;
+            TLRPC.TL_messageMediaVenue streetLocation = null;
             try {
-                Geocoder gcd = new Geocoder(ApplicationLoader.applicationContext, LocaleController.getInstance().getSystemDefaultLocale());
+                Geocoder gcd = new Geocoder(ApplicationLoader.applicationContext, finalLocale);
                 List<Address> addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
                 if (addresses.size() > 0) {
                     Address address = addresses.get(0);
@@ -1028,6 +1038,74 @@ public class LocationController extends BaseController implements NotificationCe
 
                     StringBuilder nameBuilder = new StringBuilder();
                     StringBuilder displayNameBuilder = new StringBuilder();
+                    StringBuilder cityBuilder = new StringBuilder();
+                    StringBuilder streetBuilder = new StringBuilder();
+
+                    String locality = null;
+                    String feature = null;
+//                    String addressLine = null;
+//                    try {
+//                        addressLine = address.getAddressLine(0);
+//                    } catch (Exception ignore) {}
+//                    if (addressLine != null) {
+//                        String postalCode = address.getPostalCode();
+//                        if (postalCode != null) {
+//                            addressLine = addressLine.replace(" " + postalCode, "");
+//                            addressLine = addressLine.replace(postalCode, "");
+//                        }
+//                        String[] parts = addressLine.split(", ");
+//                        if (parts.length > 2) {
+//                            String _country = parts[parts.length - 1].replace(",", "").trim();
+//                            String _city = parts[parts.length - 2].replace(",", "").trim();
+////                            if (_city.length() > 3) {
+////                                locality = _city;
+////                            }
+////                            feature = parts[0].replace(",", "").trim();
+//                        }
+//                    }
+                    if (TextUtils.isEmpty(locality)) {
+                        locality = address.getLocality();
+                    }
+                    if (TextUtils.isEmpty(locality)) {
+                        locality = address.getSubAdminArea();
+                    }
+                    if (TextUtils.isEmpty(locality)) {
+                        locality = address.getAdminArea();
+                    }
+
+//                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getFeatureName(), locality) && !TextUtils.equals(address.getFeatureName(), address.getCountryName())) {
+//                        feature = address.getFeatureName();
+//                    }
+                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getThoroughfare(), locality) && !TextUtils.equals(address.getThoroughfare(), address.getCountryName())) {
+                        feature = address.getThoroughfare();
+                    }
+                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getSubLocality(), locality) && !TextUtils.equals(address.getSubLocality(), address.getCountryName())) {
+                        feature = address.getSubLocality();
+                    }
+                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getLocality(), locality) && !TextUtils.equals(address.getLocality(), address.getCountryName())) {
+                        feature = address.getLocality();
+                    }
+                    if (!TextUtils.isEmpty(feature) && !TextUtils.equals(feature, locality) && !TextUtils.equals(feature, address.getCountryName())) {
+                        if (streetBuilder.length() > 0) {
+                            streetBuilder.append(", ");
+                        }
+                        streetBuilder.append(feature);
+                    } else {
+                        streetBuilder = null;
+                    }
+                    if (!TextUtils.isEmpty(locality)) {
+                        if (cityBuilder.length() > 0) {
+                            cityBuilder.append(", ");
+                        }
+                        cityBuilder.append(locality);
+                        onlyCountry = false;
+                        if (streetBuilder != null) {
+                            if (streetBuilder.length() > 0) {
+                                streetBuilder.append(", ");
+                            }
+                            streetBuilder.append(locality);
+                        }
+                    }
 
                     arg = address.getSubThoroughfare();
                     if (!TextUtils.isEmpty(arg)) {
@@ -1065,12 +1143,29 @@ public class LocationController extends BaseController implements NotificationCe
                         }
                         nameBuilder.append(arg);
                     }
+                    countryCode = address.getCountryCode();
                     arg = address.getCountryName();
                     if (!TextUtils.isEmpty(arg)) {
                         if (nameBuilder.length() > 0) {
                             nameBuilder.append(", ");
                         }
                         nameBuilder.append(arg);
+                        String shortCountry = arg;
+                        final String lng = finalLocale.getLanguage();
+                        if (("US".equals(address.getCountryCode()) || "AE".equals(address.getCountryCode())) && ("en".equals(lng) || "uk".equals(lng) || "ru".equals(lng)) || "GB".equals(address.getCountryCode()) && "en".equals(lng)) {
+                            shortCountry = "";
+                            String[] words = arg.split(" ");
+                            for (String word : words) {
+                                if (word.length() > 0)
+                                    shortCountry += word.charAt(0);
+                            }
+                        } else if ("US".equals(address.getCountryCode())) {
+                            shortCountry = "USA";
+                        }
+                        if (cityBuilder.length() > 0) {
+                            cityBuilder.append(", ");
+                        }
+                        cityBuilder.append(shortCountry);
                     }
 
                     arg = address.getCountryName();
@@ -1106,19 +1201,94 @@ public class LocationController extends BaseController implements NotificationCe
 
                     name = nameBuilder.toString();
                     displayName = displayNameBuilder.toString();
+                    city = cityBuilder.toString();
+                    street = streetBuilder == null ? null : streetBuilder.toString();
                 } else {
                     name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                    city = null;
+                    street = null;
+                }
+                if (!TextUtils.isEmpty(city)) {
+                    cityLocation = new TLRPC.TL_messageMediaVenue();
+                    cityLocation.geo = new TLRPC.TL_geoPoint();
+                    cityLocation.geo.lat = location.getLatitude();
+                    cityLocation.geo._long = location.getLongitude();
+                    cityLocation.query_id = -1;
+                    cityLocation.title = city;
+                    cityLocation.icon = onlyCountry ? "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png" : "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
+                    cityLocation.emoji = countryCodeToEmoji(countryCode);
+                    cityLocation.address = onlyCountry ? LocaleController.getString("Country", R.string.Country) : LocaleController.getString("PassportCity", R.string.PassportCity);
+                }
+                if (!TextUtils.isEmpty(street)) {
+                    streetLocation = new TLRPC.TL_messageMediaVenue();
+                    streetLocation.geo = new TLRPC.TL_geoPoint();
+                    streetLocation.geo.lat = location.getLatitude();
+                    streetLocation.geo._long = location.getLongitude();
+                    streetLocation.query_id = -1;
+                    streetLocation.title = street;
+                    streetLocation.icon = "pin";
+                    streetLocation.address = LocaleController.getString("PassportStreet1", R.string.PassportStreet1);
+                }
+                if (cityLocation == null && streetLocation == null && location != null) {
+                    String ocean = detectOcean(location.getLongitude(), location.getLatitude());
+                    if (ocean != null) {
+                        cityLocation = new TLRPC.TL_messageMediaVenue();
+                        cityLocation.geo = new TLRPC.TL_geoPoint();
+                        cityLocation.geo.lat = location.getLatitude();
+                        cityLocation.geo._long = location.getLongitude();
+                        cityLocation.query_id = -1;
+                        cityLocation.title = ocean;
+                        cityLocation.icon = "pin";
+                        cityLocation.emoji = "🌊";
+                        cityLocation.address = "Ocean";
+                    }
                 }
             } catch (Exception ignore) {
                 name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                city = null;
+                street = null;
             }
             final String nameFinal = name;
             final String displayNameFinal = displayName;
+            final TLRPC.TL_messageMediaVenue finalCityLocation = cityLocation;
+            final TLRPC.TL_messageMediaVenue finalStreetLocation = streetLocation;
             AndroidUtilities.runOnUIThread(() -> {
                 callbacks.remove(callback);
-                callback.onLocationAddressAvailable(nameFinal, displayNameFinal, location);
+                callback.onLocationAddressAvailable(nameFinal, displayNameFinal, finalCityLocation, finalStreetLocation, location);
             });
         }, 300);
         callbacks.put(callback, fetchLocationRunnable);
+    }
+
+    public static String countryCodeToEmoji(String code) {
+        if (code == null) {
+            return null;
+        }
+        code = code.toUpperCase();
+        final int count = code.codePointCount(0, code.length());
+        if (count > 2) {
+            return null;
+        }
+        StringBuilder flag = new StringBuilder();
+        for (int j = 0; j < count; ++j) {
+            flag.append(Character.toChars(Character.codePointAt(code, j) - 0x41 + 0x1F1E6));
+        }
+        return flag.toString();
+    }
+
+    public static String detectOcean(double x, double y) {
+        if (y > 65) {
+            return "Arctic Ocean";
+        }
+        if (x > -88 && x < 40 && y > 0 || x > -60 && x < 20 && y <= 0) {
+            return "Atlantic Ocean";
+        }
+        if (y <= 30 && x >= 20 && x < 150) {
+            return "Indian Ocean";
+        }
+        if ((x > 106 || x < -60) && y > 0 || (x > 150 || x < -60) && y <= 0) {
+            return "Pacific Ocean";
+        }
+        return null;
     }
 }

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static android.graphics.Canvas.ALL_SAVE_FLAG;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -14,8 +16,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
-
-import static android.graphics.Canvas.ALL_SAVE_FLAG;
 
 public class BlurBehindDrawable {
 
@@ -70,6 +70,9 @@ public class BlurBehindDrawable {
     }
 
     public void draw(Canvas canvas) {
+        if (parentView == null || parentView.getMeasuredHeight() == 0 && parentView.getMeasuredWidth() == 0) {
+            return;
+        }
         if (type == 1 && !wasDraw && !animateAlpha) {
             generateBlurredBitmaps();
             invalidate = false;
@@ -418,8 +421,7 @@ public class BlurBehindDrawable {
                 : Theme.getCachedWallpaperNonBlocking();
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

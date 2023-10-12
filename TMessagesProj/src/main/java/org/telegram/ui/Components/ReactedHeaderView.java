@@ -5,7 +5,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -26,6 +25,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -58,7 +58,7 @@ public class ReactedHeaderView extends FrameLayout {
         this.dialogId = dialogId;
 
         flickerLoadingView = new FlickerLoadingView(context);
-        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
+        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, -1);
         flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
         flickerLoadingView.setIsSingleCell(false);
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
@@ -96,15 +96,22 @@ public class ReactedHeaderView extends FrameLayout {
     }
 
     public static class UserSeen {
-        public TLRPC.User user;
+        public TLObject user;
+        long dialogId;
         public int date = 0;
 
         public UserSeen(TLRPC.User user) {
             this.user = user;
+            dialogId = user.id;
         }
-        public UserSeen(TLRPC.User user, int date) {
+        public UserSeen(TLObject user, int date) {
             this.user = user;
             this.date = date;
+            if (user instanceof TLRPC.User) {
+                dialogId = ((TLRPC.User) user).id;
+            } else if (user instanceof TLRPC.Chat) {
+                dialogId = -((TLRPC.Chat) user).id;
+            }
         }
     }
 
@@ -153,7 +160,7 @@ public class ReactedHeaderView extends FrameLayout {
                             for (UserSeen p : usersRes) {
                                 boolean hasSame = false;
                                 for (int i = 0; i < users.size(); i++) {
-                                    if (users.get(i).user.id == p.user.id) {
+                                    if (MessageObject.getObjectPeerId(users.get(i).user) == MessageObject.getObjectPeerId(p.user)) {
                                         hasSame = true;
                                         if (p.date > 0) {
                                             users.get(i).date = p.date;
@@ -268,7 +275,21 @@ public class ReactedHeaderView extends FrameLayout {
                         if (message.messageOwner.from_id != null && u.id != message.messageOwner.from_id.user_id) {
                             boolean hasSame = false;
                             for (int i = 0; i < users.size(); i++) {
-                                if (users.get(i).user.id == u.id) {
+                                if (users.get(i).dialogId == u.id) {
+                                    hasSame = true;
+                                    break;
+                                }
+                            }
+                            if (!hasSame) {
+                                users.add(new UserSeen(u, 0));
+                            }
+                        }
+                    }
+                    for (TLRPC.Chat u : list.chats) {
+                        if (message.messageOwner.from_id != null && u.id != message.messageOwner.from_id.user_id) {
+                            boolean hasSame = false;
+                            for (int i = 0; i < users.size(); i++) {
+                                if (users.get(i).dialogId == -u.id) {
                                     hasSame = true;
                                     break;
                                 }

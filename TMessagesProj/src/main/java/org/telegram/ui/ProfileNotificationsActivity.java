@@ -101,6 +101,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private int popupEnabledRow;
     private int popupDisabledRow;
     private int popupInfoRow;
+    private int storiesRow;
     private int callsRow;
     private int ringtoneRow;
     private int callsVibrateRow;
@@ -111,6 +112,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private int customResetRow;
     private int customResetShadowRow;
     private int rowCount;
+
+    private boolean isInTop5Peers;
 
     private boolean needReset;
 
@@ -136,6 +139,17 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
     @Override
     public boolean onFragmentCreate() {
+        if (DialogObject.isUserDialog(dialogId)) {
+            ArrayList<TLRPC.TL_topPeer> topPeers = getMediaDataController().hints;
+            for (int i = 0; i < topPeers.size(); ++i) {
+                TLRPC.Peer peer = topPeers.get(i).peer;
+                if (peer instanceof TLRPC.TL_peerUser && peer.user_id == dialogId) {
+                    isInTop5Peers = i < 5;
+                    break;
+                }
+            }
+        }
+
         rowCount = 0;
         if (addingException) {
             avatarRow = rowCount++;
@@ -150,8 +164,12 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         } else {
             enableRow = -1;
         }
+        storiesRow = -1;
         if (!DialogObject.isEncryptedDialog(dialogId)) {
             previewRow = rowCount++;
+            if (DialogObject.isUserDialog(dialogId)) {
+                storiesRow = rowCount++;
+            }
         } else {
             previewRow = -1;
         }
@@ -381,7 +399,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             } else if (position == soundRow) {
                 Bundle bundle = new Bundle();
@@ -487,6 +505,17 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 if (view != null) {
                     ((RadioCell) view).setChecked(false, true);
                 }
+            } else if (position == storiesRow) {
+                TextCheckCell checkCell = (TextCheckCell) view;
+                boolean value = !checkCell.isChecked();
+                checkCell.setChecked(value);
+                SharedPreferences.Editor edit = MessagesController.getNotificationsSettings(currentAccount).edit();
+                if (isInTop5Peers && value) {
+                    edit.remove("stories_" + key);
+                } else {
+                    edit.putBoolean("stories_" + key, value);
+                }
+                edit.apply();getNotificationsController().updateServerNotificationsSettings(dialogId, topicId);
             }
         });
 
@@ -738,7 +767,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     if (position == customResetRow) {
                         textCell.setText(LocaleController.getString(R.string.ResetCustomNotifications), false);
-                        textCell.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+                        textCell.setTextColor(getThemedColor(Theme.key_text_RedBold));
                     } else {
                         textCell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                         if (position == soundRow) {
@@ -813,22 +842,23 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 }
                 case VIEW_TYPE_INFO: {
                     TextInfoPrivacyCell textCell = (TextInfoPrivacyCell) holder.itemView;
+                    textCell.setFixedSize(0);
                     if (position == popupInfoRow) {
                         textCell.setText(LocaleController.getString("ProfilePopupNotificationInfo", R.string.ProfilePopupNotificationInfo));
-                        textCell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        textCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == ledInfoRow) {
                         textCell.setText(LocaleController.getString("NotificationsLedInfo", R.string.NotificationsLedInfo));
-                        textCell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        textCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == priorityInfoRow) {
                         if (priorityRow == -1) {
                             textCell.setText("");
                         } else {
                             textCell.setText(LocaleController.getString("PriorityInfo", R.string.PriorityInfo));
                         }
-                        textCell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        textCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == ringtoneInfoRow) {
                         textCell.setText(LocaleController.getString("VoipRingtoneInfo", R.string.VoipRingtoneInfo));
-                        textCell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        textCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 }
@@ -896,6 +926,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (position == previewRow) {
                         String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
                         checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("content_preview_" + key, true), true);
+                    } else if (position == storiesRow) {
+                        String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
+                        boolean value = preferences.getBoolean("stories_" + key, isInTop5Peers || preferences.contains("EnableAllStories") && preferences.getBoolean("EnableAllStories", true));
+                        checkCell.setTextAndCheck(LocaleController.getString("StoriesSoundEnabled", R.string.StoriesSoundEnabled), value, true);
                     }
                     break;
                 }
@@ -943,6 +977,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
                     if (holder.getAdapterPosition() == previewRow) {
                         checkCell.setEnabled(notificationsEnabled, null);
+                    } else if (holder.getAdapterPosition() == storiesRow) {
+                        checkCell.setEnabled(notificationsEnabled, null);
                     } else {
                         checkCell.setEnabled(true, null);
                     }
@@ -966,16 +1002,11 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 return VIEW_TYPE_USER;
             } else if (position == avatarSectionRow || position == customResetShadowRow) {
                 return VIEW_TYPE_SHADOW;
-            } else if (position == enableRow || position == previewRow) {
+            } else if (position == enableRow || position == previewRow || position == storiesRow) {
                 return VIEW_TYPE_TEXT_CHECK;
             }
             return VIEW_TYPE_HEADER;
         }
-    }
-
-    @Override
-    public int getNavigationBarColor() {
-        return getThemedColor(Theme.key_windowBackgroundGray);
     }
 
     @Override

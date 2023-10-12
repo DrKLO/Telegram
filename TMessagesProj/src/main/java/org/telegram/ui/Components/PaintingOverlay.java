@@ -27,6 +27,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 
@@ -167,6 +168,7 @@ public class PaintingOverlay extends FrameLayout {
                 View child = null;
                 if (entity.type == 0) {
                     BackupImageView imageView = new BackupImageView(getContext());
+                    imageView.setLayerNum(8);
                     imageView.setAspectFit(true);
                     ImageReceiver imageReceiver = imageView.getImageReceiver();
                     if (isVideo) {
@@ -191,8 +193,6 @@ public class PaintingOverlay extends FrameLayout {
                     entity.view = child = imageView;
                 } else if (entity.type == 1) {
                     EditTextOutline editText = new EditTextOutline(getContext()) {
-                        { animatedEmojiOffsetX = AndroidUtilities.dp(8); }
-
                         @Override
                         public boolean dispatchTouchEvent(MotionEvent event) {
                             return false;
@@ -253,22 +253,22 @@ public class PaintingOverlay extends FrameLayout {
                     if (Build.VERSION.SDK_INT >= 23) {
                         editText.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
                     }
-                    if ((entity.subType & 1) != 0) {
-                        editText.setTextColor(0xffffffff);
-                        editText.setStrokeColor(entity.color);
-                        editText.setFrameColor(0);
-                        editText.setShadowLayer(0, 0, 0, 0);
-                    } else if ((entity.subType & 4) != 0) {
-                        editText.setTextColor(0xff000000);
-                        editText.setStrokeColor(0);
+                    editText.setShadowLayer(0, 0, 0, 0);
+                    int textColor = entity.color;
+                    if (entity.subType == 0) {
                         editText.setFrameColor(entity.color);
-                        editText.setShadowLayer(0, 0, 0, 0);
+                        textColor = AndroidUtilities.computePerceivedBrightness(entity.color) >= .721f ? Color.BLACK : Color.WHITE;
+                    } else if (entity.subType == 1) {
+                        editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? 0x99000000 : 0x99ffffff);
+                    } else if (entity.subType == 2) {
+                        editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? Color.BLACK : Color.WHITE);
                     } else {
-                        editText.setTextColor(entity.color);
-                        editText.setStrokeColor(0);
                         editText.setFrameColor(0);
-                        editText.setShadowLayer(5, 0, 1, 0x66000000);
                     }
+                    editText.setTextColor(textColor);
+                    editText.setCursorColor(textColor);
+                    editText.setHandlesColor(textColor);
+                    editText.setHighlightColor(Theme.multAlpha(textColor, .4f));
                     entity.view = child = editText;
                 }
                 if (child != null) {

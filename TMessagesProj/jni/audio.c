@@ -7,6 +7,7 @@
 #include <opusfile.h>
 #include <math.h>
 #include "c_utils.h"
+#include "libavformat/avformat.h"
 
 typedef struct {
     int version;
@@ -686,4 +687,144 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
     }
     
     return result;
+}
+
+JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveformLoader_init(JNIEnv *env, jobject obj, jstring pathJStr, jint count) {
+    const char *path = (*env)->GetStringUTFChars(env, pathJStr, 0);
+
+    // Initialize FFmpeg components
+    av_register_all();
+
+    AVFormatContext *formatContext = avformat_alloc_context();
+    if (!formatContext) {
+        // Handle error
+        return;
+    }
+
+    int res;
+    if ((res = avformat_open_input(&formatContext, path, NULL, NULL)) != 0) {
+        LOGD("avformat_open_input error %s", av_err2str(res));
+        // Handle error
+        avformat_free_context(formatContext);
+        return;
+    }
+
+    if (avformat_find_stream_info(formatContext, NULL) < 0) {
+        // Handle error
+        avformat_close_input(&formatContext);
+        return;
+    }
+
+    AVCodec *codec = NULL;
+    int audioStreamIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
+    if (audioStreamIndex < 0) {
+        LOGD("av_find_best_stream error %s", av_err2str(audioStreamIndex));
+        // Handle error
+        avformat_close_input(&formatContext);
+        return;
+    }
+
+    AVCodecContext *codecContext = avcodec_alloc_context3(codec);
+    avcodec_parameters_to_context(codecContext, formatContext->streams[audioStreamIndex]->codecpar);
+
+    int64_t duration_in_microseconds = formatContext->duration;
+    double duration_in_seconds = (double)duration_in_microseconds / AV_TIME_BASE;
+
+    if (avcodec_open2(codecContext, codec, NULL) < 0) {
+        // Handle error
+        avcodec_free_context(&codecContext);
+        avformat_close_input(&formatContext);
+        return;
+    }
+
+    // Obtain the class and method to callback
+    jclass cls = (*env)->GetObjectClass(env, obj);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "receiveChunk", "([SI)V");
+
+    AVFrame *frame = av_frame_alloc();
+    AVPacket packet;
+
+    int sampleRate = codecContext->sample_rate;  // Sample rate from FFmpeg's codec context
+    int skip = 4;
+    int barWidth = (int) round((double) duration_in_seconds * sampleRate / count / (1 + skip)); // Assuming you have 'duration' and 'count' defined somewhere
+
+    short peak = 0;
+    int currentCount = 0;
+    int index = 0;
+    int chunkIndex = 0;
+    short waveformChunkData[32];  // Allocate the chunk array
+
+    while (av_read_frame(formatContext, &packet) >= 0) {
+        if (packet.stream_index == audioStreamIndex) {
+            // Decode the audio packet
+            int response = avcodec_send_packet(codecContext, &packet);
+
+            while (response >= 0) {
+                response = avcodec_receive_frame(codecContext, frame);
+                if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+                    break;
+                } else if (response < 0) {
+                    // Handle error
+                    break;
+                }
+
+                int16_t* samples = (int16_t*) frame->data[0];
+                for (int i = 0; i < frame->nb_samples; i++) {
+                    short value = samples[i];  // Read the 16-bit PCM sample
+
+                    if (currentCount >= barWidth) {
+                        waveformChunkData[index - chunkIndex] = peak;
+                        index++;
+                        if (index - chunkIndex >= sizeof(waveformChunkData) / sizeof(short) || index >= count) {
+                            jshortArray waveformData = (*env)->NewShortArray(env, sizeof(waveformChunkData) / sizeof(short));
+                            (*env)->SetShortArrayRegion(env, waveformData, 0, sizeof(waveformChunkData) / sizeof(short), waveformChunkData);
+                            (*env)->CallVoidMethod(env, obj, mid, waveformData, sizeof(waveformChunkData) / sizeof(short));
+
+                            // Reset the chunk data
+                            memset(waveformChunkData, 0, sizeof(waveformChunkData));
+                            chunkIndex = index;
+
+                            // Delete local reference to avoid memory leak
+                            (*env)->DeleteLocalRef(env, waveformData);
+                        }
+                        peak = 0;
+                        currentCount = 0;
+                        if (index >= count) {
+                            break;
+                        }
+                    }
+
+                    if (peak < value) {
+                        peak = value;
+                    }
+                    currentCount++;
+
+                    // Skip logic
+                    i += skip;
+                    if (i >= frame->nb_samples) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        av_packet_unref(&packet);
+
+        if (index >= count) {
+            break;
+        }
+
+        // Check for stopping flag
+        jfieldID fid = (*env)->GetFieldID(env, cls, "running", "Z");
+        jboolean running = (*env)->GetBooleanField(env, obj, fid);
+        if (running == JNI_FALSE) {
+            break;
+        }
+    }
+
+    av_frame_free(&frame);
+    avcodec_free_context(&codecContext);
+    avformat_close_input(&formatContext);
+
+    (*env)->ReleaseStringUTFChars(env, pathJStr, path);
 }

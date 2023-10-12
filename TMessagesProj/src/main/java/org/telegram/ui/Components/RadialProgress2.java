@@ -45,13 +45,13 @@ public class RadialProgress2 {
     private int circlePressedColor;
     private int iconColor;
     private int iconPressedColor;
-    private String circleColorKey;
-    private String circleCrossfadeColorKey;
+    private int circleColorKey = -1;
+    private int circleCrossfadeColorKey = -1;
     private float circleCrossfadeColorProgress;
     private float circleCheckProgress = 1.0f;
-    private String circlePressedColorKey;
-    private String iconColorKey;
-    private String iconPressedColorKey;
+    private int circlePressedColorKey = -1;
+    private int iconColorKey = -1;
+    private int iconPressedColorKey = -1;
     private ImageReceiver overlayImageView;
     private int circleRadius;
     private boolean isPressed;
@@ -147,30 +147,30 @@ public class RadialProgress2 {
         overlayImageView.onDetachedFromWindow();
     }
 
-    public void setColors(int circle, int circlePressed, int icon, int iconPressed) {
-        circleColor = circle;
-        circlePressedColor = circlePressed;
-        iconColor = icon;
-        iconPressedColor = iconPressed;
-        circleColorKey = null;
-        circlePressedColorKey = null;
-        iconColorKey = null;
-        iconPressedColorKey = null;
-    }
-
-    public void setColors(String circle, String circlePressed, String icon, String iconPressed) {
+    public void setColorKeys(int circle, int circlePressed, int icon, int iconPressed) {
         circleColorKey = circle;
         circlePressedColorKey = circlePressed;
         iconColorKey = icon;
         iconPressedColorKey = iconPressed;
     }
 
-    public void setCircleCrossfadeColor(String color, float progress, float checkProgress) {
+    public void setColors(int circle, int circlePressed, int icon, int iconPressed) {
+        circleColor = circle;
+        circlePressedColor = circlePressed;
+        iconColor = icon;
+        iconPressedColor = iconPressed;
+        circleColorKey = -1;
+        circlePressedColorKey = -1;
+        iconColorKey = -1;
+        iconPressedColorKey = -1;
+    }
+
+    public void setCircleCrossfadeColor(int color, float progress, float checkProgress) {
         circleCrossfadeColorKey = color;
         circleCrossfadeColorProgress = progress;
         circleCheckProgress = checkProgress;
         miniIconScale = 1.0f;
-        if (color != null) {
+        if (color >= 0) {
             initMiniIcons();
         }
     }
@@ -317,25 +317,25 @@ public class RadialProgress2 {
             wholeAlpha = currentIcon != MediaActionDrawable.ICON_NONE ? 1.0f : 1.0f - mediaActionDrawable.getTransitionProgress();
         }
 
-        if (isPressedMini && circleCrossfadeColorKey == null) {
-            if (iconPressedColorKey != null) {
+        if (isPressedMini && circleCrossfadeColorKey < 0) {
+            if (iconPressedColorKey >= 0) {
                 miniMediaActionDrawable.setColor(getThemedColor(iconPressedColorKey));
             } else {
                 miniMediaActionDrawable.setColor(iconPressedColor);
             }
-            if (circlePressedColorKey != null) {
+            if (circlePressedColorKey >= 0) {
                 circleMiniPaint.setColor(getThemedColor(circlePressedColorKey));
             } else {
                 circleMiniPaint.setColor(circlePressedColor);
             }
         } else {
-            if (iconColorKey != null) {
+            if (iconColorKey >= 0) {
                 miniMediaActionDrawable.setColor(getThemedColor(iconColorKey));
             } else {
                 miniMediaActionDrawable.setColor(iconColor);
             }
-            if (circleColorKey != null) {
-                if (circleCrossfadeColorKey != null) {
+            if (circleColorKey >= 0) {
+                if (circleCrossfadeColorKey >= 0) {
                     circleMiniPaint.setColor(AndroidUtilities.getOffsetColor(getThemedColor(circleColorKey), getThemedColor(circleCrossfadeColorKey), circleCrossfadeColorProgress, circleCheckProgress));
                 } else {
                     circleMiniPaint.setColor(getThemedColor(circleColorKey));
@@ -347,33 +347,33 @@ public class RadialProgress2 {
 
         int color;
         if (isPressed) {
-            if (iconPressedColorKey != null) {
+            if (iconPressedColorKey >= 0) {
                 mediaActionDrawable.setColor(color = getThemedColor(iconPressedColorKey));
                 mediaActionDrawable.setBackColor(getThemedColor(circlePressedColorKey));
             } else {
                 mediaActionDrawable.setColor(color = iconPressedColor);
                 mediaActionDrawable.setBackColor(circlePressedColor);
             }
-            if (circlePressedColorKey != null) {
+            if (circlePressedColorKey >= 0) {
                 circlePaint.setColor(getThemedColor(circlePressedColorKey));
             } else {
                 circlePaint.setColor(circlePressedColor);
             }
         } else {
-            if (iconColorKey != null) {
+            if (iconColorKey >= 0) {
                 mediaActionDrawable.setColor(color = getThemedColor(iconColorKey));
                 mediaActionDrawable.setBackColor(getThemedColor(circleColorKey));
             } else {
                 mediaActionDrawable.setColor(color = iconColor);
                 mediaActionDrawable.setBackColor(circleColor);
             }
-            if (circleColorKey != null) {
+            if (circleColorKey >= 0) {
                 circlePaint.setColor(getThemedColor(circleColorKey));
             } else {
                 circlePaint.setColor(circleColor);
             }
         }
-        if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
+        if ((drawMiniIcon || circleCrossfadeColorKey >= 0) && miniDrawCanvas != null) {
             miniDrawBitmap.eraseColor(0);
         }
 
@@ -386,7 +386,7 @@ public class RadialProgress2 {
         float scale = 1f;
         int centerX;
         int centerY;
-        if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
+        if ((drawMiniIcon || circleCrossfadeColorKey >= 0) && miniDrawCanvas != null) {
             centerX = (int) Math.ceil(progressRect.width() / 2);
             centerY = (int) Math.ceil(progressRect.height() / 2);
         } else {
@@ -419,13 +419,13 @@ public class RadialProgress2 {
         }
 
         int restore = Integer.MIN_VALUE;
-        if (miniDrawCanvas != null && circleCrossfadeColorKey != null && circleCheckProgress != 1.0f) {
+        if (miniDrawCanvas != null && circleCrossfadeColorKey >= 0 && circleCheckProgress != 1.0f) {
             restore = miniDrawCanvas.save();
             float scaleMini = 1.0f - 0.1f * (1.0f - circleCheckProgress);
             miniDrawCanvas.scale(scaleMini, scaleMini, centerX, centerY);
         }
         if (drawCircle && drawBackground) {
-            if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
+            if ((drawMiniIcon || circleCrossfadeColorKey >= 0) && miniDrawCanvas != null) {
                 miniDrawCanvas.drawCircle(centerX, centerY, circleRadius, circlePaint);
             } else {
                 if (currentIcon != MediaActionDrawable.ICON_NONE || wholeAlpha != 0) {
@@ -440,7 +440,7 @@ public class RadialProgress2 {
         if (overlayImageView.hasBitmapImage()) {
             overlayImageView.setAlpha(wholeAlpha * overrideAlpha * overlayImageAlpha);
 
-            if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
+            if ((drawMiniIcon || circleCrossfadeColorKey >= 0) && miniDrawCanvas != null) {
                 overlayImageView.draw(miniDrawCanvas);
                 miniDrawCanvas.drawCircle(centerX, centerY, circleRadius, overlayPaint);
             } else {
@@ -454,7 +454,7 @@ public class RadialProgress2 {
         }
         mediaActionDrawable.setBounds(centerX - iconSize, centerY - iconSize, centerX + iconSize, centerY + iconSize);
         mediaActionDrawable.setHasOverlayImage(overlayImageView.hasBitmapImage());
-        if ((drawMiniIcon || circleCrossfadeColorKey != null)) {
+        if ((drawMiniIcon || circleCrossfadeColorKey >= 0)) {
             if (miniDrawCanvas != null) {
                 mediaActionDrawable.draw(miniDrawCanvas);
             } else {
@@ -468,7 +468,7 @@ public class RadialProgress2 {
             miniDrawCanvas.restoreToCount(restore);
         }
 
-        if ((drawMiniIcon || circleCrossfadeColorKey != null)) {
+        if ((drawMiniIcon || circleCrossfadeColorKey >= 0)) {
             int offset;
             int size;
             float cx;
@@ -524,13 +524,12 @@ public class RadialProgress2 {
         }
     }
 
-    public String getCircleColorKey() {
+    public int getCircleColorKey() {
         return circleColorKey;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void setMaxIconSize(int maxSize) {
@@ -539,5 +538,9 @@ public class RadialProgress2 {
 
     public void setOverlayImageAlpha(float overlayImageAlpha) {
         this.overlayImageAlpha = overlayImageAlpha;
+    }
+
+    public float getTransitionProgress() {
+        return drawMiniIcon ? miniMediaActionDrawable.getTransitionProgress() : mediaActionDrawable.getTransitionProgress();
     }
 }

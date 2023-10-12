@@ -115,7 +115,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
         addView(delButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
 
-        unlockButton = new PremiumButtonView(context, AndroidUtilities.dp(4), false);
+        unlockButton = new PremiumButtonView(context, AndroidUtilities.dp(4), false, resourcesProvider);
         unlockButton.setIcon(R.raw.unlock_icon);
         unlockButton.setButton(LocaleController.getString("Unlock", R.string.Unlock), e -> onPremiumButtonClick());
         unlockButton.setVisibility(View.GONE);
@@ -425,9 +425,8 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_featuredStickers_addButtonPressed));
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     @Override

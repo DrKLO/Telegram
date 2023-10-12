@@ -27,12 +27,14 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimatedFileDrawableStream;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.DispatchQueuePoolBackground;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.utils.BitmapsCache;
 import org.telegram.tgnet.TLRPC;
 
@@ -46,6 +48,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     public boolean skipFrameUpdate;
     public long currentTime;
+
+    // canvas.drawPath lead to glitches
+    // clipPath not use antialias
+    private final boolean USE_BITMAP_SHADER = Build.VERSION.SDK_INT < 29;
+    private boolean PRERENDER_FRAME = true;
 
     private static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback, boolean preview);
 
@@ -79,12 +86,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private long lastFrameTime;
     private int lastTimeStamp;
     private int invalidateAfter = 50;
-    private final int[] metaData = new int[5];
+    private final int[] metaData = new int[6];
     private Runnable loadFrameTask;
     private Bitmap renderingBitmap;
     private int renderingBitmapTime;
     private Bitmap nextRenderingBitmap;
+    private Bitmap nextRenderingBitmap2;
     private int nextRenderingBitmapTime;
+    private int nextRenderingBitmapTime2;
     private Bitmap backgroundBitmap;
     private int backgroundBitmapTime;
     private boolean destroyWhenDone;
@@ -113,7 +122,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     private BitmapShader[] renderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
     private BitmapShader[] nextRenderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private BitmapShader[] nextRenderingShader2 = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
     private BitmapShader[] backgroundShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    ArrayList<Bitmap> unusedBitmaps = new ArrayList<>();
 
     private BitmapShader renderingShaderBackgroundDraw;
 
@@ -195,6 +206,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                             cacheGenRunnable = null;
                         }
                         generatingCache = false;
+                        chekDestroyDecoder();
                         scheduleNextGetFrame();
                     });
                 });
@@ -220,6 +232,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 decodeQueue.recycle();
                 decodeQueue = null;
             }
+            for (int i = 0; i < unusedBitmaps.size(); i++) {
+                unusedBitmaps.get(i).recycle();
+            }
+            unusedBitmaps.clear();
             invalidateInternal();
         }
     }
@@ -248,10 +264,40 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 forceDecodeAfterNextFrame = false;
             }
             loadFrameTask = null;
-            nextRenderingBitmap = backgroundBitmap;
-            nextRenderingBitmapTime = backgroundBitmapTime;
+
+            if (!PRERENDER_FRAME) {
+                nextRenderingBitmap = backgroundBitmap;
+                nextRenderingBitmapTime = backgroundBitmapTime;
+                for (int i = 0; i < backgroundShader.length; i++) {
+                    nextRenderingShader[i] = backgroundShader[i];
+                }
+            } else {
+                if (nextRenderingBitmap == null && nextRenderingBitmap2 == null) {
+                    nextRenderingBitmap = backgroundBitmap;
+                    nextRenderingBitmapTime = backgroundBitmapTime;
+                    for (int i = 0; i < backgroundShader.length; i++) {
+                        nextRenderingShader[i] = backgroundShader[i];
+                    }
+                } else if (nextRenderingBitmap == null) {
+                    nextRenderingBitmap = nextRenderingBitmap2;
+                    nextRenderingBitmapTime = nextRenderingBitmapTime2;
+                    nextRenderingBitmap2 = backgroundBitmap;
+                    nextRenderingBitmapTime2 = backgroundBitmapTime;
+                    for (int i = 0; i < backgroundShader.length; i++) {
+                        nextRenderingShader[i] = nextRenderingShader2[i];
+                        nextRenderingShader2[i] = backgroundShader[i];
+                    }
+                } else {
+                    nextRenderingBitmap2 = backgroundBitmap;
+                    nextRenderingBitmapTime2 = backgroundBitmapTime;
+                    for (int i = 0; i < backgroundShader.length; i++) {
+                        nextRenderingShader2[i] = backgroundShader[i];
+                    }
+                }
+            }
+            backgroundBitmap = null;
             for (int i = 0; i < backgroundShader.length; i++) {
-                nextRenderingShader[i] = backgroundShader[i];
+                backgroundShader[i] = null;
             }
 
             if (isRestarted) {
@@ -323,7 +369,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 try {
                     if (bitmapsCache != null) {
                         if (backgroundBitmap == null) {
-                            backgroundBitmap = Bitmap.createBitmap(renderingWidth, renderingHeight, Bitmap.Config.ARGB_8888);
+                            if (!unusedBitmaps.isEmpty()) {
+                                backgroundBitmap = unusedBitmaps.remove(0);
+                            } else {
+                                backgroundBitmap = Bitmap.createBitmap(renderingWidth, renderingHeight, Bitmap.Config.ARGB_8888);
+                            }
                         }
                         if (cacheMetadata == null) {
                             cacheMetadata = new BitmapsCache.Metadata();
@@ -350,11 +400,15 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                     if (nativePtr != 0 || metaData[0] == 0 || metaData[1] == 0) {
                         if (backgroundBitmap == null && metaData[0] > 0 && metaData[1] > 0) {
                             try {
-                                backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+                                if (!unusedBitmaps.isEmpty()) {
+                                    backgroundBitmap = unusedBitmaps.remove(0);
+                                } else {
+                                    backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+                                }
                             } catch (Throwable e) {
                                 FileLog.e(e);
                             }
-                            if (backgroundShader[0] == null && backgroundBitmap != null && hasRoundRadius()) {
+                            if (USE_BITMAP_SHADER && backgroundShader[0] == null && backgroundBitmap != null && hasRoundRadius()) {
                                 backgroundShader[0] = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                             }
                         }
@@ -427,6 +481,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions) {
         path = file;
+        PRERENDER_FRAME = SharedConfig.deviceIsAboveAverage();
         streamFileSize = streamSize;
         this.streamLoadingPriority = streamLoadingPriority;
         currentAccount = account;
@@ -464,6 +519,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     public void setIsWebmSticker(boolean b) {
         isWebmSticker = b;
         if (isWebmSticker) {
+            PRERENDER_FRAME = false;
             useSharedQueue = true;
         }
     }
@@ -616,11 +672,17 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             ArrayList<Bitmap> bitmapToRecycle = new ArrayList<>();
             bitmapToRecycle.add(renderingBitmap);
             bitmapToRecycle.add(nextRenderingBitmap);
+            bitmapToRecycle.add(nextRenderingBitmap2);
             bitmapToRecycle.add(backgroundBitmap);
+            bitmapToRecycle.addAll(unusedBitmaps);
 
+          //  unusedBitmaps.remove(backgroundBitmap);
+            unusedBitmaps.clear();
             renderingBitmap = null;
             nextRenderingBitmap = null;
+            nextRenderingBitmap2 = null;
             backgroundBitmap = null;
+
 
             if (decodeQueue != null) {
                 decodeQueue.recycle();
@@ -661,6 +723,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     @Override
     protected void finalize() throws Throwable {
         try {
+            secondParentViews.clear();
             recycle();
         } finally {
             super.finalize();
@@ -704,7 +767,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     }
 
     private void scheduleNextGetFrame() {
-        if (loadFrameTask != null || nextRenderingBitmap != null || !canLoadFrames() || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded) || parents.size() == 0 && !ignoreNoParent || generatingCache) {
+        if (loadFrameTask != null || ((!PRERENDER_FRAME || nextRenderingBitmap2 != null) && nextRenderingBitmap != null) || !canLoadFrames() || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded) || parents.size() == 0 && !ignoreNoParent || generatingCache) {
             return;
         }
         long ms = 0;
@@ -828,33 +891,36 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             }
             if (hasRoundRadius()) {
                 int index = drawInBackground ? threadIndex + 1 : 0;
-                if (renderingShader[index] == null) {
-                    renderingShader[index] = new BitmapShader(renderingBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                if (USE_BITMAP_SHADER) {
+                    if (renderingShader[index] == null) {
+                        renderingShader[index] = new BitmapShader(renderingBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    }
+                    paint.setShader(renderingShader[index]);
+                    Matrix matrix = shaderMatrix[index];
+                    if (matrix == null) {
+                        matrix = shaderMatrix[index] = new Matrix();
+                    }
+                    matrix.reset();
+                    matrix.setTranslate(rect.left, rect.top);
+                    if (metaData[2] == 90) {
+                        matrix.preRotate(90);
+                        matrix.preTranslate(0, -rect.width());
+                    } else if (metaData[2] == 180) {
+                        matrix.preRotate(180);
+                        matrix.preTranslate(-rect.width(), -rect.height());
+                    } else if (metaData[2] == 270) {
+                        matrix.preRotate(270);
+                        matrix.preTranslate(-rect.height(), 0);
+                    }
+                    matrix.preScale(scaleX, scaleY);
+
+                    renderingShader[index].setLocalMatrix(matrix);
                 }
-                paint.setShader(renderingShader[index]);
-                Matrix matrix = shaderMatrix[index];
-                if (matrix == null) {
-                    matrix = shaderMatrix[index] = new Matrix();
-                }
+
                 Path path = roundPath[index];
                 if (path == null) {
                     path = roundPath[index] = new Path();
                 }
-                matrix.reset();
-                matrix.setTranslate(rect.left, rect.top);
-                if (metaData[2] == 90) {
-                    matrix.preRotate(90);
-                    matrix.preTranslate(0, -rect.width());
-                } else if (metaData[2] == 180) {
-                    matrix.preRotate(180);
-                    matrix.preTranslate(-rect.width(), -rect.height());
-                } else if (metaData[2] == 270) {
-                    matrix.preRotate(270);
-                    matrix.preTranslate(-rect.height(), 0);
-                }
-                matrix.preScale(scaleX, scaleY);
-
-                renderingShader[index].setLocalMatrix(matrix);
                 if (invalidatePath || drawInBackground) {
                     if (!drawInBackground) {
                         invalidatePath = false;
@@ -863,27 +929,37 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                         radii[a * 2] = roundRadius[a];
                         radii[a * 2 + 1] = roundRadius[a];
                     }
-                    path.reset();
+                    path.rewind();
                     path.addRoundRect(drawInBackground ? rect : actualDrawRect, radii, Path.Direction.CW);
-                    path.close();
                 }
-                canvas.drawPath(path, paint);
+                if (USE_BITMAP_SHADER) {
+                    canvas.drawPath(path, paint);
+                } else {
+                    canvas.save();
+                    canvas.clipPath(path);
+                    drawBitmap(rect, paint, canvas, scaleX, scaleY);
+                    canvas.restore();
+                }
             } else {
-                canvas.translate(rect.left, rect.top);
-                if (metaData[2] == 90) {
-                    canvas.rotate(90);
-                    canvas.translate(0, -rect.width());
-                } else if (metaData[2] == 180) {
-                    canvas.rotate(180);
-                    canvas.translate(-rect.width(), -rect.height());
-                } else if (metaData[2] == 270) {
-                    canvas.rotate(270);
-                    canvas.translate(-rect.height(), 0);
-                }
-                canvas.scale(scaleX, scaleY);
-                canvas.drawBitmap(renderingBitmap, 0, 0, paint);
+               drawBitmap(rect, paint, canvas, scaleX, scaleY);
             }
         }
+    }
+
+    private void drawBitmap(RectF rect, Paint paint, Canvas canvas, float sx, float sy) {
+        canvas.translate(rect.left, rect.top);
+        if (metaData[2] == 90) {
+            canvas.rotate(90);
+            canvas.translate(0, -rect.width());
+        } else if (metaData[2] == 180) {
+            canvas.rotate(180);
+            canvas.translate(-rect.width(), -rect.height());
+        } else if (metaData[2] == 270) {
+            canvas.rotate(270);
+            canvas.translate(-rect.height(), 0);
+        }
+        canvas.scale(sx, sy);
+        canvas.drawBitmap(renderingBitmap, 0, 0, paint);
     }
 
     public long getLastFrameTimestamp() {
@@ -925,6 +1001,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             return renderingBitmap;
         } else if (nextRenderingBitmap != null) {
             return nextRenderingBitmap;
+        } else if (nextRenderingBitmap2 != null) {
+            return nextRenderingBitmap2;
         }
         return null;
     }
@@ -1007,7 +1085,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             return backgroundBitmap;
         }
         if (backgroundBitmap == null) {
-            backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+            if (!unusedBitmaps.isEmpty()) {
+                backgroundBitmap = unusedBitmaps.remove(0);
+            } else {
+                backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+            }
         }
         getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime);
         return backgroundBitmap;
@@ -1015,6 +1097,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     public void setLimitFps(boolean limitFps) {
         this.limitFps = limitFps;
+        if (limitFps) {
+            PRERENDER_FRAME = false;
+        }
     }
 
     public ArrayList<ImageReceiver> getParents() {
@@ -1133,14 +1218,18 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             if (renderingBitmap == null && nextRenderingBitmap == null) {
                 scheduleNextGetFrame();
             } else if (nextRenderingBitmap != null && (renderingBitmap == null || (Math.abs(now - lastFrameTime) >= invalidateAfter && !skipFrameUpdate))) {
+                unusedBitmaps.add(renderingBitmap);
                 renderingBitmap = nextRenderingBitmap;
                 renderingBitmapTime = nextRenderingBitmapTime;
                 for (int i = 0; i < backgroundShader.length; i++) {
                     renderingShader[i] = nextRenderingShader[i];
-                    nextRenderingShader[i] = null;
+                    nextRenderingShader[i] = nextRenderingShader2[i];
+                    nextRenderingShader2[i] = null;
                 }
-                nextRenderingBitmap = null;
-                nextRenderingBitmapTime = 0;
+                nextRenderingBitmap = nextRenderingBitmap2;
+                nextRenderingBitmapTime = nextRenderingBitmapTime2;
+                nextRenderingBitmap2 = null;
+                nextRenderingBitmapTime2 = 0;
 
                 lastFrameTime = now;
                 scheduleNextGetFrame();
@@ -1148,22 +1237,33 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 invalidateInternal();
             }
         } else if (!isRunning && decodeSingleFrame && Math.abs(now - lastFrameTime) >= invalidateAfter && nextRenderingBitmap != null) {
-         //   if (precache) {
-                backgroundBitmap = renderingBitmap;
-         //   }
+            unusedBitmaps.add(renderingBitmap);
             renderingBitmap = nextRenderingBitmap;
             renderingBitmapTime = nextRenderingBitmapTime;
             for (int i = 0; i < backgroundShader.length; i++) {
-              //  if (precache) {
-                    backgroundShader[i] = renderingShader[i];
-             //   }
                 renderingShader[i] = nextRenderingShader[i];
-                nextRenderingShader[i] = null;
+                nextRenderingShader[i] = nextRenderingShader2[i];
+                nextRenderingShader2[i] = null;
             }
-            nextRenderingBitmap = null;
-            nextRenderingBitmapTime = 0;
+            nextRenderingBitmap = nextRenderingBitmap2;
+            nextRenderingBitmapTime = nextRenderingBitmapTime2;
+            nextRenderingBitmap2 = null;
+            nextRenderingBitmapTime2 = 0;
+
             lastFrameTime = now;
             scheduleNextGetFrame();
         }
+    }
+
+    public int getFps() {
+        return metaData[5];
+    }
+
+    public int getRenderingWidth() {
+        return renderingWidth;
+    }
+
+    public int getRenderingHeight() {
+        return renderingHeight;
     }
 }

@@ -22,7 +22,9 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +41,7 @@ public class Utilities {
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
     public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
+    public static volatile DispatchQueue videoPlayerQueue;
 
     private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -472,6 +475,10 @@ public class Utilities {
         return Math.max(Math.min(value, maxValue), minValue);
     }
 
+    public static long clamp(long value, long maxValue, long minValue) {
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
     public static float clamp(float value, float maxValue, float minValue) {
         if (Float.isNaN(value)) {
             return minValue;
@@ -511,8 +518,20 @@ public class Utilities {
         public void run(T arg);
     }
 
+    public static interface CallbackVoidReturn<ReturnType> {
+        public ReturnType run();
+    }
+
     public static interface CallbackReturn<Arg, ReturnType> {
         public ReturnType run(Arg arg);
+    }
+
+    public static interface Callback2Return<T1, T2, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2);
+    }
+
+    public static interface Callback3Return<T1, T2, T3, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2, T3 arg3);
     }
 
     public static interface Callback2<T, T2> {
@@ -521,6 +540,13 @@ public class Utilities {
 
     public static interface Callback3<T, T2, T3> {
         public void run(T arg, T2 arg2, T3 arg3);
+    }
+
+    public static interface Callback4<T, T2, T3, T4> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
+    public static interface Callback5<T, T2, T3, T4, T5> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
     }
 
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
@@ -560,4 +586,16 @@ public class Utilities {
             actions[i].run(checkFinish);
         }
     }
+
+    public static DispatchQueue getOrCreatePlayerQueue() {
+        if (videoPlayerQueue == null) {
+            videoPlayerQueue = new DispatchQueue("playerQueue");
+        }
+        return videoPlayerQueue;
+    }
+
+    public static boolean isNullOrEmpty(final Collection<?> list) {
+        return list == null || list.isEmpty();
+    }
+
 }

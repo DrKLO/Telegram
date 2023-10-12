@@ -1210,6 +1210,7 @@ public:
     InstanceV2_4_0_0ImplInternal(Descriptor &&descriptor, std::shared_ptr<Threads> threads) :
     _threads(threads),
     _rtcServers(descriptor.rtcServers),
+    _enableP2P(descriptor.config.enableP2P),
     _encryptionKey(std::move(descriptor.encryptionKey)),
     _stateUpdated(descriptor.stateUpdated),
     _signalBarsUpdated(descriptor.signalBarsUpdated),
@@ -1252,12 +1253,12 @@ public:
     void start() {
         const auto weak = std::weak_ptr<InstanceV2_4_0_0ImplInternal>(shared_from_this());
 
-        _networking.reset(new ThreadLocalObject<NativeNetworkingImpl>(_threads->getNetworkThread(), [weak, threads = _threads, isOutgoing = _encryptionKey.isOutgoing, rtcServers = _rtcServers]() {
+        _networking.reset(new ThreadLocalObject<NativeNetworkingImpl>(_threads->getNetworkThread(), [weak, threads = _threads, isOutgoing = _encryptionKey.isOutgoing, rtcServers = _rtcServers, enableP2P = _enableP2P]() {
             return new NativeNetworkingImpl(NativeNetworkingImpl::Configuration{
                 .isOutgoing = isOutgoing,
                 .enableStunMarking = false,
                 .enableTCP = false,
-                .enableP2P = true,
+                .enableP2P = enableP2P,
                 .rtcServers = rtcServers,
                 .stateUpdated = [threads, weak](const NativeNetworkingImpl::State &state) {
                     threads->getMediaThread()->PostTask([=] {
@@ -2073,6 +2074,7 @@ private:
 private:
     std::shared_ptr<Threads> _threads;
     std::vector<RtcServer> _rtcServers;
+    bool _enableP2P = false;
     EncryptionKey _encryptionKey;
     std::function<void(State)> _stateUpdated;
     std::function<void(int)> _signalBarsUpdated;

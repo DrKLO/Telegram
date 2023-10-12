@@ -8,11 +8,16 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -21,47 +26,43 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.FilterCreateActivity;
 
 import java.util.Set;
 
 public class DrawerActionCell extends FrameLayout {
 
-    private ImageView imageView;
-    private RLottieImageView lottieImageView;
-    private AnimatedTextView textView;
+    private BackupImageView imageView;
+    private TextView textView;
     private int currentId;
     private RectF rect = new RectF();
-    private int currentLottieId;
 
     public DrawerActionCell(Context context) {
         super(context);
 
-        imageView = new ImageView(context);
+        imageView = new BackupImageView(context);
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
-        addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
-//        addView(imageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 19, 12, LocaleController.isRTL ? 19 : 0, 0));
 
-        lottieImageView = new RLottieImageView(context);
-        lottieImageView.setAutoRepeat(false);
-        lottieImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
-        addView(lottieImageView, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.TOP, 17, 10, 0, 0));
-//        addView(lottieImageView, LayoutHelper.createFrame(28, 28, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 17, 10, LocaleController.isRTL ? 17 : 0, 0));
-
-        textView = new AnimatedTextView(context, true, true, true);
-        textView.setAnimationProperties(.6f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
-        textView.setTextSize(AndroidUtilities.dp(15));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setIgnoreRTL(true);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19 + 24 + 29, 0, 16, 0));
-//        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 16 : 62, 0, LocaleController.isRTL ? 62 : 16, 0));
+        textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+        addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 72, 0, 16, 0));
 
         setWillNotDraw(false);
     }
@@ -101,39 +102,27 @@ public class DrawerActionCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
     }
 
-    public void setTextAndIcon(int id, String text, int resId, int lottieId) {
+    public void setTextAndIcon(int id, String text, int resId) {
         currentId = id;
         try {
-            textView.setText(text, false);
-            if (lottieId != 0) {
-                imageView.setImageDrawable(null);
-                lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
-            } else {
-                imageView.setImageResource(resId);
-                lottieImageView.clearAnimationDrawable();
-                currentLottieId = 0;
-            }
+            textView.setText(text);
+            imageView.setImageResource(resId);
         } catch (Throwable e) {
             FileLog.e(e);
         }
     }
 
-    public void updateText(String text) {
-        textView.setText(text);
-    }
-
-    public void updateIcon(int lottieId) {
+    public void updateTextAndIcon(String text, int resId) {
         try {
-            if (lottieId != currentLottieId) {
-                lottieImageView.setOnAnimationEndListener(() -> {
-                    lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
-                    lottieImageView.setOnAnimationEndListener(null);
-                });
-                lottieImageView.playAnimation();
-            }
+            textView.setText(text);
+            imageView.setImageResource(resId);
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    public BackupImageView getImageView() {
+        return imageView;
     }
 
     @Override
@@ -144,5 +133,33 @@ public class DrawerActionCell extends FrameLayout {
         info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
         info.setText(textView.getText());
         info.setClassName(TextView.class.getName());
+    }
+
+    public void setBot(TLRPC.TL_attachMenuBot bot) {
+        currentId = (int) bot.bot_id;
+        try {
+            if (bot.side_menu_disclaimer_needed) {
+                textView.setText(applyNewSpan(bot.short_name));
+            } else {
+                textView.setText(bot.short_name);
+            }
+            TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
+            if (botIcon != null) {
+                imageView.setImage(ImageLocation.getForDocument(botIcon.icon), "24_24", (Drawable) null, bot);
+            } else {
+                imageView.setImageResource(R.drawable.msg_bot);
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static CharSequence applyNewSpan(String str) {
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        spannableStringBuilder.append("  d");
+        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(10);
+        span.setColor(Theme.getColor(Theme.key_premiumGradient1));
+        spannableStringBuilder.setSpan(span, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+        return spannableStringBuilder;
     }
 }

@@ -66,7 +66,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void checkCreateReactionsLayout() {
         if (reactionsContainerLayout == null) {
-            reactionsContainerLayout = new ReactionsContainerLayout(parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
+            reactionsContainerLayout = new ReactionsContainerLayout(ReactionsContainerLayout.TYPE_DEFAULT, parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
                 float enabledAlpha = 1f;
                 long lastUpdate;
 
@@ -295,7 +295,13 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
+        return obj != null && !obj.needDrawBluredPreview() && (
+            MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null ||
+            obj.getDocument() != null && (
+                MessageObject.isVideoDocument(obj.getDocument()) ||
+                MessageObject.isGifDocument(obj.getDocument())
+            )
+        );
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {
@@ -336,19 +342,21 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void animateVisible(boolean visible) {
         if (visible) {
-            currentPrimaryObject = findPrimaryObject();
-            checkCreateReactionsLayout();
-            invalidatePosition(false);
-
             setVisibility(VISIBLE);
-            if (reactionsContainerLayout.isEnabled()) {
-                messageSet = true;
-                reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
-                reactionsContainerLayout.startEnterAnimation(false);
-            } else {
-                messageSet = false;
-                reactionsContainerLayout.setTransitionProgress(1f);
-            }
+            post(() -> {
+                currentPrimaryObject = findPrimaryObject();
+                checkCreateReactionsLayout();
+                invalidatePosition(false);
+
+                if (reactionsContainerLayout.isEnabled()) {
+                    messageSet = true;
+                    reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
+                    reactionsContainerLayout.startEnterAnimation(false);
+                } else {
+                    messageSet = false;
+                    reactionsContainerLayout.setTransitionProgress(1f);
+                }
+            });
         } else {
             messageSet = false;
             ValueAnimator animator = ValueAnimator.ofFloat(1, 0).setDuration(150);

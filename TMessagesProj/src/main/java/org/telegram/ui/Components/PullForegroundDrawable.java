@@ -27,6 +27,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.TopicsFragment;
 
 public class PullForegroundDrawable {
@@ -38,9 +39,9 @@ public class PullForegroundDrawable {
     public final static long minPullingTime = 200L;
     public int scrollDy;
 
-    private String backgroundColorKey = Theme.key_chats_archivePullDownBackground;
-    private String backgroundActiveColorKey = Theme.key_chats_archivePullDownBackgroundActive;
-    private String avatarBackgroundColorKey = Theme.key_avatar_backgroundArchivedHidden;
+    private int backgroundColorKey = Theme.key_chats_archivePullDownBackground;
+    private int backgroundActiveColorKey = Theme.key_chats_archivePullDownBackgroundActive;
+    private int avatarBackgroundColorKey = Theme.key_avatar_backgroundArchivedHidden;
     private boolean changeAvatarColor = true;
 
     private final Paint paintSecondary = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -88,10 +89,15 @@ public class PullForegroundDrawable {
     public float outImageSize;
     public float outOverScroll;
 
+    private final CharSequence pullTooltipText;
     private StaticLayout pullTooltipLayout;
-    private float pullTooltipLayoutWidth;
+    private float pullTooltipLayoutScale = 1;
+    private float pullTooltipLayoutLeft, pullTooltipLayoutWidth;
+
+    private final CharSequence releaseTooltipText;
     private StaticLayout releaseTooltipLayout;
-    private float releaseTooltipLayoutWidth;
+    private float releaseTooltipLayoutScale = 1;
+    private float releaseTooltipLayoutLeft, releaseTooltipLayoutWidth;
     private boolean willDraw;
 
     private boolean isOut;
@@ -120,21 +126,68 @@ public class PullForegroundDrawable {
         final ViewConfiguration vc = ViewConfiguration.get(ApplicationLoader.applicationContext);
         touchSlop = vc.getScaledTouchSlop();
 
-        pullTooltipLayout = new StaticLayout(pullText, 0, pullText.length(), tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
-        pullTooltipLayoutWidth = pullTooltipLayout.getLineWidth(0);
-        releaseTooltipLayout = new StaticLayout(releaseText, 0, releaseText.length(), tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
-        releaseTooltipLayoutWidth = releaseTooltipLayout.getLineWidth(0);
+        pullTooltipText = pullText;
+        releaseTooltipText = releaseText;
 
         try {
             generalTopicDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
         } catch (Exception ignore) {}
     }
 
+    private int lastWidth;
+    private void checkTextLayouts(int width) {
+        if (width != lastWidth) {
+
+            float textWidth;
+            int layoutWidth;
+
+            pullTooltipLayout = new StaticLayout(pullTooltipText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            textWidth = 0;
+            for (int i = 0; i < pullTooltipLayout.getLineCount(); ++i) {
+                textWidth = Math.max(textWidth, pullTooltipLayout.getLineWidth(i));
+            }
+            pullTooltipLayoutScale = Math.min(1, width / textWidth);
+            layoutWidth = (int) Math.ceil(textWidth);
+            if (pullTooltipLayoutScale < .8f) {
+                pullTooltipLayoutScale = .8f;
+                layoutWidth = HintView2.cutInFancyHalf(pullTooltipText, tooltipTextPaint);
+            }
+            pullTooltipLayout = new StaticLayout(pullTooltipText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            pullTooltipLayoutLeft = layoutWidth;
+            pullTooltipLayoutWidth = 0;
+            for (int i = 0; i < pullTooltipLayout.getLineCount(); ++i) {
+                pullTooltipLayoutLeft = Math.min(pullTooltipLayoutLeft, pullTooltipLayout.getLineLeft(i));
+                pullTooltipLayoutWidth = Math.max(pullTooltipLayoutWidth, pullTooltipLayout.getLineWidth(i));
+            }
+
+            releaseTooltipLayout = new StaticLayout(releaseTooltipText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            textWidth = 0;
+            for (int i = 0; i < releaseTooltipLayout.getLineCount(); ++i) {
+                textWidth = Math.max(textWidth, releaseTooltipLayout.getLineWidth(i));
+            }
+            releaseTooltipLayoutScale = Math.min(1, width / textWidth);
+            layoutWidth = (int) Math.ceil(textWidth);
+            if (releaseTooltipLayoutScale < .8f) {
+                releaseTooltipLayoutScale = .8f;
+                layoutWidth = HintView2.cutInFancyHalf(releaseTooltipText, tooltipTextPaint);
+            }
+            releaseTooltipLayout = new StaticLayout(releaseTooltipText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            releaseTooltipLayoutLeft = layoutWidth;
+            releaseTooltipLayoutWidth = 0;
+            for (int i = 0; i < releaseTooltipLayout.getLineCount(); ++i) {
+                releaseTooltipLayoutLeft = Math.min(releaseTooltipLayoutLeft, releaseTooltipLayout.getLineLeft(i));
+                releaseTooltipLayoutWidth = Math.max(releaseTooltipLayoutWidth, releaseTooltipLayout.getLineWidth(i));
+            }
+
+            lastWidth = width;
+        }
+    }
+
     public static int getMaxOverscroll() {
         return AndroidUtilities.dp(72);
     }
 
-    public void setColors(String background, String active) {
+    public void setColors(int background, int active) {
         backgroundColorKey = background;
         backgroundActiveColorKey = active;
         changeAvatarColor = false;
@@ -189,6 +242,8 @@ public class PullForegroundDrawable {
 
         float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
 
+        checkTextLayouts(cell.getWidth() - startPadding * 4 - AndroidUtilities.dp(16));
+
         updateTextProgress(pullProgress);
 
         float outProgressHalf = outProgress * 2f;
@@ -213,7 +268,7 @@ public class PullForegroundDrawable {
         canvas.save();
 
         if (header) {
-            canvas.clipRect(0, 0, listView.getMeasuredWidth(), overscroll + 1);
+            canvas.clipRect(0, -AndroidUtilities.dp(4) /*fix overscroll*/, listView.getMeasuredWidth(), overscroll + 1);
         }
         if (outProgress == 0f) {
             if (!(accentRevalProgress == 1f || accentRevalProgressOut == 1)) {
@@ -306,35 +361,40 @@ public class PullForegroundDrawable {
         }
 
         float textY = cell.getHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
-        float textCx = cell.getWidth() / 2f - AndroidUtilities.dp(2);
+        float textCx = (cell.getWidth() + (isTopic ? startPadding * 2 : 0)) / 2f;
 
-        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
-            canvas.save();
-            float scale = 0.8f + 0.2f * textSwappingProgress;
-            canvas.scale(scale, scale, textCx, textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress));
-        }
-        canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * textSwappingProgress * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
-        canvas.translate(textCx - pullTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (1f - textSwappingProgress) - tooltipTextPaint.getTextSize());
-        pullTooltipLayout.draw(canvas);
-        canvas.restore();
-
-        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+        if (pullTooltipLayout != null) {
+            if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+                canvas.save();
+                float scale = 0.8f + 0.2f * textSwappingProgress;
+                canvas.scale(scale, scale, textCx, textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress));
+            }
+            canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * textSwappingProgress * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
+            canvas.translate(textCx - pullTooltipLayoutLeft - pullTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (1f - textSwappingProgress) - pullTooltipLayout.getHeight());
+            canvas.scale(pullTooltipLayoutScale, pullTooltipLayoutScale, pullTooltipLayoutLeft + pullTooltipLayoutWidth / 2f, pullTooltipLayout.getHeight());
+            pullTooltipLayout.draw(canvas);
             canvas.restore();
+            if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+                canvas.restore();
+            }
         }
 
-        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
-            canvas.save();
-            float scale = 0.9f + 0.1f * (1f - textSwappingProgress);
-            canvas.scale(scale, scale, textCx, textY - AndroidUtilities.dp(8) * (textSwappingProgress));
-        }
-        canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
-        canvas.translate(textCx - releaseTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (textSwappingProgress) - tooltipTextPaint.getTextSize());
-        releaseTooltipLayout.draw(canvas);
-        canvas.restore();
-
-        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+        if (releaseTooltipLayout != null) {
+            if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+                canvas.save();
+                float scale = 0.9f + 0.1f * (1f - textSwappingProgress);
+                canvas.scale(scale, scale, textCx, textY - AndroidUtilities.dp(8) * (textSwappingProgress));
+            }
+            canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
+            canvas.translate(textCx - releaseTooltipLayoutLeft - releaseTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (textSwappingProgress) - releaseTooltipLayout.getHeight());
+            canvas.scale(releaseTooltipLayoutScale, releaseTooltipLayoutScale, releaseTooltipLayoutLeft + releaseTooltipLayoutWidth / 2f, releaseTooltipLayout.getHeight());
+            releaseTooltipLayout.draw(canvas);
             canvas.restore();
+            if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+                canvas.restore();
+            }
         }
+
         canvas.restore();
 
         if (!isTopic && changeAvatarColor && outProgress > 0) {

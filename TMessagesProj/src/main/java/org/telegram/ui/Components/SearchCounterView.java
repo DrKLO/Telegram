@@ -43,7 +43,7 @@ public class SearchCounterView extends View {
     private int countWidth;
 
     private int textColor;
-    private String textColorKey = Theme.key_chat_searchPanelText;
+    private int textColorKey = Theme.key_chat_searchPanelText;
 
     int lastH;
     int gravity = Gravity.CENTER;

@@ -338,7 +338,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         View view = null;
         switch (viewType) {
             case 0:
-                StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context, false) {
+                StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context, false, resourcesProvider) {
                     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                     }
@@ -675,8 +675,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         descriptions.add(new ThemeDescription(emptyTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_emojiPanelEmptyText));
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

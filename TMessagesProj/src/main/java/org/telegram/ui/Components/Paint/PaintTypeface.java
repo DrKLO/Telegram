@@ -6,12 +6,16 @@ import android.graphics.fonts.Font;
 import android.graphics.fonts.SystemFonts;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 
 import java.io.File;
@@ -29,14 +33,15 @@ import java.util.Set;
 public class PaintTypeface {
     private final static boolean SYSTEM_FONTS_ENABLED = true;
 
-    public static final PaintTypeface ROBOTO_MEDIUM = new PaintTypeface("roboto", "PhotoEditorTypefaceRoboto", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-    public static final PaintTypeface ROBOTO_ITALIC = new PaintTypeface("italic", "PhotoEditorTypefaceItalic", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC));
-    public static final PaintTypeface ROBOTO_SERIF = new PaintTypeface("serif", "PhotoEditorTypefaceSerif", Typeface.create("serif", Typeface.BOLD));
-    public static final PaintTypeface ROBOTO_MONO = new PaintTypeface ("mono", "PhotoEditorTypefaceMono", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO));
-    public static final PaintTypeface MW_BOLD = new PaintTypeface("mw_bold", "PhotoEditorTypefaceMerriweather", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_MERRIWEATHER_BOLD));
-    public static final PaintTypeface COURIER_NEW_BOLD = new PaintTypeface("courier_new_bold", "PhotoEditorTypefaceCourierNew", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_COURIER_NEW_BOLD));
+    public static final PaintTypeface ROBOTO_MEDIUM = new PaintTypeface("roboto", "PhotoEditorTypefaceRoboto", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)));
+    public static final PaintTypeface ROBOTO_ITALIC = new PaintTypeface("italic", "PhotoEditorTypefaceItalic", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC)));
+    public static final PaintTypeface ROBOTO_SERIF = new PaintTypeface("serif", "PhotoEditorTypefaceSerif", new LazyTypeface(() -> Typeface.create("serif", Typeface.BOLD)));
+    public static final PaintTypeface ROBOTO_CONDENSED = new PaintTypeface("condensed", "PhotoEditorTypefaceCondensed", new LazyTypeface(() -> AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf")));
+    public static final PaintTypeface ROBOTO_MONO = new PaintTypeface ("mono", "PhotoEditorTypefaceMono", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO)));
+    public static final PaintTypeface MW_BOLD = new PaintTypeface("mw_bold", "PhotoEditorTypefaceMerriweather", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_MERRIWEATHER_BOLD)));
+    public static final PaintTypeface COURIER_NEW_BOLD = new PaintTypeface("courier_new_bold", "PhotoEditorTypefaceCourierNew", new LazyTypeface(() -> AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_COURIER_NEW_BOLD)));
 
-    private final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
+    public final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_CONDENSED, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
 
     private static final List<String> preferable = Arrays.asList(
         "Google Sans",
@@ -51,14 +56,44 @@ public class PaintTypeface {
     private final String nameKey;
     private final String name;
     private final Typeface typeface;
+    private final LazyTypeface lazyTypeface;
     private final Font font;
     private Paint paint;
+
+    private static class LazyTypeface {
+        public interface LazyTypefaceLoader {
+            Typeface load();
+        }
+
+        private final LazyTypefaceLoader loader;
+        private Typeface typeface;
+        public LazyTypeface(LazyTypefaceLoader loader) {
+            this.loader = loader;
+        }
+
+        public Typeface get() {
+            if (typeface == null) {
+                typeface = loader.load();
+            }
+            return typeface;
+        }
+    }
 
     PaintTypeface(String key, String nameKey, Typeface typeface) {
         this.key = key;
         this.nameKey = nameKey;
         this.name = null;
         this.typeface = typeface;
+        this.lazyTypeface = null;
+        this.font = null;
+    }
+
+    PaintTypeface(String key, String nameKey, LazyTypeface lazyTypeface) {
+        this.key = key;
+        this.nameKey = nameKey;
+        this.name = null;
+        this.typeface = null;
+        this.lazyTypeface = lazyTypeface;
         this.font = null;
     }
 
@@ -67,7 +102,8 @@ public class PaintTypeface {
         this.key = name;
         this.name = name;
         this.nameKey = null;
-        this.typeface = Typeface.createFromFile(font.getFile());
+        this.typeface = null;
+        this.lazyTypeface = new LazyTypeface(() -> Typeface.createFromFile(font.getFile()));
         this.font = font;
     }
 
@@ -92,6 +128,9 @@ public class PaintTypeface {
     }
 
     public Typeface getTypeface() {
+        if (lazyTypeface != null) {
+            return lazyTypeface.get();
+        }
         return typeface;
     }
 
@@ -103,9 +142,15 @@ public class PaintTypeface {
     }
 
     private static List<PaintTypeface> typefaces;
-    public static List<PaintTypeface> get() {
-        if (typefaces == null) {
-            typefaces = new ArrayList<>(BUILT_IN_FONTS);
+    public static boolean loadingTypefaces;
+
+    private static void load() {
+        if (typefaces != null || loadingTypefaces) {
+            return;
+        }
+        loadingTypefaces = true;
+        Utilities.themeQueue.postRunnable(() -> {
+            ArrayList<PaintTypeface> typefaces = new ArrayList<PaintTypeface>(BUILT_IN_FONTS);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && SYSTEM_FONTS_ENABLED) {
                 Set<Font> fonts = SystemFonts.getAvailableFonts();
                 Iterator<Font> i = fonts.iterator();
@@ -125,23 +170,31 @@ public class PaintTypeface {
                     }
                 }
 
-//                if (BuildVars.DEBUG_PRIVATE_VERSION) {
-//                    for (Family family : families.values()) {
-//                        if (family != null) {
-//                            FontData regular = family.getRegular();
-//                            typefaces.add(new PaintTypeface(regular.font, regular.getName()));
-//                        }
-//                    }
-//                } else {
-                    for (String familyName : preferable) {
-                        Family family = families.get(familyName);
-                        if (family != null) {
-                            FontData regular = family.getRegular();
-                            typefaces.add(new PaintTypeface(regular.font, regular.getName()));
+                for (String familyName : preferable) {
+                    Family family = families.get(familyName);
+                    if (family != null) {
+                        FontData font = family.getBold();
+                        if (font == null) {
+                            font = family.getRegular();
+                        }
+                        if (font != null) {
+                            typefaces.add(new PaintTypeface(font.font, font.getName()));
                         }
                     }
-//                }
+                }
             }
+            AndroidUtilities.runOnUIThread(() -> {
+                PaintTypeface.typefaces = typefaces;
+                loadingTypefaces = false;
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.customTypefacesLoaded);
+            });
+        });
+    }
+
+    public static List<PaintTypeface> get() {
+        if (typefaces == null) {
+            load();
+            return BUILT_IN_FONTS;
         }
         return typefaces;
     }
@@ -150,12 +203,7 @@ public class PaintTypeface {
         if (key == null || TextUtils.isEmpty(key)) {
             return null;
         }
-        if (typefaces == null) {
-            get();
-        }
-        if (typefaces == null) {
-            return null;
-        }
+        List<PaintTypeface> typefaces = get();
         for (int i = 0; i < typefaces.size(); ++i) {
             PaintTypeface typeface = typefaces.get(i);
             if (typeface != null && TextUtils.equals(key, typeface.key)) {
@@ -163,17 +211,6 @@ public class PaintTypeface {
             }
         }
         return null;
-    }
-
-    public static boolean fetched(Runnable runnable) {
-        if (typefaces != null || runnable == null) {
-            return true;
-        }
-        Utilities.themeQueue.postRunnable(() -> {
-            get();
-            AndroidUtilities.runOnUIThread(runnable);
-        });
-        return false;
     }
 
     static class Family {
@@ -192,6 +229,16 @@ public class PaintTypeface {
                 regular = fonts.get(0);
             }
             return regular;
+        }
+
+        @Nullable
+        public FontData getBold() {
+            for (int j = 0; j < fonts.size(); ++j) {
+                if ("Bold".equalsIgnoreCase(fonts.get(j).subfamily)) {
+                    return fonts.get(j);
+                }
+            }
+            return null;
         }
     }
 

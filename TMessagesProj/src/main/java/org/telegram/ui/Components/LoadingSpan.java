@@ -24,19 +24,23 @@ public class LoadingSpan extends ReplacementSpan {
     }
 
     public LoadingSpan(View view, int size, int yOffset) {
+        this(view, size, yOffset, null);
+    }
+
+    public LoadingSpan(View view, int size, int yOffset, Theme.ResourcesProvider resourcesProvider) {
         this.view = view;
         this.size = size;
         this.yOffset = yOffset;
-        this.drawable = new LoadingDrawable(null);
+        this.drawable = new LoadingDrawable(resourcesProvider);
         this.drawable.setRadiiDp(4);
     }
 
-    public void setColorKeys(String colorKey1, String colorKey2) {
+    public void setColorKeys(int colorKey1, int colorKey2) {
         this.drawable.colorKey1 = colorKey1;
         this.drawable.colorKey2 = colorKey2;
     }
 
-    public void setColorKeys(String colorKey1, String colorKey2, Theme.ResourcesProvider resourcesProvider) {
+    public void setColorKeys(int colorKey1, int colorKey2, Theme.ResourcesProvider resourcesProvider) {
         this.drawable.resourcesProvider = resourcesProvider;
         this.drawable.colorKey1 = colorKey1;
         this.drawable.colorKey2 = colorKey2;
@@ -53,11 +57,13 @@ public class LoadingSpan extends ReplacementSpan {
 
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
-        if (paint != null) {
+        if (paint != null && this.drawable.color1 == null && this.drawable.color2 == null) {
             drawable.setColors(
                 Theme.multAlpha(paint.getColor(), .1f),
                 Theme.multAlpha(paint.getColor(), .25f)
             );
+        }
+        if (paint != null) {
             drawable.setAlpha(paint.getAlpha());
         }
         return size;

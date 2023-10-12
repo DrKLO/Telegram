@@ -295,7 +295,7 @@ public class AvatarConstructorFragment extends BaseFragment {
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (keyboardVisibleProgress == 0 && AndroidUtilities.findClickableView(this, ev.getX(), ev.getY())) {
+                if (keyboardVisibleProgress == 0) {
                     return false;
                 }
                 return onTouchEvent(ev);
@@ -432,7 +432,7 @@ public class AvatarConstructorFragment extends BaseFragment {
 
 
         button = new FrameLayout(getContext());
-        button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+        button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
 
         TextView textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1106,7 +1106,7 @@ public class AvatarConstructorFragment extends BaseFragment {
         colorPickerContainer.addView(colorPicker);
 
         FrameLayout button = new FrameLayout(getContext());
-        button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+        button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
 
         TextView textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

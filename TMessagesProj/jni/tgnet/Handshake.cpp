@@ -940,32 +940,33 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
     if (loadingCdnKeys) {
         return;
     }
-    if (cdnPublicKeysFingerprints.empty()) {
-        if (cdnConfig == nullptr) {
-            cdnConfig = new Config(datacenter->instanceNum, "cdnkeys.dat");
-        }
-        NativeByteBuffer *buffer = cdnConfig->readConfig();
-        if (buffer != nullptr) {
-            uint32_t version = buffer->readUint32(nullptr);
-            if (version >= 1) {
-                size_t count = buffer->readUint32(nullptr);
-                for (uint32_t a = 0; a < count; a++) {
-                    int dcId = buffer->readInt32(nullptr);
-                    cdnPublicKeys[dcId] = buffer->readString(nullptr);
-                    cdnPublicKeysFingerprints[dcId] = buffer->readUint64(nullptr);
-                }
-            }
-            buffer->reuse();
-            if (!cdnPublicKeysFingerprints.empty()) {
-                size_t count = cdnWaitingDatacenters.size();
-                for (uint32_t a = 0; a < count; a++) {
-                    cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
-                }
-                cdnWaitingDatacenters.clear();
-                return;
-            }
-        }
-    }
+    if (LOGS_ENABLED) DEBUG_D("account%u dc%u loadCdnConfig", datacenter->instanceNum, datacenter->datacenterId);
+//    if (cdnPublicKeysFingerprints.empty()) {
+//        if (cdnConfig == nullptr) {
+//            cdnConfig = new Config(datacenter->instanceNum, "cdnkeys.dat");
+//        }
+//        NativeByteBuffer *buffer = cdnConfig->readConfig();
+//        if (buffer != nullptr) {
+//            uint32_t version = buffer->readUint32(nullptr);
+//            if (version >= 1) {
+//                size_t count = buffer->readUint32(nullptr);
+//                for (uint32_t a = 0; a < count; a++) {
+//                    int dcId = buffer->readInt32(nullptr);
+//                    cdnPublicKeys[dcId] = buffer->readString(nullptr);
+//                    cdnPublicKeysFingerprints[dcId] = buffer->readUint64(nullptr);
+//                }
+//            }
+//            buffer->reuse();
+//            if (!cdnPublicKeysFingerprints.empty()) {
+//                size_t count = cdnWaitingDatacenters.size();
+//                for (uint32_t a = 0; a < count; a++) {
+//                    cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
+//                }
+//                cdnWaitingDatacenters.clear();
+//                return;
+//            }
+//        }
+//    }
     loadingCdnKeys = true;
     auto request = new TL_help_getCdnConfig();
 
@@ -1008,6 +1009,7 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
             buffer->reuse();
             BIO_free(keyBio);
             count = cdnWaitingDatacenters.size();
+            if (LOGS_ENABLED) DEBUG_D("account%u dc%u cdnConfig loaded begin handshake", datacenter->instanceNum, datacenter->datacenterId);
             for (uint32_t a = 0; a < count; a++) {
                 cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
             }

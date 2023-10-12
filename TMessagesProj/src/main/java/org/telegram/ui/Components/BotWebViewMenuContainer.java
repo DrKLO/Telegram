@@ -1,15 +1,19 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteBlackText;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -106,6 +110,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
     private boolean overrideBackgroundColor;
 
     private boolean needCloseConfirmation;
+    ActionBarColorsAnimating actionBarColors;
 
     private Runnable pollRunnable = () -> {
         if (!dismissed) {
@@ -126,6 +131,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             }));
         }
     };
+    private boolean actionBarIsLight;
+    private int lineColor;
 
     private void checkBotMenuItem() {
         if (botMenuItem == null) {
@@ -139,13 +146,21 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
     public BotWebViewMenuContainer(@NonNull Context context, ChatActivityEnterView parentEnterView) {
         super(context);
+        actionBarColors = new ActionBarColorsAnimating();
+        actionBarColors.setTo(0, null);
+        actionBarColors.progress = 1;
 
         this.parentEnterView = parentEnterView;
         ChatActivity chatActivity = parentEnterView.getParentFragment();
         ActionBar actionBar = chatActivity.getActionBar();
         actionBarOnItemClick = actionBar.getActionBarMenuOnItemClick();
 
-        webViewContainer = new BotWebViewContainer(context, parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite));
+        webViewContainer = new BotWebViewContainer(context, parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite)) {
+            @Override
+            public void onWebViewCreated() {
+                swipeContainer.setWebView(webViewContainer.getWebView());
+            }
+        };
         webViewContainer.setDelegate(webViewDelegate = new BotWebViewContainer.Delegate() {
 
             @Override
@@ -159,10 +174,15 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             }
 
             @Override
-            public void onWebAppSetActionBarColor(String colorKey) {
+            public void onWebAppSetActionBarColor(int color, boolean isOverrideColor) {
                 int from = overrideActionBarBackground;
-                int to = getColor(colorKey);
+                int to = color;
 
+                actionBarColors = new BotWebViewMenuContainer.ActionBarColorsAnimating();
+                actionBarColors.setFrom(overrideBackgroundColor ? from : 0, null);
+                overrideBackgroundColor = isOverrideColor;
+                actionBarIsLight = ColorUtils.calculateLuminance(color) < 0.5f;
+                actionBarColors.setTo(overrideBackgroundColor ? to : 0, null);
                 if (from == 0) {
                     overrideActionBarBackground = to;
                 }
@@ -170,11 +190,13 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                 ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 animator.addUpdateListener(animation -> {
+                    float progress = (float) animation.getAnimatedValue();
                     if (from != 0) {
-                        overrideActionBarBackground = ColorUtils.blendARGB(from, to, (float) animation.getAnimatedValue());
+                        overrideActionBarBackground = ColorUtils.blendARGB(from, to, progress);
                     } else {
-                        overrideActionBarBackgroundProgress = (float) animation.getAnimatedValue();
+                        overrideActionBarBackgroundProgress = progress;
                     }
+                    actionBarColors.progress = progress;
                     actionBarPaint.setColor(overrideActionBarBackground);
                     invalidateActionBar();
                 });
@@ -388,21 +410,22 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             return;
         }
 
-        ChatAvatarContainer avatarContainer = chatActivity.getAvatarContainer();
-        String subtitleDefaultColorKey = avatarContainer.getLastSubtitleColorKey() == null ? Theme.key_actionBarDefaultSubtitle : avatarContainer.getLastSubtitleColorKey();
-        int subtitleColor = ColorUtils.blendARGB(getColor(subtitleDefaultColorKey), getColor(Theme.key_windowBackgroundWhiteGrayText), actionBarTransitionProgress);
         ActionBar actionBar = chatActivity.getActionBar();
         int backgroundColor = ColorUtils.blendARGB(getColor(Theme.key_actionBarDefault), getColor(Theme.key_windowBackgroundWhite), actionBarTransitionProgress);
+        if (overrideBackgroundColor) {
+            backgroundColor = ColorUtils.blendARGB(getColor(Theme.key_actionBarDefault), overrideActionBarBackground, actionBarTransitionProgress);
+        } else {
+            ColorUtils.blendARGB(getColor(Theme.key_actionBarDefault), actionBarColors.getColor(Theme.key_windowBackgroundWhite), actionBarTransitionProgress);
+        }
+
         actionBar.setBackgroundColor(backgroundColor);
-        actionBar.setItemsColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultIcon), getColor(Theme.key_windowBackgroundWhiteBlackText), actionBarTransitionProgress), false);
-        actionBar.setItemsBackgroundColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultSelector), getColor(Theme.key_actionBarWhiteSelector), actionBarTransitionProgress), false);
-        actionBar.setSubtitleColor(subtitleColor);
+        actionBar.setItemsColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultIcon), actionBarColors.getColor(key_windowBackgroundWhiteBlackText), actionBarTransitionProgress), false);
+        actionBar.setItemsBackgroundColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultSelector), actionBarColors.getColor(Theme.key_actionBarWhiteSelector), actionBarTransitionProgress), false);
 
         ChatAvatarContainer chatAvatarContainer = chatActivity.getAvatarContainer();
-        chatAvatarContainer.getTitleTextView().setTextColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultTitle), getColor(Theme.key_windowBackgroundWhiteBlackText), actionBarTransitionProgress));
-        chatAvatarContainer.getSubtitleTextView().setTextColor(subtitleColor);
-        chatAvatarContainer.setOverrideSubtitleColor(actionBarTransitionProgress == 0 ? null : subtitleColor);
-
+        chatAvatarContainer.setAlpha(1f - actionBarTransitionProgress);
+        chatActivity.getOrCreateWebBotTitleView().setAlpha(actionBarTransitionProgress);
+        chatActivity.getOrCreateWebBotTitleView().setTextColor(ColorUtils.blendARGB(getColor(Theme.key_actionBarDefaultIcon), actionBarColors.getColor(key_windowBackgroundWhiteBlackText), actionBarTransitionProgress));
         updateLightStatusBar();
     }
 
@@ -434,7 +457,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     .create();
             dialog.show();
             TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            textView.setTextColor(getColor(Theme.key_dialogTextRed));
+            textView.setTextColor(getColor(Theme.key_text_RedBold));
             return false;
         } else {
             dismiss();
@@ -647,7 +670,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
         float radius = AndroidUtilities.dp(16) * (1f - actionBarTransitionProgress);
         AndroidUtilities.rectTmp.set(0, AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), getWidth(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius,actionBarPaint );
 
         AndroidUtilities.rectTmp.set(0, swipeContainer.getTranslationY() + AndroidUtilities.dp(24), getWidth(), getHeight() + radius);
         canvas.drawRect(AndroidUtilities.rectTmp, backgroundPaint);
@@ -667,7 +690,9 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
     public void draw(Canvas canvas) {
         super.draw(canvas);
 
-        linePaint.setColor(getColor(Theme.key_sheet_scrollUp));
+        lineColor = actionBarColors.getColor(Theme.key_sheet_scrollUp);
+
+        linePaint.setColor(lineColor);
         linePaint.setAlpha((int) (linePaint.getAlpha() * (1f - Math.min(0.5f, actionBarTransitionProgress) / 0.5f)));
 
         canvas.save();
@@ -697,6 +722,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         ChatActivity chatActivity = parentEnterView.getParentFragment();
         if (chatActivity != null) {
             chatActivity.hideFieldPanel(true);
+            TextView webViewTitle = chatActivity.getOrCreateWebBotTitleView();
+            webViewTitle.setText(chatActivity.getCurrentUser().first_name);
         }
 
         if (!isLoaded) {
@@ -747,7 +774,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("bg_color", getColor(Theme.key_windowBackgroundWhite));
             jsonObject.put("secondary_bg_color", getColor(Theme.key_windowBackgroundGray));
-            jsonObject.put("text_color", getColor(Theme.key_windowBackgroundWhiteBlackText));
+            jsonObject.put("text_color", getColor(key_windowBackgroundWhiteBlackText));
             jsonObject.put("hint_color", getColor(Theme.key_windowBackgroundWhiteHintText));
             jsonObject.put("link_color", getColor(Theme.key_windowBackgroundWhiteLinkText));
             jsonObject.put("button_color", getColor(Theme.key_featuredStickers_addButton));
@@ -775,15 +802,9 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         }));
     }
 
-    private int getColor(String key) {
-        Integer color;
+    private int getColor(int key) {
         Theme.ResourcesProvider resourcesProvider = parentEnterView.getParentFragment().getResourceProvider();
-        if (resourcesProvider != null) {
-            color = resourcesProvider.getColor(key);
-        } else {
-            color = Theme.getColor(key);
-        }
-        return color != null ? color : Theme.getColor(key);
+        return Theme.getColor(key, resourcesProvider);
     }
 
     /**
@@ -832,7 +853,12 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         webViewContainer.destroyWebView();
         swipeContainer.removeView(webViewContainer);
 
-        webViewContainer = new BotWebViewContainer(getContext(), parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite));
+        webViewContainer = new BotWebViewContainer(getContext(), parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite)) {
+            @Override
+            public void onWebViewCreated() {
+                swipeContainer.setWebView(webViewContainer.getWebView());
+            }
+        };
         webViewContainer.setDelegate(webViewDelegate);
         webViewContainer.setWebViewProgressListener(progress -> {
             progressView.setLoadProgressAnimated(progress);
@@ -898,6 +924,71 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             invalidate();
             invalidateActionBar();
             AndroidUtilities.runOnUIThread(this::invalidateActionBar, 300);
+        }
+    }
+
+    public static class ActionBarColorsAnimating {
+
+        SparseIntArray fromColors = new SparseIntArray();
+        SparseIntArray toColors = new SparseIntArray();
+
+        int[] colorKeys = new int[]{
+                Theme.key_windowBackgroundWhiteBlackText,
+                Theme.key_actionBarWhiteSelector,
+                Theme.key_actionBarDefaultSubmenuBackground,
+                Theme.key_actionBarDefaultSubmenuItem,
+                Theme.key_actionBarDefaultSubmenuItemIcon,
+                Theme.key_dialogButtonSelector,
+                Theme.key_sheet_scrollUp
+        };
+
+        public float progress;
+
+        public void setFrom(int actionBarColor, Theme.ResourcesProvider resourcesProvider) {
+            updateColors(fromColors, actionBarColor, resourcesProvider);
+        }
+
+        public void setTo(int actionBarColor, Theme.ResourcesProvider resourcesProvider) {
+            updateColors(toColors, actionBarColor, resourcesProvider);
+        }
+
+        private void updateColors(SparseIntArray fromColors, int actionBarColor, Theme.ResourcesProvider resourcesProvider) {
+            if (actionBarColor == 0) {
+                for (int i = 0; i < colorKeys.length; i++) {
+                    int key = colorKeys[i];
+                    fromColors.put(key,  Theme.getColor(key, resourcesProvider));
+                }
+            } else {
+                int color = ColorUtils.calculateLuminance(actionBarColor) < 0.5f ? Color.WHITE : Color.BLACK;
+                int selectorColor = ColorUtils.setAlphaComponent(color, 60);
+                for (int i = 0; i < colorKeys.length; i++) {
+                    int key = colorKeys[i];
+                    if (key == Theme.key_actionBarDefaultSubmenuBackground || key == Theme.key_actionBarDefaultSubmenuItem || key == Theme.key_actionBarDefaultSubmenuItemIcon || key == Theme.key_dialogButtonSelector) {
+                        fromColors.put(key,  Theme.getColor(key, resourcesProvider));
+                    } else if (key == Theme.key_sheet_scrollUp) {
+                        fromColors.put(key, ColorUtils.blendARGB(actionBarColor, color, 0.5f));
+                    } else if (key == Theme.key_actionBarWhiteSelector || key == Theme.key_dialogButtonSelector) {
+                        fromColors.put(key, selectorColor);
+                    } else {
+                        fromColors.put(key, color);
+                    }
+                }
+            }
+        }
+
+        public int getColor(int key) {
+            return ColorUtils.blendARGB(fromColors.get(key), toColors.get(key), progress);
+        }
+
+        public void updateActionBar(ActionBar actionBar, float progress) {
+            this.progress = progress;
+            actionBar.setTitleColor(getColor(Theme.key_windowBackgroundWhiteBlackText));
+            actionBar.setItemsColor(getColor(Theme.key_windowBackgroundWhiteBlackText), false);
+            actionBar.setItemsBackgroundColor(getColor(Theme.key_actionBarWhiteSelector), false);
+            actionBar.setPopupBackgroundColor(getColor(Theme.key_actionBarDefaultSubmenuBackground), false);
+            actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItem), false, false);
+            actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true, false);
+            actionBar.setPopupItemsSelectorColor(getColor(Theme.key_dialogButtonSelector), false);
         }
     }
 }

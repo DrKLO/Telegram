@@ -16,7 +16,6 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -27,7 +26,7 @@ public class SnowflakesEffect {
     private Paint particlePaint;
     private Paint particleThinPaint;
     private Paint bitmapPaint = new Paint();
-    private String colorKey = Theme.key_actionBarDefaultTitle;
+    private int colorKey = Theme.key_actionBarDefaultTitle;
     private int viewType;
 
     Bitmap particleBitmap;
@@ -123,7 +122,7 @@ public class SnowflakesEffect {
         }
     }
 
-    public void setColorKey(String key) {
+    public void setColorKey(int key) {
         colorKey = key;
         updateColors();
     }

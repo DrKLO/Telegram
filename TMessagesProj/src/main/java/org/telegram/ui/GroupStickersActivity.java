@@ -235,18 +235,18 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         boolean isSelected = ((StickerSetCell) view).isChecked();
         stickersAlert.setCustomButtonDelegate(new StickersAlert.StickersAlertCustomButtonDelegate() {
             @Override
-            public String getCustomButtonTextColorKey() {
-                return isSelected ? Theme.key_dialogTextRed : Theme.key_featuredStickers_buttonText;
+            public int getCustomButtonTextColorKey() {
+                return isSelected ? Theme.key_text_RedBold : Theme.key_featuredStickers_buttonText;
             }
 
             @Override
-            public String getCustomButtonRippleColorKey() {
-                return !isSelected ? Theme.key_featuredStickers_addButtonPressed : null;
+            public int getCustomButtonRippleColorKey() {
+                return !isSelected ? Theme.key_featuredStickers_addButtonPressed : -1;
             }
 
             @Override
-            public String getCustomButtonColorKey() {
-                return !isSelected ? Theme.key_featuredStickers_addButton : null;
+            public int getCustomButtonColorKey() {
+                return !isSelected ? Theme.key_featuredStickers_addButton : -1;
             }
 
             @Override
@@ -549,7 +549,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 default:
                 case TYPE_MY_STICKERS_HEADER:
                     view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteGrayText4, 21, 0, 0, false, getResourceProvider());
-                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     ((HeaderCell) view).setText(LocaleController.getString(R.string.ChooseStickerMyStickerSets));
                     break;
             }
@@ -685,7 +685,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     break;
                 case TYPE_INFO:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case TYPE_CHOOSE_HEADER:
                 default:

@@ -97,6 +97,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -2844,13 +2845,31 @@ public final class Util {
 
   @RequiresApi(api = Build.VERSION_CODES.M)
   private static boolean requestExternalStoragePermission(Activity activity) {
-    if (activity.checkSelfPermission(permission.READ_EXTERNAL_STORAGE)
-        != PackageManager.PERMISSION_GRANTED) {
-      activity.requestPermissions(
-          new String[] {permission.READ_EXTERNAL_STORAGE}, /* requestCode= */ 0);
-      return true;
+    if (Build.VERSION.SDK_INT >= 33) {
+      ArrayList<String> permissions = new ArrayList<>();
+      if (activity.checkSelfPermission(permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+        permissions.add(permission.READ_MEDIA_VIDEO);
+      }
+      if (activity.checkSelfPermission(permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+        permissions.add(permission.READ_MEDIA_IMAGES);
+      }
+      if (activity.checkSelfPermission(permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        permissions.add(permission.READ_MEDIA_AUDIO);
+      }
+      if (!permissions.isEmpty()) {
+        activity.requestPermissions(permissions.toArray(new String[0]), /* requestCode= */ 0);
+        return true;
+      }
+      return false;
+    } else {
+      if (activity.checkSelfPermission(permission.READ_EXTERNAL_STORAGE)
+          != PackageManager.PERMISSION_GRANTED) {
+        activity.requestPermissions(
+          new String[]{permission.READ_EXTERNAL_STORAGE}, /* requestCode= */ 0);
+        return true;
+      }
+      return false;
     }
-    return false;
   }
 
   @RequiresApi(api = Build.VERSION_CODES.N)

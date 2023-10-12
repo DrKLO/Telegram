@@ -44,7 +44,10 @@ import org.telegram.ui.WallpapersListActivity;
 
 public class WallpaperCell extends FrameLayout {
 
-    private class WallpaperView extends FrameLayout {
+    int size;
+    public boolean drawStubBackground = true;
+
+    public class WallpaperView extends FrameLayout {
 
         private BackupImageView imageView;
         private ImageView imageView2;
@@ -290,7 +293,7 @@ public class WallpaperCell extends FrameLayout {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (checkBox.isChecked() || !imageView.getImageReceiver().hasBitmapImage() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f) {
+            if (drawStubBackground && checkBox.isChecked() || !imageView.getImageReceiver().hasBitmapImage() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f) {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
             }
         }
@@ -307,9 +310,13 @@ public class WallpaperCell extends FrameLayout {
     private Drawable checkDrawable;
 
     public WallpaperCell(Context context) {
+        this(context, 5);
+    }
+
+    public WallpaperCell(Context context, int size) {
         super(context);
 
-        wallpaperViews = new WallpaperView[5];
+        wallpaperViews = new WallpaperView[size];
         for (int a = 0; a < wallpaperViews.length; a++) {
             WallpaperView wallpaperView = wallpaperViews[a] = new WallpaperView(context);
             int num = a;
@@ -339,6 +346,11 @@ public class WallpaperCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (spanCount == 1) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(size + AndroidUtilities.dp(6), MeasureSpec.EXACTLY));
+            setPadding(0, 0, 0, AndroidUtilities.dp(6));
+            return;
+        }
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int availableWidth = width - AndroidUtilities.dp(14 * 2 + 6 * (spanCount - 1));
         int itemWidth = availableWidth / spanCount;
@@ -353,6 +365,10 @@ public class WallpaperCell extends FrameLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        if (spanCount == 1) {
+            super.onLayout(changed, left, top, right, bottom);
+            return;
+        }
         int l = AndroidUtilities.dp(14);
         int t = isTop ? AndroidUtilities.dp(14) : 0;
         for (int a = 0; a < spanCount; a++) {
@@ -392,6 +408,13 @@ public class WallpaperCell extends FrameLayout {
         super.invalidate();
         for (int a = 0; a < spanCount; a++) {
             wallpaperViews[a].invalidate();
+        }
+    }
+
+    public void setSize(int itemSize) {
+        if (size != itemSize) {
+            this.size = itemSize;
+            requestLayout();
         }
     }
 }

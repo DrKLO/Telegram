@@ -171,6 +171,9 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                     if (stickerSet.masks) {
                         titleTextView.setText(LocaleController.getString("MasksArchived", R.string.MasksArchived));
                         subtitleTextView.setText(LocaleController.formatString("MasksArchivedInfo", R.string.MasksArchivedInfo, stickerSet.title));
+                    } else if (stickerSet.emojis) {
+                        titleTextView.setText(LocaleController.getString("EmojiArchived", R.string.EmojiArchived));
+                        subtitleTextView.setText(LocaleController.formatString("EmojiArchivedInfo", R.string.EmojiArchivedInfo, stickerSet.title));
                     } else {
                         titleTextView.setText(LocaleController.getString("StickersArchived", R.string.StickersArchived));
                         subtitleTextView.setText(LocaleController.formatString("StickersArchivedInfo", R.string.StickersArchivedInfo, stickerSet.title));

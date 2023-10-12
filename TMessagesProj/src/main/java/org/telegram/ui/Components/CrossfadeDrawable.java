@@ -52,9 +52,17 @@ public class CrossfadeDrawable extends Drawable {
                     }
                 }
                 @Override
-                public void scheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable, long l) {}
+                public void scheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable, long l) {
+                    if (progress > 0.0f) {
+                        CrossfadeDrawable.this.scheduleSelf(runnable, l);
+                    }
+                }
                 @Override
-                public void unscheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable) {}
+                public void unscheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable) {
+                    if (progress > 0.0f) {
+                        CrossfadeDrawable.this.unscheduleSelf(runnable);
+                    }
+                }
             });
         }
     }

@@ -26,18 +26,28 @@ import org.telegram.ui.Components.SeekBarView;
 
 public class BrightnessControlCell extends FrameLayout {
 
+    public static final int TYPE_DEFAULT = 0;
+    public static final int TYPE_WALLPAPER_DIM = 1;
+    private final int size;
     private ImageView leftImageView;
     private ImageView rightImageView;
-    private SeekBarView seekBarView;
+    public final SeekBarView seekBarView;
+    private int type;
+    Theme.ResourcesProvider resourcesProvider;
 
-    public BrightnessControlCell(Context context) {
+    public BrightnessControlCell(Context context, int type) {
+        this(context, type, null);
+    }
+
+    public BrightnessControlCell(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.type = type;
+        this.resourcesProvider = resourcesProvider;
 
         leftImageView = new ImageView(context);
-        leftImageView.setImageResource(R.drawable.msg_brightness_low);
         addView(leftImageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 17, 12, 0, 0));
 
-        seekBarView = new SeekBarView(context, /* inPercents = */ true, null) {
+        seekBarView = new SeekBarView(context, /* inPercents = */ true, resourcesProvider) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -66,15 +76,23 @@ public class BrightnessControlCell extends FrameLayout {
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 54, 5, 54, 0));
 
         rightImageView = new ImageView(context);
-        rightImageView.setImageResource(R.drawable.msg_brightness_high);
         addView(rightImageView, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 12, 17, 0));
+        if (type == TYPE_DEFAULT) {
+            leftImageView.setImageResource(R.drawable.msg_brightness_low);
+            rightImageView.setImageResource(R.drawable.msg_brightness_high);
+            size = 48;
+        } else {
+            leftImageView.setImageResource(R.drawable.msg_brightness_high);
+            rightImageView.setImageResource(R.drawable.msg_brightness_low);
+            size = 43;
+        }
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        leftImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
-        rightImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        leftImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        rightImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
     }
 
     protected void didChangedValue(float value) {
@@ -83,7 +101,7 @@ public class BrightnessControlCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(size), MeasureSpec.EXACTLY));
     }
 
     public void setProgress(float value) {

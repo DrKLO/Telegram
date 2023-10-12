@@ -43,6 +43,8 @@ import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
@@ -109,25 +111,30 @@ public class SvgHelper {
         private Paint backgroundPaint;
         protected int width;
         protected int height;
-        private static int[] parentPosition = new int[2];
+        private static final int[] parentPosition = new int[2];
 
-        private Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         private static float totalTranslation;
         private static float gradientWidth;
         private static long lastUpdateTime;
         private static Runnable shiftRunnable;
         private static WeakReference<Drawable> shiftDrawable;
         private ImageReceiver parentImageReceiver;
-        private int[] currentColor = new int[2];
-        private String currentColorKey;
+        private final int[] currentColor = new int[2];
+        private int currentColorKey;
         private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
         SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
+
+        private static boolean lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+        public static void updateLiteValues() {
+            lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+        }
 
         private boolean aspectFill = true;
         private boolean aspectCenter = false;
@@ -161,12 +168,12 @@ public class SvgHelper {
         }
 
         public void drawInternal(Canvas canvas, boolean drawInBackground, int threadIndex, long time, float x, float y, float w, float h) {
-            if (currentColorKey != null) {
+            if (currentColorKey >= 0) {
                 setupGradient(currentColorKey, currentResourcesProvider, colorAlpha, drawInBackground);
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && lite) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {
@@ -313,11 +320,11 @@ public class SvgHelper {
             parentImageReceiver = imageReceiver;
         }
 
-        public void setupGradient(String colorKey, float alpha, boolean drawInBackground) {
+        public void setupGradient(int colorKey, float alpha, boolean drawInBackground) {
             setupGradient(colorKey, null, alpha, drawInBackground);
         }
 
-        public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
+        public void setupGradient(int colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
             int color = overrideColor == null ? Theme.getColor(colorKey, resourcesProvider) : overrideColor;
             int index = drawInBackground ? 1 : 0;
             currentResourcesProvider = resourcesProvider;
@@ -326,7 +333,7 @@ public class SvgHelper {
                 currentColorKey = colorKey;
                 currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
-                if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+                if (!lite) {
                     int color2 = ColorUtils.setAlphaComponent(currentColor[index], 70);
                     if (drawInBackground) {
                         if (backgroundPaint == null) {
@@ -380,11 +387,11 @@ public class SvgHelper {
             }
         }
 
-        public void setColorKey(String colorKey) {
+        public void setColorKey(int colorKey) {
             currentColorKey = colorKey;
         }
 
-        public void setColorKey(String colorKey, Theme.ResourcesProvider resourcesProvider) {
+        public void setColorKey(int colorKey, Theme.ResourcesProvider resourcesProvider) {
             currentColorKey = colorKey;
             currentResourcesProvider = resourcesProvider;
         }
@@ -436,6 +443,7 @@ public class SvgHelper {
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, color, false, scale);
+           ///handler.alphaOnly = true;
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -451,6 +459,9 @@ public class SvgHelper {
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
+            if (!white) {
+                handler.alphaOnly = true;
+            }
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -1111,6 +1122,7 @@ public class SvgHelper {
         boolean pushed = false;
 
         private HashMap<String, StyleSet> globalStyles = new HashMap<>();
+        private boolean alphaOnly;
 
         private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale) {
             globalScale = scale;
@@ -1270,7 +1282,7 @@ public class SvgHelper {
                         height *= scale;
                     }
                     if (drawable == null) {
-                        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                        bitmap = Bitmap.createBitmap(width, height, alphaOnly ? Bitmap.Config.ALPHA_8 : Bitmap.Config.ARGB_8888);
                         bitmap.eraseColor(0);
                         canvas = new Canvas(bitmap);
                         if (scale != 0) {

@@ -126,7 +126,7 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
             }
         }
         if (onComplete != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime);
+            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime, msgId);
         }
         if (errorText != nullptr) {
             jniEnv[instanceNum]->DeleteLocalRef(errorText);
@@ -144,6 +144,10 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
 
 void cancelRequest(JNIEnv *env, jclass c, jint instanceNum, jint token, jboolean notifyServer) {
     return ConnectionsManager::getInstance(instanceNum).cancelRequest(token, notifyServer);
+}
+
+void failNotRunningRequest(JNIEnv *env, jclass c, jint instanceNum, jint token) {
+    return ConnectionsManager::getInstance(instanceNum).failNotRunningRequest(token);
 }
 
 void cleanUp(JNIEnv *env, jclass c, jint instanceNum, jboolean resetKeys) {
@@ -214,7 +218,7 @@ void resumeNetwork(JNIEnv *env, jclass c, jint instanceNum, jboolean partial) {
 }
 
 void updateDcSettings(JNIEnv *env, jclass c, jint instanceNum) {
-    ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false);
+    ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false, false);
 }
 
 void setIpStrategy(JNIEnv *env, jclass c, jint instanceNum, jbyte value) {
@@ -352,6 +356,10 @@ void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstr
     socket->onHostNameResolved(h, i, false);
 }
 
+void discardConnection(JNIEnv *env, jclass c,  jint instanceNum, jint datacenerId, jint connectionType) {
+    ConnectionsManager::getInstance(instanceNum).reconnect(datacenerId, connectionType);
+}
+
 void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
 
@@ -469,7 +477,9 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setJava", "(Z)V", (void *) setJava},
         {"native_applyDnsConfig", "(IJLjava/lang/String;I)V", (void *) applyDnsConfig},
         {"native_checkProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/telegram/tgnet/RequestTimeDelegate;)J", (void *) checkProxy},
-        {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved}
+        {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved},
+        {"native_discardConnection", "(III)V", (void *) discardConnection},
+        {"native_failNotRunningRequest", "(II)V", (void *) failNotRunningRequest},
 };
 
 inline int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *methods, int methodsCount) {

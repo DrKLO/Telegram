@@ -20,6 +20,8 @@ import android.os.SystemClock;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -34,7 +36,7 @@ public class LoadingDrawable extends Drawable {
         this.resourcesProvider = resourcesProvider;
     }
 
-    public LoadingDrawable(String colorKey1, String colorKey2, Theme.ResourcesProvider resourcesProvider) {
+    public LoadingDrawable(int colorKey1, int colorKey2, Theme.ResourcesProvider resourcesProvider) {
         this();
         this.colorKey1 = colorKey1;
         this.colorKey2 = colorKey2;
@@ -93,8 +95,8 @@ public class LoadingDrawable extends Drawable {
     private Matrix matrix = new Matrix(), strokeMatrix = new Matrix();
     private int gradientColor1, gradientColor2;
     private int gradientStrokeColor1, gradientStrokeColor2;
-    public String colorKey1 = Theme.key_dialogBackground;
-    public String colorKey2 = Theme.key_dialogBackgroundGray;
+    public int colorKey1 = Theme.key_dialogBackground;
+    public int colorKey2 = Theme.key_dialogBackgroundGray;
     public boolean stroke;
     public Integer backgroundColor, color1, color2, strokeColor1, strokeColor2;
     private int gradientWidth;
@@ -171,8 +173,27 @@ public class LoadingDrawable extends Drawable {
         }
     }
 
+    public void setRadii(float[] radii) {
+        if (radii == null || radii.length != 8) {
+            return;
+        }
+        boolean changed = false;
+        for (int i = 0; i < 8; ++i) {
+            if (this.radii[i] != radii[i]) {
+                this.radii[i] = radii[i];
+                changed = true;
+            }
+        }
+        if (lastBounds != null && changed) {
+            path.rewind();
+            rectF.set(lastBounds);
+            path.addRoundRect(rectF, radii, Path.Direction.CW);
+        }
+    }
+
     public void setBounds(@NonNull RectF bounds) {
         super.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+        lastBounds = null;
     }
 
     public void reset() {
@@ -235,6 +256,7 @@ public class LoadingDrawable extends Drawable {
         float appearT = (now - start) / APPEAR_DURATION;
         float disappearT = disappearStart > 0 ? 1f - CubicBezierInterpolator.EASE_OUT.getInterpolation(Math.min(1, (now - disappearStart) / DISAPPEAR_DURATION)) : 0;
 
+        boolean disappearRestore = false;
         if (isDisappearing()) {
             int disappearGradientWidthNow = Math.max(AndroidUtilities.dp(200), bounds.width() / 3);
 
@@ -255,8 +277,10 @@ public class LoadingDrawable extends Drawable {
                 rectF.set(bounds);
                 rectF.inset(-strokePaint.getStrokeWidth(), -strokePaint.getStrokeWidth());
                 canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
+                disappearRestore = true;
             }
         }
+        boolean appearRestore = false;
         if (appearByGradient) {
             int appearGradientWidthNow = Math.max(AndroidUtilities.dp(200), bounds.width() / 3);
 
@@ -277,6 +301,7 @@ public class LoadingDrawable extends Drawable {
                 rectF.set(bounds);
                 rectF.inset(-strokePaint.getStrokeWidth(), -strokePaint.getStrokeWidth());
                 canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
+                appearRestore = true;
             }
         }
 
@@ -305,23 +330,23 @@ public class LoadingDrawable extends Drawable {
             canvas.drawPath(drawPath, strokePaint);
         }
 
-        if (isDisappearing() && disappearT < 1) {
-            canvas.save();
-            float appearOffset = disappearT * (disappearGradientWidth + bounds.width() + disappearGradientWidth) - disappearGradientWidth;
-            disappearMatrix.setTranslate(bounds.right - appearOffset, 0);
-            disappearGradient.setLocalMatrix(disappearMatrix);
-            int inset = (int) strokePaint.getStrokeWidth();
-            canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, disappearPaint);
-            canvas.restore();
-            canvas.restore();
-        }
-        if (appearByGradient && appearT < 1) {
+        if (appearRestore) {
             canvas.save();
             float appearOffset = appearT * (appearGradientWidth + bounds.width() + appearGradientWidth) - appearGradientWidth;
             appearMatrix.setTranslate(bounds.left + appearOffset, 0);
             appearGradient.setLocalMatrix(appearMatrix);
             int inset = (int) strokePaint.getStrokeWidth();
             canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, appearPaint);
+            canvas.restore();
+            canvas.restore();
+        }
+        if (disappearRestore) {
+            canvas.save();
+            float appearOffset = disappearT * (disappearGradientWidth + bounds.width() + disappearGradientWidth) - disappearGradientWidth;
+            disappearMatrix.setTranslate(bounds.right - appearOffset, 0);
+            disappearGradient.setLocalMatrix(disappearMatrix);
+            int inset = (int) strokePaint.getStrokeWidth();
+            canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, disappearPaint);
             canvas.restore();
             canvas.restore();
         }
@@ -345,6 +370,7 @@ public class LoadingDrawable extends Drawable {
     @Override
     public void setAlpha(int i) {
         paint.setAlpha(i);
+        strokePaint.setAlpha(i);
         if (i > 0) {
             invalidateSelf();
         }

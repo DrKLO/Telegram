@@ -368,22 +368,25 @@ import com.google.common.collect.ImmutableList;
           newPeriodInfo.copyWithRequestedContentPositionUs(
               oldPeriodInfo.requestedContentPositionUs);
 
-      if (!areDurationsCompatible(oldPeriodInfo.durationUs, newPeriodInfo.durationUs)) {
-        // The period duration changed. Remove all subsequent periods and check whether we read
-        // beyond the new duration.
-        periodHolder.updateClipping();
-        long newDurationInRendererTime =
-            newPeriodInfo.durationUs == C.TIME_UNSET
-                ? Long.MAX_VALUE
-                : periodHolder.toRendererTime(newPeriodInfo.durationUs);
-        boolean isReadingAndReadBeyondNewDuration =
-            periodHolder == reading
-                && !periodHolder.info.isFollowedByTransitionToSameStream
-                && (maxRendererReadPositionUs == C.TIME_END_OF_SOURCE
-                    || maxRendererReadPositionUs >= newDurationInRendererTime);
-        boolean readingPeriodRemoved = removeAfter(periodHolder);
-        return !readingPeriodRemoved && !isReadingAndReadBeyondNewDuration;
-      }
+      //@xaxtix
+      //comment cause lead to infinit seek loop in end of video
+
+//      if (!areDurationsCompatible(oldPeriodInfo.durationUs, newPeriodInfo.durationUs)) {
+//        // The period duration changed. Remove all subsequent periods and check whether we read
+//        // beyond the new duration.
+//        periodHolder.updateClipping();
+//        long newDurationInRendererTime =
+//                newPeriodInfo.durationUs == C.TIME_UNSET
+//                        ? Long.MAX_VALUE
+//                        : periodHolder.toRendererTime(newPeriodInfo.durationUs);
+//        boolean isReadingAndReadBeyondNewDuration =
+//                periodHolder == reading
+//                        && !periodHolder.info.isFollowedByTransitionToSameStream
+//                        && (maxRendererReadPositionUs == C.TIME_END_OF_SOURCE
+//                        || maxRendererReadPositionUs >= newDurationInRendererTime);
+//        boolean readingPeriodRemoved = removeAfter(periodHolder);
+//        return !readingPeriodRemoved && !isReadingAndReadBeyondNewDuration;
+//      }
 
       previousPeriodHolder = periodHolder;
       periodHolder = periodHolder.getNext();

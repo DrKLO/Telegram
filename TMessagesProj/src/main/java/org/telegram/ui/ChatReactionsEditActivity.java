@@ -273,7 +273,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             return;
         }
         if (enableReactionsCell != null) {
-            boolean checked = selectType == SELECT_TYPE_SOME;
+            boolean checked = selectType == SELECT_TYPE_SOME || selectType == SELECT_TYPE_ALL;
             enableReactionsCell.setChecked(checked);
             int clr = Theme.getColor(checked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
             if (checked) {
@@ -365,7 +365,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
                 Theme.key_listSelector,
                 Theme.key_windowBackgroundGray,
                 Theme.key_windowBackgroundWhiteGrayText4,
-                Theme.key_windowBackgroundWhiteRedText4,
+                Theme.key_text_RedRegular,
                 Theme.key_windowBackgroundChecked,
                 Theme.key_windowBackgroundCheckText,
                 Theme.key_switchTrackBlue,

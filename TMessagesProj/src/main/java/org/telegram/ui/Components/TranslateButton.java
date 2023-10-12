@@ -44,6 +44,7 @@ public class TranslateButton extends FrameLayout {
     private Theme.ResourcesProvider resourcesProvider;
 
     private AnimatedTextView textView;
+    private final Drawable translateDrawable;
     public final SpannableString translateIcon;
 
     private ImageView menuView;
@@ -64,19 +65,17 @@ public class TranslateButton extends FrameLayout {
 
         textView = new AnimatedTextView(context, true, true, false);
         textView.setAnimationProperties(.3f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
-        textView.setTextColor(Theme.getColor(Theme.key_chat_addContact, resourcesProvider));
+
         textView.setTextSize(AndroidUtilities.dp(15));
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
         textView.setIgnoreRTL(!LocaleController.isRTL);
         textView.adaptWidth = false;
-        textView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, 3));
         textView.setOnClickListener(e -> onButtonClick());
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        final Drawable translateDrawable = getContext().getResources().getDrawable(R.drawable.msg_translate).mutate();
-        translateDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        translateDrawable = getContext().getResources().getDrawable(R.drawable.msg_translate).mutate();
         translateDrawable.setBounds(0, AndroidUtilities.dp(-8), AndroidUtilities.dp(20), AndroidUtilities.dp(20 - 8));
         translateIcon = new SpannableString("x");
         translateIcon.setSpan(new ImageSpan(translateDrawable, DynamicDrawableSpan.ALIGN_BOTTOM), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -84,8 +83,6 @@ public class TranslateButton extends FrameLayout {
         menuView = new ImageView(context);
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
-        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
-        menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         menuView.setOnClickListener(e -> {
             if (UserConfig.getInstance(currentAccount).isPremium()) {
                 onMenuClick();
@@ -94,6 +91,16 @@ public class TranslateButton extends FrameLayout {
             }
         });
         addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
+
+        updateColors();
+    }
+
+    public void updateColors() {
+        textView.setTextColor(Theme.getColor(Theme.key_chat_addContact, resourcesProvider));
+        textView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, 3));
+        menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        translateDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
     }
 
     protected void onButtonClick() {

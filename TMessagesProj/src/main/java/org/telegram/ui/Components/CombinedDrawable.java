@@ -62,6 +62,16 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
         }
     }
 
+    public void setBackgroundDrawable(Drawable backgroundDrawable) {
+        background = backgroundDrawable;
+        invalidateSelf();
+    }
+
+    public void setIconDrawable(Drawable iconDrawable) {
+        icon = iconDrawable;
+        invalidateSelf();
+    }
+
     public void setCustomSize(int width, int height) {
         backWidth = width;
         backHeight = height;
@@ -125,8 +135,10 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
 
     @Override
     public void draw(Canvas canvas) {
-        background.setBounds(getBounds());
-        background.draw(canvas);
+        if (background != null) {
+            background.setBounds(getBounds());
+            background.draw(canvas);
+        }
         if (icon != null) {
             if (fullSize) {
                 android.graphics.Rect bounds = getBounds();

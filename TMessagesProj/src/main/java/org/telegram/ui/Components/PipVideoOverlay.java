@@ -44,6 +44,7 @@ import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
@@ -315,11 +316,12 @@ public class PipVideoOverlay {
         controlsAnimator.start();
     }
 
-    public static void dimissAndDestroy() {
+    public static void dismissAndDestroy() {
         if (instance.parentSheet != null) {
             instance.parentSheet.destroy();
         } else if (instance.photoViewer != null) {
             instance.photoViewer.destroyPhotoViewer();
+            MediaController.getInstance().tryResumePausedAudio();
         }
         dismiss();
     }
@@ -329,10 +331,14 @@ public class PipVideoOverlay {
     }
 
     public static void dismiss(boolean animate) {
-        instance.dismissInternal(animate);
+        instance.dismissInternal(animate, false);
     }
 
-    private void dismissInternal(boolean animate) {
+    public static void dismiss(boolean animate, boolean immediate) {
+        instance.dismissInternal(animate, immediate);
+    }
+
+    private void dismissInternal(boolean animate, boolean immediate) {
         if (isDismissing) {
             return;
         }
@@ -354,7 +360,11 @@ public class PipVideoOverlay {
 
         // Animate is a flag for PhotoViewer transition, not ours
         if (animate || contentView == null) {
-            AndroidUtilities.runOnUIThread(this::onDismissedInternal, 100);
+            if (immediate) {
+                onDismissedInternal();
+            } else {
+                AndroidUtilities.runOnUIThread(this::onDismissedInternal, 100);
+            }
         } else {
             AnimatorSet set = new AnimatorSet();
             set.setDuration(250);
@@ -753,14 +763,14 @@ public class PipVideoOverlay {
 
             @Override
             public boolean onSingleTapUp(MotionEvent e) {
-                if (!hasDoubleTap()) {
+                if (!hasDoubleTap(e)) {
                     return onSingleTapConfirmed(e);
                 }
                 return super.onSingleTapUp(e);
             }
 
             @Override
-            public boolean hasDoubleTap() {
+            public boolean hasDoubleTap(MotionEvent e) {
                 if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
                     return false;
                 }
@@ -894,7 +904,7 @@ public class PipVideoOverlay {
                     if (onSideToDismiss) {
                         onSideToDismiss = false;
 
-                        dimissAndDestroy();
+                        dismissAndDestroy();
                     } else {
                         if (!pipXSpring.isRunning()) {
                             pipXSpring.setStartValue(pipX)
@@ -1028,7 +1038,7 @@ public class PipVideoOverlay {
         closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         closeButton.setPadding(padding, padding, padding, padding);
-        closeButton.setOnClickListener(v -> dimissAndDestroy());
+        closeButton.setOnClickListener(v -> dismissAndDestroy());
         controlsView.addView(closeButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, margin, 0));
 
         ImageView expandButton = new ImageView(context);

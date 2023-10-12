@@ -1,6 +1,9 @@
 package org.telegram;
 
+import org.telegram.messenger.FileLog;
+
 import java.util.Comparator;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -21,8 +24,21 @@ public class DispatchQueuePriority {
             }
             return priority2 - priority1;
         }
-    }));
+    })) {
+        @Override
+        protected void beforeExecute(Thread t, Runnable r) {
+            CountDownLatch latch = pauseLatch;
+            if (latch != null) {
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+    };
 
+    private volatile CountDownLatch pauseLatch;
 
     public DispatchQueuePriority(String threadName) {
 
@@ -41,14 +57,11 @@ public class DispatchQueuePriority {
     }
 
     public Runnable postRunnable(Runnable runnable, int priority) {
-        if (priority == 1) {
-            postRunnable(runnable);
-            return runnable;
-        } else {
-            PriorityRunnable priorityRunnable = new PriorityRunnable(priority, runnable);
-            threadPoolExecutor.execute(priorityRunnable);
-            return priorityRunnable;
+        if (priority != 1) {
+            runnable = new PriorityRunnable(priority, runnable);
         }
+        postRunnable(runnable);
+        return runnable;
     }
 
     public void cancelRunnable(Runnable runnable) {
@@ -56,7 +69,20 @@ public class DispatchQueuePriority {
             return;
         }
         threadPoolExecutor.remove(runnable);
+    }
 
+    public void pause() {
+        if (pauseLatch == null) {
+            pauseLatch = new CountDownLatch(1);
+        }
+    }
+
+    public void resume() {
+        CountDownLatch latch = pauseLatch;
+        if (latch != null) {
+            latch.countDown();
+            pauseLatch = null;
+        }
     }
 
     private static class PriorityRunnable implements Runnable {

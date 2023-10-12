@@ -3,21 +3,13 @@ package org.telegram.ui.Components;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.os.Build;
 import android.text.TextUtils;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.graphics.ColorUtils;
-import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -38,9 +30,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.SharedAudioCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
@@ -530,12 +520,9 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                         });
                     }
                 } else if (position == recentFilesHeader) {
-                    graySectionCell.setText(LocaleController.getString("RecentlyDownloaded", R.string.RecentlyDownloaded), LocaleController.getString("Settings", R.string.Settings), new OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            showSettingsDialog();
-                        }
-                    });
+                    graySectionCell.setText(LocaleController.getString("RecentlyDownloaded", R.string.RecentlyDownloaded), LocaleController.getString("Settings", R.string.Settings),
+                            view -> DownloadsInfoBottomSheet.show(parentActivity, parentFragment)
+                    );
                 }
             } else {
                 MessageObject messageObject = getMessage(position);
@@ -594,82 +581,6 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             return holder.getItemViewType() == 1 || holder.getItemViewType() == 2;
         }
-    }
-
-    private void showSettingsDialog() {
-        if (parentFragment == null || parentActivity == null) {
-            return;
-        }
-        BottomSheet bottomSheet = new BottomSheet(parentActivity, false);
-        Context context = parentFragment.getParentActivity();
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-
-        StickerImageView imageView = new StickerImageView(context, currentAccount);
-        imageView.setStickerNum(9);
-        imageView.getImageReceiver().setAutoRepeat(1);
-        linearLayout.addView(imageView, LayoutHelper.createLinear(144, 144, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
-
-        TextView title = new TextView(context);
-        title.setGravity(Gravity.CENTER_HORIZONTAL);
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        title.setText(LocaleController.getString("DownloadedFiles", R.string.DownloadedFiles));
-        linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 30, 21, 0));
-
-        TextView description = new TextView(context);
-        description.setGravity(Gravity.CENTER_HORIZONTAL);
-        description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        description.setTextColor(Theme.getColor(Theme.key_dialogTextHint));
-        description.setText(LocaleController.formatString("DownloadedFilesMessage", R.string.DownloadedFilesMessage));
-        linearLayout.addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 15, 21, 16));
-
-
-        TextView buttonTextView = new TextView(context);
-        buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
-        buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setText(LocaleController.getString("ManageDeviceStorage", R.string.ManageDeviceStorage));
-
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
-
-        linearLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 16, 15, 16, 16));
-
-
-        TextView buttonTextView2 = new TextView(context);
-        buttonTextView2.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
-        buttonTextView2.setGravity(Gravity.CENTER);
-        buttonTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView2.setText(LocaleController.getString("ClearDownloadsList", R.string.ClearDownloadsList));
-
-        buttonTextView2.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        buttonTextView2.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));
-
-        linearLayout.addView(buttonTextView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 16, 0, 16, 16));
-
-        NestedScrollView scrollView = new NestedScrollView(context);
-        scrollView.addView(linearLayout);
-        bottomSheet.setCustomView(scrollView);
-        bottomSheet.show();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            AndroidUtilities.setLightStatusBar(bottomSheet.getWindow(), !Theme.isCurrentThemeDark());
-            AndroidUtilities.setLightNavigationBar(bottomSheet.getWindow(), !Theme.isCurrentThemeDark());
-        }
-
-        buttonTextView.setOnClickListener(view -> {
-            bottomSheet.dismiss();
-            if (parentFragment != null) {
-                parentFragment.presentFragment(new CacheControlActivity());
-            }
-        });
-        buttonTextView2.setOnClickListener(view -> {
-            bottomSheet.dismiss();
-            DownloadController.getInstance(currentAccount).clearRecentDownloadedFiles();
-        });
-        //parentFragment.showDialog(bottomSheet);
     }
 
     @Override

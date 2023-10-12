@@ -195,7 +195,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         super.onViewCreated(containerView);
         currentAccount = UserConfig.selectedAccount;
 
-        PremiumButtonView premiumButtonView = new PremiumButtonView(getContext(), false);
+        PremiumButtonView premiumButtonView = new PremiumButtonView(getContext(), false, resourcesProvider);
         premiumButtonView.setButton(PremiumPreviewFragment.getPremiumButtonText(currentAccount, null), v -> {
             PremiumPreviewFragment.sentPremiumButtonClick();
             PremiumPreviewFragment.buyPremium(fragment, "profile");

@@ -53,7 +53,6 @@ public class DialogsHintCell extends FrameLayout {
 
         chevronView = new ImageView(context);
         chevronView.setImageResource(R.drawable.arrow_newchat);
-        chevronView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         addView(chevronView, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
 
         updateColors();
@@ -62,6 +61,7 @@ public class DialogsHintCell extends FrameLayout {
     public void updateColors() {
         titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        chevronView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         setBackground(Theme.AdaptiveRipple.filledRect());
     }
 

@@ -225,7 +225,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
         String artworkUrl = messageObject.getArtworkUrl(true);
         String artworkUrlBig = messageObject.getArtworkUrl(false);
-        long duration = messageObject.getDuration() * 1000;
+        long duration = (long) (messageObject.getDuration() * 1000);
 
         Bitmap albumArt = audioInfo != null ? audioInfo.getSmallCover() : null;
         Bitmap fullAlbumArt = audioInfo != null ? audioInfo.getCover() : null;

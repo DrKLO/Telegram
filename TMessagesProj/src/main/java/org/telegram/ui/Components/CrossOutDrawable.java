@@ -27,7 +27,7 @@ public class CrossOutDrawable extends Drawable {
     final Paint xRefPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     int color;
-    String colorKey;
+    int colorKey;
     float progress;
     boolean cross;
 
@@ -35,7 +35,7 @@ public class CrossOutDrawable extends Drawable {
     private float lenOffsetTop;
     private float lenOffsetBottom;
 
-    public CrossOutDrawable(Context context, int iconRes, String colorKey) {
+    public CrossOutDrawable(Context context, int iconRes, int colorKey) {
         iconDrawable = ContextCompat.getDrawable(context, iconRes);
         this.colorKey = colorKey;
         paint.setStyle(Paint.Style.STROKE);
@@ -74,7 +74,7 @@ public class CrossOutDrawable extends Drawable {
                 progress = 0;
             }
         }
-        int newColor = colorKey == null ? Color.WHITE : Theme.getColor(colorKey);
+        int newColor = colorKey < 0 ? Color.WHITE : Theme.getColor(colorKey);
         if (color != newColor) {
             color = newColor;
             paint.setColor(newColor);
@@ -136,7 +136,7 @@ public class CrossOutDrawable extends Drawable {
         return PixelFormat.TRANSPARENT;
     }
 
-    public void setColorKey(String colorKey) {
+    public void setColorKey(int colorKey) {
         this.colorKey = colorKey;
     }
 

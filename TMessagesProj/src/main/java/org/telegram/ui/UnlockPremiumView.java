@@ -43,7 +43,7 @@ public class UnlockPremiumView extends FrameLayout {
         }
         linearLayout.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 17, 17, 16));
 
-        premiumButtonView = new PremiumButtonView(context, false);
+        premiumButtonView = new PremiumButtonView(context, false, resourcesProvider);
 
         String text;
         if (type == TYPE_STICKERS) {

@@ -44,13 +44,16 @@ public class CellFlickerDrawable {
     Runnable onRestartCallback;
 
     public CellFlickerDrawable() {
-        this(64, 204);
+        this(64, 204, 160);
     }
 
-    public CellFlickerDrawable(int a1, int a2) {
-        size = AndroidUtilities.dp(160);
-        gradientShader = new LinearGradient(0, 0, size, 0, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, a1), Color.TRANSPARENT}, null, Shader.TileMode.CLAMP);
-        gradientShader2 = new LinearGradient(0, 0, size, 0, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, a2), Color.TRANSPARENT}, null, Shader.TileMode.CLAMP);
+    public CellFlickerDrawable(int a1, int a) {
+        this(a1, a, 160);
+    }
+    public CellFlickerDrawable(int a1, int a2, int size) {
+        this.size = AndroidUtilities.dp(size);
+        gradientShader = new LinearGradient(0, 0, this.size, 0, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, a1), Color.TRANSPARENT}, null, Shader.TileMode.CLAMP);
+        gradientShader2 = new LinearGradient(0, 0, this.size, 0, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, a2), Color.TRANSPARENT}, null, Shader.TileMode.CLAMP);
         paint.setShader(gradientShader);
         paintOutline.setShader(gradientShader2);
         paintOutline.setStyle(Paint.Style.STROKE);
@@ -96,32 +99,27 @@ public class CellFlickerDrawable {
     }
 
     private void update(View view) {
-        if (progress > 1f && !repeatEnabled) {
-            return;
-        }
-        if (view != null) {
-            view.invalidate();
-        }
-        long currentTime = System.currentTimeMillis();
-        if (lastUpdateTime != 0) {
-            long dt = currentTime - lastUpdateTime;
-            if (dt > 10) {
-                progress += (dt / 1200f) * animationSpeedScale;
-                if (progress > repeatProgress) {
-                    progress = 0;
-                    if (onRestartCallback != null) {
-                        onRestartCallback.run();
+        if (repeatEnabled || progress < 1) {
+            if (view != null) {
+                view.invalidate();
+            }
+            long currentTime = System.currentTimeMillis();
+            if (lastUpdateTime != 0) {
+                long dt = currentTime - lastUpdateTime;
+                if (dt > 10) {
+                    progress += (dt / 1200f) * animationSpeedScale;
+                    if (progress > repeatProgress) {
+                        progress = 0;
+                        if (onRestartCallback != null) {
+                            onRestartCallback.run();
+                        }
                     }
+                    lastUpdateTime = currentTime;
                 }
+            } else {
                 lastUpdateTime = currentTime;
             }
-        } else {
-            lastUpdateTime = currentTime;
         }
-
-//        if (progress > 1f) {
-//            return;
-//        }
 
         float x = (parentWidth + size * 2) * progress - size;
         matrix.reset();
@@ -179,6 +177,11 @@ public class CellFlickerDrawable {
 
     public void setOnRestartCallback(Runnable runnable) {
         onRestartCallback = runnable;
+    }
+
+    public void setAlpha(int alpha) {
+        paint.setAlpha(alpha);
+        paintOutline.setAlpha(alpha);
     }
 
     public class DrawableInterface extends Drawable {

@@ -1,40 +1,50 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
+import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public final static int STICKER_TYPE_NO_CONTACTS = 0;
     public final static int STICKER_TYPE_SEARCH = 1;
-    public final static int STICKER_TYPE_DONE = 2;
+    public final static int STICKER_TYPE_ALBUM = 11;
+    public final static int STICKER_TYPE_PRIVACY = 12;
+    public final static int STICKER_TYPE_DONE = 16;
 
-    private LinearLayout linearLayout;
+    public LinearLayout linearLayout;
     public BackupImageView stickerView;
     private RadialProgressView progressBar;
     public final TextView title;
-    public final TextView subtitle;
+    public final LinkSpanDrawable.LinksTextView subtitle;
     private boolean progressShowing;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -101,9 +111,10 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setGravity(Gravity.CENTER);
 
-        subtitle = new TextView(context);
+        subtitle = new LinkSpanDrawable.LinksTextView(context);
         subtitle.setTag(Theme.key_windowBackgroundWhiteGrayText);
         subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        subtitle.setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitle.setGravity(Gravity.CENTER);
 
@@ -119,6 +130,37 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             progressBar.setScaleX(0.5f);
             addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
+    }
+
+    public void createButtonLayout(CharSequence sting, Runnable action) {
+        ((LinearLayout.LayoutParams) subtitle.getLayoutParams()).topMargin = AndroidUtilities.dp(12);
+        TextView buttonTextView = new TextView(getContext());
+        buttonTextView.setText(sting);
+        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        buttonTextView.setPadding(AndroidUtilities.dp(45), AndroidUtilities.dp(12), AndroidUtilities.dp(45), AndroidUtilities.dp(12));
+        buttonTextView.setGravity(Gravity.CENTER);
+        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+
+        FrameLayout buttonLayout = new FrameLayout(getContext()) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+                return true;
+            }
+        };
+        buttonLayout.setOnClickListener(v -> {
+            AndroidUtilities.runOnUIThread(action, 100);
+        });
+        buttonLayout.setBackground(
+                Theme.createSimpleSelectorRoundRectDrawable(dp(8),
+                        Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                        ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider), 30))
+        );
+        ScaleStateListAnimator.apply(buttonLayout, 0.05f, 1.5f);
+        buttonLayout.addView(buttonTextView);
+        linearLayout.setClipChildren(false);
+        linearLayout.addView(buttonLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 28, 0, 4));
     }
 
     private int lastH;
@@ -142,9 +184,9 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         lastH = getMeasuredHeight();
     }
 
-    String colorKey1 = Theme.key_emptyListPlaceholder;
+    int colorKey1 = Theme.key_emptyListPlaceholder;
 
-    public void setColors(String titleKey, String subtitleKey, String key1, String key2) {
+    public void setColors(int titleKey, int subtitleKey, int key1, int key2) {
         title.setTag(titleKey);
         title.setTextColor(getThemedColor(titleKey));
 
@@ -159,6 +201,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             if (visibility == VISIBLE) {
                 if (progressShowing) {
                     linearLayout.animate().alpha(0f).scaleY(0.8f).scaleX(0.8f).setDuration(150).start();
+                    progressView.animate().setListener(null).cancel();
                     progressView.setVisibility(VISIBLE);
                     progressView.setAlpha(1f);
                     //showProgressRunnable.run();
@@ -232,7 +275,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             if (set == null) {
                 set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
             }
-            if (set != null && stickerType >= 0 && stickerType < set.documents.size() ) {
+            if (set != null && stickerType >= 0 && stickerType < set.documents.size()) {
                 document = set.documents.get(stickerType);
             }
             imageFilter = "130_130";
@@ -369,9 +412,8 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void setStickerType(int stickerType) {
@@ -380,4 +422,37 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             setSticker();
         }
     }
+
+    public void setSubtitle(CharSequence text) {
+        int whitespaceCount = getWhitespaceCount(text);
+        if (whitespaceCount > 4 && text.length() > 20) {
+            int closestToCenterWhitespace = -1;
+            int closestValue = 0;
+            int centerIndex = text.length() >> 1;
+            for (int i = 0; i < text.length(); i++) {
+                if (Character.isWhitespace(text.charAt(i))) {
+                    int value = Math.abs(centerIndex - i);
+                    if (closestToCenterWhitespace == -1 || value < closestValue) {
+                        closestValue = value;
+                        closestToCenterWhitespace = i;
+                    }
+                }
+            }
+            if (closestToCenterWhitespace > 0) {
+                text = text.subSequence(0, closestToCenterWhitespace) + "\n" + text.subSequence(closestToCenterWhitespace + 1, text.length());
+            }
+        }
+        subtitle.setText(text);
+    }
+
+    private int getWhitespaceCount(CharSequence text) {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.isWhitespace(text.charAt(i))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
 }

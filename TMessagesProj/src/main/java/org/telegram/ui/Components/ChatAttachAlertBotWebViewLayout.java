@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.ui.Components.Bulletin.DURATION_PROLONG;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -37,6 +39,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -92,7 +95,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             prolongWebView.query_id = queryId;
             prolongWebView.silent = silent;
             if (replyToMsgId != 0) {
-                prolongWebView.reply_to_msg_id = replyToMsgId;
+                prolongWebView.reply_to = SendMessagesHelper.creteReplyInput(replyToMsgId);
                 prolongWebView.flags |= 1;
             }
 
@@ -119,6 +122,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             }));
         }
     };
+    private boolean hasCustomActionBarBackground;
+    private int customActionBarBackground;
 
     public ChatAttachAlertBotWebViewLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
         super(alert, context, resourcesProvider);
@@ -177,6 +182,11 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                     }
                 }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            public void onWebViewCreated() {
+                swipeContainer.setWebView(webViewContainer.getWebView());
             }
         };
         swipeContainer = new WebViewSwipeContainer(context) {
@@ -248,7 +258,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                     .create();
             dialog.show();
             TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            textView.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+            textView.setTextColor(getThemedColor(Theme.key_text_RedBold));
             return false;
         } else {
             parentAlert.dismiss();
@@ -269,6 +279,21 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     @Override
     public int getCustomBackground() {
         return customBackground;
+    }
+
+    @Override
+    boolean hasCustomActionBarBackground() {
+        return hasCustomActionBarBackground;
+    }
+
+    @Override
+    int getCustomActionBarBackground() {
+        return customActionBarBackground;
+    }
+
+    public void setCustomActionBarBackground(int customActionBarBackground) {
+        hasCustomActionBarBackground = true;
+        this.customActionBarBackground = customActionBarBackground;
     }
 
     public boolean canExpandByRequest() {
@@ -454,7 +479,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         }
 
         if (replyToMsgId != 0) {
-            req.reply_to_msg_id = replyToMsgId;
+            req.reply_to = SendMessagesHelper.creteReplyInput(replyToMsgId);
             req.flags |= 1;
         }
 
@@ -480,7 +505,6 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                 TLRPC.TL_webViewResultUrl resultUrl = (TLRPC.TL_webViewResultUrl) response;
                 queryId = resultUrl.query_id;
                 webViewContainer.loadUrl(currentAccount, resultUrl.url);
-                swipeContainer.setWebView(webViewContainer.getWebView());
 
                 AndroidUtilities.runOnUIThread(pollRunnable);
             }
@@ -620,6 +644,34 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         } else if (id == NotificationCenter.didSetNewTheme) {
             webViewContainer.updateFlickerBackgroundColor(getThemedColor(Theme.key_dialogBackground));
         }
+    }
+
+    public void showJustAddedBulletin() {
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
+        TLRPC.TL_attachMenuBot currentBot = null;
+        for (TLRPC.TL_attachMenuBot bot : MediaDataController.getInstance(currentAccount).getAttachMenuBots().bots) {
+            if (bot.bot_id == botId) {
+                currentBot = bot;
+                break;
+            }
+        }
+        if (currentBot == null) {
+            return;
+        }
+        String str;
+        if (currentBot.show_in_side_menu && currentBot.show_in_attach_menu) {
+            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttachAndSide", R.string.BotAttachMenuShortcatAddedAttachAndSide, user.first_name);
+        } else if (currentBot.show_in_side_menu) {
+            str = LocaleController.formatString("BotAttachMenuShortcatAddedSide", R.string.BotAttachMenuShortcatAddedSide, user.first_name);
+        } else {
+            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttach", R.string.BotAttachMenuShortcatAddedAttach, user.first_name);
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+        BulletinFactory.of(parentAlert.getContainer(), resourcesProvider)
+                .createSimpleBulletin(R.raw.contact_check, AndroidUtilities.replaceTags(str))
+                .setDuration(DURATION_PROLONG)
+                .show(true);
+        }, 200);
     }
 
     public static class WebViewSwipeContainer extends FrameLayout {
@@ -844,6 +896,11 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             if (scrollListener != null) {
                 scrollListener.run();
             }
+
+            if (Bulletin.getVisibleBulletin() != null) {
+                Bulletin bulletin = Bulletin.getVisibleBulletin();
+                bulletin.updatePosition();
+            }
         }
 
         public float getTopActionBarOffsetY() {
@@ -986,9 +1043,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             bluePaint.setStrokeCap(Paint.Cap.ROUND);
         }
 
-        protected int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
 
         @Override

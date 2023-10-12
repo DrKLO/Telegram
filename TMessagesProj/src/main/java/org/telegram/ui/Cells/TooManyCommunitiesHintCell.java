@@ -61,7 +61,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
             @Override
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
-                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                paint.setColor(Theme.getColor(Theme.key_text_RedRegular));
 
                 canvas.save();
                 canvas.translate(getMeasuredWidth() - textPaint.measureText(s) - AndroidUtilities.dp(8), AndroidUtilities.dpf2(7f));

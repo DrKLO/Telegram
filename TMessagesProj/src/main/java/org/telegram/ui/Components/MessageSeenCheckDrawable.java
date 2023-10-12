@@ -8,10 +8,8 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 
@@ -23,33 +21,33 @@ public class MessageSeenCheckDrawable {
     private float lastDensity;
 
     private int resId;
-    private String colorKey;
+    private int colorKey;
 
     private int w = -1, h = -1;
     private float oy = 4.66f;
 
-    public MessageSeenCheckDrawable(int resId, String colorKey) {
+    public MessageSeenCheckDrawable(int resId, int colorKey) {
         this.resId = resId;
         this.colorKey = colorKey;
     }
 
-    public MessageSeenCheckDrawable(int resId, String colorKey, int w, int h) {
+    public MessageSeenCheckDrawable(int resId, int colorKey, int w, int h) {
         this(resId, colorKey);
         this.w = w;
         this.h = h;
     }
 
-    public MessageSeenCheckDrawable(int resId, String colorKey, int w, int h, float oy) {
+    public MessageSeenCheckDrawable(int resId, int colorKey, int w, int h, float oy) {
         this(resId, colorKey);
         this.w = w;
         this.h = h;
         this.oy = oy;
     }
 
-    public CharSequence getSpanned(Context context) {
+    public CharSequence getSpanned(Context context, Theme.ResourcesProvider resourcesProvider) {
         if (lastSpanned != null && drawable != null && AndroidUtilities.density == lastDensity) {
-            if (lastColor != Theme.getColor(colorKey)) {
-                drawable.setColorFilter(new PorterDuffColorFilter(lastColor = Theme.getColor(colorKey), PorterDuff.Mode.SRC_IN));
+            if (lastColor != Theme.getColor(colorKey, resourcesProvider)) {
+                drawable.setColorFilter(new PorterDuffColorFilter(lastColor = Theme.getColor(colorKey, resourcesProvider), PorterDuff.Mode.SRC_IN));
             }
             return lastSpanned;
         }
@@ -59,7 +57,7 @@ public class MessageSeenCheckDrawable {
         SpannableStringBuilder str = new SpannableStringBuilder("v ");
         lastDensity = AndroidUtilities.density;
         drawable = context.getResources().getDrawable(resId).mutate();
-        drawable.setColorFilter(new PorterDuffColorFilter(lastColor = Theme.getColor(colorKey), PorterDuff.Mode.SRC_IN));
+        drawable.setColorFilter(new PorterDuffColorFilter(lastColor = Theme.getColor(colorKey, resourcesProvider), PorterDuff.Mode.SRC_IN));
         final int w = this.w <= 0 ? drawable.getIntrinsicWidth() : AndroidUtilities.dp(this.w);
         final int h = this.h <= 0 ? drawable.getIntrinsicHeight() : AndroidUtilities.dp(this.h);
         final int oy = AndroidUtilities.dp(this.oy);

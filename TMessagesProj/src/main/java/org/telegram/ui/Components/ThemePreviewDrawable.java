@@ -10,6 +10,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.util.SparseIntArray;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -20,7 +21,6 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
-import java.util.HashMap;
 
 public class ThemePreviewDrawable extends BitmapDrawable {
 
@@ -42,8 +42,8 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         Bitmap bitmap = Bitmaps.createBitmap(560, 678, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
-        HashMap<String, Integer> baseColors = Theme.getThemeFileValues(null, themeDocument.baseTheme.assetName, null);
-        HashMap<String, Integer> colors = new HashMap<>(baseColors);
+        SparseIntArray baseColors = Theme.getThemeFileValues(null, themeDocument.baseTheme.assetName, null);
+        SparseIntArray colors = baseColors.clone();
         themeDocument.accent.fillAccentColors(baseColors, colors);
 
         int actionBarColor = Theme.getPreviewColor(colors, Theme.key_actionBarDefault);
@@ -76,7 +76,7 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         for (int a = 0; a < 2; a++) {
             messageDrawable[a] = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_PREVIEW, a == 1, false) {
                 @Override
-                protected int getColor(String key) {
+                protected int getColor(int key) {
                     Integer color = colors.get(key);
                     if (color == null) {
                         return Theme.getColor(key);
@@ -85,7 +85,7 @@ public class ThemePreviewDrawable extends BitmapDrawable {
                 }
 
                 @Override
-                protected Integer getCurrentColor(String key) {
+                protected int getCurrentColor(int key) {
                     return colors.get(key);
                 }
             };

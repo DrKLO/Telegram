@@ -16,6 +16,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Size;
 
@@ -58,10 +59,6 @@ public class Painting {
     private Brush brush;
     private HashMap<Integer, Texture> brushTextures = new HashMap<>();
     private Texture bitmapTexture;
-    private Texture bluredTexture;
-    private Bitmap imageBitmap;
-    private int imageBitmapRotation;
-    private Bitmap bluredBitmap;
     private ByteBuffer vertexBuffer;
     private ByteBuffer textureBuffer;
     private int reusableFramebuffer;
@@ -78,8 +75,19 @@ public class Painting {
     private float[] projection;
     private float[] renderProjection;
 
-    public Painting(Size sz, Bitmap originalBitmap, int originalRotation) {
+    private Texture bluredTexture;
+    private Bitmap imageBitmap;
+    private int imageBitmapRotation;
+    private Bitmap bluredBitmap;
+
+    private Texture bitmapBlurTexture;
+    public boolean hasBlur;
+
+    private final BlurringShader.BlurManager blurManager;
+
+    public Painting(Size sz, Bitmap originalBitmap, int originalRotation, BlurringShader.BlurManager blurManager) {
         renderState = new RenderState();
+        this.blurManager = blurManager;
 
         size = sz;
         imageBitmap = originalBitmap;
@@ -147,11 +155,18 @@ public class Painting {
     }
 
     public void setBitmap(Bitmap bitmap) {
-        if (bitmapTexture != null) {
-            return;
+        if (bitmapTexture == null) {
+            bitmapTexture = new Texture(bitmap);
         }
+    }
 
-        bitmapTexture = new Texture(bitmap);
+    public void setBitmap(Bitmap bitmap, Bitmap blurBitmap) {
+        if (bitmapTexture == null) {
+            bitmapTexture = new Texture(bitmap);
+        }
+        if (bitmapBlurTexture == null) {
+            bitmapBlurTexture = new Texture(blurBitmap);
+        }
     }
 
     private boolean helperShown;
@@ -377,7 +392,12 @@ public class Painting {
     }
 
     private Slice commitShapeInternal(Shape shape, int color, RectF bounds) {
-        Slice undoSlice = registerUndo(bounds);
+        Brush brush = shape.brush;
+        if (brush == null) {
+            brush = this.brush;
+        }
+
+        Slice undoSlice = registerUndo(bounds, blurManager != null && brush instanceof Brush.Blurer);
 
         beginSuppressingChanges();
 
@@ -386,10 +406,6 @@ public class Painting {
 
         GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
 
-        Brush brush = shape.brush;
-        if (brush == null) {
-            brush = this.brush;
-        }
         Shader shader = shaders.get(brush.getShaderName(Brush.PAINT_TYPE_COMPOSITE));
         if (shader == null) {
             return null;
@@ -485,56 +501,90 @@ public class Painting {
     }
 
     private Slice commitPathInternal(final Path path, final int color, RectF bounds) {
-        Slice undoSlice = registerUndo(bounds);
-
-        beginSuppressingChanges();
-
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
-        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getTexture(), 0);
-
-        GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
-
         Brush brush = this.brush;
         if (path != null) {
             brush = path.getBrush();
         }
 
-        Shader shader = shaders.get(brush.getShaderName(Brush.PAINT_TYPE_COMPOSITE));
-        if (shader == null) {
-            return null;
+        Slice undoSlice;
+        if (blurManager != null && (brush instanceof Brush.Blurer || brush instanceof Brush.Eraser)) {
+            undoSlice = registerDoubleUndo(bounds, hasBlur);
+            hasBlur = brush instanceof Brush.Blurer;
+        } else {
+            undoSlice = registerUndo(bounds, false);
         }
 
-        GLES20.glUseProgram(shader.program);
+        beginSuppressingChanges();
 
-        GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
-        GLES20.glUniform1i(shader.getUniform("texture"), 0);
-        GLES20.glUniform1i(shader.getUniform("mask"), 1);
-        Shader.SetColorUniform(shader.getUniform("color"), ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * brush.getOverrideAlpha())));
-
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPaintTexture());
-
-        if (brush instanceof Brush.Blurer && bluredTexture != null) {
-            GLES20.glUniform1i(shader.getUniform("blured"), 2);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bluredTexture.texture());
+        int count = 1;
+        if (blurManager != null && (brush instanceof Brush.Blurer || brush instanceof Brush.Eraser)) {
+            // - eraser erases both from def. texture and blur texture
+            // - blurer blurs in blur texture and erases anything else in def. texture
+            count = 2;
         }
+        for (int a = 0; a < count; ++a) {
 
-        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
+            int tex = getTexture();
+            if (blurManager != null && (brush instanceof Brush.Blurer && a == 0 || brush instanceof Brush.Eraser && a == 1)) {
+                tex = bitmapBlurTexture != null ? bitmapBlurTexture.texture() : 0;
+            }
+            if (a == 1 && brush instanceof Brush.Blurer) {
+                brush = new Brush.Eraser();
+            }
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, tex, 0);
 
-        GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
-        GLES20.glEnableVertexAttribArray(0);
-        GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-        GLES20.glEnableVertexAttribArray(1);
+            GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            Shader shader = shaders.get(brush.getShaderName(Brush.PAINT_TYPE_COMPOSITE));
+            if (shader == null) {
+                return null;
+            }
 
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+            GLES20.glUseProgram(shader.program);
+
+            GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
+            GLES20.glUniform1i(shader.getUniform("texture"), 0);
+            GLES20.glUniform1i(shader.getUniform("mask"), 1);
+            Shader.SetColorUniform(shader.getUniform("color"), ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * brush.getOverrideAlpha())));
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPaintTexture());
+
+            Object lock = null;
+            if (brush instanceof Brush.Blurer) {
+                GLES20.glUniform1i(shader.getUniform("blured"), 2);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+                if (blurManager != null) {
+                    lock = blurManager.getTextureLock();
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, blurManager.getTexture());
+                } else {
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bluredTexture.texture());
+                }
+            }
+
+            GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+
+            GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+            GLES20.glEnableVertexAttribArray(0);
+            GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+            GLES20.glEnableVertexAttribArray(1);
+
+            if (lock != null) {
+                synchronized (lock) {
+                    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+                }
+            } else {
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            }
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        }
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
 
@@ -543,7 +593,6 @@ public class Painting {
         }
 
         endSuppressingChanges();
-
         renderState.reset();
 
         activePath = null;
@@ -600,7 +649,7 @@ public class Painting {
         helperApplyAlpha = 0f;
     }
 
-    private Slice registerUndo(RectF rect) {
+    private Slice registerUndo(RectF rect, boolean blurTex) {
         if (rect == null) {
             return null;
         }
@@ -610,10 +659,31 @@ public class Painting {
             return null;
         }
 
-        final Slice slice = new Slice(getPaintingData(rect, true).data, rect, delegate.requestDispatchQueue());
+        final Slice slice = new Slice(getPaintingData(rect, true, blurTex, false).data, blurTex ? 1 : 0, rect, delegate.requestDispatchQueue());
         delegate.requestUndoStore().registerUndo(UUID.randomUUID(), () -> restoreSlice(slice));
 
         return slice;
+    }
+
+    private Slice registerDoubleUndo(RectF rect, boolean hadBlur) {
+        if (rect == null) {
+            return null;
+        }
+
+        boolean intersect = rect.setIntersect(rect, getBounds());
+        if (!intersect) {
+            return null;
+        }
+
+        final Slice slice1 = new Slice(getPaintingData(rect, true, false, false).data, 0, rect, delegate.requestDispatchQueue());
+        final Slice slice2 = new Slice(getPaintingData(rect, true, true, false).data, 1, rect, delegate.requestDispatchQueue());
+        delegate.requestUndoStore().registerUndo(UUID.randomUUID(), () -> {
+            restoreSlice(slice1);
+            restoreSlice(slice2);
+            hasBlur = hadBlur;
+        });
+
+        return slice1; // ehm...
     }
 
     private void restoreSlice(final Slice slice) {
@@ -629,7 +699,11 @@ public class Painting {
 
         ByteBuffer buffer = slice.getData();
 
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+        int tex = getTexture();
+        if (slice.getTexture() == 1 && bitmapBlurTexture != null) {
+            tex = bitmapBlurTexture.texture();
+        }
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex);
         GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, slice.getX(), slice.getY(), slice.getWidth(), slice.getHeight(), GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
         if (!isSuppressingChanges() && delegate != null) {
             delegate.contentChanged();
@@ -649,6 +723,10 @@ public class Painting {
             return;
         }
 
+        if (bitmapBlurTexture != null) {
+            renderBlur();
+        }
+
         if (activePath != null) {
             renderBlitPath(getPaintTexture(), activePath, 1f - .5f * helperAlpha - .5f * helperApplyAlpha);
         } else if (activeShape != null) {
@@ -659,6 +737,53 @@ public class Painting {
 
         if (helperTexture != 0 && helperShape != null && helperAlpha > 0) {
             renderBlitShape(helperTexture, getPaintTexture(), helperShape, .5f * helperAlpha + .5f * helperApplyAlpha);
+        }
+    }
+
+    private void renderBlur() {
+        if (blurManager == null || bitmapBlurTexture == null) {
+            return;
+        }
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+        Shader shader = shaders.get("videoBlur");
+        if (shader == null) {
+            return;
+        }
+
+        GLES20.glUseProgram(shader.program);
+
+        GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(renderProjection));
+        GLES20.glUniform1f(shader.getUniform("flipy"), 0f);
+
+        GLES20.glUniform1i(shader.getUniform("texture"), 0);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bitmapBlurTexture.texture());
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+        GLES20.glUniform1i(shader.getUniform("blured"), 1);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, blurManager.getTexture());
+
+        if (activePath != null && this.brush instanceof Brush.Eraser) {
+            GLES20.glUniform1f(shader.getUniform("eraser"), 1f);
+            GLES20.glUniform1i(shader.getUniform("mask"), 2);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPaintTexture());
+        } else {
+            GLES20.glUniform1f(shader.getUniform("eraser"), 0f);
+        }
+
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+
+        GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+        GLES20.glEnableVertexAttribArray(0);
+        GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+        GLES20.glEnableVertexAttribArray(1);
+
+        synchronized (blurManager.getTextureLock()) {
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         }
     }
 
@@ -750,10 +875,16 @@ public class Painting {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mask);
 
-        if (brush instanceof Brush.Blurer && bluredTexture != null) {
+        Object lock = null;
+        if (brush instanceof Brush.Blurer) {
             GLES20.glUniform1i(shader.getUniform("blured"), 2);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bluredTexture.texture());
+            if (blurManager != null) {
+                lock = blurManager.getTextureLock();
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, blurManager.getTexture());
+            } else if (bluredTexture != null) {
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bluredTexture.texture());
+            }
         }
 
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
@@ -763,7 +894,13 @@ public class Painting {
         GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
         GLES20.glEnableVertexAttribArray(1);
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        if (lock != null) {
+            synchronized (lock) {
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            }
+        } else {
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        }
 
         Utils.HasGLError();
     }
@@ -796,6 +933,10 @@ public class Painting {
     }
 
     public PaintingData getPaintingData(RectF rect, boolean undo) {
+        return getPaintingData(rect, undo, false, false);
+    }
+
+    public PaintingData getPaintingData(RectF rect, boolean undo, boolean onlyBlur, boolean includeBlur) {
         int minX = (int) rect.left;
         int minY = (int) rect.top;
         int width = (int) rect.width();
@@ -838,7 +979,7 @@ public class Painting {
         GLES20.glUniform1i(shader.getUniform("texture"), 0);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, onlyBlur && bitmapBlurTexture != null ? bitmapBlurTexture.texture() : getTexture());
 
         GLES20.glClearColor(0, 0, 0, 0);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
@@ -851,6 +992,42 @@ public class Painting {
         GLES20.glEnableVertexAttribArray(1);
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+        if (includeBlur && !onlyBlur) {
+            shader = shaders.get("videoBlur");
+            if (shader != null && blurManager != null) {
+                GLES20.glUseProgram(shader.program);
+
+                GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(finalProjection));
+                GLES20.glUniform1f(shader.getUniform("flipy"), 0f);
+
+                GLES20.glUniform1i(shader.getUniform("texture"), 0);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bitmapBlurTexture.texture());
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+                GLES20.glUniform1i(shader.getUniform("blured"), 1);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, blurManager.getTexture());
+
+                GLES20.glUniform1f(shader.getUniform("eraser"), 0f);
+
+                GLES20.glUniform1i(shader.getUniform("mask"), 2);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+
+                GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
+                GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+                GLES20.glEnableVertexAttribArray(0);
+                GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+                GLES20.glEnableVertexAttribArray(1);
+
+                synchronized (blurManager.getTextureLock()) {
+                    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+                }
+            }
+        }
 
         dataBuffer.limit(width * height * 4);
         GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, dataBuffer);
@@ -880,7 +1057,7 @@ public class Painting {
     public void setBrush(Brush value) {
         brush = value;
 
-        if (value instanceof Brush.Blurer && imageBitmap != null) {
+        if (value instanceof Brush.Blurer && imageBitmap != null && blurManager == null) {
             int w = imageBitmap.getWidth(), h = imageBitmap.getHeight();
             if (imageBitmapRotation == 90 || imageBitmapRotation == 270 || imageBitmapRotation == -90) {
                 int pH = h;
@@ -909,7 +1086,7 @@ public class Painting {
             canvas.drawBitmap(imageBitmap, 0, 0, imageBitmapPaint);
             canvas.restore();
             if (renderView != null) {
-                Bitmap bitmap = renderView.getResultBitmap();
+                Bitmap bitmap = renderView.getResultBitmap(false, false);
                 if (bitmap != null) {
                     canvas.scale((float) w / bitmap.getWidth(), (float) h / bitmap.getHeight());
                     canvas.drawBitmap(bitmap, 0, 0, imageBitmapPaint);
@@ -931,8 +1108,8 @@ public class Painting {
     public void onPause(final Runnable completionRunnable) {
         renderView.performInContext(() -> {
             paused = true;
-            PaintingData data = getPaintingData(getBounds(), true);
-            backupSlice = new Slice(data.data, getBounds(), delegate.requestDispatchQueue());
+            PaintingData data = getPaintingData(getBounds(), true, false, false); // TODO: save also blur bitmap?
+            backupSlice = new Slice(data.data, 0, getBounds(), delegate.requestDispatchQueue());
 
             cleanResources(false);
 
@@ -954,7 +1131,12 @@ public class Painting {
             reusableFramebuffer = 0;
         }
 
-        bitmapTexture.cleanResources(recycle);
+        if (bitmapTexture != null) {
+            bitmapTexture.cleanResources(recycle);
+        }
+        if (bitmapBlurTexture != null) {
+            bitmapBlurTexture.cleanResources(recycle);
+        }
 
         if (paintTexture != 0) {
             buffers[0] = paintTexture;

@@ -25,6 +25,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.util.Log;
 import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -40,8 +41,6 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.android.gms.vision.Frame;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
@@ -53,6 +52,9 @@ public class DrawerLayoutContainer extends FrameLayout {
     private static final int MIN_DRAWER_MARGIN = 64;
 
     private FrameLayout drawerLayout;
+    private View navigationBar;
+    private Paint navigationBarPaint = new Paint();
+    private View drawerListView;
     private INavigationLayout parentActionBarLayout;
 
     private boolean maybeStartTracking;
@@ -176,13 +178,18 @@ public class DrawerLayoutContainer extends FrameLayout {
         return 0;
     }
 
-    public void setDrawerLayout(FrameLayout layout) {
+    public void setDrawerLayout(FrameLayout layout, View drawerListView) {
         drawerLayout = layout;
+        this.drawerListView = drawerListView;
         addView(drawerLayout);
         drawerLayout.setVisibility(INVISIBLE);
+        drawerListView.setVisibility(GONE);
         if (Build.VERSION.SDK_INT >= 21) {
             drawerLayout.setFitsSystemWindows(true);
         }
+        AndroidUtilities.runOnUIThread(() -> {
+            drawerListView.setVisibility(View.VISIBLE);
+        }, 2500);
     }
 
     public void moveDrawerByX(float dx) {
@@ -201,6 +208,9 @@ public class DrawerLayoutContainer extends FrameLayout {
             drawerPosition = 0;
         }
         drawerLayout.setTranslationX(drawerPosition);
+        if (drawerPosition > 0 && drawerListView != null && drawerListView.getVisibility() != View.VISIBLE) {
+            drawerListView.setVisibility(View.VISIBLE);
+        }
 
         final int newVisibility = drawerPosition > 0 ? VISIBLE : INVISIBLE;
         if (drawerLayout.getVisibility() != newVisibility) {
@@ -438,7 +448,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 return true;
             }
 
-            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1) {
+            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1 && (parentActionBarLayout.getLastFragment().storyViewer == null || !parentActionBarLayout.getLastFragment().storyViewer.attachedToParent())) {
                 if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
                    View scrollingChild = findScrollingChild(this, ev.getX(),ev.getY());
                    if (scrollingChild != null) {
@@ -606,12 +616,12 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (Build.VERSION.SDK_INT < 21) {
             inLayout = true;
             if (heightSize == AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) {
-                if (getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                if (getLayoutParams() instanceof MarginLayoutParams) {
                     setPadding(0, AndroidUtilities.statusBarHeight, 0, 0);
                 }
                 heightSize = AndroidUtilities.displaySize.y;
             } else {
-                if (getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                if (getLayoutParams() instanceof MarginLayoutParams) {
                     setPadding(0, 0, 0, 0);
                 }
             }
@@ -651,12 +661,30 @@ public class DrawerLayoutContainer extends FrameLayout {
                 } else {
                     contentHeightSpec = MeasureSpec.makeMeasureSpec(heightSize - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
                 }
+                if (child instanceof ActionBarLayout) {
+                    ActionBarLayout actionBarLayout = (ActionBarLayout) child;
+                    //fix keyboard measuring
+                    if (actionBarLayout.storyViewerAttached()) {
+                        child.forceLayout();
+                    }
+                }
                 child.measure(contentWidthSpec, contentHeightSpec);
             } else {
                 child.setPadding(0, 0, 0, 0);
                 final int drawerWidthSpec = getChildMeasureSpec(widthMeasureSpec, minDrawerMargin + lp.leftMargin + lp.rightMargin, lp.width);
                 final int drawerHeightSpec = getChildMeasureSpec(heightMeasureSpec, lp.topMargin + lp.bottomMargin, lp.height);
                 child.measure(drawerWidthSpec, drawerHeightSpec);
+            }
+        }
+
+        if (navigationBar != null) {
+            if (navigationBar.getParent() == null) {
+                ((FrameLayout) AndroidUtilities.findActivity(getContext()).getWindow().getDecorView()).addView(navigationBar);
+            }
+            if (navigationBar.getLayoutParams().height != AndroidUtilities.navigationBarHeight || ((LayoutParams)navigationBar.getLayoutParams()).topMargin != MeasureSpec.getSize(heightMeasureSpec)) {
+                navigationBar.getLayoutParams().height = AndroidUtilities.navigationBarHeight;
+                ((LayoutParams)navigationBar.getLayoutParams()).topMargin = MeasureSpec.getSize(heightMeasureSpec);
+                navigationBar.requestLayout();
             }
         }
     }
@@ -764,6 +792,28 @@ public class DrawerLayoutContainer extends FrameLayout {
             return false;
         }
         return super.onRequestSendAccessibilityEvent(child, event);
+    }
+
+    public void setNavigationBarColor(int color) {
+        navigationBarPaint.setColor(color);
+        if (navigationBar != null) {
+            navigationBar.invalidate();
+        }
+    }
+
+    public int getNavigationBarColor() {
+        return navigationBarPaint.getColor();
+    }
+
+    public View createNavigationBar() {
+        navigationBar = new View(getContext()) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), navigationBarPaint);
+            }
+        };
+        navigationBarPaint.setColor(0xff000000);
+        return navigationBar;
     }
 
     private static class PreviewForegroundDrawable extends Drawable {

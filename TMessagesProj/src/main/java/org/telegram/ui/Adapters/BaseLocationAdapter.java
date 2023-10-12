@@ -8,13 +8,20 @@
 
 package org.telegram.ui.Adapters;
 
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Build;
+import android.text.TextUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -23,8 +30,17 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 
 public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdapter {
+
+    public final boolean stories;
+
+    public BaseLocationAdapter(boolean stories) {
+        this.stories = stories;
+    }
 
     public interface BaseLocationAdapterDelegate {
         void didLoadSearchResult(ArrayList<TLRPC.TL_messageMediaVenue> places);
@@ -32,8 +48,9 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
 
     protected boolean searched = false;
     protected boolean searching;
+    protected boolean searchingLocations;
+    protected ArrayList<TLRPC.TL_messageMediaVenue> locations = new ArrayList<>();
     protected ArrayList<TLRPC.TL_messageMediaVenue> places = new ArrayList<>();
-    protected ArrayList<String> iconUrls = new ArrayList<>();
     private Location lastSearchLocation;
     private String lastSearchQuery;
     private String lastFoundQuery;
@@ -43,7 +60,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     private int currentAccount = UserConfig.selectedAccount;
     private long dialogId;
     private boolean searchingUser;
-    private boolean searchInProgress;
+    protected boolean searchInProgress;
 
     public void destroy() {
         if (currentRequestNum != 0) {
@@ -60,6 +77,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     public void searchDelayed(final String query, final Location coordinate) {
         if (query == null || query.length() == 0) {
             places.clear();
+            locations.clear();
             searchInProgress = false;
             notifyDataSetChanged();
         } else {
@@ -82,7 +100,9 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         }
         searchingUser = true;
         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-        req.username = MessagesController.getInstance(currentAccount).venueSearchBot;
+        req.username = stories ?
+            MessagesController.getInstance(currentAccount).venueSearchBot : // MessagesController.getInstance(currentAccount).storyVenueSearchBot :
+            MessagesController.getInstance(currentAccount).venueSearchBot;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (response != null) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -118,7 +138,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                     notifyItemRangeRemoved(fromIndex, getItemCount() - fromIndex);
                 }
             } else {
-                int placesCount = places.size() + 3;
+                int placesCount = 3 + places.size() + locations.size();
                 int offset = oldItemCount - placesCount;
                 notifyItemInserted(offset);
                 notifyItemRangeRemoved(offset, placesCount);
@@ -129,10 +149,10 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     }
 
     public void searchPlacesWithQuery(final String query, final Location coordinate, boolean searchUser, boolean animated) {
-        if (coordinate == null || lastSearchLocation != null && coordinate.distanceTo(lastSearchLocation) < 200) {
+        if (coordinate == null && !stories || lastSearchLocation != null && coordinate != null && coordinate.distanceTo(lastSearchLocation) < 200) {
             return;
         }
-        lastSearchLocation = new Location(coordinate);
+        lastSearchLocation = coordinate == null ? null : new Location(coordinate);
         lastSearchQuery = query;
         if (searching) {
             searching = false;
@@ -147,7 +167,11 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         boolean wasSearched = searched;
         searched = true;
 
-        TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessagesController.getInstance(currentAccount).venueSearchBot);
+        TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(
+            stories ?
+                MessagesController.getInstance(currentAccount).venueSearchBot : // MessagesController.getInstance(currentAccount).storyVenueSearchBot :
+                MessagesController.getInstance(currentAccount).venueSearchBot
+        );
         if (!(object instanceof TLRPC.User)) {
             if (searchUser) {
                 searchBotUser();
@@ -161,10 +185,12 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         req.bot = MessagesController.getInstance(currentAccount).getInputUser(user);
         req.offset = "";
 
-        req.geo_point = new TLRPC.TL_inputGeoPoint();
-        req.geo_point.lat = AndroidUtilities.fixLocationCoord(coordinate.getLatitude());
-        req.geo_point._long = AndroidUtilities.fixLocationCoord(coordinate.getLongitude());
-        req.flags |= 1;
+        if (coordinate != null) {
+            req.geo_point = new TLRPC.TL_inputGeoPoint();
+            req.geo_point.lat = AndroidUtilities.fixLocationCoord(coordinate.getLatitude());
+            req.geo_point._long = AndroidUtilities.fixLocationCoord(coordinate.getLongitude());
+            req.flags |= 1;
+        }
 
         if (DialogObject.isEncryptedDialog(dialogId)) {
             req.peer = new TLRPC.TL_inputPeerEmpty();
@@ -172,12 +198,174 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         }
 
+        if (!TextUtils.isEmpty(query) && stories) {
+            searchingLocations = true;
+            final Locale locale = LocaleController.getInstance().getCurrentLocale();
+            final String finalQuery = query;
+            Utilities.globalQueue.postRunnable(() -> {
+                final ArrayList<TLRPC.TL_messageMediaVenue> locations = new ArrayList<>();
+                try {
+                    Geocoder geocoder = new Geocoder(ApplicationLoader.applicationContext, locale);
+                    List<Address> addresses = geocoder.getFromLocationName(finalQuery, 5);
+                    HashSet<String> countries = new HashSet<>();
+                    HashSet<String> cities = new HashSet<>();
+                    String arg, lc;
+                    for (int i = 0; i < addresses.size(); ++i) {
+                        Address address = addresses.get(i);
+                        if (!address.hasLatitude() || !address.hasLongitude())
+                            continue;
+                        double lat = address.getLatitude();
+                        double _long = address.getLongitude();
+
+                        StringBuilder countryBuilder = new StringBuilder();
+                        StringBuilder cityBuilder = new StringBuilder();
+                        StringBuilder streetBuilder = new StringBuilder();
+                        boolean onlyCountry = true;
+                        boolean onlyCity = true;
+
+                        String locality = address.getLocality();
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getAdminArea();
+                        }
+                        arg = address.getThoroughfare();
+                        if (!TextUtils.isEmpty(arg) && !TextUtils.equals(arg, address.getAdminArea())) {
+                            if (streetBuilder.length() > 0) {
+                                streetBuilder.append(", ");
+                            }
+                            streetBuilder.append(arg);
+                            onlyCity = false;
+                        } else {
+                            arg = address.getSubLocality();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (streetBuilder.length() > 0) {
+                                    streetBuilder.append(", ");
+                                }
+                                streetBuilder.append(arg);
+                                onlyCity = false;
+                            } else {
+                                arg = address.getLocality();
+                                if (!TextUtils.isEmpty(arg) && !TextUtils.equals(arg, locality)) {
+                                    if (streetBuilder.length() > 0) {
+                                        streetBuilder.append(", ");
+                                    }
+                                    streetBuilder.append(arg);
+                                    onlyCity = false;
+                                } else {
+                                    streetBuilder = null;
+                                }
+                            }
+                        }
+                        if (!TextUtils.isEmpty(locality)) {
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(locality);
+                            onlyCountry = false;
+                            if (streetBuilder != null) {
+                                if (streetBuilder.length() > 0) {
+                                    streetBuilder.append(", ");
+                                }
+                                streetBuilder.append(locality);
+                            }
+                        }
+                        arg = address.getCountryName();
+                        if (!TextUtils.isEmpty(arg)) {
+                            String shortCountry = arg;
+                            if ("US".equals(address.getCountryCode()) || "AE".equals(address.getCountryCode()) || "GB".equals(address.getCountryCode()) && "en".equals(locale.getLanguage())) {
+                                shortCountry = "";
+                                String[] words = arg.split(" ");
+                                for (String word : words) {
+                                    if (word.length() > 0)
+                                        shortCountry += word.charAt(0);
+                                }
+                            }
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(shortCountry);
+                            if (countryBuilder.length() > 0) {
+                                countryBuilder.append(", ");
+                            }
+                            countryBuilder.append(arg);
+                        }
+
+                        if (countryBuilder.length() > 0 && !countries.contains(countryBuilder.toString())) {
+                            TLRPC.TL_messageMediaVenue countryLocation = new TLRPC.TL_messageMediaVenue();
+                            countryLocation.geo = new TLRPC.TL_geoPoint();
+                            countryLocation.geo.lat = lat;
+                            countryLocation.geo._long = _long;
+                            countryLocation.query_id = -1;
+                            countryLocation.title = countryBuilder.toString();
+                            countryLocation.icon = "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png";
+                            countryLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
+                            countries.add(countryLocation.title);
+                            countryLocation.address = LocaleController.getString("Country", R.string.Country);
+                            locations.add(countryLocation);
+                            if (locations.size() >= 5) {
+                                break;
+                            }
+                        }
+
+                        if (!onlyCountry && !cities.contains(cityBuilder.toString())) {
+                            TLRPC.TL_messageMediaVenue cityLocation = new TLRPC.TL_messageMediaVenue();
+                            cityLocation.geo = new TLRPC.TL_geoPoint();
+                            cityLocation.geo.lat = lat;
+                            cityLocation.geo._long = _long;
+                            cityLocation.query_id = -1;
+                            cityLocation.title = cityBuilder.toString();
+                            cityLocation.icon = "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
+                            cityLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
+                            cities.add(cityLocation.title);
+                            cityLocation.address = LocaleController.getString("PassportCity", R.string.PassportCity);
+                            locations.add(cityLocation);
+                            if (locations.size() >= 5) {
+                                break;
+                            }
+                        }
+
+                        if (streetBuilder != null && streetBuilder.length() > 0) {
+                            TLRPC.TL_messageMediaVenue streetLocation = new TLRPC.TL_messageMediaVenue();
+                            streetLocation.geo = new TLRPC.TL_geoPoint();
+                            streetLocation.geo.lat = lat;
+                            streetLocation.geo._long = _long;
+                            streetLocation.query_id = -1;
+                            streetLocation.title = streetBuilder.toString();
+                            streetLocation.icon = "pin";
+                            streetLocation.address = onlyCity ? LocaleController.getString("PassportCity", R.string.PassportCity) : LocaleController.getString("PassportStreet1", R.string.PassportStreet1);
+                            locations.add(streetLocation);
+                            if (locations.size() >= 5) {
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignore) {}
+                AndroidUtilities.runOnUIThread(() -> {
+                    searchingLocations = false;
+                    if (coordinate == null) {
+                        currentRequestNum = 0;
+                        searching = false;
+                        places.clear();
+                        searchInProgress = false;
+                        lastFoundQuery = query;
+                    }
+                    BaseLocationAdapter.this.locations.clear();
+                    BaseLocationAdapter.this.locations.addAll(locations);
+                    notifyDataSetChanged();
+                });
+            });
+        } else {
+            searchingLocations = false;
+        }
+
+        if (coordinate == null) {
+            return;
+        }
+
         currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 currentRequestNum = 0;
                 searching = false;
                 places.clear();
-                iconUrls.clear();
                 searchInProgress = false;
                 lastFoundQuery = query;
 
@@ -188,14 +376,16 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                         continue;
                     }
                     TLRPC.TL_botInlineMessageMediaVenue mediaVenue = (TLRPC.TL_botInlineMessageMediaVenue) result.send_message;
-                    iconUrls.add("https://ss3.4sqi.net/img/categories_v2/" + mediaVenue.venue_type + "_64.png");
                     TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
                     venue.geo = mediaVenue.geo;
                     venue.address = mediaVenue.address;
                     venue.title = mediaVenue.title;
+                    venue.icon = "https://ss3.4sqi.net/img/categories_v2/" + mediaVenue.venue_type + "_64.png";
                     venue.venue_type = mediaVenue.venue_type;
                     venue.venue_id = mediaVenue.venue_id;
                     venue.provider = mediaVenue.provider;
+                    venue.query_id = res.query_id;
+                    venue.result_id = result.id;
                     places.add(venue);
                 }
             }

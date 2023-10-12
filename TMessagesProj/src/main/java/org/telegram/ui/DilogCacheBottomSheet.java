@@ -72,7 +72,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
                     textInfoPrivacyCell.setFixedSize(12);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(
                             new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)),
-                            Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
+                            Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
                     );
                     combinedDrawable.setFullsize(true);
                     textInfoPrivacyCell.setBackgroundDrawable(combinedDrawable);
@@ -131,10 +131,10 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
         }
         linearLayout.addView(circleDiagramView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
         CheckBoxCell lastCreatedCheckbox = null;
-        for (int a = 0; a < 7; a++) {
+        for (int a = 0; a < 8; a++) {
             long size = 0;
             String name;
-            String color;
+            int color;
 
             if (a == CacheControlActivity.TYPE_PHOTOS) {
                 name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
@@ -154,6 +154,9 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
             } else if (a == CacheControlActivity.TYPE_ANIMATED_STICKERS_CACHE) {
                 name = LocaleController.getString("LocalStickersCache", R.string.LocalStickersCache);
                 color = Theme.key_statisticChartLine_orange;
+            } else if (a == CacheControlActivity.TYPE_STORIES) {
+                name = LocaleController.getString("LocalStoriesCache", R.string.LocalStoriesCache);
+                color = Theme.key_statisticChartLine_indigo;
             } else {
                 name = LocaleController.getString("LocalMiscellaneousCache", R.string.LocalMiscellaneousCache);
                 color = Theme.key_statisticChartLine_purple;
@@ -169,7 +172,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
             if (size > 0) {
                 clearViewData[a] = new StorageDiagramView.ClearViewData(circleDiagramView);
                 clearViewData[a].size = size;
-                clearViewData[a].color = color;
+                clearViewData[a].colorKey = color;
                 CheckBoxCell checkBoxCell = new CheckBoxCell(context, 4, 21, null);
                 lastCreatedCheckbox = checkBoxCell;
                 checkBoxCell.setTag(a);

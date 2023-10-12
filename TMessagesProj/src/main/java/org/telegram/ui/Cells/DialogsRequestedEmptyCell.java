@@ -88,7 +88,7 @@ public class DialogsRequestedEmptyCell extends LinearLayout implements Notificat
 
         buttonView = new TextView(context);
         buttonView.setGravity(Gravity.CENTER);
-        buttonView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+        buttonView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
         buttonView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -134,7 +134,7 @@ public class DialogsRequestedEmptyCell extends LinearLayout implements Notificat
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
     }
 
     @Override

@@ -56,10 +56,12 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
@@ -77,7 +79,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         return AndroidUtilities.displaySize.y > AndroidUtilities.displaySize.x ? .8f : .45f;
     }
 
-    private ChatActivity.ThemeDelegate themeDelegate;
+    private Theme.ResourcesProvider themeDelegate;
 
     public RecyclerListView listView;
     private LinearLayoutManager layoutManager;
@@ -96,7 +98,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
     private Drawable videoPlayImage;
 
-    public ChatAttachAlertPhotoLayoutPreview(ChatAttachAlert alert, Context context, ChatActivity.ThemeDelegate themeDelegate) {
+    public ChatAttachAlertPhotoLayoutPreview(ChatAttachAlert alert, Context context, Theme.ResourcesProvider themeDelegate) {
         super(alert, context, themeDelegate);
 
         this.themeDelegate = themeDelegate;
@@ -1817,11 +1819,15 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                             chatActivity = null;
                             type = 4;
                         }
+                        BaseFragment fragment = parentAlert.baseFragment;
+                        if (fragment == null) {
+                            fragment = LaunchActivity.getLastFragment();
+                        }
                         if (!parentAlert.delegate.needEnterComment()) {
-                            AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
+                            AndroidUtilities.hideKeyboard(fragment.getFragmentView().findFocus());
                             AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
                         }
-                        PhotoViewer.getInstance().setParentActivity(parentAlert.baseFragment, resourcesProvider);
+                        PhotoViewer.getInstance().setParentActivity(fragment, resourcesProvider);
                         PhotoViewer.getInstance().setParentAlert(parentAlert);
                         PhotoViewer.getInstance().setMaxSelectedPhotos(parentAlert.maxSelectedPhotos, parentAlert.allowOrder);
                         photoViewerProvider.init(arrayList);
@@ -2551,7 +2557,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
     }
 
     public Drawable getThemedDrawable(String drawableKey) {
-        Drawable drawable = themeDelegate.getDrawable(drawableKey);
+        Drawable drawable = themeDelegate != null ? themeDelegate.getDrawable(drawableKey) : null;
         return drawable != null ? drawable : Theme.getThemeDrawable(drawableKey);
     }
 }

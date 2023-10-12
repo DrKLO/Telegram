@@ -237,10 +237,14 @@ public class Browser {
     }
 
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
-        openUrl(context, uri, allowCustom, tryTelegraph, null);
+        openUrl(context, uri, allowCustom, tryTelegraph, false, null);
     }
 
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, Progress inCaseLoading) {
+        openUrl(context, uri, allowCustom, tryTelegraph, false, inCaseLoading);
+    }
+
+    public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading) {
         if (context == null || uri == null) {
             return;
         }
@@ -250,7 +254,7 @@ public class Browser {
         if (tryTelegraph) {
             try {
                 String host = AndroidUtilities.getHostAuthority(uri);
-                if (isTelegraphUrl(host, true) || uri.toString().toLowerCase().contains("www2.teamgram.net/faq") || uri.toString().toLowerCase().contains("www2.teamgram.net/privacy")) {
+                if (isTelegraphUrl(host, true) || "www2.teamgram.net".equalsIgnoreCase(host) && (uri.toString().toLowerCase().contains("www2.teamgram.net/faq") || uri.toString().toLowerCase().contains("www2.teamgram.net/privacy") || uri.toString().toLowerCase().contains("www2.teamgram.net/blog"))) {
                     final AlertDialog[] progressDialog = new AlertDialog[] {
                         new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER)
                     };
@@ -412,6 +416,7 @@ public class Browser {
             intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
             intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, context.getPackageName());
             if (internalUri && context instanceof LaunchActivity) {
+                intent.putExtra(LaunchActivity.EXTRA_FORCE_NOT_INTERNAL_APPS, forceNotInternalForApps);
                 ((LaunchActivity) context).onNewIntent(intent, inCaseLoading);
             } else {
                 context.startActivity(intent);
@@ -510,11 +515,41 @@ public class Browser {
                 }
                 return true;
             }
+        } else if ("telegram.org".equals(host) && uri != null && uri.getPath() != null && uri.getPath().startsWith("/blog/")) {
+            return true;
         } else if (all) {
             if (host.endsWith("teamgram.net")) {
                 return true;
             }
         }
         return false;
+    }
+
+    // © ChatGPT. All puns reserved. 🤖📜
+    public static String replaceHostname(Uri originalUri, String newHostname) {
+        String scheme = originalUri.getScheme();
+        String userInfo = originalUri.getUserInfo();
+        int port = originalUri.getPort();
+        String path = originalUri.getPath();
+        String query = originalUri.getQuery();
+        String fragment = originalUri.getFragment();
+
+        StringBuilder modifiedUriBuilder = new StringBuilder();
+        modifiedUriBuilder.append(scheme).append("://");
+        if (userInfo != null) {
+            modifiedUriBuilder.append(userInfo).append("@");
+        }
+        modifiedUriBuilder.append(newHostname);
+        if (port != -1) {
+            modifiedUriBuilder.append(":").append(port);
+        }
+        modifiedUriBuilder.append(path);
+        if (query != null) {
+            modifiedUriBuilder.append("?").append(query);
+        }
+        if (fragment != null) {
+            modifiedUriBuilder.append("#").append(fragment);
+        }
+        return modifiedUriBuilder.toString();
     }
 }

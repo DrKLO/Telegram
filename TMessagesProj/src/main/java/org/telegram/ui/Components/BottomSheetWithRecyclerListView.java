@@ -39,7 +39,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private float shadowAlpha = 1f;
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize) {
-        this(fragment, needFocus, hasFixedSize, false, null);
+        this(fragment, needFocus, hasFixedSize, false, fragment == null ? null : fragment.getResourceProvider());
     }
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
@@ -245,7 +245,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         }
         shadowAlpha = Utilities.clamp(shadowAlpha, 1f, 0f);
         if (actionBar != null && actionBar.getVisibility() == View.VISIBLE && actionBar.getAlpha() != 0 && shadowAlpha != 0) {
-            headerShadowDrawable.setBounds(0, actionBar.getBottom(), parentView.getMeasuredWidth(), actionBar.getBottom() + headerShadowDrawable.getIntrinsicHeight());
+            headerShadowDrawable.setBounds(backgroundPaddingLeft, actionBar.getBottom(), parentView.getMeasuredWidth() - backgroundPaddingLeft, actionBar.getBottom() + headerShadowDrawable.getIntrinsicHeight());
             headerShadowDrawable.setAlpha((int) (255 * actionBar.getAlpha() * shadowAlpha));
             headerShadowDrawable.draw(canvas);
         }

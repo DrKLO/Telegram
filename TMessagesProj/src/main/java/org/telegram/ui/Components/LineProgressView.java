@@ -128,7 +128,6 @@ public class LineProgressView extends View {
             }
             cellFlickerDrawable.setParentWidth(getMeasuredWidth());
             cellFlickerDrawable.draw(canvas, rect, getHeight() / 2f, null);
-            invalidate();
         }
 
         updateAnimation();

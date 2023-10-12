@@ -22,6 +22,16 @@ public class ReactionsUtils {
         return false;
     }
 
+    public static boolean compare(TLRPC.Reaction reaction,  TLRPC.Reaction reaction2) {
+        if (reaction instanceof TLRPC.TL_reactionEmoji && reaction2 instanceof TLRPC.TL_reactionEmoji && TextUtils.equals(((TLRPC.TL_reactionEmoji) reaction).emoticon, ((TLRPC.TL_reactionEmoji) reaction2).emoticon)) {
+            return true;
+        }
+        if (reaction instanceof TLRPC.TL_reactionCustomEmoji && reaction2 instanceof TLRPC.TL_reactionCustomEmoji && ((TLRPC.TL_reactionCustomEmoji) reaction).document_id == ((TLRPC.TL_reactionCustomEmoji) reaction2).document_id) {
+            return true;
+        }
+        return false;
+    }
+
     public static TLRPC.Reaction toTLReaction(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
         if (visibleReaction.emojicon != null) {
             TLRPC.TL_reactionEmoji emoji = new TLRPC.TL_reactionEmoji();
@@ -45,5 +55,37 @@ public class ReactionsUtils {
             return spannableStringBuilder;
         }
         return "";
+    }
+
+    public static void applyForStoryViews(TLRPC.Reaction oldReaction, TLRPC.Reaction newReaction, TLRPC.StoryViews views) {
+        boolean found = false;
+        if (views == null) {
+            return;
+        }
+        for (int i = 0; i < views.reactions.size(); i++) {
+            TLRPC.ReactionCount reactionCount = views.reactions.get(i);
+            if (oldReaction != null) {
+                if (compare(reactionCount.reaction, oldReaction)) {
+                    reactionCount.count--;
+                    if (reactionCount.count <= 0) {
+                        views.reactions.remove(i);
+                        i--;
+                        continue;
+                    }
+                }
+            }
+            if (newReaction != null) {
+                if (compare(reactionCount.reaction, newReaction)) {
+                    reactionCount.count++;
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            TLRPC.ReactionCount reactionCount = new TLRPC.TL_reactionCount();
+            reactionCount.count = 1;
+            reactionCount.reaction = newReaction;
+            views.reactions.add(reactionCount);
+        }
     }
 }

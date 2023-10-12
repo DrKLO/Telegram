@@ -385,10 +385,9 @@ public class BotHelpCell extends View {
     public void setAnimating(boolean animating) {
         this.animating = animating;
     }
-    
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     private Drawable getThemedDrawable(String drawableKey) {

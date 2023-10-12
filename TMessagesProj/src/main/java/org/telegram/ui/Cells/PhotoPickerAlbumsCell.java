@@ -133,7 +133,7 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             AlbumView albumView = albumViews[a];
             albumView.imageView.setOrientation(0, true);
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
-                albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
+                albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, albumEntry.coverPhoto.invert, true);
                 if (albumEntry.coverPhoto.isVideo) {
                     albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, Theme.chat_attachEmptyDrawable);
                 } else {

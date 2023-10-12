@@ -230,7 +230,7 @@ public class EditWidgetActivity extends BaseFragment {
             }
             updateDialogs();
 
-            shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
+            shadowDrawable = Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         }
         
         public void updateDialogs() {
@@ -935,7 +935,7 @@ public class EditWidgetActivity extends BaseFragment {
             switch (viewType) {
                 case 0:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 1:
                     view = new TextCell(mContext);
@@ -986,7 +986,7 @@ public class EditWidgetActivity extends BaseFragment {
                 }
                 case 1: {
                     TextCell cell = (TextCell) holder.itemView;
-                    cell.setColors(null, Theme.key_windowBackgroundWhiteBlueText4);
+                    cell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
                     Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
                     Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
                     drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));

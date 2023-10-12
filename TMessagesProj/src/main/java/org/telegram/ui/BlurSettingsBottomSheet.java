@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -8,29 +9,36 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.fragment.app.Fragment;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SeekBarView;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 public class BlurSettingsBottomSheet extends BottomSheet {
 
     BaseFragment fragment;
 
-    public static float saturation = 0.2f;
+    public static float saturation = 1f;
     public static float blurRadius = 1f;
-    public static float blurAlpha = 0.176f;
+    public static float blurAlpha = 1f - Color.alpha(Theme.getColor(Theme.key_chat_BlurAlpha)) / 255f;
+    SizeNotifierFrameLayout contentView;
 
 
-    public static void show(ChatActivity fragment) {
+    public static void show(BaseFragment fragment) {
         new BlurSettingsBottomSheet(fragment).show();
     }
 
-    private BlurSettingsBottomSheet(ChatActivity fragment) {
+    private BlurSettingsBottomSheet(BaseFragment fragment) {
         super(fragment.getParentActivity(), false);
         this.fragment = fragment;
+        if (fragment.getFragmentView() instanceof SizeNotifierFrameLayout) {
+            contentView = (SizeNotifierFrameLayout) fragment.getFragmentView();
+        }
         Context context = fragment.getParentActivity();
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -51,8 +59,8 @@ public class BlurSettingsBottomSheet extends BottomSheet {
             public void onSeekBarDrag(boolean stop, float progress) {
                 saturation = progress;
                 saturationTextView.setText("Saturation " + (progress * 5));
-                fragment.contentView.invalidateBlurredViews();
-                fragment.contentView.invalidateBlur();
+                contentView.invalidateBlurredViews();
+                contentView.invalidateBlur();
             }
 
             @Override
@@ -80,7 +88,7 @@ public class BlurSettingsBottomSheet extends BottomSheet {
             public void onSeekBarDrag(boolean stop, float progress) {
                 alphaTextView.setText("Alpha " + blurAlpha);
                 blurAlpha = progress;
-                fragment.contentView.invalidateBlur();
+                contentView.invalidateBlur();
             }
 
             @Override
@@ -108,13 +116,13 @@ public class BlurSettingsBottomSheet extends BottomSheet {
             @Override
             public void onSeekBarDrag(boolean stop, float progress) {
                 blurRadius = progress;
-                fragment.contentView.invalidateBlur();
-                fragment.contentView.invalidateBlurredViews();
+                contentView.invalidateBlur();
+                contentView.invalidateBlurredViews();
             }
 
             @Override
             public void onSeekBarPressed(boolean pressed) {
-                fragment.contentView.invalidateBlurredViews();
+                contentView.invalidateBlurredViews();
             }
         });
         seekBar2.setReportChanges(true);
@@ -134,4 +142,7 @@ public class BlurSettingsBottomSheet extends BottomSheet {
         setCustomView(scrollView);
     }
 
+    public static void onThemeApplyed() {
+        blurAlpha = 1f - Color.alpha(Theme.getColor(Theme.key_chat_BlurAlpha, null, true)) / 255f;
+    }
 }

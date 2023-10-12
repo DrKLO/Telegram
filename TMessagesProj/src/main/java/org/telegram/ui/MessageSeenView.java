@@ -42,6 +42,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -55,6 +56,7 @@ import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MessageSeenCheckDrawable;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StatusBadgeComponent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +65,7 @@ public class MessageSeenView extends FrameLayout {
 
     ArrayList<Long> peerIds = new ArrayList<>();
     ArrayList<Integer> dates = new ArrayList<>();
-    public ArrayList<TLRPC.User> users = new ArrayList<>();
+    public ArrayList<TLObject> users = new ArrayList<>();
     AvatarsImageView avatarsImageView;
     SimpleTextView titleView;
     ImageView iconView;
@@ -77,7 +79,7 @@ public class MessageSeenView extends FrameLayout {
         this.currentAccount = currentAccount;
         isVoice = (messageObject.isRoundVideo() || messageObject.isVoice());
         flickerLoadingView = new FlickerLoadingView(context);
-        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
+        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, -1);
         flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
         flickerLoadingView.setIsSingleCell(false);
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
@@ -117,7 +119,8 @@ public class MessageSeenView extends FrameLayout {
             if (error == null) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
                 ArrayList<Long> unknownUsers = new ArrayList<>();
-                HashMap<Long, TLRPC.User> usersLocal = new HashMap<>();
+                ArrayList<Long> unknownChats = new ArrayList<>();
+                HashMap<Long, TLObject> usersLocal = new HashMap<>();
                 ArrayList<Pair<Long, Integer>> allPeers = new ArrayList<>();
                 for (int i = 0, n = vector.objects.size(); i < n; i++) {
                     Object object = vector.objects.get(i);
@@ -139,12 +142,22 @@ public class MessageSeenView extends FrameLayout {
                         if (finalFromId == peerId) {
                             continue;
                         }
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
-                        allPeers.add(new Pair<>(peerId, 0));
-                        if (true || user == null) {
-                            unknownUsers.add(peerId);
+                        if (peerId > 0) {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
+                            allPeers.add(new Pair<>(peerId, 0));
+                            if (true || user == null) {
+                                unknownUsers.add(peerId);
+                            } else {
+                                usersLocal.put(peerId, user);
+                            }
                         } else {
-                            usersLocal.put(peerId, user);
+                            TLRPC.Chat chat1 = MessagesController.getInstance(currentAccount).getChat(-peerId);
+                            allPeers.add(new Pair<>(peerId, 0));
+                            if (true || chat1 == null) {
+                                unknownChats.add(peerId);
+                            } else {
+                                usersLocal.put(peerId, chat1);
+                            }
                         }
                     }
                 }
@@ -266,7 +279,7 @@ public class MessageSeenView extends FrameLayout {
 
         avatarsImageView.commitTransition(false);
         if (peerIds.size() == 1 && users.get(0) != null) {
-            titleView.setText(ContactsController.formatName(users.get(0).first_name, users.get(0).last_name));
+            titleView.setText(ContactsController.formatName(users.get(0)));
         } else {
             if (peerIds.size() == 0) {
                 titleView.setText(LocaleController.getString("NobodyViewed", R.string.NobodyViewed));
@@ -349,9 +362,9 @@ public class MessageSeenView extends FrameLayout {
         SimpleTextView nameView;
         TextView readView;
         AvatarDrawable avatarDrawable = new AvatarDrawable();
-        AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable rightDrawable;
+        StatusBadgeComponent statusBadgeComponent;
 
-        TLRPC.User user;
+        TLObject object;
 
         private static MessageSeenCheckDrawable seenDrawable = new MessageSeenCheckDrawable(R.drawable.msg_mini_checks, Theme.key_windowBackgroundWhiteGrayText);
 
@@ -359,18 +372,16 @@ public class MessageSeenView extends FrameLayout {
             super(context);
             avatarImageView = new BackupImageView(context);
             avatarImageView.setRoundRadius(AndroidUtilities.dp(18));
-            addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER_VERTICAL, 10f, 0, 0, 0));
 
             nameView = new SimpleTextView(context);
             nameView.setTextSize(16);
-            nameView.setEllipsizeByGradient(true);
+            nameView.setEllipsizeByGradient(!LocaleController.isRTL);
             nameView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             nameView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-            addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 6.33f, 8, 0));
+            nameView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
-            rightDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(18));
+            statusBadgeComponent = new StatusBadgeComponent(this);
             nameView.setDrawablePadding(AndroidUtilities.dp(3));
-            nameView.setRightDrawable(rightDrawable);
 
             readView = new TextView(context);
             readView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -378,7 +389,17 @@ public class MessageSeenView extends FrameLayout {
             readView.setEllipsize(TextUtils.TruncateAt.END);
             readView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             readView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 20, 13, 0));
+            readView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+
+            if (LocaleController.isRTL) {
+                addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 8, 6.33f, 55, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 13, 20, 55, 0));
+            } else {
+                addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.LEFT | Gravity.CENTER_VERTICAL, 10f, 0, 0, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 6.33f, 8, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 20, 13, 0));
+            }
         }
 
         @Override
@@ -386,22 +407,22 @@ public class MessageSeenView extends FrameLayout {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
         }
 
-        public void setUser(TLRPC.User user, int date) {
-            this.user = user;
+        public void setUser(TLObject object, int date) {
+            this.object = object;
             updateStatus(false);
 
-            if (user != null) {
-                avatarDrawable.setInfo(user);
-                ImageLocation imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
-                avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, user);
-                nameView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            if (object != null) {
+                avatarDrawable.setInfo(object);
+                ImageLocation imageLocation = ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL);
+                avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, object);
+                nameView.setText(ContactsController.formatName(object));
             }
 
             if (date <= 0) {
                 readView.setVisibility(GONE);
                 nameView.setTranslationY(AndroidUtilities.dp(9));
             } else {
-                readView.setText(TextUtils.concat(seenDrawable.getSpanned(getContext()), LocaleController.formatSeenDate(date)));
+                readView.setText(TextUtils.concat(seenDrawable.getSpanned(getContext(), null), LocaleController.formatSeenDate(date)));
                 readView.setVisibility(VISIBLE);
                 nameView.setTranslationY(0);
             }
@@ -421,37 +442,29 @@ public class MessageSeenView extends FrameLayout {
         public void didReceivedNotification(int id, int account, Object... args) {
             if (id == NotificationCenter.userEmojiStatusUpdated) {
                 TLRPC.User user = (TLRPC.User) args[0];
-                if (this.user != null && user != null && this.user.id == user.id) {
-                    this.user = user;
+                TLRPC.User currentUser = object instanceof TLRPC.User ? (TLRPC.User) object : null;
+                if (currentUser != null && user != null && currentUser.id == user.id) {
+                    this.object = user;
                     updateStatus(true);
                 }
             }
         }
 
         private void updateStatus(boolean animated) {
-            Long documentId = UserObject.getEmojiStatusDocumentId(user);
-            if (documentId == null) {
-                rightDrawable.set((Drawable) null, animated);
-            } else {
-                rightDrawable.set(documentId, animated);
-            }
+            nameView.setRightDrawable(statusBadgeComponent.updateDrawable(object, Theme.getColor(Theme.key_chats_verifiedBackground), animated));
         }
 
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            if (rightDrawable != null) {
-                rightDrawable.attach();
-            }
+            statusBadgeComponent.onAttachedToWindow();
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userEmojiStatusUpdated);
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
-            if (rightDrawable != null) {
-                rightDrawable.detach();
-            }
+            statusBadgeComponent.onDetachedFromWindow();
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userEmojiStatusUpdated);
         }
     }

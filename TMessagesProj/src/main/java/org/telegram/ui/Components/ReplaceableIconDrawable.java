@@ -9,6 +9,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
+import android.widget.ImageView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -29,6 +30,7 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
     private ValueAnimator animation;
     private float progress = 1f;
     ArrayList<View> parentViews = new ArrayList<>();
+    public boolean exactlyBounds;
 
     public ReplaceableIconDrawable(Context context) {
         this.context = context;
@@ -98,7 +100,13 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
     }
 
     private void updateBounds(Drawable d, Rect bounds) {
-        if (d == null) return;
+        if (d == null) {
+            return;
+        }
+        if (exactlyBounds) {
+            d.setBounds(bounds);
+            return;
+        }
         int left;
         int right;
         int bottom;
@@ -199,7 +207,9 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
     }
 
     public void addView(View view) {
-        parentViews.add(view);
+        if (!parentViews.contains(view)) {
+            parentViews.add(view);
+        }
     }
 
     @Override
@@ -210,5 +220,9 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
                 parentViews.get(i).invalidate();
             }
         }
+    }
+
+    public void removeView(View view) {
+        parentViews.remove(view);
     }
 }

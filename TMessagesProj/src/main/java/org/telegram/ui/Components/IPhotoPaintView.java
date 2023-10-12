@@ -26,6 +26,8 @@ public interface IPhotoPaintView {
     void shutdown();
     void onResume();
 
+    default void onAnimationStateChanged(boolean isStart) {}
+    default void setOffsetTranslationX(float x) {}
     void setOffsetTranslationY(float y, float panProgress, int keyboardHeight, boolean isPan);
     float getOffsetTranslationY();
     void updateColors();
@@ -38,7 +40,7 @@ public interface IPhotoPaintView {
     boolean onTouch(MotionEvent ev);
     void setTransform(float scale, float trX, float trY, float imageWidth, float imageHeight);
     void setOnDoneButtonClickedListener(Runnable callback);
-    void onBackPressed();
+    boolean onBackPressed();
     int getEmojiPadding(boolean panned);
     RenderView getRenderView();
 

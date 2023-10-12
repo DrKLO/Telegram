@@ -85,7 +85,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         if (needCheck > 0) {
             checkView = new CheckBox2(context, 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
-            checkView.setColor(null, null, Theme.key_radioBackgroundChecked);
+            checkView.setColor(-1, -1, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);
             if (needCheck == 1) {
                 addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
@@ -99,6 +99,9 @@ public class ActionBarMenuSubItem extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(itemHeight), View.MeasureSpec.EXACTLY));
+        if (expandIfMultiline && textView.getLayout().getLineCount() > 1) {
+            super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(itemHeight + 8), View.MeasureSpec.EXACTLY));
+        }
     }
 
     public void setItemHeight(int itemHeight) {
@@ -123,8 +126,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
-    public void setCheckColor(String colorKey) {
-        checkView.setColor(null, null, colorKey);
+    public void setCheckColor(int colorKey) {
+        checkView.setColor(-1, -1, colorKey);
     }
 
     public void setRightIcon(int icon) {
@@ -145,9 +148,19 @@ public class ActionBarMenuSubItem extends FrameLayout {
         setTextAndIcon(text, icon, null);
     }
 
+    boolean expandIfMultiline;
+
     public void setMultiline() {
+        setMultiline(true);
+    }
+
+    public void setMultiline(boolean changeSize) {
         textView.setLines(2);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        if (changeSize) {
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        } else {
+            expandIfMultiline = true;
+        }
         textView.setSingleLine(false);
         textView.setGravity(Gravity.CENTER_VERTICAL);
     }
@@ -188,6 +201,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     public void setIcon(int resId) {
         imageView.setImageResource(resId);
+    }
+
+    public void setIcon(Drawable drawable) {
+        imageView.setImageDrawable(drawable);
     }
 
     public void setAnimatedIcon(int resId) {
@@ -260,9 +277,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
         setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? 6 : 0, bottom ? 6 : 0));
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public CheckBox2 getCheckView() {

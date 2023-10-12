@@ -11,7 +11,7 @@ package org.telegram.messenger;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.SharedPreferences;
-import android.net.Uri;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
@@ -80,6 +80,7 @@ public class FileUploadOperation {
     private long availableSize;
     private boolean uploadFirstPartLater;
     private SparseArray<UploadCachedResult> cachedResults = new SparseArray<>();
+    private boolean[] recalculatedEstimatedSize = {false, false};
     protected long lastProgressUpdateTime;
 
     public interface FileUploadOperationDelegate {
@@ -198,8 +199,23 @@ public class FileUploadOperation {
         AutoDeleteMediaTask.unlockFile(uploadingFilePath);
     }
 
-    protected void checkNewDataAvailable(final long newAvailableSize, final long finalSize) {
+    protected void checkNewDataAvailable(final long newAvailableSize, final long finalSize, final Float progress) {
         Utilities.stageQueue.postRunnable(() -> {
+            if (progress != null && estimatedSize != 0 && finalSize == 0) {
+                boolean needRecalculation = false;
+                if (progress > 0.75f && !recalculatedEstimatedSize[0]) {
+                    recalculatedEstimatedSize[0] = true;
+                    needRecalculation = true;
+                }
+                if (progress > 0.95f && !recalculatedEstimatedSize[1]) {
+                    recalculatedEstimatedSize[1] = true;
+                    needRecalculation = true;
+                }
+                if (needRecalculation) {
+                    estimatedSize = (long) (newAvailableSize / progress);
+                }
+            }
+
             if (estimatedSize != 0 && finalSize != 0) {
                 estimatedSize = 0;
                 totalFileSize = finalSize;
@@ -525,10 +541,14 @@ public class FileUploadOperation {
         } else {
             connectionType = ConnectionsManager.ConnectionTypeUpload | ((requestNumFinal % 4) << 16);
         }
-
-        int requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(finalRequest, (response, error) -> {
+        long time = System.currentTimeMillis();
+        int[] requestToken = new int[1];
+        requestToken[0] = ConnectionsManager.getInstance(currentAccount).sendRequest(finalRequest, (response, error) -> {
             if (currentOperationGuid != operationGuid) {
                 return;
+            }
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("debug_uploading: " + " response reqId " + requestToken[0] + " time" + uploadingFilePath);
             }
             int networkType = response != null ? response.networkType : ApplicationLoader.getCurrentNetworkType();
             if (currentType == ConnectionsManager.FileTypeAudio) {
@@ -650,6 +670,9 @@ public class FileUploadOperation {
                 startUploadRequest();
             }
         }), forceSmallFile ? ConnectionsManager.RequestFlagCanCompress : 0, ConnectionsManager.DEFAULT_DATACENTER_ID, connectionType, true);
-        requestTokens.put(requestNumFinal, requestToken);
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("debug_uploading: " + " send reqId " + requestToken[0] + " " + uploadingFilePath);
+        }
+        requestTokens.put(requestNumFinal, requestToken[0]);
     }
 }

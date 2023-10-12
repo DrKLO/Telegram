@@ -71,6 +71,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         buttonColor = color;
 
         rippleView.setBackground(Theme.createSelectorDrawable(BotWebViewContainer.getMainButtonRippleColor(buttonColor), 2));
+        invalidate();
 
         progressView.setProgressColor(textColor);
         if (progressWasVisible != isProgressVisible) {
@@ -135,5 +136,15 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         canvas.translate(-AndroidUtilities.dp(8) * (1f - progress), 0);
         super.draw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int height = MeasureSpec.getSize(heightMeasureSpec);
+        int parentHeight = getParent() instanceof View ? ((View) getParent()).getHeight() : 0;
+        if (parentHeight > 0) {
+            height = Math.min(height, parentHeight);
+        }
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.getMode(heightMeasureSpec)));
     }
 }

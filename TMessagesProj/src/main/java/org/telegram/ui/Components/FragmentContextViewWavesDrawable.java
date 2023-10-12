@@ -293,13 +293,13 @@ public class FragmentContextViewWavesDrawable {
             createGradients();
         }
 
-        String greenKey1 = Theme.key_voipgroup_topPanelGreen1;
-        String greenKey2 = Theme.key_voipgroup_topPanelGreen2;
-        String blueKey1 = Theme.key_voipgroup_topPanelBlue1;
-        String blueKey2 = Theme.key_voipgroup_topPanelBlue2;
-        String mutedByAdmin = Theme.key_voipgroup_mutedByAdminGradient;
-        String mutedByAdmin2 = Theme.key_voipgroup_mutedByAdminGradient2;
-        String mutedByAdmin3 = Theme.key_voipgroup_mutedByAdminGradient3;
+        int greenKey1 = Theme.key_voipgroup_topPanelGreen1;
+        int greenKey2 = Theme.key_voipgroup_topPanelGreen2;
+        int blueKey1 = Theme.key_voipgroup_topPanelBlue1;
+        int blueKey2 = Theme.key_voipgroup_topPanelBlue2;
+        int mutedByAdmin = Theme.key_voipgroup_mutedByAdminGradient;
+        int mutedByAdmin2 = Theme.key_voipgroup_mutedByAdminGradient2;
+        int mutedByAdmin3 = Theme.key_voipgroup_mutedByAdminGradient3;
 
         private void createGradients() {
             if (currentState == MUTE_BUTTON_STATE_UNMUTE) {

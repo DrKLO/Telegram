@@ -17,6 +17,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
+import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.Size;
 
 import java.util.concurrent.CountDownLatch;
@@ -47,6 +48,7 @@ public class RenderView extends TextureView {
     private Input input;
     private ShapeInput shapeInput;
     private Bitmap bitmap;
+    private Bitmap blurBitmap;
     private boolean transformedBitmap;
 
     private boolean firstDrawSent;
@@ -57,11 +59,12 @@ public class RenderView extends TextureView {
 
     private boolean shuttingDown;
 
-    public RenderView(Context context, Painting paint, Bitmap b) {
+    public RenderView(Context context, Painting paint, Bitmap bitmap, Bitmap blurBitmap, BlurringShader.BlurManager blurManager) {
         super(context);
         setOpaque(false);
 
-        bitmap = b;
+        this.bitmap = bitmap;
+        this.blurBitmap = blurBitmap;
         painting = paint;
         painting.setRenderView(this);
 
@@ -71,7 +74,7 @@ public class RenderView extends TextureView {
                 if (surface == null || internal != null) {
                     return;
                 }
-                internal = new CanvasInternal(surface);
+                internal = new CanvasInternal(surface, blurManager);
                 internal.setBufferSize(width, height);
                 updateTransform();
 
@@ -342,8 +345,11 @@ public class RenderView extends TextureView {
         private long lastRenderCallTime;
         private Runnable scheduledRunnable;
 
-        public CanvasInternal(SurfaceTexture surface) {
+        private final BlurringShader.BlurManager blurManager;
+
+        public CanvasInternal(SurfaceTexture surface, BlurringShader.BlurManager blurManager) {
             super("CanvasInternal");
+            this.blurManager = blurManager;
             surfaceTexture = surface;
         }
 
@@ -408,13 +414,18 @@ public class RenderView extends TextureView {
             }
 
             int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
-            eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+            EGLContext parentContext = blurManager != null ? blurManager.getParentContext() : EGL10.EGL_NO_CONTEXT;
+            eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, parentContext, attrib_list);
             if (eglContext == null) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 }
                 finish();
                 return false;
+            }
+            if (blurManager != null) {
+                blurManager.acquiredContext(eglContext);
+                blurManager.attach(safeRequestRender);
             }
 
             if (surfaceTexture instanceof SurfaceTexture) {
@@ -446,7 +457,7 @@ public class RenderView extends TextureView {
 
             painting.setupShaders();
             checkBitmap();
-            painting.setBitmap(bitmap);
+            painting.setBitmap(bitmap, blurBitmap);
 
             Utils.HasGLError();
 
@@ -466,6 +477,13 @@ public class RenderView extends TextureView {
                 Canvas canvas = new Canvas(b);
                 canvas.drawBitmap(bitmap, null, new RectF(0, 0, paintingSize.width, paintingSize.height), null);
                 bitmap = b;
+                transformedBitmap = true;
+            }
+            if (blurBitmap != null && (blurBitmap.getWidth() != paintingSize.width || blurBitmap.getHeight() != paintingSize.height)) {
+                Bitmap b = Bitmap.createBitmap((int) paintingSize.width, (int) paintingSize.height, Bitmap.Config.ALPHA_8);
+                Canvas canvas = new Canvas(b);
+                canvas.drawBitmap(blurBitmap, null, new RectF(0, 0, paintingSize.width, paintingSize.height), null);
+                blurBitmap = b;
                 transformedBitmap = true;
             }
         }
@@ -520,8 +538,17 @@ public class RenderView extends TextureView {
         }
 
         public void requestRender() {
-            postRunnable(() -> drawRunnable.run());
+            postRunnable(drawRunnable);
         }
+
+        public Runnable safeRequestRender = () -> {
+            if (scheduledRunnable != null) {
+                cancelRunnable(scheduledRunnable);
+                scheduledRunnable = null;
+            }
+            cancelRunnable(drawRunnable);
+            postRunnable(drawRunnable);
+        };
 
         public void scheduleRedraw() {
             if (scheduledRunnable != null) {
@@ -544,12 +571,18 @@ public class RenderView extends TextureView {
                 eglSurface = null;
             }
             if (eglContext != null) {
+                if (blurManager != null) {
+                    blurManager.destroyedContext(eglContext);
+                }
                 egl10.eglDestroyContext(eglDisplay, eglContext);
                 eglContext = null;
             }
             if (eglDisplay != null) {
                 egl10.eglTerminate(eglDisplay);
                 eglDisplay = null;
+            }
+            if (blurManager != null) {
+                blurManager.detach(safeRequestRender);
             }
         }
 
@@ -564,6 +597,10 @@ public class RenderView extends TextureView {
         }
 
         public Bitmap getTexture() {
+            return getTexture(false, false);
+        }
+
+        public Bitmap getTexture(final boolean onlyBlur, final boolean includeBlur) {
             if (!initialized) {
                 return null;
             }
@@ -571,7 +608,7 @@ public class RenderView extends TextureView {
             final Bitmap[] object = new Bitmap[1];
             try {
                 postRunnable(() -> {
-                    Painting.PaintingData data = painting.getPaintingData(new RectF(0, 0, painting.getSize().width, painting.getSize().height), false);
+                    Painting.PaintingData data = painting.getPaintingData(new RectF(0, 0, painting.getSize().width, painting.getSize().height), false, onlyBlur, includeBlur);
                     if (data != null) {
                         object[0] = data.bitmap;
                     }
@@ -585,11 +622,11 @@ public class RenderView extends TextureView {
         }
     }
 
-    public Bitmap getResultBitmap() {
+    public Bitmap getResultBitmap(boolean blurTex, boolean includeBlur) {
         if (brush instanceof Brush.Shape) {
             shapeInput.stop();
         }
-        return internal != null ? internal.getTexture() : null;
+        return internal != null ? internal.getTexture(blurTex, includeBlur) : null;
     }
 
     public void performInContext(final Runnable action) {

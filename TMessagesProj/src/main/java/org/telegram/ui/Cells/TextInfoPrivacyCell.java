@@ -35,7 +35,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     private TextView textView;
     private LinkSpanDrawable.LinkCollector links;
-    private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
+    private int linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
     private int topPadding = 10;
     private int bottomPadding = 17;
     private int fixedSize;
@@ -115,7 +115,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     }
 
-    public void setLinkTextColorKey(String key) {
+    public void setLinkTextColorKey(int key) {
         linkTextColorKey = key;
     }
 
@@ -167,7 +167,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setTextColor(String key) {
+    public void setTextColorByKey(int key) {
         textView.setTextColor(getThemedColor(key));
         textView.setTag(key);
     }
@@ -195,8 +195,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
         info.setText(text);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

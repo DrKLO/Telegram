@@ -215,7 +215,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                 ActionBarPopupWindow.ActionBarPopupWindowLayout actionBarPopupWindowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext());
                 ActionBarMenuSubItem edit = ActionBarMenuItem.addItem(actionBarPopupWindowLayout, R.drawable.msg_customize, LocaleController.getString("EditException", R.string.EditException), false, null);
                 ActionBarMenuSubItem delete = ActionBarMenuItem.addItem(actionBarPopupWindowLayout, R.drawable.msg_delete, LocaleController.getString("DeleteException", R.string.DeleteException), false, null);
-                delete.setColors(Theme.getColor(Theme.key_windowBackgroundWhiteRedText), Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                delete.setColors(Theme.getColor(Theme.key_text_RedRegular), Theme.getColor(Theme.key_text_RedRegular));
                 ActionBarPopupWindow popupWindow = AlertsCreator.createSimplePopup(SaveToGallerySettingsActivity.this, actionBarPopupWindowLayout, view, x, y);
                 actionBarPopupWindowLayout.setParentWindow(popupWindow);
 
@@ -245,7 +245,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
             //  ((ViewGroup.MarginLayoutParams)recyclerListView.getLayoutParams()).bottomMargin = AndroidUtilities.dp()
 
             FrameLayout button = new FrameLayout(getContext());
-            button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+            button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
 
             TextView textView = new TextView(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -373,7 +373,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                 case VIEW_TYPE_DELETE_ALL:
                     textCell = new TextCell(parent.getContext());
                     textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
-                    textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
+                    textCell.setColors(-1, Theme.key_text_RedRegular);
                     view = textCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
@@ -399,7 +399,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
                     SelectableAnimatedTextView lowerTextView = new SelectableAnimatedTextView(getContext());
                     lowerTextView.setTextSize(AndroidUtilities.dp(13));
-                    lowerTextView.setText(AndroidUtilities.formatFileSize(1024 * 512, true));
+                    lowerTextView.setText(AndroidUtilities.formatFileSize(1024 * 512, true, false));
                     textContainer.addView(lowerTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
                     SelectableAnimatedTextView midTextView = new SelectableAnimatedTextView(getContext());
@@ -409,7 +409,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
                     SelectableAnimatedTextView topTextView = new SelectableAnimatedTextView(getContext());
                     topTextView.setTextSize(AndroidUtilities.dp(13));
-                    topTextView.setText(AndroidUtilities.formatFileSize(SaveToGallerySettingsHelper.MAX_VIDEO_LIMIT, true));
+                    topTextView.setText(AndroidUtilities.formatFileSize(SaveToGallerySettingsHelper.MAX_VIDEO_LIMIT, true, false));
                     textContainer.addView(topTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM));
 
 
@@ -450,7 +450,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                             } else {
                                 midTextView.setText(
                                         LocaleController.formatString("UpToFileSize", R.string.UpToFileSize,
-                                                AndroidUtilities.formatFileSize(value, true)
+                                                AndroidUtilities.formatFileSize(value, true, false)
                                         ), false);
                                 lowerTextView.setSelectedInternal(false, animated);
                                 midTextView.setSelectedInternal(true, animated);

@@ -11,14 +11,14 @@ import org.telegram.ui.ActionBar.Theme;
 public class ForegroundColorSpanThemable extends CharacterStyle implements UpdateAppearance {
 
     private int color;
-    private String colorKey;
+    private int colorKey;
     private final Theme.ResourcesProvider resourcesProvider;
 
-    public ForegroundColorSpanThemable(String colorKey) {
+    public ForegroundColorSpanThemable(int colorKey) {
         this(colorKey, null);
     }
 
-    public ForegroundColorSpanThemable(String colorKey, Theme.ResourcesProvider resourcesProvider) {
+    public ForegroundColorSpanThemable(int colorKey, Theme.ResourcesProvider resourcesProvider) {
         this.colorKey = colorKey;
         this.resourcesProvider = resourcesProvider;
     }

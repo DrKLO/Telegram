@@ -40,6 +40,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatBackgroundDrawable;
 
 import java.util.List;
 
@@ -80,6 +81,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
     private int currentType;
     int patternColor;
     private float selectionProgress;
+    ChatBackgroundDrawable chatBackgroundDrawable;
+    boolean attached;
 
     public ThemeSmallPreviewView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, int currentType) {
         super(context);
@@ -141,6 +144,13 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             super.dispatchDraw(canvas);
             return;
         }
+        if (chatBackgroundDrawable != null) {
+            canvas.save();
+            canvas.clipPath(clipPath);
+            chatBackgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            chatBackgroundDrawable.draw(canvas);
+            canvas.restore();
+        }
         if (changeThemeProgress != 1 && animateOutThemeDrawable != null) {
             animateOutThemeDrawable.drawBackground(canvas, 1f);
         }
@@ -193,6 +203,21 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 thumb = Emoji.getEmojiDrawable(item.chatTheme.getEmoticon());
             }
             backupImageView.setImage(ImageLocation.getForDocument(document), "50_50", thumb, null);
+            if (item.chatTheme.wallpaper != null) {
+                if (attached && chatBackgroundDrawable != null) {
+                    chatBackgroundDrawable.onDetachedFromWindow();
+                }
+                chatBackgroundDrawable = new ChatBackgroundDrawable(item.chatTheme.wallpaper, false, true);
+                chatBackgroundDrawable.setParent(this);
+                if (attached) {
+                    chatBackgroundDrawable.onAttachedToWindow();
+                }
+            } else {
+                if (attached && chatBackgroundDrawable != null) {
+                    chatBackgroundDrawable.onDetachedFromWindow();
+                }
+                chatBackgroundDrawable = null;
+            }
         }
 
         if (itemChanged || darkModeChanged) {
@@ -498,9 +523,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         return textLayout;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
 
@@ -591,7 +615,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             inBubblePaint.setAlpha((int) (255 * alpha));
             rectF.set(INNER_RECT_SPACE, INNER_RECT_SPACE, getWidth() - INNER_RECT_SPACE, getHeight() - INNER_RECT_SPACE);
 
-            if (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.showAsDefaultStub) {
+            if (chatThemeItem.chatTheme == null || (chatThemeItem.chatTheme.showAsDefaultStub && chatThemeItem.chatTheme.wallpaper == null)) {
                 canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
                 canvas.save();
                 StaticLayout textLayout = getNoThemeStaticLayout();
@@ -654,12 +678,20 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        attached = true;
+        if (chatBackgroundDrawable != null) {
+            chatBackgroundDrawable.onAttachedToWindow();
+        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        attached = false;
+        if (chatBackgroundDrawable != null) {
+            chatBackgroundDrawable.onDetachedFromWindow();
+        }
     }
 
     @Override

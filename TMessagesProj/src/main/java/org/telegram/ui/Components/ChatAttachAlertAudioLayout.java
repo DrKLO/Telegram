@@ -19,6 +19,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -463,7 +464,13 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         SharedAudioCell audioCell = (SharedAudioCell) view;
         MediaController.AudioEntry audioEntry = (MediaController.AudioEntry) audioCell.getTag();
         boolean add;
-        if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
+        if (parentAlert.isStoryAudioPicker) {
+            sendPressed = true;
+            ArrayList<MessageObject> audios = new ArrayList<>();
+            audios.add(audioEntry.messageObject);
+            delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), false, 0);
+            add = true;
+        } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
             selectedAudiosOrder.remove(audioEntry);
             audioCell.setChecked(false, true);

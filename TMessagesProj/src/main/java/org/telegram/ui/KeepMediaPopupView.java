@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.ui.CacheControlActivity.KEEP_MEDIA_TYPE_STORIES;
+
 import android.content.Context;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
@@ -34,6 +36,7 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
     ActionBarMenuSubItem oneMonth;
     ActionBarMenuSubItem oneWeek;
     ActionBarMenuSubItem oneDay;
+    ActionBarMenuSubItem twoDay;
     ActionBarMenuSubItem oneMinute;
     ArrayList<CheckItem> checkItems = new ArrayList<>();
 
@@ -57,12 +60,14 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
 //            checkItems.add(new CheckItem(oneMinute, CacheByChatsController.KEEP_MEDIA_ONE_MINUTE));
 //        }
         oneDay = ActionBarMenuItem.addItem(this, R.drawable.msg_autodelete_1d, LocaleController.formatPluralString("Days", 1), false, null);
+        twoDay = ActionBarMenuItem.addItem(this, R.drawable.msg_autodelete_2d, LocaleController.formatPluralString("Days", 2), false, null);
         oneWeek = ActionBarMenuItem.addItem(this, R.drawable.msg_autodelete_1w, LocaleController.formatPluralString("Weeks", 1), false, null);
         oneMonth = ActionBarMenuItem.addItem(this, R.drawable.msg_autodelete_1m, LocaleController.formatPluralString("Months", 1), false, null);
         forever = ActionBarMenuItem.addItem(this, R.drawable.msg_cancel, LocaleController.getString("AutoDeleteMediaNever", R.string.AutoDeleteMediaNever), false, null);
         delete = ActionBarMenuItem.addItem(this, R.drawable.msg_delete, LocaleController.getString("DeleteException", R.string.DeleteException), false, null);
-        delete.setColors(Theme.getColor(Theme.key_windowBackgroundWhiteRedText), Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+        delete.setColors(Theme.getColor(Theme.key_text_RedRegular), Theme.getColor(Theme.key_text_RedRegular));
         checkItems.add(new CheckItem(oneDay, CacheByChatsController.KEEP_MEDIA_ONE_DAY));
+        checkItems.add(new CheckItem(twoDay, CacheByChatsController.KEEP_MEDIA_TWO_DAY));
         checkItems.add(new CheckItem(oneWeek, CacheByChatsController.KEEP_MEDIA_ONE_WEEK));
         checkItems.add(new CheckItem(oneMonth, CacheByChatsController.KEEP_MEDIA_ONE_MONTH));
         checkItems.add(new CheckItem(forever, CacheByChatsController.KEEP_MEDIA_FOREVER));
@@ -72,7 +77,7 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
         gap = new FrameLayout(context);
         gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator));
         View gapShadow = new View(context);
-        gapShadow.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, null));
+        gapShadow.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, null));
         gap.addView(gapShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         gap.setTag(R.id.fit_width_tag, 1);
         addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
@@ -164,6 +169,19 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
 
     public void update(int type) {
         currentType = type;
+        if (type == KEEP_MEDIA_TYPE_STORIES) {
+            twoDay.setVisibility(View.VISIBLE);
+            oneMonth.setVisibility(View.GONE);
+            gap.setVisibility(View.GONE);
+            exceptionsView.setVisibility(View.GONE);
+            description.setVisibility(View.GONE);
+        } else {
+            twoDay.setVisibility(View.GONE);
+            oneMonth.setVisibility(View.VISIBLE);
+            gap.setVisibility(View.VISIBLE);
+            exceptionsView.setVisibility(View.VISIBLE);
+            description.setVisibility(View.VISIBLE);
+        }
         exceptions = cacheByChatsController.getKeepMediaExceptions(type);
         if (exceptions.isEmpty()) {
             exceptionsView.titleView.setText(LocaleController.getString("AddAnException", R.string.AddAnException));
