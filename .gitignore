@@ -6,3 +6,5 @@ obj/
 local.properties
 .externalNativeBuild
 .cxx
+
+.DS_Store
