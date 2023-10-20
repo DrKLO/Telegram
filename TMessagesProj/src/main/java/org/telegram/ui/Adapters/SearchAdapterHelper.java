@@ -201,42 +201,6 @@ public class SearchAdapterHelper {
                                 TLRPC.User user = res.users.get(a);
                                 usersMap.put(user.id, user);
                             }
-                            for (int b = 0; b < 2; b++) {
-                                ArrayList<TLRPC.Peer> arrayList;
-                                if (b == 0) {
-                                    if (!allResultsAreGlobal) {
-                                        continue;
-                                    }
-                                    arrayList = res.my_results;
-                                } else {
-                                    arrayList = res.results;
-                                }
-                                for (int a = 0; a < arrayList.size(); a++) {
-                                    TLRPC.Peer peer = arrayList.get(a);
-                                    TLRPC.User user = null;
-                                    TLRPC.Chat chat = null;
-                                    if (peer.user_id != 0) {
-                                        user = usersMap.get(peer.user_id);
-                                    } else if (peer.chat_id != 0) {
-                                        chat = chatsMap.get(peer.chat_id);
-                                    } else if (peer.channel_id != 0) {
-                                        chat = chatsMap.get(peer.channel_id);
-                                    }
-                                    if (chat != null) {
-                                        if (!allowChats || canAddGroupsOnly && !ChatObject.canAddBotsToChat(chat) || !allowGlobalResults && ChatObject.isNotInChat(chat) || !filter(chat)) {
-                                            continue;
-                                        }
-                                        globalSearch.add(chat);
-                                        globalSearchMap.put(-chat.id, chat);
-                                    } else if (user != null) {
-                                        if (canAddGroupsOnly || !allowBots && user.bot || !allowSelf && user.self || !allowGlobalResults && b == 1 && !user.contact || !filter(user)) {
-                                            continue;
-                                        }
-                                        globalSearch.add(user);
-                                        globalSearchMap.put(user.id, user);
-                                    }
-                                }
-                            }
                             if (!allResultsAreGlobal) {
                                 for (int a = 0; a < res.my_results.size(); a++) {
                                     TLRPC.Peer peer = res.my_results.get(a);

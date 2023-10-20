@@ -341,9 +341,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         //items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), newChannelIcon));
         items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), contactsIcon));
         items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), callsIcon));
-        if (hasGps) {
-            items.add(new Item(12, LocaleController.getString("PeopleNearby", R.string.PeopleNearby), peopleNearbyIcon));
-        }
         items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), savedIcon));
         items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), settingsIcon));
         items.add(null); // divider
