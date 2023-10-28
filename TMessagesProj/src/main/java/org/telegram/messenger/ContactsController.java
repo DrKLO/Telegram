@@ -27,6 +27,7 @@ import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
 import com.google.android.exoplayer2.util.Log;
@@ -2214,7 +2215,7 @@ public class ContactsController extends BaseController {
         if (systemAccount == null || user == null) {
             return -1;
         }
-        if (!hasContactsPermission()) {
+        if (!hasContactsWritePermission()) {
             return -1;
         }
         long res = -1;
@@ -2239,8 +2240,8 @@ public class ContactsController extends BaseController {
             if (result != null && result.length > 0 && result[0].uri != null) {
                 res = Long.parseLong(result[0].uri.getLastPathSegment());
             }
-        } catch (Exception ignore) {
-
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         synchronized (observerLock) {
             ignoreChanges = false;
@@ -2863,6 +2864,7 @@ public class ContactsController extends BaseController {
         }
     }
 
+    @NonNull
     public static String formatName(TLRPC.User user) {
         if (user == null) {
             return "";
@@ -2870,10 +2872,12 @@ public class ContactsController extends BaseController {
         return formatName(user.first_name, user.last_name, 0);
     }
 
+    @NonNull
     public static String formatName(String firstName, String lastName) {
         return formatName(firstName, lastName, 0);
     }
 
+    @NonNull
     public static String formatName(String firstName, String lastName, int maxLength) {
         /*if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);

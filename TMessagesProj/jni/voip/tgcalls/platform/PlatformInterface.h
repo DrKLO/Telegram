@@ -10,6 +10,9 @@
 #include "rtc_base/ref_counted_object.h"
 #include <string>
 
+struct AVFrame;
+struct AVCodecContext;
+
 namespace tgcalls {
 
 enum class VideoState;
@@ -292,6 +295,14 @@ private:
     rtc::scoped_refptr<webrtc::AudioDeviceModule> _impl;
 };
 
+class PlatformVideoFrame {
+public:
+    PlatformVideoFrame() {
+    }
+    
+    virtual ~PlatformVideoFrame() = default;
+};
+
 class PlatformInterface {
 public:
 	static PlatformInterface *SharedInstance();
@@ -312,6 +323,11 @@ public:
 	virtual std::unique_ptr<VideoCapturerInterface> makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::function<void(PlatformCaptureInfo)> captureInfoUpdated, std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) = 0;
     virtual rtc::scoped_refptr<WrappedAudioDeviceModule> wrapAudioDeviceModule(rtc::scoped_refptr<webrtc::AudioDeviceModule> module) {
         return rtc::make_ref_counted<DefaultWrappedAudioDeviceModule>(module);
+    }
+    virtual void setupVideoDecoding(AVCodecContext *codecContext) {
+    }
+    virtual rtc::scoped_refptr<webrtc::VideoFrameBuffer> createPlatformFrameFromData(AVFrame const *frame) {
+        return nullptr;
     }
 
 public:

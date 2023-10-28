@@ -23,6 +23,8 @@ import androidx.annotation.RequiresApi;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.UserConfig;
@@ -134,7 +136,6 @@ public class AdjustPanLayoutHelper {
                 updateTransition((float) animation.getAnimatedValue());
             }
         });
-        int selectedAccount = UserConfig.selectedAccount;
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {

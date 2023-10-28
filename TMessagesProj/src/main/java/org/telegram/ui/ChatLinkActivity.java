@@ -55,6 +55,7 @@ import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class ChatLinkActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -618,6 +619,11 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 TLRPC.messages_Chats res = (TLRPC.messages_Chats) response;
                 getMessagesController().putChats(res.chats, false);
                 chats = res.chats;
+                Iterator<TLRPC.Chat> i = chats.iterator();
+                while (i.hasNext()) {
+                    if (ChatObject.isForum(i.next()))
+                        i.remove();
+                }
             }
             loadingChats = false;
             chatsLoaded = true;

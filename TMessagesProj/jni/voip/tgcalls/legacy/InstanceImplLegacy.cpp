@@ -215,7 +215,7 @@ void InstanceImplLegacy::sendVideoDeviceUpdated() {
 void InstanceImplLegacy::setRequestedVideoAspect(float aspect) {
 }
 
-void InstanceImplLegacy::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void InstanceImplLegacy::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
 }
 
 void InstanceImplLegacy::setAudioOutputGainControlEnabled(bool enabled) {

@@ -24,7 +24,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -348,7 +348,7 @@ public class SelfStoryViewsView extends FrameLayout {
         viewPagerContainer.setTranslationY(-bottomPadding + getMeasuredHeight() - selfStoriesViewsOffset);
     }
 
-    public void setItems(long dialogId, ArrayList<TLRPC.StoryItem> storyItems, int selectedPosition) {
+    public void setItems(long dialogId, ArrayList<TL_stories.StoryItem> storyItems, int selectedPosition) {
         this.storyItems.clear();
         this.dialogId = dialogId;
         for (int i = 0; i < storyItems.size(); i++) {
@@ -384,7 +384,7 @@ public class SelfStoryViewsView extends FrameLayout {
         return false;
     }
 
-    public TLRPC.StoryItem getSelectedStory() {
+    public TL_stories.StoryItem getSelectedStory() {
         int p = selfStoriesPreviewView.getClosestPosition();
         if (p < 0 || p >= storyItems.size()) {
             return null;
@@ -499,10 +499,10 @@ public class SelfStoryViewsView extends FrameLayout {
     }
 
     public class StoryItemInternal {
-        public TLRPC.StoryItem storyItem;
+        public TL_stories.StoryItem storyItem;
         public StoriesController.UploadingStory uploadingStory;
 
-        public StoryItemInternal(TLRPC.StoryItem storyItem) {
+        public StoryItemInternal(TL_stories.StoryItem storyItem) {
             this.storyItem = storyItem;
         }
 

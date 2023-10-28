@@ -19,12 +19,16 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class BillingUtilities {
     private static final String CURRENCY_FILE = "currencies.json";
     private static final String CURRENCY_EXP = "exp";
+
+    private static TLRPC.InputStorePaymentPurpose remPaymentPurpose;
 
     @SuppressWarnings("ConstantConditions")
     public static void extractCurrencyExp(Map<String, Integer> currencyExpMap) {
@@ -56,7 +60,12 @@ public class BillingUtilities {
         paymentPurpose.serializeToStream(serializedData);
         String obfuscatedData = Base64.encodeToString(serializedData.toByteArray(), Base64.DEFAULT);
         serializedData.cleanup();
-
+        if (paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode || paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
+            remPaymentPurpose = paymentPurpose;
+            return Pair.create(obfuscatedAccountId, obfuscatedAccountId);
+        } else {
+            remPaymentPurpose = null;
+        }
         return Pair.create(obfuscatedAccountId, obfuscatedData);
     }
 
@@ -86,10 +95,16 @@ public class BillingUtilities {
         }
 
         try {
-            byte[] obfuscatedDataBytes = Base64.decode(obfuscatedData, Base64.DEFAULT);
-            SerializedData data = new SerializedData(obfuscatedDataBytes);
-            TLRPC.InputStorePaymentPurpose purpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(true), true);
-            data.cleanup();
+            TLRPC.InputStorePaymentPurpose purpose;
+            if (remPaymentPurpose == null) {
+                byte[] obfuscatedDataBytes = Base64.decode(obfuscatedData, Base64.DEFAULT);
+                SerializedData data = new SerializedData(obfuscatedDataBytes);
+                purpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(true), true);
+                data.cleanup();
+            } else {
+                purpose = remPaymentPurpose;
+                remPaymentPurpose = null;
+            }
 
             byte[] obfuscatedAccountIdBytes = Base64.decode(obfuscatedAccountId, Base64.DEFAULT);
             long accountId = Long.parseLong(new String(obfuscatedAccountIdBytes, Charsets.UTF_8));

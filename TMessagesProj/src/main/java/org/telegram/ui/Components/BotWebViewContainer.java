@@ -121,6 +121,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     private long lastClickMs;
 
     private boolean isBackButtonVisible;
+    private boolean isSettingsButtonVisible;
 
     private boolean hasUserPermissions;
     private TLRPC.User botUser;
@@ -340,11 +341,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                Context ctx = getContext();
-                if (!(ctx instanceof Activity)) {
+                Activity activity = AndroidUtilities.findActivity(getContext());
+                if (activity == null) {
                     return false;
                 }
-                Activity activity = (Activity) ctx;
 
                 if (mFilePathCallback != null) {
                     mFilePathCallback.onReceiveValue(null);
@@ -518,7 +518,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     private void onOpenUri(Uri uri, boolean tryInstantView, boolean suppressPopup) {
-        if (isRequestingPageOpen || System.currentTimeMillis() - lastClickMs > 10000 && suppressPopup) {
+        if (isRequestingPageOpen || System.currentTimeMillis() - lastClickMs > 1000 && suppressPopup) {
             return;
         }
 
@@ -536,7 +536,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-                delegate.onCloseRequested(() -> Browser.openUrl(getContext(), uri, true, tryInstantView));
+                Browser.openUrl(getContext(), uri, true, tryInstantView);
             } else {
                 Browser.openUrl(getContext(), uri, true, tryInstantView);
             }
@@ -813,10 +813,6 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 flickerView.setImage(ImageLocation.getForDocument(botIcon.icon), null, (Drawable) null, cachedBot);
                 setupFlickerParams(center);
             }
-
-            if (settingsItem != null) {
-                settingsItem.setVisibility(cachedBot.has_settings ? VISIBLE : GONE);
-            }
         } else {
             TLRPC.TL_messages_getAttachMenuBot req = new TLRPC.TL_messages_getAttachMenuBot();
             req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
@@ -836,12 +832,6 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         flickerView.setImage(ImageLocation.getForDocument(botIcon.icon), null, (Drawable) null, bot);
                         setupFlickerParams(center);
                     }
-
-                    if (settingsItem != null) {
-                        settingsItem.setVisibility(bot.has_settings ? VISIBLE : GONE);
-                    }
-                } else if (settingsItem != null) {
-                    settingsItem.setVisibility(GONE);
                 }
             }));
         }
@@ -863,6 +853,13 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
     public void reload() {
         NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+            if (isSettingsButtonVisible) {
+                isSettingsButtonVisible = false;
+                if (delegate != null) {
+                    delegate.onSetSettingsButtonVisible(isSettingsButtonVisible);
+                }
+            }
+
             checkCreateWebView();
             isPageLoaded = false;
             lastClickMs = 0;
@@ -1349,6 +1346,20 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 }
                 break;
             }
+            case "web_app_setup_settings_button": {
+                try {
+                    JSONObject jsonData = new JSONObject(eventData);
+                    boolean newVisible = jsonData.optBoolean("is_visible");
+                    if (newVisible != isSettingsButtonVisible) {
+                        isSettingsButtonVisible = newVisible;
+
+                        delegate.onSetSettingsButtonVisible(isSettingsButtonVisible);
+                    }
+                } catch (JSONException e) {
+                    FileLog.e(e);
+                }
+                break;
+            }
             case "web_app_open_invoice": {
                 try {
                     JSONObject jsonData = new JSONObject(eventData);
@@ -1687,19 +1698,14 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
     private JSONObject buildThemeParams() {
         try {
-            JSONObject object = new JSONObject();
-            object.put("bg_color", formatColor(Theme.key_windowBackgroundWhite));
-            object.put("secondary_bg_color", formatColor(Theme.key_windowBackgroundGray));
-            object.put("text_color", formatColor(Theme.key_windowBackgroundWhiteBlackText));
-            object.put("hint_color", formatColor(Theme.key_windowBackgroundWhiteHintText));
-            object.put("link_color", formatColor(Theme.key_windowBackgroundWhiteLinkText));
-            object.put("button_color", formatColor(Theme.key_featuredStickers_addButton));
-            object.put("button_text_color", formatColor(Theme.key_featuredStickers_buttonText));
-            return new JSONObject().put("theme_params", object);
+            JSONObject object = BotWebViewSheet.makeThemeParams(resourcesProvider);
+            if (object != null) {
+                return new JSONObject().put("theme_params", object);
+            }
         } catch (Exception e) {
             FileLog.e(e);
-            return new JSONObject();
         }
+        return new JSONObject();
     }
 
     private int getColor(int colorKey) {
@@ -1811,6 +1817,8 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
          */
         void onSetBackButtonVisible(boolean visible);
 
+        void onSetSettingsButtonVisible(boolean visible);
+
         /**
          * Called when WebView is ready (Called web_app_ready or page load finished)
          */
@@ -1820,6 +1828,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
          * @return If clipboard access is available to webapp
          */
         default boolean isClipboardAvailable() {
+
             return false;
         }
 

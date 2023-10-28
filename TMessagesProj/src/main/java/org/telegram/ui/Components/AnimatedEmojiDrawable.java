@@ -961,6 +961,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         private Integer lastColor;
+        private int colorFilterLastColor;
         private ColorFilter colorFilter;
 
         public void setColor(Integer color) {
@@ -968,7 +969,9 @@ public class AnimatedEmojiDrawable extends Drawable {
                 return;
             }
             lastColor = color;
-            colorFilter = color != null ? new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) : null;
+            if (color == null || colorFilterLastColor != color) {
+                colorFilter = color != null ? new PorterDuffColorFilter(colorFilterLastColor = color, PorterDuff.Mode.SRC_IN) : null;
+            }
         }
 
         public Integer getColor() {
@@ -1048,13 +1051,17 @@ public class AnimatedEmojiDrawable extends Drawable {
             return drawables[0];
         }
 
-        public void set(long documentId, boolean animated) {
-            set(documentId, cacheType, animated);
+        public boolean set(long documentId, boolean animated) {
+            return set(documentId, cacheType, animated);
         }
 
-        public void set(long documentId, int cacheType, boolean animated) {
+        public void resetAnimation() {
+            changeProgress.set(1, true);
+        }
+
+        public boolean  set(long documentId, int cacheType, boolean animated) {
             if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
-                return;
+                return false;
             }
             if (animated) {
                 changeProgress.set(0, true);
@@ -1082,8 +1089,10 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
+            return true;
         }
 
         public void set(TLRPC.Document document, boolean animated) {
@@ -1128,6 +1137,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
         }
@@ -1159,6 +1169,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
         }

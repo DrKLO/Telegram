@@ -47,7 +47,7 @@ public class UpdateAppAlertDialog extends BottomSheet {
     private NestedScrollView scrollView;
 
     private AnimatorSet shadowAnimation;
-    
+
     private View shadow;
 
     private boolean ignoreLayout;

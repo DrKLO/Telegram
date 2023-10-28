@@ -96,7 +96,6 @@ import org.telegram.ui.Components.EmojiTabsStrip;
 import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
@@ -117,7 +116,6 @@ import org.telegram.ui.WrappedResourceProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1122,7 +1120,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     listView.scrollToPosition(0, 0);
                     searchField.showProgress(false);
                     tabsStrip.showSelected(false);
-                }, null, false, false, false, true, 50);
+                }, null, false, false, false, true, 50, false);
             };
 
             @NonNull

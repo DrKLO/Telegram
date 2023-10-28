@@ -325,8 +325,8 @@ struct StateLogRecord {
 struct NetworkStateLogRecord {
     bool isConnected = false;
     bool isFailed = false;
-    absl::optional<NativeNetworkingImpl::RouteDescription> route;
-    absl::optional<NativeNetworkingImpl::ConnectionDescription> connection;
+    absl::optional<InstanceNetworking::RouteDescription> route;
+    absl::optional<InstanceNetworking::ConnectionDescription> connection;
 
     bool operator==(NetworkStateLogRecord const &rhs) const {
         if (isConnected != rhs.isConnected) {
@@ -363,7 +363,7 @@ public:
     _encryptionKey(std::move(descriptor.encryptionKey)),
     _stateUpdated(descriptor.stateUpdated),
     _signalBarsUpdated(descriptor.signalBarsUpdated),
-    _audioLevelsUpdated(descriptor.audioLevelsUpdated),
+    _audioLevelUpdated(descriptor.audioLevelsUpdated),
     _remoteBatteryLevelIsLowUpdated(descriptor.remoteBatteryLevelIsLowUpdated),
     _remoteMediaStateUpdated(descriptor.remoteMediaStateUpdated),
     _remotePrefferedAspectRatioUpdated(descriptor.remotePrefferedAspectRatioUpdated),
@@ -373,7 +373,7 @@ public:
     _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
     _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
     _videoCapture(descriptor.videoCapture),
-     _platformContext(descriptor.platformContext) {
+    _platformContext(descriptor.platformContext) {
         webrtc::field_trial::InitFieldTrialsFromString(
             "WebRTC-DataChannel-Dcsctp/Enabled/"
             "WebRTC-Audio-iOS-Holding/Enabled/"
@@ -459,6 +459,11 @@ public:
 
         cricket::MediaEngineDependencies mediaDeps;
         mediaDeps.adm = _audioDeviceModule;
+
+        webrtc:: AudioProcessingBuilder builder;
+        mediaDeps.audio_processing = builder.Create();
+
+
         mediaDeps.task_queue_factory = peerConnectionFactoryDependencies.task_queue_factory.get();
         mediaDeps.audio_encoder_factory = webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>();
         mediaDeps.audio_decoder_factory = webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>();
@@ -607,10 +612,10 @@ public:
                 return;
             }
 
-            NativeNetworkingImpl::ConnectionDescription connectionDescription;
+            InstanceNetworking::ConnectionDescription connectionDescription;
 
-            connectionDescription.local = NativeNetworkingImpl::connectionDescriptionFromCandidate(event.selected_candidate_pair.local);
-            connectionDescription.remote = NativeNetworkingImpl::connectionDescriptionFromCandidate(event.selected_candidate_pair.remote);
+            connectionDescription.local = InstanceNetworking::connectionDescriptionFromCandidate(event.selected_candidate_pair.local);
+            connectionDescription.remote = InstanceNetworking::connectionDescriptionFromCandidate(event.selected_candidate_pair.remote);
 
             if (!strong->_currentConnectionDescription || strong->_currentConnectionDescription.value() != connectionDescription) {
                 strong->_currentConnectionDescription = std::move(connectionDescription);
@@ -649,10 +654,8 @@ public:
             if (server.isTurn) {
                 webrtc::PeerConnectionInterface::IceServer mappedServer;
 
-                std::ostringstream uri;
-                uri << "turn:" << address.HostAsURIString() << ":" << server.port;
-
-                mappedServer.urls.push_back(uri.str());
+                mappedServer.urls.push_back(
+                    "turn:" + address.HostAsURIString() + ":" + std::to_string(server.port));
                 mappedServer.username = server.login;
                 mappedServer.password = server.password;
 
@@ -660,10 +663,8 @@ public:
             } else {
                 webrtc::PeerConnectionInterface::IceServer mappedServer;
 
-                std::ostringstream uri;
-                uri << "stun:" << address.HostAsURIString() << ":" << server.port;
-
-                mappedServer.urls.push_back(uri.str());
+                mappedServer.urls.push_back(
+                    "stun:" + address.HostAsURIString() + ":" + std::to_string(server.port));
 
                 peerConnectionConfiguration.servers.push_back(mappedServer);
             }
@@ -704,7 +705,7 @@ public:
                 parameters.encodings[0].max_bitrate_bps = 32 * 1024;
                 _outgoingAudioTransceiver->sender()->SetParameters(parameters);
 
-                _outgoingAudioTrack->set_enabled(true);
+                _outgoingAudioTrack->set_enabled(!_isMicrophoneMuted);
             }
         }
 
@@ -1451,14 +1452,10 @@ public:
         for (const auto &record : _networkStateLogRecords) {
             json11::Json::object jsonRecord;
 
-            std::ostringstream timestampString;
-
             if (baseTimestamp == 0) {
                 baseTimestamp = record.timestamp;
             }
-            timestampString << (record.timestamp - baseTimestamp);
-
-            jsonRecord.insert(std::make_pair("t", json11::Json(timestampString.str())));
+            jsonRecord.insert(std::make_pair("t", json11::Json(std::to_string(record.timestamp - baseTimestamp))));
             jsonRecord.insert(std::make_pair("c", json11::Json(record.record.isConnected ? 1 : 0)));
             if (record.record.route) {
                 jsonRecord.insert(std::make_pair("local", json11::Json(record.record.route->localDescription)));
@@ -1467,7 +1464,7 @@ public:
             if (record.record.connection) {
                 json11::Json::object jsonConnection;
 
-                auto serializeCandidate = [](NativeNetworkingImpl::ConnectionDescription::CandidateDescription const &candidate) -> json11::Json::object {
+                auto serializeCandidate = [](InstanceNetworking::ConnectionDescription::CandidateDescription const &candidate) -> json11::Json::object {
                     json11::Json::object jsonCandidate;
 
                     jsonCandidate.insert(std::make_pair("type", json11::Json(candidate.type)));
@@ -1554,7 +1551,7 @@ private:
     EncryptionKey _encryptionKey;
     std::function<void(State)> _stateUpdated;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float, float)> _audioLevelsUpdated;
+    std::function<void(float, float )> _audioLevelUpdated;
     std::function<void(bool)> _remoteBatteryLevelIsLowUpdated;
     std::function<void(AudioState, VideoState)> _remoteMediaStateUpdated;
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
@@ -1567,7 +1564,7 @@ private:
 
     bool _isConnected = false;
     bool _isFailed = false;
-    absl::optional<NativeNetworkingImpl::ConnectionDescription> _currentConnectionDescription;
+    absl::optional<InstanceNetworking::ConnectionDescription> _currentConnectionDescription;
 
     absl::optional<NetworkStateLogRecord> _currentNetworkStateLogRecord;
     std::vector<StateLogRecord<NetworkStateLogRecord>> _networkStateLogRecords;
@@ -1665,7 +1662,7 @@ void InstanceV2ReferenceImpl::setMuteMicrophone(bool muteMicrophone) {
     });
 }
 
-void InstanceV2ReferenceImpl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void InstanceV2ReferenceImpl::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
     _internal->perform([sink](InstanceV2ReferenceImplInternal *internal) {
         internal->setIncomingVideoOutput(sink);
     });

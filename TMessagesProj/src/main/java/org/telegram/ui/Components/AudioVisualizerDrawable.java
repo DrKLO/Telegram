@@ -114,6 +114,15 @@ public class AudioVisualizerDrawable {
 
     float rotation;
 
+    public void draw(Canvas canvas, float cx, float cy, int color, float alpha, Theme.ResourcesProvider resourcesProvider) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            return;
+        }
+        p1.setColor(color);
+        p1.setAlpha((int) (ALPHA * alpha));
+        this.draw(canvas, cx, cy);
+    }
+
     public void draw(Canvas canvas, float cx, float cy, boolean outOwner, float alpha, Theme.ResourcesProvider resourcesProvider) {
         if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;

@@ -4,8 +4,13 @@ import com.google.android.exoplayer2.util.Consumer;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.Bulletin;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.Premium.boosts.BoostRepository;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class ChannelBoostsController {
 
@@ -23,85 +28,122 @@ public class ChannelBoostsController {
     }
 
 
-    public void getBoostsStats(long dialogId, Consumer<TLRPC.TL_stories_boostsStatus> consumer) {
-        TLRPC.TL_stories_getBoostsStatus req = new TLRPC.TL_stories_getBoostsStatus();
+    public void getBoostsStats(long dialogId, Consumer<TL_stories.TL_premium_boostsStatus> consumer) {
+        TL_stories.TL_premium_getBoostsStatus req = new TL_stories.TL_premium_getBoostsStatus();
         req.peer = messagesController.getInputPeer(dialogId);
         connectionsManager.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
-                consumer.accept((TLRPC.TL_stories_boostsStatus) response);
+                consumer.accept((TL_stories.TL_premium_boostsStatus) response);
             } else {
                 BulletinFactory.showForError(error);
                 consumer.accept(null);
             }
         }));
-
     }
 
-    public void userCanBoostChannel(long dialogId, Consumer<CanApplyBoost> consumer) {
-        TLRPC.TL_stories_canApplyBoost req = new TLRPC.TL_stories_canApplyBoost();
-        req.peer = messagesController.getInputPeer(dialogId);
-        connectionsManager.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            CanApplyBoost canApplyBoost = new CanApplyBoost();
-            if (response != null) {
-                canApplyBoost.canApply = true;
-                if (response instanceof TLRPC.TL_stories_canApplyBoostReplace) {
-                    TLRPC.TL_stories_canApplyBoostReplace canApplyBoostReplace = (TLRPC.TL_stories_canApplyBoostReplace) response;
-                    messagesController.putChats(canApplyBoostReplace.chats, false);
-                    canApplyBoost.replaceDialogId = DialogObject.getPeerDialogId(canApplyBoostReplace.current_boost);
-                    if (canApplyBoost.replaceDialogId == 0 && canApplyBoostReplace.chats.size() > 0) {
-                        canApplyBoost.replaceDialogId = -canApplyBoostReplace.chats.get(0).id;
-                    }
-                }
-            } else {
-                if (error != null) {
-                    if (error.text.equals("SAME_BOOST_ALREADY_ACTIVE") || error.text.equals("BOOST_NOT_MODIFIED")) {
-                        canApplyBoost.alreadyActive = true;
-                    } else if (error.text.equals("PREMIUM_GIFTED_NOT_ALLOWED")) {
-                        canApplyBoost.giftedPremium = true;
-                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                        canApplyBoost.floodWait = Utilities.parseInt(error.text);
-                        canApplyBoost.lastCheckTime = System.currentTimeMillis();
-                    }
-                }
-            }
+    public void userCanBoostChannel(long dialogId, TL_stories.TL_premium_boostsStatus boostsStatus, Consumer<CanApplyBoost> consumer) {
+        CanApplyBoost canApplyBoost = new CanApplyBoost();
+        canApplyBoost.currentPeer = messagesController.getPeer(dialogId);
+        canApplyBoost.currentDialogId = dialogId;
+        canApplyBoost.currentChat = messagesController.getChat(-dialogId);
+        BoostRepository.getMyBoosts(myBoosts -> {
+            canApplyBoost.isMaxLvl = boostsStatus.next_level_boosts <= 0;
+            canApplyBoost.setMyBoosts(myBoosts);
             consumer.accept(canApplyBoost);
-        }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);
-    }
-
-    public void applyBoost(long dialogId) {
-        TLRPC.TL_stories_applyBoost req = new TLRPC.TL_stories_applyBoost();
-        req.peer = messagesController.getInputPeer(dialogId);
-        connectionsManager.sendRequest(req, (response, error) -> {
-
+        }, error -> {
+            if (error.text.startsWith("FLOOD_WAIT")) {
+                canApplyBoost.floodWait = Utilities.parseInt(error.text);
+            } else if (error.text.startsWith("BOOSTS_EMPTY")) {
+                canApplyBoost.empty = true;
+            }
+            canApplyBoost.canApply = false;
+            consumer.accept(canApplyBoost);
         });
     }
 
-    public int getTotalBooststToLevel(int level) {
-        int count = 0;
-        if (level >= 1) {
-            count += BOOSTS_FOR_LEVEL_1;
-        }
-        if (level >= 2) {
-            count += BOOSTS_FOR_LEVEL_2;
-        }
-        return count;
+    public void applyBoost(long dialogId, int slot, Utilities.Callback<TL_stories.TL_premium_myBoosts> onDone, Utilities.Callback<TLRPC.TL_error> onError) {
+        BoostRepository.applyBoost(-dialogId, Arrays.asList(slot), onDone, onError);
     }
 
     public static class CanApplyBoost {
         public boolean canApply;
+        public boolean empty;
         public long replaceDialogId;
 
         public boolean alreadyActive;
+        public boolean needSelector;
         public int floodWait;
-        public boolean giftedPremium;
-        private long lastCheckTime;
+        public int slot;
+        public TL_stories.TL_premium_myBoosts myBoosts;
+        public int boostCount = 0;
+        public TLRPC.Peer currentPeer;
+        public long currentDialogId;
+        public TLRPC.Chat currentChat;
+        public boolean boostedNow;
+        public boolean isMaxLvl;
 
-        public void checkTime() {
-            floodWait -= (System.currentTimeMillis() - lastCheckTime) / 1000;
-            lastCheckTime = System.currentTimeMillis();
-            if (floodWait < 0) {
-                floodWait = 0;
+        public void setMyBoosts(TL_stories.TL_premium_myBoosts myBoosts) {
+            this.myBoosts = myBoosts;
+            boostCount = 0;
+            slot = 0;
+            alreadyActive = false;
+            canApply = false;
+            needSelector = false;
+            replaceDialogId = 0;
+
+            if (myBoosts.my_boosts.isEmpty()) {
+                empty = true;
+            }
+
+            //search boosted count
+            for (TL_stories.TL_myBoost myBoost : myBoosts.my_boosts) {
+                if (currentDialogId == DialogObject.getPeerDialogId(myBoost.peer)) {
+                    boostCount++;
+                }
+            }
+
+            if (boostCount > 0) {
+                alreadyActive = true;
+            }
+
+            //search free slot
+            for (TL_stories.TL_myBoost myBoost : myBoosts.my_boosts) {
+                if (myBoost.peer == null) {
+                    slot = myBoost.slot;
+                    break;
+                }
+            }
+            boolean noFreeSlot = slot == 0;
+            if (noFreeSlot) {
+                //only replacement
+                List<TL_stories.TL_myBoost> replaceBoost = new ArrayList<>();
+                for (TL_stories.TL_myBoost myBoost : myBoosts.my_boosts) {
+                    if (myBoost.peer != null && DialogObject.getPeerDialogId(myBoost.peer) != -currentChat.id) {
+                        replaceBoost.add(myBoost);
+                    }
+                }
+
+                if (replaceBoost.size() == 1) {
+                    TL_stories.TL_myBoost myBoost = replaceBoost.get(0);
+                    replaceDialogId = DialogObject.getPeerDialogId(myBoost.peer);
+                    slot = myBoost.slot;
+                    canApply = true;
+                } else if (replaceBoost.size() > 1) {
+                    needSelector = true;
+                    if (!BoostRepository.isMultiBoostsAvailable()) {
+                        TL_stories.TL_myBoost myBoost = replaceBoost.get(0);
+                        replaceDialogId = DialogObject.getPeerDialogId(myBoost.peer);
+                        slot = myBoost.slot;
+                    }
+                    canApply = true;
+                } else {
+                    canApply = false;
+                }
+            } else {
                 canApply = true;
+            }
+            if (isMaxLvl) {
+                canApply = false;
             }
         }
     }

@@ -3,7 +3,6 @@ package org.telegram.ui.Stories.recorder;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
-import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
@@ -11,11 +10,9 @@ import android.graphics.Paint;
 import android.graphics.Shader;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.SpannableString;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -27,10 +24,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -41,6 +36,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.PhotoFilterView;
@@ -48,7 +44,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +61,7 @@ public class StoryEntry extends IStoryPart {
     public boolean isEditSaved;
     public double fileDuration = -1;
     public boolean editedMedia, editedCaption, editedPrivacy;
-    public ArrayList<TLRPC.MediaArea> editedMediaAreas;
+    public ArrayList<TL_stories.MediaArea> editedMediaAreas;
 
     public boolean isError;
     public TLRPC.TL_error error;
@@ -514,7 +509,7 @@ public class StoryEntry extends IStoryPart {
         cancelCheckStickers();
     }
 
-    public static StoryEntry fromStoryItem(File file, TLRPC.StoryItem storyItem) {
+    public static StoryEntry fromStoryItem(File file, TL_stories.StoryItem storyItem) {
         StoryEntry entry = new StoryEntry();
         entry.isEdit = true;
         entry.editStoryId = storyItem.id;
@@ -958,7 +953,7 @@ public class StoryEntry extends IStoryPart {
         });
     }
 
-    public void checkStickers(TLRPC.StoryItem storyItem) {
+    public void checkStickers(TL_stories.StoryItem storyItem) {
         if (storyItem == null || storyItem.media == null) {
             return;
         }

@@ -269,7 +269,7 @@ TrafficStats NetworkManager::getNetworkStats() {
 }
 
 void NetworkManager::fillCallStats(CallStats &callStats) {
-    callStats.networkRecords = std::move(_networkRecords);
+    callStats.networkRecords = _networkRecords;
 }
 
 void NetworkManager::logCurrentNetworkState() {

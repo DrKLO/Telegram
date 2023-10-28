@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 
+#include "InstanceNetworking.h"
 #include "Message.h"
 #include "ThreadLocalObject.h"
 #include "Instance.h"
@@ -50,117 +51,24 @@ struct Message;
 class SctpDataChannelProviderInterfaceImpl;
 class Threads;
 
-class NativeNetworkingImpl : public sigslot::has_slots<>, public std::enable_shared_from_this<NativeNetworkingImpl> {
+class NativeNetworkingImpl : public InstanceNetworking, public sigslot::has_slots<>, public std::enable_shared_from_this<NativeNetworkingImpl> {
 public:
-    struct RouteDescription {
-        explicit RouteDescription(std::string const &localDescription_, std::string const &remoteDescription_) :
-        localDescription(localDescription_),
-        remoteDescription(remoteDescription_) {
-        }
-        
-        std::string localDescription;
-        std::string remoteDescription;
-        
-        bool operator==(RouteDescription const &rhs) const {
-            if (localDescription != rhs.localDescription) {
-                return false;
-            }
-            if (remoteDescription != rhs.remoteDescription) {
-                return false;
-            }
-            
-            return true;
-        }
-        
-        bool operator!=(const RouteDescription& rhs) const {
-            return !(*this == rhs);
-        }
-    };
-    
-    struct ConnectionDescription {
-        struct CandidateDescription {
-            std::string protocol;
-            std::string type;
-            std::string address;
-            
-            bool operator==(CandidateDescription const &rhs) const {
-                if (protocol != rhs.protocol) {
-                    return false;
-                }
-                if (type != rhs.type) {
-                    return false;
-                }
-                if (address != rhs.address) {
-                    return false;
-                }
-                
-                return true;
-            }
-            
-            bool operator!=(const CandidateDescription& rhs) const {
-                return !(*this == rhs);
-            }
-        };
-        
-        CandidateDescription local;
-        CandidateDescription remote;
-        
-        bool operator==(ConnectionDescription const &rhs) const {
-            if (local != rhs.local) {
-                return false;
-            }
-            if (remote != rhs.remote) {
-                return false;
-            }
-            
-            return true;
-        }
-        
-        bool operator!=(const ConnectionDescription& rhs) const {
-            return !(*this == rhs);
-        }
-    };
-    
-    struct State {
-        bool isReadyToSendData = false;
-        bool isFailed = false;
-        absl::optional<RouteDescription> route;
-        absl::optional<ConnectionDescription> connection;
-    };
-    
-    struct Configuration {
-        bool isOutgoing = false;
-        bool enableStunMarking = false;
-        bool enableTCP = false;
-        bool enableP2P = false;
-        std::vector<RtcServer> rtcServers;
-        absl::optional<Proxy> proxy;
-        std::function<void(const NativeNetworkingImpl::State &)> stateUpdated;
-        std::function<void(const cricket::Candidate &)> candidateGathered;
-        std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived;
-        std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> rtcpPacketReceived;
-        std::function<void(bool)> dataChannelStateUpdated;
-        std::function<void(std::string const &)> dataChannelMessageReceived;
-        std::shared_ptr<Threads> threads;
-    };
-    
     static webrtc::CryptoOptions getDefaulCryptoOptions();
-    static ConnectionDescription::CandidateDescription connectionDescriptionFromCandidate(cricket::Candidate const &candidate);
 
     NativeNetworkingImpl(Configuration &&configuration);
-    ~NativeNetworkingImpl();
+    virtual ~NativeNetworkingImpl();
 
-    void start();
-    void stop();
+    virtual void start() override;
+    virtual void stop() override;
 
-    PeerIceParameters getLocalIceParameters();
-    std::unique_ptr<rtc::SSLFingerprint> getLocalFingerprint();
-    void setRemoteParams(PeerIceParameters const &remoteIceParameters, rtc::SSLFingerprint *fingerprint, std::string const &sslSetup);
-    void addCandidates(std::vector<cricket::Candidate> const &candidates);
+    virtual PeerIceParameters getLocalIceParameters() override;
+    virtual std::unique_ptr<rtc::SSLFingerprint> getLocalFingerprint() override;
+    virtual void setRemoteParams(PeerIceParameters const &remoteIceParameters, rtc::SSLFingerprint *fingerprint, std::string const &sslSetup) override;
+    virtual void addCandidates(std::vector<cricket::Candidate> const &candidates) override;
 
-    void sendDataChannelMessage(std::string const &message);
+    virtual void sendDataChannelMessage(std::string const &message) override;
 
-    webrtc::RtpTransport *getRtpTransport();
+    virtual webrtc::RtpTransport *getRtpTransport() override;
 
 private:
     void resetDtlsSrtpTransport();
@@ -191,7 +99,7 @@ private:
     std::vector<RtcServer> _rtcServers;
     absl::optional<Proxy> _proxy;
 
-    std::function<void(const NativeNetworkingImpl::State &)> _stateUpdated;
+    std::function<void(const InstanceNetworking::State &)> _stateUpdated;
     std::function<void(const cricket::Candidate &)> _candidateGathered;
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> _transportMessageReceived;
     std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> _rtcpPacketReceived;

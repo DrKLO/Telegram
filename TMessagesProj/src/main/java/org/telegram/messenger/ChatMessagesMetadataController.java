@@ -1,17 +1,11 @@
 package org.telegram.messenger;
 
-import com.google.android.exoplayer2.util.Log;
-
-import org.checkerframework.checker.units.qual.A;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Stories.StoriesStorage;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class ChatMessagesMetadataController {
 
@@ -53,8 +47,8 @@ public class ChatMessagesMetadataController {
                     extendedMediaToCheck.add(messageObject);
                 }
                 if (messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION || messageObject.messageOwner.replyStory != null) {
-                    TLRPC.StoryItem storyItem = messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION ? messageObject.messageOwner.media.storyItem : messageObject.messageOwner.replyStory;
-                    if (storyItem == null || storyItem instanceof TLRPC.TL_storyItemDeleted) {
+                    TL_stories.StoryItem storyItem = messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION ? messageObject.messageOwner.media.storyItem : messageObject.messageOwner.replyStory;
+                    if (storyItem == null || storyItem instanceof TL_stories.TL_storyItemDeleted) {
                         continue;
                     }
                     if (currentTime - storyItem.lastUpdateTime > 1000 * 5 * 60) {
@@ -74,9 +68,9 @@ public class ChatMessagesMetadataController {
             return;
         }
         for (int i = 0; i < visibleObjects.size(); i++) {
-            TLRPC.TL_stories_getStoriesByID req = new TLRPC.TL_stories_getStoriesByID();
+            TL_stories.TL_stories_getStoriesByID req = new TL_stories.TL_stories_getStoriesByID();
             MessageObject messageObject = visibleObjects.get(i);
-            TLRPC.StoryItem storyItem = new TLRPC.TL_storyItem();
+            TL_stories.StoryItem storyItem = new TL_stories.TL_storyItem();
             if (messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION) {
                 storyItem = messageObject.messageOwner.media.storyItem;
                 storyItem.dialogId = messageObject.messageOwner.media.user_id;
@@ -91,18 +85,18 @@ public class ChatMessagesMetadataController {
             req.id.add(storyItem.id);
             int storyId = storyItem.id;
             int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
-                TLRPC.StoryItem newStoryItem = null;
+                TL_stories.StoryItem newStoryItem = null;
                 if (response != null) {
-                    TLRPC.TL_stories_stories stories = (TLRPC.TL_stories_stories) response;
+                    TL_stories.TL_stories_stories stories = (TL_stories.TL_stories_stories) response;
                     if (stories.stories.size() > 0) {
                         newStoryItem = stories.stories.get(0);
                     }
                     if (newStoryItem == null) {
-                        newStoryItem = new TLRPC.TL_storyItemDeleted();
+                        newStoryItem = new TL_stories.TL_storyItemDeleted();
                     }
                     newStoryItem.lastUpdateTime = System.currentTimeMillis();
                     newStoryItem.id = storyId;
-                    TLRPC.StoryItem finalNewStoryItem = newStoryItem;
+                    TL_stories.StoryItem finalNewStoryItem = newStoryItem;
                     AndroidUtilities.runOnUIThread(() -> {
                         boolean wasExpired = messageObject.isExpiredStory();
                         StoriesStorage.applyStory(chatActivity.getCurrentAccount(), storyDialogId, messageObject, finalNewStoryItem);
@@ -137,7 +131,8 @@ public class ChatMessagesMetadataController {
             MessageObject messageObject = visibleObjects.get(i);
             req.id.add(messageObject.getId());
         }
-        int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
+        final int[] reqId = new int[1];
+        reqId[0] = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 TLRPC.Updates updates = (TLRPC.Updates) response;
                 for (int i = 0; i < updates.updates.size(); i++) {
@@ -147,9 +142,12 @@ public class ChatMessagesMetadataController {
                 }
                 chatActivity.getMessagesController().processUpdates(updates, false);
             }
+            AndroidUtilities.runOnUIThread(() -> {
+                reactionsRequests.remove((Object) reqId[0]);
+            });
         });
-        reactionsRequests.add(reqId);
-        if (reactionsRequests.size() > 5) {
+        reactionsRequests.add(reqId[0]);
+        while (reactionsRequests.size() > 4) {
             chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.remove(0), false);
         }
     }
@@ -164,13 +162,17 @@ public class ChatMessagesMetadataController {
             MessageObject messageObject = visibleObjects.get(i);
             req.id.add(messageObject.getId());
         }
-        int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
+        final int[] reqId = new int[1];
+        reqId[0] = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 chatActivity.getMessagesController().processUpdates((TLRPC.Updates) response, false);
             }
+            AndroidUtilities.runOnUIThread(() -> {
+                extendedMediaRequests.remove((Object) reqId[0]);
+            });
         });
-        extendedMediaRequests.add(reqId);
-        if (extendedMediaRequests.size() > 10) {
+        extendedMediaRequests.add(reqId[0]);
+        while (extendedMediaRequests.size() > 10) {
             chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.remove(0), false);
         }
     }

@@ -82,6 +82,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     public static final int ALERT_TYPE_SPINNER = 3;
 
     private View customView;
+    private View bottomView;
     private int customViewHeight = LayoutHelper.WRAP_CONTENT;
     private TextView titleTextView;
     private TextView secondTitleTextView;
@@ -766,6 +767,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             progressViewContainer.addView(progressView, LayoutHelper.createFrame(86, 86, Gravity.CENTER));
         } else {
             scrollContainer.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 0, 24, customView != null || items != null ? customViewOffset : 0));
+            if (bottomView != null) {
+                scrollContainer.addView(bottomView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, -16, 24, 0));
+            }
         }
         if (!TextUtils.isEmpty(message)) {
             messageTextView.setText(message);
@@ -1511,6 +1515,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         public Builder setView(View view, int height) {
             alertDialog.customView = view;
             alertDialog.customViewHeight = height;
+            return this;
+        }
+
+        public Builder addBottomView(View view) {
+            alertDialog.bottomView = view;
             return this;
         }
 

@@ -256,7 +256,7 @@ _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
 _sendSignalingMessage(std::move(sendSignalingMessage)),
 _sendTransportMessage(std::move(sendTransportMessage)),
 _signalBarsUpdated(std::move(signalBarsUpdated)),
-_audioLevelsUpdated(std::move(audioLevelsUpdated)),
+_audioLevelUpdated(std::move(audioLevelsUpdated)),
 _createAudioDeviceModule(std::move(createAudioDeviceModule)),
 _protocolVersion(protocolVersion),
 _outgoingVideoState(videoCapture ? VideoState::Active : VideoState::Inactive),
@@ -467,7 +467,7 @@ void MediaManager::start() {
     }
 
     beginStatsTimer(3000);
-    if (_audioLevelsUpdated != nullptr) {
+    if (_audioLevelUpdated != nullptr) {
         beginLevelsTimer(100);
     }
 }
@@ -595,7 +595,7 @@ void MediaManager::beginLevelsTimer(int timeoutMs) {
             return;
         }
 
-        strong->_audioLevelsUpdated(strong->_currentMyAudioLevel, strong->_currentAudioLevel);
+        strong->_audioLevelUpdated(strong->_currentMyAudioLevel, strong->_currentAudioLevel);
 
         strong->beginLevelsTimer(100);
     }, webrtc::TimeDelta::Millis(timeoutMs));
@@ -689,7 +689,7 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
         const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
         _isScreenCapture = object->isScreenCapture();
         _videoCaptureGuard = std::make_shared<bool>(true);
-        const auto guard = std::weak_ptr<bool>{_videoCaptureGuard};
+        const auto guard = std::weak_ptr<bool>{ _videoCaptureGuard };
 		object->setStateUpdated([=](VideoState state) {
 			thread->PostTask([=] {
 				// Checking this special guard instead of weak_ptr(this)
@@ -1040,7 +1040,7 @@ void MediaManager::fillCallStats(CallStats &callStats) {
     if (_videoCodecOut.has_value()) {
         callStats.outgoingCodec = _videoCodecOut->name;
     }
-    callStats.bitrateRecords = std::move(_bitrateRecords);
+    callStats.bitrateRecords = _bitrateRecords;
 }
 
 void MediaManager::setAudioInputDevice(std::string id) {

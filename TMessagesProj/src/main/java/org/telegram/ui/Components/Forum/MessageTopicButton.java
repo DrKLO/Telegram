@@ -109,7 +109,7 @@ public class MessageTopicButton {
         int iconColor;
         if (topic.id == 1) {
             iconColor = getThemedColor(messageObject != null && messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
-            topicIconDrawable = ForumUtilities.createGeneralTopicDrawable(context, .65f, iconColor);
+            topicIconDrawable = ForumUtilities.createGeneralTopicDrawable(context, .65f, iconColor, false);
         } else if (topic.icon_emoji_id != 0) {
             if (!(topicIconDrawable instanceof AnimatedEmojiDrawable) || topic.icon_emoji_id != ((AnimatedEmojiDrawable) topicIconDrawable).getDocumentId()) {
                 if (topicIconDrawable instanceof AnimatedEmojiDrawable) {

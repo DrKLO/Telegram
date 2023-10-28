@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -8,12 +10,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -23,6 +23,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -70,7 +71,33 @@ public class PremiumButtonView extends FrameLayout {
         flickerDrawable.repeatProgress = 4f;
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        buttonTextView = new AnimatedTextView(context);
+        buttonTextView = new AnimatedTextView(context) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (loadingT > 0) {
+                    if (loadingDrawable == null) {
+                        loadingDrawable = new CircularProgressDrawable(buttonTextView.getTextColor());
+                    }
+                    int y = (int) ((1f - loadingT) * dp(24));
+                    loadingDrawable.setBounds(0, y, getWidth(), y + getHeight());
+                    loadingDrawable.setAlpha((int) (0xFF * loadingT));
+                    loadingDrawable.draw(canvas);
+                    invalidate();
+                }
+
+                if (loadingT < 1) {
+                    if (loadingT != 0) {
+                        canvas.save();
+                        canvas.translate(0, (int) (loadingT * dp(-24)));
+                        canvas.scale(1, 1f - .4f * loadingT);
+                        super.onDraw(canvas);
+                        canvas.restore();
+                        return;
+                    }
+                    super.onDraw(canvas);
+                }
+            }
+        };
         buttonTextView.setAnimationProperties(.35f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Color.WHITE);
@@ -90,7 +117,33 @@ public class PremiumButtonView extends FrameLayout {
         addView(buttonLayout);
 
         if (createOverlayTextView) {
-            overlayTextView = new AnimatedTextView(context, true, true, true);
+            overlayTextView = new AnimatedTextView(context, true, true, true) {
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    if (loadingT > 0) {
+                        if (loadingDrawable == null) {
+                            loadingDrawable = new CircularProgressDrawable(buttonTextView.getTextColor());
+                        }
+                        int y = (int) ((1f - loadingT) * dp(24));
+                        loadingDrawable.setBounds(0, y, getWidth(), y + getHeight());
+                        loadingDrawable.setAlpha((int) (0xFF * loadingT));
+                        loadingDrawable.draw(canvas);
+                        invalidate();
+                    }
+
+                    if (loadingT < 1) {
+                        if (loadingT != 0) {
+                            canvas.save();
+                            canvas.translate(0, (int) (loadingT * dp(-24)));
+                            canvas.scale(1, 1f - .4f * loadingT);
+                            super.onDraw(canvas);
+                            canvas.restore();
+                            return;
+                        }
+                        super.onDraw(canvas);
+                    }
+                }
+            };
             overlayTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             overlayTextView.setGravity(Gravity.CENTER);
             overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
@@ -108,6 +161,7 @@ public class PremiumButtonView extends FrameLayout {
     public RLottieImageView getIconView() {
         return iconView;
     }
+
     public AnimatedTextView getTextView() {
         return buttonTextView;
     }
@@ -118,6 +172,45 @@ public class PremiumButtonView extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    private CircularProgressDrawable loadingDrawable;
+    private float loadingT = 0;
+    private boolean loading;
+    private ValueAnimator loadingAnimator;
+
+    public void setLoading(boolean loading) {
+        if (this.loading != loading) {
+            if (loadingAnimator != null) {
+                loadingAnimator.cancel();
+                loadingAnimator = null;
+            }
+            loadingAnimator = ValueAnimator.ofFloat(loadingT, (this.loading = loading) ? 1 : 0);
+            loadingAnimator.addUpdateListener(anm -> {
+                loadingT = (float) anm.getAnimatedValue();
+                buttonTextView.invalidate();
+                if (overlayTextView != null) {
+                    overlayTextView.invalidate();
+                }
+            });
+            loadingAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    loadingT = loading ? 1 : 0;
+                    buttonTextView.invalidate();
+                    if (overlayTextView != null) {
+                        overlayTextView.invalidate();
+                    }
+                }
+            });
+            loadingAnimator.setDuration(320);
+            loadingAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            loadingAnimator.start();
+        }
+    }
+
+    public boolean isLoading() {
+        return loading;
     }
 
     @Override
@@ -184,7 +277,6 @@ public class PremiumButtonView extends FrameLayout {
         overlayTextView.setText(text, animated);
         updateOverlay(animated);
     }
-
 
     private void updateOverlay(boolean animated) {
         if (overlayAnimator != null) {

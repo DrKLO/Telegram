@@ -93,7 +93,7 @@ void InstanceImpl::setMuteMicrophone(bool muteMicrophone) {
 	});
 }
 
-void InstanceImpl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void InstanceImpl::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
 	_manager->perform([sink](Manager *manager) {
 		manager->setIncomingVideoOutput(sink);
 	});
@@ -166,6 +166,8 @@ PersistentState InstanceImpl::getPersistentState() {
 }
 
 void InstanceImpl::stop(std::function<void(FinalState)> completion) {
+    RTC_LOG(LS_INFO) << "Stopping InstanceImpl";
+
     std::string debugLog = _logSink->result();
 
     _manager->perform([completion, debugLog = std::move(debugLog)](Manager *manager) {

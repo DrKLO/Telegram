@@ -212,7 +212,7 @@ public class CaptionContainerView extends FrameLayout {
                 return true;
             }
         };
-        editText.getEditText().setShadowLayer(dp(10), 0, 0, 0);
+        editText.getEditText().wrapCanvasToFixClipping = true;
         editText.setFocusable(true);
         editText.setFocusableInTouchMode(true);
         editText.getEditText().hintLayoutYFix = true;
@@ -220,7 +220,7 @@ public class CaptionContainerView extends FrameLayout {
         editText.getEditText().setSupportRtlHint(true);
         captionBlur = new BlurringShader.StoryBlurDrawer(blurManager, editText.getEditText(), customBlur() ? BlurringShader.StoryBlurDrawer.BLUR_TYPE_CAPTION : BlurringShader.StoryBlurDrawer.BLUR_TYPE_CAPTION_XFER);
         editText.getEditText().setHintColor(0x80ffffff);
-        editText.getEditText().setHintText(LocaleController.getString("AddCaption", R.string.AddCaption), false);
+        editText.getEditText().setHintText(LocaleController.getString(R.string.AddCaption), false);
         hintTextBitmapPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
         editText.getEditText().setTranslationX(AndroidUtilities.dp(-40 + 18));
         editText.getEmojiButton().setAlpha(0f);
@@ -368,13 +368,25 @@ public class CaptionContainerView extends FrameLayout {
                     return super.dispatchTouchEvent(ev);
                 }
             }
+            editText.getEditText().setForceCursorEnd(true);
             editText.getEditText().requestFocus();
 //            editText.getEditText().setSelection(editText.getEditText().length(), editText.getEditText().length());
             editText.openKeyboard();
             editText.getEditText().setScrollY(0);
+            bounce.setPressed(true);
             return true;
+        } else if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+            bounce.setPressed(false);
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    private final ButtonBounce bounce = new ButtonBounce(this, 1f, 3.0f);
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        bounce.setPressed(pressed && !keyboardShown);
     }
 
     private ObjectAnimator scrollAnimator;
@@ -388,6 +400,7 @@ public class CaptionContainerView extends FrameLayout {
         }
         int sy = et.getScrollY();
         editText.setSelection(end ? editText.length() : 0);
+        editText.getEditText().setForceCursorEnd(false);
         int totalLineHeight = et.getLayout().getLineTop(et.getLineCount());
         int visibleHeight = et.getHeight() - et.getPaddingTop() - et.getPaddingBottom();
         int nsy = end ? totalLineHeight - visibleHeight : 0;
@@ -765,6 +778,10 @@ public class CaptionContainerView extends FrameLayout {
             getHeight() - pad
         );
 
+        canvas.save();
+        final float s = bounce.getScale(.018f);
+        canvas.scale(s, s, bounds.centerX(), bounds.centerY());
+
         final float r = lerp(AndroidUtilities.dp(21), 0, keyboardT);
         if (customBlur()) {
             drawBlur(backgroundBlur, canvas, bounds, r, false, 0, 0, true);
@@ -788,6 +805,8 @@ public class CaptionContainerView extends FrameLayout {
         }
 
         super.dispatchDraw(canvas);
+
+        canvas.restore();
     }
 
     public RectF getBounds() {

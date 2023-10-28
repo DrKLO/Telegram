@@ -29,6 +29,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.transition.Visibility;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -2033,7 +2034,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     speakerPhoneIcon.animate().alpha(0).start();
                 }
                 setVideoAction(bottomButtons[1], service, animated);
-                setMicrohoneAction(bottomButtons[2], service, animated);
+                setMicrophoneAction(bottomButtons[2], service, animated);
             } else {
                 bottomButtons[0].setVisibility(View.GONE);
                 bottomButtons[1].setVisibility(View.GONE);
@@ -2056,7 +2057,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 speakerPhoneIcon.animate().alpha(0f).start();
             }
             setVideoAction(bottomButtons[1], service, animated);
-            setMicrohoneAction(bottomButtons[2], service, animated);
+            setMicrophoneAction(bottomButtons[2], service, animated);
 
             bottomButtons[3].setData(R.drawable.calls_decline, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), false, animated);
             bottomButtons[3].setOnClickListener(view -> {
@@ -2076,7 +2077,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         updateSpeakerPhoneIcon();
     }
 
-    private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
+    private void setMicrophoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (service.isMicMute()) {
             bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         } else {

@@ -53,6 +53,7 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
@@ -816,16 +817,18 @@ public abstract class BaseFragment {
         }
         BottomSheet[] bottomSheet = new BottomSheet[1];
         INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(getParentActivity(), () -> bottomSheet[0])};
+        actionBarLayout[0].setIsSheet(true);
         LaunchActivity.instance.sheetFragmentsStack.add(actionBarLayout[0]);
+        fragment.onTransitionAnimationStart(true, false);
         bottomSheet[0] = new BottomSheet(getParentActivity(), true, fragment.getResourceProvider()) {
             {
                 drawNavigationBar = true;
                 actionBarLayout[0].setFragmentStack(new ArrayList<>());
                 actionBarLayout[0].addFragmentToStack(fragment);
-                actionBarLayout[0].setIsSheet(true);
                 actionBarLayout[0].showLastFragment();
                 actionBarLayout[0].getView().setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
-                containerView = actionBarLayout[0].getView();
+                ViewGroup view = actionBarLayout[0].getView();
+                containerView = view;
                 setApplyBottomPadding(false);
                 setOnDismissListener(dialog -> {
                     fragment.onPause();
@@ -839,6 +842,7 @@ public abstract class BaseFragment {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
+                actionBarLayout[0].setWindow(bottomSheet[0].getWindow());
                 fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
                 AndroidUtilities.setLightStatusBar(getWindow(), fragment.isLightStatusBar());
             }
@@ -846,6 +850,11 @@ public abstract class BaseFragment {
             @Override
             protected boolean canDismissWithSwipe() {
                 return false;
+            }
+
+            @Override
+            protected boolean canSwipeToBack() {
+                return params != null && params.transitionFromLeft && actionBarLayout[0] != null && actionBarLayout[0].getFragmentStack().size() <= 1;
             }
 
             @Override
@@ -871,8 +880,20 @@ public abstract class BaseFragment {
 
             @Override
             public void onOpenAnimationEnd() {
+                fragment.onTransitionAnimationEnd(true, false);
                 if (params != null && params.onOpenAnimationFinished != null) {
                     params.onOpenAnimationFinished.run();
+                }
+            }
+
+            @Override
+            protected void onInsetsChanged() {
+                if (actionBarLayout[0] != null) {
+                    for (BaseFragment baseFragment : actionBarLayout[0].getFragmentStack()) {
+                        if (baseFragment.getFragmentView() != null) {
+                            baseFragment.getFragmentView().requestLayout();
+                        }
+                    }
                 }
             }
         };
@@ -1058,7 +1079,7 @@ public abstract class BaseFragment {
     public StoryViewer getOrCreateStoryViewer() {
         if (storyViewer == null) {
             storyViewer = new StoryViewer(this);
-            if (parentLayout.isSheet()) {
+            if (parentLayout != null && parentLayout.isSheet()) {
                 storyViewer.fromBottomSheet = true;
             }
         }

@@ -761,9 +761,6 @@ public class SecretChatHelper extends BaseController {
                                 newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                 getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, false);
                                 getSendMessagesHelper().processSentMessage(newMsgObj.id);
-                                if (MessageObject.isVideoMessage(newMsgObj) || MessageObject.isNewGifMessage(newMsgObj) || MessageObject.isRoundVideoMessage(newMsgObj)) {
-                                    getSendMessagesHelper().stopVideoService(attachPath);
-                                }
                                 getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id, false);
                             });
                         });
@@ -773,9 +770,6 @@ public class SecretChatHelper extends BaseController {
                             newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                             getNotificationCenter().postNotificationName(NotificationCenter.messageSendError, newMsgObj.id);
                             getSendMessagesHelper().processSentMessage(newMsgObj.id);
-                            if (MessageObject.isVideoMessage(newMsgObj) || MessageObject.isNewGifMessage(newMsgObj) || MessageObject.isRoundVideoMessage(newMsgObj)) {
-                                getSendMessagesHelper().stopVideoService(newMsgObj.attachPath);
-                            }
                             getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id, false);
                         });
                     }

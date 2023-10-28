@@ -63,6 +63,7 @@ public:
     void onQuickAck();
     void onWriteToSocket();
     bool isMediaRequest();
+    bool isCancelRequest();
     bool hasInitFlag();
     bool needInitRequest(Datacenter *datacenter, uint32_t currentVersion);
     TLObject *getRpcRequest();

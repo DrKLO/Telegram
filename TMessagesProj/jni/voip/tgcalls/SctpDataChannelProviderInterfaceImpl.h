@@ -19,7 +19,7 @@ namespace tgcalls {
 class SctpDataChannelProviderInterfaceImpl : public sigslot::has_slots<>, public webrtc::SctpDataChannelControllerInterface, public webrtc::DataChannelObserver, public webrtc::DataChannelSink {
 public:
     SctpDataChannelProviderInterfaceImpl(
-        cricket::DtlsTransport *transportChannel,
+        rtc::PacketTransportInternal *transportChannel,
         bool isOutgoing,
         std::function<void(bool)> onStateChanged,
         std::function<void()> onTerminated,

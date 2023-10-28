@@ -220,6 +220,7 @@ public class ViewPagerFixed extends FrameLayout {
                 }
                 manualScrolling = null;
                 onTabAnimationUpdate(true);
+                onScrollEnd();
             }
         });
         manualScrolling.setDuration(540);

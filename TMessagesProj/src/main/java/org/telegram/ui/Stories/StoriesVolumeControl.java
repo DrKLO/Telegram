@@ -5,22 +5,23 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.AudioManager;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.AnimatedFloat;
 
-public class StoriesVolumeContorl extends View {
+public class StoriesVolumeControl extends View {
 
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     boolean isVisible;
-    public StoriesVolumeContorl(Context context) {
+    public StoriesVolumeControl(Context context) {
         super(context);
         paint.setColor(Color.WHITE);
     }
 
-    Runnable hideRunnuble = new Runnable() {
+    Runnable hideRunnable = new Runnable() {
         @Override
         public void run() {
             isVisible = false;
@@ -34,10 +35,10 @@ public class StoriesVolumeContorl extends View {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             adjustVolume(true);
             return true;
-        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+        } else if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             adjustVolume(false);
             return true;
         }
@@ -61,8 +62,8 @@ public class StoriesVolumeContorl extends View {
             volumeProgress.set(currentProgress, true);
             isVisible = true;
             invalidate();
-            AndroidUtilities.cancelRunOnUIThread(hideRunnuble);
-            AndroidUtilities.runOnUIThread(hideRunnuble, 2000);
+            AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+            AndroidUtilities.runOnUIThread(hideRunnable, 2000);
         }
     }
 
@@ -71,13 +72,15 @@ public class StoriesVolumeContorl extends View {
         int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
 
+        int step = (int) Math.max(1, maxVolume / 15f);
+
         if (increase) {
-            currentVolume++;
+            currentVolume += step;
             if (currentVolume > maxVolume) {
                 currentVolume = maxVolume;
             }
         } else {
-            currentVolume--;
+            currentVolume -= step;
             if (currentVolume < 0) {
                 currentVolume = 0;
             }
@@ -91,8 +94,8 @@ public class StoriesVolumeContorl extends View {
         }
         invalidate();
         isVisible = true;
-        AndroidUtilities.cancelRunOnUIThread(hideRunnuble);
-        AndroidUtilities.runOnUIThread(hideRunnuble, 2000);
+        AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+        AndroidUtilities.runOnUIThread(hideRunnable, 2000);
     }
 
     @Override
@@ -109,7 +112,7 @@ public class StoriesVolumeContorl extends View {
     }
 
     public void hide() {
-        AndroidUtilities.cancelRunOnUIThread(hideRunnuble);
-        hideRunnuble.run();
+        AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+        hideRunnable.run();
     }
 }

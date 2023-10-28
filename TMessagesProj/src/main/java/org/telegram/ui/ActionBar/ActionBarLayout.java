@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -35,6 +36,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.Window;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
@@ -53,7 +55,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.BackButtonMenu;
+import org.telegram.ui.Components.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
@@ -70,6 +74,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     public boolean highlightActionButtons = false;
     private boolean attached;
     private boolean isSheet;
+    private Window window;
 
     @Override
     public void setHighlightActionButtons(boolean highlightActionButtons) {
@@ -449,6 +454,14 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     @Override
     public boolean isSheet() {
         return isSheet;
+    }
+
+    @Override
+    public void updateTitleOverlay() {
+        BaseFragment fragment = getLastFragment();
+        if (fragment != null && fragment.actionBar != null) {
+            fragment.actionBar.setTitleOverlayText(titleOverlayText, titleOverlayTextId, overlayAction);
+        }
     }
 
     @Override
@@ -1223,6 +1236,16 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (fragment == null || checkTransitionAnimation() || delegate != null && check && !delegate.needPresentFragment(this, params) || !fragment.onFragmentCreate()) {
             return false;
         }
+        BaseFragment lastFragment = getLastFragment();
+        if (lastFragment != null && lastFragment.getVisibleDialog() != null) {
+            if (shouldOpenFragmentOverlay(lastFragment.getVisibleDialog())) {
+                BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                bottomSheetParams.transitionFromLeft = true;
+                bottomSheetParams.allowNestedScroll = false;
+                lastFragment.showAsSheet(fragment, bottomSheetParams);
+                return true;
+            }
+        }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("present fragment " + fragment.getClass().getSimpleName() + " args=" + fragment.getArguments());
         }
@@ -1518,6 +1541,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             fragment.onBecomeFullyVisible();
         }
         return true;
+    }
+
+    private boolean shouldOpenFragmentOverlay(Dialog visibleDialog) {
+        return visibleDialog instanceof ChatAttachAlert || visibleDialog instanceof BotWebViewSheet;
     }
 
     @Override
@@ -2544,5 +2571,21 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             return getLastFragment().storyViewer.windowView.dispatchTouchEvent(ev);
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public void setWindow(Window window) {
+        this.window = window;
+    }
+
+    @Override
+    public Window getWindow() {
+        if (window != null) {
+            return window;
+        }
+        if (getParentActivity() != null) {
+            return getParentActivity().getWindow();
+        }
+        return null;
     }
 }

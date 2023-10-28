@@ -73,6 +73,12 @@ public class LayoutHelper {
         return layoutParams;
     }
 
+    public static FrameLayout.LayoutParams createFrameMarginPx(int width, float height, int gravity, int leftMarginPx, int topMarginPx, int rightMarginPx, int bottomMarginPx) {
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(getSize(width), getSize(height), gravity);
+        layoutParams.setMargins(leftMarginPx, topMarginPx, rightMarginPx, bottomMarginPx);
+        return layoutParams;
+    }
+
     public static FrameLayout.LayoutParams createFrame(int width, int height, int gravity) {
         return new FrameLayout.LayoutParams(getSize(width), getSize(height), gravity);
     }

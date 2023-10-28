@@ -21,6 +21,7 @@ import android.view.ViewParent;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -37,6 +38,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -103,11 +105,7 @@ public class StoriesUtilities {
             params.reset();
             animated = false;
         }
-//        if (!scheduled) {
-//            scheduled = true;
-//            AndroidUtilities.runOnUIThread(debugRunnable);
-//        }
-//            int state = debugState;
+
         int state;
         int unreadState = 0;
         boolean showProgress = storiesController.isLoading(dialogId);
@@ -131,7 +129,6 @@ public class StoriesUtilities {
             }
         } else if (hasStories) {
             if (params.drawSegments) {
-                // unreadState = storiesController.getUnreadState(dialogId, params.storyId);
                 unreadState = state = STATE_READ;
             } else {
                 unreadState = storiesController.getUnreadState(dialogId, params.storyId);
@@ -201,7 +198,7 @@ public class StoriesUtilities {
                 getCloseFriendsPaint(avatarImage);
                 gradientTools = closeFriendsGradientTools;
             } else {
-                getActiveCirclePaint(avatarImage, params.isStoryCell);
+                getUnreadCirclePaint(avatarImage, params.isStoryCell);
                 gradientTools = storiesGradientTools[params.isStoryCell ? 1 : 0];
             }
             boolean animateOut = params.prevState == STATE_HAS_UNREAD && params.progressToSate != 1f;
@@ -232,7 +229,7 @@ public class StoriesUtilities {
             Paint unreadPaint = null;
             Paint closeFriendsPaint = null;
             if (params.drawSegments) {
-                unreadPaint = getActiveCirclePaint(avatarImage, params.isStoryCell);
+                unreadPaint = getUnreadCirclePaint(avatarImage, params.isStoryCell);
                 unreadPaint.setAlpha((int) (0xFF * params.alpha));
                 closeFriendsPaint = getCloseFriendsPaint(avatarImage);
                 closeFriendsPaint.setAlpha((int) (0xFF * params.alpha));
@@ -262,7 +259,7 @@ public class StoriesUtilities {
         if ((params.prevState == STATE_PROGRESS && params.progressToSate != 1f) || params.currentState == STATE_PROGRESS) {
             Paint paint;
             if (params.animateFromUnreadState == STATE_HAS_UNREAD) {
-                getActiveCirclePaint(avatarImage, params.isStoryCell);
+                getUnreadCirclePaint(avatarImage, params.isStoryCell);
                 paint = storiesGradientTools[params.isStoryCell ? 1 : 0].paint;
             } else {
                 if (params.isStoryCell) {
@@ -278,7 +275,7 @@ public class StoriesUtilities {
             Paint unreadPaint = null;
             Paint closeFriendsPaint = null;
             if (params.drawSegments) {
-                unreadPaint = getActiveCirclePaint(avatarImage, params.isStoryCell);
+                unreadPaint = getUnreadCirclePaint(avatarImage, params.isStoryCell);
                 unreadPaint.setAlpha((int) (0xFF * params.alpha));
                 closeFriendsPaint = getCloseFriendsPaint(avatarImage);
                 closeFriendsPaint.setAlpha((int) (0xFF * params.alpha));
@@ -354,7 +351,7 @@ public class StoriesUtilities {
         }
 
         params.globalState = globalState == StoriesController.STATE_READ ? STATE_READ : STATE_HAS_UNREAD;
-        TLRPC.PeerStories userStories = storiesController.getStories(params.dialogId);
+        TL_stories.PeerStories userStories = storiesController.getStories(params.dialogId);
         if (userStories == null) {
             userStories = storiesController.getStoriesFromFullPeer(params.dialogId);
         }
@@ -369,11 +366,12 @@ public class StoriesUtilities {
             getCloseFriendsPaint(avatarImage);
             globalPaint = closeFriendsGradientTools.paint;
         } else if (globalState == STATE_UNREAD) {
-            getActiveCirclePaint(avatarImage, params.isStoryCell);
+            getUnreadCirclePaint(avatarImage, params.isStoryCell);
             globalPaint = storiesGradientTools[params.isStoryCell ? 1 : 0].paint;
         } else {
             globalPaint = params.isStoryCell ? storyCellGreyPaint[params.isArchive ? 1 : 0] : grayPaint;
         }
+        // 0 - if has only uploading stories. displayed as unread
         if (storiesCount <= 1) {
             Paint localPaint = paint;
             if (storiesController.hasUnreadStories(params.dialogId)) {
@@ -417,6 +415,9 @@ public class StoriesUtilities {
                         segmentPaint = unreadPaint;
                     }
                 } else {
+                    if (i >= userStories.stories.size()) {
+                        segmentPaint = unreadPaint;
+                    }
                     if (userStories.stories.get(i).justUploaded || userStories.stories.get(i).id > maxUnread) {
                         if (userStories.stories.get(i).close_friends) {
                             segmentPaint = closeFriendsPaint;
@@ -443,7 +444,7 @@ public class StoriesUtilities {
         }
     }
 
-    private static int getPredictiveUnreadState(StoriesController storiesController, long dialogId) {
+    public static int getPredictiveUnreadState(StoriesController storiesController, long dialogId) {
         if (dialogId == 0) {
             return STATE_EMPTY;
         }
@@ -580,7 +581,21 @@ public class StoriesUtilities {
         return 0;
     }
 
-    public static Paint getActiveCirclePaint(ImageReceiver avatarImage, boolean isDialogCell) {
+    public static Paint getUnreadCirclePaint(ImageReceiver avatarImage, boolean isDialogCell) {
+        int i = isDialogCell ? 1 : 0;
+        checkStoriesGradientTools(isDialogCell);
+        storiesGradientTools[i].setBounds(avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageX2(), avatarImage.getImageY2());
+        return storiesGradientTools[i].paint;
+    }
+
+    public static Paint getUnreadCirclePaint(RectF bounds, boolean isDialogCell) {
+        int i = isDialogCell ? 1 : 0;
+        checkStoriesGradientTools(isDialogCell);
+        storiesGradientTools[i].setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom);
+        return storiesGradientTools[i].paint;
+    }
+
+    private static void checkStoriesGradientTools(boolean isDialogCell) {
         int i = isDialogCell ? 1 : 0;
         if (storiesGradientTools[i] == null) {
             storiesGradientTools[i] = new GradientTools();
@@ -595,8 +610,6 @@ public class StoriesUtilities {
             storiesGradientTools[i].paint.setStyle(Paint.Style.STROKE);
             storiesGradientTools[i].paint.setStrokeCap(Paint.Cap.ROUND);
         }
-        storiesGradientTools[i].setBounds(avatarImage.getImageX(), avatarImage.getImageY(), avatarImage.getImageX2(), avatarImage.getImageY2());
-        return storiesGradientTools[i].paint;
     }
 
     public static void updateColors() {
@@ -665,7 +678,7 @@ public class StoriesUtilities {
         return errorGradientTools.paint;
     }
 
-    public static void setStoryMiniImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem) {
+    public static void setStoryMiniImage(ImageReceiver imageReceiver, TL_stories.StoryItem storyItem) {
         if (storyItem == null) {
             return;
         }
@@ -683,11 +696,11 @@ public class StoriesUtilities {
         }
     }
 
-    public static void setImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem) {
+    public static void setImage(ImageReceiver imageReceiver, TL_stories.StoryItem storyItem) {
         setImage(imageReceiver, storyItem, "320_320");
     }
 
-    public static void setImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem, String filter) {
+    public static void setImage(ImageReceiver imageReceiver, TL_stories.StoryItem storyItem, String filter) {
         if (storyItem == null) {
             return;
         }
@@ -720,7 +733,7 @@ public class StoriesUtilities {
         }
     }
 
-    public static void setThumbImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem, int w, int h) {
+    public static void setThumbImage(ImageReceiver imageReceiver, TL_stories.StoryItem storyItem, int w, int h) {
         if (storyItem.media != null && storyItem.media.document != null) {
             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, AndroidUtilities.dp(Math.max(w, h)), false, null, true);
             imageReceiver.setImage(ImageLocation.getForDocument(size, storyItem.media.document), w + "_" + h, null, null, ImageLoader.createStripedBitmap(storyItem.media.document.thumbs), 0, null, storyItem, 0);
@@ -812,7 +825,7 @@ public class StoriesUtilities {
         spannableStringBuilder.append("d ").append(LocaleController.formatString(strKey, strRes, args));
         ColoredImageSpan coloredImageSpan = new ColoredImageSpan(R.drawable.msg_mini_bomb);
         if (useScale) {
-            coloredImageSpan.setScale(0.8f);
+            coloredImageSpan.setScale(0.8f, 0.8f);
         } else {
             coloredImageSpan.setTopOffset(-1);
         }
@@ -828,20 +841,20 @@ public class StoriesUtilities {
         return spannableStringBuilder;
     }
 
-    public static boolean hasExpiredViews(TLRPC.StoryItem storyItem) {
+    public static boolean hasExpiredViews(TL_stories.StoryItem storyItem) {
         if (storyItem == null) {
             return false;
         }
         return ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() > storyItem.expire_date + 86400;
     }
 
-    public static void applyViewedUser(TLRPC.StoryItem storyItem, TLRPC.User currentUser) {
+    public static void applyViewedUser(TL_stories.StoryItem storyItem, TLRPC.User currentUser) {
         if (currentUser == null) {
             return;
         }
         if (storyItem.dialogId == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && !hasExpiredViews(storyItem)) {
             if (storyItem.views == null) {
-                storyItem.views = new TLRPC.TL_storyViews();
+                storyItem.views = new TL_stories.TL_storyViews();
             }
             if (storyItem.views.views_count == 0) {
                 storyItem.views.views_count = 1;
@@ -873,7 +886,7 @@ public class StoriesUtilities {
         canvas.drawArc(rect, startAngle, endAngle - startAngle, false, paint);
     }
 
-    public static boolean isExpired(int currentAccount, TLRPC.StoryItem storyItem) {
+    public static boolean isExpired(int currentAccount, TL_stories.StoryItem storyItem) {
         return ConnectionsManager.getInstance(currentAccount).getCurrentTime() > storyItem.expire_date;
     }
 
@@ -903,12 +916,12 @@ public class StoriesUtilities {
         }
     }
 
-    public static EnsureStoryFileLoadedObject ensureStoryFileLoaded(TLRPC.PeerStories stories, Runnable onDoneOrTimeout) {
+    public static EnsureStoryFileLoadedObject ensureStoryFileLoaded(TL_stories.PeerStories stories, Runnable onDoneOrTimeout) {
         if (stories == null || stories.stories.isEmpty() || DialogObject.getPeerDialogId(stories.peer) == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
             onDoneOrTimeout.run();
             return null;
         }
-        TLRPC.StoryItem storyItem = null;
+        TL_stories.StoryItem storyItem = null;
         StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).storiesController;
         int maxReadId = storiesController.dialogIdToMaxReadId.get(DialogObject.getPeerDialogId(stories.peer));
 
@@ -1010,7 +1023,7 @@ public class StoriesUtilities {
         public boolean drawSegments = true;
         public boolean animate = true;
         public int storyId;
-        public TLRPC.StoryItem storyItem;
+        public TL_stories.StoryItem storyItem;
         public float progressToSegments = 1f;
         public float progressToArc = 0;
         public boolean isLast;
@@ -1199,7 +1212,12 @@ public class StoriesUtilities {
             BaseFragment fragment = LaunchActivity.getLastFragment();
             if (fragment != null && child != null) {
                 fragment.getOrCreateStoryViewer().doOnAnimationReady(onDone);
-                fragment.getOrCreateStoryViewer().open(fragment.getContext(), dialogId, StoriesListPlaceProvider.of((RecyclerListView) child.getParent()));
+                ViewParent parent = child.getParent();
+                StoriesListPlaceProvider placeProvider = null;
+                if (parent instanceof RecyclerView) {
+                    placeProvider = StoriesListPlaceProvider.of((RecyclerListView) parent);
+                }
+                fragment.getOrCreateStoryViewer().open(fragment.getContext(), dialogId, placeProvider);
             }
         }
 
@@ -1243,16 +1261,16 @@ public class StoriesUtilities {
             storiesController.setLoading(dialogId, true);
             view.invalidate();
 
-            TLRPC.TL_stories_getPeerStories req = new TLRPC.TL_stories_getPeerStories();
+            TL_stories.TL_stories_getPeerStories req = new TL_stories.TL_stories_getPeerStories();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 boolean openned = false;
                 boolean finished = true;
                 if (response != null) {
-                    TLRPC.TL_stories_peerStories stories_userStories = (TLRPC.TL_stories_peerStories) response;
+                    TL_stories.TL_stories_peerStories stories_userStories = (TL_stories.TL_stories_peerStories) response;
                     MessagesController.getInstance(currentAccount).putUsers(stories_userStories.users, false);
                     MessagesController.getInstance(currentAccount).putChats(stories_userStories.chats, false);
-                    TLRPC.PeerStories stories = stories_userStories.stories;
+                    TL_stories.PeerStories stories = stories_userStories.stories;
                     if (!stories.stories.isEmpty()) {
                         MessagesController.getInstance(currentAccount).getStoriesController().putStories(dialogId, stories);
                         finished = false;

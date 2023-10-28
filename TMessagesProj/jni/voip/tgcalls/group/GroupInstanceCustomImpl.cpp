@@ -103,15 +103,11 @@ static int stringToInt(std::string const &string) {
 }
 
 static std::string intToString(int value) {
-    std::ostringstream stringStream;
-    stringStream << value;
-    return stringStream.str();
+    return std::to_string(value);
 }
 
 static std::string uint32ToString(uint32_t value) {
-    std::ostringstream stringStream;
-    stringStream << value;
-    return stringStream.str();
+    return std::to_string(value);
 }
 
 static uint32_t stringToUInt32(std::string const &string) {
@@ -130,6 +126,7 @@ static uint16_t stringToUInt16(std::string const &string) {
 
 static std::string formatTimestampMillis(int64_t timestamp) {
     std::ostringstream stringStream;
+    stringStream.imbue(std::locale::classic());
     stringStream << std::fixed << std::setprecision(3) << (double)timestamp / 1000.0;
     return stringStream.str();
 }
@@ -2845,9 +2842,9 @@ public:
 
     void setAudioInputDevice(const std::string &id) {
 #if not defined(WEBRTC_IOS) && not defined(WEBRTC_ANDROID)
-        _threads->getWorkerThread()->BlockingCall([&] {
+         _threads->getWorkerThread()->BlockingCall([&] {
                     SetAudioInputDeviceById(_audioDeviceModule.get(), id);
-        });
+         });
 #endif // WEBRTC_IOS
     }
 

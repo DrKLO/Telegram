@@ -622,9 +622,24 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "MESSAGE_GIFTCODE": {
+                                            messageText = LocaleController.formatString("NotificationMessageGiftCode", R.string.NotificationMessageGiftCode, args[0], LocaleController.formatPluralString("Months", Utilities.parseInt(args[1])));
+                                            localMessage = true;
+                                            break;
+                                        }
+                                        case "MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageGiveaway", R.string.NotificationMessageGiveaway, args[0], args[1], args[2]);
+                                            localMessage = true;
+                                            break;
+                                        }
                                         case "MESSAGES": {
                                             messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
                                             localMessage = true;
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageChannelGiveaway", R.string.NotificationMessageChannelGiveaway, args[0], args[1], args[2]);
+                                            message1 = LocaleController.getString("BoostingGiveaway", R.string.BoostingGiveaway);
                                             break;
                                         }
                                         case "CHANNEL_MESSAGE_NOTEXT": {
@@ -735,6 +750,11 @@ public class PushListenerController {
                                         case "CHANNEL_MESSAGES": {
                                             messageText = LocaleController.formatString("ChannelMessageAlbum", R.string.ChannelMessageAlbum, args[0]);
                                             localMessage = true;
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageChatGiveaway", R.string.NotificationMessageChatGiveaway, args[0], args[1], args[2], args[3]);
+                                            message1 = LocaleController.getString("BoostingGiveaway", R.string.BoostingGiveaway);
                                             break;
                                         }
                                         case "CHAT_MESSAGE_TEXT": {
@@ -1038,6 +1058,10 @@ public class PushListenerController {
                                             }
                                             break;
                                         }
+                                        case "PINNED_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationPinnedGiveaway", R.string.NotificationPinnedGiveaway, args[0]);
+                                            break;
+                                        }
                                         case "PINNED_QUIZ": {
                                             if (dialogId > 0) {
                                                 messageText = LocaleController.formatString("NotificationActionPinnedQuizUser", R.string.NotificationActionPinnedQuizUser, args[0], args[1]);
@@ -1306,6 +1330,12 @@ public class PushListenerController {
             }
             case "REACT_GIF": {
                 return LocaleController.formatString("PushReactGif", R.string.PushReactGif, args);
+            }
+            case "REACT_GIVEAWAY": {
+                return LocaleController.formatString("NotificationReactGiveaway", R.string.NotificationReactGiveaway, args);
+            }
+            case "CHAT_REACT_GIVEAWAY": {
+                return LocaleController.formatString("NotificationChatReactGiveaway", R.string.NotificationChatReactGiveaway, args);
             }
             case "CHAT_REACT_TEXT": {
                 return LocaleController.formatString("PushChatReactText", R.string.PushChatReactText, args);

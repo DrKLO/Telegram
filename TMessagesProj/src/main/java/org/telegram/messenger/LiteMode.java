@@ -108,11 +108,12 @@ public class LiteMode {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public static int getBatteryLevel() {
-        if (lastBatteryLevelCached < 0 || System.currentTimeMillis() - lastBatteryLevelChecked > 1000 * 12) {
+        long time = 0;
+        if (lastBatteryLevelCached < 0 || (time = System.currentTimeMillis()) - lastBatteryLevelChecked > 1000 * 12) {
             BatteryManager batteryManager = (BatteryManager) ApplicationLoader.applicationContext.getSystemService(Context.BATTERY_SERVICE);
             if (batteryManager != null) {
                 lastBatteryLevelCached = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                lastBatteryLevelChecked = System.currentTimeMillis();
+                lastBatteryLevelChecked = time;
             }
         }
         return lastBatteryLevelCached;

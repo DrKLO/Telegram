@@ -69,8 +69,8 @@ android {
 
     buildTypes {
         HA_private {
-            debuggable true
-            jniDebuggable true
+            debuggable false
+            jniDebuggable false
             signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
             minifyEnabled true

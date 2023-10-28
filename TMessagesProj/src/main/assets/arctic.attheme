@@ -1,3 +1,4 @@
+chat_BlurAlpha=-1056964608
 chat_unreadMessagesStartText=-14512671
 chat_inFileBackgroundSelected=-2823172
 radioBackgroundChecked=-14638337
@@ -74,6 +75,7 @@ chat_inBubbleShadow=1981626195
 chat_outAudioProgress=-10907938
 player_progress=-14441474
 chat_inReplyLine=-12478487
+chat_inQuote=-12478487
 dialogLineProgressBackground=-3152133
 chat_inReplyNameText=-13464859
 chat_outAudioPerfomerSelectedText=-1

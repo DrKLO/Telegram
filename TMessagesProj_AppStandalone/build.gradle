@@ -64,6 +64,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+            signingConfig signingConfigs.debug
+            applicationIdSuffix ".web"
+            minifyEnabled false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+        }
         standalone {
             debuggable false
             jniDebuggable false
@@ -76,6 +86,9 @@ android {
         }
     }
 
+    sourceSets.debug {
+        manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_standalone.xml'
+    }
     sourceSets.standalone {
         manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_standalone.xml'
     }

@@ -2471,7 +2471,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             });
         }
 
-        if (screenType == SCREEN_TYPE_ACCENT_COLOR && !Theme.hasCustomWallpaper() && accent.backgroundOverrideColor != 0x100000000L) {
+        if (screenType == SCREEN_TYPE_ACCENT_COLOR && !Theme.hasCustomWallpaper() && accent != null && accent.backgroundOverrideColor != 0x100000000L) {
             selectColorType(2);
         }
 
@@ -2524,7 +2524,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 backgroundRotation -= 360;
             }
             setBackgroundColor(backgroundColor, 0, true, true);
-        } else {
+        } else if (accent != null) {
             accent.backgroundRotation += 45;
             while (accent.backgroundRotation >= 360) {
                 accent.backgroundRotation -= 360;
@@ -2538,10 +2538,10 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     }
 
     private void selectColorType(int id, boolean ask) {
-        if (getParentActivity() == null || colorType == id || patternViewAnimation != null) {
+        if (getParentActivity() == null || colorType == id || patternViewAnimation != null || accent != null) {
             return;
         }
-        if (ask && id == 2 && (Theme.hasCustomWallpaper() || accent.backgroundOverrideColor == 0x100000000L)) {
+        if (ask && id == 2 && (Theme.hasCustomWallpaper() ||  accent.backgroundOverrideColor == 0x100000000L)) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("ChangeChatBackground", R.string.ChangeChatBackground));
             if (!Theme.hasCustomWallpaper() || Theme.isCustomWallpaperColor()) {
@@ -4604,6 +4604,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 message.from_id = new TLRPC.TL_peerUser();
                 message.id = 1;
                 message.reply_to = new TLRPC.TL_messageReplyHeader();
+                message.reply_to.flags |= 16;
                 message.reply_to.reply_to_msg_id = 5;
                 message.media = new TLRPC.TL_messageMediaEmpty();
                 message.out = false;
@@ -4764,6 +4765,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     message.from_id = new TLRPC.TL_peerUser();
                     message.id = 1;
                     message.reply_to = new TLRPC.TL_messageReplyHeader();
+                    message.reply_to.flags |= 16;
                     message.reply_to.reply_to_msg_id = 5;
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     message.out = false;

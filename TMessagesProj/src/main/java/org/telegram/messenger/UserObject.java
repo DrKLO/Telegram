@@ -10,10 +10,14 @@ package org.telegram.messenger;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.TLRPC;
 
 public class UserObject {
+
+    public static final long REPLY_BOT = 1271266957L;
 
     public static boolean isDeleted(TLRPC.User user) {
         return user == null || user instanceof TLRPC.TL_userDeleted_old2 || user instanceof TLRPC.TL_userEmpty || user.deleted;
@@ -28,13 +32,14 @@ public class UserObject {
     }
 
     public static boolean isReplyUser(TLRPC.User user) {
-        return user != null && (user.id == 708513 || user.id == 1271266957);
+        return user != null && (user.id == 708513 || user.id == REPLY_BOT);
     }
 
     public static boolean isReplyUser(long did) {
-        return did == 708513 || did == 1271266957;
+        return did == 708513 || did == REPLY_BOT;
     }
 
+    @NonNull
     public static String getUserName(TLRPC.User user) {
         if (user == null || isDeleted(user)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);

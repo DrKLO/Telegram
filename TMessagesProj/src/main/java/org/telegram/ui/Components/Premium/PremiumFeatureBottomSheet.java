@@ -455,6 +455,10 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         return type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES;
     }
 
+    public void hideButton() {
+        buttonContainer.setVisibility(View.GONE);
+    }
+
     public PremiumFeatureBottomSheet setForceAbout() {
         this.forceAbout = true;
         premiumButtonView.clearOverlayText();

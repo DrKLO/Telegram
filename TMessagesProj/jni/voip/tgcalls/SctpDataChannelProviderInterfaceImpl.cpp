@@ -7,7 +7,7 @@
 namespace tgcalls {
 
 SctpDataChannelProviderInterfaceImpl::SctpDataChannelProviderInterfaceImpl(
-    cricket::DtlsTransport *transportChannel,
+    rtc::PacketTransportInternal *transportChannel,
     bool isOutgoing,
     std::function<void(bool)> onStateChanged,
     std::function<void()> onTerminated,

@@ -254,4 +254,9 @@ public class EditTextOutline extends EditTextBoldCursor {
         }
         super.onDraw(canvas);
     }
+
+    @Override
+    public boolean onTextContextMenuItem(int id) {
+        return super.onTextContextMenuItem(id);
+    }
 }

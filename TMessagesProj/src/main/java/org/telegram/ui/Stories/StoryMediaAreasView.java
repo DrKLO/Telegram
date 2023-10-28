@@ -7,40 +7,30 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.graphics.Shader;
-import android.graphics.Xfermode;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
-import com.google.android.exoplayer2.extractor.CeaUtil;
-import com.google.zxing.qrcode.decoder.Mode;
-
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.EmojiAnimationsOverlay;
 import org.telegram.ui.LocationActivity;
@@ -69,13 +59,13 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         addView(hintsContainer = new FrameLayout(context));
     }
 
-    public static ArrayList<TLRPC.MediaArea> getMediaAreasFor(StoryEntry entry) {
+    public static ArrayList<TL_stories.MediaArea> getMediaAreasFor(StoryEntry entry) {
         if (entry == null || entry.mediaEntities == null) {
             return null;
         }
-        ArrayList<TLRPC.MediaArea> areas = new ArrayList<>();
+        ArrayList<TL_stories.MediaArea> areas = new ArrayList<>();
         for (int i = 0; i < entry.mediaEntities.size(); i++) {
-            if (entry.mediaEntities.get(i).mediaArea instanceof TLRPC.TL_mediaAreaSuggestedReaction) {
+            if (entry.mediaEntities.get(i).mediaArea instanceof TL_stories.TL_mediaAreaSuggestedReaction) {
                 areas.add(entry.mediaEntities.get(i).mediaArea);
             }
         }
@@ -90,14 +80,14 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
     }
 
-    private ArrayList<TLRPC.MediaArea> lastMediaAreas;
+    private ArrayList<TL_stories.MediaArea> lastMediaAreas;
 
-    public void set(TLRPC.StoryItem storyItem, EmojiAnimationsOverlay animationsOverlay) {
-        ArrayList<TLRPC.MediaArea> mediaAreas = storyItem != null ? storyItem.media_areas : null;
+    public void set(TL_stories.StoryItem storyItem, EmojiAnimationsOverlay animationsOverlay) {
+        ArrayList<TL_stories.MediaArea> mediaAreas = storyItem != null ? storyItem.media_areas : null;
         set(storyItem, mediaAreas, animationsOverlay);
     }
 
-    public void set(TLRPC.StoryItem storyItem, ArrayList<TLRPC.MediaArea> mediaAreas, EmojiAnimationsOverlay animationsOverlay) {
+    public void set(TL_stories.StoryItem storyItem, ArrayList<TL_stories.MediaArea> mediaAreas, EmojiAnimationsOverlay animationsOverlay) {
         if (mediaAreas == lastMediaAreas && (mediaAreas == null || lastMediaAreas == null || mediaAreas.size() == lastMediaAreas.size())) {
             return;
         }
@@ -130,11 +120,11 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
         double totalArea = 0;
         for (int i = 0; i < mediaAreas.size(); ++i) {
-            TLRPC.MediaArea mediaArea = mediaAreas.get(i);
+            TL_stories.MediaArea mediaArea = mediaAreas.get(i);
             if (mediaArea != null && mediaArea.coordinates != null) {
                 View areaView;
-                if (mediaArea instanceof TLRPC.TL_mediaAreaSuggestedReaction) {
-                    StoryReactionWidgetView storyReactionWidgetView = new StoryReactionWidgetView(getContext(), this, (TLRPC.TL_mediaAreaSuggestedReaction) mediaArea, animationsOverlay);
+                if (mediaArea instanceof TL_stories.TL_mediaAreaSuggestedReaction) {
+                    StoryReactionWidgetView storyReactionWidgetView = new StoryReactionWidgetView(getContext(), this, (TL_stories.TL_mediaAreaSuggestedReaction) mediaArea, animationsOverlay);
                     areaView = storyReactionWidgetView;
                     if (storyItem != null) {
                         storyReactionWidgetView.setViews(storyItem.views, false);
@@ -203,8 +193,8 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
             };
             fragment.setResourceProvider(resourcesProvider);
             TLRPC.TL_message message = new TLRPC.TL_message();
-            if (selectedArea.mediaArea instanceof TLRPC.TL_mediaAreaVenue) {
-                TLRPC.TL_mediaAreaVenue areaVenue = (TLRPC.TL_mediaAreaVenue) selectedArea.mediaArea;
+            if (selectedArea.mediaArea instanceof TL_stories.TL_mediaAreaVenue) {
+                TL_stories.TL_mediaAreaVenue areaVenue = (TL_stories.TL_mediaAreaVenue) selectedArea.mediaArea;
                 TLRPC.TL_messageMediaVenue media = new TLRPC.TL_messageMediaVenue();
                 media.venue_id = areaVenue.venue_id;
                 media.venue_type = areaVenue.venue_type;
@@ -213,9 +203,9 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 media.provider = areaVenue.provider;
                 media.geo = areaVenue.geo;
                 message.media = media;
-            } else if (selectedArea.mediaArea instanceof TLRPC.TL_mediaAreaGeoPoint) {
+            } else if (selectedArea.mediaArea instanceof TL_stories.TL_mediaAreaGeoPoint) {
                 fragment.setInitialMaxZoom(true);
-                TLRPC.TL_mediaAreaGeoPoint areaGeo = (TLRPC.TL_mediaAreaGeoPoint) selectedArea.mediaArea;
+                TL_stories.TL_mediaAreaGeoPoint areaGeo = (TL_stories.TL_mediaAreaGeoPoint) selectedArea.mediaArea;
                 TLRPC.TL_messageMediaGeo media = new TLRPC.TL_messageMediaGeo();
                 media.geo = areaGeo.geo;
                 message.media = media;
@@ -256,8 +246,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         imageSpan.translate(dp(-2), dp(1));
         imageSpan.setScale(-1, 1);
         arrowLeft.setSpan(imageSpan, 0, arrowLeft.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        AndroidUtilities.replaceCharSequence(">", text, arrowRight);
-        AndroidUtilities.replaceCharSequence("<", text, arrowLeft);
+        AndroidUtilities.replaceCharSequence(">", text, AndroidUtilities.isRTL(text) ? arrowLeft : arrowRight);
 
         final HintView2 thisHint = hintView = new HintView2(getContext(), top ? HintView2.DIRECTION_TOP : HintView2.DIRECTION_BOTTOM)
             .setText(text)
@@ -405,7 +394,39 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         return selectedArea != null;
     }
 
-    public void onStoryItemUpdated(TLRPC.StoryItem storyItem, boolean animated) {
+    // returns true when widget that is drawn above the story (f.ex. reaction) is at these coordinates
+    // used to detect that back gesture safety measure should not occur
+    public boolean hasAreaAboveAt(float x, float y) {
+        for (int i = 0; i < getChildCount(); ++i) {
+            View child = getChildAt(i);
+            if (child instanceof StoryReactionWidgetView) {
+                if (rotatedRectContainsPoint(
+                        child.getTranslationX(),
+                        child.getTranslationY(),
+                        child.getMeasuredWidth(),
+                        child.getMeasuredHeight(),
+                        child.getRotation(),
+                        x, y
+                )) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean rotatedRectContainsPoint(float rcx, float rcy, float rw, float rh, float rr, float x, float y) {
+        float xt = x - rcx;
+        float yt = y - rcy;
+
+        double rad = Math.toRadians(-rr);
+        float xr = (float) (xt * Math.cos(rad) - yt * Math.sin(rad));
+        float yr = (float) (xt * Math.sin(rad) + yt * Math.cos(rad));
+
+        return xr >= -rw/2 && xr <= rw/2 && yr >= -rh/2 && yr <= rh/2;
+    }
+
+    public void onStoryItemUpdated(TL_stories.StoryItem storyItem, boolean animated) {
         if (storyItem == null) {
             return;
         }
@@ -442,9 +463,9 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
         public final AnimatedFloat highlightAlpha;
 
-        public final TLRPC.MediaArea mediaArea;
+        public final TL_stories.MediaArea mediaArea;
 
-        public AreaView(Context context, View parent, TLRPC.MediaArea mediaArea) {
+        public AreaView(Context context, View parent, TL_stories.MediaArea mediaArea) {
             super(context);
             this.mediaArea = mediaArea;
             highlightAlpha = new AnimatedFloat(parent, 0, 120, new LinearInterpolator());

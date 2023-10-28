@@ -120,6 +120,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private TextCell locationCell;
     private TextCell typeCell;
     private TextCell linkedCell;
+    private PeerColorActivity.ChangeNameColorCell colorCell;
     private TextCell historyCell;
     private TextCell reactionsCell;
     private TextInfoPrivacyCell settingsSectionCell;
@@ -386,6 +387,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             nameTextView.onResume();
             nameTextView.getEditText().requestFocus();
         }
+        updateColorCell();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         updateFields(true, true);
         imageUpdater.onResume();
@@ -879,6 +881,15 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 });
             }
 
+            if (ChatObject.isChannelAndNotMegaGroup(currentChat) && ChatObject.canChangeChatInfo(currentChat)) {
+                colorCell = new PeerColorActivity.ChangeNameColorCell(true, context, getResourceProvider());
+                colorCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                typeEditContainer.addView(colorCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                colorCell.setOnClickListener(v -> {
+                    presentFragment(new PeerColorActivity(-currentChat.id).setOnApplied(this));
+                });
+            }
+
             if (!isChannel && ChatObject.canBlockUsers(currentChat) && (ChatObject.isChannel(currentChat) || currentChat.creator)) {
                 historyCell = new TextCell(context);
                 historyCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
@@ -963,6 +974,8 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     updateFields(false, true);
                 });
             }
+
+            updateColorCell();
         }
 
         ActionBarMenu menu = actionBar.createMenu();
@@ -1880,6 +1893,12 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
     }
 
+    private void updateColorCell() {
+        if (colorCell != null) {
+            colorCell.set(currentChat, (historyCell != null && historyCell.getVisibility() == View.VISIBLE) || (signCell != null && signCell.getVisibility() == View.VISIBLE) || (forumsCell != null && forumsCell.getVisibility() == View.VISIBLE));
+        }
+    }
+
     private ValueAnimator updateHistoryShowAnimator;
     private void updateHistoryShow(boolean show, boolean animated) {
         final boolean finalShow = show;
@@ -1888,6 +1907,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
         if (historyCell.getAlpha() <= 0 && !show) {
             historyCell.setVisibility(View.GONE);
+            updateColorCell();
             return;
         } else if (historyCell.getVisibility() == View.VISIBLE && historyCell.getAlpha() >= 1 && show) {
             return;

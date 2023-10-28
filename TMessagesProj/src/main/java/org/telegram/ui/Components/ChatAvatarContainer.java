@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -52,7 +53,9 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
+import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,7 +152,21 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
         avatarImageView = new BackupImageView(context) {
 
-            StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true);
+            StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true) {
+                @Override
+                public void openStory(long dialogId, Runnable onDone) {
+                    baseFragment.getOrCreateStoryViewer().open(getContext(), dialogId, (dialogId1, messageId, storyId, type, holder) -> {
+                        holder.crossfadeToAvatarImage = holder.storyImage = imageReceiver;
+                        holder.params = params;
+                        holder.view = avatarImageView;
+                        holder.alpha = avatarImageView.getAlpha();
+                        holder.clipTop = 0;
+                        holder.clipBottom = AndroidUtilities.displaySize.y;
+                        holder.clipParent = (View) getParent();
+                        return true;
+                    });
+                }
+            };
 
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
@@ -175,6 +192,16 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 } else {
                     super.onDraw(canvas);
                 }
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (allowDrawStories) {
+                    if (params.checkOnTouchEvent(event, this)) {
+                        return true;
+                    }
+                }
+                return super.onTouchEvent(event);
             }
         };
         if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {

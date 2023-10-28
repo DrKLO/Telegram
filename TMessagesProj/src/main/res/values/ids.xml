@@ -1,5 +1,6 @@
 <resources>
     <item name="menu_spoiler" type="id"/>
+    <item name="menu_quote" type="id"/>
     <item name="menu_regular" type="id"/>
     <item name="menu_bold" type="id"/>
     <item name="menu_italic" type="id"/>

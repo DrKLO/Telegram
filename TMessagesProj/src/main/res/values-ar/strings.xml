@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; تذكير</string>
     <string name="OneResult">نتيجة واحدة</string>
     <string name="VideoQualityIsTooLow">جودة المقطع المرئي أقل مما ينبغي لتغيير إعدادات الضغط.</string>
-    <string name="TextSelectionHit">اضغط باستمرار على **كلمة** ما، ثم حرّك المؤشر لتحديد المزيد والنسخ.</string>
     <string name="CardNumberCopied">تم نسخ رقم البطاقة للحافظة</string>
     <string name="CopyCardNumber">نسخ</string>
     <string name="DiceInfo2">أرسل الرمز التعبيري **&#127922;** لرمي حجر النرد.</string>

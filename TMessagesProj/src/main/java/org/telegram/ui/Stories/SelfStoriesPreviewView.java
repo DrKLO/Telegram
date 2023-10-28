@@ -6,14 +6,12 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.text.TextUtils;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -25,10 +23,8 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.StaticLayoutEx;
@@ -473,7 +469,7 @@ public abstract class SelfStoriesPreviewView extends View {
         }
     }
 
-    private void formatCounterText(SpannableStringBuilder spannableStringBuilder, TLRPC.StoryViews storyViews, boolean twoLines) {
+    private void formatCounterText(SpannableStringBuilder spannableStringBuilder, TL_stories.StoryViews storyViews, boolean twoLines) {
         int count = storyViews == null ? 0 : storyViews.views_count;
         if (count > 0) {
             spannableStringBuilder.append("d");

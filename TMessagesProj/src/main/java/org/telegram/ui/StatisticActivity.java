@@ -50,6 +50,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -83,14 +84,15 @@ import org.telegram.ui.Components.ChatAvatarContainer;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FlatCheckBox;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.boosts.BoostDialogs;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ViewPagerFixed;
-import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 public class StatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -145,7 +147,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     private AlertDialog[] progressDialog = new AlertDialog[1];
     private ViewPagerFixed viewPagerFixed;
-    private ChannelBoostLayout boosLayout;
+    private ChannelBoostLayout boostLayout;
     private boolean onlyBoostsStat;
 
     public StatisticActivity(Bundle args) {
@@ -177,6 +179,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     public boolean onFragmentCreate() {
         getNotificationCenter().addObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.boostByChannelCreated);
         if (chat != null) {
             loadStatistic();
         } else {
@@ -353,6 +356,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     @Override
     public void onFragmentDestroy() {
+        getNotificationCenter().removeObserver(this, NotificationCenter.boostByChannelCreated);
         getNotificationCenter().removeObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
         if (progressDialog[0] != null) {
@@ -365,7 +369,24 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.messagesDidLoad) {
+        if (id == NotificationCenter.boostByChannelCreated) {
+            TLRPC.Chat chat = (TLRPC.Chat) args[0];
+            boolean isGiveaway = (boolean) args[1];
+            if (isGiveaway) {
+                List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
+                BaseFragment profileFragment = fragmentStack.size() >= 2 ? fragmentStack.get(fragmentStack.size() - 2) : null;
+                BaseFragment chatFragment = fragmentStack.size() >= 3 ? fragmentStack.get(fragmentStack.size() - 3) : null;
+                if (profileFragment instanceof ProfileActivity) {
+                    getParentLayout().removeFragmentFromStack(profileFragment);
+                }
+                finishFragment();
+                if (chatFragment instanceof ChatActivity) {
+                    BoostDialogs.showBulletin(chatFragment, chat, true);
+                }
+            } else {
+                BoostDialogs.showBulletin(this, chat, false);
+            }
+        } else if (id == NotificationCenter.messagesDidLoad) {
             int guid = (Integer) args[10];
             if (guid == classGuid) {
                 ArrayList<MessageObject> messArr = (ArrayList<MessageObject>) args[2];
@@ -457,7 +478,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         });
         FrameLayout statisticLayout = new FrameLayout(context);
         if (isChannel) {
-            boosLayout = new ChannelBoostLayout(StatisticActivity.this, -chatId, getResourceProvider());
+            boostLayout = new ChannelBoostLayout(StatisticActivity.this, -chatId, getResourceProvider());
         }
         boolean showTabs = isChannel && !onlyBoostsStat;
         if (showTabs && startFromBoosts) {
@@ -478,9 +499,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             @Override
             public View createView(int viewType) {
                 if (onlyBoostsStat) {
-                    return boosLayout;
+                    return boostLayout;
                 }
-                return viewType == 0 ? statisticLayout : boosLayout;
+                return viewType == 0 ? statisticLayout : boostLayout;
             }
 
             @Override

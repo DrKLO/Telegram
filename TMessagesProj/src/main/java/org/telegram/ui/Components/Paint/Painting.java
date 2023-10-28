@@ -741,7 +741,7 @@ public class Painting {
     }
 
     private void renderBlur() {
-        if (blurManager == null || bitmapBlurTexture == null) {
+        if (blurManager == null || bitmapBlurTexture == null || !hasBlur) {
             return;
         }
 

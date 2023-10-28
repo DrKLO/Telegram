@@ -60,6 +60,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_chatlists;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -95,7 +96,7 @@ public class FilterChatlistActivity extends BaseFragment {
     private ListAdapter adapter;
 
     MessagesController.DialogFilter filter;
-    TLRPC.TL_exportedChatlistInvite invite;
+    TL_chatlists.TL_exportedChatlistInvite invite;
 
     private static final int MAX_NAME_LENGTH = 32;
 
@@ -109,21 +110,21 @@ public class FilterChatlistActivity extends BaseFragment {
     private int shiftDp = -5;
     private long lastClickedDialogId, lastClicked;
 
-    public FilterChatlistActivity(MessagesController.DialogFilter filter, TLRPC.TL_exportedChatlistInvite invite) {
+    public FilterChatlistActivity(MessagesController.DialogFilter filter, TL_chatlists.TL_exportedChatlistInvite invite) {
         super();
 
         this.filter = filter;
         this.invite = invite;
     }
 
-    private Utilities.Callback<TLRPC.TL_exportedChatlistInvite> onDelete;
-    private Utilities.Callback<TLRPC.TL_exportedChatlistInvite> onEdit;
+    private Utilities.Callback<TL_chatlists.TL_exportedChatlistInvite> onDelete;
+    private Utilities.Callback<TL_chatlists.TL_exportedChatlistInvite> onEdit;
 
-    public void setOnDelete(Utilities.Callback<TLRPC.TL_exportedChatlistInvite> onDelete) {
+    public void setOnDelete(Utilities.Callback<TL_chatlists.TL_exportedChatlistInvite> onDelete) {
         this.onDelete = onDelete;
     }
 
-    public void setOnEdit(Utilities.Callback<TLRPC.TL_exportedChatlistInvite> onEdit) {
+    public void setOnEdit(Utilities.Callback<TL_chatlists.TL_exportedChatlistInvite> onEdit) {
         this.onEdit = onEdit;
     }
 
@@ -324,8 +325,8 @@ public class FilterChatlistActivity extends BaseFragment {
             invite.peers.add(getMessagesController().getPeer(selectedPeers.get(i)));
         }
 
-        TLRPC.TL_chatlists_editExportedInvite req = new TLRPC.TL_chatlists_editExportedInvite();
-        req.chatlist = new TLRPC.TL_inputChatlistDialogFilter();
+        TL_chatlists.TL_chatlists_editExportedInvite req = new TL_chatlists.TL_chatlists_editExportedInvite();
+        req.chatlist = new TL_chatlists.TL_inputChatlistDialogFilter();
         req.chatlist.filter_id = filter.id;
         req.slug = getSlug();
         req.revoked = invite.revoked;
@@ -358,8 +359,8 @@ public class FilterChatlistActivity extends BaseFragment {
             getConnectionsManager().cancelRequest(savingTitleReqId, true);
             savingTitleReqId = 0;
         }
-        TLRPC.TL_chatlists_editExportedInvite req = new TLRPC.TL_chatlists_editExportedInvite();
-        req.chatlist = new TLRPC.TL_inputChatlistDialogFilter();
+        TL_chatlists.TL_chatlists_editExportedInvite req = new TL_chatlists.TL_chatlists_editExportedInvite();
+        req.chatlist = new TL_chatlists.TL_inputChatlistDialogFilter();
         req.chatlist.filter_id = filter.id;
         req.slug = getSlug();
         req.revoked = invite.revoked;
@@ -490,8 +491,8 @@ public class FilterChatlistActivity extends BaseFragment {
                             return;
                         }
 
-                        TLRPC.TL_chatlists_editExportedInvite req = new TLRPC.TL_chatlists_editExportedInvite();
-                        req.chatlist = new TLRPC.TL_inputChatlistDialogFilter();
+                        TL_chatlists.TL_chatlists_editExportedInvite req = new TL_chatlists.TL_chatlists_editExportedInvite();
+                        req.chatlist = new TL_chatlists.TL_inputChatlistDialogFilter();
                         req.chatlist.filter_id = filter.id;
                         req.revoked = revoke;
                         req.slug = getSlug();
@@ -508,8 +509,8 @@ public class FilterChatlistActivity extends BaseFragment {
 
                     @Override
                     protected void deleteLink() {
-                        TLRPC.TL_chatlists_deleteExportedInvite req = new TLRPC.TL_chatlists_deleteExportedInvite();
-                        req.chatlist = new TLRPC.TL_inputChatlistDialogFilter();
+                        TL_chatlists.TL_chatlists_deleteExportedInvite req = new TL_chatlists.TL_chatlists_deleteExportedInvite();
+                        req.chatlist = new TL_chatlists.TL_inputChatlistDialogFilter();
                         req.chatlist.filter_id = filter.id;
                         req.slug = getSlug();
                         final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);

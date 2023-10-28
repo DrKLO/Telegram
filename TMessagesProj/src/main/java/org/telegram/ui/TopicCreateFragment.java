@@ -443,7 +443,7 @@ public class TopicCreateFragment extends BaseFragment {
             selectAnimatedEmojiDialog.setClipChildren(false);
             emojiContainer.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 12, 12, 12, 12));
 
-            Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor);
+            Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor, false);
             CombinedDrawable topicCombinedDrawable = (CombinedDrawable) drawable;
             forumBubbleDrawable = (ForumBubbleDrawable) topicCombinedDrawable.getBackgroundDrawable();
 

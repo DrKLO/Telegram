@@ -209,6 +209,7 @@ public class AndroidUtilities {
 
     public final static int REPLACING_TAG_TYPE_LINK = 0;
     public final static int REPLACING_TAG_TYPE_BOLD = 1;
+    public final static int REPLACING_TAG_TYPE_LINKBOLD = 2;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
@@ -453,6 +454,10 @@ public class AndroidUtilities {
         return null;
     }
 
+    public static CharSequence premiumText(String str, Runnable runnable) {
+        return replaceSingleTag(str, -1, REPLACING_TAG_TYPE_LINKBOLD, runnable);
+    }
+
     public static CharSequence replaceSingleTag(String str, Runnable runnable) {
         return replaceSingleTag(str, -1, 0, runnable);
     }
@@ -473,7 +478,7 @@ public class AndroidUtilities {
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         if (index >= 0) {
-            if (type == REPLACING_TAG_TYPE_LINK) {
+            if (type == REPLACING_TAG_TYPE_LINK || type == REPLACING_TAG_TYPE_LINKBOLD) {
                 spannableStringBuilder.setSpan(new ClickableSpan() {
 
                     @Override
@@ -482,6 +487,9 @@ public class AndroidUtilities {
                         ds.setUnderlineText(false);
                         if (colorKey >= 0) {
                             ds.setColor(Theme.getColor(colorKey, resourcesProvider));
+                        }
+                        if (type == REPLACING_TAG_TYPE_LINKBOLD) {
+                            ds.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                         }
                     }
 
@@ -593,8 +601,11 @@ public class AndroidUtilities {
             if (child.getVisibility() != View.VISIBLE || child instanceof PeerStoriesView && child != onlyThisView) {
                 continue;
             }
-            if (child instanceof StoryMediaAreasView.AreaView && !((StoryMediaAreasView) container).hasSelected() && (x < dp(60) || x > container.getWidth() - dp(60))) {
-                continue;
+            if (child instanceof StoryMediaAreasView.AreaView) {
+                StoryMediaAreasView areasView = (StoryMediaAreasView) container;
+                if (!(areasView.hasSelected() && (x < dp(60) || x > container.getWidth() - dp(60))) && !areasView.hasAreaAboveAt(x, y)) {
+                    continue;
+                }
             }
             child.getHitRect(AndroidUtilities.rectTmp2);
             if (AndroidUtilities.rectTmp2.contains((int) x, (int) y) && child.isClickable()) {
@@ -3454,7 +3465,7 @@ public class AndroidUtilities {
         return stringBuilder.toString();
     }
 
-    public static final String[] numbersSignatureArray = {"", "K", "M", "G", "T", "P"};
+    public static final String[] numbersSignatureArray = {"", "K", "M", "B", "T", "P"};
 
     public static String formatWholeNumber(int v, int dif) {
         if (v == 0) {
@@ -4632,6 +4643,20 @@ public class AndroidUtilities {
         }
     }
 
+    public static void setLightStatusBar(View view, boolean enable) {
+        if (view != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int flags = view.getSystemUiVisibility();
+            if (((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) > 0) != enable) {
+                if (enable) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                } else {
+                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                }
+                view.setSystemUiVisibility(flags);
+            }
+        }
+    }
+
     public static void setLightNavigationBar(Window window, boolean enable) {
         if (window != null) {
             setLightNavigationBar(window.getDecorView(), enable);
@@ -5280,6 +5305,10 @@ public class AndroidUtilities {
 
     public static boolean intersect1d(int x1, int x2, int y1, int y2) {
         return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
+    }
+
+    public static boolean intersect1dInclusive(int x1, int x2, int y1, int y2) {
+        return Math.max(x1, x2) >= Math.min(y1, y2) && Math.max(y1, y2) >= Math.min(x1, x2);
     }
 
     public static String getSysInfoString(String path) {

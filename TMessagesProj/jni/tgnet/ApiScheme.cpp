@@ -483,19 +483,19 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         lang_code = stream->readString(&error);
     }
     if ((flags & 1073741824) != 0) {
-        uint32_t magic = stream->readUint32(&error);
-        if (magic == 0x2de11aae) {
+        emojiStatusMagic = stream->readUint32(&error);
+        if (emojiStatusMagic == 0x2de11aae) {
             // emojiStatusEmpty
-        } else if (magic == 0x929b619d) {
+        } else if (emojiStatusMagic == 0x929b619d) {
             // emojiStatus
-            int64_t document_id = stream->readInt64(&error);
-        } else if (magic == 0xfa30a8c7) {
+            emojiStatusDocumentId = stream->readInt64(&error);
+        } else if (emojiStatusMagic == 0xfa30a8c7) {
             // emojiStatusUntil
-            int64_t document_id = stream->readInt64(&error);
-            int until = stream->readInt32(&error);
+            emojiStatusDocumentId = stream->readInt64(&error);
+            emojiStatusUntil = stream->readInt32(&error);
         } else {
             error = true;
-            if (LOGS_ENABLED) DEBUG_FATAL("wrong EmojiStatus magic, got %x", magic);
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong EmojiStatus magic, got %x", emojiStatusMagic);
             return;
         }
     }
@@ -517,6 +517,12 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     }
     if ((flags2 & 32) != 0) {
         stories_max_id = stream->readInt32(&error);
+    }
+    if ((flags2 & 128) != 0) {
+        color = stream->readInt32(&error);
+    }
+    if ((flags2 & 64) != 0) {
+        background_emoji_id = stream->readInt64(&error);
     }
 }
 
@@ -562,6 +568,34 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     }
     if ((flags & 4194304) != 0) {
         stream->writeString(lang_code);
+    }
+    if ((flags & 1073741824) != 0) {
+        stream->writeInt32(emojiStatusMagic);
+        if (emojiStatusMagic == 0x929b619d) {
+            // emojiStatus
+            stream->writeInt64(emojiStatusDocumentId);
+        } else if (emojiStatusMagic == 0xfa30a8c7) {
+            // emojiStatusUntil
+            stream->writeInt64(emojiStatusDocumentId);
+            stream->writeInt32(emojiStatusUntil);
+        }
+    }
+    if ((flags2 & 1) != 0) {
+        stream->writeInt32(0x1cb5c415);
+        int32_t count = (int32_t) usernames.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            usernames[a]->serializeToStream(stream);
+        }
+    }
+    if ((flags2 & 32) != 0) {
+        stream->writeInt32(stories_max_id);
+    }
+    if ((flags2 & 128) != 0) {
+        stream->writeInt32(color);
+    }
+    if ((flags2 & 64) != 0) {
+        stream->writeInt64(background_emoji_id);
     }
 }
 
