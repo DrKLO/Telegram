@@ -464,7 +464,9 @@ public class SharedLinkCell extends FrameLayout {
             if (currentPhotoObjectThumb == currentPhotoObject) {
                 currentPhotoObjectThumb = null;
             }
-            currentPhotoObject.size = -1;
+            if (currentPhotoObject != null) {
+                currentPhotoObject.size = -1;
+            }
             if (currentPhotoObjectThumb != null) {
                 currentPhotoObjectThumb.size = -1;
             }

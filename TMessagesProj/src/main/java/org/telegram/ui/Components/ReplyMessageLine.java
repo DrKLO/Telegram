@@ -17,6 +17,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
@@ -131,13 +132,14 @@ public class ReplyMessageLine {
         } else if (!isReply && (
             messageObject.overrideLinkColor >= 0 ||
             messageObject.messageOwner != null && (
-                messageObject.isFromUser() && currentUser != null ||
+                (messageObject.isFromUser() || DialogObject.isEncryptedDialog(messageObject.getDialogId())) && currentUser != null ||
                 messageObject.isFromChannel() && currentChat != null ||
                 messageObject.isSponsored() && messageObject.sponsoredChatInvite instanceof TLRPC.TL_chatInvite ||
-                messageObject.isSponsored() && messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null
+                messageObject.isSponsored() && messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null ||
+                messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null
             )
         )) {
-            int colorId;
+            int colorId = 5;
             if (messageObject.overrideLinkColor >= 0) {
                 colorId = messageObject.overrideLinkColor;
             } else if (messageObject.isSponsored() && messageObject.sponsoredChatInvite instanceof TLRPC.TL_chatInvite) {
@@ -147,6 +149,27 @@ public class ReplyMessageLine {
                     colorId = messageObject.sponsoredChatInvite.chat.color;
                 } else {
                     colorId = (int) (messageObject.sponsoredChatInvite.chat.id % 7);
+                }
+            } else if (messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
+                long dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+                if (dialogId < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+                    if (chat != null) {
+                        colorId = (chat.flags2 & 64) != 0 ? chat.color : (int) (chat.id % 7);
+                    }
+                } else {
+                    TLRPC.User user = MessagesController.getInstance(messageObject.currentAccount).getUser(dialogId);
+                    if (user != null) {
+                        colorId = (user.flags2 & 128) != 0 ? user.color : (int) (user.id % 7);
+                    }
+                }
+            } else if (DialogObject.isEncryptedDialog(messageObject.getDialogId()) && currentUser != null) {
+                TLRPC.User user = messageObject.isOutOwner() ? UserConfig.getInstance(messageObject.currentAccount).getCurrentUser() : currentUser;
+                if (user == null) user = currentUser;
+                if ((user.flags2 & 128) != 0) {
+                    colorId = user.color;
+                } else {
+                    colorId = (int) (user.id % 7);
                 }
             } else if (messageObject.isFromUser() && currentUser != null) {
                 if ((currentUser.flags2 & 128) != 0) {
@@ -174,11 +197,22 @@ public class ReplyMessageLine {
             messageObject.replyMessageObject.messageOwner != null &&
             messageObject.replyMessageObject.messageOwner.from_id != null && (
                 messageObject.replyMessageObject.isFromUser() ||
+                DialogObject.isEncryptedDialog(messageObject.getDialogId()) ||
                 messageObject.replyMessageObject.isFromChannel()
         ))) {
             int colorId;
             if (messageObject.overrideLinkColor >= 0) {
                 colorId = messageObject.overrideLinkColor;
+            } else if (DialogObject.isEncryptedDialog(messageObject.replyMessageObject.getDialogId())) {
+                TLRPC.User user = messageObject.replyMessageObject.isOutOwner() ? UserConfig.getInstance(messageObject.replyMessageObject.currentAccount).getCurrentUser() : currentUser;
+                if (user != null) {
+                    colorId = (user.flags2 & 128) != 0 ? user.color : (int) (user.id % 7);
+                    if ((user.flags2 & 64) != 0) {
+                        emojiDocumentId = user.background_emoji_id;
+                    }
+                } else {
+                    colorId = 0;
+                }
             } else if (messageObject.replyMessageObject.isFromUser()) {
                 TLRPC.User user = MessagesController.getInstance(messageObject.currentAccount).getUser(messageObject.replyMessageObject.messageOwner.from_id.user_id);
                 if (user != null) {
@@ -449,7 +483,7 @@ public class ReplyMessageLine {
                 float y0 = Math.min(rect.centerY(), rect.top + dp(42 / 2));
 
                 emoji.setColor(getColor());
-                emoji.setAlpha((int) (0xFF * alpha * (rect.width() < dp(140) ? .27f : .5f )));
+                emoji.setAlpha((int) (0xFF * alpha * (rect.width() < dp(140) ? .3f : .5f )));
                 for (int i = 0; i < iconCoords.length; ++i) {
                     IconCoords c = iconCoords[i];
                     if (c.q && !hasQuote) {

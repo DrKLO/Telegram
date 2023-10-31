@@ -180,8 +180,8 @@ public class HeaderCell extends FrameLayout {
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         try {
             String description = LocaleController.getString("BoostingLinkAllowsToUser", R.string.BoostingLinkAllowsToUser);
-            CharSequence descriptionStart = description.substring(0, description.indexOf("**%1s**") + 7);
-            CharSequence descriptionEnd = description.substring(description.indexOf("**%1s**") + 7);
+            CharSequence descriptionStart = description.substring(0, description.indexOf("**%1$s**") + 8);
+            CharSequence descriptionEnd = description.substring(description.indexOf("**%1$s**") + 8);
 
             TLRPC.User toUser = MessagesController.getInstance(UserConfig.selectedAccount).getUser(toUserId);
             SpannableStringBuilder userName = new SpannableStringBuilder();
@@ -190,7 +190,7 @@ public class HeaderCell extends FrameLayout {
             userName.append("**");
 
             descriptionStart = AndroidUtilities.replaceSingleTag(
-                    descriptionStart.toString().replace("**%1s**", userName),
+                    descriptionStart.toString().replace("**%1$s**", userName),
                     Theme.key_chat_messageLinkIn, 0,
                     () -> onObjectClicked.run(toUser),
                     resourcesProvider

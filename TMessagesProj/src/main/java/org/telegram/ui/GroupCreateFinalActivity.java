@@ -316,6 +316,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             if (!TextUtils.isEmpty(txt)) {
                 editText.setText(txt);
+                editText.setSelection(editText.getText().length());
             }
         }
     }
@@ -588,6 +589,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT || chatType == ChatObject.CHAT_TYPE_MEGAGROUP || chatType == ChatObject.CHAT_TYPE_FORUM ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
         if (nameToSet != null) {
             editText.setText(nameToSet);
+            editText.setSelection(editText.getText().length());
             nameToSet = null;
         }
         setDefaultGroupName();

@@ -2,7 +2,6 @@ package org.telegram.ui.Components.Premium.boosts.adapters;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Color;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,12 +18,14 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorCountryCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorLetterCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickerEmptyView;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class SelectorAdapter extends AdapterWithDiffUtils {
@@ -37,13 +38,17 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final Context context;
-    private final boolean reversedLayout = false;
     private RecyclerListView listView;
     private List<Item> items;
+    private HashMap<Long, Integer> chatsParticipantsCount = new HashMap<>();
 
     public SelectorAdapter(Context context, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
         this.resourcesProvider = resourcesProvider;
+        BoostRepository.loadParticipantsCount(result -> {
+            chatsParticipantsCount.clear();
+            chatsParticipantsCount.putAll(result);
+        });
     }
 
     public void setData(List<Item> items, RecyclerListView listView) {
@@ -84,6 +89,11 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         TLRPC.ChatFull chatFull = MessagesController.getInstance(UserConfig.selectedAccount).getChatFull(chat.id);
         if (chatFull != null && chatFull.participants_count > 0) {
             return chatFull.participants_count;
+        } else if (!chatsParticipantsCount.isEmpty()) {
+            Integer count = chatsParticipantsCount.get(chat.id);
+            if (count != null) {
+                return count;
+            }
         }
         return chat.participants_count;
     }
@@ -108,9 +118,11 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
                 } else if (peer instanceof TLRPC.TL_inputPeerUser) {
                     userCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(peer.user_id));
                 } else if (peer instanceof TLRPC.TL_inputPeerChat) {
-                    userCell.setChat(MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.chat_id), 0);
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.chat_id);
+                    userCell.setChat(chat, getParticipantsCount(chat));
                 } else if (peer instanceof TLRPC.TL_inputPeerChannel) {
-                    userCell.setChat(MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.channel_id), 0);
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.channel_id);
+                    userCell.setChat(chat, getParticipantsCount(chat));
                 }
             }
             userCell.setChecked(item.checked, false);

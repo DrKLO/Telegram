@@ -402,6 +402,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     private int topMarginDp;
     DefaultItemAnimator emojiItemAnimator;
     private int accentColor;
+    public boolean useAccentForPlus;
 
     protected void invalidateParent() {
 
@@ -2652,7 +2653,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         }
     }
 
-    public static class EmojiPackExpand extends FrameLayout {
+    public class EmojiPackExpand extends FrameLayout {
         public TextView textView;
 
         public EmojiPackExpand(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -2660,8 +2661,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             textView.setTextColor(0xffffffff);// Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(11), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider), 99)));
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            final int backgroundColor = useAccentForPlus ? Theme.blendOver(accentColor, Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite), .4f)) : ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider), 99);
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(11), backgroundColor));
+            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             textView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1.66f), AndroidUtilities.dp(4), AndroidUtilities.dp(2f));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
@@ -3777,7 +3779,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     ImageReceiver imageReceiver;
                     if (imageView.empty) {
                         Drawable drawable = getPremiumStar();
-                        float scale = type == TYPE_SET_REPLY_ICON ? 1.15f : 1f;
+                        float scale = type == TYPE_SET_REPLY_ICON ? 1.3f : 1f;
                         if (imageView.pressedProgress != 0 || imageView.selected) {
                             scale *= 0.8f + 0.2f * (1f - (imageView.selected ? .7f : imageView.pressedProgress));
                         }

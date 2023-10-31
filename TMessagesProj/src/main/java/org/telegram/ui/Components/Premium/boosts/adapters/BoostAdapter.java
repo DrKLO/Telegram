@@ -81,6 +81,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 ((ChatCell) child).setCounter(value);
             }
         }
+        notifyItemChanged(8);
         //updates all prices
         notifyItemChanged(items.size() - 1);
         notifyItemChanged(items.size() - 2);

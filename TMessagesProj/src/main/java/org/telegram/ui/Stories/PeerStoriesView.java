@@ -2630,7 +2630,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
             updatePosition();
             if (chatActivityEnterView != null) {
-                chatActivityEnterView.setVisibility(View.VISIBLE);
+                chatActivityEnterView.setVisibility(UserObject.isService(dialogId) ? View.GONE : View.VISIBLE);
                 chatActivityEnterView.getEditField().setText(storyViewer.getDraft(dialogId, currentStory.storyItem));
                 chatActivityEnterView.setDialogId(dialogId, currentAccount);
                 TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
@@ -5699,7 +5699,6 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         public Drawable shareDrawable;
         public Drawable likeDrawable;
         public Drawable likeDrawableFilled;
-        public Drawable drawMoreDrawable;
         public Drawable optionsDrawable;
         public Drawable deleteDrawable;
         public RLottieDrawable noSoundDrawable;
@@ -5707,7 +5706,6 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         public RLottieDrawable muteDrawable;
 
         SharedResources(Context context) {
-            // drawMoreDrawable = ContextCompat.getDrawable(context, R.drawable.msg_draw_more);
             shareDrawable = ContextCompat.getDrawable(context, R.drawable.media_share);
             likeDrawable = ContextCompat.getDrawable(context, R.drawable.media_like);
             likeDrawableFilled = ContextCompat.getDrawable(context, R.drawable.media_like_active);

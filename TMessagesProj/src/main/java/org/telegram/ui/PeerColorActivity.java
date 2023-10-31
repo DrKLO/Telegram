@@ -669,6 +669,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 return 0;
             }
         };
+        popupLayout.useAccentForPlus = true;
         popupLayout.setSelected(selectedEmoji == 0 ? null : selectedEmoji);
         popupLayout.setSaveState(3);
         popupLayout.setScrimDrawable(scrimDrawable, scrimDrawableParent);

@@ -372,9 +372,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         if (id == NotificationCenter.boostByChannelCreated) {
             TLRPC.Chat chat = (TLRPC.Chat) args[0];
             boolean isGiveaway = (boolean) args[1];
+            List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
+            BaseFragment profileFragment = fragmentStack.size() >= 2 ? fragmentStack.get(fragmentStack.size() - 2) : null;
             if (isGiveaway) {
-                List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
-                BaseFragment profileFragment = fragmentStack.size() >= 2 ? fragmentStack.get(fragmentStack.size() - 2) : null;
                 BaseFragment chatFragment = fragmentStack.size() >= 3 ? fragmentStack.get(fragmentStack.size() - 3) : null;
                 if (profileFragment instanceof ProfileActivity) {
                     getParentLayout().removeFragmentFromStack(profileFragment);
@@ -384,7 +384,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     BoostDialogs.showBulletin(chatFragment, chat, true);
                 }
             } else {
-                BoostDialogs.showBulletin(this, chat, false);
+                finishFragment();
+                if (profileFragment instanceof ProfileActivity) {
+                    BoostDialogs.showBulletin(profileFragment, chat, false);
+                }
             }
         } else if (id == NotificationCenter.messagesDidLoad) {
             int guid = (Integer) args[10];

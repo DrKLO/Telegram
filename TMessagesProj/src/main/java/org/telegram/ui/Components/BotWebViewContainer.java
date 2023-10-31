@@ -101,7 +101,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     private TextView webViewNotAvailableText;
     private boolean webViewNotAvailable;
 
-    private CellFlickerDrawable flickerDrawable = new CellFlickerDrawable();
+    private final CellFlickerDrawable flickerDrawable = new CellFlickerDrawable();
     private BackupImageView flickerView;
     private boolean isFlickeringCenter;
 

@@ -325,7 +325,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
 
                 @Override
                 public boolean onTouchEvent(MotionEvent event) {
-                    if (type == TYPE_PEER_COLOR) {
+                    if (allowLoadingOnTouch()) {
                         return super.onTouchEvent(event);
                     }
                     gestureDetector.onTouchEvent(event);

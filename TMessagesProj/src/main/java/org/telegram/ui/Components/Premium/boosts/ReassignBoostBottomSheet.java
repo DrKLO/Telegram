@@ -44,12 +44,10 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorBtnCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
@@ -142,8 +140,10 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
                 uniqueChannelIds.add(DialogObject.getPeerDialogId(selectedBoost.peer));
             }
             BoostRepository.applyBoost(currentChat.id, slots, result -> {
-                dismiss();
-                NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostedChannelByUser, result, slots.size(), uniqueChannelIds.size());
+                MessagesController.getInstance(currentAccount).getBoostsController().getBoostsStats(-currentChat.id, tlPremiumBoostsStatus -> {
+                    dismiss();
+                    NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostedChannelByUser, result, slots.size(), uniqueChannelIds.size(), tlPremiumBoostsStatus);
+                });
             }, error -> {
                 actionButton.setLoading(false);
                 BoostDialogs.showToastError(getContext(), error);

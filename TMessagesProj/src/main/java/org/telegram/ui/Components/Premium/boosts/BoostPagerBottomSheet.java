@@ -1,6 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.isTablet;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -74,6 +75,7 @@ public class BoostPagerBottomSheet extends BottomSheet {
             private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             private boolean isScrolling;
             private boolean isKeyboardVisible;
+            private final boolean isTablet = isTablet();
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -131,6 +133,9 @@ public class BoostPagerBottomSheet extends BottomSheet {
                     super.dispatchDraw(canvas);
                     canvas.restore();
                 } else {
+                    if (isTablet) {
+                        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    }
                     super.dispatchDraw(canvas);
                 }
             }

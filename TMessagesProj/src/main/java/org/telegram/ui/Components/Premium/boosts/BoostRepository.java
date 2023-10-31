@@ -14,9 +14,11 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -73,19 +75,28 @@ public class BoostRepository {
         return (int) MessagesController.getInstance(UserConfig.selectedAccount).boostsPerSentGift;
     }
 
-    public static ArrayList<TLRPC.InputPeer> getMyChannels(long chatId) {
-        ArrayList<TLRPC.InputPeer> sendAs = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().sendAs;
-        ArrayList<TLRPC.InputPeer> peers = new ArrayList<>(sendAs);
-        for (int i = 0; i < peers.size(); i++) {
-            if (peers.get(i) instanceof TLRPC.TL_inputPeerSelf) {
-                peers.remove(i);
-                break;
+    public static void loadParticipantsCount(Utilities.Callback<HashMap<Long, Integer>> callback) {
+        MessagesStorage storage = MessagesStorage.getInstance(UserConfig.selectedAccount);
+        storage.getStorageQueue().postRunnable(() -> {
+            HashMap<Long, Integer> participantsCountByChat = storage.getSmallGroupsParticipantsCount();
+            if (participantsCountByChat == null || participantsCountByChat.isEmpty()) {
+                return;
             }
-        }
-        for (int i = 0; i < peers.size(); i++) {
-            if (peers.get(i).channel_id == chatId) {
-                peers.remove(i);
-                break;
+            AndroidUtilities.runOnUIThread(() -> callback.run(participantsCountByChat));
+        });
+    }
+
+    public static ArrayList<TLRPC.InputPeer> getMyChannels(long currentChatId) {
+        ArrayList<TLRPC.InputPeer> peers = new ArrayList<>();
+        final MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
+        final ArrayList<TLRPC.Dialog> dialogs = messagesController.getAllDialogs();
+        for (int i = 0; i < dialogs.size(); ++i) {
+            TLRPC.Dialog dialog = dialogs.get(i);
+            if (DialogObject.isChatDialog(dialog.id)) {
+                TLRPC.Chat chat = messagesController.getChat(-dialog.id);
+                if (ChatObject.isChannelAndNotMegaGroup(chat) && -dialog.id != currentChatId) {
+                    peers.add(messagesController.getInputPeer(dialog.id));
+                }
             }
         }
         return peers;
@@ -509,7 +520,7 @@ public class BoostRepository {
                 for (int a = 0; a < res.chats.size(); a++) {
                     TLRPC.Chat chat = res.chats.get(a);
                     TLRPC.InputPeer inputPeer = MessagesController.getInputPeer(chat);
-                    if (chat.id != currentChatId && ChatObject.isChannel(chat)) {
+                    if (chat.id != currentChatId && ChatObject.isChannelAndNotMegaGroup(chat)) {
                         result.add(inputPeer);
                     }
                 }
@@ -630,6 +641,6 @@ public class BoostRepository {
                 controller.putChats(myBoosts.chats, false);
                 onDone.run(myBoosts);
             }
-        }));
+        }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);
     }
 }

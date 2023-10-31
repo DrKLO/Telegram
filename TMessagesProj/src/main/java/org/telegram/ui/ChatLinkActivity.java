@@ -391,6 +391,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     long[] array = new long[]{getUserConfig().getClientUserId()};
                     args.putLongArray("result", array);
                     args.putInt("chatType", ChatObject.CHAT_TYPE_MEGAGROUP);
+                    if (currentChat != null) {
+                        String title = LocaleController.formatString("GroupCreateDiscussionDefaultName", R.string.GroupCreateDiscussionDefaultName, currentChat.title);
+                        args.putString("title", title);
+                    }
                     GroupCreateFinalActivity activity = new GroupCreateFinalActivity(args);
                     activity.setDelegate(new GroupCreateFinalActivity.GroupCreateFinalActivityDelegate() {
                         @Override

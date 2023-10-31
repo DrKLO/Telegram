@@ -2538,7 +2538,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     }
 
     private void selectColorType(int id, boolean ask) {
-        if (getParentActivity() == null || colorType == id || patternViewAnimation != null || accent != null) {
+        if (getParentActivity() == null || colorType == id || patternViewAnimation != null || accent == null) {
             return;
         }
         if (ask && id == 2 && (Theme.hasCustomWallpaper() ||  accent.backgroundOverrideColor == 0x100000000L)) {

@@ -143,6 +143,10 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                 if (giftCode.boost != null) {
                     cell.hideSlug(this::onHiddenLinkClicked);
                 }
+                //unclaimed and slug visible only for giveaway creator
+                if ((slug == null || slug.isEmpty()) && giftCode.to_id == NO_USER_ID) {
+                    cell.hideSlug(this::onHiddenLinkClicked);
+                }
                 break;
             }
             case HOLDER_TYPE_TABLE: {

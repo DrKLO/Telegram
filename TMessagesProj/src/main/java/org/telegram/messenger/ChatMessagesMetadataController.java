@@ -131,8 +131,7 @@ public class ChatMessagesMetadataController {
             MessageObject messageObject = visibleObjects.get(i);
             req.id.add(messageObject.getId());
         }
-        final int[] reqId = new int[1];
-        reqId[0] = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
+        int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 TLRPC.Updates updates = (TLRPC.Updates) response;
                 for (int i = 0; i < updates.updates.size(); i++) {
@@ -142,12 +141,9 @@ public class ChatMessagesMetadataController {
                 }
                 chatActivity.getMessagesController().processUpdates(updates, false);
             }
-            AndroidUtilities.runOnUIThread(() -> {
-                reactionsRequests.remove((Object) reqId[0]);
-            });
         });
-        reactionsRequests.add(reqId[0]);
-        while (reactionsRequests.size() > 4) {
+        reactionsRequests.add(reqId);
+        if (reactionsRequests.size() > 5) {
             chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.remove(0), false);
         }
     }
@@ -162,17 +158,13 @@ public class ChatMessagesMetadataController {
             MessageObject messageObject = visibleObjects.get(i);
             req.id.add(messageObject.getId());
         }
-        final int[] reqId = new int[1];
-        reqId[0] = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
+        int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 chatActivity.getMessagesController().processUpdates((TLRPC.Updates) response, false);
             }
-            AndroidUtilities.runOnUIThread(() -> {
-                extendedMediaRequests.remove((Object) reqId[0]);
-            });
         });
-        extendedMediaRequests.add(reqId[0]);
-        while (extendedMediaRequests.size() > 10) {
+        extendedMediaRequests.add(reqId);
+        if (extendedMediaRequests.size() > 10) {
             chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.remove(0), false);
         }
     }

@@ -1477,7 +1477,10 @@ public class AlertsCreator {
         });
     }
 
-    public static void createBotLaunchAlert(BaseFragment fragment, TLRPC.TL_messages_botApp botApp, TLRPC.User user, AtomicBoolean allowWrite, Runnable loadBotSheet) {
+    public static void createBotLaunchAlert(BaseFragment fragment, AtomicBoolean allowWrite, TLRPC.User user, Runnable loadBotSheet) {
+        if (fragment == null) {
+            return;
+        }
         Context context = fragment.getContext();
         CheckBoxCell[] cell = new CheckBoxCell[1];
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -1553,7 +1556,7 @@ public class AlertsCreator {
         frameLayout.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 76), 28, (LocaleController.isRTL ? 76 : 21), 0));
         frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 57, 24, 1));
 
-        if (botApp.request_write_access) {
+        if (allowWrite != null) {
             allowWrite.set(true);
 
             cell[0] = new CheckBoxCell(context, 1, fragment.getResourceProvider());

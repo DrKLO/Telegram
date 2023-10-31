@@ -165,6 +165,7 @@ public class BoostDialogs {
         hourPicker.setItemCount(5);
         hourPicker.setTextColor(datePickerColors.textColor);
         hourPicker.setTextOffset(-dp(10));
+        hourPicker.setTag("HOUR");
         final NumberPicker minutePicker = new NumberPicker(context, resourcesProvider) {
             @Override
             protected CharSequence getContentDescription(int value) {
@@ -266,7 +267,7 @@ public class BoostDialogs {
         dayPicker.setMinValue(0); //0 for today
         dayPicker.setMaxValue(maxDay - 1);
         dayPicker.setWrapSelectorWheel(false);
-        dayPicker.setTag("YEAR");
+        dayPicker.setTag("DAY");
         dayPicker.setFormatter(value -> {
             if (value == 0) {
                 return getString("MessageScheduleToday", R.string.MessageScheduleToday);
@@ -287,14 +288,25 @@ public class BoostDialogs {
             } catch (Exception ignore) {
 
             }
-            if (picker.getTag() != null && picker.getTag().equals("YEAR")) {
+            if (picker.getTag() != null && (picker.getTag().equals("DAY"))) {
                 if (picker.getValue() == picker.getMinValue()) {
                     Calendar calendarCurrent = Calendar.getInstance();
                     calendarCurrent.setTimeInMillis(System.currentTimeMillis());
-                    int minHour = calendar.get(Calendar.HOUR_OF_DAY);
-                    int minMinute = calendar.get(Calendar.MINUTE);
-                    hourPicker.setMinValue(minHour);
-                    minutePicker.setMinValue(Math.min((minMinute / 5) + 1, 11));
+                    int minHour = calendarCurrent.get(Calendar.HOUR_OF_DAY);
+                    int minMinute = calendarCurrent.get(Calendar.MINUTE);
+                    int minValueMinute = (minMinute / 5) + 1;
+                    if (minValueMinute > 11) {
+                        if (minHour == 23) {
+                            picker.setMinValue(picker.getMinValue() + 1);
+                            hourPicker.setMinValue(0);
+                        } else {
+                            hourPicker.setMinValue(minHour + 1);
+                        }
+                        minutePicker.setMinValue(0);
+                    } else {
+                        hourPicker.setMinValue(minHour);
+                        minutePicker.setMinValue(minValueMinute);
+                    }
                 } else if (picker.getValue() == picker.getMaxValue()) {
                     hourPicker.setMaxValue(maxHour);
                     minutePicker.setMaxValue(Math.min((maxMinute / 5), 11));
@@ -302,6 +314,23 @@ public class BoostDialogs {
                     hourPicker.setMinValue(0);
                     minutePicker.setMinValue(0);
                     hourPicker.setMaxValue(23);
+                    minutePicker.setMaxValue(11);
+                }
+            }
+
+            if (picker.getTag() != null && picker.getTag().equals("HOUR") && dayPicker.getValue() == dayPicker.getMinValue()) {
+                if (picker.getValue() == picker.getMinValue()) {
+                    Calendar calendarCurrent = Calendar.getInstance();
+                    calendarCurrent.setTimeInMillis(System.currentTimeMillis());
+                    int minMinute = calendarCurrent.get(Calendar.MINUTE);
+                    int minValueMinute = (minMinute / 5) + 1;
+                    if (minValueMinute > 11) {
+                        minutePicker.setMinValue(0);
+                    } else {
+                        minutePicker.setMinValue(minValueMinute);
+                    }
+                } else {
+                    minutePicker.setMinValue(0);
                     minutePicker.setMaxValue(11);
                 }
             }
@@ -329,11 +358,11 @@ public class BoostDialogs {
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             int days = (int) ((currentDate - calendar.getTimeInMillis()) / (24 * 60 * 60 * 1000));
             calendar.setTimeInMillis(currentDate);
-            if (days >= 0) {
-                minutePicker.setValue(calendar.get(Calendar.MINUTE) / 5);
-                hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
-                dayPicker.setValue(days);
-            }
+            minutePicker.setValue(calendar.get(Calendar.MINUTE) / 5);
+            hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
+            dayPicker.setValue(days);
+            onValueChangeListener.onValueChange(dayPicker, dayPicker.getValue(), dayPicker.getValue());
+            onValueChangeListener.onValueChange(hourPicker, hourPicker.getValue(), hourPicker.getValue());
         }
 
         buttonTextView.setPadding(dp(34), 0, dp(34), 0);
@@ -521,25 +550,27 @@ public class BoostDialogs {
         builder.setTitle(getString("BoostingGiveawayEnd", R.string.BoostingGiveawayEnd));
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
 
-        stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksText", quantity, from, quantity, months)));
+        stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksTextEnd", quantity, from, quantity, months)));
         stringBuilder.append("\n\n");
 
         if (giveaway.only_new_subscribers) {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveral", quantity, endDate, quantity, from, giveaway.channels.size() - 1, fromTime, fromDate)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveralEnd", quantity, endDate, quantity, from, giveaway.channels.size() - 1, fromTime, fromDate)));
             } else {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDate", quantity, endDate, quantity, from, fromTime, fromDate)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateEnd", quantity, endDate, quantity, from, fromTime, fromDate)));
             }
         } else {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveral", quantity, endDate, quantity, from, giveaway.channels.size() - 1)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveralEnd", quantity, endDate, quantity, from, giveaway.channels.size() - 1)));
             } else {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubText", quantity, endDate, quantity, from)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextEnd", quantity, endDate, quantity, from)));
             }
         }
 
         stringBuilder.append(" ");
-        stringBuilder.append(replaceTags(formatString("BoostingGiveawayUsedLinks", R.string.BoostingGiveawayUsedLinks, giveawayInfo.activated_count)));
+        if (giveawayInfo.activated_count > 0) {
+            stringBuilder.append(replaceTags(formatString("BoostingGiveawayUsedLinks", R.string.BoostingGiveawayUsedLinks, giveawayInfo.activated_count)));
+        }
         stringBuilder.append("\n\n");
 
         if (giveawayInfo.refunded) {
@@ -563,7 +594,11 @@ public class BoostDialogs {
                 stringBuilder.append(getString("BoostingGiveawayYouWon", R.string.BoostingGiveawayYouWon));
                 builder.setMessage(stringBuilder);
                 builder.setPositiveButton(getString("BoostingGiveawayViewPrize", R.string.BoostingGiveawayViewPrize), (dialogInterface, i) -> {
-                    //todo
+                    BaseFragment fragment = LaunchActivity.getLastFragment();
+                    if (fragment == null) {
+                        return;
+                    }
+                    GiftInfoBottomSheet.show(fragment, giveawayInfo.gift_code_slug);
                 });
                 builder.setNegativeButton(getString("Close", R.string.Close), (dialogInterface, i) -> {
 
@@ -685,6 +720,30 @@ public class BoostDialogs {
         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGetMoreBoostByGifting", R.string.BoostingGetMoreBoostByGifting, chat.title)));
         builder.setPositiveButton(getString("OK", R.string.OK), (dialogInterface, i) -> {
 
+        });
+        builder.show();
+    }
+
+    public static void showFloodWait(int time) {
+        BaseFragment baseFragment = LaunchActivity.getLastFragment();
+        if (baseFragment == null) {
+            return;
+        }
+        String timeString;
+        if (time < 60) {
+            timeString = LocaleController.formatPluralString("Seconds", time);
+        } else if (time < 60 * 60) {
+            timeString = LocaleController.formatPluralString("Minutes", time / 60);
+        } else if (time / 60 / 60 > 2) {
+            timeString = LocaleController.formatPluralString("Hours", time / 60 / 60);
+        } else {
+            timeString = LocaleController.formatPluralString("Hours", time / 60 / 60) + " " + LocaleController.formatPluralString("Minutes", time % 60);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getContext(), baseFragment.getResourceProvider());
+        builder.setTitle(LocaleController.getString("CantBoostTooOften", R.string.CantBoostTooOften));
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("CantBoostTooOftenDescription", R.string.CantBoostTooOftenDescription, timeString)));
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+            dialog.dismiss();
         });
         builder.show();
     }

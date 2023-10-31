@@ -417,8 +417,7 @@ public class StoriesUtilities {
                 } else {
                     if (i >= userStories.stories.size()) {
                         segmentPaint = unreadPaint;
-                    }
-                    if (userStories.stories.get(i).justUploaded || userStories.stories.get(i).id > maxUnread) {
+                    } else if (userStories.stories.get(i).justUploaded || userStories.stories.get(i).id > maxUnread) {
                         if (userStories.stories.get(i).close_friends) {
                             segmentPaint = closeFriendsPaint;
                         } else {

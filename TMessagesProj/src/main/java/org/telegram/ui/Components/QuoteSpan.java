@@ -103,7 +103,7 @@ public class QuoteSpan implements LeadingMarginSpan {
         @Override
         public void updateMeasureState(@NonNull TextPaint tp) {
             tp.setTextSize(AndroidUtilities.dp(span.edit ? 16 : SharedConfig.fontSize - 2));
-            tp.setTextScaleX(span.edit ? 1.08f : 1f);
+            tp.setTextScaleX(span.edit ? 1.1f : 1f);
         }
 
         @Override
@@ -261,6 +261,9 @@ public class QuoteSpan implements LeadingMarginSpan {
             this.span = span;
             span.start = spanned.getSpanStart(span);
             span.end = spanned.getSpanEnd(span);
+            if (span.end - 1 >= 0 && span.end < spanned.length() && spanned.charAt(span.end) != '\n' && spanned.charAt(span.end - 1) == '\n') {
+                span.end--;
+            }
             final int lineStart = layout.getLineForOffset(span.start);
             final int lineEnd = layout.getLineForOffset(span.end);
             span.singleLine = lineEnd - lineStart < 1;

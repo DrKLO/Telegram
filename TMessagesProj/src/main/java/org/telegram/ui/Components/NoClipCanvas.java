@@ -1,12 +1,19 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Bitmap;
+import android.graphics.BlendMode;
 import android.graphics.Canvas;
+import android.graphics.DrawFilter;
 import android.graphics.Matrix;
+import android.graphics.NinePatch;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Picture;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
+import android.graphics.RenderNode;
 import android.graphics.fonts.Font;
 import android.graphics.text.MeasuredText;
 import android.os.Build;

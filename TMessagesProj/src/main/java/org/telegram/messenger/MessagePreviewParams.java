@@ -190,23 +190,23 @@ public class MessagePreviewParams {
 
     public boolean singleLink;
     public boolean hasMedia;
+    public boolean isVideo;
     public boolean webpageSmall;
     public boolean webpageTop;
     public boolean webpagePhoto;
 
-    public boolean secret;
     public boolean noforwards;
 
     public TLRPC.WebPage webpage;
     public CharacterStyle currentLink;
 
     public MessagePreviewParams(boolean secret, boolean noforwards) {
-        this.secret = secret;
+        this.isSecret = secret;
         this.noforwards = secret || noforwards;
     }
 
     public void updateReply(MessageObject replyMessageObject, MessageObject.GroupedMessages group, long dialogId, ChatActivity.ReplyQuote replyQuote) {
-        if (replyMessageObject == null || replyMessageObject.type == MessageObject.TYPE_DATE || replyMessageObject.type == MessageObject.TYPE_ACTION_PHOTO || replyMessageObject.type == MessageObject.TYPE_ACTION_WALLPAPER || replyMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
+        if (isSecret || replyMessageObject == null || replyMessageObject.type == MessageObject.TYPE_DATE || replyMessageObject.type == MessageObject.TYPE_ACTION_PHOTO || replyMessageObject.type == MessageObject.TYPE_ACTION_WALLPAPER || replyMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
             replyMessageObject = null;
             replyQuote = null;
         }
@@ -237,6 +237,7 @@ public class MessagePreviewParams {
 
     public void updateLink(int currentAccount, TLRPC.WebPage foundWebpage, CharSequence messageText, MessageObject replyMessageObject, ChatActivity.ReplyQuote replyQuote, MessageObject inherit) {
         hasMedia = false;
+        isVideo = false;
         singleLink = true;
         boolean wasDifferent = webpage != foundWebpage;
         webpage = foundWebpage;
@@ -272,6 +273,7 @@ public class MessagePreviewParams {
                 message.media.force_large_media = !webpageSmall;
                 message.media.force_small_media = webpageSmall;
                 hasMedia = message.media.webpage.photo != null;
+                isVideo = MessageObject.isVideoDocument(message.media.webpage.document);
             } else {
                 hasMedia = false;
             }

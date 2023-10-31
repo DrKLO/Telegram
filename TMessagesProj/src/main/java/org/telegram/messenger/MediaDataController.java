@@ -34,6 +34,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -1318,29 +1319,36 @@ public class MediaDataController extends BaseController {
         });
     }
 
-    private final HashSet<TLRPC.InputStickerSet> loadingStickerSets = new HashSet<>();
+    private final HashMap<TLRPC.InputStickerSet, ArrayList<Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet>>> loadingStickerSets = new HashMap<>();
 
     private void fetchStickerSetInternal(TLRPC.InputStickerSet inputStickerSet, Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet> onDone) {
         if (onDone == null) {
             return;
         }
-        if (loadingStickerSets.contains(inputStickerSet)) {
+        ArrayList<Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet>> loading = loadingStickerSets.get(inputStickerSet);
+        if (loading != null && loading.size() > 0) {
+            loading.add(onDone);
             return;
         }
-        loadingStickerSets.add(inputStickerSet);
+        if (loading == null) {
+            loadingStickerSets.put(inputStickerSet, loading = new ArrayList<>());
+        }
+        loading.add(onDone);
         TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
         req.stickerset = inputStickerSet;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             AndroidUtilities.runOnUIThread(() -> {
-                loadingStickerSets.remove(inputStickerSet);
-//                if (error != null && "".equals(error.text)) {
-//                    onDone.run(true, null);
-//                } else
-                if (response != null) {
-                    onDone.run(true, (TLRPC.TL_messages_stickerSet) response);
-                } else {
-                    onDone.run(false, null);
+                ArrayList<Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet>> loadingCallbacks = loadingStickerSets.get(inputStickerSet);
+                if (loadingCallbacks != null) {
+                    for (int i = 0; i < loadingCallbacks.size(); ++i) {
+                        if (response != null) {
+                            loadingCallbacks.get(i).run(true, (TLRPC.TL_messages_stickerSet) response);
+                        } else {
+                            loadingCallbacks.get(i).run(false, null);
+                        }
+                    }
                 }
+                loadingStickerSets.remove(inputStickerSet);
             });
         });
     }
@@ -7410,6 +7418,15 @@ public class MediaDataController extends BaseController {
             }
         }
         return false;
+    }
+
+    public TLRPC.TL_attachMenuBot findBotInAttachMenu(long id) {
+        for (int i = 0; i < attachMenuBots.bots.size(); i++) {
+            if (attachMenuBots.bots.get(i).bot_id == id) {
+                return attachMenuBots.bots.get(i);
+            }
+        }
+        return null;
     }
 
     //---------------- BOT END ----------------

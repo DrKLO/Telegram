@@ -121,7 +121,9 @@ public class MessagePreviewView extends FrameLayout {
         ActionBarMenuSubItem replyAnotherChatButton, quoteAnotherChatButton;
         ActionBarMenuSubItem deleteReplyButton;
         ToggleButton changePositionBtn;
+        FrameLayout changeSizeBtnContainer;
         ToggleButton changeSizeBtn;
+        ToggleButton videoChangeSizeBtn;
         boolean shownBackMenu;
         int menuBack;
         ChatMessageSharedResources sharedResources;
@@ -305,7 +307,7 @@ public class MessagePreviewView extends FrameLayout {
 
                 @Override
                 protected boolean canShowQuote() {
-                    return currentTab == TAB_REPLY && !messagePreviewParams.secret;
+                    return currentTab == TAB_REPLY && !messagePreviewParams.isSecret;
                 }
 
                 @Override
@@ -325,7 +327,7 @@ public class MessagePreviewView extends FrameLayout {
 
                 @Override
                 public boolean isSelected(MessageObject messageObject) {
-                    return currentTab == TAB_REPLY && !messagePreviewParams.secret && isInSelectionMode();
+                    return currentTab == TAB_REPLY && !messagePreviewParams.isSecret && isInSelectionMode();
                 }
             };
             textSelectionHelper.setCallback(new TextSelectionHelper.Callback() {
@@ -765,7 +767,7 @@ public class MessagePreviewView extends FrameLayout {
             addView(menu, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
             if (tab == TAB_REPLY && messagePreviewParams.replyMessage != null) {
-                if (messagePreviewParams.replyMessage.hasText) {
+                if (messagePreviewParams.replyMessage.hasText && !messagePreviewParams.isSecret) {
                     LinearLayout swipeback = new LinearLayout(context);
                     swipeback.setOrientation(LinearLayout.VERTICAL);
 
@@ -892,9 +894,11 @@ public class MessagePreviewView extends FrameLayout {
                     menu.addView(btn2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
 
-                ActionBarPopupWindow.GapView gap2 = new ActionBarPopupWindow.GapView(context, resourcesProvider);
-                gap2.setTag(R.id.fit_width_tag, 1);
-                menu.addView(gap2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                if (!messagePreviewParams.isSecret) {
+                    ActionBarPopupWindow.GapView gap2 = new ActionBarPopupWindow.GapView(context, resourcesProvider);
+                    gap2.setTag(R.id.fit_width_tag, 1);
+                    menu.addView(gap2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                }
 
                 switchToQuote(messagePreviewParams.quote != null, false);
 
@@ -1010,15 +1014,29 @@ public class MessagePreviewView extends FrameLayout {
                 changePositionBtn.setState(!messagePreviewParams.webpageTop, false);
                 menu.addView(changePositionBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
+                changeSizeBtnContainer = new FrameLayout(context);
+                changeSizeBtnContainer.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, 0));
                 changeSizeBtn = new ToggleButton(
                     context,
                     R.raw.media_shrink, LocaleController.getString(R.string.LinkMediaLarger),
                     R.raw.media_enlarge, LocaleController.getString(R.string.LinkMediaSmaller)
                 );
+                changeSizeBtn.setBackground(null);
+                changeSizeBtn.setVisibility(messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
+                changeSizeBtnContainer.addView(changeSizeBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                videoChangeSizeBtn = new ToggleButton(
+                        context,
+                        R.raw.media_shrink, LocaleController.getString(R.string.LinkVideoLarger),
+                        R.raw.media_enlarge, LocaleController.getString(R.string.LinkVideoSmaller)
+                );
+                videoChangeSizeBtn.setBackground(null);
+                videoChangeSizeBtn.setVisibility(!messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
+                changeSizeBtnContainer.setAlpha(messagePreviewParams.hasMedia ? 1f : .5f);
+                changeSizeBtnContainer.addView(videoChangeSizeBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                menu.addView(changeSizeBtnContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                changeSizeBtnContainer.setVisibility(messagePreviewParams.singleLink && !messagePreviewParams.hasMedia ? View.GONE : View.VISIBLE);
                 changeSizeBtn.setState(messagePreviewParams.webpageSmall, false);
-                changeSizeBtn.setVisibility(messagePreviewParams.singleLink && !messagePreviewParams.hasMedia ? View.GONE : View.VISIBLE);
-                changeSizeBtn.setAlpha(messagePreviewParams.hasMedia ? 1f : .5f);
-                menu.addView(changeSizeBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                videoChangeSizeBtn.setState(messagePreviewParams.webpageSmall, false);
 
                 ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
                 gap.setTag(R.id.fit_width_tag, 1);
@@ -1036,12 +1054,13 @@ public class MessagePreviewView extends FrameLayout {
                 deleteLink.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
                 menu.addView(deleteLink, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
-                changeSizeBtn.setOnClickListener(view -> {
+                changeSizeBtnContainer.setOnClickListener(view -> {
                     if (!messagePreviewParams.hasMedia) {
                         return;
                     }
                     messagePreviewParams.webpageSmall = !messagePreviewParams.webpageSmall;
                     changeSizeBtn.setState(messagePreviewParams.webpageSmall, true);
+                    videoChangeSizeBtn.setState(messagePreviewParams.webpageSmall, true);
                     if (messages.messages.size() > 0) {
                         TLRPC.Message msg = messages.messages.get(0).messageOwner;
                         if (msg != null && msg.media != null) {
@@ -1479,7 +1498,7 @@ public class MessagePreviewView extends FrameLayout {
 
                     @Override
                     public boolean canPerformActions() {
-                        return currentTab == TAB_LINK && !messagePreviewParams.singleLink;
+                        return currentTab == TAB_LINK && !messagePreviewParams.singleLink && !messagePreviewParams.isSecret;
                     }
 
                     @Override
@@ -1563,7 +1582,7 @@ public class MessagePreviewView extends FrameLayout {
                     messageCell.setDrawSelectionBackground(groupedMessages == null);
                     messageCell.setChecked(true, groupedMessages == null, false);
 
-                    if (messagePreviewParams.quote != null && isReplyMessageCell(messageCell) && !textSelectionHelper.isInSelectionMode()) {
+                    if (!messagePreviewParams.isSecret && messagePreviewParams.quote != null && isReplyMessageCell(messageCell) && !textSelectionHelper.isInSelectionMode()) {
                         textSelectionHelper.select(messageCell, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                         if (firstAttach) {
                             scrollToOffset = offset(messageCell, messagePreviewParams.quoteStart);
@@ -2102,9 +2121,12 @@ public class MessagePreviewView extends FrameLayout {
         for (int i = 0; i < viewPager.viewPages.length; ++i) {
             if (viewPager.viewPages[i] != null && ((Page) viewPager.viewPages[i]).currentTab == TAB_LINK) {
                 Page page = (Page) viewPager.viewPages[i];
-                page.changeSizeBtn.setVisibility(messagePreviewParams.singleLink && !messagePreviewParams.hasMedia ? View.GONE : View.VISIBLE);
-                page.changeSizeBtn.animate().alpha(messagePreviewParams.hasMedia ? 1f : .5f).start();
+                page.changeSizeBtnContainer.setVisibility(messagePreviewParams.singleLink && !messagePreviewParams.hasMedia ? View.GONE : View.VISIBLE);
+                page.changeSizeBtn.setVisibility(messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
+                page.videoChangeSizeBtn.setVisibility(!messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
+                page.changeSizeBtnContainer.animate().alpha(messagePreviewParams.hasMedia ? 1f : .5f).start();
                 page.changeSizeBtn.setState(messagePreviewParams.webpageSmall, true);
+                page.videoChangeSizeBtn.setState(messagePreviewParams.webpageSmall, true);
                 page.changePositionBtn.setState(!messagePreviewParams.webpageTop, true);
                 page.updateMessages();
             }
@@ -2124,7 +2146,7 @@ public class MessagePreviewView extends FrameLayout {
                 }
                 page.updateMessages();
                 if (page.currentTab == TAB_REPLY) {
-                    if (showOutdatedQuote) {
+                    if (showOutdatedQuote && !messagePreviewParams.isSecret) {
                         MessageObject replyMessage = page.getReplyMessage();
                         if (replyMessage != null) {
                             messagePreviewParams.quoteStart = 0;
@@ -2253,6 +2275,14 @@ public class MessagePreviewView extends FrameLayout {
                 ),
                 MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY)
             );
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (getVisibility() != View.VISIBLE || getAlpha() < .5f) {
+                return false;
+            }
+            return super.onTouchEvent(event);
         }
     }
 

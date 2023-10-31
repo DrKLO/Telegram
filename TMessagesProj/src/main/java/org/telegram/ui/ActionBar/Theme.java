@@ -8664,8 +8664,8 @@ public class Theme {
             chat_attachButtonDrawables[5] = new RLottieDrawable(R.raw.attach_poll, "attach_poll", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
             chat_attachEmptyDrawable = resources.getDrawable(R.drawable.nophotos3);
 
-            chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_share).mutate();
-            chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_reply);
+            chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_button_share).mutate();
+            chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_button_reply);
             chat_goIconDrawable = resources.getDrawable(R.drawable.message_arrow);
 
             int rad = AndroidUtilities.dp(2);

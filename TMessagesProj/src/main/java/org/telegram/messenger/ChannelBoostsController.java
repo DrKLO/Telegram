@@ -122,13 +122,12 @@ public class ChannelBoostsController {
                         replaceBoost.add(myBoost);
                     }
                 }
-
-                if (replaceBoost.size() == 1) {
+                if (replaceBoost.size() == 1 && replaceBoost.get(0).cooldown_until_date == 0) {
                     TL_stories.TL_myBoost myBoost = replaceBoost.get(0);
                     replaceDialogId = DialogObject.getPeerDialogId(myBoost.peer);
                     slot = myBoost.slot;
                     canApply = true;
-                } else if (replaceBoost.size() > 1) {
+                } else if (replaceBoost.size() >= 1) {
                     needSelector = true;
                     if (!BoostRepository.isMultiBoostsAvailable()) {
                         TL_stories.TL_myBoost myBoost = replaceBoost.get(0);

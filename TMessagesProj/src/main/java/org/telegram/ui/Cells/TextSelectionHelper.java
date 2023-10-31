@@ -1921,7 +1921,6 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             if (super.callback != null) {
                 super.callback.onStateChanged(true);
             }
-            movingDirectionSettling = true;
             movingOffsetY = 0;
             movingOffsetX = 0;
             onOffsetChanged();
@@ -2144,8 +2143,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 }
             }
             if (line >= 0) {
-                int k = layoutBlock.charOffset + layout.getOffsetForHorizontal(line, x);;
-                return k;
+                return layoutBlock.charOffset + layout.getOffsetForHorizontal(line, x);
             }
 
             return -1;

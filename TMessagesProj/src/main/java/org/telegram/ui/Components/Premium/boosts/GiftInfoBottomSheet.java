@@ -1,10 +1,10 @@
 package org.telegram.ui.Components.Premium.boosts;
 
+import static org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode.NO_USER_ID;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Gravity;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -19,11 +19,9 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
 import org.telegram.ui.Components.Premium.boosts.adapters.GiftInfoAdapter;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -99,11 +97,13 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
     private final TLRPC.TL_payments_checkedGiftCode giftCode;
     private final boolean isUnused;
     private GiftInfoAdapter adapter;
+    private String slug;
 
     public GiftInfoBottomSheet(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, TLRPC.TL_payments_checkedGiftCode giftCode, String slug) {
         super(fragment, needFocus, hasFixedSize);
         this.isUnused = giftCode.used_date == 0;
         this.giftCode = giftCode;
+        this.slug = slug;
         setApplyTopPadding(false);
         setApplyBottomPadding(true);
         fixNavigationBar();
@@ -164,7 +164,12 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
 
             @Override
             protected void onHiddenLinkClicked() {
-                String text = LocaleController.getString("BoostingOnlyRecipientCode", R.string.BoostingOnlyRecipientCode);
+                String text;
+                if ((slug == null || slug.isEmpty()) && giftCode.to_id == NO_USER_ID) {
+                    text = LocaleController.getString("BoostingOnlyGiveawayCreatorSeeLink", R.string.BoostingOnlyGiveawayCreatorSeeLink);
+                } else {
+                    text = LocaleController.getString("BoostingOnlyRecipientCode", R.string.BoostingOnlyRecipientCode);
+                }
                 BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(R.raw.chats_infotip, text).show(true);
             }
         };

@@ -14096,6 +14096,10 @@ public class MessagesStorage extends BaseController {
             if (message.action.chat_id != 0 && !chatsToLoad.contains(message.action.chat_id)) {
                 chatsToLoad.add(message.action.chat_id);
             }
+            if (message.action instanceof TLRPC.TL_messageActionGiftCode) {
+                TLRPC.TL_messageActionGiftCode action = (TLRPC.TL_messageActionGiftCode) message.action;
+                addLoadPeerInfo(action.boost_peer, usersToLoad, chatsToLoad);
+            }
             if (message.action instanceof TLRPC.TL_messageActionGeoProximityReached) {
                 TLRPC.TL_messageActionGeoProximityReached action = (TLRPC.TL_messageActionGeoProximityReached) message.action;
                 addLoadPeerInfo(action.from_id, usersToLoad, chatsToLoad);
@@ -14125,6 +14129,14 @@ public class MessagesStorage extends BaseController {
         if (message.media != null) {
             if (message.media.user_id != 0 && !usersToLoad.contains(message.media.user_id)) {
                 usersToLoad.add(message.media.user_id);
+            }
+            if (message.media instanceof TLRPC.TL_messageMediaGiveaway) {
+                TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) message.media;
+                for (Long channelId : giveaway.channels) {
+                    if (!chatsToLoad.contains(channelId)) {
+                        chatsToLoad.add(channelId);
+                    }
+                }
             }
             if (message.media instanceof TLRPC.TL_messageMediaPoll) {
                 TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) message.media;

@@ -25,6 +25,7 @@ public class ChatCell extends BaseCell {
     private final ImageView deleteImageView;
     private ChatDeleteListener chatDeleteListener;
     private TLRPC.Chat chat;
+    private boolean removable;
 
     public ChatCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
@@ -52,6 +53,7 @@ public class ChatCell extends BaseCell {
     }
 
     public void setChat(TLRPC.Chat chat, int boosts, boolean removable) {
+        this.removable = removable;
         this.chat = chat;
         avatarDrawable.setInfo(chat);
         imageView.setRoundRadius(AndroidUtilities.dp(20));
@@ -61,7 +63,12 @@ public class ChatCell extends BaseCell {
         text = Emoji.replaceEmoji(text, titleTextView.getPaint().getFontMetricsInt(), false);
         titleTextView.setText(text);
 
-        setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", boosts));
+        if (removable) {
+            setSubtitle(null);
+        } else {
+            setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", boosts));
+        }
+
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
         setDivider(true);
         if (removable) {
@@ -81,6 +88,10 @@ public class ChatCell extends BaseCell {
     }
 
     public void setCounter(int count) {
-        setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", count));
+        if (removable) {
+            setSubtitle(null);
+        } else {
+            setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", count));
+        }
     }
 }

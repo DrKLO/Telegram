@@ -62,9 +62,9 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     private BoostAdapter adapter;
     private int selectedBoostType = BoostTypeCell.TYPE_GIVEAWAY;
     private int selectedParticipantsType = ParticipantsTypeCell.TYPE_ALL;
-    private int selectedMonths = 3;
+    private int selectedMonths = 12;
     private long selectedEndDate = BoostDialogs.getThreeDaysAfterToday();
-    private int selectedSliderIndex = 0;
+    private int selectedSliderIndex = 2;
     private ActionBtnCell actionBtn;
     private ActionListener actionListener;
     private int top;
@@ -119,6 +119,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 selectedParticipantsType = tmpParticipantsType;
             } else if (view instanceof DurationCell) {
                 selectedMonths = ((TLRPC.TL_premiumGiftCodeOption) ((DurationCell) view).getGifCode()).months;
+                updateRows(false, false);
             } else if (view instanceof DateEndCell) {
                 BoostDialogs.showDatePicker(fragment.getContext(), selectedEndDate, (notify, timeSec) -> {
                     selectedEndDate = timeSec * 1000L;
@@ -133,8 +134,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
         this.currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         this.adapter.setItems(items, recyclerListView, sliderIndex -> {
             selectedSliderIndex = sliderIndex;
-            int counter = getSelectedSliderValue();
-            actionBtn.updateCounter(counter);
+            actionBtn.updateCounter(getSelectedSliderValueWithBoosts());
             updateRows(false, false);
             adapter.updateBoostCounter(getSelectedSliderValueWithBoosts());
         }, deletedChat -> {
@@ -159,7 +159,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                         actionBtn.updateLoading(true);
                         BoostRepository.payGiftCode(selectedUsers, option, currentChat, fragment, result -> {
                             dismiss();
-                            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, false);
+                            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, false), 220);
                         }, error -> {
                             actionBtn.updateLoading(false);
                             BoostDialogs.showToastError(getContext(), error);
@@ -239,12 +239,12 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
 
     private void updateActionButton(boolean animated) {
         if (isPreparedGiveaway()) {
-            actionBtn.setStartGiveAwayStyle(prepaidGiveaway.quantity, animated);
+            actionBtn.setStartGiveAwayStyle(prepaidGiveaway.quantity * BoostRepository.giveawayBoostsPerPremium(), animated);
         } else {
             if (selectedBoostType == BoostTypeCell.TYPE_GIVEAWAY) {
-                actionBtn.setStartGiveAwayStyle(getSelectedSliderValue(), animated);
+                actionBtn.setStartGiveAwayStyle(getSelectedSliderValueWithBoosts(), animated);
             } else {
-                actionBtn.setGiftPremiumStyle(selectedUsers.size(), animated, selectedUsers.size() > 0);
+                actionBtn.setGiftPremiumStyle(selectedUsers.size() * BoostRepository.giveawayBoostsPerPremium(), animated, selectedUsers.size() > 0);
             }
         }
     }
@@ -297,7 +297,11 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 items.add(Item.asDivider(LocaleController.getString("BoostingChooseHowMany", R.string.BoostingChooseHowMany), false));
             }
             items.add(Item.asSubTitle(LocaleController.getString("BoostingChannelsIncludedGiveaway", R.string.BoostingChannelsIncludedGiveaway)));
-            items.add(Item.asChat(currentChat, false, getSelectedSliderValueWithBoosts()));
+            if (isPreparedGiveaway()) {
+                items.add(Item.asChat(currentChat, false, prepaidGiveaway.quantity * BoostRepository.giveawayBoostsPerPremium()));
+            } else {
+                items.add(Item.asChat(currentChat, false, getSelectedSliderValueWithBoosts()));
+            }
             for (TLObject selectedChat : selectedChats) {
                 if (selectedChat instanceof TLRPC.Chat) {
                     items.add(Item.asChat((TLRPC.Chat) selectedChat, true, getSelectedSliderValueWithBoosts()));
@@ -382,7 +386,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             selectedBoostType = BoostTypeCell.TYPE_SPECIFIC_USERS;
         }
         selectedSliderIndex = 0;
-        updateRows(true, true);
+        updateRows(false, true);
         updateActionButton(true);
         updateTitle();
     }

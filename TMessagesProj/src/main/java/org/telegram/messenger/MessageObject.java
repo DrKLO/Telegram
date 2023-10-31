@@ -4118,7 +4118,7 @@ public class MessageObject {
                 } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaInvoice) {
                     messageText = getMedia(messageOwner).description;
                 } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
-                    messageText = LocaleController.getString("UnsupportedMedia", R.string.UnsupportedMedia);
+                    messageText = LocaleController.getString(ApplicationLoader.applicationLoaderInstance.isStandalone() ? R.string.UnsupportedMediaStandalone : R.string.UnsupportedMedia);
                 } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument) {
                     if (isSticker() || isAnimatedStickerDocument(getDocument(), true)) {
                         String sch = getStickerChar();
@@ -4204,9 +4204,9 @@ public class MessageObject {
             } else {
                 return LocaleController.getString("AttachVideo", R.string.AttachVideo);
             }
-        } else if (isVoice()) {
+        } else if (media != null && isVoiceDocument(media.document)) {
             return LocaleController.getString("AttachAudio", R.string.AttachAudio);
-        } else if (isRoundVideo()) {
+        } else if (media != null && isRoundVideoDocument(media.document)) {
             return LocaleController.getString("AttachRound", R.string.AttachRound);
         } else if (media instanceof TLRPC.TL_messageMediaGeo || media instanceof TLRPC.TL_messageMediaVenue) {
             return LocaleController.getString("AttachLocation", R.string.AttachLocation);
@@ -4222,9 +4222,9 @@ public class MessageObject {
         } else if (media instanceof TLRPC.TL_messageMediaInvoice) {
             return media.description;
         } else if (media instanceof TLRPC.TL_messageMediaUnsupported) {
-            return LocaleController.getString("UnsupportedMedia", R.string.UnsupportedMedia);
+            return LocaleController.getString(ApplicationLoader.applicationLoaderInstance.isStandalone() ? R.string.UnsupportedMediaStandalone : R.string.UnsupportedMedia);
         } else if (media instanceof TLRPC.TL_messageMediaDocument) {
-            if (isSticker() || isAnimatedStickerDocument(media.document, true)) {
+            if (isStickerDocument(media.document) || isAnimatedStickerDocument(media.document, true)) {
                 String sch = getStickerChar();
                 if (sch != null && sch.length() > 0) {
                     return String.format("%s %s", sch, LocaleController.getString("AttachSticker", R.string.AttachSticker));
@@ -5802,7 +5802,7 @@ public class MessageObject {
                 maxWidth -= dp(52);
             }
             if (needDrawShareButton() && !isOutOwner()) {
-                maxWidth -= dp(10);
+                maxWidth -= dp(20);
             }
             if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
                 maxWidth -= dp(10);
@@ -8909,7 +8909,7 @@ public class MessageObject {
     }
 
     public static CharSequence peerNameWithIcon(int currentAccount, TLRPC.Peer peer) {
-        return peerNameWithIcon(currentAccount, peer, false);
+        return peerNameWithIcon(currentAccount, peer, !(peer instanceof TLRPC.TL_peerUser));
     }
     
     public static CharSequence peerNameWithIcon(int currentAccount, TLRPC.Peer peer, boolean anotherChat) {
@@ -8925,12 +8925,20 @@ public class MessageObject {
         } else if (peer instanceof TLRPC.TL_peerChat) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peer.chat_id);
             if (chat != null) {
-                return new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? channelSpan() : groupSpan()).append(" ").append(chat.title);
+                if (anotherChat) {
+                    return new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? channelSpan() : groupSpan()).append(" ").append(chat.title);
+                } else {
+                    return chat.title;
+                }
             }
         } else if (peer instanceof TLRPC.TL_peerChannel) {
             TLRPC.Chat channel = MessagesController.getInstance(currentAccount).getChat(peer.channel_id);
             if (channel != null) {
-                return new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(channel) ? channelSpan() : groupSpan()).append(" ").append(channel.title);
+                if (anotherChat) {
+                    return new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(channel) ? channelSpan() : groupSpan()).append(" ").append(channel.title);
+                } else {
+                    return channel.title;
+                }
             }
         }
         return "";
@@ -8968,20 +8976,25 @@ public class MessageObject {
                 senderName = peerNameWithIcon(currentAccount, getDialogId());
             }
         } else if (messageOwner.reply_to.reply_from != null) {
+            final boolean anotherChat = messageOwner.reply_to.reply_to_peer_id == null || DialogObject.getPeerDialogId(messageOwner.reply_to.reply_to_peer_id) != getDialogId();
             if (messageOwner.reply_to.reply_from.from_id != null) {
                 if (messageOwner.reply_to.reply_from.from_id instanceof TLRPC.TL_peerUser) {
-                    senderName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.from_id, true);
+                    senderName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.from_id, anotherChat);
                 } else {
-                    chatName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.from_id, true);
+                    chatName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.from_id, anotherChat);
                 }
             } else if (messageOwner.reply_to.reply_from.saved_from_peer != null) {
                 if (messageOwner.reply_to.reply_from.saved_from_peer instanceof TLRPC.TL_peerUser) {
-                    senderName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.saved_from_peer, true);
+                    senderName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.saved_from_peer, anotherChat);
                 } else {
-                    chatName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.saved_from_peer, true);
+                    chatName = peerNameWithIcon(currentAccount, messageOwner.reply_to.reply_from.saved_from_peer, anotherChat);
                 }
             } else if (!TextUtils.isEmpty(messageOwner.reply_to.reply_from.from_name)) {
-                senderName = new SpannableStringBuilder(userSpan()).append(" ").append(messageOwner.reply_to.reply_from.from_name);
+                if (anotherChat) {
+                    senderName = new SpannableStringBuilder(userSpan()).append(" ").append(messageOwner.reply_to.reply_from.from_name);
+                } else {
+                    senderName = new SpannableStringBuilder(messageOwner.reply_to.reply_from.from_name);
+                }
             }
         }
         if (messageOwner.reply_to.reply_to_peer_id != null && DialogObject.getPeerDialogId(messageOwner.reply_to.reply_to_peer_id) != getDialogId()) {

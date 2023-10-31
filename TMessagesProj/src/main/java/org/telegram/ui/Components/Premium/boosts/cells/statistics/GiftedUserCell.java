@@ -77,27 +77,39 @@ public class GiftedUserCell extends UserCell {
         addView(badgeLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 9 : 0), 9, (LocaleController.isRTL ? 0 : 9), 0));
     }
 
+    private void setAvatarColorByMonths(int months) {
+        if (months == 12) {
+            avatarDrawable.setColor(0xFFff8560, 0xFFd55246);
+        } else if (months == 6) {
+            avatarDrawable.setColor(0xFF5caefa, 0xFF418bd0);
+        } else {
+            avatarDrawable.setColor(0xFF9ad164, 0xFF49ba44);
+        }
+    }
+
     public void setStatus(TL_stories.TL_boost boost) {
         this.boost = boost;
         if ((boost.gift || boost.giveaway)) {
             badgeLayout.setVisibility(VISIBLE);
+            int months = (boost.expires - boost.date) / 30 / 86400;
             if (boost.unclaimed) {
                 nameTextView.setText(LocaleController.getString("BoostingUnclaimed", R.string.BoostingUnclaimed));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_UNCLAIMED);
-                avatarDrawable.setColor(0xFF9ad164, 0xFF49ba44);
+                setAvatarColorByMonths(months);
                 avatarImageView.setForUserOrChat(null, avatarDrawable);
                 nameTextView.setRightDrawable(null);
             } else if (boost.user_id == NO_USER_ID) {
                 nameTextView.setText(LocaleController.getString("BoostingToBeDistributed", R.string.BoostingToBeDistributed));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_TO_BE_DISTRIBUTED);
-                avatarDrawable.setColor(0xFF5caefa, 0xFF418bd0);
+                setAvatarColorByMonths(months);
                 avatarImageView.setForUserOrChat(null, avatarDrawable);
                 nameTextView.setRightDrawable(null);
             }
             String date = LocaleController.getInstance().formatterScheduleDay.format(new Date(boost.date * 1000L));
             String time = LocaleController.getInstance().formatterDay.format(new Date(boost.date * 1000L));
-            int months = (boost.expires - boost.date) / 30 / 86400;
-            statusTextView.setText(months + "m • " + LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, date, time));
+
+            statusTextView.setText(LocaleController.formatString("BoostingShortMonths", R.string.BoostingShortMonths, months) + " • " + LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, date, time));
+
             if (boost.gift) {
                 if (giftDrawable == null) {
                     giftDrawable = getResources().getDrawable(R.drawable.mini_gift);
