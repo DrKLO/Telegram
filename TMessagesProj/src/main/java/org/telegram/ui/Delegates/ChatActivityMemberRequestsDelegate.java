@@ -84,6 +84,7 @@ public class ChatActivityMemberRequestsDelegate {
                     super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(width), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };
+            avatarsView.setAvatarsTextSize(AndroidUtilities.dp(18));
             avatarsView.reset();
             requestsDataLayout.addView(avatarsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 8, 0, 10, 0));
 

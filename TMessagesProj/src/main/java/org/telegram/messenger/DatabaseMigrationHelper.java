@@ -1376,6 +1376,14 @@ public class DatabaseMigrationHelper {
             version = 134;
         }
 
+        if (version == 134) {
+            database.executeFast("DROP TABLE user_photos").stepThis().dispose();
+            database.executeFast("CREATE TABLE dialog_photos(uid INTEGER, id INTEGER, num INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
+            database.executeFast("CREATE TABLE dialog_photos_count(uid INTEGER PRIMARY KEY, count INTEGER)").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 135").stepThis().dispose();
+            version = 135;
+        }
+
         return version;
     }
 

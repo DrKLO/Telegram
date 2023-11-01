@@ -725,6 +725,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurLinearButton.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
         }
+        updateFiltersEmpty();
     }
 
     public MediaController.SavedFilterState getSavedFilterState() {

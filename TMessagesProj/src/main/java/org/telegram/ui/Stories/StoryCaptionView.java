@@ -701,7 +701,7 @@ public class StoryCaptionView extends NestedScrollView {
                             if (x < showMoreX - AndroidUtilities.dp(16)) {
                                 lineInfo.collapsedY = collapsedY;
                                 lineInfo.collapsedX = x;
-                                x += layout.getLineRight(0) + space;
+                                x += Math.abs(layout.getLineRight(0) - layout.getLineLeft(0)) + space;
                             } else {
                                 lineInfo.collapsedY = lineInfo.finalY;
                                 lineInfo.collapsedX = lineInfo.finalX;

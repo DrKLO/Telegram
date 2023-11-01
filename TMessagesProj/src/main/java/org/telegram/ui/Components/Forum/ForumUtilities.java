@@ -15,9 +15,13 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -46,6 +50,8 @@ import java.util.ArrayList;
 
 public class ForumUtilities {
 
+    static Drawable dialogGeneralIcon;
+    static SparseArray<Drawable> dialogForumDrawables = new SparseArray();
 
     public static void setTopicIcon(BackupImageView backupImageView, TLRPC.TL_forumTopic forumTopic) {
         setTopicIcon(backupImageView, forumTopic, false, false, null);
@@ -56,7 +62,7 @@ public class ForumUtilities {
         }
         if (forumTopic.id == 1) {
             backupImageView.setAnimatedEmojiDrawable(null);
-            backupImageView.setImageDrawable(createGeneralTopicDrawable(backupImageView.getContext(), 0.75f, Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider)));
+            backupImageView.setImageDrawable(createGeneralTopicDrawable(backupImageView.getContext(), 0.75f, Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), false));
         } else if (forumTopic.icon_emoji_id != 0) {
             backupImageView.setImageDrawable(null);
             if (backupImageView.animatedEmojiDrawable == null || forumTopic.icon_emoji_id != backupImageView.animatedEmojiDrawable.getDocumentId()) {
@@ -66,19 +72,31 @@ public class ForumUtilities {
             }
         } else {
             backupImageView.setAnimatedEmojiDrawable(null);
-            backupImageView.setImageDrawable(createTopicDrawable(forumTopic));
+            backupImageView.setImageDrawable(createTopicDrawable(forumTopic, false));
         }
     }
 
     public static Drawable createGeneralTopicDrawable(Context context, float scale, Theme.ResourcesProvider resourcesProvider) {
-        return createGeneralTopicDrawable(context, scale, Theme.getColor(Theme.key_chat_inMenu, resourcesProvider));
+        return createGeneralTopicDrawable(context, scale, Theme.getColor(Theme.key_chat_inMenu, resourcesProvider), false);
     }
 
-    public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color) {
+    public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
         if (context == null) {
             return null;
         }
-        return new GeneralTopicDrawable(context, scale, color);
+        return new GeneralTopicDrawable(context, scale, color, isDialog);
+    }
+
+    public static void filterMessagesByTopic(int threadMessageId, ArrayList<MessageObject> messageObjects) {
+        if (messageObjects == null) {
+            return;
+        }
+        for (int i = 0; i < messageObjects.size(); i++) {
+            if (threadMessageId != MessageObject.getTopicId(messageObjects.get(i).messageOwner, true)) {
+                messageObjects.remove(i);
+                i--;
+            }
+        }
     }
 
     public static class GeneralTopicDrawable extends Drawable {
@@ -96,8 +114,15 @@ public class ForumUtilities {
             this.scale = scale;
         }
 
-        public GeneralTopicDrawable(Context context, float scale, int color) {
-            this.icon = context.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+        public GeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
+            if (isDialog) {
+                if (dialogGeneralIcon == null) {
+                    dialogGeneralIcon = context.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+                }
+                this.icon = dialogGeneralIcon;
+            } else {
+                this.icon = context.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+            }
             this.scale = scale;
             setColor(color);
         }
@@ -140,19 +165,29 @@ public class ForumUtilities {
         }
     }
 
-    public static Drawable createTopicDrawable(TLRPC.TL_forumTopic topic) {
-        return topic == null ? null : createTopicDrawable(topic.title, topic.icon_color);
+    public static Drawable createTopicDrawable(TLRPC.TL_forumTopic topic, boolean isDialog) {
+        return topic == null ? null : createTopicDrawable(topic.title, topic.icon_color, isDialog);
     }
 
     public static Drawable createTopicDrawable(String text) {
-        return createTopicDrawable(text, 0);
+        return createTopicDrawable(text, 0, false);
     }
 
-    public static Drawable createTopicDrawable(String text, int color) {
-        Drawable forumBubbleDrawable = new ForumBubbleDrawable(color);
+    public static Drawable createTopicDrawable(String text, int color, boolean isDialog) {
+        Drawable forumBubbleDrawable;
+        if (isDialog) {
+            forumBubbleDrawable = dialogForumDrawables.get(color);
+            if (forumBubbleDrawable == null) {
+                forumBubbleDrawable = new ForumBubbleDrawable(color);
+                dialogForumDrawables.put(color, forumBubbleDrawable);
+            }
+        } else {
+            forumBubbleDrawable = new ForumBubbleDrawable(color);
+        }
+
         LetterDrawable letterDrawable = new LetterDrawable(null, LetterDrawable.STYLE_TOPIC_DRAWABLE);
-        String title = text.trim().toUpperCase();
-        letterDrawable.setTitle(title.length() >= 1 ? title.substring(0, 1) : "");
+        String title = text.trim();
+        letterDrawable.setTitle(title.length() >= 1 ? title.substring(0, 1).toUpperCase() : "");
         CombinedDrawable combinedDrawable = new CombinedDrawable(forumBubbleDrawable, letterDrawable, 0, 0);
         combinedDrawable.setFullsize(true);
         return combinedDrawable;
@@ -205,17 +240,17 @@ public class ForumUtilities {
         baseFragment.presentFragment(chatActivity);
     }
 
-    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint) {
-        return getTopicSpannedName(topic, paint, null);
+    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint, boolean isDialog) {
+        return getTopicSpannedName(topic, paint, null, isDialog);
     }
 
-    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint, Drawable[] drawableToSet) {
+    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint, Drawable[] drawableToSet, boolean isDialog) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         if (topic instanceof TLRPC.TL_forumTopic) {
             TLRPC.TL_forumTopic forumTopic = (TLRPC.TL_forumTopic) topic;
             if (forumTopic.id == 1) {
                 try {
-                    Drawable drawable = createGeneralTopicDrawable(ApplicationLoader.applicationContext, 1f, paint == null ? Theme.getColor(Theme.key_chat_inMenu) : paint.getColor());
+                    Drawable drawable = createGeneralTopicDrawable(ApplicationLoader.applicationContext, 1f, paint == null ? Theme.getColor(Theme.key_chat_inMenu) : paint.getColor(), isDialog);
                     drawable.setBounds(0, 0, paint == null ? AndroidUtilities.dp(14) : (int) (paint.getTextSize()), paint == null ? AndroidUtilities.dp(14) : (int) (paint.getTextSize()));
                     sb.append(" ");
                     if (drawableToSet != null) {
@@ -231,7 +266,7 @@ public class ForumUtilities {
                 span.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC;
             } else {
                 sb.append(" ");
-                Drawable drawable = ForumUtilities.createTopicDrawable(forumTopic);
+                Drawable drawable = ForumUtilities.createTopicDrawable(forumTopic, isDialog);
                 if (drawableToSet != null) {
                     drawableToSet[0] = ((CombinedDrawable) drawable).getBackgroundDrawable();
                 }
@@ -276,7 +311,7 @@ public class ForumUtilities {
             return null;
         }
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionTopicCreate) {
-            return AndroidUtilities.replaceCharSequence("%s", LocaleController.getString(R.string.TopicWasCreatedAction), ForumUtilities.getTopicSpannedName(topic, null));
+            return AndroidUtilities.replaceCharSequence("%s", LocaleController.getString(R.string.TopicWasCreatedAction), ForumUtilities.getTopicSpannedName(topic, null, false));
         }
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionTopicEdit) {
             TLRPC.TL_messageActionTopicEdit topicEdit = (TLRPC.TL_messageActionTopicEdit) messageObject.messageOwner.action;
@@ -299,14 +334,14 @@ public class ForumUtilities {
                 return AndroidUtilities.replaceCharSequence("%s", topicEdit.hidden ? LocaleController.getString(R.string.TopicHidden2) :  LocaleController.getString(R.string.TopicShown2), name);
             }
             if ((topicEdit.flags & 4) != 0) {
-                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", topicEdit.closed ? LocaleController.getString(R.string.TopicWasClosedAction) :  LocaleController.getString(R.string.TopicWasReopenedAction), ForumUtilities.getTopicSpannedName(topic, null));
+                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", topicEdit.closed ? LocaleController.getString(R.string.TopicWasClosedAction) :  LocaleController.getString(R.string.TopicWasReopenedAction), ForumUtilities.getTopicSpannedName(topic, null, false));
                 return AndroidUtilities.replaceCharSequence("%1$s", charSequence, name);
             }
             if ((topicEdit.flags & 1) != 0 && (topicEdit.flags & 2) != 0) {
                 TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
                 forumTopic.icon_emoji_id = topicEdit.icon_emoji_id;
                 forumTopic.title = topicEdit.title;
-                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", LocaleController.getString(R.string.TopicWasRenamedToAction2), ForumUtilities.getTopicSpannedName(forumTopic, null));
+                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", LocaleController.getString(R.string.TopicWasRenamedToAction2), ForumUtilities.getTopicSpannedName(forumTopic, null, false));
                 return AndroidUtilities.replaceCharSequence("%1$s", charSequence, name);
             }
             if ((topicEdit.flags & 1) != 0) {
@@ -317,7 +352,7 @@ public class ForumUtilities {
                 TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
                 forumTopic.icon_emoji_id = topicEdit.icon_emoji_id;
                 forumTopic.title = "";
-                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", LocaleController.getString(R.string.TopicWasIconChangedToAction), ForumUtilities.getTopicSpannedName(forumTopic, null));
+                CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", LocaleController.getString(R.string.TopicWasIconChangedToAction), ForumUtilities.getTopicSpannedName(forumTopic, null, false));
                 return AndroidUtilities.replaceCharSequence("%1$s", charSequence, name);
             }
 

@@ -60,8 +60,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -80,13 +78,13 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -121,8 +119,8 @@ import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
-import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.UserListPoller;
+import org.telegram.ui.Stories.ViewsForPeerStoriesRequester;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1305,6 +1303,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidStart);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.storiesListUpdated);
+        profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.storiesUpdated);
 
         for (int a = 0; a < 10; a++) {
             //cellCache.add(new SharedPhotoVideoCell(context));
@@ -2553,14 +2552,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         floatingDateView.setTranslationY(-AndroidUtilities.dp(48));
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
-        addView(fragmentContextView = new FragmentContextView(context, parent, this, false, resourcesProvider), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
-        fragmentContextView.setDelegate((start, show) -> {
-            if (!start) {
-                requestLayout();
-            }
-        });
-
         if (!isStoriesView()) {
+            addView(fragmentContextView = new FragmentContextView(context, parent, this, false, resourcesProvider), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+            fragmentContextView.setDelegate((start, show) -> {
+                if (!start) {
+                    requestLayout();
+                }
+            });
+
             addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
             addView(actionModeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
         }
@@ -3473,7 +3472,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     protected void onSelectedTabChanged() {
-
+        boolean pollerEnabled = isStoriesView() || isArchivedOnlyStoriesView();
+        if (archivedStoriesAdapter.poller != null) {
+            archivedStoriesAdapter.poller.start(pollerEnabled && getClosestTab() == TAB_ARCHIVED_STORIES);
+        }
+        if (storiesAdapter.poller != null) {
+            storiesAdapter.poller.start(pollerEnabled && getClosestTab() == TAB_STORIES);
+        }
     }
 
     protected boolean canShowSearchItem() {
@@ -3497,6 +3502,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidStart);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.storiesListUpdated);
+        profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.storiesUpdated);
 
         if (storiesAdapter != null && storiesAdapter.storiesList != null) {
             storiesAdapter.destroy();
@@ -3841,7 +3847,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         for (int a = 0; a < mediaPages.length; a++) {
             mediaPages[a].setTranslationY(topPadding - lastMeasuredTopPadding);
         }
-        fragmentContextView.setTranslationY(AndroidUtilities.dp(48) + top);
+        if (fragmentContextView != null) {
+            fragmentContextView.setTranslationY(AndroidUtilities.dp(48) + top);
+        }
         additionalFloatingTranslation = top;
         floatingDateView.setTranslationY((floatingDateView.getTag() == null ? -AndroidUtilities.dp(48) : 0) + additionalFloatingTranslation);
     }
@@ -4550,6 +4558,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     delegate.updateSelectedMediaTabText();
                 }
             }
+        } else if (id == NotificationCenter.storiesUpdated) {
+            for (int i = 0; i < mediaPages.length; ++i) {
+                if (mediaPages[i] != null && mediaPages[i].listView != null && (mediaPages[i].selectedType == TAB_STORIES || mediaPages[i].selectedType == TAB_ARCHIVED_STORIES)) {
+                    for (int j = 0; j < mediaPages[i].listView.getChildCount(); ++j) {
+                        View child = mediaPages[i].listView.getChildAt(j);
+                        if (child instanceof SharedPhotoVideoCell2) {
+                            ((SharedPhotoVideoCell2) child).updateViews();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -4995,6 +5014,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mediaPages[0].selectedType = id;
         }
         scrollSlidingTextTabStrip.finishAddingTabs();
+        onSelectedTabChanged();
     }
 
     private void startStopVisibleGifs() {
@@ -6840,6 +6860,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         private StoriesAdapter supportingAdapter;
         private int id;
 
+        private ViewsForPeerStoriesRequester poller;
+
         public StoriesAdapter(Context context, boolean isArchive) {
             super(context);
             this.isArchive = isArchive;
@@ -6850,6 +6872,36 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             }
             if (storiesList != null) {
                 id = storiesList.link();
+                poller = new ViewsForPeerStoriesRequester(profileActivity.getMessagesController().getStoriesController(), dialog_id, storiesList.currentAccount) {
+                    @Override
+                    protected void getStoryIds(ArrayList<Integer> ids) {
+                        RecyclerListView listView = null;
+                        for (int i = 0; i < mediaPages.length; ++i) {
+                            if (mediaPages[i].listView != null && mediaPages[i].listView.getAdapter() == StoriesAdapter.this) {
+                                listView = mediaPages[i].listView;
+                                break;
+                            }
+                        }
+
+                        if (listView != null) {
+                            for (int i = 0; i < listView.getChildCount(); ++i) {
+                                View child = listView.getChildAt(i);
+                                if (child instanceof SharedPhotoVideoCell2) {
+                                    MessageObject msg = ((SharedPhotoVideoCell2) child).getMessageObject();
+                                    if (msg != null && msg.isStory()) {
+                                        ids.add(msg.storyItem.id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    protected boolean updateStories(ArrayList<Integer> reqIds, TL_stories.TL_stories_storyViews storyViews) {
+                        storiesList.updateStoryViews(reqIds, storyViews.views);
+                        return true;
+                    }
+                };
             }
             checkColumns();
         }
@@ -7404,14 +7456,16 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_profile_tabText));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_profile_tabSelector));
 
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerTitle));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_FASTSCROLL, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerPerformer));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
+        if (fragmentContextView != null) {
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerTitle));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_FASTSCROLL, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerPerformer));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
 
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_returnToCallBackground));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_returnToCallBackground));
+            arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText));
+        }
 
         for (int a = 0; a < mediaPages.length; a++) {
             final int num = a;

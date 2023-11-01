@@ -85,6 +85,10 @@ bool Request::isMediaRequest() {
     return Connection::isMediaConnectionType(connectionType);
 }
 
+bool Request::isCancelRequest() {
+    return (requestFlags & RequestFlagIsCancel) != 0;
+}
+
 bool Request::needInitRequest(Datacenter *datacenter, uint32_t currentVersion) {
     bool media = PFS_ENABLED && datacenter != nullptr && isMediaRequest() && datacenter->hasMediaAddress();
     return !media && datacenter->lastInitVersion != currentVersion || media && datacenter->lastInitMediaVersion != currentVersion;

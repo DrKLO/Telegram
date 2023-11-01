@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; Promemoria</string>
     <string name="OneResult">1 risultato</string>
     <string name="VideoQualityIsTooLow">Qualità video troppo bassa per cambiare le impostazioni di compressione.</string>
-    <string name="TextSelectionHit">Premi la **parola**, quindi muovi il cursore per selezionare altro testo da copiare.</string>
     <string name="CardNumberCopied">Numero carta copiato negli appunti</string>
     <string name="CopyCardNumber">Copia</string>
     <string name="DiceInfo2">Invia l\'emoji **:dado:** in qualsiasi chat per lanciare un dado.</string>

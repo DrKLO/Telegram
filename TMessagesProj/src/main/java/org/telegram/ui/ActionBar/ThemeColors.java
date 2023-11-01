@@ -164,13 +164,29 @@ public class ThemeColors {
         defaultColors[key_avatar_actionBarSelectorBlue] = 0xff4981ad;
         defaultColors[key_avatar_actionBarIconBlue] = 0xffffffff;
 
-        defaultColors[key_avatar_nameInMessageRed] = 0xffca5650;
-        defaultColors[key_avatar_nameInMessageOrange] = 0xffd87b29;
-        defaultColors[key_avatar_nameInMessageViolet] = 0xff9B66DC;
-        defaultColors[key_avatar_nameInMessageGreen] = 0xff50b232;
-        defaultColors[key_avatar_nameInMessageCyan] = 0xff379eb8;
-        defaultColors[key_avatar_nameInMessageBlue] = 0xff4e92cc;
-        defaultColors[key_avatar_nameInMessagePink] = 0xffCF5C95;
+        defaultColors[key_avatar_nameInMessageRed] = 0xffCC5049;
+        defaultColors[key_avatar_nameInMessageOrange] = 0xffD67722;
+        defaultColors[key_avatar_nameInMessageViolet] = 0xff955CDB;
+        defaultColors[key_avatar_nameInMessageGreen] = 0xff40A920;
+        defaultColors[key_avatar_nameInMessageCyan] = 0xff309EBA;
+        defaultColors[key_avatar_nameInMessageBlue] = 0xff368AD1;
+        defaultColors[key_avatar_nameInMessagePink] = 0xffC7508B;
+
+        defaultColors[key_avatar_composite_nameInMessageRed] = 0xffE15052;
+        defaultColors[key_avatar_composite_nameInMessageOrange] = 0xffE0802B;
+        defaultColors[key_avatar_composite_nameInMessageViolet] = 0xffA05FF3;
+        defaultColors[key_avatar_composite_nameInMessageGreen] = 0xff27A910;
+        defaultColors[key_avatar_composite_nameInMessageCyan] = 0xff27ACCE;
+        defaultColors[key_avatar_composite_nameInMessageBlue] = 0xff3391D4;
+        defaultColors[key_avatar_composite_nameInMessagePink] = 0xffD14972;
+
+        defaultColors[key_avatar_composite_nameInMessageRed2] = 0xffF9AE63;
+        defaultColors[key_avatar_composite_nameInMessageOrange2] = 0xffFAC534;
+        defaultColors[key_avatar_composite_nameInMessageViolet2] = 0xffF48FFF;
+        defaultColors[key_avatar_composite_nameInMessageGreen2] = 0xffA7DC57;
+        defaultColors[key_avatar_composite_nameInMessageCyan2] = 0xff82E8D6;
+        defaultColors[key_avatar_composite_nameInMessageBlue2] = 0xff7DD3F0;
+        defaultColors[key_avatar_composite_nameInMessagePink2] = 0xffFFBE9F;
 
         defaultColors[key_actionBarDefault] = 0xff527da3;
         defaultColors[key_actionBarDefaultIcon] = 0xffffffff;
@@ -347,6 +363,7 @@ public class ThemeColors {
         defaultColors[key_chat_stickerViaBotNameText] = 0xffffffff;
         defaultColors[key_chat_inReplyLine] = 0xff599fd8;
         defaultColors[key_chat_outReplyLine] = 0xff6eb969;
+        defaultColors[key_chat_outReplyLine2] = 0xff40A920;
         defaultColors[key_chat_stickerReplyLine] = 0xffffffff;
         defaultColors[key_chat_inReplyNameText] = 0xff3a8ccf;
         defaultColors[key_chat_outReplyNameText] = 0xff55ab4f;
@@ -512,6 +529,8 @@ public class ThemeColors {
         defaultColors[key_chat_mediaLoaderPhotoIcon] = 0xffffffff;
         defaultColors[key_chat_mediaLoaderPhotoIconSelected] = 0xffd9d9d9;
         defaultColors[key_chat_serviceBackgroundSelector] = 0x20ffffff;
+        defaultColors[key_chat_inQuote] = 0xff459BD8;
+        defaultColors[key_chat_outQuote] = 0xff6AB860;
 
         defaultColors[key_profile_creatorIcon] = 0xff3a95d5;
         defaultColors[key_profile_actionIcon] = 0xff81868a;
@@ -767,6 +786,17 @@ public class ThemeColors {
         defaultColors[key_stories_circle_closeFriends1] = 0xFFC9EB38;
         defaultColors[key_stories_circle_closeFriends2] = 0xFF09C167;
 
+        defaultColors[key_code_background] = 0x20000000;
+        defaultColors[key_chat_inCodeBackground] = 0x08484848;
+        defaultColors[key_chat_outCodeBackground] = 0x123c7503;
+        defaultColors[key_code_keyword] = 0xFFE05356;
+        defaultColors[key_code_operator] = 0xFF4DBBFF;
+        defaultColors[key_code_constant] = 0xFF7F79F3;
+        defaultColors[key_code_string] = 0xFF61C752;
+        defaultColors[key_code_number] = 0xFF327FE5;
+        defaultColors[key_code_comment] = 0x80000000;
+        defaultColors[key_code_function] = 0xFFF28C39;
+
         return defaultColors;
     }
 
@@ -932,6 +962,20 @@ public class ThemeColors {
         colorKeysMap.put(key_avatar_nameInMessageCyan, "avatar_nameInMessageCyan");
         colorKeysMap.put(key_avatar_nameInMessageBlue, "avatar_nameInMessageBlue");
         colorKeysMap.put(key_avatar_nameInMessagePink, "avatar_nameInMessagePink");
+        colorKeysMap.put(key_avatar_composite_nameInMessageRed, "avatar_composite_nameInMessageRed");
+        colorKeysMap.put(key_avatar_composite_nameInMessageOrange, "avatar_composite_nameInMessageOrange");
+        colorKeysMap.put(key_avatar_composite_nameInMessageViolet, "avatar_composite_nameInMessageViolet");
+        colorKeysMap.put(key_avatar_composite_nameInMessageGreen, "avatar_composite_nameInMessageGreen");
+        colorKeysMap.put(key_avatar_composite_nameInMessageCyan, "avatar_composite_nameInMessageCyan");
+        colorKeysMap.put(key_avatar_composite_nameInMessageBlue, "avatar_composite_nameInMessageBlue");
+        colorKeysMap.put(key_avatar_composite_nameInMessagePink, "avatar_composite_nameInMessagePink");
+        colorKeysMap.put(key_avatar_composite_nameInMessageRed2, "avatar_composite_nameInMessageRed2");
+        colorKeysMap.put(key_avatar_composite_nameInMessageOrange2, "avatar_composite_nameInMessageOrange2");
+        colorKeysMap.put(key_avatar_composite_nameInMessageViolet2, "avatar_composite_nameInMessageViolet2");
+        colorKeysMap.put(key_avatar_composite_nameInMessageGreen2, "avatar_composite_nameInMessageGreen2");
+        colorKeysMap.put(key_avatar_composite_nameInMessageCyan2, "avatar_composite_nameInMessageCyan2");
+        colorKeysMap.put(key_avatar_composite_nameInMessageBlue2, "avatar_composite_nameInMessageBlue2");
+        colorKeysMap.put(key_avatar_composite_nameInMessagePink2, "avatar_composite_nameInMessagePink2");
         colorKeysMap.put(key_actionBarDefault, "actionBarDefault");
         colorKeysMap.put(key_actionBarDefaultSelector, "actionBarDefaultSelector");
         colorKeysMap.put(key_actionBarWhiteSelector, "actionBarWhiteSelector");
@@ -1064,6 +1108,8 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_serviceBackground, "chat_serviceBackground");
         colorKeysMap.put(key_chat_serviceBackgroundSelected, "chat_serviceBackgroundSelected");
         colorKeysMap.put(key_chat_serviceBackgroundSelector, "chat_serviceBackgroundSelector");
+        colorKeysMap.put(key_chat_inQuote, "chat_inQuote");
+        colorKeysMap.put(key_chat_outQuote, "chat_outQuote");
         colorKeysMap.put(key_chat_muteIcon, "chat_muteIcon");
         colorKeysMap.put(key_chat_lockIcon, "chat_lockIcon");
         colorKeysMap.put(key_chat_outSentCheck, "chat_outSentCheck");
@@ -1114,6 +1160,7 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_stickerViaBotNameText, "chat_stickerViaBotNameText");
         colorKeysMap.put(key_chat_inReplyLine, "chat_inReplyLine");
         colorKeysMap.put(key_chat_outReplyLine, "chat_outReplyLine");
+        colorKeysMap.put(key_chat_outReplyLine2, "chat_outReplyLine2");
         colorKeysMap.put(key_chat_stickerReplyLine, "chat_stickerReplyLine");
         colorKeysMap.put(key_chat_inReplyNameText, "chat_inReplyNameText");
         colorKeysMap.put(key_chat_outReplyNameText, "chat_outReplyNameText");
@@ -1494,6 +1541,16 @@ public class ThemeColors {
         colorKeysMap.put(key_stories_circle_dialog2, "stories_circle_dialog2");
         colorKeysMap.put(key_stories_circle_closeFriends1, "stories_circle_closeFriends1");
         colorKeysMap.put(key_stories_circle_closeFriends2, "stories_circle_closeFriends2");
+        colorKeysMap.put(key_code_background, "code_background");
+        colorKeysMap.put(key_chat_inCodeBackground, "chat_inCodeBackground");
+        colorKeysMap.put(key_chat_outCodeBackground, "chat_outCodeBackground");
+        colorKeysMap.put(key_code_keyword, "code_keyword");
+        colorKeysMap.put(key_code_operator, "code_operator");
+        colorKeysMap.put(key_code_constant, "code_constant");
+        colorKeysMap.put(key_code_string, "code_string");
+        colorKeysMap.put(key_code_number, "code_number");
+        colorKeysMap.put(key_code_comment, "code_comment");
+        colorKeysMap.put(key_code_function, "code_function");
         return colorKeysMap;
     }
 

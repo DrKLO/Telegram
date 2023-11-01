@@ -17,9 +17,7 @@ public class ButtonBounce {
     private long releaseDelay = 0;
 
     public ButtonBounce(View viewToInvalidate) {
-        view = viewToInvalidate;
-        durationPressMultiplier = durationReleaseMultiplier = 1f;
-        overshoot = 5.0f;
+        this(viewToInvalidate, 1f, 5.0f);
     }
 
     public ButtonBounce(View viewToInvalidate, float durationMultiplier, float overshoot) {

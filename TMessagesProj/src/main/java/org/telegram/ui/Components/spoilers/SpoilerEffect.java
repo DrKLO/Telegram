@@ -18,14 +18,17 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
+import android.graphics.text.LineBreaker;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ReplacementSpan;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -41,7 +44,10 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.Easings;
+import org.telegram.ui.Components.QuoteSpan;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TextStyleSpan;
 
 import java.util.ArrayList;
@@ -49,6 +55,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SpoilerEffect extends Drawable {
@@ -100,6 +107,8 @@ public class SpoilerEffect extends Drawable {
     public boolean drawPoints;
     private static Paint xRefPaint;
     private int bitmapSize;
+
+    public boolean insideQuote;
 
     private static int measureParticlesPerCharacter() {
         switch (SharedConfig.getDevicePerformanceClass()) {
@@ -551,7 +560,12 @@ public class SpoilerEffect extends Drawable {
      */
     public static void addSpoilers(TextView tv, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers) {
         int width = tv.getMeasuredWidth();
-        addSpoilers(tv, tv.getLayout(), 0, width > 0 ? width : -2, (Spanned) tv.getText(), spoilersPool, spoilers);
+        addSpoilers(tv, tv.getLayout(), 0, width > 0 ? width : -2, (Spanned) tv.getText(), spoilersPool, spoilers, null);
+    }
+
+    public static void addSpoilers(TextView tv, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers, ArrayList<QuoteSpan.Block> quoteBlocks) {
+        int width = tv.getMeasuredWidth();
+        addSpoilers(tv, tv.getLayout(), 0, width > 0 ? width : -2, (Spanned) tv.getText(), spoilersPool, spoilers, quoteBlocks);
     }
 
     /**
@@ -570,7 +584,7 @@ public class SpoilerEffect extends Drawable {
 
     public static void addSpoilers(@Nullable View v, Layout textLayout, int left, int right, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers) {
         if (textLayout.getText() instanceof Spanned) {
-            addSpoilers(v, textLayout, left, right, (Spanned) textLayout.getText(), spoilersPool, spoilers);
+            addSpoilers(v, textLayout, left, right, (Spanned) textLayout.getText(), spoilersPool, spoilers, null);
         }
     }
 
@@ -578,7 +592,7 @@ public class SpoilerEffect extends Drawable {
         if (textLayout == null) {
             return;
         }
-        addSpoilers(v, textLayout, -1, -1, spannable, spoilersPool, spoilers);
+        addSpoilers(v, textLayout, -1, -1, spannable, spoilersPool, spoilers, null);
     }
 
     /**
@@ -594,15 +608,15 @@ public class SpoilerEffect extends Drawable {
      * @param spoilersPool Cached spoilers pool, could be null, but highly recommended
      * @param spoilers     Spoilers list to populate
      */
-    public static void addSpoilers(@Nullable View v, Layout textLayout, int layoutLeft, int layoutRight, Spanned spannable, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers) {
+    public static void addSpoilers(@Nullable View v, Layout textLayout, int layoutLeft, int layoutRight, Spanned spannable, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers, ArrayList<QuoteSpan.Block> quoteBlocks) {
         if (textLayout == null) {
             return;
         }
         TextStyleSpan[] spans = spannable.getSpans(0, textLayout.getText().length(), TextStyleSpan.class);
         for (int i = 0; i < spans.length; ++i) {
             if (spans[i].isSpoiler()) {
-                int start = spannable.getSpanStart(spans[i]);
-                int end = spannable.getSpanEnd(spans[i]);
+                final int start = spannable.getSpanStart(spans[i]);
+                final int end = spannable.getSpanEnd(spans[i]);
                 int left = layoutLeft, right = layoutRight;
                 if (left == -1 && right == -1) {
                     left = Integer.MAX_VALUE;
@@ -614,7 +628,7 @@ public class SpoilerEffect extends Drawable {
                         right = Math.max(right, (int) textLayout.getLineRight(l));
                     }
                 }
-                addSpoilerRangesInternal(v, textLayout, left, right, start, end, spoilersPool, spoilers);
+                addSpoilerRangesInternal(v, textLayout, left, right, start, end, spoilersPool, spoilers, quoteBlocks);
             }
         }
         if (v instanceof TextView && spoilersPool != null) {
@@ -622,17 +636,28 @@ public class SpoilerEffect extends Drawable {
         }
     }
 
-    private static void addSpoilerRangesInternal(@Nullable View v, @NonNull Layout textLayout, int mostleft, int mostright, int start, int end, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers) {
+    private static void addSpoilerRangesInternal(@Nullable View v, @NonNull Layout textLayout, int mostleft, int mostright, int start, int end, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers, ArrayList<QuoteSpan.Block> quoteBlocks) {
         textLayout.getSelectionPath(start, end, new Path() {
             @Override
             public void addRect(float left, float top, float right, float bottom, @NonNull Direction dir) {
-                addSpoilerRangeInternal(v, textLayout, left, top, right, bottom, spoilersPool, spoilers, mostleft, mostright);
+                addSpoilerRangeInternal(v, textLayout, left, top, right, bottom, spoilersPool, spoilers, mostleft, mostright, quoteBlocks);
             }
         });
     }
 
-    private static void addSpoilerRangeInternal(@Nullable View v, @NonNull Layout textLayout, float left, float top, float right, float bottom, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers, int mostleft, int mostright) {
+    private static void addSpoilerRangeInternal(@Nullable View v, @NonNull Layout textLayout, float left, float top, float right, float bottom, @Nullable Stack<SpoilerEffect> spoilersPool, List<SpoilerEffect> spoilers, int mostleft, int mostright, ArrayList<QuoteSpan.Block> quote) {
         SpoilerEffect spoilerEffect = spoilersPool == null || spoilersPool.isEmpty() ? new SpoilerEffect() : spoilersPool.remove(0);
+        spoilerEffect.insideQuote = false;
+        if (quote != null) {
+            final float cy = (top + bottom) / 2f;
+            for (int j = 0; j < quote.size(); ++j) {
+                QuoteSpan.Block block = quote.get(j);
+                if (cy >= block.top && cy <= block.bottom) {
+                    spoilerEffect.insideQuote = true;
+                    break;
+                }
+            }
+        }
         spoilerEffect.setRippleProgress(-1);
         spoilerEffect.setBounds((int) Math.max(left, mostleft), (int) top, (int) Math.min(right, mostright <= 0 ? Integer.MAX_VALUE : mostright), (int) bottom);
         spoilerEffect.setColor(textLayout.getPaint().getColor());
@@ -657,6 +682,39 @@ public class SpoilerEffect extends Drawable {
         canvas.clipPath(tempPath, Region.Op.DIFFERENCE);
     }
 
+    private static WeakHashMap<Layout, ArrayList<RectF>> lazyLayoutLines;
+    public static void layoutDrawMaybe(Layout layout, Canvas canvas) {
+        if (canvas instanceof SizeNotifierFrameLayout.SimplerCanvas) {
+            final int wasAlpha = layout.getPaint().getAlpha();
+            layout.getPaint().setAlpha((int) (wasAlpha * .4f));
+            if (lazyLayoutLines == null) {
+                lazyLayoutLines = new WeakHashMap<>();
+            }
+            ArrayList<RectF> linesRect = lazyLayoutLines.get(layout);
+            if (linesRect == null) {
+                linesRect = new ArrayList<>();
+                final int lineCount = layout.getLineCount();
+                for (int i = 0; i < lineCount; ++i) {
+                    linesRect.add(new RectF(
+                        layout.getLineLeft(i),
+                        layout.getLineTop(i),
+                        layout.getLineRight(i),
+                        layout.getLineBottom(i)
+                    ));
+                }
+                lazyLayoutLines.put(layout, linesRect);
+            }
+            if (linesRect != null) {
+                for (int i = 0; i < linesRect.size(); ++i) {
+                    canvas.drawRect(linesRect.get(i), layout.getPaint());
+                }
+            }
+            layout.getPaint().setAlpha(wasAlpha);
+        } else {
+            layout.draw(canvas);
+        }
+    }
+
     /**
      * Optimized version of text layout double-render
      *  @param v                        View to use as a parent view
@@ -673,15 +731,15 @@ public class SpoilerEffect extends Drawable {
     @MainThread
     public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas, boolean useParentWidth) {
         if (spoilers.isEmpty()) {
-            textLayout.draw(canvas);
+            layoutDrawMaybe(textLayout, canvas);
             return;
         }
         Layout pl = patchedLayoutRef.get();
 
         if (pl == null || !textLayout.getText().toString().equals(pl.getText().toString()) || textLayout.getWidth() != pl.getWidth() || textLayout.getHeight() != pl.getHeight()) {
             SpannableStringBuilder sb = new SpannableStringBuilder(textLayout.getText());
-            if (textLayout.getText() instanceof Spannable) {
-                Spannable sp = (Spannable) textLayout.getText();
+            if (textLayout.getText() instanceof Spanned) {
+                Spanned sp = (Spanned) textLayout.getText();
                 for (TextStyleSpan ss : sp.getSpans(0, sp.length(), TextStyleSpan.class)) {
                     if (ss.isSpoiler()) {
                         int start = sp.getSpanStart(ss), end = sp.getSpanEnd(ss);
@@ -699,7 +757,7 @@ public class SpoilerEffect extends Drawable {
                             sb.removeSpan(e);
                         }
 
-                        sb.setSpan(new ForegroundColorSpan(Color.TRANSPARENT), sp.getSpanStart(ss), sp.getSpanEnd(ss), sp.getSpanFlags(ss));
+                        sb.setSpan(new ForegroundColorSpan(Color.TRANSPARENT), start, end, sp.getSpanFlags(ss));
                         sb.removeSpan(ss);
                     }
                 }
@@ -725,7 +783,7 @@ public class SpoilerEffect extends Drawable {
             pl.draw(canvas);
             canvas.restore();
         } else {
-            textLayout.draw(canvas);
+            layoutDrawMaybe(textLayout, canvas);
         }
 
         if (!spoilers.isEmpty()) {
@@ -743,7 +801,7 @@ public class SpoilerEffect extends Drawable {
                 }
                 canvas.clipPath(tempPath);
                 canvas.translate(0, -v.getPaddingTop());
-                textLayout.draw(canvas);
+                layoutDrawMaybe(textLayout, canvas);
                 canvas.restore();
             }
 

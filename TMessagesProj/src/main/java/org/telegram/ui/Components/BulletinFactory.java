@@ -9,6 +9,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -176,8 +177,12 @@ public final class BulletinFactory {
     }
 
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text) {
+        return createSimpleBulletinWithIconSize(iconRawId, text, 36);
+    }
+
+    public Bulletin createSimpleBulletinWithIconSize(int iconRawId, CharSequence text, int iconSize) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
-        layout.setAnimation(iconRawId, 36, 36);
+        layout.setAnimation(iconRawId, iconSize, iconSize);
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);

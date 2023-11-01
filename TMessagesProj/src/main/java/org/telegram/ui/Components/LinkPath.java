@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.CornerPathEffect;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
 
@@ -93,10 +94,18 @@ public class LinkPath extends Path {
         baselineShift = value;
     }
 
+    private float insetVert, insetHoriz;
+    public void setInset(float insetVert, float insetHoriz) {
+        this.insetVert = insetVert;
+        this.insetHoriz = insetHoriz;
+    }
+
+    private float minX = Float.MAX_VALUE, maxX, minY = Float.MAX_VALUE, maxY;
+
     @Override
     public void addRect(float left, float top, float right, float bottom, Direction dir) {
         if (currentLayout == null) {
-            super.addRect(left, top, right, bottom, dir);
+            superAddRect(left, top, right, bottom, dir);
             return;
         }
         try {
@@ -143,13 +152,29 @@ public class LinkPath extends Path {
 //            int startOffset = currentLayout.getOffsetForHorizontal(currentLine, left), endOffset = currentLayout.getOffsetForHorizontal(currentLine, right) + 1;
                 boolean startsWithWhitespace = false; // startOffset >= 0 && startOffset < text.length() && text.charAt(startOffset) == ' ';
                 boolean endsWithWhitespace = false; // endOffset >= 0 && endOffset < text.length() && text.charAt(endOffset) == ' ';
-                super.addRect(left - (startsWithWhitespace ? 0 : getRadius() / 2f), y, right + (endsWithWhitespace ? 0 : getRadius() / 2f), y2, dir);
+                superAddRect(left - (startsWithWhitespace ? 0 : getRadius() / 2f), y, right + (endsWithWhitespace ? 0 : getRadius() / 2f), y2, dir);
             } else {
-                super.addRect(left, y, right, y2, dir);
+                superAddRect(left, y, right, y2, dir);
             }
         } catch (Exception e) {
 
         }
+    }
+
+    private void superAddRect(float l, float t, float r, float b, Path.Direction d) {
+        l -= insetHoriz;
+        t -= insetVert;
+        r += insetHoriz;
+        b += insetVert;
+        minX = Math.min(minX, Math.min(l, r));
+        minY = Math.min(minY, Math.min(t, b));
+        maxX = Math.max(maxX, Math.max(l, r));
+        maxY = Math.max(maxY, Math.max(t, b));
+        super.addRect(l, t, r, b, d);
+    }
+
+    public void getBounds(RectF bounds) {
+        bounds.set(minX, minY, maxX, maxY);
     }
 
     @Override

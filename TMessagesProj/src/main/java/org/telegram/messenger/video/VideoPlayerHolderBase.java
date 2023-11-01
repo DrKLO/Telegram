@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
@@ -355,10 +356,14 @@ public class VideoPlayerHolderBase {
             } else {
                 localProgress = currentPosition / (float) playerDuration;
             }
-            if (localProgress < progress) {
-                return progress;
-            }
+//            if (localProgress < progress) {
+//                return progress;
+//            }
             progress = localProgress;
+            if (!seeking) {
+                currentSeek = progress;
+                lastSeek = currentPosition;
+            }
         }
         return progress;
     }
@@ -433,5 +438,64 @@ public class VideoPlayerHolderBase {
             videoPlayer.setPlaybackSpeed(currentVideoSpeed);
         });
 
+    }
+
+    private Runnable onSeekUpdate;
+    public void setOnSeekUpdate(Runnable onSeekUpdate) {
+        this.onSeekUpdate = onSeekUpdate;
+    }
+
+
+    private volatile boolean firstSeek = true;
+    private volatile long lastSeek = -1;
+    private long lastBetterSeek = -1;
+    public float currentSeek = 0;
+    public volatile float currentSeekThread = 0;
+    private volatile long duration;
+
+    private final Runnable betterSeek = () -> {
+        if (videoPlayer != null) {
+//            videoPlayer.seekTo(lastBetterSeek, false);
+        }
+    };
+
+    private final Runnable updateSeek = () -> {
+        if (videoPlayer == null) {
+            return;
+        }
+        long position = (long) (currentSeekThread * duration);
+        if (lastSeek <= -1) {
+            lastSeek = position;
+        }
+        if (Math.abs(position - lastSeek) >= (firstSeek ? 350 : 40)) {
+            firstSeek = false;
+            lastBetterSeek = position;
+            dispatchQueue.cancelRunnable(betterSeek);
+            dispatchQueue.postRunnable(betterSeek, 300);
+            videoPlayer.seekTo(lastSeek = position, true);
+        }
+    };
+
+    private volatile boolean seeking;
+    public void setSeeking(boolean seeking) {
+        if (seeking && !this.seeking) {
+            firstSeek = true;
+        }
+        this.seeking = seeking;
+        if (!seeking) {
+            dispatchQueue.cancelRunnable(betterSeek);
+        }
+    }
+
+    public float seek(float delta, final long duration) {
+        if (videoPlayer == null) {
+            return currentSeek;
+        }
+        this.duration = duration;
+        currentSeek = Utilities.clamp(currentSeek + delta, 1, 0);
+        currentSeekThread = currentSeek;
+        dispatchQueue.cancelRunnable(updateSeek);
+        dispatchQueue.postRunnable(updateSeek);
+        return currentSeek;
     }
 }

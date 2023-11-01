@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; Herinnering</string>
     <string name="OneResult">1 resultaat</string>
     <string name="VideoQualityIsTooLow">Videokwaliteit is te laag om de compressie-instellingen te wijzigen.</string>
-    <string name="TextSelectionHit">Hou het **woord** vast, beweeg de cursor om meer tekst te selecteren om te kopiëren.</string>
     <string name="CardNumberCopied">Kaartnummer naar klembord gekopiëerd</string>
     <string name="CopyCardNumber">Kopiëren</string>
     <string name="DiceInfo2">Stuur een **:dice:**-emoji om een dobbelsteen te gebruiken in een chat.</string>

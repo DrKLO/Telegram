@@ -30,6 +30,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
@@ -45,6 +46,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CanvasButton;
 import org.telegram.ui.Components.CheckBoxBase;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -68,10 +71,16 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     SharedPhotoVideoCell2 crossfadeView;
     float imageAlpha = 1f;
     float imageScale = 1f;
+
     boolean showVideoLayout;
     StaticLayout videoInfoLayot;
-    boolean drawVideoIcon = true;
     String videoText;
+    boolean drawVideoIcon = true;
+
+    boolean drawViews;
+    AnimatedFloat viewsAlpha = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    AnimatedTextView.AnimatedTextDrawable viewsText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
+
     CheckBoxBase checkBoxBase;
     SharedResources sharedResources;
     private boolean attached;
@@ -120,6 +129,12 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             }
         });
 
+        viewsText.setCallback(this);
+        viewsText.setTextSize(dp(12));
+        viewsText.setTextColor(Color.WHITE);
+        viewsText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        viewsText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+
         setWillNotDraw(false);
     }
 
@@ -164,6 +179,9 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             imageReceiver.onDetachedFromWindow();
             blurImageReceiver.onDetachedFromWindow();
             videoText = null;
+            drawViews = false;
+            viewsAlpha.set(0f, true);
+            viewsText.setText("", false);
             videoInfoLayot = null;
             showVideoLayout = false;
             gradientDrawableLoading = false;
@@ -194,6 +212,15 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         videoInfoLayot = null;
         showVideoLayout = false;
         imageReceiver.clearDecorators();
+        if (isStory && messageObject.storyItem.views != null) {
+            drawViews = messageObject.storyItem.views.views_count > 0;
+            viewsText.setText(AndroidUtilities.formatWholeNumber(messageObject.storyItem.views.views_count, 0), false);
+        } else {
+            drawViews = false;
+            viewsAlpha.set(0f, true);
+            viewsText.setText("", false);
+        }
+        viewsAlpha.set(drawViews ? 1f : 0f, true);
         if (!TextUtils.isEmpty(restrictionReason)) {
             showImageStub = true;
         } else if (messageObject.storyItem != null && messageObject.storyItem.media instanceof TLRPC.TL_messageMediaUnsupported) {
@@ -417,8 +444,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
 
         bounds.set(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
-        bounds.set(leftpadding, padding, leftpadding + imageWidth - rightpadding, padding + imageHeight);
         drawDuration(canvas, bounds, 1f);
+        drawViews(canvas, bounds, 1f);
 
         if (checkBoxBase != null && (style == STYLE_CACHE || checkBoxBase.getProgress() != 0)) {
             canvas.save();
@@ -489,6 +516,59 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             videoInfoLayot.draw(canvas);
             sharedResources.textPaint.setAlpha(oldAlpha);
         }
+        canvas.restore();
+    }
+
+    public void updateViews() {
+        if (isStory && currentMessageObject != null && currentMessageObject.storyItem != null && currentMessageObject.storyItem.views != null) {
+            drawViews = currentMessageObject.storyItem.views.views_count > 0;
+            viewsText.setText(AndroidUtilities.formatWholeNumber(currentMessageObject.storyItem.views.views_count, 0), true);
+        } else {
+            drawViews = false;
+            viewsText.setText("", false);
+        }
+    }
+
+    public void drawViews(Canvas canvas, RectF bounds, float alpha) {
+        if (!isStory || imageReceiver != null && !imageReceiver.getVisible() || currentParentColumnsCount >= 5) {
+            return;
+        }
+
+        float a = viewsAlpha.set(drawViews);
+        alpha *= a;
+
+        if (alpha < 1) {
+            alpha = (float) Math.pow(alpha, 8);
+        }
+
+        if (a <= 0) {
+            return;
+        }
+
+        canvas.save();
+        canvas.translate(bounds.left, bounds.top);
+        canvas.clipRect(0, 0, bounds.width(), bounds.height());
+
+        float width = dp(18 + 8) + viewsText.getCurrentWidth();
+
+        canvas.translate(bounds.width() - dp(5) - width, dp(1) + bounds.height() - dp(17) - dp(4));
+        AndroidUtilities.rectTmp.set(0, 0, width, dp(17));
+        int oldAlpha = Theme.chat_timeBackgroundPaint.getAlpha();
+        Theme.chat_timeBackgroundPaint.setAlpha((int) (oldAlpha * alpha));
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(4), dp(4), Theme.chat_timeBackgroundPaint);
+        Theme.chat_timeBackgroundPaint.setAlpha(oldAlpha);
+
+        canvas.save();
+        canvas.translate(dp(3), (dp(17) - sharedResources.viewDrawable.getBounds().height()) / 2f);
+        sharedResources.viewDrawable.setAlpha((int) (255 * imageAlpha * alpha));
+        sharedResources.viewDrawable.draw(canvas);
+        canvas.restore();
+
+        canvas.translate(dp(4 + 18), 0);
+        viewsText.setBounds(0, 0, (int) width, dp(17));
+        viewsText.setAlpha((int) (0xFF * alpha));
+        viewsText.draw(canvas);
+
         canvas.restore();
     }
 
@@ -704,6 +784,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private Paint backgroundPaint = new Paint();
         Drawable playDrawable;
+        Drawable viewDrawable;
         Paint highlightPaint = new Paint();
         SparseArray<String> imageFilters = new SparseArray<>();
 
@@ -713,6 +794,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             playDrawable = ContextCompat.getDrawable(context, R.drawable.play_mini_video);
             playDrawable.setBounds(0, 0, playDrawable.getIntrinsicWidth(), playDrawable.getIntrinsicHeight());
+            viewDrawable = ContextCompat.getDrawable(context, R.drawable.filled_views);
+            viewDrawable.setBounds(0, 0, (int) (viewDrawable.getIntrinsicWidth() * .7f), (int) (viewDrawable.getIntrinsicHeight() * .7f));
             backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder, resourcesProvider));
         }
 
@@ -734,5 +817,10 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             }
         }
         return super.onTouchEvent(event);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return viewsText == who || super.verifyDrawable(who);
     }
 }

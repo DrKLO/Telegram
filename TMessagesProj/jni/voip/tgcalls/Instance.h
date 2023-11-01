@@ -8,6 +8,7 @@
 #include <map>
 
 #include "Stats.h"
+#include "DirectConnectionChannel.h"
 
 namespace rtc {
 template <typename VideoFrameT>
@@ -186,7 +187,7 @@ public:
 	virtual void setEchoCancellationStrength(int strength) = 0;
 
 	virtual bool supportsVideo() = 0;
-	virtual void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
+	virtual void setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
 
 	virtual void setAudioInputDevice(std::string id) = 0;
 	virtual void setAudioOutputDevice(std::string id) = 0;
@@ -237,6 +238,7 @@ struct Descriptor {
 	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
     std::string initialInputDeviceId;
     std::string initialOutputDeviceId;
+    std::shared_ptr<DirectConnectionChannel> directConnectionChannel;
 
 	std::shared_ptr<PlatformContext> platformContext;
 };

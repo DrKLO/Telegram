@@ -21,6 +21,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -649,7 +650,7 @@ public class CacheChart extends View {
         AndroidUtilities.roundPercents(tempFloat, tempPercents);
         if (type == TYPE_CACHE) { // putting "other" section to being the first one
             Arrays.sort(segments, (a, b) -> Long.compare(a.size, b.size));
-            for (int i = 0; i < segments.length - 1; ++i) {
+            for (int i = 0; i <= segments.length; ++i) {
                 if (segments[i].index == segments.length - 1) {
                     int from = i, to = 0;
                     SegmentSize temp = segments[to];

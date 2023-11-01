@@ -8,15 +8,12 @@
 
 package org.telegram.messenger;
 
-import android.os.Build;
-
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.utils.ImmutableByteArrayOutputStream;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Storage.CacheModel;
 
@@ -783,7 +780,7 @@ public class FileLoadOperation {
     public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean streamPriority) {
         startTime = System.currentTimeMillis();
         updateParams();
-        isStory = parentObject instanceof TLRPC.TL_storyItem;
+        isStory = parentObject instanceof TL_stories.TL_storyItem;
         if (currentDownloadChunkSize == 0) {
             if (forceSmallChunk) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -1996,7 +1993,11 @@ public class FileLoadOperation {
             } else {
                 if (BuildVars.LOGS_ENABLED) {
                     if (location != null) {
-                        FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
+                        if (location instanceof TLRPC.TL_inputPeerPhotoFileLocation) {
+                            FileLog.e(error.text + " " + location + " peer_did = " + DialogObject.getPeerDialogId(((TLRPC.TL_inputPeerPhotoFileLocation) location).peer) + " peer_access_hash=" + ((TLRPC.TL_inputPeerPhotoFileLocation) location).peer.access_hash + " photo_id=" + ((TLRPC.TL_inputPeerPhotoFileLocation) location).photo_id + " big=" + ((TLRPC.TL_inputPeerPhotoFileLocation) location).big);
+                        } else {
+                            FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
+                        }
                     } else if (webLocation != null) {
                         FileLog.e(error.text + " " + webLocation + " id = " + fileName);
                     }

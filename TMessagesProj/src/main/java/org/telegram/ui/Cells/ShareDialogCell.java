@@ -118,7 +118,7 @@ public class ShareDialogCell extends FrameLayout {
         });
         addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, currentType == TYPE_CREATE ? -40 : 42, 0, 0));
 
-        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector), AndroidUtilities.dp(2), AndroidUtilities.dp(2)));
+        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), AndroidUtilities.dp(2), AndroidUtilities.dp(2)));
     }
 
     @Override
@@ -188,7 +188,7 @@ public class ShareDialogCell extends FrameLayout {
             }
 
             if (visible) {
-                topicTextView.setText(ForumUtilities.getTopicSpannedName(topic, topicTextView.getTextPaint()));
+                topicTextView.setText(ForumUtilities.getTopicSpannedName(topic, topicTextView.getTextPaint(), false));
                 topicTextView.requestLayout();
             }
             if (animate) {

@@ -47,7 +47,7 @@ public:
 		std::function<void(Message &&)> sendSignalingMessage,
 		std::function<void(Message &&)> sendTransportMessage,
         std::function<void(int)> signalBarsUpdated,
-        std::function<void(float, float)> audioLevelsUpdated,
+        std::function<void(float, float)> audioLevelUpdated,
 		std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
         bool enableHighBitrateVideo,
         std::vector<std::string> preferredCodecs,
@@ -130,7 +130,7 @@ private:
 	std::function<void(Message &&)> _sendSignalingMessage;
 	std::function<void(Message &&)> _sendTransportMessage;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float, float)> _audioLevelsUpdated;
+    std::function<void(float, float)> _audioLevelUpdated;
 	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
 
 	SSRC _ssrcAudio;

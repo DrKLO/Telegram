@@ -24,8 +24,11 @@ public class PremiumFeatureCell extends FrameLayout {
     public ImageView imageView;
     boolean drawDivider;
     public PremiumPreviewFragment.PremiumFeatureData data;
-
     public PremiumFeatureCell(Context context) {
+        this(context, null);
+    }
+
+    public PremiumFeatureCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         LinearLayout linearLayout = new LinearLayout(context);
@@ -36,12 +39,12 @@ public class PremiumFeatureCell extends FrameLayout {
         title = new SimpleTextView(context);
         title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         title.setTextSize(15);
-        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         linearLayout.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         description = new TextView(context);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
         description.setLineSpacing(AndroidUtilities.dp(2), 1f);
         linearLayout.addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 1, 0, 0));
 
@@ -54,7 +57,7 @@ public class PremiumFeatureCell extends FrameLayout {
         ImageView nextIcon = new ImageView(context);
         nextIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         nextIcon.setImageResource(R.drawable.msg_arrowright);
-        nextIcon.setColorFilter(Theme.getColor(Theme.key_switchTrack));
+        nextIcon.setColorFilter(Theme.getColor(Theme.key_switchTrack, resourcesProvider));
         addView(nextIcon, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 18, 0));
     }
 

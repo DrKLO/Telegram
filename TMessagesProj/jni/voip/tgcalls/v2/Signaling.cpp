@@ -11,9 +11,7 @@ namespace tgcalls {
 namespace signaling {
 
 static std::string uint32ToString(uint32_t value) {
-    std::ostringstream stringStream;
-    stringStream << value;
-    return stringStream.str();
+    return std::to_string(value);
 }
 
 static uint32_t stringToUInt32(std::string const &string) {
@@ -221,7 +219,7 @@ absl::optional<PayloadType> PayloadType_parse(json11::Json::object const &object
 
 json11::Json::object MediaContent_serialize(MediaContent const &mediaContent) {
     json11::Json::object object;
-    
+
     std::string mappedType;
     switch (mediaContent.type) {
         case MediaContent::Type::Audio: {
@@ -268,7 +266,7 @@ json11::Json::object MediaContent_serialize(MediaContent const &mediaContent) {
 
 absl::optional<MediaContent> MediaContent_parse(json11::Json::object const &object) {
     MediaContent result;
-    
+
     const auto type = object.find("type");
     if (type == object.end() || !type->second.is_string()) {
         RTC_LOG(LS_ERROR) << "Signaling: type must be a string";
@@ -362,7 +360,7 @@ absl::optional<MediaContent> MediaContent_parse(json11::Json::object const &obje
 
 std::vector<uint8_t> InitialSetupMessage_serialize(const InitialSetupMessage * const message) {
     json11::Json::object object;
-    
+
     object.insert(std::make_pair("@type", json11::Json("InitialSetup")));
     object.insert(std::make_pair("ufrag", json11::Json(message->ufrag)));
     object.insert(std::make_pair("pwd", json11::Json(message->pwd)));
@@ -425,7 +423,7 @@ absl::optional<InitialSetupMessage> InitialSetupMessage_parse(json11::Json::obje
             RTC_LOG(LS_ERROR) << "Signaling: fingerprint must be a string";
             return absl::nullopt;
         }
-        
+
         DtlsFingerprint parsedFingerprint;
         parsedFingerprint.hash = hash->second.string_value();
         parsedFingerprint.setup = setup->second.string_value();
@@ -445,11 +443,11 @@ absl::optional<InitialSetupMessage> InitialSetupMessage_parse(json11::Json::obje
 
 std::vector<uint8_t> NegotiateChannelsMessage_serialize(const NegotiateChannelsMessage * const message) {
     json11::Json::object object;
-    
+
     object.insert(std::make_pair("@type", json11::Json("NegotiateChannels")));
-    
+
     object.insert(std::make_pair("exchangeId", json11::Json(uint32ToString(message->exchangeId))));
-    
+
     json11::Json::array contents;
     for (const auto &content : message->contents) {
         contents.push_back(json11::Json(MediaContent_serialize(content)));
@@ -463,9 +461,9 @@ std::vector<uint8_t> NegotiateChannelsMessage_serialize(const NegotiateChannelsM
 
 absl::optional<NegotiateChannelsMessage> NegotiateChannelsMessage_parse(json11::Json::object const &object) {
     NegotiateChannelsMessage message;
-    
+
     const auto exchangeId = object.find("exchangeId");
-    
+
     if (exchangeId == object.end()) {
         RTC_LOG(LS_ERROR) << "Signaling: exchangeId must be present";
         return absl::nullopt;

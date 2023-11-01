@@ -35,7 +35,6 @@ import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -53,7 +52,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -82,6 +80,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
@@ -1127,7 +1126,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         animator.start();
     }
 
-    private LocationView createLocationSticker(TLRPC.MessageMedia location, TLRPC.MediaArea mediaArea, boolean select) {
+    private LocationView createLocationSticker(TLRPC.MessageMedia location, TL_stories.MediaArea mediaArea, boolean select) {
         onTextAdd();
 
         forceChanges = true;
@@ -1164,6 +1163,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         Size paintingSize = getPaintingSize();
         Point position = startPositionRelativeToEntity(null);
         TextPaintView view = new TextPaintView(getContext(), position, (int) (paintingSize.width / 9), "", colorSwatch, selectedTextType);
+        view.setMinMaxFontSize((int) (0.5f * (paintingSize.width / 9f)), (int) (2f * (paintingSize.width / 9f)), () -> {
+            if (weightChooserView != null) {
+                weightChooserView.invalidate();
+            }
+        });
         if (position.x == entitiesView.getMeasuredWidth() / 2f) {
             view.setStickyX(EntityView.STICKY_CENTER);
         }
@@ -1345,6 +1349,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             if (currentEntityView instanceof TextPaintView) {
                 TextPaintView textPaintView = (TextPaintView) currentEntityView;
                 textPaintView.getSwatch().brushWeight = colorSwatch.brushWeight;
+                textPaintView.disableAutoresize(false);
                 setCurrentSwatch(textPaintView.getSwatch(), true);
 
                 float base = (int) (paintingSize.width / 9);
@@ -1356,6 +1361,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
                     @Override
                     public void set(float val) {
+                        textPaintView.disableAutoresize(true);
                         textPaintView.setBaseFontSize((int) (base * val));
                     }
                 });
@@ -1819,7 +1825,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         return true;
     }
 
-    private void showLocationAlert(LocationView editingLocationView, Utilities.Callback2<TLRPC.MessageMedia, TLRPC.MediaArea> onLocationSelected) {
+    private void showLocationAlert(LocationView editingLocationView, Utilities.Callback2<TLRPC.MessageMedia, TL_stories.MediaArea> onLocationSelected) {
         ChatAttachAlert locationAlert = new ChatAttachAlert(getContext(), new ChatActivity(null) {
             @Override
             public long getDialogId() {
@@ -1853,15 +1859,15 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             @Override
             public void didSelectLocation(TLRPC.MessageMedia location, int locationType, boolean notify, int scheduleDate) {
-                TLRPC.MediaArea mediaArea;
+                TL_stories.MediaArea mediaArea;
                 if (location instanceof TLRPC.TL_messageMediaGeo) {
-                    TLRPC.TL_mediaAreaGeoPoint areaGeo = new TLRPC.TL_mediaAreaGeoPoint();
+                    TL_stories.TL_mediaAreaGeoPoint areaGeo = new TL_stories.TL_mediaAreaGeoPoint();
                     areaGeo.geo = location.geo;
                     mediaArea = areaGeo;
                 } else if (location instanceof TLRPC.TL_messageMediaVenue) {
                     TLRPC.TL_messageMediaVenue loc = (TLRPC.TL_messageMediaVenue) location;
                     if (loc.query_id == -1 || loc.query_id == -2) {
-                        TLRPC.TL_mediaAreaGeoPoint areaGeo = new TLRPC.TL_mediaAreaGeoPoint();
+                        TL_stories.TL_mediaAreaGeoPoint areaGeo = new TL_stories.TL_mediaAreaGeoPoint();
                         areaGeo.geo = location.geo;
                         Utilities.globalQueue.postRunnable(() -> {
                             try {
@@ -1876,7 +1882,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         });
                         mediaArea = areaGeo;
                     } else {
-                        TLRPC.TL_inputMediaAreaVenue areaVenue = new TLRPC.TL_inputMediaAreaVenue();
+                        TL_stories.TL_inputMediaAreaVenue areaVenue = new TL_stories.TL_inputMediaAreaVenue();
                         areaVenue.query_id = ((TLRPC.TL_messageMediaVenue) location).query_id;
                         areaVenue.result_id = ((TLRPC.TL_messageMediaVenue) location).result_id;
                         mediaArea = areaVenue;
@@ -2425,7 +2431,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         mediaEntity.density = locationView.marker.density;
                         mediaEntity.mediaGeo = locationView.location;
                         mediaEntity.mediaArea = locationView.mediaArea;
-                        mediaEntity.mediaArea.coordinates = new TLRPC.TL_mediaAreaCoordinates();
+                        mediaEntity.mediaArea.coordinates = new TL_stories.TL_mediaAreaCoordinates();
                         TLRPC.Document emojiDocument = locationView.marker.getCountryCodeEmojiDocument();
                         if (emojiDocument != null) {
                             VideoEditedInfo.EmojiEntity tlentity = new VideoEditedInfo.EmojiEntity();
@@ -2442,11 +2448,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         skipDrawToBitmap = true;
                         ReactionWidgetEntityView reactionView = (ReactionWidgetEntityView) entity;
                         mediaEntity.type = VideoEditedInfo.MediaEntity.TYPE_REACTION;
-                        mediaEntity.mediaArea = new TLRPC.TL_mediaAreaSuggestedReaction();
+                        mediaEntity.mediaArea = new TL_stories.TL_mediaAreaSuggestedReaction();
                         mediaEntity.mediaArea.reaction = ReactionsUtils.toTLReaction(reactionView.getCurrentReaction());
                         mediaEntity.mediaArea.dark = reactionView.isDark();
                         mediaEntity.mediaArea.flipped = reactionView.isMirrored();
-                        mediaEntity.mediaArea.coordinates = new TLRPC.TL_mediaAreaCoordinates();
+                        mediaEntity.mediaArea.coordinates = new TL_stories.TL_mediaAreaCoordinates();
                     } else {
                         continue;
                     }
@@ -4346,7 +4352,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, true, resourcesProvider);
+        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, true, resourcesProvider, false);
         emojiView.fixBottomTabContainerTranslation = false;
         emojiView.allowEmojisForNonPremium(true);
         emojiView.setVisibility(GONE);

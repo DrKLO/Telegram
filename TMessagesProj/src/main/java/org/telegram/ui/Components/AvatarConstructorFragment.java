@@ -882,6 +882,7 @@ public class AvatarConstructorFragment extends BaseFragment {
                 backgroundGradient.color4 = defaultColors[i][3];
                 gradients.add(backgroundGradient);
             }
+            useLayoutPositionOnClick = true;
             setOnItemClickListener((view, position) -> {
                 if (view instanceof GradientSelectorView && !((GradientSelectorView) view).isCustom) {
                     selectedItemId = ((GradientSelectorView) view).backgroundGradient.stableId;

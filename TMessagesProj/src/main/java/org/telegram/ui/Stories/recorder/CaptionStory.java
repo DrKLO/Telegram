@@ -30,8 +30,8 @@ public class CaptionStory extends CaptionContainerView {
     private ItemOptions periodPopup;
     private boolean periodVisible = true;
 
-    public static final int[] periods = new int[] { 6 * 3600, 12 * 3600, 86400, 2 * 86400/*, Integer.MAX_VALUE*/ };
-    public static final int[] periodDrawables = new int[] { R.drawable.msg_story_6h, R.drawable.msg_story_12h, R.drawable.msg_story_24h, R.drawable.msg_story_48h/*, R.drawable.msg_story_infinite*/ };
+    public static final int[] periods = new int[] { 6 * 3600, 12 * 3600, 86400, 2 * 86400 };
+    public static final int[] periodDrawables = new int[] { R.drawable.msg_story_6h, R.drawable.msg_story_12h, R.drawable.msg_story_24h, R.drawable.msg_story_48h };
     private int periodIndex = 0;
 
     public CaptionStory(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {

@@ -366,8 +366,13 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             }
         } else {
-            titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
-            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
+            if(user == null) {
+                titleView[0].setText(LocaleController.getString(R.string.TelegramPremium));
+                subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumSubscribedSubtitle)));
+            } else {
+                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
+            }
         }
     }
 
@@ -434,7 +439,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                         titleViewContainer = new FrameLayout(context);
                         titleViewContainer.setClipChildren(false);
 
-                        final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
+                        final ColorFilter colorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon), PorterDuff.Mode.SRC_IN);
                         titleView = new LinkSpanDrawable.LinksTextView[2];
                         for (int a = 0; a < 2; ++a) {
                             titleView[a] = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
@@ -528,7 +533,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                     break;
                 default:
                 case 1:
-                    view = new PremiumFeatureCell(context) {
+                    view = new PremiumFeatureCell(context, resourcesProvider) {
                         @Override
                         protected void dispatchDraw(Canvas canvas) {
                             AndroidUtilities.rectTmp.set(imageView.getLeft(), imageView.getTop(), imageView.getRight(), imageView.getBottom());

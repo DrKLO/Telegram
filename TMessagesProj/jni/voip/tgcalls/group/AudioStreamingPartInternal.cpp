@@ -199,7 +199,7 @@ _avIoContext(std::move(fileData)) {
 
 AudioStreamingPartInternal::~AudioStreamingPartInternal() {
     if (_frame) {
-        av_frame_unref(_frame);
+        av_frame_free(&_frame);
     }
     if (_inputFormatContext) {
         avformat_close_input(&_inputFormatContext);

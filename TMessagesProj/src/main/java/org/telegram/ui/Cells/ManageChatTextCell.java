@@ -71,7 +71,11 @@ public class ManageChatTextCell extends FrameLayout {
         textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + 24), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
 
-        setMeasuredDimension(width, AndroidUtilities.dp(56) + (divider ? 1 : 0));
+        setMeasuredDimension(width, getFullHeight() + (divider ? 1 : 0));
+    }
+
+    protected int getFullHeight() {
+        return AndroidUtilities.dp(56);
     }
 
     @Override

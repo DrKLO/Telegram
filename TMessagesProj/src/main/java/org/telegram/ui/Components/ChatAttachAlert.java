@@ -114,6 +114,7 @@ import org.telegram.ui.PhotoPickerSearchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
+import org.telegram.ui.WebAppDisclaimerAlert;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -400,8 +401,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
 
                     @Override
+                    public void onSetSettingsButtonVisible(boolean visible) {
+                        if (webViewLayout.settingsItem != null) {
+                            webViewLayout.settingsItem.setVisibility(visible ? View.VISIBLE : View.GONE);
+                        }
+                    }
+
+                    @Override
                     public boolean isClipboardAvailable() {
-                        return true;
+                        return MediaDataController.getInstance(currentAccount).botInAttachMenu(id);
                     }
                 });
                 MessageObject replyingObject = ((ChatActivity) baseFragment).getChatActivityEnterView().getReplyingMessageObject();
@@ -2250,7 +2258,21 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             } else if (view instanceof AttachBotButton) {
                 AttachBotButton button = (AttachBotButton) view;
                 if (button.attachMenuBot != null) {
-                    showBotLayout(button.attachMenuBot.bot_id, true);
+                    if (button.attachMenuBot.inactive) {
+                        WebAppDisclaimerAlert.show(getContext(), (allowSendMessage) -> {
+                            TLRPC.TL_messages_toggleBotInAttachMenu botRequest = new TLRPC.TL_messages_toggleBotInAttachMenu();
+                            botRequest.bot = MessagesController.getInstance(currentAccount).getInputUser(button.attachMenuBot.bot_id);
+                            botRequest.enabled = true;
+                            botRequest.write_allowed = true;
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(botRequest, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                button.attachMenuBot.inactive = button.attachMenuBot.side_menu_disclaimer_needed = false;
+                                showBotLayout(button.attachMenuBot.bot_id, true);
+                                MediaDataController.getInstance(currentAccount).updateAttachMenuBotsInCache();
+                            }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
+                        }, null);
+                    } else {
+                        showBotLayout(button.attachMenuBot.bot_id, true);
+                    }
                 } else {
                     delegate.didSelectBot(button.currentUser);
                     dismiss();

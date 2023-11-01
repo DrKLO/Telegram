@@ -8,13 +8,10 @@ import android.graphics.Path;
 import android.graphics.Region;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -25,7 +22,6 @@ import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SharedMediaLayout;
 
 public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
@@ -154,7 +150,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                 ChatActionCell cell = (ChatActionCell) child;
                 if (cell.getMessageObject().getId() == messageId) {
                     holder.view = child;
-                    TLRPC.StoryItem storyItem = cell.getMessageObject().messageOwner.media.storyItem;
+                    TL_stories.StoryItem storyItem = cell.getMessageObject().messageOwner.media.storyItem;
                     if (storyItem.noforwards) {
                         holder.avatarImage = cell.getPhotoImage();
                     } else {
@@ -181,6 +177,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.storyImage = cell.imageReceiver;
                     holder.drawAbove = (canvas, bounds, alpha, opening) -> {
                         cell.drawDuration(canvas, bounds, alpha);
+                        cell.drawViews(canvas, bounds, alpha);
                         if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
                             canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
                             canvas.translate(loc[0], loc[1]);

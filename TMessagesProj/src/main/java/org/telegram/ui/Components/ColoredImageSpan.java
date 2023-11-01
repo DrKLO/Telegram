@@ -34,6 +34,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     public static final int ALIGN_BASELINE = 1;
     public static final int ALIGN_CENTER = 2;
     private final int verticalAlignment;
+    public float spaceScaleX = 1f;
     private float scaleX = 1f, scaleY = 1f;
     private Runnable checkColorDelegate;
 
@@ -83,7 +84,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
         if (sizeWidth != 0)
             return (int) (Math.abs(scaleX) * sizeWidth);
-        return (int) (Math.abs(scaleX) * (size != 0 ? size : drawable.getIntrinsicWidth()));
+        return (int) (Math.abs(scaleX) * Math.abs(spaceScaleX) * (size != 0 ? size : drawable.getIntrinsicWidth()));
     }
 
     @Override

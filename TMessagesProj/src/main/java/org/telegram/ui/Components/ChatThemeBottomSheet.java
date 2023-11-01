@@ -263,12 +263,6 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         chooseBackgroundTextView.setGravity(Gravity.CENTER);
         chooseBackgroundTextView.setLines(1);
         chooseBackgroundTextView.setSingleLine(true);
-//        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-//        spannableStringBuilder
-//                .append("d ")
-//                .append(LocaleController.getString("ChooseBackgroundFromGallery", R.string.ChooseBackgroundFromGallery));
-//        spannableStringBuilder.setSpan(new ColoredImageSpan(R.drawable.msg_button_wallpaper), 0, 1, 0);
-//        chooseBackgroundTextView.setText(spannableStringBuilder);
         if (currentWallpaper == null) {
             chooseBackgroundTextView.setText(LocaleController.getString("ChooseBackgroundFromGallery", R.string.ChooseBackgroundFromGallery));
         } else {

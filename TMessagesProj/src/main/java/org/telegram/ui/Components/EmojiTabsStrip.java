@@ -94,6 +94,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
     public boolean animateAppear = true;
 
+    private int accentColor;
     private Runnable onSettingsOpenRunnable;
     private boolean wasDrawn;
     private int animatedEmojiCacheType = AnimatedEmojiDrawable.CACHE_TYPE_TAB_STRIP;
@@ -101,11 +102,16 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
     public boolean updateButtonDrawables = true;
 
     public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeRecent, boolean includeStandard, boolean includeAnimated, int type, Runnable onSettingsOpen) {
+        this(context, resourcesProvider, includeRecent, includeStandard, includeAnimated, type, onSettingsOpen, Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider));
+    }
+
+    public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeRecent, boolean includeStandard, boolean includeAnimated, int type, Runnable onSettingsOpen, int accentColor) {
         super(context);
         this.includeAnimated = includeAnimated;
         this.resourcesProvider = resourcesProvider;
         this.onSettingsOpenRunnable = onSettingsOpen;
         this.currentType = type;
+        this.accentColor = accentColor;
 
         contentView = new LinearLayout(context) {
 
@@ -492,7 +498,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                     currentPackButton.setAnimatedEmojiDocument(thumbDocument);
                 }
                 currentPackButton.updateSelect(selected == i, false);
-                if (currentType == SelectAnimatedEmojiDialog.TYPE_AVATAR_CONSTRUCTOR) {
+                if (currentType == SelectAnimatedEmojiDialog.TYPE_AVATAR_CONSTRUCTOR || currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON) {
                     currentPackButton.setLock(null);
                 } else if (!isPremium && !free) {
                     currentPackButton.setLock(true);
@@ -648,6 +654,9 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
     }
 
     private int selectorColor() {
+        if (currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON) {
+            return Theme.multAlpha(accentColor, .09f);
+        }
         return Theme.multAlpha(Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider), .18f);
     }
 
@@ -1109,15 +1118,18 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         public void updateColor() {
             Theme.setSelectorDrawableColor(getBackground(), selectorColor(), false);
             setColor(
-                    ColorUtils.blendARGB(
-                            Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider),
-                            Theme.getColor(Theme.key_chat_emojiPanelIconSelected, resourcesProvider),
-                            selectT
-                    )
+                ColorUtils.blendARGB(
+                    Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider),
+                    Theme.getColor(Theme.key_chat_emojiPanelIconSelected, resourcesProvider),
+                    selectT
+                )
             );
         }
 
         private void setColor(int color) {
+            if (currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON) {
+                color = accentColor;
+            }
             PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
             if (imageView != null && !isAnimatedEmoji) {
                 imageView.setColorFilter(colorFilter);

@@ -48,6 +48,9 @@ public class ExpiredStoryView {
         String from = LocaleController.getString("From", R.string.From);
         int fromWidth = (int) Math.ceil(Theme.chat_forwardNamePaint.measureText(from + " "));
 
+        if (fromName == null) {
+            fromName = "";
+        }
         fromName = (String) TextUtils.ellipsize(fromName.replace('\n', ' '), Theme.chat_replyNamePaint, forwardedNameWidth - fromWidth, TextUtils.TruncateAt.END);
         String fromString = LocaleController.getString("FromFormatted", R.string.FromFormatted);
         int idx = fromString.indexOf("%1$s");

@@ -20,15 +20,21 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.text.MeasuredText;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
@@ -168,7 +174,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 }
                 backgroundDrawable = newDrawable;
                 if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
-                    ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+                    ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(this);
                 }
                 backgroundMotion = newMotion;
                 themeAnimationValue = 0f;
@@ -197,7 +203,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     parallaxScale = 1.0f;
                     translationX = 0;
                     translationY = 0;
-
                 }
                 if (drawable instanceof MotionBackgroundDrawable) {
                     MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) drawable;
@@ -300,6 +305,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                             (int) (getMeasuredWidth() * parallaxScale + x),
                             (int) (backgroundTranslationY + getRootView().getMeasuredHeight() * parallaxScale + y)
                     );
+
                     drawable.draw(canvas);
                     checkSnowflake(canvas);
                     if (bottomClip != 0) {
@@ -308,7 +314,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 }
                 if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
                     if (attached && oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
-                        ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
+                        ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
                     }
                     oldBackgroundDrawable = null;
                     oldBackgroundMotion = false;
@@ -335,11 +341,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             motionBackgroundDrawable.setParentView(backgroundView);
         }
         if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow(backgroundView);
         }
         backgroundDrawable = bitmap;
         if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
         }
         checkMotion();
         backgroundView.invalidate();
@@ -597,11 +603,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (bitmap == null) {
             bitmap = new BlurBitmap();
             bitmap.topBitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
-            bitmap.topCanvas = new Canvas(bitmap.topBitmap);
+            bitmap.topCanvas = new SimplerCanvas(bitmap.topBitmap);
 
             if (needBlurBottom) {
                 bitmap.bottomBitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
-                bitmap.bottomCanvas = new Canvas(bitmap.bottomBitmap);
+                bitmap.bottomCanvas = new SimplerCanvas(bitmap.bottomBitmap);
             }
         } else {
             bitmap.topBitmap.eraseColor(Color.TRANSPARENT);
@@ -781,10 +787,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             invalidateBlur = true;
         }
         if (backgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
         }
         if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow();
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow(backgroundView);
         }
     }
 
@@ -812,10 +818,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         blurIsRunning = false;
 
         if (backgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow(backgroundView);
         }
         if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
-            ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
         }
     }
 
@@ -931,6 +937,82 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             if (bottomBitmap != null) {
                 bottomBitmap.recycle();
             }
+        }
+    }
+
+    public static class SimplerCanvas extends Canvas {
+        public SimplerCanvas(Bitmap bitmap) {
+            super(bitmap);
+        }
+
+        // all calls to render text for blur should be replaced with drawRect using SpoilerEffect.layoutDrawMaybe
+
+        @Override
+        public void drawText(@NonNull char[] text, int index, int count, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, index, count, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull String text, int start, int end, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, start, end, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull String text, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull CharSequence text, int start, int end, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, start, end, x, y, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull CharSequence text, int start, int end, int contextStart, int contextEnd, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, start, end, contextStart, contextEnd, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull MeasuredText text, int start, int end, int contextStart, int contextEnd, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, start, end, contextStart, contextEnd, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull char[] text, int index, int count, int contextIndex, int contextCount, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, index, count, contextIndex, contextCount, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextOnPath(@NonNull char[] text, int index, int count, @NonNull Path path, float hOffset, float vOffset, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextOnPath(text, index, count, path, hOffset, vOffset, paint);
+        }
+
+        @Override
+        public void drawTextOnPath(@NonNull String text, @NonNull Path path, float hOffset, float vOffset, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextOnPath(text, path, hOffset, vOffset, paint);
+        }
+
+        @Override
+        public boolean clipPath(@NonNull Path path) {
+            // NOP
+            return false;
+//            return super.clipPath(path);
+        }
+
+        @Override
+        public boolean clipPath(@NonNull Path path, @NonNull Region.Op op) {
+            // NOP
+            return false;
+//            return super.clipPath(path, op);
         }
     }
 

@@ -205,16 +205,16 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             backupImageView.setImage(ImageLocation.getForDocument(document), "50_50", thumb, null);
             if (item.chatTheme.wallpaper != null) {
                 if (attached && chatBackgroundDrawable != null) {
-                    chatBackgroundDrawable.onDetachedFromWindow();
+                    chatBackgroundDrawable.onDetachedFromWindow(ThemeSmallPreviewView.this);
                 }
                 chatBackgroundDrawable = new ChatBackgroundDrawable(item.chatTheme.wallpaper, false, true);
                 chatBackgroundDrawable.setParent(this);
                 if (attached) {
-                    chatBackgroundDrawable.onAttachedToWindow();
+                    chatBackgroundDrawable.onAttachedToWindow(ThemeSmallPreviewView.this);
                 }
             } else {
                 if (attached && chatBackgroundDrawable != null) {
-                    chatBackgroundDrawable.onDetachedFromWindow();
+                    chatBackgroundDrawable.onDetachedFromWindow(ThemeSmallPreviewView.this);
                 }
                 chatBackgroundDrawable = null;
             }
@@ -680,7 +680,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         attached = true;
         if (chatBackgroundDrawable != null) {
-            chatBackgroundDrawable.onAttachedToWindow();
+            chatBackgroundDrawable.onAttachedToWindow(ThemeSmallPreviewView.this);
         }
     }
 
@@ -690,7 +690,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         attached = false;
         if (chatBackgroundDrawable != null) {
-            chatBackgroundDrawable.onDetachedFromWindow();
+            chatBackgroundDrawable.onDetachedFromWindow(ThemeSmallPreviewView.this);
         }
     }
 

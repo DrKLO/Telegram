@@ -604,6 +604,14 @@ public class Bulletin {
             return 0;
         }
 
+        default int getLeftPadding() {
+            return 0;
+        }
+
+        default int getRightPadding() {
+            return 0;
+        }
+
         default int getTopOffset(int tag) {
             return 0;
         }
@@ -1011,7 +1019,7 @@ public class Bulletin {
             if (bulletin == null) {
                 return;
             }
-            background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
+            background.setBounds(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
             if (isTransitionRunning() && delegate != null) {
                 final float top = delegate.getTopOffset(bulletin.tag) - getY();
                 final float bottom = ((View) getParent()).getMeasuredHeight() - getBottomOffset() - getY();

@@ -281,6 +281,10 @@ public interface INavigationLayout {
 
     boolean isSheet();
 
+    void updateTitleOverlay();
+
+    void setWindow(Window window);
+
     interface INavigationLayoutDelegate {
         default boolean needPresentFragment(INavigationLayout layout, NavigationParams params) {
             return needPresentFragment(params.fragment, params.removeLast, params.noAnimation, layout);

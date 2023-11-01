@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128467; Lembrete</string>
     <string name="OneResult">1 resultado</string>
     <string name="VideoQualityIsTooLow">A qualidade do vídeo é muito baixa para mudar a compressão.</string>
-    <string name="TextSelectionHit">Segure na **palavra** e depois mova o cursor para selecionar mais texto para copiar.</string>
     <string name="CardNumberCopied">Número do cartão copiado.</string>
     <string name="CopyCardNumber">Copiar</string>
     <string name="DiceInfo2">Envie o emoji do **:dado:** em qualquer chat para rolar um dado.</string>

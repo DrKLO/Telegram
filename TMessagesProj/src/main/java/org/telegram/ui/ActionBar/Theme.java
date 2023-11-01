@@ -38,6 +38,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -795,126 +796,7 @@ public class Theme {
                 invalidatePath = true;
             }
             if (invalidatePath || overrideRoundRadius != 0) {
-                path.rewind();
-                int heightHalf = (bounds.height() - padding) >> 1;
-                if (rad > heightHalf) {
-                    rad = heightHalf;
-                }
-                if (isOut) {
-                    if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                        int radToUse = botButtonsBottom ? nearRad : rad;
-                        if (currentType == TYPE_MEDIA) {
-                            path.moveTo(bounds.right - dp(8) - radToUse, bounds.bottom - padding);
-                        } else {
-                            path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
-                        }
-                        path.lineTo(bounds.left + padding + radToUse, bounds.bottom - padding);
-                        rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
-                        path.arcTo(rect, 90, 90, false);
-                    } else {
-                        path.moveTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
-                        path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
-                    }
-                    if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullTop) {
-                        path.lineTo(bounds.left + padding, bounds.top + padding + rad);
-                        rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
-                        path.arcTo(rect, 180, 90, false);
-
-                        int radToUse = isTopNear ? nearRad : rad;
-                        if (currentType == TYPE_MEDIA) {
-                            path.lineTo(bounds.right - padding - radToUse, bounds.top + padding);
-                            rect.set(bounds.right - padding - radToUse * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + radToUse * 2);
-                        } else {
-                            path.lineTo(bounds.right - dp(8) - radToUse, bounds.top + padding);
-                            rect.set(bounds.right - dp(8) - radToUse * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + radToUse * 2);
-                        }
-                        path.arcTo(rect, 270, 90, false);
-                    } else {
-                        path.lineTo(bounds.left + padding, top - topY - dp(2));
-                        if (currentType == TYPE_MEDIA) {
-                            path.lineTo(bounds.right - padding, top - topY - dp(2));
-                        } else {
-                            path.lineTo(bounds.right - dp(8), top - topY - dp(2));
-                        }
-                    }
-                    if (currentType == TYPE_MEDIA) {
-                        if (paintToUse != null || drawFullBottom) {
-                            int radToUse = isBottomNear ? nearRad : rad;
-
-                            path.lineTo(bounds.right - padding, bounds.bottom - padding - radToUse);
-                            rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
-                            path.arcTo(rect, 0, 90, false);
-                        } else {
-                            path.lineTo(bounds.right - padding, top - topY + currentBackgroundHeight);
-                        }
-                    } else {
-                        if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                            path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
-                            rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
-                            path.arcTo(rect, 180, -83, false);
-                        } else {
-                            path.lineTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
-                        }
-                    }
-                } else {
-                    if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                        int radToUse = botButtonsBottom ? nearRad : rad;
-
-                        if (currentType == TYPE_MEDIA) {
-                            path.moveTo(bounds.left + dp(8) + radToUse, bounds.bottom - padding);
-                        } else {
-                            path.moveTo(bounds.left + dp(2.6f), bounds.bottom - padding);
-                        }
-                        path.lineTo(bounds.right - padding - radToUse, bounds.bottom - padding);
-                        rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
-                        path.arcTo(rect, 90, -90, false);
-                    } else {
-                        path.moveTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
-                        path.lineTo(bounds.right - padding, top - topY + currentBackgroundHeight);
-                    }
-                    if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullTop) {
-                        path.lineTo(bounds.right - padding, bounds.top + padding + rad);
-                        rect.set(bounds.right - padding - rad * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + rad * 2);
-                        path.arcTo(rect, 0, -90, false);
-
-                        int radToUse = isTopNear ? nearRad : rad;
-                        if (currentType == TYPE_MEDIA) {
-                            path.lineTo(bounds.left + padding + radToUse, bounds.top + padding);
-                            rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + radToUse * 2, bounds.top + padding + radToUse * 2);
-                        } else {
-                            path.lineTo(bounds.left + dp(8) + radToUse, bounds.top + padding);
-                            rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + radToUse * 2, bounds.top + padding + radToUse * 2);
-                        }
-                        path.arcTo(rect, 270, -90, false);
-                    } else {
-                        path.lineTo(bounds.right - padding, top - topY - dp(2));
-                        if (currentType == TYPE_MEDIA) {
-                            path.lineTo(bounds.left + padding, top - topY - dp(2));
-                        } else {
-                            path.lineTo(bounds.left + dp(8), top - topY - dp(2));
-                        }
-                    }
-                    if (currentType == TYPE_MEDIA) {
-                        if (paintToUse != null || drawFullBottom) {
-                            int radToUse = isBottomNear ? nearRad : rad;
-
-                            path.lineTo(bounds.left + padding, bounds.bottom - padding - radToUse);
-                            rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
-                            path.arcTo(rect, 180, -90, false);
-                        } else {
-                            path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
-                        }
-                    } else {
-                        if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                            path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
-                            rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
-                            path.arcTo(rect, 0, 83, false);
-                        } else {
-                            path.lineTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
-                        }
-                    }
-                }
-                path.close();
+                generatePath(path, bounds, padding, rad, smallRad, nearRad, top, drawFullBottom, drawFullTop, paintToUse != null);
             }
 
             canvas.drawPath(path, p);
@@ -923,6 +805,176 @@ public class Theme {
                 selectedPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * alpha / 255f)));
                 canvas.drawPath(path, selectedPaint);
             }
+        }
+
+        public Path makePath() {
+            return makePath(pathDrawCacheParams);
+        }
+
+        public Path makePath(MessageDrawable.PathDrawParams pathDrawCacheParams) {
+            Rect bounds = getBounds();
+            int padding = dp(2);
+            int rad;
+            int nearRad;
+            if (overrideRoundRadius != 0) {
+                rad = overrideRoundRadius;
+                nearRad = overrideRoundRadius;
+            } else if (overrideRounding > 0) {
+                rad = AndroidUtilities.lerp(dp(SharedConfig.bubbleRadius), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+                nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+            } else if (currentType == TYPE_PREVIEW) {
+                rad = dp(6);
+                nearRad = dp(6);
+            } else {
+                rad = dp(SharedConfig.bubbleRadius);
+                nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
+            }
+            int smallRad = dp(6);
+            int top = Math.max(bounds.top, 0);
+            boolean drawFullBottom, drawFullTop;
+            if (pathDrawCacheParams != null && bounds.height() < currentBackgroundHeight) {
+                drawFullBottom = true;
+                drawFullTop = true;
+            } else {
+                drawFullBottom = currentType == TYPE_MEDIA ? topY + bounds.bottom - smallRad * 2 < currentBackgroundHeight : topY + bounds.bottom - rad < currentBackgroundHeight;
+                drawFullTop = topY + rad * 2 >= 0;
+            }
+            Path path;
+            boolean invalidatePath;
+            if (pathDrawCacheParams != null) {
+                path = pathDrawCacheParams.path;
+                invalidatePath = pathDrawCacheParams.invalidatePath(bounds, drawFullBottom, drawFullTop);
+            } else {
+                path = this.path;
+                invalidatePath = true;
+            }
+            if (invalidatePath || overrideRoundRadius != 0) {
+                generatePath(path, bounds, padding, rad, smallRad, nearRad, top, drawFullBottom, drawFullTop, true);
+            }
+            return path;
+        }
+
+        private void generatePath(Path path, Rect bounds, int padding, int rad, int smallRad, int nearRad, int top, boolean drawFullBottom, boolean drawFullTop, boolean customPaint) {
+            path.rewind();
+            int heightHalf = (bounds.height() - padding) >> 1;
+            if (rad > heightHalf) {
+                rad = heightHalf;
+            }
+            if (isOut) {
+                if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
+                    int radToUse = botButtonsBottom ? nearRad : rad;
+                    if (currentType == TYPE_MEDIA) {
+                        path.moveTo(bounds.right - dp(8) - radToUse, bounds.bottom - padding);
+                    } else {
+                        path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
+                    }
+                    path.lineTo(bounds.left + padding + radToUse, bounds.bottom - padding);
+                    rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
+                    path.arcTo(rect, 90, 90, false);
+                } else {
+                    path.moveTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
+                    path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
+                }
+                if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullTop) {
+                    path.lineTo(bounds.left + padding, bounds.top + padding + rad);
+                    rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
+                    path.arcTo(rect, 180, 90, false);
+
+                    int radToUse = isTopNear ? nearRad : rad;
+                    if (currentType == TYPE_MEDIA) {
+                        path.lineTo(bounds.right - padding - radToUse, bounds.top + padding);
+                        rect.set(bounds.right - padding - radToUse * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + radToUse * 2);
+                    } else {
+                        path.lineTo(bounds.right - dp(8) - radToUse, bounds.top + padding);
+                        rect.set(bounds.right - dp(8) - radToUse * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + radToUse * 2);
+                    }
+                    path.arcTo(rect, 270, 90, false);
+                } else {
+                    path.lineTo(bounds.left + padding, top - topY - dp(2));
+                    if (currentType == TYPE_MEDIA) {
+                        path.lineTo(bounds.right - padding, top - topY - dp(2));
+                    } else {
+                        path.lineTo(bounds.right - dp(8), top - topY - dp(2));
+                    }
+                }
+                if (currentType == TYPE_MEDIA) {
+                    if (customPaint || drawFullBottom) {
+                        int radToUse = isBottomNear ? nearRad : rad;
+
+                        path.lineTo(bounds.right - padding, bounds.bottom - padding - radToUse);
+                        rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
+                        path.arcTo(rect, 0, 90, false);
+                    } else {
+                        path.lineTo(bounds.right - padding, top - topY + currentBackgroundHeight);
+                    }
+                } else {
+                    if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
+                        path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
+                        rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
+                        path.arcTo(rect, 180, -83, false);
+                    } else {
+                        path.lineTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
+                    }
+                }
+            } else {
+                if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
+                    int radToUse = botButtonsBottom ? nearRad : rad;
+
+                    if (currentType == TYPE_MEDIA) {
+                        path.moveTo(bounds.left + dp(8) + radToUse, bounds.bottom - padding);
+                    } else {
+                        path.moveTo(bounds.left + dp(2.6f), bounds.bottom - padding);
+                    }
+                    path.lineTo(bounds.right - padding - radToUse, bounds.bottom - padding);
+                    rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
+                    path.arcTo(rect, 90, -90, false);
+                } else {
+                    path.moveTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
+                    path.lineTo(bounds.right - padding, top - topY + currentBackgroundHeight);
+                }
+                if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullTop) {
+                    path.lineTo(bounds.right - padding, bounds.top + padding + rad);
+                    rect.set(bounds.right - padding - rad * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + rad * 2);
+                    path.arcTo(rect, 0, -90, false);
+
+                    int radToUse = isTopNear ? nearRad : rad;
+                    if (currentType == TYPE_MEDIA) {
+                        path.lineTo(bounds.left + padding + radToUse, bounds.top + padding);
+                        rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + radToUse * 2, bounds.top + padding + radToUse * 2);
+                    } else {
+                        path.lineTo(bounds.left + dp(8) + radToUse, bounds.top + padding);
+                        rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + radToUse * 2, bounds.top + padding + radToUse * 2);
+                    }
+                    path.arcTo(rect, 270, -90, false);
+                } else {
+                    path.lineTo(bounds.right - padding, top - topY - dp(2));
+                    if (currentType == TYPE_MEDIA) {
+                        path.lineTo(bounds.left + padding, top - topY - dp(2));
+                    } else {
+                        path.lineTo(bounds.left + dp(8), top - topY - dp(2));
+                    }
+                }
+                if (currentType == TYPE_MEDIA) {
+                    if (customPaint || drawFullBottom) {
+                        int radToUse = isBottomNear ? nearRad : rad;
+
+                        path.lineTo(bounds.left + padding, bounds.bottom - padding - radToUse);
+                        rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
+                        path.arcTo(rect, 180, -90, false);
+                    } else {
+                        path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
+                    }
+                } else {
+                    if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
+                        path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
+                        rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
+                        path.arcTo(rect, 0, 83, false);
+                    } else {
+                        path.lineTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
+                    }
+                }
+            }
+            path.close();
         }
 
         public void setDrawFullBubble(boolean drawFullBuble) {
@@ -1525,6 +1577,7 @@ public class Theme {
                         currentColors.put(key_chat_outForwardedNameText, textColor);
                         currentColors.put(key_chat_outViaBotNameText, textColor);
                         currentColors.put(key_chat_outReplyLine, textColor);
+                        currentColors.put(key_chat_outReplyLine2, textColor);
                         currentColors.put(key_chat_outReplyNameText, textColor);
 
                         currentColors.put(key_chat_outPreviewLine, textColor);
@@ -1694,6 +1747,17 @@ public class Theme {
                 Math.max(0, Color.blue(submenuBackground) - 10)
             ));
 
+            currentColors.put(key_chat_inCodeBackground, codeBackground(inBubble, isDarkTheme));
+            if (isDarkTheme && currentColors.get(key_chat_outBubbleGradient1) != 0) {
+                int outBubbleAverage = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
+                Color.colorToHSV(outBubbleAverage, tempHSV);
+                tempHSV[1] = Utilities.clamp(tempHSV[1] + .3f, 1, 0);
+                tempHSV[2] = Utilities.clamp(tempHSV[2] + -.4f, 1, 0);
+                currentColors.put(key_chat_outCodeBackground, Color.HSVToColor(0x70, tempHSV));
+            } else {
+                currentColors.put(key_chat_outCodeBackground, codeBackground(outBubble, isDarkTheme));
+            }
+
             return !isMyMessagesGradientColorsNear;
         }
 
@@ -1749,6 +1813,20 @@ public class Theme {
             tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] - .1f));
             tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? .1f : 0)));
             return Color.HSVToColor(0x33, tempHSV);
+        }
+        private int codeBackground(int bubbleColor, boolean isDarkTheme) {
+            Color.colorToHSV(bubbleColor, tempHSV);
+            int alpha = 0x20;
+            if (tempHSV[1] <= 0 || tempHSV[2] >= 1 || tempHSV[2] <= 0) {
+                tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? .3f : -.2f)));
+            } else {
+                tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] + (isDarkTheme ? -.3f : .28f)));
+                tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? +.1f : -.1f)));
+                if (isDarkTheme) {
+                    alpha = 0x60;
+                }
+            }
+            return Color.HSVToColor(alpha, tempHSV);
         }
         private int locationPlaceholderColor(float accentHue, int bubbleColor, boolean isDarkTheme) {
             if (isDarkTheme) {
@@ -1933,6 +2011,8 @@ public class Theme {
     }
 
     public static int multAlpha(int color, float multiply) {
+        if (multiply == 1f)
+            return color;
         return ColorUtils.setAlphaComponent(color, MathUtils.clamp((int) (Color.alpha(color) * multiply), 0, 0xFF));
     }
 
@@ -3007,7 +3087,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable[] avatarDrawables = new Drawable[14];
+    public static Drawable[] avatarDrawables = new Drawable[17];
 
     public static Drawable moveUpDrawable;
 
@@ -3084,6 +3164,7 @@ public class Theme {
     public static Paint chat_outUrlPaint;
     public static Paint chat_textSearchSelectionPaint;
     public static Paint chat_instantViewRectPaint;
+    public static Paint chat_instantViewButtonPaint;
     public static Paint chat_pollTimerPaint;
     public static Paint chat_replyLinePaint;
     public static Paint chat_msgErrorPaint;
@@ -3103,6 +3184,9 @@ public class Theme {
     public static Paint chat_radialProgressPausedSeekbarPaint;
 
     public static TextPaint chat_msgTextPaint;
+    public static TextPaint chat_msgTextCodePaint;
+    public static TextPaint chat_msgTextCode2Paint;
+    public static TextPaint chat_msgTextCode3Paint;
     public static TextPaint chat_actionTextPaint;
     public static TextPaint chat_actionTextPaint2;
     public static TextPaint chat_unlockExtendedMediaTextPaint;
@@ -3135,10 +3219,12 @@ public class Theme {
     public static TextPaint chat_forwardNamePaint;
     public static TextPaint chat_replyNamePaint;
     public static TextPaint chat_replyTextPaint;
+    public static TextPaint chat_quoteTextPaint;
     public static TextPaint chat_topicTextPaint;
     public static TextPaint chat_commentTextPaint;
     public static TextPaint chat_contextResult_titleTextPaint;
     public static TextPaint chat_contextResult_descriptionTextPaint;
+    public static TextPaint chat_msgCodeBgPaint;
 
     public static Drawable chat_msgNoSoundDrawable;
     public static Drawable chat_composeShadowDrawable;
@@ -3154,6 +3240,7 @@ public class Theme {
     public static MessageDrawable chat_msgOutMediaSelectedDrawable;
     private static StatusDrawable[] chat_status_drawables = new StatusDrawable[6];
     public static PorterDuffColorFilter chat_animatedEmojiTextColorFilter;
+    public static PorterDuffColorFilter chat_outAnimatedEmojiTextColorFilter;
 
     public static PathAnimator playPauseAnimator;
     public static Drawable chat_msgOutCheckDrawable;
@@ -3420,6 +3507,25 @@ public class Theme {
     public static int[] keys_avatar_background2 = {key_avatar_background2Red, key_avatar_background2Orange, key_avatar_background2Violet, key_avatar_background2Green, key_avatar_background2Cyan, key_avatar_background2Blue, key_avatar_background2Pink};
     public static int[] keys_avatar_nameInMessage = {key_avatar_nameInMessageRed, key_avatar_nameInMessageOrange, key_avatar_nameInMessageViolet, key_avatar_nameInMessageGreen, key_avatar_nameInMessageCyan, key_avatar_nameInMessageBlue, key_avatar_nameInMessagePink};
 
+    public static final int key_avatar_composite_nameInMessageRed = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageOrange = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageViolet = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageGreen = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageCyan = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageBlue = colorsCount++;
+    public static final int key_avatar_composite_nameInMessagePink = colorsCount++;
+
+    public static final int key_avatar_composite_nameInMessageRed2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageOrange2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageViolet2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageGreen2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageCyan2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessageBlue2 = colorsCount++;
+    public static final int key_avatar_composite_nameInMessagePink2 = colorsCount++;
+
+    public static int[] keys_avatar_composite_nameInMessage = {key_avatar_composite_nameInMessageRed, key_avatar_composite_nameInMessageOrange, key_avatar_composite_nameInMessageViolet, key_avatar_composite_nameInMessageGreen, key_avatar_composite_nameInMessageCyan, key_avatar_composite_nameInMessageBlue, key_avatar_composite_nameInMessagePink};
+    public static int[] keys_avatar_composite_nameInMessage2 = {key_avatar_composite_nameInMessageRed2, key_avatar_composite_nameInMessageOrange2, key_avatar_composite_nameInMessageViolet2, key_avatar_composite_nameInMessageGreen2, key_avatar_composite_nameInMessageCyan2, key_avatar_composite_nameInMessageBlue2, key_avatar_composite_nameInMessagePink2};
+
     public static final int key_actionBarDefault = colorsCount++;
     public static final int key_actionBarDefaultSelector = colorsCount++;
     public static final int key_actionBarWhiteSelector = colorsCount++;
@@ -3569,6 +3675,7 @@ public class Theme {
     public static final int key_chat_outForwardedNameText = colorsCount++;
     public static final int key_chat_outViaBotNameText = colorsCount++;
     public static final int key_chat_outReplyLine = colorsCount++;
+    public static final int key_chat_outReplyLine2 = colorsCount++;
     public static final int key_chat_outReplyNameText = colorsCount++;
     public static final int key_chat_outReplyMessageText = colorsCount++;
     public static final int key_chat_outReplyMediaMessageText = colorsCount++;
@@ -3662,6 +3769,8 @@ public class Theme {
     public static final int key_chat_inPsaNameText = colorsCount++;
     public static final int key_chat_inViaBotNameText = colorsCount++;
     public static final int key_chat_stickerViaBotNameText = colorsCount++;
+    public static final int key_chat_inQuote = colorsCount++;
+    public static final int key_chat_outQuote = colorsCount++;
     public static final int key_chat_inReplyLine = colorsCount++;
     public static final int key_chat_stickerReplyLine = colorsCount++;
     public static final int key_chat_inReplyNameText = colorsCount++;
@@ -4024,6 +4133,17 @@ public class Theme {
     public static final int key_stories_circle_closeFriends1 = colorsCount++;
     public static final int key_stories_circle_closeFriends2 = colorsCount++;
 
+    public static final int key_code_background = colorsCount++;
+    public static final int key_chat_inCodeBackground = colorsCount++;
+    public static final int key_chat_outCodeBackground = colorsCount++;
+    public static final int key_code_keyword = colorsCount++;
+    public static final int key_code_operator = colorsCount++;
+    public static final int key_code_constant = colorsCount++;
+    public static final int key_code_string = colorsCount++;
+    public static final int key_code_number = colorsCount++;
+    public static final int key_code_comment = colorsCount++;
+    public static final int key_code_function = colorsCount++;
+
     public static final String key_drawable_botInline = "drawableBotInline";
     public static final String key_drawable_botLink = "drawableBotLink";
     public static final String key_drawable_botWebView = "drawableBotWebView";
@@ -4109,6 +4229,9 @@ public class Theme {
     static {
         defaultColors = ThemeColors.createDefaultColors();
 
+        fallbackKeys.put(key_chat_inQuote, key_featuredStickers_addButtonPressed);
+        fallbackKeys.put(key_chat_outQuote, key_chat_outReplyLine);
+        fallbackKeys.put(key_chat_outReplyLine2, key_chat_outReplyLine);
         fallbackKeys.put(key_chat_inAdminText, key_chat_inTimeText);
         fallbackKeys.put(key_chat_inAdminSelectedText, key_chat_inTimeSelectedText);
         fallbackKeys.put(key_player_progressCachedBackground, key_player_progressBackground);
@@ -4274,6 +4397,12 @@ public class Theme {
         }
         for (int i = 0; i < keys_avatar_nameInMessage.length; i++) {
             themeAccentExclusionKeys.add(keys_avatar_nameInMessage[i]);
+        }
+        for (int i = 0; i < keys_avatar_composite_nameInMessage.length; i++) {
+            themeAccentExclusionKeys.add(keys_avatar_composite_nameInMessage[i]);
+        }
+        for (int i = 0; i < keys_avatar_composite_nameInMessage2.length; i++) {
+            themeAccentExclusionKeys.add(keys_avatar_composite_nameInMessage2[i]);
         }
         for (int i = 0; i < keys_colors.length; i++) {
             themeAccentExclusionKeys.add(keys_colors[i]);
@@ -6444,7 +6573,7 @@ public class Theme {
         return changeColorAccent(hsvTemp3, hsvTemp4, color, themeInfo.isDark());
     }
 
-    private static float[] getTempHsv(int num) {
+    public static float[] getTempHsv(int num) {
         ThreadLocal<float[]> local;
         switch (num) {
             case 1:
@@ -7985,6 +8114,9 @@ public class Theme {
             avatarDrawables[11] = resources.getDrawable(R.drawable.chats_replies);
             avatarDrawables[12] = resources.getDrawable(R.drawable.other_chats);
             avatarDrawables[13] = resources.getDrawable(R.drawable.msg_stories_closefriends);
+            avatarDrawables[14] = resources.getDrawable(R.drawable.filled_gift_premium);
+            avatarDrawables[15] = resources.getDrawable(R.drawable.filled_unknown);
+            avatarDrawables[16] = resources.getDrawable(R.drawable.filled_unclaimed);
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
@@ -8079,6 +8211,7 @@ public class Theme {
         dialogs_unarchiveDrawable.commitApplyLayerColors();
 
         chat_animatedEmojiTextColorFilter = new PorterDuffColorFilter(getColor(key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN);
+        chat_outAnimatedEmojiTextColorFilter = new PorterDuffColorFilter(getColor(key_chat_messageTextOut), PorterDuff.Mode.SRC_IN);
 
         PremiumGradient.getInstance().checkIconColors();
     }
@@ -8265,17 +8398,25 @@ public class Theme {
                 chat_msgTextPaintTwoEmoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 chat_msgTextPaintThreeEmoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 chat_msgBotButtonPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                chat_msgBotButtonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                chat_msgBotButtonPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-                chat_namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                chat_namePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_replyNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-                chat_replyNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                chat_replyNamePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                chat_quoteTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_topicTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-                chat_topicTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                chat_topicTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_forwardNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_adminPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                chat_msgTextCodePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                chat_msgTextCodePaint.setTypeface(Typeface.MONOSPACE);
+                chat_msgTextCode2Paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                chat_msgTextCode2Paint.setTypeface(Typeface.MONOSPACE);
+                chat_msgTextCode3Paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                chat_msgTextCode3Paint.setTypeface(Typeface.MONOSPACE);
+                chat_msgCodeBgPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             }
 
             final float[] emojiSizePercents = new float[] {.68f, .46f, .34f, .28f, .22f, .19f};
@@ -8293,9 +8434,13 @@ public class Theme {
             chat_namePaint.setTextSize(AndroidUtilities.dp(smallerDp));
             chat_replyNamePaint.setTextSize(AndroidUtilities.dp(smallerDp));
             chat_replyTextPaint.setTextSize(AndroidUtilities.dp(smallerDp));
+            chat_quoteTextPaint.setTextSize(AndroidUtilities.dp(smallerDp - 1));
             chat_topicTextPaint.setTextSize(AndroidUtilities.dp(smallerDp - 1));
             chat_forwardNamePaint.setTextSize(AndroidUtilities.dp(smallerDp));
             chat_adminPaint.setTextSize(AndroidUtilities.dp(smallerDp - 1));
+            chat_msgTextCodePaint.setTextSize(AndroidUtilities.dp(Math.max(Math.min(10, SharedConfig.fontSize - 1), SharedConfig.fontSize - 2)));
+            chat_msgTextCode2Paint.setTextSize(AndroidUtilities.dp(Math.max(Math.min(10, SharedConfig.fontSize - 2), SharedConfig.fontSize - 3)));
+            chat_msgTextCode3Paint.setTextSize(AndroidUtilities.dp(Math.max(Math.min(10, SharedConfig.fontSize - 2), SharedConfig.fontSize - 5)));
         }
     }
 
@@ -8361,6 +8506,7 @@ public class Theme {
             chat_instantViewRectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_instantViewRectPaint.setStyle(Paint.Style.STROKE);
             chat_instantViewRectPaint.setStrokeCap(Paint.Cap.ROUND);
+            chat_instantViewButtonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_pollTimerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_pollTimerPaint.setStyle(Paint.Style.STROKE);
             chat_pollTimerPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -8518,8 +8664,8 @@ public class Theme {
             chat_attachButtonDrawables[5] = new RLottieDrawable(R.raw.attach_poll, "attach_poll", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
             chat_attachEmptyDrawable = resources.getDrawable(R.drawable.nophotos3);
 
-            chat_shareIconDrawable = resources.getDrawable(R.drawable.share_arrow).mutate();
-            chat_replyIconDrawable = resources.getDrawable(R.drawable.fast_reply);
+            chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_button_share).mutate();
+            chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_button_reply);
             chat_goIconDrawable = resources.getDrawable(R.drawable.message_arrow);
 
             int rad = AndroidUtilities.dp(2);

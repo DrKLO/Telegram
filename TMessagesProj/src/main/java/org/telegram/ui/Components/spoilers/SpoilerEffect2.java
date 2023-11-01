@@ -87,12 +87,12 @@ public class SpoilerEffect2 {
     private static int getSize() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
-                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .9f));
+                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 1.0f));
             case SharedConfig.PERFORMANCE_CLASS_AVERAGE:
-                return Math.min(512, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .6f));
+                return Math.min(512, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .95f));
             default:
             case SharedConfig.PERFORMANCE_CLASS_LOW:
-                return Math.min(400, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .5f));
+                return Math.min(400, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .85f));
         }
     }
 
@@ -541,19 +541,19 @@ public class SpoilerEffect2 {
 
         private void die() {
             if (particlesData != null) {
-                GLES31.glDeleteBuffers(2, particlesData, 0);
+                try { GLES31.glDeleteBuffers(2, particlesData, 0); } catch (Exception e) { FileLog.e(e); };
                 particlesData = null;
             }
             if (drawProgram != 0) {
-                GLES31.glDeleteProgram(drawProgram);
+                try { GLES31.glDeleteProgram(drawProgram); } catch (Exception e) { FileLog.e(e); };
                 drawProgram = 0;
             }
             if (egl != null) {
-                egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
-                egl.eglDestroySurface(eglDisplay, eglSurface);
-                egl.eglDestroyContext(eglDisplay, eglContext);
+                try { egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT); } catch (Exception e) { FileLog.e(e); };
+                try { egl.eglDestroySurface(eglDisplay, eglSurface); } catch (Exception e) { FileLog.e(e); };
+                try { egl.eglDestroyContext(eglDisplay, eglContext); } catch (Exception e) { FileLog.e(e); };
             }
-            surfaceTexture.release();
+            try { surfaceTexture.release(); } catch (Exception e) { FileLog.e(e); };
 
             checkGlErrors();
         }

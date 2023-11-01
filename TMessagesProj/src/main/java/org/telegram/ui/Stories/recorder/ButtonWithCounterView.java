@@ -4,13 +4,14 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ShapeDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -19,9 +20,11 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -35,7 +38,7 @@ public class ButtonWithCounterView extends FrameLayout {
     private Theme.ResourcesProvider resourcesProvider;
 
     private final Paint paint;
-    private final AnimatedTextView.AnimatedTextDrawable text;
+    public final AnimatedTextView.AnimatedTextDrawable text;
     private final AnimatedTextView.AnimatedTextDrawable countText;
     private float countAlpha;
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -83,6 +86,11 @@ public class ButtonWithCounterView extends FrameLayout {
         countText.setGravity(Gravity.CENTER_HORIZONTAL);
 
         setWillNotDraw(false);
+    }
+
+    public void setCounterColor(int color) {
+        countText.setTextColor(color);
+        counterDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
     }
 
     private boolean countFilled = true;
@@ -189,6 +197,14 @@ public class ButtonWithCounterView extends FrameLayout {
 
     private int lastCount;
     private boolean showZero;
+    private boolean withCounterIcon;
+    private Drawable counterDrawable;
+
+    public void withCounterIcon() {
+        withCounterIcon = true;
+        counterDrawable = ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_button).mutate();
+        counterDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+    }
 
     public void setShowZero(boolean showZero) {
         this.showZero = showZero;
@@ -279,7 +295,8 @@ public class ButtonWithCounterView extends FrameLayout {
             float textWidth = text.getCurrentWidth();
             float countAlpha = countAlphaAnimated.set(this.countAlpha);
 
-            float width = textWidth + (dp(5.66f + 5 + 5) + countText.getCurrentWidth()) * countAlpha;
+            float lightningWidth = withCounterIcon ? AndroidUtilities.dp(12) : 0;
+            float width = textWidth + lightningWidth + (dp(5.66f + 5 + 5) + countText.getCurrentWidth()) * countAlpha;
             AndroidUtilities.rectTmp2.set(
                     (int) ((getMeasuredWidth() - width - getWidth()) / 2f),
                     (int) ((getMeasuredHeight() - text.getHeight()) / 2f - dp(1)),
@@ -293,7 +310,7 @@ public class ButtonWithCounterView extends FrameLayout {
             AndroidUtilities.rectTmp2.set(
                     (int) ((getMeasuredWidth() - width) / 2f + textWidth + dp(countFilled ? 5 : 2)),
                     (int) ((getMeasuredHeight() - dp(18)) / 2f),
-                    (int) ((getMeasuredWidth() - width) / 2f + textWidth + dp((countFilled ? 5 : 2) + 4 + 4) + Math.max(dp(9), countText.getCurrentWidth())),
+                    (int) ((getMeasuredWidth() - width) / 2f + textWidth + dp((countFilled ? 5 : 2) + 4 + 4) + Math.max(dp(9), countText.getCurrentWidth() + lightningWidth)),
                     (int) ((getMeasuredHeight() + dp(18)) / 2f)
             );
             AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
@@ -304,13 +321,26 @@ public class ButtonWithCounterView extends FrameLayout {
             }
             if (countFilled) {
                 paint.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * countAlpha * AndroidUtilities.lerp(.5f, 1f, enabledT)));
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(10), dp(10), paint);
+                int radius = withCounterIcon ? dp(4) : dp(10);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
             }
 
             AndroidUtilities.rectTmp2.offset(-dp(.3f), -dp(.4f));
             countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
             countText.setBounds(AndroidUtilities.rectTmp2);
+            canvas.save();
+            if (countFilled && withCounterIcon) {
+                counterDrawable.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * 1));
+                counterDrawable.setBounds(
+                        dp(1) + AndroidUtilities.rectTmp2.left,
+                        dp(2) + AndroidUtilities.rectTmp2.top,
+                        dp(1) + AndroidUtilities.rectTmp2.left + counterDrawable.getIntrinsicWidth(),
+                        dp(2) + AndroidUtilities.rectTmp2.top + counterDrawable.getIntrinsicHeight());
+                counterDrawable.draw(canvas);
+                canvas.translate(lightningWidth / 2, 0);
+            }
             countText.draw(canvas);
+            canvas.restore();
             if (countScale != 1) {
                 canvas.restore();
             }

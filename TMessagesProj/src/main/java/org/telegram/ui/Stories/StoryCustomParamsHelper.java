@@ -4,21 +4,22 @@ import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 
 public class StoryCustomParamsHelper {
 
-    public static boolean isEmpty(TLRPC.StoryItem storyItem) {
+    public static boolean isEmpty(TL_stories.StoryItem storyItem) {
         return storyItem.detectedLng == null && storyItem.translatedLng == null && !storyItem.translated && storyItem.translatedText == null;
     }
 
-    public static void copyParams(TLRPC.StoryItem fromStory, TLRPC.StoryItem toStory) {
+    public static void copyParams(TL_stories.StoryItem fromStory, TL_stories.StoryItem toStory) {
         toStory.translated = fromStory.translated;
         toStory.detectedLng = fromStory.detectedLng;
         toStory.translatedText = fromStory.translatedText;
         toStory.translatedLng = fromStory.translatedLng;
     }
 
-    public static void readLocalParams(TLRPC.StoryItem storyItem, NativeByteBuffer byteBuffer) {
+    public static void readLocalParams(TL_stories.StoryItem storyItem, NativeByteBuffer byteBuffer) {
         if (byteBuffer == null) {
             return;
         }
@@ -34,7 +35,7 @@ public class StoryCustomParamsHelper {
         params.readParams(byteBuffer, true);
     }
 
-    public static NativeByteBuffer writeLocalParams(TLRPC.StoryItem storyItem) {
+    public static NativeByteBuffer writeLocalParams(TL_stories.StoryItem storyItem) {
         if (isEmpty(storyItem)) {
             return null;
         }
@@ -52,10 +53,10 @@ public class StoryCustomParamsHelper {
     private static class Params_v1 extends TLObject {
 
         private final static int VERSION = 1;
-        final TLRPC.StoryItem storyItem;
+        final TL_stories.StoryItem storyItem;
         int flags = 0;
 
-        private Params_v1(TLRPC.StoryItem storyItem) {
+        private Params_v1(TL_stories.StoryItem storyItem) {
             this.storyItem = storyItem;
             flags += storyItem.translated ? 1 : 0;
             flags += storyItem.detectedLng != null ? 2 : 0;

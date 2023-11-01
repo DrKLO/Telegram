@@ -29,6 +29,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
         public int start;
         public int end;
         public TLRPC.MessageEntity urlEntity;
+        public String lng;
 
         public TextStyleRun() {
 
@@ -75,7 +76,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
         }
 
         public Typeface getTypeface() {
-            if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_QUOTE) != 0) {
+            if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_CODE) != 0) {
                 return Typeface.MONOSPACE;
             } else if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
                 return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
@@ -100,6 +101,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
     public final static int FLAG_STYLE_SPOILER = 256;
     public final static int FLAG_STYLE_SPOILER_REVEALED = 512;
     public final static int FLAG_STYLE_TEXT_URL = 1024;
+    public final static int FLAG_STYLE_CODE = 2048;
 
 
     public TextStyleSpan(TextStyleRun run) {

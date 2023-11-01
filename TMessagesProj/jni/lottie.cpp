@@ -2,7 +2,6 @@
 #include <android/bitmap.h>
 #include <cstring>
 #include <rlottie.h>
-#include <lz4.h>
 #include <unistd.h>
 #include <condition_variable>
 #include <atomic>

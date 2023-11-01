@@ -59,6 +59,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     private String lastPremiumTransaction;
     private String lastPremiumToken;
     private boolean isDisconnected;
+    private Runnable onCanceled;
 
     public static BillingController getInstance() {
         if (instance == null) {
@@ -72,6 +73,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 .enablePendingPurchases()
                 .setListener(this)
                 .build();
+    }
+
+    public void setOnCanceled(Runnable onCanceled) {
+        this.onCanceled = onCanceled;
     }
 
     public String getLastPremiumTransaction() {
@@ -177,7 +182,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                 if (purchase.getProducts().contains(productId)) {
                                     productsToBeConsumed.incrementAndGet();
                                     billingClient.consumeAsync(ConsumeParams.newBuilder()
-                                                    .setPurchaseToken(purchase.getPurchaseToken())
+                                            .setPurchaseToken(purchase.getPurchaseToken())
                                             .build(), (billingResult1, s) -> {
                                         if (billingResult1.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                                             productsConsumed.add(productId);
@@ -228,6 +233,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             if (billing.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
                 PremiumPreviewFragment.sentPremiumBuyCanceled();
             }
+            if (onCanceled != null) {
+                onCanceled.run();
+                onCanceled = null;
+            }
             return;
         }
         if (list == null || list.isEmpty()) {
@@ -269,7 +278,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
                             consumeGiftPurchase(purchase, req.purpose);
                         } else if (error != null) {
-                            FileLog.d("Billing: Confirmation Error: " + error.code + " " + error.text);
+                            if (onCanceled != null) {
+                                onCanceled.run();
+                                onCanceled = null;
+                            }
                             NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
                         }
                     }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagInvokeAfter);
@@ -285,7 +297,9 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
      * Without confirmation the user will not be able to buy the product again.
      */
     private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose) {
-        if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium) {
+        if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium
+                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
+                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
             billingClient.consumeAsync(
                     ConsumeParams.newBuilder()
                             .setPurchaseToken(purchase.getPurchaseToken())

@@ -6,7 +6,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
@@ -15,13 +15,13 @@ import java.util.ArrayList;
 public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
 
     ArrayList<DrawingObject> drawingObjects;
-    public StoryWidgetsImageDecorator(TLRPC.StoryItem storyItem) {
+    public StoryWidgetsImageDecorator(TL_stories.StoryItem storyItem) {
         for (int i = 0; i < storyItem.media_areas.size(); i++) {
-            if (storyItem.media_areas.get(i) instanceof TLRPC.TL_mediaAreaSuggestedReaction) {
+            if (storyItem.media_areas.get(i) instanceof TL_stories.TL_mediaAreaSuggestedReaction) {
                 if (drawingObjects == null) {
                     drawingObjects = new ArrayList<>();
                 }
-                drawingObjects.add(new ReactionWidget((TLRPC.TL_mediaAreaSuggestedReaction) storyItem.media_areas.get(i)));
+                drawingObjects.add(new ReactionWidget((TL_stories.TL_mediaAreaSuggestedReaction) storyItem.media_areas.get(i)));
             }
         }
     }
@@ -84,10 +84,10 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
 
         StoryReactionWidgetBackground storyReactionWidgetBackground = new StoryReactionWidgetBackground(null);
 
-        TLRPC.TL_mediaAreaSuggestedReaction mediaArea;
+        TL_stories.TL_mediaAreaSuggestedReaction mediaArea;
         ReactionImageHolder imageHolder = new ReactionImageHolder(null);
 
-        public ReactionWidget(TLRPC.TL_mediaAreaSuggestedReaction mediaArea) {
+        public ReactionWidget(TL_stories.TL_mediaAreaSuggestedReaction mediaArea) {
             this.mediaArea = mediaArea;
             if (mediaArea.flipped) {
                 storyReactionWidgetBackground.setMirror(true, false);

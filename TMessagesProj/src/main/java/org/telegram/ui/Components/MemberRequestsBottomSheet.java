@@ -38,7 +38,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
                     if (membersEmptyView.getVisibility() != View.INVISIBLE) {
                         membersEmptyView.setVisibility(View.INVISIBLE);
                     }
-                    dismiss();
+//                    dismiss();
                 } else if (fromHide) {
                     searchView.searchEditText.setText("");
                 } else {

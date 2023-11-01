@@ -314,9 +314,18 @@ public class PopupSwipeBackLayout extends FrameLayout {
                 }
                 invalidateTransforms();
                 isAnimationInProgress = false;
+
+                if (onForegroundOpen != null && Math.abs(f - 1f) < .01f) {
+                    onForegroundOpen.run();
+                }
             }
         });
         val.start();
+    }
+
+    private Runnable onForegroundOpen;
+    public void setOnForegroundOpenFinished(Runnable listener) {
+        onForegroundOpen = listener;
     }
 
     /**
@@ -357,15 +366,28 @@ public class PopupSwipeBackLayout extends FrameLayout {
         }
     }
 
+    public boolean stickToRight;
+    public void setStickToRight(boolean right) {
+        stickToRight = right;
+    }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         for (int i = 0; i < getChildCount(); i++) {
             View ch = getChildAt(i);
             boolean shownFromBottom = ch.getLayoutParams() instanceof FrameLayout.LayoutParams && ((LayoutParams) ch.getLayoutParams()).gravity == Gravity.BOTTOM;
             if (shownFromBottom) {
-                ch.layout(0, bottom - top - ch.getMeasuredHeight(), ch.getMeasuredWidth(), bottom - top);
+                if (stickToRight) {
+                    ch.layout((right - left) - ch.getMeasuredWidth(), bottom - top - ch.getMeasuredHeight(), right - left, bottom - top);
+                } else {
+                    ch.layout(0, bottom - top - ch.getMeasuredHeight(), ch.getMeasuredWidth(), bottom - top);
+                }
             } else {
-                ch.layout(0, 0, ch.getMeasuredWidth(), ch.getMeasuredHeight());
+                if (stickToRight) {
+                    ch.layout((right - left) - ch.getMeasuredWidth(), 0, right - left, ch.getMeasuredHeight());
+                } else {
+                    ch.layout(0, 0, ch.getMeasuredWidth(), ch.getMeasuredHeight());
+                }
             }
         }
     }
@@ -407,7 +429,11 @@ public class PopupSwipeBackLayout extends FrameLayout {
         int s = canvas.save();
         mPath.rewind();
         int rad = AndroidUtilities.dp(6);
-        mRect.set(0, y, w, y + h);
+        if (stickToRight) {
+            mRect.set(getWidth() - w, y, getWidth(), y + h);
+        } else {
+            mRect.set(0, y, w, y + h);
+        }
         mPath.addRoundRect(mRect, rad, rad, Path.Direction.CW);
         canvas.clipPath(mPath);
         super.dispatchDraw(canvas);

@@ -256,7 +256,9 @@ public class EmojiThemes {
             }
             themeInfo = new Theme.ThemeInfo(baseTheme);
             accent = themeInfo.createNewAccent(tlTheme, currentAccount, true, settingsIndex);
-            themeInfo.setCurrentAccentId(accent.id);
+            if (accent != null) {
+                themeInfo.setCurrentAccentId(accent.id);
+            }
         } else {
             if (themeInfo.themeAccentsMap != null) {
                 accent = themeInfo.themeAccentsMap.get(items.get(index).accentId);

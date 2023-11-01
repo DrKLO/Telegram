@@ -188,6 +188,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
         }
     }
 
+    public void setTextGravity(int gravity) {
+        textView.setGravity(gravity);
+    }
+
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);

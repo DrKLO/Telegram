@@ -26,6 +26,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LayoutHelper;
@@ -106,32 +107,30 @@ public class TextPaintView extends EntityView {
         updatePosition();
 
         editText.addTextChangedListener(new TextWatcher() {
-            private String text;
-            private int beforeCursorPosition = 0;
-
+            boolean pasted;
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                text = s.toString();
-                beforeCursorPosition = start;
+                pasted = after > 3;
             }
-
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
-                editText.removeTextChangedListener(this);
-
-                if (editText.getLineCount() > 9) {
-                    editText.setText(text);
-                    editText.setSelection(beforeCursorPosition);
+                if (pasted && minFontSize > 0 && maxFontSize > 0 && !disableAutoresize && editText.getLayout() != null) {
+                    int newHeight = editText.getLayout().getHeight();
+                    float maxHeight = AndroidUtilities.displaySize.y / 3f;
+                    if (newHeight > maxHeight) {
+                        float scale = maxHeight / newHeight;
+                        int newFontSize = Utilities.clamp((int) (scale * getBaseFontSize()), maxFontSize, minFontSize);
+                        if (newFontSize != getBaseFontSize()) {
+                            setBaseFontSize(newFontSize);
+                            if (onFontChange != null) {
+                                onFontChange.run();
+                            }
+                        }
+                    }
                 }
-
                 updateHint();
-
-                editText.addTextChangedListener(this);
             }
         });
     }
@@ -207,6 +206,19 @@ public class TextPaintView extends EntityView {
 
     public int getBaseFontSize() {
         return baseFontSize;
+    }
+
+    private int minFontSize, maxFontSize;
+    private Runnable onFontChange;
+    public void setMinMaxFontSize(int min, int max, Runnable onFontChange) {
+        minFontSize = min;
+        maxFontSize = max;
+        this.onFontChange = onFontChange;
+    }
+
+    private boolean disableAutoresize;
+    public void disableAutoresize(boolean disable) {
+        disableAutoresize = disable;
     }
 
     public void setBaseFontSize(int baseFontSize) {

@@ -34,6 +34,7 @@ public class GraySectionCell extends FrameLayout {
     private TextView textView;
     private AnimatedTextView rightTextView;
     private final Theme.ResourcesProvider resourcesProvider;
+    private int layerHeight = 32;
 
     public GraySectionCell(Context context) {
         this(context, null);
@@ -70,7 +71,14 @@ public class GraySectionCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
+        super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(layerHeight), MeasureSpec.EXACTLY));
+    }
+
+    public void setLayerHeight(int dp){
+        layerHeight = dp;
+        requestLayout();
     }
 
     public void setTextColor(int key) {

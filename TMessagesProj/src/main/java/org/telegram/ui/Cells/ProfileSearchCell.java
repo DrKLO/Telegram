@@ -802,7 +802,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (user != null && avatarStoryParams.checkOnTouchEvent(event, this)) {
+        if ((user != null || chat != null) && avatarStoryParams.checkOnTouchEvent(event, this)) {
             return true;
         }
         if (actionButton != null && actionButton.checkTouchEvent(event)) {

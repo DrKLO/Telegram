@@ -56,7 +56,8 @@ public class PinchToZoomHelper {
     private ZoomOverlayView overlayView;
     private View child;
     private ImageReceiver childImage;
-    private TextureView childTextureView;
+    private View childTextureViewContainer;
+    private View childTextureView;
 
     private ImageReceiver fullImage = new ImageReceiver();
     private ImageReceiver blurImage = new ImageReceiver();
@@ -121,7 +122,7 @@ public class PinchToZoomHelper {
         this.isSimple = true;
     }
 
-    public void startZoom(View child, ImageReceiver image, TextureView textureView, MessageObject messageObject, int spoilerEffect2AttachIndex) {
+    public void startZoom(View child, ImageReceiver image, View textureViewContainer, View textureView, MessageObject messageObject, int spoilerEffect2AttachIndex) {
         this.child = child;
         this.messageObject = messageObject;
 
@@ -218,15 +219,18 @@ public class PinchToZoomHelper {
             } else {
                 isHardwareVideo = false;
                 this.childImage = new ImageReceiver();
+                this.childTextureViewContainer = textureViewContainer;
                 this.childTextureView = textureView;
                 this.childImage.onAttachedToWindow();
                 Drawable drawable = image.getDrawable();
                 this.childImage.setImageBitmap(drawable);
+
                 if (drawable instanceof AnimatedFileDrawable) {
                     ((AnimatedFileDrawable) drawable).addSecondParentView(overlayView);
                     ((AnimatedFileDrawable) drawable).setInvalidateParentViewWithSecond(true);
                 }
                 this.childImage.setImageCoords(imageX, imageY, imageWidth, imageHeight);
+                this.childImage.setAspectFit(image.isAspectFit());
                 this.childImage.setRoundRadius(image.getRoundRadius());
 
                 this.fullImage.setRoundRadius(image.getRoundRadius());
@@ -272,7 +276,11 @@ public class PinchToZoomHelper {
             }
             parentOffsetX += currentView.getLeft();
             parentOffsetY += currentView.getTop();
-            currentView = (View) currentView.getParent();
+            if (currentView.getParent() instanceof View) {
+                currentView = (View) currentView.getParent();
+            } else {
+                break;
+            }
         }
 
         float fragmentOffsetX = 0;
@@ -605,10 +613,22 @@ public class PinchToZoomHelper {
                         fullImage.draw(canvas);
                     }
                 }
-                if (childTextureView != null) {
+                if (childTextureViewContainer != null) {
+                    View view = childTextureView;
+                    if (view == null) {
+                        view = childTextureViewContainer;
+                    }
                     canvas.save();
                     canvas.translate(childImage.getImageX(), childImage.getImageY());
-                    childTextureView.draw(canvas);
+                    float scaleX = childImage.getImageWidth() / childTextureViewContainer.getMeasuredWidth();
+                    float scaleY = childImage.getImageHeight() / childTextureViewContainer.getMeasuredHeight();
+                    float maxScale = Math.max(scaleX, scaleY);
+                    if (childImage.isAspectFit()) {
+                        canvas.scale(maxScale, maxScale, childTextureViewContainer.getMeasuredWidth() / 2f, 0);
+                    } else {
+                        canvas.scale(maxScale, maxScale);
+                    }
+                    childTextureViewContainer.draw(canvas);
                     canvas.restore();
                 }
             } else {
@@ -740,11 +760,11 @@ public class PinchToZoomHelper {
         void getClipTopBottom(float[] topBottom);
     }
 
-    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, TextureView textureView, MessageObject messageObject) {
-        return checkPinchToZoom(ev, child, image, textureView, messageObject, 0);
+    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, View textureViewContainer, View textureView, MessageObject messageObject) {
+        return checkPinchToZoom(ev, child, image, textureViewContainer, textureView, messageObject, 0);
     }
 
-    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, TextureView textureView, MessageObject messageObject, int spoilerEffect2Index) {
+    public boolean checkPinchToZoom(MotionEvent ev, View child, ImageReceiver image, View textureViewContainer, View textureView, MessageObject messageObject, int spoilerEffect2Index) {
         if (!zoomEnabled(child, image)) {
             return false;
         }
@@ -785,7 +805,7 @@ public class PinchToZoomHelper {
                 pinchTranslationX = 0f;
                 pinchTranslationY = 0f;
                 child.getParent().requestDisallowInterceptTouchEvent(true);
-                startZoom(child, image, textureView, messageObject, spoilerEffect2Index);
+                startZoom(child, image, textureViewContainer, textureView, messageObject, spoilerEffect2Index);
 
             }
 

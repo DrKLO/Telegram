@@ -30,6 +30,7 @@ import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class ChatBackgroundDrawable extends Drawable {
@@ -222,22 +223,36 @@ public class ChatBackgroundDrawable extends Drawable {
         return 0;
     }
 
-    boolean attached;
-
-    public void onAttachedToWindow() {
-        if (attached) {
-            return;
-        }
-        attached = true;
-        imageReceiver.onAttachedToWindow();
+    private boolean attached;
+    private final ArrayList<View> attachedViews = new ArrayList<>();
+    private boolean isAttached() {
+        return attachedViews.size() > 0;
     }
 
-    public void onDetachedFromWindow() {
-        if (!attached) {
-            return;
+    public void onAttachedToWindow(View view) {
+        if (!attachedViews.contains(view)) {
+            attachedViews.add(view);
         }
-        attached = false;
-        imageReceiver.onDetachedFromWindow();
+        if (isAttached() && !attached) {
+            attached = true;
+            imageReceiver.onAttachedToWindow();
+        } else if (!isAttached() && attached) {
+            attached = false;
+            imageReceiver.onDetachedFromWindow();
+        }
+    }
+
+    public void onDetachedFromWindow(View view) {
+        if (!attachedViews.contains(view)) {
+            attachedViews.remove(view);
+        }
+        if (isAttached() && !attached) {
+            attached = true;
+            imageReceiver.onAttachedToWindow();
+        } else if (!isAttached() && attached) {
+            attached = false;
+            imageReceiver.onDetachedFromWindow();
+        }
     }
 
     public Drawable getDrawable() {

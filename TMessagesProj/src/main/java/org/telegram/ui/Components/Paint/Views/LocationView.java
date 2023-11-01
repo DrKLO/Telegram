@@ -2,49 +2,17 @@ package org.telegram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Typeface;
-import android.graphics.Xfermode;
-import android.graphics.drawable.Drawable;
-import android.graphics.text.LineBreaker;
-import android.os.Build;
-import android.text.Editable;
-import android.text.Layout;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.TextWatcher;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
-import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-
-import androidx.core.graphics.ColorUtils;
-
-import com.googlecode.mp4parser.authoring.Edit;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.PaintTypeface;
-import org.telegram.ui.Components.Paint.Swatch;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 
@@ -55,7 +23,7 @@ public class LocationView extends EntityView {
     private int currentType;
 
     public TLRPC.MessageMedia location;
-    public TLRPC.MediaArea mediaArea;
+    public TL_stories.MediaArea mediaArea;
 
     @Override
     protected float getStickyPaddingLeft() {
@@ -100,7 +68,7 @@ public class LocationView extends EntityView {
         return deg(Lat) + (Lat > 0 ? "N" : "S") + " " + deg(Long) + (Long > 0 ? "E" : "W");
     }
 
-    public LocationView(Context context, Point position, int currentAccount, TLRPC.MessageMedia location, TLRPC.MediaArea mediaArea, float density, int maxWidth, int type, int color) {
+    public LocationView(Context context, Point position, int currentAccount, TLRPC.MessageMedia location, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type, int color) {
         super(context, position);
 
         marker = new LocationMarker(context, density);
@@ -115,7 +83,7 @@ public class LocationView extends EntityView {
         updatePosition();
     }
 
-    public void setLocation(int currentAccount, TLRPC.MessageMedia location, TLRPC.MediaArea area) {
+    public void setLocation(int currentAccount, TLRPC.MessageMedia location, TL_stories.MediaArea area) {
         this.location = location;
         this.mediaArea = area;
 

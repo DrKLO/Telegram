@@ -17,12 +17,12 @@ import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.Paint.PaintTypeface;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.util.ArrayList;
@@ -154,7 +154,7 @@ public class VideoEditedInfo {
         public AnimatedFileDrawable animatedFileDrawable;
         public Canvas roundRadiusCanvas;
 
-        public TLRPC.MediaArea mediaArea;
+        public TL_stories.MediaArea mediaArea;
         public TLRPC.MessageMedia mediaGeo;
         public float density;
 
@@ -202,7 +202,7 @@ public class VideoEditedInfo {
             }
             if (type == TYPE_LOCATION) {
                 density = data.readFloat(false);
-                mediaArea = TLRPC.MediaArea.TLdeserialize(data, data.readInt32(false), false);
+                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(false), false);
                 mediaGeo = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(false), false);
                 if (data.remaining() > 0) {
                     int magic = data.readInt32(false);
@@ -215,7 +215,7 @@ public class VideoEditedInfo {
                 }
             }
             if (type == TYPE_REACTION) {
-                mediaArea = TLRPC.MediaArea.TLdeserialize(data, data.readInt32(false), false);
+                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(false), false);
             }
         }
 

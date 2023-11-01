@@ -46,6 +46,11 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     private final HintView2 hint;
     private final Runnable applyCaption;
 
+    @Override
+    protected int getEditTextStyle() {
+        return EditTextEmoji.STYLE_PHOTOVIEWER;
+    }
+
     public CaptionPhotoViewer(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager, Runnable applyCaption) {
         super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager);
         this.applyCaption = applyCaption;

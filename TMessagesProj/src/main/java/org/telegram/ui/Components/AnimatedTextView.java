@@ -71,8 +71,12 @@ public class AnimatedTextView extends View {
 
             public Part(StaticLayout layout, float offset, int toOppositeIndex) {
                 this.layout = layout;
-                this.offset = offset;
                 this.toOppositeIndex = toOppositeIndex;
+                layout(offset);
+            }
+
+            public void layout(float offset) {
+                this.offset = offset;
                 this.left = layout == null || layout.getLineCount() <= 0 ? 0 : layout.getLineLeft(0);
                 this.width = layout == null || layout.getLineCount() <= 0 ? 0 : layout.getLineWidth(0);
             }
@@ -796,7 +800,33 @@ public class AnimatedTextView extends View {
         }
 
         public void setTextSize(float textSizePx) {
+            final float lastTextPaint = textPaint.getTextSize();
             textPaint.setTextSize(textSizePx);
+            if (Math.abs(lastTextPaint - textSizePx) > 0.5f) {
+                final int width = overrideFullWidth > 0 ? overrideFullWidth : bounds.width();
+                if (currentParts != null) {
+                    // relayout parts:
+                    currentWidth = 0;
+                    currentHeight = 0;
+                    for (int i = 0; i < currentParts.length; ++i) {
+                        StaticLayout layout = makeLayout(currentParts[i].layout.getText(), width - (int) Math.ceil(Math.min(currentWidth, oldWidth)));
+                        currentParts[i] = new Part(layout, currentParts[i].offset, currentParts[i].toOppositeIndex);
+                        currentWidth += currentParts[i].width;
+                        currentHeight = Math.max(currentHeight, currentParts[i].layout.getHeight());
+                    }
+                }
+                if (oldParts != null) {
+                    oldWidth = 0;
+                    oldHeight = 0;
+                    for (int i = 0; i < oldParts.length; ++i) {
+                        StaticLayout layout = makeLayout(oldParts[i].layout.getText(), width - (int) Math.ceil(Math.min(currentWidth, oldWidth)));
+                        oldParts[i] = new Part(layout, oldParts[i].offset, oldParts[i].toOppositeIndex);
+                        oldWidth += oldParts[i].width;
+                        oldHeight = Math.max(oldHeight, oldParts[i].layout.getHeight());
+                    }
+                }
+                invalidateSelf();
+            }
         }
 
         public float getTextSize() {

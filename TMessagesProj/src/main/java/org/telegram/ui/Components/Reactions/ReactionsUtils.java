@@ -4,6 +4,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 
 public class ReactionsUtils {
@@ -57,7 +58,7 @@ public class ReactionsUtils {
         return "";
     }
 
-    public static void applyForStoryViews(TLRPC.Reaction oldReaction, TLRPC.Reaction newReaction, TLRPC.StoryViews views) {
+    public static void applyForStoryViews(TLRPC.Reaction oldReaction, TLRPC.Reaction newReaction, TL_stories.StoryViews views) {
         boolean found = false;
         if (views == null) {
             return;
