@@ -14,6 +14,7 @@ import android.text.Editable;
 import android.text.Layout;
 import android.text.ParcelableSpan;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -34,9 +35,13 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.TreeSet;
 
 public class QuoteSpan implements LeadingMarginSpan {
 
@@ -329,6 +334,198 @@ public class QuoteSpan implements LeadingMarginSpan {
             }
 
             canvas.restore();
+        }
+    }
+
+
+    public static void mergeQuotes(SpannableStringBuilder text, ArrayList<TLRPC.MessageEntity> entities) {
+        if (entities == null || !(text instanceof Spanned)) {
+            return;
+        }
+
+        final int QUOTE_START = 1;
+        final int QUOTE_END = 2;
+        final int CODE_START = 4;
+        final int CODE_END = 8;
+
+        final TreeSet<Integer> cutIndexes = new TreeSet<>();
+        final HashMap<Integer, Integer> cutToType = new HashMap<>();
+
+        for (int i = 0; i < entities.size(); ++i) {
+            TLRPC.MessageEntity entity = entities.get(i);
+            if (entity.offset + entity.length > text.length()) {
+                continue;
+            }
+            final int start = entity.offset;
+            final int end = entity.offset + entity.length;
+
+            if (entity instanceof TLRPC.TL_messageEntityBlockquote) {
+                cutIndexes.add(start);
+                cutIndexes.add(end);
+                cutToType.put(start, (cutToType.containsKey(start) ? cutToType.get(start) : 0) | QUOTE_START);
+                cutToType.put(end, (cutToType.containsKey(end) ? cutToType.get(end) : 0) | QUOTE_END);
+            }
+        }
+
+        int from = 0;
+        int quoteCount = 0, codeCount = 0;
+        for (Iterator<Integer> i = cutIndexes.iterator(); i.hasNext(); ) {
+            int cutIndex = i.next();
+            final int type = cutToType.get(cutIndex);
+
+            if (from != cutIndex) {
+                int to = cutIndex;
+                if (cutIndex - 1 >= 0 && cutIndex - 1 < text.length() && text.charAt(cutIndex - 1) == '\n') {
+                    to--;
+                }
+
+                final boolean isQuote = quoteCount > 0;
+                if (isQuote) {
+                    QuoteSpan.putQuoteToEditable(text, from, to);
+                }
+                from = cutIndex;
+                if (from + 1 < text.length() && text.charAt(from) == '\n') {
+                    from++;
+                }
+            }
+
+            if ((type & QUOTE_END) != 0) quoteCount--;
+            if ((type & QUOTE_START) != 0) quoteCount++;
+            if ((type & CODE_END) != 0) codeCount--;
+            if ((type & CODE_START) != 0) codeCount++;
+        }
+        if (from < text.length()) {
+            if (quoteCount > 0) {
+                QuoteSpan.putQuoteToEditable(text, from, text.length());
+            }
+        }
+    }
+
+    public static void normalizeQuotes(Editable text) {
+        if (text == null) {
+            return;
+        }
+
+        final int QUOTE_START = 1;
+        final int QUOTE_END = 2;
+        final int CODE_START = 4;
+        final int CODE_END = 8;
+
+        final TreeSet<Integer> cutIndexes = new TreeSet<>();
+        final HashMap<Integer, Integer> cutToType = new HashMap<>();
+
+        QuoteSpan.QuoteStyleSpan[] quoteSpans = text.getSpans(0, text.length(), QuoteSpan.QuoteStyleSpan.class);
+        for (int i = 0; i < quoteSpans.length; ++i) {
+            QuoteSpan.QuoteStyleSpan span = quoteSpans[i];
+
+            final int start = text.getSpanStart(span);
+            final int end = text.getSpanEnd(span);
+
+            cutIndexes.add(start);
+            cutToType.put(start, (cutToType.containsKey(start) ? cutToType.get(start) : 0) | QUOTE_START);
+            cutIndexes.add(end);
+            cutToType.put(end, (cutToType.containsKey(end) ? cutToType.get(end) : 0) | QUOTE_END);
+
+            text.removeSpan(span);
+            text.removeSpan(span.span);
+        }
+
+        int from = 0;
+        int quoteCount = 0, codeCount = 0;
+        for (Iterator<Integer> i = cutIndexes.iterator(); i.hasNext(); ) {
+            int cutIndex = i.next();
+            final int type = cutToType.get(cutIndex);
+
+            if (from != cutIndex) {
+                int to = cutIndex;
+                if (cutIndex - 1 >= 0 && cutIndex - 1 < text.length() && text.charAt(cutIndex - 1) == '\n') {
+                    to--;
+                }
+
+                final boolean isQuote = quoteCount > 0;
+                if (isQuote) {
+                    QuoteSpan.putQuoteToEditable(text, from, to);
+                }
+                from = cutIndex;
+                if (from + 1 < text.length() && text.charAt(from) == '\n') {
+                    from++;
+                }
+            }
+
+            if ((type & QUOTE_END) != 0) quoteCount--;
+            if ((type & QUOTE_START) != 0) quoteCount++;
+            if ((type & CODE_END) != 0) codeCount--;
+            if ((type & CODE_START) != 0) codeCount++;
+        }
+        if (from < text.length()) {
+            if (quoteCount > 0) {
+                QuoteSpan.putQuoteToEditable(text, from, text.length());
+            }
+        }
+    }
+
+    public static void normalizeQuotes(Spannable text) {
+        if (text == null) {
+            return;
+        }
+
+        final int QUOTE_START = 1;
+        final int QUOTE_END = 2;
+        final int CODE_START = 4;
+        final int CODE_END = 8;
+
+        final TreeSet<Integer> cutIndexes = new TreeSet<>();
+        final HashMap<Integer, Integer> cutToType = new HashMap<>();
+
+        QuoteSpan.QuoteStyleSpan[] quoteSpans = text.getSpans(0, text.length(), QuoteSpan.QuoteStyleSpan.class);
+        for (int i = 0; i < quoteSpans.length; ++i) {
+            QuoteSpan.QuoteStyleSpan span = quoteSpans[i];
+
+            final int start = text.getSpanStart(span);
+            final int end = text.getSpanEnd(span);
+
+            cutIndexes.add(start);
+            cutToType.put(start, (cutToType.containsKey(start) ? cutToType.get(start) : 0) | QUOTE_START);
+            cutIndexes.add(end);
+            cutToType.put(end, (cutToType.containsKey(end) ? cutToType.get(end) : 0) | QUOTE_END);
+
+            text.removeSpan(span);
+            text.removeSpan(span.span);
+        }
+
+        int from = 0;
+        int quoteCount = 0;
+        for (Iterator<Integer> i = cutIndexes.iterator(); i.hasNext(); ) {
+            int cutIndex = i.next();
+            final int type = cutToType.get(cutIndex);
+
+            if ((type & QUOTE_END) != 0 && (type & QUOTE_START) != 0 || quoteCount > 0 && (type & QUOTE_START) != 0) {
+                continue;
+            }
+
+            if (from != cutIndex) {
+                int to = cutIndex;
+                if (cutIndex - 1 >= 0 && cutIndex - 1 < text.length() && text.charAt(cutIndex - 1) == '\n') {
+                    to--;
+                }
+
+                final boolean isQuote = quoteCount > 0;
+                if (isQuote) {
+                    QuoteSpan.putQuote(text, from, to);
+                }
+                from = cutIndex;
+                if (from + 1 < text.length() && text.charAt(from) == '\n') {
+                    from++;
+                }
+            }
+
+            if ((type & QUOTE_END) != 0) quoteCount--;
+            if ((type & QUOTE_START) != 0) quoteCount++;
+        }
+        if (from < text.length()) {
+            if (quoteCount > 0) {
+                QuoteSpan.putQuote(text, from, text.length());
+            }
         }
     }
 }

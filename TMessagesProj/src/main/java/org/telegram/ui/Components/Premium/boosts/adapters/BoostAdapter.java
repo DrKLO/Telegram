@@ -193,7 +193,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 view = new SliderCell(context, resourcesProvider);
                 break;
             case HOLDER_TYPE_SUBTITLE:
-                view = new org.telegram.ui.Cells.HeaderCell(context, resourcesProvider);
+                view = new org.telegram.ui.Cells.HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 3, false, resourcesProvider);
                 view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
                 break;
             case HOLDER_TYPE_SUBTITLE_WITH_COUNTER:

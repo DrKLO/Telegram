@@ -222,10 +222,21 @@ public class MessagePreviewView extends FrameLayout {
         }
 
         public MessageObject getReplyMessage() {
+            return getReplyMessage(null);
+        }
+
+        public MessageObject getReplyMessage(MessageObject fallback) {
             if (messagePreviewParams.replyMessage != null) {
                 if (messagePreviewParams.replyMessage.groupedMessagesMap != null && messagePreviewParams.replyMessage.groupedMessagesMap.size() > 0) {
                     MessageObject.GroupedMessages group = messagePreviewParams.replyMessage.groupedMessagesMap.valueAt(0);
                     if (group != null) {
+                        if (group.isDocuments) {
+                            if (fallback != null) {
+                                return fallback;
+                            } else if (messagePreviewParams.quote != null) {
+                                return messagePreviewParams.quote.message;
+                            }
+                        }
                         return group.captionMessage;
                     }
                 }
@@ -318,8 +329,9 @@ public class MessagePreviewView extends FrameLayout {
                     }
                     messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                     messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
-                    if (messagePreviewParams.quote == null) {
-                        messagePreviewParams.quote = ChatActivity.ReplyQuote.from(getReplyMessage(), start, end);
+                    MessageObject toSelectMessage = getReplyMessage(messageObject);
+                    if (toSelectMessage != null && (messagePreviewParams.quote == null || messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != toSelectMessage.getId())) {
+                        messagePreviewParams.quote = ChatActivity.ReplyQuote.from(toSelectMessage, start, end);
                     }
                     onQuoteSelectedPart();
                     dismiss(true);
@@ -338,15 +350,22 @@ public class MessagePreviewView extends FrameLayout {
                     }
                     if (!isSelected && menu.getSwipeBack().isForegroundOpen()) {
                         menu.getSwipeBack().closeForeground(true);
-                    } else if (isSelected && messagePreviewParams.quote == null) {
+                    } else if (isSelected) {
                         if (textSelectionHelper.selectionEnd - textSelectionHelper.selectionStart > MessagesController.getInstance(currentAccount).quoteLengthMax) {
                             showQuoteLengthError();
                             return;
                         }
-                        messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
-                        messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
-                        messagePreviewParams.quote = ChatActivity.ReplyQuote.from(getReplyMessage(), messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
-                        menu.getSwipeBack().openForeground(menuBack);
+                        MessageObject msg = null;
+                        if (textSelectionHelper.getSelectedCell() != null) {
+                            msg = textSelectionHelper.getSelectedCell().getMessageObject();
+                        }
+                        msg = getReplyMessage(msg);
+                        if (messagePreviewParams.quote == null) {
+                            messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
+                            messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
+                            messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
+                            menu.getSwipeBack().openForeground(menuBack);
+                        }
                     }
                 }
             });
@@ -367,7 +386,7 @@ public class MessagePreviewView extends FrameLayout {
                         cell.drawContent(canvas, true);
                         cell.layoutTextXY(true);
                         cell.drawMessageText(canvas);
-                        if ((cell.getCurrentMessagesGroup() == null || cell.getCurrentPosition() != null && cell.getCurrentPosition().last) || cell.getTransitionParams().animateBackgroundBoundsInner) {
+                        if ((cell.getCurrentMessagesGroup() == null || cell.getCurrentPosition() != null && (cell.getCurrentPosition().last || cell.getCurrentMessagesGroup() != null && cell.getCurrentMessagesGroup().isDocuments)) || cell.getTransitionParams().animateBackgroundBoundsInner) {
                             cell.drawCaptionLayout(canvas, false, cell.getAlpha());
                         }
                         if (cell.getCurrentMessagesGroup() != null || cell.getTransitionParams().animateBackgroundBoundsInner) {
@@ -795,9 +814,14 @@ public class MessagePreviewView extends FrameLayout {
                                     showQuoteLengthError();
                                     return;
                                 }
+                                MessageObject msg = null;
+                                if (textSelectionHelper.getSelectedCell() != null) {
+                                    msg = textSelectionHelper.getSelectedCell().getMessageObject();
+                                }
+                                msg = getReplyMessage(msg);
                                 messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                                 messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
-                                messagePreviewParams.quote = ChatActivity.ReplyQuote.from(replyMessage, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
+                                messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                                 onQuoteSelectedPart();
                                 dismiss(true);
                             }
@@ -858,7 +882,12 @@ public class MessagePreviewView extends FrameLayout {
                                 if (textSelectionHelper.isInSelectionMode()) {
                                     messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                                     messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
-                                    messagePreviewParams.quote = ChatActivity.ReplyQuote.from(replyMessage, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
+                                    MessageObject msg = null;
+                                    if (textSelectionHelper.getSelectedCell() != null) {
+                                        msg = textSelectionHelper.getSelectedCell().getMessageObject();
+                                    }
+                                    msg = getReplyMessage(msg);
+                                    messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                                     onQuoteSelectedPart();
                                     dismiss(true);
                                     return;
@@ -1339,9 +1368,18 @@ public class MessagePreviewView extends FrameLayout {
                 if (textSelectionHelper.selectionEnd - textSelectionHelper.selectionStart > MessagesController.getInstance(currentAccount).quoteLengthMax) {
                     return;
                 }
+                MessageObject msg = null;
+                if (textSelectionHelper.getSelectedCell() != null) {
+                    msg = textSelectionHelper.getSelectedCell().getMessageObject();
+                }
+                msg = getReplyMessage(msg);
                 if (messagePreviewParams.quote != null && textSelectionHelper.isInSelectionMode()) {
                     messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                     messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
+                    if (msg != null && (messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != msg.getId())) {
+                        messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
+                        onQuoteSelectedPart();
+                    }
                 }
                 textSelectionHelper.clear();
             }
@@ -2147,11 +2185,15 @@ public class MessagePreviewView extends FrameLayout {
                 page.updateMessages();
                 if (page.currentTab == TAB_REPLY) {
                     if (showOutdatedQuote && !messagePreviewParams.isSecret) {
-                        MessageObject replyMessage = page.getReplyMessage();
-                        if (replyMessage != null) {
+                        MessageObject msg = null;
+                        if (page.textSelectionHelper.getSelectedCell() != null) {
+                            msg = page.textSelectionHelper.getSelectedCell().getMessageObject();
+                        }
+                        msg = page.getReplyMessage(msg);
+                        if (msg != null) {
                             messagePreviewParams.quoteStart = 0;
-                            messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, replyMessage.messageOwner.message.length());
-                            messagePreviewParams.quote = ChatActivity.ReplyQuote.from(replyMessage, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
+                            messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, msg.messageOwner.message.length());
+                            messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                             page.textSelectionHelper.select(page.getReplyMessageCell(), messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                         }
                     } else {

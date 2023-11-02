@@ -569,7 +569,7 @@ public class BoostDialogs {
 
         stringBuilder.append(" ");
         if (giveawayInfo.activated_count > 0) {
-            stringBuilder.append(replaceTags(formatString("BoostingGiveawayUsedLinks", R.string.BoostingGiveawayUsedLinks, giveawayInfo.activated_count)));
+            stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayUsedLinksPlural", giveawayInfo.activated_count)));
         }
         stringBuilder.append("\n\n");
 

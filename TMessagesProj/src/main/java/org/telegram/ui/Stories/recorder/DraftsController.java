@@ -584,6 +584,9 @@ public class DraftsController {
             entry.gradientBottomColor = gradientBottomColor;
             if (caption != null) {
                 CharSequence caption = new SpannableString(this.caption);
+                if (Theme.chat_msgTextPaint == null) {
+                    Theme.createCommonMessageResources();
+                }
                 caption = Emoji.replaceEmoji(caption, Theme.chat_msgTextPaint.getFontMetricsInt(), true);
                 MessageObject.addEntitiesToText(caption, captionEntities, true, false, true, false);
                 entry.caption = caption;

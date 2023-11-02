@@ -3953,7 +3953,19 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         anotherChat = true;
                     }
                 }
-                final boolean anotherTopic = replyToTopMsg != null && replyToTopMsg.getId() != replyToMsg.getId() && MessageObject.getTopicId(replyToMsg.messageOwner, true) != replyToTopMsg.getId();
+                boolean anotherTopic = false;
+                if (replyToMsg != null) {
+                    boolean isForum = false;
+                    if (!isForum) {
+                        TLRPC.Chat chat = getMessagesController().getChat(-DialogObject.getPeerDialogId(newMsg.peer_id));
+                        if (ChatObject.isForum(chat)) {
+                            isForum = true;
+                        }
+                    }
+                    if (isForum) {
+                        anotherTopic = replyToTopMsg.getId() != replyToMsg.getId() && MessageObject.getTopicId(replyToMsg.messageOwner, true) != replyToTopMsg.getId();
+                    }
+                }
                 if (anotherChat || anotherTopic) {
                     newMsg.reply_to.flags |= 1;
                     newMsg.reply_to.reply_to_peer_id = peer2;

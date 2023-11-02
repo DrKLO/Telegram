@@ -7403,7 +7403,11 @@
     <string name="BoostingGiveawayYouWon">You won a prize in this giveaway 🏆</string>
     <string name="BoostingGiveawayViewPrize">View my prize</string>
     <string name="BoostingGiveawayCanceledByPayment">The channel cancelled the prizes by reversing the payment for them.</string>
-    <string name="BoostingGiveawayUsedLinks">**%1$d** of the winners already used their gift links.</string>
+    <string name="BoostingGiveawayUsedLinksPlural_one">**%1$d** of the winners already used their gift links.</string>
+    <string name="BoostingGiveawayUsedLinksPlural_two">**%1$d** of the winners already used their gift links.</string>
+    <string name="BoostingGiveawayUsedLinksPlural_few">**%1$d** of the winners already used their gift links.</string>
+    <string name="BoostingGiveawayUsedLinksPlural_many">**%1$d** of the winners already used their gift links.</string>
+    <string name="BoostingGiveawayUsedLinksPlural_other">**%1$d** of the winners already used their gift links.</string>
     <string name="BoostingReduceQuantityText">You can’t purchase **%1$d** %2$s subscriptions in the app. Do you want to reduce the prize quantity to **%3$d**?</string>
     <string name="BoostingReduceUsersText">You can’t purchase **%1$d** subscriptions in the app. Only **%2$s** available.</string>
     <string name="BoostingSelectUpTo">Select up to %1$d channels</string>

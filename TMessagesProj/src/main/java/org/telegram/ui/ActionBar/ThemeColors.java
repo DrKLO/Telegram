@@ -172,22 +172,6 @@ public class ThemeColors {
         defaultColors[key_avatar_nameInMessageBlue] = 0xff368AD1;
         defaultColors[key_avatar_nameInMessagePink] = 0xffC7508B;
 
-        defaultColors[key_avatar_composite_nameInMessageRed] = 0xffE15052;
-        defaultColors[key_avatar_composite_nameInMessageOrange] = 0xffE0802B;
-        defaultColors[key_avatar_composite_nameInMessageViolet] = 0xffA05FF3;
-        defaultColors[key_avatar_composite_nameInMessageGreen] = 0xff27A910;
-        defaultColors[key_avatar_composite_nameInMessageCyan] = 0xff27ACCE;
-        defaultColors[key_avatar_composite_nameInMessageBlue] = 0xff3391D4;
-        defaultColors[key_avatar_composite_nameInMessagePink] = 0xffD14972;
-
-        defaultColors[key_avatar_composite_nameInMessageRed2] = 0xffF9AE63;
-        defaultColors[key_avatar_composite_nameInMessageOrange2] = 0xffFAC534;
-        defaultColors[key_avatar_composite_nameInMessageViolet2] = 0xffF48FFF;
-        defaultColors[key_avatar_composite_nameInMessageGreen2] = 0xffA7DC57;
-        defaultColors[key_avatar_composite_nameInMessageCyan2] = 0xff82E8D6;
-        defaultColors[key_avatar_composite_nameInMessageBlue2] = 0xff7DD3F0;
-        defaultColors[key_avatar_composite_nameInMessagePink2] = 0xffFFBE9F;
-
         defaultColors[key_actionBarDefault] = 0xff527da3;
         defaultColors[key_actionBarDefaultIcon] = 0xffffffff;
         defaultColors[key_actionBarActionModeDefault] = 0xffffffff;
@@ -962,20 +946,6 @@ public class ThemeColors {
         colorKeysMap.put(key_avatar_nameInMessageCyan, "avatar_nameInMessageCyan");
         colorKeysMap.put(key_avatar_nameInMessageBlue, "avatar_nameInMessageBlue");
         colorKeysMap.put(key_avatar_nameInMessagePink, "avatar_nameInMessagePink");
-        colorKeysMap.put(key_avatar_composite_nameInMessageRed, "avatar_composite_nameInMessageRed");
-        colorKeysMap.put(key_avatar_composite_nameInMessageOrange, "avatar_composite_nameInMessageOrange");
-        colorKeysMap.put(key_avatar_composite_nameInMessageViolet, "avatar_composite_nameInMessageViolet");
-        colorKeysMap.put(key_avatar_composite_nameInMessageGreen, "avatar_composite_nameInMessageGreen");
-        colorKeysMap.put(key_avatar_composite_nameInMessageCyan, "avatar_composite_nameInMessageCyan");
-        colorKeysMap.put(key_avatar_composite_nameInMessageBlue, "avatar_composite_nameInMessageBlue");
-        colorKeysMap.put(key_avatar_composite_nameInMessagePink, "avatar_composite_nameInMessagePink");
-        colorKeysMap.put(key_avatar_composite_nameInMessageRed2, "avatar_composite_nameInMessageRed2");
-        colorKeysMap.put(key_avatar_composite_nameInMessageOrange2, "avatar_composite_nameInMessageOrange2");
-        colorKeysMap.put(key_avatar_composite_nameInMessageViolet2, "avatar_composite_nameInMessageViolet2");
-        colorKeysMap.put(key_avatar_composite_nameInMessageGreen2, "avatar_composite_nameInMessageGreen2");
-        colorKeysMap.put(key_avatar_composite_nameInMessageCyan2, "avatar_composite_nameInMessageCyan2");
-        colorKeysMap.put(key_avatar_composite_nameInMessageBlue2, "avatar_composite_nameInMessageBlue2");
-        colorKeysMap.put(key_avatar_composite_nameInMessagePink2, "avatar_composite_nameInMessagePink2");
         colorKeysMap.put(key_actionBarDefault, "actionBarDefault");
         colorKeysMap.put(key_actionBarDefaultSelector, "actionBarDefaultSelector");
         colorKeysMap.put(key_actionBarWhiteSelector, "actionBarWhiteSelector");

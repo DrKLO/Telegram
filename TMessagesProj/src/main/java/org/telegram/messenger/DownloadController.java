@@ -82,7 +82,7 @@ public class DownloadController extends BaseController implements NotificationCe
     public final SparseArray<MessageObject> unviewedDownloads = new SparseArray<>();
 
     public static class Preset {
-        public int[] mask = new int[5];
+        public int[] mask = new int[4];
         public long[] sizes = new long[4];
         public boolean preloadVideo;
         public boolean preloadMusic;

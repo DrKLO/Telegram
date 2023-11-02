@@ -89,10 +89,10 @@ public class SpoilerEffect2 {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
                 return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 1.0f));
             case SharedConfig.PERFORMANCE_CLASS_AVERAGE:
-                return Math.min(512, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .95f));
+                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .8f));
             default:
             case SharedConfig.PERFORMANCE_CLASS_LOW:
-                return Math.min(400, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .85f));
+                return Math.min(720, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .7f));
         }
     }
 

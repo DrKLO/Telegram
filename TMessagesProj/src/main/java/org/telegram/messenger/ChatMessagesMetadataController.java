@@ -144,7 +144,7 @@ public class ChatMessagesMetadataController {
         });
         reactionsRequests.add(reqId);
         if (reactionsRequests.size() > 5) {
-            chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.remove(0), false);
+            chatActivity.getConnectionsManager().cancelRequest(reactionsRequests.remove(0), true);
         }
     }
 

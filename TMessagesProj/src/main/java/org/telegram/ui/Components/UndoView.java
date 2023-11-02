@@ -61,6 +61,7 @@ import org.telegram.ui.PaymentFormActivity;
 import java.util.ArrayList;
 
 @SuppressWarnings("FieldCanBeLocal")
+@Deprecated // use Bulletin instead
 public class UndoView extends FrameLayout {
 
     private TextView infoTextView;

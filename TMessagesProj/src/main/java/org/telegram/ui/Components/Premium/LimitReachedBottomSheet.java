@@ -829,9 +829,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
                         textView.setGravity(Gravity.CENTER_HORIZONTAL);
-                        textView.setOnClickListener(v -> {
-                            BoostPagerBottomSheet.show(getBaseFragment(), dialogId, resourcesProvider);
-                        });
+                        textView.setOnClickListener(v -> BoostPagerBottomSheet.show(getBaseFragment(), dialogId, resourcesProvider));
+                        orDividerView.setOnClickListener(v -> textView.performClick());
                         wrapperLayout.addView(actionBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 12, 12, 12, 8));
                         wrapperLayout.addView(orDividerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 0));
                         wrapperLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 12, 0, 12, 4));

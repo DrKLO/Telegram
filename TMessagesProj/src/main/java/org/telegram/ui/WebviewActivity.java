@@ -219,6 +219,10 @@ public class WebviewActivity extends BaseFragment {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        }
+
         if (Build.VERSION.SDK_INT >= 21) {
             webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             CookieManager cookieManager = CookieManager.getInstance();

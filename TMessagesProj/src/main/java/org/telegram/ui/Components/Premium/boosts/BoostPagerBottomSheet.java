@@ -59,6 +59,8 @@ public class BoostPagerBottomSheet extends BottomSheet {
         return instance;
     }
 
+    private boolean isLandscapeOrientation;
+
     public BoostPagerBottomSheet(Context context, boolean needFocus, BoostViaGiftsBottomSheet leftSheet, SelectorBottomSheet rightSheet, Theme.ResourcesProvider resourcesProvider, boolean forceDark) {
         super(context, needFocus, resourcesProvider);
         this.rightSheet = rightSheet;
@@ -68,6 +70,7 @@ public class BoostPagerBottomSheet extends BottomSheet {
         setBackgroundColor(Color.TRANSPARENT);
         fixNavigationBar();
         AndroidUtilities.setLightStatusBar(getWindow(), isLightStatusBar());
+        checkScreenOrientation();
 
         viewPager = new ViewPagerFixed(getContext()) {
 
@@ -133,7 +136,7 @@ public class BoostPagerBottomSheet extends BottomSheet {
                     super.dispatchDraw(canvas);
                     canvas.restore();
                 } else {
-                    if (isTablet) {
+                    if (isTablet || isLandscapeOrientation) {
                         canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     }
                     super.dispatchDraw(canvas);
@@ -230,6 +233,10 @@ public class BoostPagerBottomSheet extends BottomSheet {
         });
     }
 
+    private void checkScreenOrientation() {
+        isLandscapeOrientation = getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    }
+
     @Override
     public void dismissInternal() {
         super.dismissInternal();
@@ -239,6 +246,7 @@ public class BoostPagerBottomSheet extends BottomSheet {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         rightSheet.onConfigurationChanged(newConfig);
+        checkScreenOrientation();
         super.onConfigurationChanged(newConfig);
     }
 

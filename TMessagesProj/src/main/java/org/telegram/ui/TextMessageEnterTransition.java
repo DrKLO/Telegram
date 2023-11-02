@@ -635,7 +635,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             float replyImageSz = 0;
             if (messageView.needReplyImage) {
                 canvas.save();
-                final float sz = Math.min(replySelectorRect.height() - AndroidUtilities.dp(10), AndroidUtilities.dp(33));
+                final float sz = Math.min(replySelectorRect.height() - AndroidUtilities.dp(10), AndroidUtilities.dp(messageView.isReplyQuote ? 3 : 7) + Theme.chat_replyNamePaint.getTextSize() + Theme.chat_replyTextPaint.getTextSize());
                 replyImageSz = AndroidUtilities.lerp(AndroidUtilities.dp(35), sz, progressX);
                 messageView.replyImageReceiver.setImageCoords(
                     AndroidUtilities.lerp(replyX, replySelectorRect.left + AndroidUtilities.dp(8), progressX),
