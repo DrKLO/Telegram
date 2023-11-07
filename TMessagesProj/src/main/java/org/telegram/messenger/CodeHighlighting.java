@@ -1,9 +1,13 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -12,6 +16,7 @@ import android.text.SpannedString;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
+import android.text.style.LeadingMarginSpan;
 import android.text.style.LineHeightSpan;
 import android.text.style.MetricAffectingSpan;
 import android.util.Log;
@@ -52,7 +57,13 @@ public class CodeHighlighting {
     public static final int MATCH_COMMENT = 6;
     public static final int MATCH_FUNCTION = 7;
 
-    public static class Span extends MetricAffectingSpan {
+    public static int getTextSizeDecrement(int codeLength) {
+        if (codeLength > 120) return 5;
+        if (codeLength > 50) return 3;
+        return 2;
+    }
+
+    public static class Span extends CharacterStyle {
 
         public final String lng;
         public final String code;
@@ -67,36 +78,15 @@ public class CodeHighlighting {
 
             this.lng = lng;
             this.code = code;
-            if (code == null) {
-                this.decrementSize = 2;
-            } else if (code.length() > 120) {
-                this.decrementSize = 5;
-            } else if (code.length() > 50) {
-                this.decrementSize = 3;
-            } else {
-                this.decrementSize = 2;
-            }
+            this.decrementSize = getTextSizeDecrement(code == null ? 0 : code.length());
             this.currentType = type;
             this.style = style;
         }
 
         @Override
-        public void updateMeasureState(TextPaint p) {
-            if (smallerSize) {
-                p.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - decrementSize));
-            }
-            p.setFlags(p.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
-            if (style != null) {
-                style.applyStyle(p);
-            } else {
-                p.setTypeface(Typeface.MONOSPACE);
-            }
-        }
-
-        @Override
         public void updateDrawState(TextPaint p) {
             if (smallerSize) {
-                p.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - decrementSize));
+                p.setTextSize(dp(SharedConfig.fontSize - decrementSize));
             }
             if (currentType == 2) {
                 p.setColor(0xffffffff);

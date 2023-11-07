@@ -144,6 +144,14 @@ public class BoostPagerBottomSheet extends BottomSheet {
             }
 
             @Override
+            protected float getAvailableTranslationX() {
+                if (isTablet || isLandscapeOrientation) {
+                    return getMeasuredWidth();
+                }
+                return super.getAvailableTranslationX();
+            }
+
+            @Override
             protected boolean canScroll(MotionEvent e) {
                 return viewPager.getCurrentPosition() == 1;
             }

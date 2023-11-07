@@ -1751,9 +1751,9 @@ public class Theme {
             if (isDarkTheme && currentColors.get(key_chat_outBubbleGradient1) != 0) {
                 int outBubbleAverage = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
                 Color.colorToHSV(outBubbleAverage, tempHSV);
-                tempHSV[1] = Utilities.clamp(tempHSV[1] + .3f, 1, 0);
-                tempHSV[2] = Utilities.clamp(tempHSV[2] + -.4f, 1, 0);
-                currentColors.put(key_chat_outCodeBackground, Color.HSVToColor(0x70, tempHSV));
+                tempHSV[1] = Utilities.clamp(tempHSV[1] + .1f, 1, 0);
+                tempHSV[2] = Utilities.clamp(tempHSV[2] - .8f, 1, 0);
+                currentColors.put(key_chat_outCodeBackground, Color.HSVToColor(0x40, tempHSV));
             } else {
                 currentColors.put(key_chat_outCodeBackground, codeBackground(outBubble, isDarkTheme));
             }
@@ -1817,13 +1817,16 @@ public class Theme {
         private int codeBackground(int bubbleColor, boolean isDarkTheme) {
             Color.colorToHSV(bubbleColor, tempHSV);
             int alpha = 0x20;
-            if (tempHSV[1] <= 0 || tempHSV[2] >= 1 || tempHSV[2] <= 0) {
-                tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? .3f : -.2f)));
+            if (isDarkTheme) {
+                alpha = 0x40;
+                tempHSV[1] = Utilities.clamp(tempHSV[1] - .08f, 1f, 0f);
+                tempHSV[2] = .03f;
             } else {
-                tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] + (isDarkTheme ? -.3f : .28f)));
-                tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? +.1f : -.1f)));
-                if (isDarkTheme) {
-                    alpha = 0x60;
+                if (tempHSV[1] <= 0 || tempHSV[2] >= 1 || tempHSV[2] <= 0) {
+                    tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + -.2f));
+                } else {
+                    tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] + .28f));
+                    tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + -.1f));
                 }
             }
             return Color.HSVToColor(alpha, tempHSV);

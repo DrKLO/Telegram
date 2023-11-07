@@ -45,6 +45,7 @@ public class ReplyMessageLine {
     private float lastHeight;
     private Path color2Path = new Path();
     private Path color3Path = new Path();
+    private int switchedCount = 0;
 
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji;
 
@@ -58,6 +59,7 @@ public class ReplyMessageLine {
     public final AnimatedFloat color3Alpha;
     public final AnimatedFloat emojiLoadedT;
     public final AnimatedFloat loadingStateT;
+    public final AnimatedFloat switchStateT;
 
     public ReplyMessageLine(View view) {
         this.parentView = view;
@@ -85,6 +87,7 @@ public class ReplyMessageLine {
         color3Alpha = new AnimatedFloat(view, 0, 400, CubicBezierInterpolator.EASE_OUT_QUINT);
         emojiLoadedT = new AnimatedFloat(view, 0, 440, CubicBezierInterpolator.EASE_OUT_QUINT);
         loadingStateT = new AnimatedFloat(view, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+        switchStateT = new AnimatedFloat(view, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
     }
 
     public int getColor() {
@@ -95,7 +98,21 @@ public class ReplyMessageLine {
         return backgroundColor;
     }
 
+    public void setBackgroundColor(int backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
+    private int wasMessageId;
+    private int wasColorId;
     private void resolveColor(MessageObject messageObject, int colorId, Theme.ResourcesProvider resourcesProvider) {
+        if (wasColorId != colorId) {
+            final int msgId = messageObject != null ? messageObject.getId() : 0;
+            if (msgId == wasMessageId) {
+                switchedCount++;
+            }
+            wasColorId = colorId;
+            wasMessageId = msgId;
+        }
         if (colorId < 7) {
             color1 = color2 = color3 = Theme.getColor(Theme.keys_avatar_nameInMessage[colorId], resourcesProvider);
             hasColor2 = hasColor3 = false;
@@ -351,8 +368,6 @@ public class ReplyMessageLine {
             canvas.drawPaint(color1Paint);
             color1Paint.setAlpha(wasAlpha);
 
-            canvas.clipPath(lineClipPath);
-
             incrementLoadingT();
 
             float x = (float) Math.pow(loadingT / 240f / 4f, .85f) * 4f;
@@ -372,7 +387,6 @@ public class ReplyMessageLine {
 
             parentView.invalidate();
         }
-
         canvas.drawPaint(color1Paint);
         final float color2Alpha = this.color2Alpha.set(hasColor2);
         if (color2Alpha > 0) {
@@ -387,7 +401,8 @@ public class ReplyMessageLine {
             } else {
                 fh = rect.height() - Math.floorMod((int) rect.height(), dp(6.33f + 3 + 3.33f));
             }
-            canvas.translate(0, -((loadingTranslationT + (reversedOut ? 100 : 0)) / 1000f * dp(30) % fh));
+
+            canvas.translate(0, -((loadingTranslationT + switchStateT.set(switchedCount * 425) + (reversedOut ? 100 : 0)) / 1000f * dp(30) % fh));
 
             checkColorPathes(rect.height() * 2);
             int wasAlpha = color2Paint.getAlpha();

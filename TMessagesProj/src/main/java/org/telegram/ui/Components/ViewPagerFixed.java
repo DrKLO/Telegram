@@ -110,14 +110,18 @@ public class ViewPagerFixed extends FrameLayout {
     public float getPositionAnimated() {
         float position = 0;
         if (viewPages[0] != null && viewPages[0].getVisibility() == View.VISIBLE) {
-            final float t = Utilities.clamp(1f - Math.abs(viewPages[0].getTranslationX() / (float) AndroidUtilities.displaySize.x), 1, 0);
+            final float t = Utilities.clamp(1f - Math.abs(viewPages[0].getTranslationX() / getAvailableTranslationX()), 1, 0);
             position += currentPosition * t;
         }
         if (viewPages[1] != null && viewPages[1].getVisibility() == View.VISIBLE) {
-            final float t = Utilities.clamp(1f - Math.abs(viewPages[1].getTranslationX() / (float) AndroidUtilities.displaySize.x), 1, 0);
+            final float t = Utilities.clamp(1f - Math.abs(viewPages[1].getTranslationX() / getAvailableTranslationX()), 1, 0);
             position += nextPosition * t;
         }
         return position;
+    }
+
+    protected float getAvailableTranslationX() {
+        return (float) AndroidUtilities.displaySize.x;
     }
 
     protected boolean canScroll(MotionEvent e) {

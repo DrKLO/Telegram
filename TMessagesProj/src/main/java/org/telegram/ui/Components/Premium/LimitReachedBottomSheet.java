@@ -770,8 +770,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             canApplyBoost.setMyBoosts(myBoosts);
             onBoostSuccess();
 
-            String str = LocaleController.formatString("BoostingReassignedFrom", R.string.BoostingReassignedFrom,
-                    LocaleController.formatPluralString("BoostingSubscriptionsCount", size),
+            String str = LocaleController.formatPluralString("BoostingReassignedFromPlural", size,
                     LocaleController.formatPluralString("BoostingFromOtherChannel", channels));
             BulletinFactory bulletinFactory = BulletinFactory.of(container, resourcesProvider);
             bulletinFactory.createSimpleBulletinWithIconSize(R.raw.forward, str, 30).setDuration(4000).show(true);

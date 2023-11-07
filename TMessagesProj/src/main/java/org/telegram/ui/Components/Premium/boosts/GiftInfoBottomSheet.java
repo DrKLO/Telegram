@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
 
     public static void show(BaseFragment fragment, String slug, Browser.Progress progress) {
+        if (fragment == null) {
+            return;
+        }
         final AtomicBoolean isCanceled = new AtomicBoolean(false);
         if (progress != null) {
             progress.init();
@@ -38,12 +41,11 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
             if (isCanceled.get()) {
                 return;
             }
-            GiftInfoBottomSheet alert = new GiftInfoBottomSheet(fragment, false, true, giftCode, slug);
-            if (fragment != null && fragment.getParentActivity() != null) {
-                fragment.showDialog(alert);
-            } else {
-                alert.show();
+            if (fragment.getParentActivity() == null) {
+                return;
             }
+            GiftInfoBottomSheet alert = new GiftInfoBottomSheet(fragment, false, true, giftCode, slug);
+            fragment.showDialog(alert);
             if (progress != null) {
                 progress.end();
             }

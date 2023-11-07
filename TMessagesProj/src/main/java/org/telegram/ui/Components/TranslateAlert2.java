@@ -337,10 +337,13 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     newEntity.length = entity.length;
                     received.entities.set(i, newEntity);
                 }
+            } else if (entity instanceof TLRPC.TL_messageEntityPre) {
+                if (source != null && source.entities != null && i < source.entities.size() && source.entities.get(i) instanceof TLRPC.TL_messageEntityPre) {
+                    entity.language = source.entities.get(i).language;
+                }
             }
         }
         if (source != null && source.text != null && !source.entities.isEmpty()) {
-
             HashMap<String, ArrayList<Emoji.EmojiSpanRange>> srcIndexes = groupEmojiRanges(source.text);
             HashMap<String, ArrayList<Emoji.EmojiSpanRange>> destIndexes = groupEmojiRanges(received.text);
 

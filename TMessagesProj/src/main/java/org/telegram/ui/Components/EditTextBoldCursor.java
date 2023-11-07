@@ -863,12 +863,12 @@ public class EditTextBoldCursor extends EditTextEffects {
                 throw new RuntimeException(e);
             }
         }
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT_WATCH) {
+        if (!EditTextEffects.allowHackingTextCanvas()) {
             ignoreTopCount = 1;
             ignoreBottomCount = 1;
         }
         canvas.save();
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT_WATCH) {
+        if (!EditTextEffects.allowHackingTextCanvas()) {
             canvas.translate(0, topPadding);
         }
         try {

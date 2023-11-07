@@ -197,6 +197,10 @@ public class AnimatedFloat {
         }
     }
 
+    public float getTargetValue() {
+        return targetValue;
+    }
+
     public void setParent(View parent) {
         this.parent = parent;
     }

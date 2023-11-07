@@ -271,7 +271,19 @@ public class EditTextEffects extends EditText {
         return offsetY;
     }
 
-    public boolean wrapCanvasToFixClipping = Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH;
+    private static Boolean allowHackingTextCanvasCache;
+    public static boolean allowHackingTextCanvas() {
+        if (allowHackingTextCanvasCache == null) {
+            allowHackingTextCanvasCache = Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH && (
+                Build.MANUFACTURER == null ||
+                !Build.MANUFACTURER.equalsIgnoreCase("HONOR") &&
+                !Build.MANUFACTURER.equalsIgnoreCase("HUAWEI")
+            );
+        }
+        return allowHackingTextCanvasCache;
+    }
+
+    public boolean wrapCanvasToFixClipping = allowHackingTextCanvas();
     private NoClipCanvas wrappedCanvas;
 
     @Override

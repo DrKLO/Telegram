@@ -289,8 +289,8 @@ public class ChannelBoostLayout extends FrameLayout {
                 ItemInternal item = items.get(position);
                 TL_stories.TL_prepaidGiveaway prepaidGiveaway = item.prepaidGiveaway;
                 GiveawayCell giveawayCell = (GiveawayCell) holder.itemView;
-                String name = LocaleController.formatString("TelegramPremiumCount", R.string.TelegramPremiumCount, prepaidGiveaway.quantity);
-                String info = LocaleController.formatString("SubscriptionsCount", R.string.SubscriptionsCount, LocaleController.formatPluralString("GiftMonths", prepaidGiveaway.months));
+                String name = LocaleController.formatPluralString("BoostingTelegramPremiumCountPlural", prepaidGiveaway.quantity);
+                String info = LocaleController.formatPluralString("BoostingSubscriptionsCountPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("PrepaidGiveawayMonths", prepaidGiveaway.months));
                 giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
                 giveawayCell.setImage(prepaidGiveaway);
                 giveawayCell.setAvatarPadding(5);
@@ -352,6 +352,7 @@ public class ChannelBoostLayout extends FrameLayout {
                     giftCode.months = (boost.expires - boost.date) / 30 / 86400;
                     if (boost.unclaimed) {
                         giftCode.to_id = NO_USER_ID;
+                        giftCode.flags = -1;
                     } else {
                         giftCode.boost = boost;
                     }

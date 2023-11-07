@@ -67,25 +67,14 @@ public class SelectorCountryCell extends BaseCell {
     private CharSequence getCountryNameWithFlag(TLRPC.TL_help_country country) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         String flag = LocaleController.getLanguageFlag(country.iso2);
-        if (!LocaleController.isRTL) {
-            if (flag != null) {
-                sb.append(flag).append(" ");
-                sb.setSpan(new SpaceDrawable(16), flag.length(), flag.length() + 1, 0);
-            } else {
-                sb.append(" ");
-                sb.setSpan(new SpaceDrawable(34), 0, 1, 0);
-            }
-            sb.append(country.default_name);
+        if (flag != null) {
+            sb.append(flag).append(" ");
+            sb.setSpan(new SpaceDrawable(16), flag.length(), flag.length() + 1, 0);
         } else {
-            sb.append(country.default_name);
-            if (flag != null) {
-                sb.append(" ").append(flag);
-                sb.setSpan(new SpaceDrawable(16), country.default_name.length(), country.default_name.length() + 1, 0);
-            } else {
-                sb.append(" ");
-                sb.setSpan(new SpaceDrawable(34), country.default_name.length(), country.default_name.length() + 1, 0);
-            }
+            sb.append(" ");
+            sb.setSpan(new SpaceDrawable(34), 0, 1, 0);
         }
+        sb.append(country.default_name);
         return sb;
     }
 

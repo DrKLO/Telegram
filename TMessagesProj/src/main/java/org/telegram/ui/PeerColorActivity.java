@@ -3,6 +3,7 @@ package org.telegram.ui;
 import static android.content.DialogInterface.BUTTON_NEGATIVE;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.getPath;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_COLOR;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS;
 
@@ -16,7 +17,9 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.icu.util.Measure;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -47,6 +50,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -84,7 +88,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     private RecyclerView.Adapter listAdapter;
     private FrameLayout buttonContainer;
     private ButtonWithCounterView button;
-    private PeerColorPicker peerColorPicker;
+    private PeerColorGrid peerColorPicker;
 
     private int selectedColor;
     private long selectedEmoji;
@@ -98,6 +102,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     int infoRow;
     int iconRow;
     int info2Row;
+    int buttonRow;
 
     int rowCount;
 
@@ -105,6 +110,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     private static final int VIEW_TYPE_COLOR_PICKER = 1;
     private static final int VIEW_TYPE_INFO = 2;
     private static final int VIEW_TYPE_ICON = 3;
+    private static final int VIEW_TYPE_BUTTONPAD = 5;
 
     public PeerColorActivity(long dialogId) {
         super();
@@ -183,13 +189,25 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         FrameLayout frameLayout = new FrameLayout(context);
 
-        listView = new RecyclerListView(context);
-        ((DefaultItemAnimator)listView.getItemAnimator()).setSupportsChangeAnimations(false);
+        listView = new RecyclerListView(context) {
+            @Override
+            protected void onMeasure(int widthSpec, int heightSpec) {
+                super.onMeasure(widthSpec, heightSpec);
+                updateButtonY();
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                super.onLayout(changed, l, t, r, b);
+                updateButtonY();
+            }
+        };
+        ((DefaultItemAnimator) listView.getItemAnimator()).setSupportsChangeAnimations(false);
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(listAdapter = new RecyclerListView.SelectionAdapter() {
             @Override
             public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                return holder.getItemViewType() == VIEW_TYPE_COLOR_PICKER || holder.getItemViewType() == VIEW_TYPE_ICON;
+                return holder.getItemViewType() == VIEW_TYPE_ICON;
             }
 
             @NonNull
@@ -211,24 +229,26 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                         view = cell;
                         break;
                     case VIEW_TYPE_COLOR_PICKER:
-                        PeerColorPicker colorPicker = peerColorPicker = new PeerColorPicker(context, currentAccount, getResourceProvider());
-                        colorPicker.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
+                        PeerColorGrid colorPicker = peerColorPicker = new PeerColorGrid(context, currentAccount);
+                        colorPicker.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                         colorPicker.setSelected(selectedColor);
-                        colorPicker.layoutManager.scrollToPositionWithOffset(colorPicker.selectedPosition, AndroidUtilities.displaySize.x / 2);
-                        colorPicker.setOnItemClickListener((item, position) -> {
-                            selectedColor = colorPicker.toColorId(position);
-                            colorPicker.setSelectedPosition(position);
-                            if (item.getLeft() - colorPicker.getPaddingLeft() < AndroidUtilities.dp(24)) {
-                                colorPicker.smoothScrollBy(position == 0 ? Math.max(-(item.getLeft() - colorPicker.getPaddingLeft()), -AndroidUtilities.dp(64)) : -AndroidUtilities.dp(64), 0);
-                            } else if (item.getRight() - colorPicker.getPaddingLeft() > AndroidUtilities.displaySize.x - colorPicker.getPaddingLeft() - colorPicker.getPaddingRight() - AndroidUtilities.dp(24)) {
-                                colorPicker.smoothScrollBy(position == colorPicker.adapter.getItemCount() - 1 ? Math.min(AndroidUtilities.displaySize.x - item.getRight() - colorPicker.getPaddingRight(), AndroidUtilities.dp(64)) : AndroidUtilities.dp(64), 0);
-                            }
+                        colorPicker.setOnColorClick(colorId -> {
+                            selectedColor = colorId;
+                            colorPicker.setSelected(colorId);
                             updateMessages();
                             if (setReplyIconCell != null) {
                                 setReplyIconCell.invalidate();
                             }
                         });
                         view = colorPicker;
+                        break;
+                    case VIEW_TYPE_BUTTONPAD:
+                        view = new View(context) {
+                            @Override
+                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(14 + 48 + 14), MeasureSpec.EXACTLY));
+                            }
+                        };
                         break;
                     case VIEW_TYPE_ICON:
                         SetReplyIconCell setcell = setReplyIconCell = new SetReplyIconCell(context);
@@ -285,6 +305,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 if (position == iconRow) {
                     return VIEW_TYPE_ICON;
                 }
+                if (position == buttonRow) {
+                    return VIEW_TYPE_BUTTONPAD;
+                }
                 if (position == getItemCount() - 1) {
                     return 4;
                 }
@@ -314,6 +337,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
 
         frameLayout.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                updateButtonY();
+            }
+        });
 
         fragmentView = contentView = frameLayout;
 
@@ -321,6 +350,29 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         updateRows();
 
         return contentView;
+    }
+
+    private void updateButtonY() {
+        if (buttonContainer == null) {
+            return;
+        }
+        final int lastPosition = listAdapter.getItemCount() - 1;
+        boolean foundLastPosition = false;
+        int maxTop = 0;
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            View child = listView.getChildAt(i);
+            final int position = listView.getChildAdapterPosition(child);
+            if (position != RecyclerListView.NO_POSITION && position <= lastPosition) {
+                maxTop = Math.max(maxTop, child.getTop());
+                if (position == lastPosition) {
+                    foundLastPosition = true;
+                }
+            }
+        }
+        if (!foundLastPosition) {
+            maxTop = listView.getMeasuredHeight();
+        }
+        buttonContainer.setTranslationY(Math.max(0, maxTop - (listView.getMeasuredHeight() - dp(14 + 48 + 14))));
     }
 
     private void showBoostLimit(boolean error) {
@@ -688,9 +740,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         rowCount = 0;
         previewRow = rowCount++;
         colorPickerRow = rowCount++;
-        infoRow = rowCount++;
         iconRow = rowCount++;
-        info2Row = rowCount++;
+        infoRow = rowCount++;
+        buttonRow = rowCount++;
     }
 
     @Override
@@ -1133,6 +1185,276 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 }
                 canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(64), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(64) : 0), getMeasuredHeight() - 1, paint);
             }
+        }
+    }
+
+    public static class PeerColorGrid extends View {
+
+        public class ColorButton {
+            private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint paint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint paint3 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Path circlePath = new Path();
+            private final Path color2Path = new Path();
+            private boolean hasColor2, hasColor3;
+
+            private final ButtonBounce bounce = new ButtonBounce(PeerColorGrid.this);
+
+            public ColorButton() {
+                backgroundPaint.setStyle(Paint.Style.STROKE);
+            }
+
+            public void setBackgroundColor(int backgroundColor) {
+                backgroundPaint.setColor(backgroundColor);
+            }
+
+            public void set(int color) {
+                hasColor2 = hasColor3 = false;
+                paint1.setColor(color);
+            }
+
+            public void set(int color1, int color2) {
+                hasColor2 = true;
+                hasColor3 = false;
+                paint1.setColor(color1);
+                paint2.setColor(color2);
+            }
+
+            public void set(MessagesController.PeerColor color) {
+                if (color == null) {
+                    return;
+                }
+                if (Theme.isCurrentThemeDark() && color.hasColor2() && !color.hasColor3()) {
+                    paint1.setColor(color.getColor2());
+                    paint2.setColor(color.getColor1());
+                } else {
+                    paint1.setColor(color.getColor1());
+                    paint2.setColor(color.getColor2());
+                }
+                paint3.setColor(color.getColor3());
+                hasColor2 = color.hasColor2();
+                hasColor3 = color.hasColor3();
+            }
+
+            private boolean selected;
+            private final AnimatedFloat selectedT = new AnimatedFloat(PeerColorGrid.this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+            public void setSelected(boolean selected, boolean animated) {
+                this.selected = selected;
+                if (!animated) {
+                    selectedT.set(selected, true);
+                }
+                invalidate();
+            }
+
+            private static final int VIEW_SIZE_DP = 56;
+            private static final int CIRCLE_RADIUS_DP = 20;
+
+            public int id;
+            private final RectF bounds = new RectF();
+            public final RectF clickBounds = new RectF();
+            public void layout(int id, RectF bounds) {
+                this.id = id;
+                this.bounds.set(bounds);
+            }
+            public void layoutClickBounds(RectF bounds) {
+                this.clickBounds.set(bounds);
+            }
+
+            protected void draw(Canvas canvas) {
+                canvas.save();
+                final float s = bounce.getScale(.05f);
+                canvas.scale(s, s, bounds.centerX(), bounds.centerY());
+
+                canvas.save();
+                circlePath.rewind();
+                circlePath.addCircle(bounds.centerX(), bounds.centerY(), Math.min(bounds.height() / 2f, bounds.width() / 2f), Path.Direction.CW);
+                canvas.clipPath(circlePath);
+                canvas.drawPaint(paint1);
+                if (hasColor2) {
+                    color2Path.rewind();
+                    color2Path.moveTo(bounds.right, bounds.top);
+                    color2Path.lineTo(bounds.right, bounds.bottom);
+                    color2Path.lineTo(bounds.left, bounds.bottom);
+                    color2Path.close();
+                    canvas.drawPath(color2Path, paint2);
+                }
+                canvas.restore();
+
+                if (hasColor3) {
+                    canvas.save();
+                    final float color3Size = (bounds.width() * .315f);
+                    AndroidUtilities.rectTmp.set(
+                        bounds.centerX() - color3Size / 2f,
+                        bounds.centerY() - color3Size / 2f,
+                        bounds.centerX() + color3Size / 2f,
+                        bounds.centerY() + color3Size / 2f
+                    );
+                    canvas.rotate(45f, bounds.centerX(), bounds.centerY());
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(2.33f), dp(2.33f), paint3);
+                    canvas.restore();
+                }
+
+                final float selectT = selectedT.set(selected);
+
+                if (selectT > 0) {
+                    backgroundPaint.setStrokeWidth(dpf2(2));
+                    canvas.drawCircle(
+                        bounds.centerX(), bounds.centerY(),
+                        Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * AndroidUtilities.lerp(.5f, -2f, selectT),
+                        backgroundPaint
+                    );
+                }
+
+                canvas.restore();
+            }
+
+            private boolean pressed;
+            public boolean isPressed() {
+                return pressed;
+            }
+
+            public void setPressed(boolean pressed) {
+                bounce.setPressed(this.pressed = pressed);
+            }
+        }
+
+        private int currentAccount;
+
+        private ColorButton[] buttons;
+
+        public PeerColorGrid(Context context, int currentAccount) {
+            super(context);
+            this.currentAccount = currentAccount;
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            final int width = MeasureSpec.getSize(widthMeasureSpec);
+
+            final MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).peerColors;
+            final int colorsCount = 7 + (peerColors == null ? 0 : peerColors.colors.size());
+            final int columns = 7;
+
+            final float iconSize = Math.min(dp(38 + 16), width / (columns + (columns + 1) * .28947f));
+            final float horizontalSeparator = iconSize * .28947f;
+            final float verticalSeparator = iconSize * .315789474f;
+
+            final int rows = colorsCount / columns;
+            final int height = (int) (iconSize * rows + verticalSeparator * (rows + 1));
+
+            setMeasuredDimension(width, height);
+
+            if (buttons == null || buttons.length != colorsCount) {
+                buttons = new ColorButton[colorsCount];
+                for (int i = 0; i < colorsCount; ++i) {
+                    buttons[i] = new ColorButton();
+                    buttons[i].setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    if (i < 7) {
+                        buttons[i].set(Theme.getColor(Theme.keys_avatar_nameInMessage[i]));
+                    } else if (peerColors != null) {
+                        buttons[i].set(peerColors.getColor(i));
+                    }
+                }
+            }
+            final float itemsWidth = iconSize * columns + horizontalSeparator * (columns + 1);
+            final float startX = (width - itemsWidth) / 2f + horizontalSeparator;
+            if (buttons != null) {
+                float x = startX, y = verticalSeparator;
+                for (int i = 0; i < buttons.length; ++i) {
+                    AndroidUtilities.rectTmp.set(x, y, x + iconSize, y + iconSize);
+                    buttons[i].layout(i, AndroidUtilities.rectTmp);
+                    AndroidUtilities.rectTmp.inset(-horizontalSeparator / 2, -verticalSeparator / 2);
+                    buttons[i].layoutClickBounds(AndroidUtilities.rectTmp);
+                    buttons[i].setSelected(i == selectedColorId, false);
+
+                    if (i % columns == (columns - 1)) {
+                        x = startX;
+                        y += iconSize + verticalSeparator;
+                    } else {
+                        x += iconSize + horizontalSeparator;
+                    }
+                }
+            }
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            if (buttons != null) {
+                for (int i = 0; i < buttons.length; ++i) {
+                    buttons[i].draw(canvas);
+                }
+            }
+            canvas.drawRect(dp(21), getMeasuredHeight() - 1, getMeasuredWidth() - dp(21), getMeasuredHeight(), Theme.dividerPaint);
+        }
+
+        private int selectedColorId = 0;
+        public void setSelected(int colorId) {
+            selectedColorId = colorId;
+            if (buttons != null) {
+                for (int i = 0; i < buttons.length; ++i) {
+                    buttons[i].setSelected(i == colorId, true);
+                }
+            }
+        }
+        public int getColorId() {
+            return selectedColorId;
+        }
+
+        private Utilities.Callback<Integer> onColorClick;
+        public void setOnColorClick(Utilities.Callback<Integer> onColorClick) {
+            this.onColorClick = onColorClick;
+        }
+
+        private ColorButton pressedButton;
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            ColorButton button = null;
+            if (buttons != null) {
+                for (int i = 0; i < buttons.length; ++i) {
+                    if (buttons[i].clickBounds.contains(event.getX(), event.getY())) {
+                        button = buttons[i];
+                        break;
+                    }
+                }
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                pressedButton = button;
+                if (button != null) {
+                    button.setPressed(true);
+                }
+                if (getParent() != null) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                if (pressedButton != button) {
+                    if (pressedButton != null) {
+                        pressedButton.setPressed(false);
+                    }
+                    if (button != null) {
+                        button.setPressed(true);
+                    }
+                    if (pressedButton != null && button != null) {
+                        if (onColorClick != null) {
+                            onColorClick.run(button.id);
+                        }
+                    }
+                    pressedButton = button;
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                if (event.getAction() == MotionEvent.ACTION_UP && pressedButton != null) {
+                    if (onColorClick != null) {
+                        onColorClick.run(pressedButton.id);
+                    }
+                }
+                if (buttons != null) {
+                    for (int i = 0; i < buttons.length; ++i) {
+                        buttons[i].setPressed(false);
+                    }
+                }
+                pressedButton = null;
+            }
+            return true;
         }
     }
 

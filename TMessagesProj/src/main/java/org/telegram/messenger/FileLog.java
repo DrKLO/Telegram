@@ -170,7 +170,7 @@ public class FileLog {
             //exclude file loading
             excludeRequests = new HashSet<>();
             excludeRequests.add("TL_upload_getFile");
-            excludeRequests.add("TL_upload_a");
+            excludeRequests.add("TL_upload_getWebFile");
 
             ExclusionStrategy strategy = new ExclusionStrategy() {
 

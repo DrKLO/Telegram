@@ -1384,6 +1384,14 @@ public class DatabaseMigrationHelper {
             version = 135;
         }
 
+        if (version == 135) {
+//            database.executeFast("DROP TABLE stickersets").stepThis().dispose();
+            database.executeFast("CREATE TABLE stickersets2(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS stickersets2_id_index ON stickersets2(id);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 136").stepThis().dispose();
+            version = 136;
+        }
+
         return version;
     }
 

@@ -117,6 +117,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                     }
                 }
                 selectedParticipantsType = tmpParticipantsType;
+                updateRows(false, false);
             } else if (view instanceof DurationCell) {
                 selectedMonths = ((TLRPC.TL_premiumGiftCodeOption) ((DurationCell) view).getGifCode()).months;
                 updateRows(false, false);
@@ -185,7 +186,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                     for (int i = 0; i < options.size(); i++) {
                         TLRPC.TL_premiumGiftCodeOption option = options.get(i);
                         if (option.months == selectedMonths) {
-                            if (BoostRepository.isGoogleBillingAvailable() && BoostDialogs.checkReduceQuantity(getContext(), resourcesProvider, giftCodeOptions, option, arg -> {
+                            if (BoostRepository.isGoogleBillingAvailable() && BoostDialogs.checkReduceQuantity(sliderValues, getContext(), resourcesProvider, giftCodeOptions, option, arg -> {
                                 selectedSliderIndex = sliderValues.indexOf(arg.users);
                                 updateRows(true, true);
                                 updateActionButton(true);

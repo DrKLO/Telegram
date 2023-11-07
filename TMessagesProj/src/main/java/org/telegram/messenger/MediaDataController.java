@@ -1244,19 +1244,36 @@ public class MediaDataController extends BaseController {
         return null;
     }
 
+    private boolean cleanedupStickerSetCache;
+    private void cleanupStickerSetCache() {
+        if (cleanedupStickerSetCache) {
+            return;
+        }
+        cleanedupStickerSetCache = true;
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                final long minDate = (System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 7);
+                getMessagesStorage().getDatabase().executeFast("DELETE FROM stickersets2 WHERE date < " + minDate).stepThis().dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
     private void saveStickerSetIntoCache(TLRPC.TL_messages_stickerSet set) {
         if (set == null || set.set == null) {
             return;
         }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
-                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO stickersets VALUES(?, ?, ?)");
+                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO stickersets2 VALUES(?, ?, ?, ?)");
                 state.requery();
                 NativeByteBuffer data = new NativeByteBuffer(set.getObjectSize());
                 set.serializeToStream(data);
                 state.bindLong(1, set.set.id);
                 state.bindByteBuffer(2, data);
                 state.bindInteger(3, set.set.hash);
+                state.bindLong(4, System.currentTimeMillis());
                 state.step();
                 data.reuse();
                 state.dispose();
@@ -1264,6 +1281,7 @@ public class MediaDataController extends BaseController {
                 FileLog.e(e);
             }
         });
+        cleanupStickerSetCache();
     }
 
     private TLRPC.TL_messages_stickerSet getCachedStickerSetInternal(long id, Integer hash) {
@@ -1271,7 +1289,7 @@ public class MediaDataController extends BaseController {
         SQLiteCursor cursor = null;
         NativeByteBuffer data = null;
         try {
-            cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, hash FROM stickersets WHERE id = " + id + " LIMIT 1");
+            cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, hash FROM stickersets2 WHERE id = " + id + " LIMIT 1");
             if (cursor.next() && !cursor.isNull(0)) {
                 data = cursor.byteBufferValue(0);
                 if (data != null) {
@@ -6283,11 +6301,15 @@ public class MediaDataController extends BaseController {
                         content = substring(content, 0, content.length() - 1);
                     }
                     if (!TextUtils.isEmpty(content)) {
+                        if (content.length() > 1 && content.charAt(0) == '\n') {
+                            content = content.subSequence(1, content.length());
+                            index--;
+                        }
                         message[0] = AndroidUtilities.concat(startMessage, content, endMessage);
                         TLRPC.TL_messageEntityPre entity = new TLRPC.TL_messageEntityPre();
                         entity.offset = start + (replacedFirst ? 0 : 1);
                         entity.length = index - start - 3 - (language.length() + (!language.isEmpty() ? 1 : 0)) + (replacedFirst ? 0 : 1);
-                        entity.language = language;
+                        entity.language = TextUtils.isEmpty(language) || language.trim().length() == 0 ? "" : language;
                         entities.add(entity);
                         lastIndex -= 6;
                     }
@@ -6630,10 +6652,13 @@ public class MediaDataController extends BaseController {
                     TLRPC.Peer peer2 = getMessagesController().getPeer(dialogId);
                     TLRPC.Peer thisPeer = quote.message.messageOwner.peer_id;
                     if (peer2 != null && !MessageObject.peersEqual(peer2, thisPeer)) {
-                        draftMessage.reply_to.flags |= 1;
-                        draftMessage.reply_to.reply_to_peer_id = getMessagesController().getInputPeer(peer2);
+                        draftMessage.reply_to.flags |= 2;
+                        draftMessage.reply_to.reply_to_peer_id = getMessagesController().getInputPeer(thisPeer);
                     }
                 }
+            } else if (dialogId != MessageObject.getDialogId(replyToMessage)) {
+                draftMessage.reply_to.flags |= 2;
+                draftMessage.reply_to.reply_to_peer_id = getMessagesController().getInputPeer(getMessagesController().getPeer(MessageObject.getDialogId(replyToMessage)));
             }
         }
         if (entities != null && !entities.isEmpty()) {
@@ -6644,10 +6669,20 @@ public class MediaDataController extends BaseController {
         SparseArray<TLRPC.DraftMessage> threads = drafts.get(dialogId);
         TLRPC.DraftMessage currentDraft = threads == null ? null : threads.get(threadId);
         if (!clean) {
-            if (
-                currentDraft != null && currentDraft.message.equals(draftMessage.message) && replyToEquals(currentDraft.reply_to, draftMessage.reply_to) && currentDraft.no_webpage == draftMessage.no_webpage ||
-                currentDraft == null && TextUtils.isEmpty(draftMessage.message) && (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0)
-            ) {
+            boolean sameDraft;
+            if (currentDraft != null) {
+                sameDraft = (
+                    currentDraft.message.equals(draftMessage.message) &&
+                    replyToEquals(currentDraft.reply_to, draftMessage.reply_to) &&
+                    currentDraft.no_webpage == draftMessage.no_webpage
+                );
+            } else {
+                sameDraft = (
+                    TextUtils.isEmpty(draftMessage.message) &&
+                    (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0)
+                );
+            }
+            if (sameDraft) {
                 return;
             }
         }
@@ -6791,7 +6826,7 @@ public class MediaDataController extends BaseController {
             if (threads != null) {
                 replyToMessage = threads.get(threadId);
             }
-            if (replyToMessage == null || replyToMessage.id != draft.reply_to.reply_to_msg_id || !MessageObject.peersEqual(replyToMessage.peer_id, getMessagesController().getPeer(draft.reply_to.reply_to_msg_id))) {
+            if (replyToMessage == null || replyToMessage.id != draft.reply_to.reply_to_msg_id || !MessageObject.peersEqual(draft.reply_to.reply_to_peer_id, replyToMessage.peer_id)) {
                 replyToMessage = null;
             }
         } else if (draft != null && draft.reply_to == null) {
@@ -6823,13 +6858,14 @@ public class MediaDataController extends BaseController {
         }
         editor.commit();
         if (fromServer && (threadId == 0 || getMessagesController().isForum(dialogId))) {
-            if (draft != null && draft.reply_to != null && draft.reply_to.reply_to_msg_id != 0 && replyToMessage == null) {
+            if (draft != null && draft.reply_to != null && draft.reply_to.reply_to_msg_id != 0 && (replyToMessage == null || replyToMessage.reply_to instanceof TLRPC.TL_messageReplyHeader && replyToMessage.replyMessage == null)) {
+                final long replyDialogId = (draft.reply_to.flags & 2) != 0 ? DialogObject.getPeerDialogId(draft.reply_to.reply_to_peer_id) : dialogId;
                 TLRPC.User user = null;
                 TLRPC.Chat chat = null;
-                if (DialogObject.isUserDialog(dialogId)) {
-                    user = getMessagesController().getUser(dialogId);
+                if (DialogObject.isUserDialog(replyDialogId)) {
+                    user = getMessagesController().getUser(replyDialogId);
                 } else {
-                    chat = getMessagesController().getChat(-dialogId);
+                    chat = getMessagesController().getChat(-replyDialogId);
                 }
                 if (user != null || chat != null) {
                     long channelId = ChatObject.isChannel(chat) ? chat.id : 0;
@@ -6838,13 +6874,40 @@ public class MediaDataController extends BaseController {
                     getMessagesStorage().getStorageQueue().postRunnable(() -> {
                         try {
                             TLRPC.Message message = null;
-                            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data FROM messages_v2 WHERE mid = %d and uid = %d", messageId, dialogId));
+                            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, replydata FROM messages_v2 WHERE mid = %d and uid = %d", messageId, replyDialogId));
                             if (cursor.next()) {
                                 NativeByteBuffer data = cursor.byteBufferValue(0);
                                 if (data != null) {
                                     message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     message.readAttachPath(data, getUserConfig().clientUserId);
                                     data.reuse();
+                                }
+                                if (message != null) {
+                                    ArrayList<Long> usersToLoad = new ArrayList<>();
+                                    ArrayList<Long> chatsToLoad = new ArrayList<>();
+                                    LongSparseArray<SparseArray<ArrayList<TLRPC.Message>>> replyMessageOwners = new LongSparseArray<>();
+                                    LongSparseArray<ArrayList<Integer>> dialogReplyMessagesIds = new LongSparseArray<>();
+                                    try {
+                                        if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0) {
+                                            if (!cursor.isNull(1)) {
+                                                NativeByteBuffer data2 = cursor.byteBufferValue(1);
+                                                if (data2 != null) {
+                                                    message.replyMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
+                                                    message.replyMessage.readAttachPath(data2, getUserConfig().clientUserId);
+                                                    data2.reuse();
+                                                    if (message.replyMessage != null) {
+                                                        MessagesStorage.addUsersAndChatsFromMessage(message.replyMessage, usersToLoad, chatsToLoad, null);
+                                                    }
+                                                }
+                                            }
+                                            if (message.replyMessage == null) {
+                                                MessagesStorage.addReplyMessages(message, replyMessageOwners, dialogReplyMessagesIds);
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        getMessagesStorage().checkSQLException(e);
+                                    }
+                                    getMessagesStorage().loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, false);
                                 }
                             }
                             cursor.dispose();

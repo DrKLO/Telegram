@@ -39,7 +39,7 @@ public class BoostCounterView extends View {
         countText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         countText.setTextColor(Color.WHITE);
         countText.setText("");
-        countText.setGravity(Gravity.CENTER_HORIZONTAL);
+        countText.setGravity(Gravity.CENTER);
 
         bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         bgPaint.setColor(0xFF967bff);

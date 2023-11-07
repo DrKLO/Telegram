@@ -768,7 +768,7 @@ public class SpoilerEffect extends Drawable {
                 layout = StaticLayout.Builder.obtain(sb, 0, sb.length(), textLayout.getPaint(), textLayout.getWidth())
                         .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                         .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
-                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                        .setAlignment(textLayout.getAlignment())
                         .setLineSpacing(textLayout.getSpacingAdd(), textLayout.getSpacingMultiplier())
                         .build();
             } else {

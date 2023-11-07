@@ -276,7 +276,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
             linearSmoothScroller.setOffset(AndroidUtilities.dp(38));
             recyclerListView.getLayoutManager().startSmoothScroll(linearSmoothScroller);
         } else {
-            recyclerListView.scrollToPosition(1);
+            recyclerListView.scrollToPosition(0);
         }
     }
 
@@ -409,13 +409,14 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         updateList(false, true);
         headerView.setText(getTitle());
         updateActionButton(false);
+        scrollToTop(false);
     }
 
     private void updateSection() {
         String text;
         switch (type) {
             case TYPE_CHANNEL:
-                text = LocaleController.formatString("BoostingSelectUpTo", R.string.BoostingSelectUpTo, BoostRepository.giveawayAddPeersMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToPlural", (int) BoostRepository.giveawayAddPeersMax());
                 sectionCell.setLayerHeight(32);
                 break;
             case TYPE_USER:
@@ -423,7 +424,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                 sectionCell.setLayerHeight(32);
                 break;
             case TYPE_COUNTRY:
-                text = LocaleController.formatString("BoostingSelectUpTo", R.string.BoostingSelectUpToCountries, BoostRepository.giveawayCountriesMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToCountriesPlural", (int) BoostRepository.giveawayCountriesMax());
                 sectionCell.setLayerHeight(1);
                 break;
             default:
@@ -436,13 +437,13 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         String text = "";
         switch (type) {
             case TYPE_CHANNEL:
-                text = LocaleController.formatString("BoostingSelectUpToWarningChannels", R.string.BoostingSelectUpToWarningChannels, BoostRepository.giveawayAddPeersMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsPlural", (int) BoostRepository.giveawayAddPeersMax());
                 break;
             case TYPE_USER:
                 text = LocaleController.getString("BoostingSelectUpToWarningUsers", R.string.BoostingSelectUpToWarningUsers);
                 break;
             case TYPE_COUNTRY:
-                text = LocaleController.formatString("BoostingSelectUpToWarningCountries", R.string.BoostingSelectUpToWarningCountries, BoostRepository.giveawayCountriesMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToWarningCountriesPlural", (int) BoostRepository.giveawayCountriesMax());
                 break;
         }
         if (selectedObjectsListener != null) {

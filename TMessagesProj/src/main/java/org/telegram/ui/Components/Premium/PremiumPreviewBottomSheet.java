@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
@@ -43,6 +44,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -87,12 +89,13 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     ViewGroup iconContainer;
     BaseFragment fragment;
 
+    public Integer accentColor;
     public float startEnterFromX;
     public float startEnterFromY;
     public float startEnterFromX1;
     public float startEnterFromY1;
     public float startEnterFromScale;
-    public SimpleTextView startEnterFromView;
+    public View startEnterFromView;
     public View overrideTitleIcon;
     public TLRPC.InputStickerSet statusStickerSet;
     public boolean isEmojiStatus;
@@ -265,7 +268,10 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         if (statusStickerSet != null) {
             final String stickerSetPlaceholder = "<STICKERSET>";
             String string = LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogTitle, ContactsController.formatName(user.first_name, user.last_name), stickerSetPlaceholder);
-            CharSequence charSequence = AndroidUtilities.replaceSingleTag(string, Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null);
+            CharSequence charSequence = AndroidUtilities.replaceSingleLink(string, accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor);
+            try {
+                charSequence = Emoji.replaceEmoji(charSequence, titleView[0].getPaint().getFontMetricsInt(), false);
+            } catch (Exception ignore) {}
             SpannableStringBuilder title = charSequence instanceof SpannableStringBuilder ? ((SpannableStringBuilder) charSequence) : new SpannableStringBuilder(charSequence);
             int index = charSequence.toString().indexOf(stickerSetPlaceholder);
             if (index >= 0) {
@@ -301,6 +307,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                     public void updateDrawState(@NonNull TextPaint ds) {
                         super.updateDrawState(ds);
                         ds.setUnderlineText(false);
+                        if (accentColor != null) {
+                            ds.setColor(accentColor);
+                        }
                     }
                     @Override
                     public void onClick(@NonNull View view) {}
@@ -356,24 +365,27 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
             subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogSubtitle, ContactsController.formatName(user.first_name, user.last_name))));
         } else if (giftTier != null) {
             if (isOutboundGift) {
-                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
-                subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor));
+                subtitleView.setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor));
             } else if (user == null || TextUtils.isEmpty(user.first_name) || user.id == 777000) {
-                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPluralSomeone, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPluralSomeone, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             } else {
-                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user.first_name, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user.first_name, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             }
         } else {
-            if(user == null) {
+            if (user == null) {
                 titleView[0].setText(LocaleController.getString(R.string.TelegramPremium));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumSubscribedSubtitle)));
             } else {
-                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
             }
         }
+        try {
+            titleView[0].setText(Emoji.replaceEmoji(titleView[0].getText(), titleView[0].getPaint().getFontMetricsInt(), false));
+        } catch (Exception ignore) {}
     }
 
     @Override
@@ -439,7 +451,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                         titleViewContainer = new FrameLayout(context);
                         titleViewContainer.setClipChildren(false);
 
-                        final ColorFilter colorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon), PorterDuff.Mode.SRC_IN);
+                        final ColorFilter colorFilter = new PorterDuffColorFilter(accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon) : accentColor, PorterDuff.Mode.SRC_IN);
                         titleView = new LinkSpanDrawable.LinksTextView[2];
                         for (int a = 0; a < 2; ++a) {
                             titleView[a] = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
@@ -465,6 +477,11 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                                 @Override
                                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(99999999, MeasureSpec.AT_MOST));
+                                }
+
+                                @Override
+                                public int overrideColor() {
+                                    return accentColor != null ? Theme.multAlpha(accentColor, .10f) : super.overrideColor();
                                 }
                             };
                             titleView[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
@@ -651,7 +668,16 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
 
             float[] points = new float[]{startEnterFromX, startEnterFromY};
             startEnterFromView.getMatrix().mapPoints(points);
-            Drawable startEnterFromDrawable = startEnterFromView.getRightDrawable();
+            Drawable startEnterFromDrawable = null;
+            if (startEnterFromView instanceof SimpleTextView) {
+                startEnterFromDrawable = ((SimpleTextView) startEnterFromView).getRightDrawable();
+            } else if (startEnterFromView instanceof ChatMessageCell) {
+                startEnterFromDrawable = ((ChatMessageCell) startEnterFromView).currentNameStatusDrawable;
+            }
+            if (startEnterFromDrawable == null) {
+                canvas.restore();
+                return;
+            }
             float cxFrom = -coords[0] + startEnterFromX1 + points[0];
             float cyFrom = -coords[1] + startEnterFromY1 + points[1];
 
@@ -715,8 +741,23 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         enterTransitionProgress = 0f;
         enterTransitionInProgress = true;
         iconContainer.invalidate();
-        startEnterFromView.getRightDrawable().setAlpha(0);
-        startEnterFromView.invalidate();
+        final Drawable startEnterFromDrawable;
+        if (startEnterFromView instanceof SimpleTextView) {
+            startEnterFromDrawable = ((SimpleTextView) startEnterFromView).getRightDrawable();
+        } else if (startEnterFromView instanceof ChatMessageCell) {
+            startEnterFromDrawable = ((ChatMessageCell) startEnterFromView).currentNameStatusDrawable;
+            ((ChatMessageCell) startEnterFromView).invalidateOutbounds();
+        } else {
+            startEnterFromDrawable = null;
+        }
+        if (startEnterFromDrawable != null) {
+            startEnterFromDrawable.setAlpha(0);
+        }
+        if (startEnterFromView instanceof ChatMessageCell) {
+            ((ChatMessageCell) startEnterFromView).invalidateOutbounds();
+        } else {
+            startEnterFromView.invalidate();
+        }
         if (iconTextureView != null) {
             iconTextureView.startEnterAnimation(-360, 100);
         }
@@ -730,13 +771,18 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                 enterTransitionInProgress = false;
                 enterTransitionProgress = 1f;
                 iconContainer.invalidate();
-                ValueAnimator iconAlphaBack = ValueAnimator.ofInt(0, 255);
-                Drawable drawable = startEnterFromView.getRightDrawable();
-                iconAlphaBack.addUpdateListener(animation1 -> {
-                    drawable.setAlpha((Integer) animation1.getAnimatedValue());
-                    startEnterFromView.invalidate();
-                });
-                iconAlphaBack.start();
+                if (startEnterFromDrawable != null) {
+                    ValueAnimator iconAlphaBack = ValueAnimator.ofInt(0, 255);
+                    iconAlphaBack.addUpdateListener(animation1 -> {
+                        startEnterFromDrawable.setAlpha((Integer) animation1.getAnimatedValue());
+                        if (startEnterFromView instanceof ChatMessageCell) {
+                            ((ChatMessageCell) startEnterFromView).invalidateOutbounds();
+                        } else {
+                            startEnterFromView.invalidate();
+                        }
+                    });
+                    iconAlphaBack.start();
+                }
                 super.onAnimationEnd(animation);
             }
         });

@@ -25,7 +25,7 @@ public class BoostTypeSingleCell extends BoostTypeCell {
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
         avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_GIFT);
         titleTextView.setText(LocaleController.formatString("BoostingPreparedGiveawayOne", R.string.BoostingPreparedGiveawayOne));
-        String subtitle = LocaleController.formatString("BoostingPreparedGiveawaySubscriptions", R.string.BoostingPreparedGiveawaySubscriptions, prepaidGiveaway.quantity, LocaleController.formatPluralString("Months", prepaidGiveaway.months));
+        String subtitle = LocaleController.formatPluralString("BoostingPreparedGiveawaySubscriptionsPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("Months", prepaidGiveaway.months));
         setSubtitle(subtitle);
         if (prepaidGiveaway.months == 12) {
             avatarDrawable.setColor(0xFFff8560, 0xFFd55246);

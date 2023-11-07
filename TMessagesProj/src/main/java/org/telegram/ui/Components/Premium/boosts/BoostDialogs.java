@@ -429,7 +429,7 @@ public class BoostDialogs {
 
             AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
             builder.setTitle(getString("BoostingReduceQuantity", R.string.BoostingReduceQuantity));
-            builder.setMessage(replaceTags(formatString("BoostingReduceUsersText", R.string.BoostingReduceUsersText, current, downTo)));
+            builder.setMessage(replaceTags(formatPluralString("BoostingReduceUsersTextPlural", current, downTo)));
             builder.setPositiveButton(getString("OK", R.string.OK), (dialogInterface, i) -> {
 
             });
@@ -439,11 +439,11 @@ public class BoostDialogs {
         return false;
     }
 
-    public static boolean checkReduceQuantity(Context context, Theme.ResourcesProvider resourcesProvider, List<TLRPC.TL_premiumGiftCodeOption> list, TLRPC.TL_premiumGiftCodeOption selected, Utilities.Callback<TLRPC.TL_premiumGiftCodeOption> onSuccess) {
+    public static boolean checkReduceQuantity(List<Integer> sliderValues, Context context, Theme.ResourcesProvider resourcesProvider, List<TLRPC.TL_premiumGiftCodeOption> list, TLRPC.TL_premiumGiftCodeOption selected, Utilities.Callback<TLRPC.TL_premiumGiftCodeOption> onSuccess) {
         if (selected.store_product == null) {
             List<TLRPC.TL_premiumGiftCodeOption> result = new ArrayList<>();
             for (TLRPC.TL_premiumGiftCodeOption item : list) {
-                if (item.months == selected.months && item.store_product != null) {
+                if (item.months == selected.months && item.store_product != null && sliderValues.contains(item.users)) {
                     result.add(item);
                 }
             }
@@ -462,7 +462,7 @@ public class BoostDialogs {
             int downTo = suggestion.users;
             AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
             builder.setTitle(getString("BoostingReduceQuantity", R.string.BoostingReduceQuantity));
-            builder.setMessage(replaceTags(formatString("BoostingReduceQuantityText", R.string.BoostingReduceQuantityText, current, months, downTo)));
+            builder.setMessage(replaceTags(formatPluralString("BoostingReduceQuantityTextPlural", current, months, downTo)));
             builder.setPositiveButton(getString("Reduce", R.string.Reduce), (dialogInterface, i) -> onSuccess.run(finalSuggestion));
             builder.setNegativeButton(getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
 
@@ -473,9 +473,7 @@ public class BoostDialogs {
         return false;
     }
 
-    public static void showAbout(long chatId, long msgDate, TLRPC.TL_payments_giveawayInfo giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
-        TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-chatId);
-        String from = chat != null ? chat.title : "";
+    public static void showAbout(String from, long msgDate, TLRPC.TL_payments_giveawayInfo giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
         int quantity = giveaway.quantity;
         String months = formatPluralString("BoldMonths", giveaway.months);
         String endDate = LocaleController.getInstance().formatterGiveawayMonthDay.format(new Date(giveaway.until_date * 1000L));
@@ -492,13 +490,15 @@ public class BoostDialogs {
 
         if (giveaway.only_new_subscribers) {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveral", quantity, endDate, quantity, from, giveaway.channels.size() - 1, fromTime, fromDate)));
+                String andStr = formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveral2", giveaway.channels.size() - 1, fromTime, fromDate);
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveral1", quantity, endDate, quantity, from, andStr)));
             } else {
                 stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDate", quantity, endDate, quantity, from, fromTime, fromDate)));
             }
         } else {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveral", quantity, endDate, quantity, from, giveaway.channels.size() - 1)));
+                String andStr = formatPluralString("BoostingGiveawayHowItWorksSubTextSeveral2", giveaway.channels.size() - 1);
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveral1", quantity, endDate, quantity, from, andStr)));
             } else {
                 stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubText", quantity, endDate, quantity, from)));
             }
@@ -508,7 +508,7 @@ public class BoostDialogs {
 
         if (giveawayInfo.participating) {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatString("BoostingGiveawayParticipantMulti", R.string.BoostingGiveawayParticipantMulti, from, giveaway.channels.size() - 1)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayParticipantMultiPlural", giveaway.channels.size() - 1, from)));
             } else {
                 stringBuilder.append(replaceTags(formatString("BoostingGiveawayParticipant", R.string.BoostingGiveawayParticipant, from)));
             }
@@ -523,7 +523,7 @@ public class BoostDialogs {
             stringBuilder.append(replaceTags(formatString("BoostingGiveawayNotEligible", R.string.BoostingGiveawayNotEligible, date)));
         } else {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatString("BoostingGiveawayTakePartMulti", R.string.BoostingGiveawayTakePartMulti, from, giveaway.channels.size() - 1, endDate)));
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayTakePartMultiPlural", giveaway.channels.size() - 1, from, endDate)));
             } else {
                 stringBuilder.append(replaceTags(formatString("BoostingGiveawayTakePart", R.string.BoostingGiveawayTakePart, from, endDate)));
             }
@@ -536,9 +536,7 @@ public class BoostDialogs {
         builder.show();
     }
 
-    public static void showAboutEnd(long chatId, long msgDate, TLRPC.TL_payments_giveawayInfoResults giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
-        TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-chatId);
-        String from = chat != null ? chat.title : "";
+    public static void showAboutEnd(String from, long msgDate, TLRPC.TL_payments_giveawayInfoResults giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
         int quantity = giveaway.quantity;
         String months = formatPluralString("BoldMonths", giveaway.months);
         String endDate = LocaleController.getInstance().formatterGiveawayMonthDay.format(new Date(giveaway.until_date * 1000L));
@@ -555,13 +553,15 @@ public class BoostDialogs {
 
         if (giveaway.only_new_subscribers) {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveralEnd", quantity, endDate, quantity, from, giveaway.channels.size() - 1, fromTime, fromDate)));
+                String andStr = formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveral2", giveaway.channels.size() - 1, fromTime, fromDate);
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateSeveralEnd1", quantity, endDate, quantity, from, andStr)));
             } else {
                 stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextDateEnd", quantity, endDate, quantity, from, fromTime, fromDate)));
             }
         } else {
             if (isSeveralChats) {
-                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveralEnd", quantity, endDate, quantity, from, giveaway.channels.size() - 1)));
+                String andStr = formatPluralString("BoostingGiveawayHowItWorksSubTextSeveral2", giveaway.channels.size() - 1);
+                stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextSeveralEnd1", quantity, endDate, quantity, from, andStr)));
             } else {
                 stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksSubTextEnd", quantity, endDate, quantity, from)));
             }
@@ -583,7 +583,7 @@ public class BoostDialogs {
             bottomTextView.setText(str);
             bottomTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
             bottomTextView.setBackground(Theme.createRoundRectDrawable(dp(10), dp(10), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider), 0.1f)));
-            bottomTextView.setPadding(0, dp(12), 0, dp(12));
+            bottomTextView.setPadding(dp(8), dp(12), dp(8), dp(12));
             builder.addBottomView(bottomTextView);
             builder.setMessage(stringBuilder);
             builder.setPositiveButton(getString("Close", R.string.Close), (dialogInterface, i) -> {
@@ -639,7 +639,7 @@ public class BoostDialogs {
         progress.init();
         progress.onCancel(() -> isCanceled.set(true));
         final TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) messageObject.messageOwner.media;
-        final long chatId = messageObject.getFromChatId();
+        final String fromName = getGiveawayCreatorName(messageObject);
         final long msgDate = messageObject.messageOwner.date * 1000L;
         BoostRepository.getGiveawayInfo(messageObject, result -> {
             if (isCanceled.get()) {
@@ -648,10 +648,10 @@ public class BoostDialogs {
             progress.end();
             if (result instanceof TLRPC.TL_payments_giveawayInfo) {
                 TLRPC.TL_payments_giveawayInfo giveawayInfo = (TLRPC.TL_payments_giveawayInfo) result;
-                showAbout(chatId, msgDate, giveawayInfo, giveaway, context, resourcesProvider);
+                showAbout(fromName, msgDate, giveawayInfo, giveaway, context, resourcesProvider);
             } else if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
                 TLRPC.TL_payments_giveawayInfoResults giveawayInfoResults = (TLRPC.TL_payments_giveawayInfoResults) result;
-                showAboutEnd(chatId, msgDate, giveawayInfoResults, giveaway, context, resourcesProvider);
+                showAboutEnd(fromName, msgDate, giveawayInfoResults, giveaway, context, resourcesProvider);
             }
         }, error -> {
             if (isCanceled.get()) {
@@ -661,18 +661,34 @@ public class BoostDialogs {
         });
     }
 
+    private static String getGiveawayCreatorName(MessageObject messageObject) {
+        if (messageObject == null) {
+            return "";
+        }
+        String forwardedName = messageObject.getForwardedName();
+        final String name;
+        if (forwardedName == null) {
+            final long chatId = messageObject.getFromChatId();
+            TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-chatId);
+            name = chat != null ? chat.title : "";
+        } else {
+            name = forwardedName;
+        }
+        return name;
+    }
+
     public static void showBulletinAbout(MessageObject messageObject) {
         if (messageObject == null) {
             return;
         }
         BoostRepository.getGiveawayInfo(messageObject, result -> {
             final TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) messageObject.messageOwner.media;
-            final long chatId = messageObject.getFromChatId();
             final long msgDate = messageObject.messageOwner.date * 1000L;
             BaseFragment fragment = LaunchActivity.getLastFragment();
             if (fragment == null) {
                 return;
             }
+            final String fromName = getGiveawayCreatorName(messageObject);
             final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), fragment.getResourceProvider());
 
             if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
@@ -697,10 +713,10 @@ public class BoostDialogs {
                     .setUndoAction(() -> {
                         if (result instanceof TLRPC.TL_payments_giveawayInfo) {
                             TLRPC.TL_payments_giveawayInfo giveawayInfo = (TLRPC.TL_payments_giveawayInfo) result;
-                            showAbout(chatId, msgDate, giveawayInfo, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
+                            showAbout(fromName, msgDate, giveawayInfo, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
                         } else if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
                             TLRPC.TL_payments_giveawayInfoResults giveawayInfoResults = (TLRPC.TL_payments_giveawayInfoResults) result;
-                            showAboutEnd(chatId, msgDate, giveawayInfoResults, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
+                            showAboutEnd(fromName, msgDate, giveawayInfoResults, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
                         }
                     }));
             Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();

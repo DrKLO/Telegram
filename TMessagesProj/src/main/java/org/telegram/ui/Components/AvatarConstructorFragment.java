@@ -10,6 +10,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -400,7 +401,7 @@ public class AvatarConstructorFragment extends BaseFragment {
         chooseEmojiHint.setGravity(Gravity.CENTER);
         linearLayout.addView(chooseEmojiHint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 18, 21, 10));
 
-        selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(this, getContext(), false, null, SelectAnimatedEmojiDialog.TYPE_AVATAR_CONSTRUCTOR, null) {
+        selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(this, getContext(), false, null, SelectAnimatedEmojiDialog.TYPE_AVATAR_CONSTRUCTOR, true, null, 16, Theme.isCurrentThemeDark() ? Color.WHITE : getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon)) {
 
             private boolean firstLayout = true;
 
@@ -685,6 +686,7 @@ public class AvatarConstructorFragment extends BaseFragment {
         float changeBackgroundProgress = 1f;
         BackgroundGradient backgroundGradient;
 
+        private ColorFilter colorFilter = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
         AnimatedFloat expandProgress = new AnimatedFloat(this, 200, CubicBezierInterpolator.EASE_OUT);
         boolean expanded;
         float overrideExpandProgress = -1f;
@@ -791,8 +793,8 @@ public class AvatarConstructorFragment extends BaseFragment {
                     backupImageView.animatedEmojiDrawable.getImageReceiver().setRoundRadius((int) (imageSize * 2 * STICKER_DEFAULT_ROUND_RADIUS));
                 }
                 backupImageView.animatedEmojiDrawable.setBounds((int) (cx - imageSize), (int) (cy - imageSize), (int) (cx + imageSize), (int) (cy + imageSize));
+                backupImageView.animatedEmojiDrawable.setColorFilter(colorFilter);
                 backupImageView.animatedEmojiDrawable.draw(canvas);
-
             } else {
                 backupImageView.imageReceiver.setImageCoords(cx - imageSize, cy - imageSize, imageSize * 2, imageSize * 2);
                 backupImageView.imageReceiver.setRoundRadius((int) (imageSize * 2 * STICKER_DEFAULT_ROUND_RADIUS));
@@ -842,6 +844,9 @@ public class AvatarConstructorFragment extends BaseFragment {
             ImageReceiver imageReceiver = backupImageView.getImageReceiver();
             if (backupImageView.animatedEmojiDrawable != null) {
                 imageReceiver = backupImageView.animatedEmojiDrawable.getImageReceiver();
+                if (imageReceiver != null) {
+                    imageReceiver.setColorFilter(colorFilter);
+                }
             }
             return imageReceiver;
         }

@@ -2,6 +2,8 @@ package org.telegram.ui.Components.Premium.boosts.cells.msg;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceTags;
+import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -71,10 +73,10 @@ public class GiveawayMessageCell {
     private final ChatMessageCell parentView;
     private final ImageReceiver giftReceiver;
 
-    private final CharSequence[] chatTitles = new CharSequence[10];
-    private final float[] chatTitleWidths = new float[10];
-    private final boolean[] needNewRow = new boolean[10];
-    private final Rect[] clickRect = new Rect[10];
+    private CharSequence[] chatTitles = new CharSequence[10];
+    private float[] chatTitleWidths = new float[10];
+    private boolean[] needNewRow = new boolean[10];
+    private Rect[] clickRect = new Rect[10];
     private boolean[] avatarVisible;
     private int measuredHeight = 0;
     private int measuredWidth = 0;
@@ -218,6 +220,7 @@ public class GiveawayMessageCell {
         createImages();
         setGiftImage(messageObject);
         TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) messageObject.messageOwner.media;
+        checkArraysLimits(giveaway.channels.size());
 
         int giftSize = AndroidUtilities.dp(148);
         int maxWidth;
@@ -231,8 +234,13 @@ public class GiveawayMessageCell {
         SpannableStringBuilder topStringBuilder = new SpannableStringBuilder(giveawayPrizes);
         topStringBuilder.setSpan(new RelativeSizeSpan(1.05f), 0, giveawayPrizes.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         topStringBuilder.append("\n");
-        CharSequence subTitle = replaceTags(formatString("BoostingGiveawayMsgInfo", R.string.BoostingGiveawayMsgInfo, giveaway.quantity, LocaleController.formatPluralString("BoldMonths", giveaway.months)));
-        topStringBuilder.append(subTitle);
+        SpannableStringBuilder subTitleBuilder = new SpannableStringBuilder();
+        subTitleBuilder.append(replaceTags(formatPluralStringComma("BoostingGiveawayMsgInfoPlural1", giveaway.quantity)));
+        subTitleBuilder.append("\n");
+        subTitleBuilder.append(replaceTags(formatPluralString("BoostingGiveawayMsgInfoPlural2", giveaway.quantity, LocaleController.formatPluralString("BoldMonths", giveaway.months))));
+        CharSequence subTitle = subTitleBuilder;
+
+        topStringBuilder.append(subTitleBuilder);
         topStringBuilder.append("\n\n");
 
         topStringBuilder.setSpan(new RelativeSizeSpan(0.5f), topStringBuilder.length() - 1, topStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -243,9 +251,9 @@ public class GiveawayMessageCell {
         topStringBuilder.append("\n");
 
         if (giveaway.only_new_subscribers) {
-            topStringBuilder.append(getString("BoostingGiveawayMsgNewSubs", R.string.BoostingGiveawayMsgNewSubs));
+            topStringBuilder.append(formatPluralString("BoostingGiveawayMsgNewSubsPlural", giveaway.channels.size()));
         } else {
-            topStringBuilder.append(getString("BoostingGiveawayMsgAllSubs", R.string.BoostingGiveawayMsgAllSubs));
+            topStringBuilder.append(formatPluralString("BoostingGiveawayMsgAllSubsPlural", giveaway.channels.size()));
         }
 
         CharSequence dateTitle = replaceTags(getString("BoostingWinnersDate", R.string.BoostingWinnersDate));
@@ -268,6 +276,10 @@ public class GiveawayMessageCell {
             maxRowLength = (int) Math.max(maxRowLength, Math.ceil(bottomLayout.getLineWidth(a)));
         }
 
+        if (maxRowLength < dp(180)) {
+            maxRowLength = dp(180);
+        }
+
         if (giveaway.countries_iso2.size() > 0) {
             List<CharSequence> countriesWithFlags = new ArrayList<>();
             for (String iso2 : giveaway.countries_iso2) {
@@ -275,7 +287,7 @@ public class GiveawayMessageCell {
                 String flag = LocaleController.getLanguageFlag(iso2);
                 SpannableStringBuilder builder = new SpannableStringBuilder();
                 if (flag != null) {
-                    builder.append(flag).append(" ");
+                    builder.append(flag).append("\u00A0");
                 }
                 builder.append(countryName);
                 countriesWithFlags.add(builder);
@@ -526,6 +538,28 @@ public class GiveawayMessageCell {
             avatarDrawables[a] = new AvatarDrawable();
             avatarDrawables[a].setTextSize(AndroidUtilities.dp(18));
             clickRect[a] = new Rect();
+        }
+    }
+
+    private void checkArraysLimits(int channelsCount) {
+        if (avatarImageReceivers.length < channelsCount) {
+            int oldLength = avatarImageReceivers.length;
+            avatarImageReceivers = Arrays.copyOf(avatarImageReceivers, channelsCount);
+            avatarDrawables = Arrays.copyOf(avatarDrawables, channelsCount);
+            avatarVisible = Arrays.copyOf(avatarVisible, channelsCount);
+            chatTitles = Arrays.copyOf(chatTitles, channelsCount);
+            chatTitleWidths = Arrays.copyOf(chatTitleWidths, channelsCount);
+            needNewRow = Arrays.copyOf(needNewRow, channelsCount);
+            clickRect = Arrays.copyOf(clickRect, channelsCount);
+
+            for (int i = oldLength - 1; i < channelsCount; i++) {
+                avatarImageReceivers[i] = new ImageReceiver(parentView);
+                avatarImageReceivers[i].setAllowLoadingOnAttachedOnly(true);
+                avatarImageReceivers[i].setRoundRadius(AndroidUtilities.dp(12));
+                avatarDrawables[i] = new AvatarDrawable();
+                avatarDrawables[i].setTextSize(AndroidUtilities.dp(18));
+                clickRect[i] = new Rect();
+            }
         }
     }
 

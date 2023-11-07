@@ -5589,7 +5589,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         notificationsLocker.unlock();
                         authHintCellAnimating = false;
                         authHintCellProgress = visible ? 1f : 0;
-                        fragmentView.requestLayout();
+                        if (fragmentView != null) {
+                            fragmentView.requestLayout();
+                        }
                         viewPages[0].listView.requestLayout();
                         viewPages[0].listView.setTranslationY(0);
                         if (!visible) {

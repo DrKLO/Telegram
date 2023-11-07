@@ -21,6 +21,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -432,6 +433,9 @@ public class BoostRepository {
 
                 for (int i = 0; i < help_countriesList.countries.size(); i++) {
                     TLRPC.TL_help_country country = help_countriesList.countries.get(i);
+                    if (country.name != null) {
+                        country.default_name = country.name;
+                    }
                     if (country.iso2.equalsIgnoreCase("FT")) {
                         continue;
                     }
@@ -550,7 +554,10 @@ public class BoostRepository {
                 for (int a = 0; a < res.participants.size(); a++) {
                     TLRPC.Peer peer = res.participants.get(a).peer;
                     if (MessageObject.getPeerId(peer) != selfId) {
-                        result.add(controller.getInputPeer(peer));
+                        TLRPC.User user = controller.getUser(peer.user_id);
+                        if (user != null && !UserObject.isDeleted(user) && !user.bot) {
+                            result.add(controller.getInputPeer(peer));
+                        }
                     }
                 }
                 onDone.run(result);

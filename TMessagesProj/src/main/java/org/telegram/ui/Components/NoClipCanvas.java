@@ -613,4 +613,15 @@ public class NoClipCanvas extends Canvas {
     public boolean quickReject(float left, float top, float right, float bottom, @NonNull EdgeType type) {
         return canvas.quickReject(left, top, right, bottom, type);
     }
+
+    @Override
+    public void concat(@Nullable Matrix matrix) {
+        canvas.concat(matrix);
+    }
+
+    @Override
+    public boolean isOpaque() {
+        return canvas.isOpaque();
+    }
+
 }

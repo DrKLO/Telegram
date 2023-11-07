@@ -42,6 +42,10 @@ public class Text {
         left = layout.getLineCount() > 0 ? layout.getLineLeft(0) : 0;
     }
 
+    public float getTextSize() {
+        return paint.getTextSize();
+    }
+
     public boolean isEmpty() {
         return layout == null || TextUtils.isEmpty(layout.getText());
     }
@@ -119,6 +123,10 @@ public class Text {
 
     public float getWidth() {
         return ellipsizeWidth >= 0 ? Math.min(ellipsizeWidth, width) : width;
+    }
+
+    public float getCurrentWidth() {
+        return width;
     }
 
     @NonNull

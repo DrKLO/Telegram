@@ -140,7 +140,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
             case HOLDER_TYPE_LINK: {
                 LinkCell cell = (LinkCell) holder.itemView;
                 cell.setSlug(slug);
-                if (giftCode.boost != null) {
+                if (giftCode.boost != null && slug == null) {
                     cell.hideSlug(this::onHiddenLinkClicked);
                 }
                 //unclaimed and slug visible only for giveaway creator
@@ -230,7 +230,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                         dismiss();
                     }
                 });
-                if (giftCode.boost != null || giftCode.to_id == NO_USER_ID) {
+                if (giftCode.boost != null || giftCode.flags == -1) {
                     cell.setCloseStyle();
                     cell.setOnClickListener(v -> dismiss());
                 }

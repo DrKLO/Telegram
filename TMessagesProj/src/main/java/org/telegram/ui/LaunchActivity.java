@@ -6359,8 +6359,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
             actionBarLayout.animateThemedValues(theme, accentId, nightTheme, instant, calcInBackgroundEnd);
             if (AndroidUtilities.isTablet()) {
-                layersActionBarLayout.animateThemedValues(theme, accentId, nightTheme, instant);
-                rightActionBarLayout.animateThemedValues(theme, accentId, nightTheme, instant);
+                if (layersActionBarLayout != null) {
+                    layersActionBarLayout.animateThemedValues(theme, accentId, nightTheme, instant);
+                }
+                if (rightActionBarLayout != null) {
+                    rightActionBarLayout.animateThemedValues(theme, accentId, nightTheme, instant);
+                }
             }
         } else if (id == NotificationCenter.notificationsCountUpdated) {
             if (sideMenu != null) {
