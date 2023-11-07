@@ -160,6 +160,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int disableParametersFromBotLinks;
     private int lockPremium;
     private int addItemToDeleteAllUnpinnedMessages;
+    private int largePhoto;
 
     private int stickerSizeRow;
 
@@ -227,6 +228,7 @@ public class ForkSettingsActivity extends BaseFragment {
         disableLockedAnimatedEmoji = rowCount++;
         disableParametersFromBotLinks = rowCount++;
         addItemToDeleteAllUnpinnedMessages = rowCount++;
+        largePhoto = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -333,6 +335,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("disableParametersFromBotLinks", view, false);
             } else if (position == addItemToDeleteAllUnpinnedMessages) {
                 toggleGlobalMainSetting("addItemToDeleteAllUnpinnedMessages", view, false);
+            } else if (position == largePhoto) {
+                toggleGlobalMainSetting("largePhoto", view, false);
             } else if (position == lockPremium) {
                 toggleGlobalMainSetting("lockPremium", view, false);
             } else if (position == replaceForward) {
@@ -469,6 +473,10 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("AddDeleteAllUnpinnedMessages", R.string.AddDeleteAllUnpinnedMessages);
                         String info = LocaleController.getString("AddDeleteAllUnpinnedMessagesInfo", R.string.AddDeleteAllUnpinnedMessagesInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("addItemToDeleteAllUnpinnedMessages", false), true, false);
+                    } else if (position == largePhoto) {
+                        String t = LocaleController.getString("LargePhoto", R.string.LargePhoto);
+                        String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("largePhoto", false), true, false);
                     } else if (position == lockPremium) {
                         String t = LocaleController.getString("LockPremium", R.string.LockPremium);
                         String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
@@ -535,6 +543,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == disableLockedAnimatedEmoji
                         || position == disableParametersFromBotLinks
                         || position == addItemToDeleteAllUnpinnedMessages
+                        || position == largePhoto
                         || position == lockPremium
                         || position == replaceForward
                         || position == mentionByName
@@ -600,6 +609,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == disableLockedAnimatedEmoji
                 || position == disableParametersFromBotLinks
                 || position == addItemToDeleteAllUnpinnedMessages
+                || position == largePhoto
                 || position == lockPremium
                 || position == replaceForward
                 || position == mentionByName

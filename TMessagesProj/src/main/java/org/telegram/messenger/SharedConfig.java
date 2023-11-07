@@ -342,6 +342,7 @@ public class SharedConfig {
     public static LiteMode liteMode;
 
     public static boolean hideTitleDialog = false;
+    public static int photoSizeFactor = 1;
 
     private static final int[] LOW_SOC = {
             -1775228513, // EXYNOS 850
@@ -658,6 +659,7 @@ public class SharedConfig {
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
             hideTitleDialog = preferences.getBoolean("hideTitle", false);
+            photoSizeFactor = MessagesController.getGlobalMainSettings().getBoolean("largePhoto", false) ? 2 : 1;
 
             configLoaded = true;
 

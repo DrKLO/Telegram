@@ -2477,7 +2477,7 @@ public class AndroidUtilities {
 
     public static int getPhotoSize() {
         if (photoSize == null) {
-            photoSize = 1280;
+            photoSize = 1280 * SharedConfig.photoSizeFactor;
         }
         return photoSize;
     }

@@ -1038,7 +1038,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     RectF cropRect = new RectF();
-    RectF sizeRect = new RectF(0, 0, RESULT_SIDE, RESULT_SIDE);
+    RectF sizeRect = new RectF(0, 0, RESULT_SIDE * SharedConfig.photoSizeFactor, RESULT_SIDE * SharedConfig.photoSizeFactor);
 
     private void updateCropTransform() {
         if (cropTransform == null || state == null) {
