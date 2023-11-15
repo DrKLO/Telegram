@@ -485,7 +485,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 } else {
                     currentPackButton.setDrawable(getResources().getDrawable(newPack.resId).mutate());
                     currentPackButton.updateColor();
-                    currentPackButton.setLock(null);
+                    currentPackButton.setLock(null, false);
                 }
             } else {
                 final boolean free = newPack.free;
@@ -499,13 +499,13 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 }
                 currentPackButton.updateSelect(selected == i, false);
                 if (currentType == SelectAnimatedEmojiDialog.TYPE_AVATAR_CONSTRUCTOR || currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON) {
-                    currentPackButton.setLock(null);
+                    currentPackButton.setLock(null, false);
                 } else if (!isPremium && !free) {
-                    currentPackButton.setLock(true);
+                    currentPackButton.setLock(true, false);
                 } else if (!this.isInstalled(newPack)) {
-                    currentPackButton.setLock(false);
+                    currentPackButton.setLock(false, false);
                 } else {
-                    currentPackButton.setLock(null);
+                    currentPackButton.setLock(null, false);
                 }
                 if (doAppearAnimation && !first) {
                     currentPackButton.newly = false;
@@ -936,14 +936,14 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             }
         }
 
-        public void setLock(Boolean lock) {
+        public void setLock(Boolean lock, boolean animated) {
             if (lockView == null) {
                 return;
             }
             if (lock == null) {
-                updateLock(false);
+                updateLock(false, animated);
             } else {
-                updateLock(true);
+                updateLock(true, animated);
                 if (lock) {
                     lockView.setImageResource(R.drawable.msg_mini_lockedemoji);
                 } else {
@@ -957,32 +957,40 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         private float lockT;
         private ValueAnimator lockAnimator;
 
-        private void updateLock(boolean enable) {
+        private void updateLock(boolean enable, boolean animated) {
             if (lockAnimator != null) {
                 lockAnimator.cancel();
             }
             if (Math.abs(lockT - (enable ? 1f : 0f)) < 0.01f) {
                 return;
             }
-            lockView.setVisibility(View.VISIBLE);
-            lockAnimator = ValueAnimator.ofFloat(lockT, enable ? 1f : 0f);
-            lockAnimator.addUpdateListener(anm -> {
-                lockT = (float) anm.getAnimatedValue();
+            if (animated) {
+                lockView.setVisibility(View.VISIBLE);
+                lockAnimator = ValueAnimator.ofFloat(lockT, enable ? 1f : 0f);
+                lockAnimator.addUpdateListener(anm -> {
+                    lockT = (float) anm.getAnimatedValue();
+                    lockView.setScaleX(lockT);
+                    lockView.setScaleY(lockT);
+                    lockView.setAlpha(lockT);
+                });
+                lockAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (!enable) {
+                            lockView.setVisibility(View.GONE);
+                        }
+                    }
+                });
+                lockAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                lockAnimator.setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 200);
+                lockAnimator.start();
+            } else {
+                lockT = enable ? 1f : 0f;
                 lockView.setScaleX(lockT);
                 lockView.setScaleY(lockT);
                 lockView.setAlpha(lockT);
-            });
-            lockAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (!enable) {
-                        lockView.setVisibility(View.GONE);
-                    }
-                }
-            });
-            lockAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            lockAnimator.setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 200);
-            lockAnimator.start();
+                lockView.setVisibility(enable ? View.VISIBLE : View.GONE);
+            }
         }
 
         public void updateLockImageReceiver() {

@@ -5719,6 +5719,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
                             photoParentObject = document;
                             documentAttach = document;
+                            isSmallImage = smallImage = false;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_ROUND;
                         } else if (MessageObject.isGifDocument(document, messageObject.hasValidGroupId())) {
                             if (!messageObject.isGame() && !SharedConfig.isAutoplayGifs()) {
@@ -5807,6 +5808,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 }
                             }
                             documentAttach = document;
+                            isSmallImage = smallImage = false;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_STICKER;
                         } else if (drawInstantViewType == 6) {
                             currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
@@ -5825,6 +5827,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 }
                             }
                             documentAttach = document;
+                            isSmallImage = smallImage = false;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_WALLPAPER;
                             String str = AndroidUtilities.formatFileSize(documentAttach.size);
                             durationWidth = (int) Math.ceil(Theme.chat_durationPaint.measureText(str));
@@ -5850,6 +5853,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                     currentPhotoObject.w = currentPhotoObject.h = AndroidUtilities.dp(150);
                                 }
                             }
+                            isSmallImage = smallImage = false;
                             documentAttach = document;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_THEME;
                         } else {
@@ -11165,7 +11169,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (linkLine == null) {
             linkLine = new ReplyMessageLine(this);
         }
-        Theme.chat_replyNamePaint.setColor(linkLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, false));
+        Theme.chat_replyNamePaint.setColor(linkLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_LINK));
 
         boolean restore = false;
         boolean drawInstantButtonInside = false;
@@ -12131,7 +12135,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (quoteLine == null) {
                         quoteLine = new ReplyMessageLine(this);
                     }
-                    quoteLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, false);
+                    quoteLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
 
                     final int width = (int) (block.maxRight + AndroidUtilities.dp(24) > maxWidth * .7f ? maxWidth : block.maxRight + AndroidUtilities.dp(24));
                     AndroidUtilities.rectTmp.set(0, -block.padTop + AndroidUtilities.dp(block.first ? 3 + 1.66f : 3), width, block.height + AndroidUtilities.dp(4));
@@ -12170,7 +12174,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (quoteLine == null) {
                             quoteLine = new ReplyMessageLine(this);
                         }
-                        quoteLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, false);
+                        quoteLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_CODE);
                         if (currentMessageObject.isOutOwner() && (Theme.isCurrentThemeDark() || Theme.isCustomTheme())) {
                             quoteLine.setBackgroundColor(getThemedColor(Theme.key_chat_outCodeBackground));
                         }
@@ -14136,7 +14140,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 if (chat != null) {
                                     name = chat.title;
                                 }
-                            } else {
+                            } else if (messageObject.replyMessageObject.messageOwner != null && messageObject.replyMessageObject.messageOwner.peer_id != null) {
                                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(messageObject.replyMessageObject.messageOwner.peer_id.channel_id);
                                 if (chat != null) {
                                     name = chat.title;
@@ -16317,7 +16321,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (replyLine == null) {
                 replyLine = new ReplyMessageLine(this);
             }
-            Theme.chat_replyNamePaint.setColor(replyLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, true));
+            Theme.chat_replyNamePaint.setColor(replyLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_REPLY));
 
             int rippleColor = ColorUtils.setAlphaComponent(replyLine.getColor(), 0x1e);
             if (currentMessageObject.shouldDrawWithoutBackground()) {
@@ -17214,7 +17218,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return false;
         }
         for (int i = 0; i < textLayoutBlocks.size(); ++i) {
-            if (findProgressLoadingLink(location, path, textLayoutBlocks.get(i).textLayout, textLayoutBlocks.get(i).textYOffset, i)) {
+            if (findProgressLoadingLink(location, path, textLayoutBlocks.get(i).textLayout, 0, i)) {
                 return true;
             }
         }

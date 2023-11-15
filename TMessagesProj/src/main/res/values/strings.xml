@@ -489,7 +489,11 @@
     <string name="LeaveChannelMenu">Leave channel</string>
     <string name="ChannelSettings">Settings</string>
     <string name="ChannelJoin">JOIN</string>
-    <string name="ChannelJoinRequest">APPLY TO JOIN GROUP</string>
+    <string name="ChannelJoinRequest">APPLY TO JOIN CHANNEL</string>
+    <string name="ChannelJoinRequestSent">JOIN REQUEST SENT</string>
+    <string name="GroupJoin">JOIN</string>
+    <string name="GroupJoinRequest">APPLY TO JOIN GROUP</string>
+    <string name="GroupJoinRequestSent">JOIN REQUEST SENT</string>
     <string name="ChannelBroadcast">Broadcast</string>
     <string name="ChannelSilentBroadcast">Silent Broadcast</string>
     <string name="ChannelAlertTitle">What is a Channel?</string>
@@ -731,6 +735,7 @@
     <string name="SelectFromGallery">Select from gallery</string>
     <string name="ChooseFromSearch">Search web</string>
     <string name="Statistics">Statistics</string>
+    <string name="StatisticsAndBoosts">Statistics and Boosts</string>
     <string name="AddBot">Add Bot</string>
     <string name="AddBotAdmin">Add bot as admin</string>
     <string name="AddBotAdminAlert">Add bot as admin?</string>
@@ -5954,7 +5959,6 @@
     <string name="PremiumPreviewAppIcon2">Additional App Icons</string>
     <string name="PremiumPreviewAppIconDescription2">Unlock a wider range of app icons by subscribing to Telegram Premium.</string>
     <string name="PaymentCheckoutAcceptRecurrent">I accept the *Terms of Service* of %1$s.</string>
-    <string name="ChannelJoinRequestSent">JOIN REQUEST SENT</string>
     <string name="RevokeLinksAlert">Are you sure you want to revoke these links?\n\nThe groups will become private.</string>
     <string name="RevokeLinksAlertChannel">Are you sure you want to revoke these links?\n\nThe channels will become private.</string>
     <string name="ClearRecentStickersAlertMessage">Do you want to clear all your recent stickers?</string>
@@ -7242,6 +7246,8 @@ list of viewers.</string>
     <string name="BoostingReceivedGiftOpenBtn">Open Gift Link</string>
     <string name="BoostingSaveRecipients">Save Recipients</string>
     <string name="BoostingGiveawayJustStarted">%s just started a giveaway of Telegram Premium subscriptions to its followers.</string>
+    <string name="BoostingGiveawayDeleteMsgTitle">Delete announcement</string>
+    <string name="BoostingGiveawayDeleteMsgText">Deleting this message won\'t cancel the giveaway - the winners will still be selected on **%s**.\n\nOnce deleted, the Giveaway Announcement cannot be restored.</string>
     <string name="BoostingBoostsCountTitle_zero">%d boost</string>
     <string name="BoostingBoostsCountTitle_one">%d boost</string>
     <string name="BoostingBoostsCountTitle_two">%d boosts</string>
@@ -7294,6 +7300,7 @@ list of viewers.</string>
     <string name="BoostingToBeDistributed">To be distributed</string>
     <string name="BoostingShortMonths">%1$dm</string>
     <string name="BoostingGiveaway">Giveaway</string>
+    <string name="BoostingGiveawayChannelStarted">Channel started a giveaway</string>
     <string name="BoostingRecipientWillBeSelected">The recipient will be selected when the giveaway ends.</string>
     <string name="BoostingIncompleteGiveaway">Incomplete Giveaway</string>
     <string name="BoostingNoRecipient">No recipient</string>
@@ -7496,6 +7503,8 @@ list of viewers.</string>
     <string name="BoostingWaitWarningPlural_other">Wait until the boost is available or get **%1$d** more boosts by gifting a **Telegram Premium** subscription.</string>
     <string name="BoostingBoostAgain">Boost Again</string>
     <string name="BoostingReassignBoost">Reassign Boost</string>
+    <string name="BoostingStartGiveawayConfirmTitle">Start Giveaway</string>
+    <string name="BoostingStartGiveawayConfirmText">Are you sure you want to start the giveaway now?</string>
     <string name="BoostingMoreBoostsNeeded">More Boosts Needed</string>
     <string name="BoostingReassignedFromPlural_one">%1$d boost reassigned from %2$s</string>
     <string name="BoostingReassignedFromPlural_two">%1$d boosts reassigned from %2$s</string>

@@ -545,7 +545,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.replyLine == null) {
                 messageView.replyLine = new ReplyMessageLine(messageView);
             }
-            messageView.replyLine.check(messageView.getMessageObject(), messageView.getCurrentUser(), messageView.getCurrentChat(), resourcesProvider, true);
+            messageView.replyLine.check(messageView.getMessageObject(), messageView.getCurrentUser(), messageView.getCurrentChat(), resourcesProvider, ReplyMessageLine.TYPE_REPLY);
 
             int replyMessageColor;
             int replyOwnerMessageColor;

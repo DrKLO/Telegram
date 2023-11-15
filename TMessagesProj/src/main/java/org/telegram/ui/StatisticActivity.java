@@ -373,6 +373,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             TLRPC.Chat chat = (TLRPC.Chat) args[0];
             boolean isGiveaway = (boolean) args[1];
             List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
+            BaseFragment chatEditFragment = fragmentStack.size() >= 2 ? fragmentStack.get(fragmentStack.size() - 2) : null;
+            if (chatEditFragment instanceof ChatEditActivity) {
+                getParentLayout().removeFragmentFromStack(chatEditFragment);
+            }
+            fragmentStack = getParentLayout().getFragmentStack();
             BaseFragment profileFragment = fragmentStack.size() >= 2 ? fragmentStack.get(fragmentStack.size() - 2) : null;
             if (isGiveaway) {
                 BaseFragment chatFragment = fragmentStack.size() >= 3 ? fragmentStack.get(fragmentStack.size() - 3) : null;

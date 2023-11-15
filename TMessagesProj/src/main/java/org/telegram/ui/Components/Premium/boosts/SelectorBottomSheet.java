@@ -25,7 +25,6 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -48,13 +47,14 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
 
     public interface SelectedObjectsListener {
-        void onChatsSelected(List<TLRPC.Chat> chats);
+        void onChatsSelected(List<TLRPC.Chat> chats, boolean animated);
 
         void onUsersSelected(List<TLRPC.User> users);
 
@@ -86,6 +86,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
     private final Map<String, List<TLRPC.TL_help_country>> countriesMap = new HashMap<>();
     private final List<String> countriesLetters = new ArrayList<>();
     private final List<TLRPC.TL_help_country> countriesList = new ArrayList<>();
+    private final HashMap<Long, TLObject> allSelectedObjects = new LinkedHashMap<>();
     private final AnimatedFloat statusBarT;
     private String query;
     private SelectorAdapter selectorAdapter;
@@ -167,6 +168,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                     selectedIds.remove(id);
                 } else {
                     selectedIds.add(id);
+                    allSelectedObjects.put(id, user != null ? user : chat);
                 }
                 if ((selectedIds.size() == 11 && type == TYPE_USER) || (selectedIds.size() == (BoostRepository.giveawayAddPeersMax() + 1) && type == TYPE_CHANNEL)) {
                     selectedIds.remove(id);
@@ -180,7 +182,11 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                         selectedIds.remove(id);
                         searchField.updateSpans(true, selectedIds, () -> updateList(true, false), null);
                         updateList(true, false);
-                    });
+                    }, this::clearSearchAfterSelectChannel);
+                } else {
+                    if (chat != null) {
+                        clearSearchAfterSelectChannel();
+                    }
                 }
             }
             if (view instanceof SelectorCountryCell) {
@@ -197,10 +203,14 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                     return;
                 }
                 searchField.updateSpans(true, selectedIds, () -> updateList(true, false), countriesList);
-                query = null;
-                searchField.setText("");
-                updateList(false, false);
-                updateList(true, true);
+                if (isSearching()) {
+                    query = null;
+                    searchField.setText("");
+                    updateList(false, false);
+                    updateList(true, true);
+                } else {
+                    updateList(true, false);
+                }
             }
         });
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
@@ -225,6 +235,18 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         loadData(TYPE_COUNTRY, true, null);
     }
 
+    private void clearSearchAfterSelectChannel() {
+        if (isSearching()) {
+            query = null;
+            searchField.setText("");
+            AndroidUtilities.cancelRunOnUIThread(remoteSearchRunnable);
+            peers.clear();
+            peers.addAll(BoostRepository.getMyChannels(currentChat.id));
+            updateList(false, false);
+            updateList(true, true);
+        }
+    }
+
     private void save(boolean force) {
         if (selectedIds.size() == 0 && !force) {
             return;
@@ -232,22 +254,20 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         switch (type) {
             case TYPE_CHANNEL:
                 List<TLRPC.Chat> selectedChats = new ArrayList<>();
-                for (TLRPC.InputPeer peer : peers) {
-                    if (peer instanceof TLRPC.TL_inputPeerChat && selectedIds.contains(-peer.chat_id)) {
-                        selectedChats.add(MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.chat_id));
-                    } else if (peer instanceof TLRPC.TL_inputPeerChannel && selectedIds.contains(-peer.channel_id)) {
-                        selectedChats.add(MessagesController.getInstance(UserConfig.selectedAccount).getChat(peer.channel_id));
+                for (TLObject object : allSelectedObjects.values()) {
+                    if (object instanceof TLRPC.Chat && selectedIds.contains(-((TLRPC.Chat) object).id)) {
+                        selectedChats.add((TLRPC.Chat) object);
                     }
                 }
                 if (selectedObjectsListener != null) {
-                    selectedObjectsListener.onChatsSelected(selectedChats);
+                    selectedObjectsListener.onChatsSelected(selectedChats, true);
                 }
                 break;
             case TYPE_USER:
                 List<TLRPC.User> selectedUsers = new ArrayList<>();
-                for (TLRPC.InputPeer peer : peers) {
-                    if (peer instanceof TLRPC.TL_inputPeerUser && selectedIds.contains(peer.user_id)) {
-                        selectedUsers.add(MessagesController.getInstance(UserConfig.selectedAccount).getUser(peer.user_id));
+                for (TLObject object : allSelectedObjects.values()) {
+                    if (object instanceof TLRPC.User && selectedIds.contains(((TLRPC.User) object).id)) {
+                        selectedUsers.add((TLRPC.User) object);
                     }
                 }
                 if (selectedObjectsListener != null) {
@@ -365,6 +385,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         openedIds.clear();
         selectedIds.clear();
         peers.clear();
+        allSelectedObjects.clear();
 
         switch (type) {
             case TYPE_CHANNEL:
@@ -379,23 +400,25 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         }
 
         if (selectedObjects != null) {
-            for (TLObject selectedChat : selectedObjects) {
-                if (selectedChat instanceof TLRPC.TL_inputPeerChat) {
-                    selectedIds.add(-((TLRPC.TL_inputPeerChat) selectedChat).chat_id);
+            for (TLObject selectedItem : selectedObjects) {
+                long id = 0;
+                if (selectedItem instanceof TLRPC.TL_inputPeerChat) {
+                    id = -((TLRPC.TL_inputPeerChat) selectedItem).chat_id;
                 }
-                if (selectedChat instanceof TLRPC.TL_inputPeerChannel) {
-                    selectedIds.add(-((TLRPC.TL_inputPeerChannel) selectedChat).channel_id);
+                if (selectedItem instanceof TLRPC.TL_inputPeerChannel) {
+                    id = -((TLRPC.TL_inputPeerChannel) selectedItem).channel_id;
                 }
-                if (selectedChat instanceof TLRPC.Chat) {
-                    selectedIds.add(-((TLRPC.Chat) selectedChat).id);
+                if (selectedItem instanceof TLRPC.Chat) {
+                    id = -((TLRPC.Chat) selectedItem).id;
                 }
-                if (selectedChat instanceof TLRPC.User) {
-                    selectedIds.add(((TLRPC.User) selectedChat).id);
+                if (selectedItem instanceof TLRPC.User) {
+                    id = ((TLRPC.User) selectedItem).id;
                 }
-                if (selectedChat instanceof TLRPC.TL_help_country) {
-                    long id = ((TLRPC.TL_help_country) selectedChat).default_name.hashCode();
-                    selectedIds.add(id);
+                if (selectedItem instanceof TLRPC.TL_help_country) {
+                    id = ((TLRPC.TL_help_country) selectedItem).default_name.hashCode();
                 }
+                selectedIds.add(id);
+                allSelectedObjects.put(id, selectedItem);
             }
         }
 

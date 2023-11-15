@@ -844,9 +844,7 @@ public class AvatarConstructorFragment extends BaseFragment {
             ImageReceiver imageReceiver = backupImageView.getImageReceiver();
             if (backupImageView.animatedEmojiDrawable != null) {
                 imageReceiver = backupImageView.animatedEmojiDrawable.getImageReceiver();
-                if (imageReceiver != null) {
-                    imageReceiver.setColorFilter(colorFilter);
-                }
+                backupImageView.animatedEmojiDrawable.setColorFilter(colorFilter);
             }
             return imageReceiver;
         }

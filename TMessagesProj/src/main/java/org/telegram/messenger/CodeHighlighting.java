@@ -214,7 +214,7 @@ public class CodeHighlighting {
             long S = System.currentTimeMillis();
             final StringToken[][] tokens = new StringToken[1][];
             try {
-                tokens[0] = tokenize(text.subSequence(start, end).toString(), compiledPatterns == null ? null : compiledPatterns.get(lng)).toArray();
+                tokens[0] = tokenize(text.subSequence(start, end).toString(), compiledPatterns == null ? null : compiledPatterns.get(lng), 0).toArray();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -289,15 +289,15 @@ public class CodeHighlighting {
         }
     }
 
-    private static LinkedList tokenize(String text, TokenPattern[] grammar) {
-        return tokenize(text, grammar, null);
+    private static LinkedList tokenize(String text, TokenPattern[] grammar, int depth) {
+        return tokenize(text, grammar, null, depth);
     }
 
-    private static LinkedList tokenize(String text, TokenPattern[] grammar, TokenPattern ignorePattern) {
+    private static LinkedList tokenize(String text, TokenPattern[] grammar, TokenPattern ignorePattern, int depth) {
         LinkedList list = new LinkedList();
         list.addAfter(list.head, new StringToken(text));
         grammar = flatRest(grammar);
-        matchGrammar(text, list, grammar, list.head, 0, null, ignorePattern);
+        matchGrammar(text, list, grammar, list.head, 0, null, ignorePattern, depth);
         return list;
     }
 
@@ -327,8 +327,8 @@ public class CodeHighlighting {
         return patterns;
     }
 
-    private static void matchGrammar(String text, LinkedList tokenList, TokenPattern[] grammar, Node startNode, int startPos, RematchOptions rematch, TokenPattern ignorePattern) {
-        if (grammar == null) {
+    private static void matchGrammar(String text, LinkedList tokenList, TokenPattern[] grammar, Node startNode, int startPos, RematchOptions rematch, TokenPattern ignorePattern, int depth) {
+        if (grammar == null || depth > 20) {
             return;
         }
         for (TokenPattern pattern : grammar) {
@@ -420,9 +420,9 @@ public class CodeHighlighting {
 
                 StringToken wrapped;
                 if (pattern.insideTokenPatterns != null) {
-                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns), match.length);
+                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns, depth + 1), match.length);
                 } else if (pattern.insideLanguage != null) {
-                    wrapped = new StringToken(pattern.group, tokenize(match.string, compiledPatterns.get(pattern.insideLanguage), pattern), match.length);
+                    wrapped = new StringToken(pattern.group, tokenize(match.string, compiledPatterns.get(pattern.insideLanguage), pattern, depth + 1), match.length);
                 } else {
                     wrapped = new StringToken(pattern.group, match.string);
                 }
@@ -436,7 +436,7 @@ public class CodeHighlighting {
                     RematchOptions nestedRematch = new RematchOptions();
                     nestedRematch.cause = pattern;
                     nestedRematch.reach = reach;
-                    matchGrammar(text, tokenList, grammar, currentNode.prev, pos, nestedRematch, ignorePattern);
+                    matchGrammar(text, tokenList, grammar, currentNode.prev, pos, nestedRematch, ignorePattern, depth + 1);
 
                     if (rematch != null && nestedRematch.reach > rematch.reach) {
                         rematch.reach = nestedRematch.reach;
@@ -447,7 +447,7 @@ public class CodeHighlighting {
     }
 
     private static Match matchPattern(TokenPattern pattern, int pos, String text) {
-        Matcher matcher = pattern.pattern.getPattern().matcher(text);
+        Matcher matcher = pattern.pattern.getPattern(). matcher(text);
         matcher.region(pos, text.length());
         if (!matcher.find()) {
             return null;

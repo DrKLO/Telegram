@@ -168,7 +168,7 @@ public class StickerSetNameCell extends FrameLayout {
     }
 
     private void updateTextSearchSpan() {
-        if (stickerSetName != null && stickerSetNameSearchLength != 0) {
+        if (stickerSetName != null && stickerSetNameSearchLength > 0) {
             SpannableStringBuilder builder = new SpannableStringBuilder(stickerSetName);
             try {
                 builder.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_chat_emojiPanelStickerSetNameHighlight)), stickerSetNameSearchIndex, stickerSetNameSearchIndex + stickerSetNameSearchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

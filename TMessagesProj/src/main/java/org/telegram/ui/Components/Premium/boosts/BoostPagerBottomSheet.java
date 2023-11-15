@@ -209,9 +209,9 @@ public class BoostPagerBottomSheet extends BottomSheet {
         });
         rightSheet.setSelectedObjectsListener(new SelectorBottomSheet.SelectedObjectsListener() {
             @Override
-            public void onChatsSelected(List<TLRPC.Chat> chats) {
+            public void onChatsSelected(List<TLRPC.Chat> chats, boolean animated) {
                 viewPager.scrollToPosition(0);
-                leftSheet.onChatsSelected(chats);
+                leftSheet.onChatsSelected(chats, !isKeyboardVisible());
             }
 
             @Override

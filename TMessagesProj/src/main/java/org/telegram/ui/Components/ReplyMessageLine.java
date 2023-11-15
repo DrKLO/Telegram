@@ -138,7 +138,12 @@ public class ReplyMessageLine {
         }
     }
 
-    public int check(MessageObject messageObject, TLRPC.User currentUser, TLRPC.Chat currentChat, Theme.ResourcesProvider resourcesProvider, boolean isReply) {
+    public static final int TYPE_REPLY = 0;
+    public static final int TYPE_QUOTE = 1;
+    public static final int TYPE_CODE = 2;
+    public static final int TYPE_LINK = 3;
+
+    public int check(MessageObject messageObject, TLRPC.User currentUser, TLRPC.Chat currentChat, Theme.ResourcesProvider resourcesProvider, final int type) {
         reversedOut = false;
         emojiDocumentId = 0;
         if (messageObject == null) {
@@ -146,7 +151,7 @@ public class ReplyMessageLine {
             color1 = color2 = color3 = Theme.getColor(Theme.key_chat_inReplyLine, resourcesProvider);
             backgroundColor = Theme.multAlpha(color1, Theme.isCurrentThemeDark() ? 0.12f : 0.10f);
             return nameColorAnimated.set(nameColor = Theme.getColor(Theme.key_chat_inReplyNameText, resourcesProvider));
-        } else if (!isReply && (
+        } else if (type != TYPE_REPLY && (
             messageObject.overrideLinkColor >= 0 ||
             messageObject.messageOwner != null && (
                 (messageObject.isFromUser() || DialogObject.isEncryptedDialog(messageObject.getDialogId())) && currentUser != null ||
@@ -206,7 +211,7 @@ public class ReplyMessageLine {
             resolveColor(messageObject, colorId, resourcesProvider);
             backgroundColor = Theme.multAlpha(color1, 0.10f);
             nameColor = color1;
-        } else if (isReply && (
+        } else if (type == TYPE_REPLY && (
             messageObject.overrideLinkColor >= 0 ||
             messageObject.messageOwner != null &&
             messageObject.replyMessageObject != null &&
@@ -282,7 +287,7 @@ public class ReplyMessageLine {
             backgroundColor = Theme.multAlpha(color3, Theme.isCurrentThemeDark() ? 0.12f : 0.10f);
             nameColor = Theme.getColor(Theme.key_chat_outReplyNameText, resourcesProvider);
         }
-        if (isReply && messageObject != null && messageObject.overrideLinkEmoji != -1) {
+        if (type == TYPE_REPLY && messageObject != null && messageObject.overrideLinkEmoji != -1) {
             emojiDocumentId = messageObject.overrideLinkEmoji;
         }
         if (emojiDocumentId != 0 && emoji == null) {

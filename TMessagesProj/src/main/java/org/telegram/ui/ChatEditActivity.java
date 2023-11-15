@@ -139,6 +139,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private TextCell adminCell;
     private TextCell blockCell;
     private TextCell logCell;
+    private TextCell statsAndBoosts;
     private TextCell setAvatarCell;
     private ShadowSectionCell infoSectionCell;
 
@@ -1073,6 +1074,22 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 logCell.setOnClickListener(v -> presentFragment(new ChannelAdminLogActivity(currentChat)));
             }
 
+            if (ChatObject.isChannelAndNotMegaGroup(currentChat)) {
+                statsAndBoosts = new TextCell(context);
+                statsAndBoosts.setTextAndIcon(LocaleController.getString("StatisticsAndBoosts", R.string.StatisticsAndBoosts), R.drawable.msg_stats, true);
+                statsAndBoosts.setBackground(Theme.getSelectorDrawable(false));
+                statsAndBoosts.setOnClickListener(v -> {
+                    Bundle args = new Bundle();
+                    args.putLong("chat_id", chatId);
+                    args.putBoolean("is_megagroup", currentChat.megagroup);
+                    TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(chatId);
+                    if (chatInfo == null || !chatInfo.can_view_stats) {
+                        args.putBoolean("only_boosts", true);
+                    };
+                    presentFragment(new StatisticActivity(args));
+                });
+            }
+
             infoContainer.addView(reactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             if (!isChannel && !currentChat.gigagroup) {
@@ -1107,8 +1124,13 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     groupStickersActivity.setInfo(info);
                     presentFragment(groupStickersActivity);
                 });
-            } else if (logCell != null) {
-                infoContainer.addView(logCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            } else {
+                if (statsAndBoosts != null) {
+                    infoContainer.addView(statsAndBoosts, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                }
+                if (logCell != null) {
+                    infoContainer.addView(logCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                }
             }
         }
 

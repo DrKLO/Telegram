@@ -9702,7 +9702,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), getResourceProvider());
             webViewSheet.setParentActivity(getParentActivity());
             webViewSheet.requestWebView(currentAccount, currentUser != null ? currentUser.id : currentChat.id, mentionContainer.getAdapter().getFoundContextBot().id, object.text, object.url, BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON, 0, false, BotWebViewSheet.FLAG_FROM_INLINE_SWITCH);
-            showDialog(webViewSheet);
+            webViewSheet.show();
         };
         if (approved) {
             open.run();
@@ -11049,6 +11049,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     public void searchLinks(final CharSequence charSequence, final boolean force) {
         if (currentEncryptedChat != null && getMessagesController().secretWebpagePreview == 0 || editingMessageObject != null && (!editingMessageObject.isWebpage() || editingMessageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPagePending)) {
+            return;
+        }
+        if (currentChat != null && !ChatObject.canSendEmbed(currentChat)) {
+            if (foundWebPage != null) {
+                foundWebPage = null;
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.setWebPage(null, true);
+                }
+                fallbackFieldPanel();
+                editResetMediaManual();
+            }
             return;
         }
         checkEditLinkRemoved(charSequence);
@@ -15024,7 +15035,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private void addToSelectedMessages(MessageObject messageObject, boolean outside, boolean last) {
         int prevCantForwardCount = cantForwardMessagesCount;
         if (messageObject != null) {
-            if (threadMessageObjects != null && threadMessageObjects.contains(messageObject)) {
+            if (threadMessageObjects != null && threadMessageObjects.contains(messageObject) && !isThreadChat()) {
                 return;
             }
             int index = messageObject.getDialogId() == dialog_id ? 0 : 1;
@@ -21669,14 +21680,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (currentChat.join_request) {
                             shouldApply = true;
                             if (requestedTime > 0 && System.currentTimeMillis() - requestedTime < 1000 * 60 * 2) {
-                                bottomOverlayChatText.setText(LocaleController.getString("ChannelJoinRequestSent", R.string.ChannelJoinRequestSent), true);
+                                bottomOverlayChatText.setText(LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.ChannelJoinRequestSent : R.string.GroupJoinRequestSent), true);
                                 bottomOverlayChatText.setEnabled(false);
                             } else {
-                                bottomOverlayChatText.setText(LocaleController.getString("ChannelJoinRequest", R.string.ChannelJoinRequest));
+                                bottomOverlayChatText.setText(LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.ChannelJoinRequest : R.string.GroupJoinRequest));
                                 bottomOverlayChatText.setEnabled(true);
                             }
                         } else {
-                            bottomOverlayChatText.setText(LocaleController.getString("ChannelJoin", R.string.ChannelJoin));
+                            bottomOverlayChatText.setText(LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.ChannelJoin : R.string.GroupJoin));
                             bottomOverlayChatText.setEnabled(true);
                         }
                         showBottomOverlayProgress(false, false);
@@ -23921,7 +23932,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if ((replyingMessageObject == null || threadMessageObject == replyingMessageObject) && draftReplyMessage != null && !(threadMessageObject != null && threadMessageObject.getId() == draftReplyMessage.id)) {
             replyingMessageObject = new MessageObject(currentAccount, draftReplyMessage, getMessagesController().getUsers(), false, false);
-            if (draftMessage.reply_to != null && (draftMessage.reply_to.flags & 64) != 0) {
+            if (draftMessage.reply_to != null && (draftMessage.reply_to.flags & 4) != 0) {
                 replyingQuote = ReplyQuote.from(replyingMessageObject, draftMessage.reply_to.quote_text);
             }
             checkNewMessagesOnQuoteEdit(false);
@@ -24336,7 +24347,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return true;
             }
         }
-        if (message.isSponsored() || threadMessageObjects != null && threadMessageObjects.contains(message)) {
+        if (message.isSponsored() || threadMessageObjects != null && threadMessageObjects.contains(message) && !isThreadChat()) {
             single = true;
         }
 
@@ -26556,7 +26567,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 Bundle args = new Bundle();
                 args.putBoolean("onlySelect", true);
                 args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
-                args.putInt("messagesCount", forwardingMessageGroup == null ? 1 : forwardingMessageGroup.messages.size());
+                args.putInt("messagesCount", 1);
                 args.putInt("hasPoll", forwardingMessage.isPoll() ? (forwardingMessage.isPublicPoll() ? 2 : 1) : 0);
                 args.putBoolean("hasInvoice", forwardingMessage.isInvoice());
                 args.putBoolean("canSelectTopics", true);

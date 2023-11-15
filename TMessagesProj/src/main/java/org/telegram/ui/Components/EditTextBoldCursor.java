@@ -863,14 +863,10 @@ public class EditTextBoldCursor extends EditTextEffects {
                 throw new RuntimeException(e);
             }
         }
-        if (!EditTextEffects.allowHackingTextCanvas()) {
-            ignoreTopCount = 1;
-            ignoreBottomCount = 1;
-        }
+        ignoreTopCount = 1;
+        ignoreBottomCount = 1;
         canvas.save();
-        if (!EditTextEffects.allowHackingTextCanvas()) {
-            canvas.translate(0, topPadding);
-        }
+        canvas.translate(0, topPadding);
         try {
             drawInMaim = true;
             super.onDraw(canvas);

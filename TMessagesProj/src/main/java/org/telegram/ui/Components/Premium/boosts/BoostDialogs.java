@@ -615,13 +615,14 @@ public class BoostDialogs {
         builder.show();
     }
 
-    public static void showPrivateChannelAlert(Context context, Theme.ResourcesProvider resourcesProvider, Runnable onCanceled) {
+    public static void showPrivateChannelAlert(Context context, Theme.ResourcesProvider resourcesProvider, Runnable onCanceled, Runnable onAccepted) {
         final AtomicBoolean isAddButtonClicked = new AtomicBoolean(false);
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         builder.setTitle(getString("BoostingGiveawayPrivateChannel", R.string.BoostingGiveawayPrivateChannel));
         builder.setMessage(getString("BoostingGiveawayPrivateChannelWarning", R.string.BoostingGiveawayPrivateChannelWarning));
         builder.setPositiveButton(getString("Add", R.string.Add), (dialogInterface, i) -> {
             isAddButtonClicked.set(true);
+            onAccepted.run();
         });
         builder.setNegativeButton(getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
 
@@ -759,6 +760,23 @@ public class BoostDialogs {
         builder.setTitle(LocaleController.getString("CantBoostTooOften", R.string.CantBoostTooOften));
         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("CantBoostTooOftenDescription", R.string.CantBoostTooOftenDescription, timeString)));
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+            dialog.dismiss();
+        });
+        builder.show();
+    }
+
+    public static void showStartGiveawayDialog(Runnable onStart) {
+        BaseFragment baseFragment = LaunchActivity.getLastFragment();
+        if (baseFragment == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getContext(), baseFragment.getResourceProvider());
+        builder.setTitle(LocaleController.getString("BoostingStartGiveawayConfirmTitle", R.string.BoostingStartGiveawayConfirmTitle));
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("BoostingStartGiveawayConfirmText", R.string.BoostingStartGiveawayConfirmText)));
+        builder.setPositiveButton(LocaleController.getString("Start", R.string.Start), (dialog, which) -> {
+            onStart.run();
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
             dialog.dismiss();
         });
         builder.show();

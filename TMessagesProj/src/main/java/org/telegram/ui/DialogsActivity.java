@@ -7475,7 +7475,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         boolean loadArchivedFromCache = false;
         boolean load = false;
         boolean loadFromCache = false;
-        if (viewPage.dialogsType == 7 || viewPage.dialogsType == 8) {
+        if (viewPage.dialogsType == DIALOGS_TYPE_7 || viewPage.dialogsType == DIALOGS_TYPE_8) {
             ArrayList<MessagesController.DialogFilter> dialogFilters = getMessagesController().getDialogFilters();
             if (viewPage.selectedType >= 0 && viewPage.selectedType < dialogFilters.size()) {
                 MessagesController.DialogFilter filter = dialogFilters.get(viewPage.selectedType);

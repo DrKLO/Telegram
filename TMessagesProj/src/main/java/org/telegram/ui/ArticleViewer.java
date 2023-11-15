@@ -11671,10 +11671,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         public void onReleasePlayerBeforeClose(int photoIndex) {
+            TLRPC.PageBlock pageBlock = null;
+            if (photoIndex >= 0 && photoIndex < pageBlocks.size()) {
+                pageBlock = pageBlocks.get(photoIndex);
+            }
             VideoPlayer player = PhotoViewer.getInstance().getVideoPlayer();
             TextureView textureView = PhotoViewer.getInstance().getVideoTextureView();
             SurfaceView surfaceView = PhotoViewer.getInstance().getVideoSurfaceView();
-            BlockVideoCell videoCell = getViewFromListView(listView[0], pageBlocks.get(photoIndex));
+            BlockVideoCell videoCell = getViewFromListView(listView[0], pageBlock);
             if (videoCell != null && player != null && textureView != null) {
                 videoCell.playFrom = player.getCurrentPosition();
                 videoCell.firstFrameRendered = false;

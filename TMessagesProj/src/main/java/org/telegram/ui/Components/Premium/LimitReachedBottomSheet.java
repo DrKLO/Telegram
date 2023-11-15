@@ -1057,7 +1057,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 } else {
                     descriptionStr = LocaleController.formatString(
                             "ChannelNeedBoostsDescriptionNextLevel", R.string.ChannelNeedBoostsDescriptionNextLevel,
-                            LocaleController.formatPluralString("MoreBoosts", boostsStatus.next_level_boosts, boostsStatus.next_level_boosts),
+                            LocaleController.formatPluralString("MoreBoosts", boostsStatus.next_level_boosts - boostsStatus.boosts, boostsStatus.next_level_boosts - boostsStatus.boosts),
                             LocaleController.formatPluralString("BoostStories", boostsStatus.level + 1)
                     );
                 }

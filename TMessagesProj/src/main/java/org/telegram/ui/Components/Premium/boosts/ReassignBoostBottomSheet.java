@@ -332,10 +332,12 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
         public TopCell(Context context) {
             super(context);
             setOrientation(LinearLayout.VERTICAL);
-
+            setClipChildren(false);
             avatarsContainer = new FrameLayout(getContext());
-
+            avatarsContainer.setClipChildren(false);
             avatarsWrapper = new FrameLayout(getContext());
+            avatarsWrapper.setClipChildren(false);
+
             avatarsContainer.addView(avatarsWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, 0, 0, 0, 0, 0));
 
             arrowView = new ArrowView(context);
@@ -472,7 +474,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
                 avatarsContainer.animate().setInterpolator(interpolator).translationX(0).setDuration(duration).start();
             } else {
                 int count = addedChats.size() - 1;
-                avatarsContainer.animate().setInterpolator(interpolator).translationX(dp(11) * count).setDuration(duration).start();
+                avatarsContainer.animate().setInterpolator(interpolator).translationX(dp(13) * count).setDuration(duration).start();
             }
 
             toAvatar.animate().cancel();

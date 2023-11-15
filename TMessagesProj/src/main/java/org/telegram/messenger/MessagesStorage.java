@@ -10379,6 +10379,7 @@ public class MessagesStorage extends BaseController {
         SQLitePreparedStatement state_tasks = null;
         SQLitePreparedStatement state_dialogs_replace = null;
         SQLitePreparedStatement state_dialogs_update = null;
+        SQLitePreparedStatement state_dialogs_update_without_message = null;
         SQLitePreparedStatement state_topics_update = null;
         SQLitePreparedStatement state_media_topics = null;
         SQLiteCursor cursor = null;
@@ -11204,6 +11205,7 @@ public class MessagesStorage extends BaseController {
 
                 state_dialogs_replace = database.executeFast("REPLACE INTO dialogs VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 state_dialogs_update = database.executeFast("UPDATE dialogs SET date = ?, unread_count = ?, last_mid = ?, last_mid_group = ?, unread_count_i = ? WHERE did = ?");
+                state_dialogs_update_without_message = database.executeFast("UPDATE dialogs SET unread_count = ?, unread_count_i = ? WHERE did = ?");
                 state_topics_update = database.executeFast("UPDATE topics SET unread_count = ?, top_message = ?, unread_mentions = ?, total_messages_count = ? WHERE did = ? AND topic_id = ?");
 
                 ArrayList<Long> dids = new ArrayList<>();
@@ -11262,18 +11264,26 @@ public class MessagesStorage extends BaseController {
 
                     dids.add(key);
                     if (exists) {
-                        state_dialogs_update.requery();
-                        state_dialogs_update.bindInteger(1, message != null && (!doNotUpdateDialogDate || dialog_date == 0) ? message.date : dialog_date);
-                        state_dialogs_update.bindInteger(2, old_unread_count + unread_count);
-                        state_dialogs_update.bindInteger(3, messageId);
-                        if (message != null && (message.flags & 131072) != 0) {
-                            state_dialogs_update.bindLong(4, message.grouped_id);
+                        if (messageId >= last_mid || DialogObject.isEncryptedDialog(key)) {
+                            state_dialogs_update.requery();
+                            state_dialogs_update.bindInteger(1, message != null && (!doNotUpdateDialogDate || dialog_date == 0) ? message.date : dialog_date);
+                            state_dialogs_update.bindInteger(2, old_unread_count + unread_count);
+                            state_dialogs_update.bindInteger(3, messageId);
+                            if (message != null && (message.flags & 131072) != 0) {
+                                state_dialogs_update.bindLong(4, message.grouped_id);
+                            } else {
+                                state_dialogs_update.bindNull(4);
+                            }
+                            state_dialogs_update.bindInteger(5, old_mentions_count + mentions_count);
+                            state_dialogs_update.bindLong(6, key);
+                            state_dialogs_update.step();
                         } else {
-                            state_dialogs_update.bindNull(4);
+                            state_dialogs_update_without_message.requery();
+                            state_dialogs_update_without_message.bindInteger(1, old_unread_count + unread_count);
+                            state_dialogs_update_without_message.bindInteger(2, old_mentions_count + mentions_count);
+                            state_dialogs_update_without_message.bindLong(3, key);
+                            state_dialogs_update_without_message.step();
                         }
-                        state_dialogs_update.bindInteger(5, old_mentions_count + mentions_count);
-                        state_dialogs_update.bindLong(6, key);
-                        state_dialogs_update.step();
                     } else {
                         state_dialogs_replace.requery();
                         state_dialogs_replace.bindLong(1, key);
@@ -11303,6 +11313,8 @@ public class MessagesStorage extends BaseController {
                 }
                 state_dialogs_update.dispose();
                 state_dialogs_update = null;
+                state_dialogs_update_without_message.dispose();
+                state_dialogs_update_without_message = null;
                 state_dialogs_replace.dispose();
                 state_dialogs_replace = null;
 
@@ -11530,6 +11542,9 @@ public class MessagesStorage extends BaseController {
             }
             if (state_dialogs_update != null) {
                 state_dialogs_update.dispose();
+            }
+            if (state_dialogs_update_without_message != null) {
+                state_dialogs_update_without_message.dispose();
             }
             if (state_topics_update != null) {
                 state_topics_update.dispose();

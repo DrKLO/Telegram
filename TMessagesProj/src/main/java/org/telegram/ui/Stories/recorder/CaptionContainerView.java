@@ -294,7 +294,7 @@ public class CaptionContainerView extends FrameLayout {
         ScaleStateListAnimator.apply(applyButton, 0.05f, 1.25f);
         applyButtonCheck = context.getResources().getDrawable(R.drawable.input_done).mutate();
         applyButtonCheck.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.SRC_IN));
-        applyButtonDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider)), applyButtonCheck, 0, AndroidUtilities.dp(1));
+        applyButtonDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_chat_editMediaButton, resourcesProvider)), applyButtonCheck, 0, AndroidUtilities.dp(1));
         applyButtonDrawable.setCustomSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
         applyButton.setImageDrawable(applyButtonDrawable);
         applyButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -985,7 +985,7 @@ public class CaptionContainerView extends FrameLayout {
     public void updateColors(Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         applyButtonCheck.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.SRC_IN));
-        applyButtonDrawable.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider)));
+        applyButtonDrawable.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_chat_editMediaButton, resourcesProvider)));
     }
 
     @Override

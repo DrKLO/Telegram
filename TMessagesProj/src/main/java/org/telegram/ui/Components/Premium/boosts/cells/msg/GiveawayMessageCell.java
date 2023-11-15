@@ -8,6 +8,7 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
@@ -74,6 +75,7 @@ public class GiveawayMessageCell {
     private final ImageReceiver giftReceiver;
 
     private CharSequence[] chatTitles = new CharSequence[10];
+    private TLRPC.Chat[] chats = new TLRPC.Chat[10];
     private float[] chatTitleWidths = new float[10];
     private boolean[] needNewRow = new boolean[10];
     private Rect[] clickRect = new Rect[10];
@@ -178,7 +180,7 @@ public class GiveawayMessageCell {
     }
 
     public void setButtonPressed(boolean pressed) {
-        if (messageObject == null || !messageObject.isGiveaway()) {
+        if (messageObject == null || !messageObject.isGiveaway() || selectorDrawable == null) {
             return;
         }
         if (pressed) {
@@ -338,6 +340,7 @@ public class GiveawayMessageCell {
 
             if (chat != null) {
                 avatarVisible[i] = true;
+                chats[i] = chat;
                 CharSequence text = Emoji.replaceEmoji(chat.title, chatTextPaint.getFontMetricsInt(), dp(14), false);
                 chatTitles[i] = TextUtils.ellipsize(text, chatTextPaint, maxWidth * 0.8f, TextUtils.TruncateAt.END);
                 chatTitleWidths[i] = chatTextPaint.measureText(chatTitles[i], 0, chatTitles[i].length());
@@ -356,6 +359,7 @@ public class GiveawayMessageCell {
                 avatarImageReceivers[i].setForUserOrChat(chat, avatarDrawables[i]);
                 avatarImageReceivers[i].setImageCoords(0, 0, dp(24), dp(24));
             } else {
+                chats[i] = null;
                 avatarVisible[i] = false;
                 chatTitles[i] = "";
                 needNewRow[i] = false;
@@ -365,6 +369,23 @@ public class GiveawayMessageCell {
         }
     }
 
+    private int getChatColor(TLRPC.Chat chat, Theme.ResourcesProvider resourcesProvider) {
+        final int color;
+        int colorId = (chat.flags2 & 64) != 0 ? chat.color : (int) (chat.id % 7);
+        if (colorId < 7) {
+            color = Theme.getColor(Theme.keys_avatar_nameInMessage[colorId], resourcesProvider);
+        } else {
+            MessagesController.PeerColors peerColors = MessagesController.getInstance(UserConfig.selectedAccount).peerColors;
+            MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(colorId);
+            if (peerColor != null) {
+                color = peerColor.getColor1();
+            } else {
+                color = Theme.getColor(Theme.keys_avatar_nameInMessage[0], resourcesProvider);
+            }
+        }
+        return color;
+    }
+
     public void draw(Canvas canvas, int marginTop, int marginLeft, Theme.ResourcesProvider resourcesProvider) {
         if (messageObject == null || !messageObject.isGiveaway()) {
             return;
@@ -372,11 +393,6 @@ public class GiveawayMessageCell {
 
         if (selectorDrawable == null) {
             selectorDrawable = Theme.createRadSelectorDrawable(selectorColor = Theme.getColor(Theme.key_listSelector), 12, 12);
-        }
-
-        int rippleColor = Theme.multAlpha(chatTextPaint.getColor(), Theme.isCurrentThemeDark() ? 0.12f : 0.10f);
-        if (selectorColor != rippleColor) {
-            Theme.setSelectorDrawableColor(selectorDrawable, selectorColor = rippleColor, true);
         }
 
         textPaint.setColor(Theme.chat_msgTextPaint.getColor());
@@ -391,8 +407,6 @@ public class GiveawayMessageCell {
             counterBgPaint.setColor(Theme.getColor(Theme.key_chat_inPreviewInstantText, resourcesProvider));
             chatBgPaint.setColor(Theme.getColor(Theme.key_chat_inReplyLine, resourcesProvider));
         }
-
-        chatBgPaint.setAlpha((int) (chatTextPaint.getAlpha() * 0.10f));
 
         int x = 0, y = 0;
         canvas.save();
@@ -435,6 +449,7 @@ public class GiveawayMessageCell {
         canvas.translate(0, topHeight + dp(6));
         y += topHeight + dp(6);
 
+        int selectedChatColor = 0;
         int i = 0;
         while (i < avatarVisible.length) {
             if (avatarVisible[i]) {
@@ -454,6 +469,13 @@ public class GiveawayMessageCell {
                 k = i;
 
                 do {
+                    int chatColor = getChatColor(chats[k], resourcesProvider);
+                    if (pressedPos >= 0 && pressedPos == k) {
+                        selectedChatColor = chatColor;
+                    }
+                    chatTextPaint.setColor(chatColor);
+                    chatBgPaint.setColor(chatColor);
+                    chatBgPaint.setAlpha(25);
                     avatarImageReceivers[k].draw(canvas);
                     canvas.drawText(chatTitles[k], 0, chatTitles[k].length(), dp(24 + 6), dp(16), chatTextPaint);
                     chatRect.set(0, 0, chatTitleWidths[k] + dp(24 + 6 + 12), dp(24));
@@ -492,6 +514,10 @@ public class GiveawayMessageCell {
         canvas.restore();
         canvas.restore();
         if (pressedPos >= 0) {
+            int rippleColor = Theme.multAlpha(selectedChatColor, Theme.isCurrentThemeDark() ? 0.12f : 0.10f);
+            if (selectorColor != rippleColor) {
+                Theme.setSelectorDrawableColor(selectorDrawable, selectorColor = rippleColor, true);
+            }
             selectorDrawable.setBounds(clickRect[pressedPos]);
             selectorDrawable.draw(canvas);
         }
@@ -551,6 +577,7 @@ public class GiveawayMessageCell {
             chatTitleWidths = Arrays.copyOf(chatTitleWidths, channelsCount);
             needNewRow = Arrays.copyOf(needNewRow, channelsCount);
             clickRect = Arrays.copyOf(clickRect, channelsCount);
+            chats = Arrays.copyOf(chats, channelsCount);
 
             for (int i = oldLength - 1; i < channelsCount; i++) {
                 avatarImageReceivers[i] = new ImageReceiver(parentView);

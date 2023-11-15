@@ -16,6 +16,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -39,6 +40,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -889,7 +891,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.buttonText = buttonText;
         this.currentWebApp = app;
 
-        actionBar.setTitle(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)));
+        CharSequence title = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId));
+        try {
+            TextPaint tp = new TextPaint();
+            tp.setTextSize(AndroidUtilities.dp(20));
+            title = Emoji.replaceEmoji(title, tp.getFontMetricsInt(), false);
+        } catch (Exception ignore) {}
+        actionBar.setTitle(title);
         ActionBarMenu menu = actionBar.createMenu();
         menu.removeAllViews();
 

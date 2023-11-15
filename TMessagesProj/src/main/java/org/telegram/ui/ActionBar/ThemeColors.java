@@ -47,7 +47,7 @@ public class ThemeColors {
         defaultColors[key_dialogButton] = 0xff4991cc;
         defaultColors[key_dialogButtonSelector] = 0x0f000000;
         defaultColors[key_dialogScrollGlow] = 0xfff5f6f7;
-        defaultColors[key_dialogRoundCheckBox] = 0xff1A9CFF;
+        defaultColors[key_dialogRoundCheckBox] = 0xff4cb4f5;
         defaultColors[key_dialogRoundCheckBoxCheck] = 0xffffffff;
         defaultColors[key_dialogCameraIcon] = 0xffffffff;
         defaultColors[key_dialog_inlineProgressBackground] = 0xf6f0f2f5;
@@ -56,7 +56,7 @@ public class ThemeColors {
         defaultColors[key_dialogSearchHint] = 0xff98a0a7;
         defaultColors[key_dialogSearchIcon] = 0xffa1a8af;
         defaultColors[key_dialogSearchText] = 0xff222222;
-        defaultColors[key_dialogFloatingButton] = 0xff1A9CFF;
+        defaultColors[key_dialogFloatingButton] = 0xff4cb4f5;
         defaultColors[key_dialogFloatingButtonPressed] = 0x0f000000;
         defaultColors[key_dialogFloatingIcon] = 0xffffffff;
         defaultColors[key_dialogShadowLine] = 0x12000000;
@@ -252,7 +252,7 @@ public class ThemeColors {
         defaultColors[key_chats_archivePullDownBackgroundActive] = 0xff66a9e0;
 
         defaultColors[key_chat_attachCheckBoxCheck] = 0xffffffff;
-        defaultColors[key_chat_attachCheckBoxBackground] = 0xff39b2f7;
+        defaultColors[key_chat_attachCheckBoxBackground] = 0xff4cb4f5;
         defaultColors[key_chat_attachPhotoBackground] = 0x0c000000;
         defaultColors[key_chat_attachActiveTab] = 0xff33a7f5;
         defaultColors[key_chat_attachUnactiveTab] = 0xff92999e;
@@ -637,6 +637,7 @@ public class ThemeColors {
         defaultColors[key_chat_outBubbleLocationPlaceholder] = 0x1e307311;
         defaultColors[key_chat_inBubbleLocationPlaceholder] = 0x1e506373;
         defaultColors[key_chat_BlurAlpha] = 0xFF000000;
+        defaultColors[key_chat_editMediaButton] = 0xff1A9CFF;
 
         defaultColors[key_statisticChartSignature] = 0x7f252529;
         defaultColors[key_statisticChartSignatureAlpha] = 0x7f252529;
@@ -1308,6 +1309,7 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_inBubbleLocationPlaceholder, "chat_inBubbleLocationPlaceholder");
         colorKeysMap.put(key_chat_outBubbleLocationPlaceholder, "chat_outBubbleLocationPlaceholder");
         colorKeysMap.put(key_chat_BlurAlpha, "chat_BlurAlpha");
+        colorKeysMap.put(key_chat_editMediaButton, "chat_editMediaButton");
 
         colorKeysMap.put(key_voipgroup_listSelector, "voipgroup_listSelector");
         colorKeysMap.put(key_voipgroup_inviteMembersBackground, "voipgroup_inviteMembersBackground");

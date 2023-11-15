@@ -495,7 +495,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     }
 
     public void updateColors() {
-        Theme.setDrawableColor(doneDrawable, getThemedColor(Theme.key_dialogFloatingButton));
+        Theme.setDrawableColor(doneDrawable, getThemedColor(Theme.key_chat_editMediaButton));
         int color = getThemedColor(Theme.key_dialogFloatingIcon);
         int alpha = Color.alpha(color);
         Theme.setDrawableColor(checkDrawable, ColorUtils.setAlphaComponent(color, (int) (alpha * (0.58f + 0.42f * sendButtonEnabledProgress))));
@@ -619,7 +619,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 return 771751936;
             } else if (key == Theme.key_divider) {
                 return -16777216;
-            } else if (key == Theme.key_dialogFloatingButton) {
+            } else if (key == Theme.key_chat_editMediaButton) {
                 return -10177041;
             } else if (key == Theme.key_dialogFloatingIcon) {
                 return 0xffffffff;

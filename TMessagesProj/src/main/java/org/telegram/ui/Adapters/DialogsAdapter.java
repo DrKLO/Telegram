@@ -464,7 +464,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
 
     boolean isCalculatingDiff;
     boolean updateListPending;
-    private final static boolean ALLOW_UPDATE_IN_BACKGROUND = BuildVars.DEBUG_VERSION;
+    private final static boolean ALLOW_UPDATE_IN_BACKGROUND = BuildVars.DEBUG_PRIVATE_VERSION;
 
     public void updateList(Runnable saveScrollPosition) {
         if (isCalculatingDiff) {

@@ -3888,6 +3888,7 @@ public class Theme {
     public static final int key_chat_TextSelectionCursor = colorsCount++;
     public static final int key_chat_inBubbleLocationPlaceholder = colorsCount++;
     public static final int key_chat_BlurAlpha = colorsCount++;
+    public static final int key_chat_editMediaButton = colorsCount++;
 
     public static final int key_voipgroup_listSelector = colorsCount++;
     public static final int key_voipgroup_inviteMembersBackground = colorsCount++;
@@ -4323,6 +4324,8 @@ public class Theme {
         fallbackKeys.put(key_chat_outPollCorrectAnswer, key_chat_attachLocationBackground);
         fallbackKeys.put(key_chat_inPollWrongAnswer, key_chat_attachAudioBackground);
         fallbackKeys.put(key_chat_outPollWrongAnswer, key_chat_attachAudioBackground);
+        fallbackKeys.put(key_chat_editMediaButton, key_dialogFloatingButton);
+        fallbackKeys.put(key_chat_attachCheckBoxBackground, key_dialogRoundCheckBox);
 
         fallbackKeys.put(key_profile_tabText, key_windowBackgroundWhiteGrayText);
         fallbackKeys.put(key_profile_tabSelectedText, key_windowBackgroundWhiteBlueHeader);

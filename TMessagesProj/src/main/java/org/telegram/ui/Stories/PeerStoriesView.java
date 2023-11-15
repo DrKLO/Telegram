@@ -76,6 +76,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
@@ -4863,7 +4864,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 return uploadingStory.entry.allowScreenshots;
             }
             if (storyItem != null) {
-                return !storyItem.noforwards;
+                if (storyItem.noforwards) {
+                    return false;
+                }
+                if (storyItem.pinned) {
+                    final long did = storyItem.dialogId;
+                    final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                    if (chat != null && chat.noforwards) {
+                        return false;
+                    }
+                }
             }
             return true;
         }

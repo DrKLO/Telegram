@@ -950,12 +950,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         BotWebViewSheet webViewSheet = new BotWebViewSheet(this, getLastFragment().getResourceProvider());
         webViewSheet.setParentActivity(this);
         webViewSheet.requestWebView(currentAccount, attachMenuBot.bot_id, attachMenuBot.bot_id, attachMenuBot.short_name, null, BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON, 0, false, null, null, false, startApp, null,  BotWebViewSheet.FLAG_FROM_SIDE_MENU);
-        BaseFragment lastFragment = getLastFragment();
-        if (lastFragment != null) {
-            lastFragment.showDialog(webViewSheet);
-        } else {
-            webViewSheet.show();
-        }
+        webViewSheet.show();
     }
 
     @Override
@@ -4879,12 +4874,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         BotWebViewSheet sheet = new BotWebViewSheet(LaunchActivity.this, lastFragment.getResourceProvider());
                         sheet.setParentActivity(LaunchActivity.this);
                         sheet.requestWebView(intentAccount, user.id, user.id, null, null, BotWebViewSheet.TYPE_WEB_VIEW_BOT_APP, 0, false, lastFragment, botApp.app, allowWrite.get(), botAppStartParam, user);
-                        BaseFragment currentLastFragment = getLastFragment();
-                        if (currentLastFragment != null) {
-                            currentLastFragment.showDialog(sheet);
-                        } else {
-                            sheet.show();
-                        }
+                        sheet.show();
                         if (botApp.inactive || forceNotInternalForApps) {
                             sheet.showJustAddedBulletin();
                         }
