@@ -121,6 +121,7 @@ import org.telegram.ui.Components.Paint.Views.PaintTypefaceListView;
 import org.telegram.ui.Components.Paint.Views.PaintWeightChooserView;
 import org.telegram.ui.Components.Paint.Views.PhotoView;
 import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
+import org.telegram.ui.Components.Paint.Views.RoundView;
 import org.telegram.ui.Components.Paint.Views.StickerView;
 import org.telegram.ui.Components.Paint.Views.TextPaintView;
 import org.telegram.ui.Components.Point;
@@ -257,6 +258,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     private AnimatorSet keyboardAnimator;
     public final KeyboardNotifier keyboardNotifier;
 
+    private StoryEntry initialEntry;
     private ArrayList<VideoEditedInfo.MediaEntity> initialEntities;
     private int w, h;
 
@@ -272,7 +274,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     private BlurringShader.BlurManager blurManager;
 
     @SuppressLint("NotifyDataSetChanged")
-    public PaintView(Context context, boolean fileFromGallery, File file, boolean isVideo, StoryRecorder.WindowView parent, Activity activity, int currentAccount, Bitmap bitmap, Bitmap blurBitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, int viewWidth, int viewHeight, MediaController.CropState cropState, Runnable onInit, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider) {
+    public PaintView(Context context, boolean fileFromGallery, File file, boolean isVideo, StoryRecorder.WindowView parent, Activity activity, int currentAccount, Bitmap bitmap, Bitmap blurBitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, StoryEntry entry, int viewWidth, int viewHeight, MediaController.CropState cropState, Runnable onInit, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider) {
         super(context, activity, true);
         setDelegate(this);
         this.fileFromGallery = fileFromGallery;
@@ -571,6 +573,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         };
 //        addView(entitiesView);
 
+        this.initialEntry = entry;
         this.initialEntities = entities;
         if (w > 0 && h > 0) {
             setupEntities();
@@ -1252,7 +1255,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }
     }
 
-    private boolean selectEntity(EntityView entityView) {
+    public boolean selectEntity(EntityView entityView) {
         return selectEntity(entityView, true);
     }
 
@@ -1328,6 +1331,8 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         AndroidUtilities.hideKeyboard(((TextPaintView) currentEntityView).getFocusedView());
                         hideEmojiPopup(false);
                     }
+                } else if (currentEntityView instanceof RoundView) {
+                    onDeselectRound((RoundView) currentEntityView);
                 }
             }
             changed = true;
@@ -1340,6 +1345,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             if (TextUtils.isEmpty(textPaintView.getText())) {
                 removeEntity(oldEntity);
             }
+        }
+        if (oldEntity != currentEntityView && currentEntityView instanceof RoundView) {
+            onSelectRound((RoundView) currentEntityView);
         }
 
         if (currentEntityView != null) {
@@ -2095,6 +2103,8 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     private void setupEntities() {
         if (initialEntities != null) {
             ArrayList<VideoEditedInfo.MediaEntity> entities = initialEntities;
+            StoryEntry entry = initialEntry;
+            initialEntry = null;
             initialEntities = null;
             for (int a = 0, N = entities.size(); a < N; a++) {
                 VideoEditedInfo.MediaEntity entity = entities.get(a);
@@ -2156,6 +2166,16 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         entityView.changeStyle(false);
                     }
                     view = entityView;
+                } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_ROUND) {
+                    if (entry.round == null) {
+                        continue;
+                    }
+                    RoundView roundView = createRound(entry.roundThumb, false);
+                    onCreateRound(roundView);
+                    if ((entity.subType & 2) != 0) {
+                        roundView.mirror(false);
+                    }
+                    view = roundView;
                 } else {
                     continue;
                 }
@@ -2290,10 +2310,10 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
     @Override
     public Bitmap getBitmap(ArrayList<VideoEditedInfo.MediaEntity> entities, Bitmap[] thumbBitmap) {
-        return getBitmap(entities, (int) paintingSize.width, (int) paintingSize.height, true, true, false);
+        return getBitmap(entities, (int) paintingSize.width, (int) paintingSize.height, true, true, false, null);
     }
 
-    public Bitmap getBitmap(ArrayList<VideoEditedInfo.MediaEntity> entities, int resultWidth, int resultHeight, boolean drawPaint, boolean drawEntities, boolean drawBlur) {
+    public Bitmap getBitmap(ArrayList<VideoEditedInfo.MediaEntity> entities, int resultWidth, int resultHeight, boolean drawPaint, boolean drawEntities, boolean drawBlur, StoryEntry entry) {
         Bitmap bitmap;
         if (drawPaint) {
             bitmap = renderView.getResultBitmap(false, drawBlur);
@@ -2453,6 +2473,24 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         mediaEntity.mediaArea.dark = reactionView.isDark();
                         mediaEntity.mediaArea.flipped = reactionView.isMirrored();
                         mediaEntity.mediaArea.coordinates = new TL_stories.TL_mediaAreaCoordinates();
+                    } else if (entity instanceof RoundView) {
+                        skipDrawToBitmap = true;
+                        RoundView roundView = (RoundView) entity;
+                        Size size = roundView.getBaseSize();
+                        mediaEntity.width = size.width;
+                        mediaEntity.height = size.height;
+                        mediaEntity.type = VideoEditedInfo.MediaEntity.TYPE_ROUND;
+                        if (entry != null) {
+                            mediaEntity.text = entry.round.getAbsolutePath();
+                            mediaEntity.roundOffset = entry.roundOffset;
+                            mediaEntity.roundDuration = entry.roundDuration;
+                            mediaEntity.roundLeft = (long) (entry.roundLeft * entry.roundDuration);
+                            mediaEntity.roundRight = (long) (entry.roundRight * entry.roundDuration);
+                        }
+                        mediaEntity.subType = 4;
+                        if (roundView.isMirrored()) {
+                            mediaEntity.subType |= 2;
+                        }
                     } else {
                         continue;
                     }
@@ -3374,7 +3412,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             deleteView.setTag(0);
             deleteView.setText(LocaleController.getString("PaintDelete", R.string.PaintDelete));
             deleteView.setOnClickListener(v -> {
-                removeEntity(entityView);
+                if (entityView instanceof RoundView) {
+                    onTryDeleteRound();
+                } else {
+                    removeEntity(entityView);
+                }
 
                 if (popupWindow != null && popupWindow.isShowing()) {
                     popupWindow.dismiss(true);
@@ -3433,13 +3475,15 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 parent.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 44));
             }
 
-            if (entityView instanceof StickerView || entityView instanceof PhotoView || entityView instanceof ReactionWidgetEntityView) {
+            if (entityView instanceof StickerView || entityView instanceof RoundView || entityView instanceof PhotoView || entityView instanceof ReactionWidgetEntityView) {
                 TextView flipView = createActionLayoutButton(4, LocaleController.getString("Flip", R.string.Flip));
                 flipView.setOnClickListener(v -> {
                     if (entityView instanceof StickerView) {
                         ((StickerView) entityView).mirror(true);
-                    } else if (entityView instanceof ReactionWidgetEntityView){
+                    } else if (entityView instanceof ReactionWidgetEntityView) {
                         ((ReactionWidgetEntityView) entityView).mirror(true);
+                    } else if (entityView instanceof RoundView) {
+                        ((RoundView) entityView).mirror(true);
                     } else {
                         ((PhotoView) entityView).mirror(true);
                     }
@@ -3450,7 +3494,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 parent.addView(flipView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 44));
             }
 
-            if (!(entityView instanceof PhotoView) && !(entityView instanceof LocationView) && !(entityView instanceof ReactionWidgetEntityView)) {
+            if (!(entityView instanceof PhotoView) && !(entityView instanceof RoundView) && !(entityView instanceof LocationView) && !(entityView instanceof ReactionWidgetEntityView)) {
                 TextView duplicateView = new TextView(getContext());
                 duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                 duplicateView.setLines(1);
@@ -3877,6 +3921,63 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         return view;
     }
 
+    public void onCreateRound(RoundView roundView) {
+
+    }
+
+    public void onTryDeleteRound() {
+
+    }
+
+    public void onDeleteRound() {
+
+    }
+
+    public void onDeselectRound(RoundView roundView) {
+
+    }
+
+    public void onSelectRound(RoundView roundView) {
+
+    }
+
+    public void deleteRound() {
+        for (int i = 0; i < entitiesView.getChildCount(); ++i) {
+            View child = entitiesView.getChildAt(i);
+            if (child instanceof RoundView) {
+                if (currentEntityView == child) {
+                    selectEntity(null);
+                }
+                child.animate().scaleX(0).scaleY(0)
+                        .setDuration(280).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .withEndAction(() -> removeEntity((RoundView) child)).start();
+            }
+        }
+    }
+
+    private boolean creatingNewRound;
+    public RoundView createRound(String thumbPath, boolean select) {
+        forceChanges = true;
+        creatingNewRound = true;
+        deleteRound();
+        int w = entitiesView.getMeasuredWidth(), h = entitiesView.getMeasuredHeight();
+        if (w <= 0) w = this.w;
+        if (h <= 0) h = this.h;
+        float side = (float) Math.floor(w * 0.43f);
+        Size size = new Size(side, side);
+        float x = w - size.width / 2f - dp(16);
+        float y = dp(72) + size.height / 2f;
+        RoundView view = new RoundView(getContext(), new Point(x, y), 0, 1f, size, thumbPath);
+        view.setDelegate(this);
+        entitiesView.addView(view);
+        if (select) {
+            registerRemovalUndo(view);
+            post(() -> selectEntity(view));
+        }
+        creatingNewRound = false;
+        return view;
+    }
+
     public PhotoView createPhoto(TLObject obj, boolean select) {
         forceChanges = true;
         Size size = basePhotoSize(obj);
@@ -3980,6 +4081,10 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         weightChooserView.setShowPreview(true);
         colorSwatch.brushWeight = weightDefaultValueOverride.get();
         setCurrentSwatch(colorSwatch, true);
+
+        if (!creatingNewRound && entityView instanceof RoundView) {
+            onDeleteRound();
+        }
     }
 
     private void registerRemovalUndo(final EntityView entityView) {
@@ -4517,4 +4622,19 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
     protected void onGalleryClick() {
     }
+
+    public EntityView getSelectedEntity() {
+        return currentEntityView;
+    }
+
+    public RoundView findRoundView() {
+        for (int i = 0; i < entitiesView.getChildCount(); ++i) {
+            View child = entitiesView.getChildAt(i);
+            if (child instanceof RoundView) {
+                return (RoundView) child;
+            }
+        }
+        return null;
+    }
+
 }

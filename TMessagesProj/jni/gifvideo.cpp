@@ -1339,7 +1339,7 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
     }
 }
 
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time) {
+extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time, jboolean loop) {
     if (ptr == NULL || bitmap == nullptr) {
         return 0;
     }
@@ -1408,18 +1408,19 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
                 LOGE("can't decode packet flushed %s", info->src);
                 return 0;
             }
-            if (!preview && got_frame == 0) {
-                if (info->has_decoded_frames) {
-                    int64_t start_from = 0;
-                    if (start_time > 0) {
-                        start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
-                    }
-                    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
-                        LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
-                        return 0;
-                    } else {
-                        avcodec_flush_buffers(info->video_dec_ctx);
-                    }
+            if (!preview && got_frame == 0 && info->has_decoded_frames) {
+                if (!loop) {
+                    return 0;
+                }
+                int64_t start_from = 0;
+                if (start_time > 0) {
+                    start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
+                }
+                if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
+                    LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
+                    return 0;
+                } else {
+                    avcodec_flush_buffers(info->video_dec_ctx);
                 }
             }
         }

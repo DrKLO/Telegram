@@ -16,9 +16,11 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
+import org.telegram.ui.Cells.StatisticPostInfoCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -222,6 +224,28 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.view = cell;
                     holder.params = cell.avatarStoryParams;
                     holder.avatarImage = cell.avatarImage;
+                    holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
+                    updateClip(holder);
+                    return true;
+                }
+            } else if (child instanceof StatisticPostInfoCell) {
+                StatisticPostInfoCell cell = (StatisticPostInfoCell) child;
+                if (cell.getPostInfo().getId() == storyId) {
+                    holder.view = cell.getImageView();
+                    holder.params = cell.getStoryAvatarParams();
+                    holder.storyImage = cell.getImageView().getImageReceiver();
+                    holder.clipParent = (View) cell.getParent();
+                    holder.alpha = 1;
+                    updateClip(holder);
+                    return true;
+                }
+            } else if (child instanceof ManageChatUserCell) {
+                ManageChatUserCell cell = (ManageChatUserCell) child;
+                if (cell.getStoryItem() != null && cell.getStoryItem().dialogId == dialogId && cell.getStoryItem().messageId == messageId) {
+                    holder.view = cell.getAvatarImageView();
+                    holder.params = cell.getStoryAvatarParams();
+                    holder.avatarImage = cell.getAvatarImageView().getImageReceiver();
                     holder.clipParent = (View) cell.getParent();
                     holder.alpha = 1;
                     updateClip(holder);

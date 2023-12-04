@@ -3,7 +3,6 @@ package org.telegram.ui.Components.Premium;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -38,7 +37,6 @@ import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Locale;
 
 public class StoriesPageView extends BaseListPageView {
 

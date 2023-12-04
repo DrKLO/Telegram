@@ -50,7 +50,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -89,9 +88,13 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Stories.StoriesController;
+import org.telegram.ui.Stories.StoriesListPlaceProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -113,6 +116,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     private ChartViewData newFollowersBySourceData;
     private ChartViewData languagesData;
     private ChartViewData notificationsData;
+    private ChartViewData reactionsByEmotionData;
+    private ChartViewData storyInteractionsData;
+    private ChartViewData storyReactionsByEmotionData;
 
     //chats
     private OverviewChatData overviewChatData;
@@ -162,11 +168,17 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     private int loadFromId = -1;
     private final SparseIntArray recentPostIdtoIndexMap = new SparseIntArray();
+    private final SparseIntArray recentStoriesIdtoIndexMap = new SparseIntArray();
     private final ArrayList<RecentPostInfo> recentPostsAll = new ArrayList<>();
     private final ArrayList<RecentPostInfo> recentPostsLoaded = new ArrayList<>();
+    private final ArrayList<RecentPostInfo> recentStoriesAll = new ArrayList<>();
+    private final ArrayList<RecentPostInfo> recentStoriesLoaded = new ArrayList<>();
+    private final ArrayList<RecentPostInfo> recentAllSortedDataLoaded = new ArrayList<>();
     private boolean messagesIsLoading;
     private boolean initialLoading = true;
     private DiffUtilsCallback diffUtilsCallback;
+    private StoriesController.StoriesList storiesList;
+    private int storiesListId;
 
     private final Runnable showProgressbar = new Runnable() {
         @Override
@@ -180,12 +192,25 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().addObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.boostByChannelCreated);
+        getNotificationCenter().addObserver(this, NotificationCenter.storiesListUpdated);
+        StoriesController storiesController = getMessagesController().getStoriesController();
+        storiesList = storiesController.getStoriesList(-chatId, StoriesController.StoriesList.TYPE_STATISTICS);
+        if (storiesList != null) {
+            storiesListId = storiesList.link();
+        }
         if (chat != null) {
             loadStatistic();
         } else {
             MessagesController.getInstance(currentAccount).loadFullChat(chatId, classGuid, true);
         }
         return super.onFragmentCreate();
+    }
+
+    private void sortAllLoadedData() {
+        recentAllSortedDataLoaded.clear();
+        recentAllSortedDataLoaded.addAll(recentPostsLoaded);
+        recentAllSortedDataLoaded.addAll(recentStoriesLoaded);
+        Collections.sort(recentAllSortedDataLoaded, Collections.reverseOrder(Comparator.comparingLong(RecentPostInfo::getDate)));
     }
 
     private void loadStatistic() {
@@ -203,21 +228,23 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             getBroadcastStats.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
         }
 
-
         int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response instanceof TLRPC.TL_stats_broadcastStats) {
-                final ChartViewData[] chartsViewData = new ChartViewData[9];
+                final ChartViewData[] chartsViewData = new ChartViewData[12];
                 TLRPC.TL_stats_broadcastStats stats = (TLRPC.TL_stats_broadcastStats) response;
 
                 chartsViewData[0] = createViewData(stats.iv_interactions_graph, LocaleController.getString("IVInteractionsChartTitle", R.string.IVInteractionsChartTitle), 1);
                 chartsViewData[1] = createViewData(stats.followers_graph, LocaleController.getString("FollowersChartTitle", R.string.FollowersChartTitle), 0);
                 chartsViewData[2] = createViewData(stats.top_hours_graph, LocaleController.getString("TopHoursChartTitle", R.string.TopHoursChartTitle), 0);
-                chartsViewData[3] = createViewData(stats.interactions_graph, LocaleController.getString("InteractionsChartTitle", R.string.InteractionsChartTitle), 1);
+                chartsViewData[3] = createViewData(stats.interactions_graph, LocaleController.getString("ViewsAndSharesChartTitle", R.string.ViewsAndSharesChartTitle), 1);
                 chartsViewData[4] = createViewData(stats.growth_graph, LocaleController.getString("GrowthChartTitle", R.string.GrowthChartTitle), 0);
                 chartsViewData[5] = createViewData(stats.views_by_source_graph, LocaleController.getString("ViewsBySourceChartTitle", R.string.ViewsBySourceChartTitle), 2);
                 chartsViewData[6] = createViewData(stats.new_followers_by_source_graph, LocaleController.getString("NewFollowersBySourceChartTitle", R.string.NewFollowersBySourceChartTitle), 2);
                 chartsViewData[7] = createViewData(stats.languages_graph, LocaleController.getString("LanguagesChartTitle", R.string.LanguagesChartTitle), 4, true);
                 chartsViewData[8] = createViewData(stats.mute_graph, LocaleController.getString("NotificationsChartTitle", R.string.NotificationsChartTitle), 0);
+                chartsViewData[9] = createViewData(stats.reactions_by_emotion_graph, LocaleController.getString("ReactionsByEmotionChartTitle", R.string.ReactionsByEmotionChartTitle), 2);
+                chartsViewData[10] = createViewData(stats.story_interactions_graph, LocaleController.getString("StoryInteractionsChartTitle", R.string.StoryInteractionsChartTitle), 1);
+                chartsViewData[11] = createViewData(stats.story_reactions_by_emotion_graph, LocaleController.getString("StoryReactionsByEmotionChartTitle", R.string.StoryReactionsByEmotionChartTitle), 2);
 
                 if (chartsViewData[2] != null) {
                     chartsViewData[2].useHourFormat = true;
@@ -229,15 +256,35 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
                 recentPostsAll.clear();
 
-                for (int i = 0; i < stats.recent_message_interactions.size(); i++) {
+                int msgPos = 0;
+                int storiesPos = 0;
+                List<Integer> storiesIds = new ArrayList<>();
+                for (TLRPC.PostInteractionCounters interactionCounters : stats.recent_posts_interactions) {
                     RecentPostInfo recentPostInfo = new RecentPostInfo();
-                    recentPostInfo.counters = stats.recent_message_interactions.get(i);
-                    recentPostsAll.add(recentPostInfo);
-                    recentPostIdtoIndexMap.put(recentPostInfo.counters.msg_id, i);
+                    recentPostInfo.counters = interactionCounters;
+
+                    if (interactionCounters instanceof TLRPC.TL_postInteractionCountersMessage) {
+                        recentPostsAll.add(recentPostInfo);
+                        recentPostIdtoIndexMap.put(recentPostInfo.getId(), msgPos);
+                        msgPos++;
+                    }
+                    if (interactionCounters instanceof TLRPC.TL_postInteractionCountersStory) {
+                        storiesIds.add(recentPostInfo.getId());
+                        recentStoriesAll.add(recentPostInfo);
+                        recentStoriesIdtoIndexMap.put(recentPostInfo.getId(), storiesPos);
+                        storiesPos++;
+                    }
                 }
 
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!storiesList.load(storiesIds)) {
+                        prepareStoriesLoadedItems();
+                        sortAllLoadedData();
+                    }
+                });
+
                 if (recentPostsAll.size() > 0) {
-                    int lastPostId = recentPostsAll.get(0).counters.msg_id;
+                    int lastPostId = recentPostsAll.get(0).getId();
                     int count = recentPostsAll.size();
                     getMessagesStorage().getMessages(-chatId, 0, false, count, lastPostId, 0, 0, classGuid, 0, false, 0, 0, true, false, null);
                 }
@@ -253,6 +300,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     newFollowersBySourceData = chartsViewData[6];
                     languagesData = chartsViewData[7];
                     notificationsData = chartsViewData[8];
+
+                    reactionsByEmotionData = chartsViewData[9];
+                    storyInteractionsData = chartsViewData[10];
+                    storyReactionsByEmotionData = chartsViewData[11];
 
                     dataLoaded(chartsViewData);
                 });
@@ -359,17 +410,45 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().removeObserver(this, NotificationCenter.boostByChannelCreated);
         getNotificationCenter().removeObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.storiesListUpdated);
+
         if (progressDialog[0] != null) {
             progressDialog[0].dismiss();
             progressDialog[0] = null;
         }
+        if (storiesList != null) {
+            storiesList.unlink(storiesListId);
+        }
         super.onFragmentDestroy();
+    }
+
+    private void prepareStoriesLoadedItems() {
+        recentStoriesLoaded.clear();
+        for (RecentPostInfo recentPostInfo : recentStoriesAll) {
+            MessageObject messageObject = storiesList.findMessageObject(recentPostInfo.getId());
+            if (messageObject != null) {
+                recentPostInfo.message = messageObject;
+                recentStoriesLoaded.add(recentPostInfo);
+            }
+        }
+        recentStoriesIdtoIndexMap.clear();
+        recentStoriesAll.clear();
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.boostByChannelCreated) {
+        if (id == NotificationCenter.storiesListUpdated) {
+            StoriesController.StoriesList list = (StoriesController.StoriesList) args[0];
+            if (list == storiesList) {
+                prepareStoriesLoadedItems();
+                sortAllLoadedData();
+                if (adapter != null) {
+                    recyclerListView.setItemAnimator(null);
+                    diffUtilsCallback.update();
+                }
+            }
+        } else if (id == NotificationCenter.boostByChannelCreated) {
             TLRPC.Chat chat = (TLRPC.Chat) args[0];
             boolean isGiveaway = (boolean) args[1];
             List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
@@ -403,7 +482,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < n; i++) {
                     MessageObject messageObjectFormCache = messArr.get(i);
                     int index = recentPostIdtoIndexMap.get(messageObjectFormCache.getId(), -1);
-                    if (index >= 0 && recentPostsAll.get(index).counters.msg_id == messageObjectFormCache.getId()) {
+                    if (index >= 0 && recentPostsAll.get(index).getId() == messageObjectFormCache.getId()) {
                         if (messageObjectFormCache.deleted) {
                             deletedMessages.add(recentPostsAll.get(index));
                         } else {
@@ -419,7 +498,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < n; i++) {
                     RecentPostInfo postInfo = recentPostsAll.get(i);
                     if (postInfo.message == null) {
-                        loadFromId = postInfo.counters.msg_id;
+                        loadFromId = postInfo.getId();
                         break;
                     } else {
                         recentPostsLoaded.add(postInfo);
@@ -429,6 +508,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsLoaded.size() < 20) {
                     loadMessages();
                 }
+                sortAllLoadedData();
                 if (adapter != null) {
                     recyclerListView.setItemAnimator(null);
                     diffUtilsCallback.update();
@@ -450,13 +530,15 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         sharedUi = new BaseChartView.SharedUiComponents();
         boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chatId, currentAccount);
         BottomPagerTabs storiesTabsView = new BottomPagerTabs(context, getResourceProvider()) {
-
             @Override
             public Tab[] createTabs() {
                 Tab[] tabs = new Tab[]{
                         new Tab(0, R.raw.stats, LocaleController.getString("Statistics", R.string.Statistics)),
                         new Tab(1, R.raw.boosts, LocaleController.getString("Boosts", R.string.Boosts))
                 };
+                tabs[0].customFrameInvert = true;
+                tabs[0].customEndFrameMid = 25;
+                tabs[0].customEndFrameEnd = 49;
                 tabs[1].customEndFrameMid = 25;
                 tabs[1].customEndFrameEnd = 49;
                 return tabs;
@@ -600,8 +682,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         recyclerListView.setOnItemClickListener((view, position) -> {
             if (position >= adapter.recentPostsStartRow && position <= adapter.recentPostsEndRow) {
-                MessageObject messageObject = recentPostsLoaded.get(position - adapter.recentPostsStartRow).message;
-                MessageStatisticActivity activity = new MessageStatisticActivity(messageObject);
+                RecentPostInfo recentPostInfo = recentAllSortedDataLoaded.get(position - adapter.recentPostsStartRow);
+                MessageStatisticActivity activity = new MessageStatisticActivity(recentPostInfo, chatId, true);
                 presentFragment(activity);
             } else if (position >= adapter.topAdminsStartRow && position <= adapter.topAdminsEndRow) {
                 int i = position - adapter.topAdminsStartRow;
@@ -628,7 +710,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         recyclerListView.setOnItemLongClickListener((view, position) -> {
             if (position >= adapter.recentPostsStartRow && position <= adapter.recentPostsEndRow) {
-                MessageObject messageObject = recentPostsLoaded.get(position - adapter.recentPostsStartRow).message;
+                MessageObject messageObject = recentAllSortedDataLoaded.get(position - adapter.recentPostsStartRow).message;
+
+                if (messageObject.isStory()) {
+                    return false;
+                }
 
                 final ArrayList<String> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
@@ -680,12 +766,15 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         avatarContainer = new ChatAvatarContainer(context, null, false);
         avatarContainer.setOccupyStatusBar(!AndroidUtilities.isTablet());
-        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 56 : 0, 0, 40, 0));
+        avatarContainer.getAvatarImageView().setScaleX(0.9f);
+        avatarContainer.getAvatarImageView().setScaleY(0.9f);
+        avatarContainer.setRightAvatarPadding(-AndroidUtilities.dp(3));
+        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 50 : 0, 0, 40, 0));
 
         TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
 
         avatarContainer.setChatAvatar(chatLocal);
-        avatarContainer.setTitle(chatLocal.title);
+        avatarContainer.setTitle(chatLocal == null ? "" : chatLocal.title);
         avatarContainer.hideSubtitle();
 
         actionBar.setBackButtonDrawable(new BackDrawable(false));
@@ -702,7 +791,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-
 
         if (initialLoading) {
             progressLayout.setAlpha(0f);
@@ -783,6 +871,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         int newFollowersBySourceCell = -1;
         int languagesCell = -1;
         int notificationsCell = -1;
+        int reactionsByEmotionCell = -1;
+        int storyInteractionsCell = -1;
+        int storyReactionsByEmotionCell = -1;
 
         int recentPostsHeaderCell = -1;
         int recentPostsStartRow = -1;
@@ -816,9 +907,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         public int getItemViewType(int position) {
             if (position == growCell || position == folowersCell || position == topHourseCell || position == notificationsCell || position == actionsCell || position == groupMembersCell) {
                 return 0;
-            } else if (position == interactionsCell || position == ivInteractionsCell) {
+            } else if (position == interactionsCell || position == ivInteractionsCell || position == storyInteractionsCell) {
                 return 1;
-            } else if (position == viewsBySourceCell || position == newFollowersBySourceCell || position == newMembersBySourceCell || position == messagesCell) {
+            } else if (position == viewsBySourceCell || position == newFollowersBySourceCell || position == newMembersBySourceCell || position == messagesCell || position == reactionsByEmotionCell || position == storyReactionsByEmotionCell) {
                 return 2;
             } else if (position == languagesCell || position == membersLanguageCell || position == topDayOfWeeksCell) {
                 return 4;
@@ -847,7 +938,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         @Override
         public long getItemId(int position) {
             if (position >= recentPostsStartRow && position < recentPostsEndRow) {
-                return recentPostsLoaded.get(position - recentPostsStartRow).counters.msg_id;
+                return recentAllSortedDataLoaded.get(position - recentPostsStartRow).getId();
             }
             if (position == growCell) {
                 return 1;
@@ -879,6 +970,12 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 return 14;
             } else if (position == topDayOfWeeksCell) {
                 return 15;
+            } else if (position == reactionsByEmotionCell) {
+                return 16;
+            } else if (position == storyInteractionsCell) {
+                return 17;
+            } else if (position == storyReactionsByEmotionCell) {
+                return 18;
             }
             return super.getItemId(position);
         }
@@ -898,7 +995,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 };
                 v.setWillNotDraw(false);
             } else if (viewType == 9) {
-                v = new StatisticPostInfoCell(parent.getContext(), chat) {
+                v = new StatisticPostInfoCell(parent.getContext(), chat, getResourceProvider()) {
                     @Override
                     protected void onDraw(Canvas canvas) {
                         if (getTranslationY() != 0) {
@@ -927,7 +1024,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 headerCell.setPadding(headerCell.getPaddingLeft(), AndroidUtilities.dp(16), headerCell.getRight(), AndroidUtilities.dp(16));
                 v = headerCell;
             } else if (viewType == 14) {
-                v = new OverviewCell(parent.getContext());
+                v = new OverviewCell(parent.getContext(), isMegagroup ? 2 : 4);
             } else if (viewType == 15) {
                 v = new ManageChatTextCell(parent.getContext());
                 v.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -960,6 +1057,12 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     data = topHoursData;
                 } else if (notificationsCell == position) {
                     data = notificationsData;
+                } else if (reactionsByEmotionCell == position) {
+                    data = reactionsByEmotionData;
+                } else if (storyInteractionsCell == position) {
+                    data = storyInteractionsData;
+                } else if (storyReactionsByEmotionCell == position) {
+                    data = storyReactionsByEmotionData;
                 } else if (groupMembersCell == position) {
                     data = groupMembersData;
                 } else if (newMembersBySourceCell == position) {
@@ -990,11 +1093,20 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     }
                 } else {
                     int i = position - recentPostsStartRow;
-                    ((StatisticPostInfoCell) holder.itemView).setData(recentPostsLoaded.get(i));
+                    RecentPostInfo recentPostInfo = recentAllSortedDataLoaded.get(i);
+                    StatisticPostInfoCell cell = ((StatisticPostInfoCell) holder.itemView);
+                    cell.setData(recentPostInfo, i == recentAllSortedDataLoaded.size() - 1);
+                    if (recentPostInfo.isStory()) {
+                        cell.setImageViewAction(v -> getOrCreateStoryViewer().open(getContext(), recentPostInfo.getId(), storiesList, StoriesListPlaceProvider.of(recyclerListView)));
+                    } else {
+                        cell.setImageViewAction(null);
+                    }
                 }
             } else if (type == 13) {
                 ChartHeaderView headerCell = (ChartHeaderView) holder.itemView;
+                headerCell.showDate(true);
                 headerCell.setDates(minDateOverview, maxDateOverview);
+                headerCell.setPadding(0, AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16));
                 if (position == overviewHeaderCell) {
                     headerCell.setTitle(LocaleController.getString("StatisticOverview", R.string.StatisticOverview));
                 } else if (position == topAdminsHeaderCell) {
@@ -1004,14 +1116,16 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 } else if (position == topMembersHeaderCell) {
                     headerCell.setTitle(LocaleController.getString("TopMembers", R.string.TopMembers));
                 } else {
-                    headerCell.setTitle(LocaleController.getString("RecentPosts", R.string.RecentPosts));
+                    headerCell.showDate(false);
+                    headerCell.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(15), AndroidUtilities.dp(2), AndroidUtilities.dp(6));
+                    headerCell.setTitle(LocaleController.getString("RecentPostsCapitalize", R.string.RecentPostsCapitalize));
                 }
             } else if (type == 14) {
                 OverviewCell overviewCell = (OverviewCell) holder.itemView;
                 if (isMegagroup) {
                     overviewCell.setData(overviewChatData);
                 } else {
-                    overviewCell.setData(overviewChannelData);
+                    overviewCell.setData(overviewChannelData, chat);
                 }
             } else if (type == 15) {
                 ManageChatTextCell manageChatTextCell = (ManageChatTextCell) holder.itemView;
@@ -1038,6 +1152,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             ivInteractionsCell = -1;
             topHourseCell = -1;
             notificationsCell = -1;
+            storyReactionsByEmotionCell = -1;
+            storyInteractionsCell = -1;
+            reactionsByEmotionCell = -1;
             groupMembersCell = -1;
             newMembersBySourceCell = -1;
             membersLanguageCell = -1;
@@ -1216,13 +1333,31 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     }
                     ivInteractionsCell = count++;
                 }
+                if (reactionsByEmotionData != null && !reactionsByEmotionData.isEmpty && !reactionsByEmotionData.isError) {
+                    if (count > 0) {
+                        shadowDivideCells.add(count++);
+                    }
+                    reactionsByEmotionCell = count++;
+                }
+                if (storyInteractionsData != null && !storyInteractionsData.isEmpty && !storyInteractionsData.isError) {
+                    if (count > 0) {
+                        shadowDivideCells.add(count++);
+                    }
+                    storyInteractionsCell = count++;
+                }
+                if (storyReactionsByEmotionData != null && !storyReactionsByEmotionData.isEmpty && !storyReactionsByEmotionData.isError) {
+                    if (count > 0) {
+                        shadowDivideCells.add(count++);
+                    }
+                    storyReactionsByEmotionCell = count++;
+                }
 
                 shadowDivideCells.add(count++);
 
-                if (recentPostsAll.size() > 0) {
+                if (recentAllSortedDataLoaded.size() > 0) {
                     recentPostsHeaderCell = count++;
                     recentPostsStartRow = count++;
-                    count = recentPostsEndRow = recentPostsStartRow + recentPostsLoaded.size() - 1;
+                    count = recentPostsEndRow = recentPostsStartRow + recentAllSortedDataLoaded.size() - 1;
                     count++;
 
                     if (recentPostsLoaded.size() != recentPostsAll.size()) {
@@ -1348,6 +1483,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         @SuppressLint("ClickableViewAccessibility")
         public BaseChartCell(@NonNull Context context, int type, BaseChartView.SharedUiComponents sharedUi) {
+            this(context, type, sharedUi, null);
+        }
+
+        @SuppressLint("ClickableViewAccessibility")
+        public BaseChartCell(@NonNull Context context, int type, BaseChartView.SharedUiComponents sharedUi, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             setWillNotDraw(false);
             chartType = type;
@@ -1389,19 +1529,19 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     }
                 }
             };
-            chartHeaderView = new ChartHeaderView(getContext());
+            chartHeaderView = new ChartHeaderView(getContext(), resourcesProvider);
             chartHeaderView.back.setOnTouchListener(new RecyclerListView.FoucsableOnTouchListener());
             chartHeaderView.back.setOnClickListener(v -> zoomOut(true));
 
             switch (type) {
                 case 1:
-                    chartView = new DoubleLinearChartView(getContext());
-                    zoomedChartView = new DoubleLinearChartView(getContext());
+                    chartView = new DoubleLinearChartView(getContext(), resourcesProvider);
+                    zoomedChartView = new DoubleLinearChartView(getContext(), resourcesProvider);
                     zoomedChartView.legendSignatureView.useHour = true;
                     break;
                 case 2:
-                    chartView = new StackBarChartView(getContext());
-                    zoomedChartView = new StackBarChartView(getContext());
+                    chartView = new StackBarChartView(getContext(), resourcesProvider);
+                    zoomedChartView = new StackBarChartView(getContext(), resourcesProvider);
                     zoomedChartView.legendSignatureView.useHour = true;
                     break;
                 case 3:
@@ -1437,7 +1577,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             frameLayout.addView(errorTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 30));
             progressView.setVisibility(View.GONE);
 
-            errorTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
+            errorTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray4, resourcesProvider));
 
 
             chartView.setDateSelectionListener(date -> {
@@ -1705,6 +1845,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     }
                     errorTextView.setVisibility(View.VISIBLE);
                 }
+                checkboxContainer.removeAllViews();
+                checkBoxes.clear();
                 chartView.setData(null);
                 return;
             }
@@ -1989,8 +2131,59 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     }
 
     public static class RecentPostInfo {
-        public TLRPC.TL_messageInteractionCounters counters;
+        public TLRPC.PostInteractionCounters counters;
         public MessageObject message;
+
+        public long getDate() {
+            if (message == null) {
+                return 0;
+            }
+            return message.messageOwner.date;
+        }
+
+        public boolean isStory() {
+            return counters instanceof TLRPC.TL_postInteractionCountersStory;
+        }
+
+        public int getViews() {
+            if (counters instanceof TLRPC.TL_postInteractionCountersMessage) {
+                return ((TLRPC.TL_postInteractionCountersMessage) counters).views;
+            }
+            if (counters instanceof TLRPC.TL_postInteractionCountersStory) {
+                return ((TLRPC.TL_postInteractionCountersStory) counters).views;
+            }
+            return 0;
+        }
+
+        public int getReactions() {
+            if (counters instanceof TLRPC.TL_postInteractionCountersMessage) {
+                return ((TLRPC.TL_postInteractionCountersMessage) counters).reactions;
+            }
+            if (counters instanceof TLRPC.TL_postInteractionCountersStory) {
+                return ((TLRPC.TL_postInteractionCountersStory) counters).reactions;
+            }
+            return 0;
+        }
+
+        public int getForwards() {
+            if (counters instanceof TLRPC.TL_postInteractionCountersMessage) {
+                return ((TLRPC.TL_postInteractionCountersMessage) counters).forwards;
+            }
+            if (counters instanceof TLRPC.TL_postInteractionCountersStory) {
+                return ((TLRPC.TL_postInteractionCountersStory) counters).forwards;
+            }
+            return 0;
+        }
+
+        public int getId() {
+            if (counters instanceof TLRPC.TL_postInteractionCountersMessage) {
+                return ((TLRPC.TL_postInteractionCountersMessage) counters).msg_id;
+            }
+            if (counters instanceof TLRPC.TL_postInteractionCountersStory) {
+                return ((TLRPC.TL_postInteractionCountersStory) counters).story_id;
+            }
+            return 0;
+        }
     }
 
     private void loadMessages() {
@@ -2001,7 +2194,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         int count = 0;
         for (int i = index; i < n; i++) {
             if (recentPostsAll.get(i).message == null) {
-                req.id.add(recentPostsAll.get(i).counters.msg_id);
+                req.id.add(recentPostsAll.get(i).getId());
                 count++;
                 if (count > 50) {
                     break;
@@ -2031,7 +2224,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < size; i++) {
                     MessageObject messageObjectFormCache = messageObjects.get(i);
                     int localIndex = recentPostIdtoIndexMap.get(messageObjectFormCache.getId(), -1);
-                    if (localIndex >= 0 && recentPostsAll.get(localIndex).counters.msg_id == messageObjectFormCache.getId()) {
+                    if (localIndex >= 0 && recentPostsAll.get(localIndex).getId() == messageObjectFormCache.getId()) {
                         recentPostsAll.get(localIndex).message = messageObjectFormCache;
                     }
                 }
@@ -2041,12 +2234,13 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < size; i++) {
                     RecentPostInfo postInfo = recentPostsAll.get(i);
                     if (postInfo.message == null) {
-                        loadFromId = postInfo.counters.msg_id;
+                        loadFromId = postInfo.getId();
                         break;
                     } else {
                         recentPostsLoaded.add(postInfo);
                     }
                 }
+                sortAllLoadedData();
                 recyclerListView.setItemAnimator(null);
                 diffUtilsCallback.update();
             });
@@ -2085,6 +2279,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         int languagesCell = -1;
         int topHourseCell = -1;
         int notificationsCell = -1;
+        int reactionsByEmotionCell = -1;
+        int storyInteractionsCell = -1;
+        int storyReactionsByEmotionCell = -1;
 
         int groupMembersCell = -1;
         int newMembersBySourceCell = -1;
@@ -2118,6 +2315,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             notificationsCell = adapter.notificationsCell;
             startPosts = adapter.recentPostsStartRow;
             endPosts = adapter.recentPostsEndRow;
+            reactionsByEmotionCell = adapter.reactionsByEmotionCell;
+            storyInteractionsCell = adapter.storyInteractionsCell;
+            storyReactionsByEmotionCell = adapter.storyReactionsByEmotionCell;
 
             groupMembersCell = adapter.groupMembersCell;
             newMembersBySourceCell = adapter.newMembersBySourceCell;
@@ -2177,6 +2377,12 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             } else if (oldItemPosition == actionsCell && newItemPosition == adapter.actionsCell) {
                 return true;
             } else if (oldItemPosition == topDayOfWeeksCell && newItemPosition == adapter.topDayOfWeeksCell) {
+                return true;
+            } else if (oldItemPosition == reactionsByEmotionCell && newItemPosition == adapter.reactionsByEmotionCell) {
+                return true;
+            } else if (oldItemPosition == storyInteractionsCell && newItemPosition == adapter.storyInteractionsCell) {
+                return true;
+            } else if (oldItemPosition == storyReactionsByEmotionCell && newItemPosition == adapter.storyReactionsByEmotionCell) {
                 return true;
             }
             return false;
@@ -2256,6 +2462,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{StatisticPostInfoCell.class}, new String[]{"message"}, null, null, null, Theme.key_dialogTextBlack));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{StatisticPostInfoCell.class}, new String[]{"views"}, null, null, null, Theme.key_dialogTextBlack));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{StatisticPostInfoCell.class}, new String[]{"shares"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
+        arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{StatisticPostInfoCell.class}, new String[]{"likes"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{StatisticPostInfoCell.class}, new String[]{"date"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{ChartHeaderView.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextBlack));
 
@@ -2307,7 +2514,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 putColorFromData(chartViewData, arrayList, themeDelegate);
             }
         } else {
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < 12; i++) {
                 ChartViewData chartViewData;
                 if (i == 0) {
                     chartViewData = growthData;
@@ -2325,9 +2532,16 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     chartViewData = notificationsData;
                 } else if (i == 7) {
                     chartViewData = topHoursData;
-                } else {
+                } else if (i == 8) {
                     chartViewData = languagesData;
+                } else if (i == 9) {
+                    chartViewData = reactionsByEmotionData;
+                } else if (i == 10) {
+                    chartViewData = storyInteractionsData;
+                } else {
+                    chartViewData = storyReactionsByEmotionData;
                 }
+
                 putColorFromData(chartViewData, arrayList, themeDelegate);
             }
         }
@@ -2369,7 +2583,90 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         String notificationsTitle;
         String notificationsPrimary;
 
+        String reactionsPerPostTitle;
+        String reactionsPerPostPrimary;
+        String reactionsPerPostSecondary;
+        boolean reactionsPerPostUp;
+        boolean reactionsPerPostVisible;
+
+        String reactionsPerStoryTitle;
+        String reactionsPerStoryPrimary;
+        String reactionsPerStorySecondary;
+        boolean reactionsPerStoryUp;
+        boolean reactionsPerStoryVisible;
+
+        String viewsPerStoryTitle;
+        String viewsPerStoryPrimary;
+        String viewsPerStorySecondary;
+        boolean viewsPerStoryUp;
+        boolean viewsPerStoryVisible;
+
+        String sharesPerStoryTitle;
+        String sharesPerStoryPrimary;
+        String sharesPerStorySecondary;
+        boolean sharesPerStoryUp;
+        boolean sharesPerStoryVisible;
+
+        public static class Quadruple<A, B, C, D> {
+            public Quadruple(A fist, B second, C third, D fourth) {
+                this.fist = fist;
+                this.second = second;
+                this.third = third;
+                this.fourth = fourth;
+            }
+
+            public A fist;
+            public B second;
+            public C third;
+            public D fourth;
+        }
+
+        private Quadruple<String, String, Boolean, Boolean> prepare(TLRPC.TL_statsAbsValueAndPrev valueAndPrev) {
+            int dif = (int) (valueAndPrev.current - valueAndPrev.previous);
+            float difPercent = valueAndPrev.previous == 0 ? 0 : Math.abs(dif / (float) valueAndPrev.previous * 100f);
+            String primary = AndroidUtilities.formatWholeNumber((int) valueAndPrev.current, 0);
+            String secondary;
+            if (dif == 0 || difPercent == 0) {
+                secondary = "";
+            } else if (difPercent == (int) difPercent) {
+                secondary = String.format(Locale.ENGLISH, "%s (%d%s)", (dif > 0 ? "+" : "") + AndroidUtilities.formatWholeNumber(dif, 0), (int) difPercent, "%");
+            } else {
+                secondary = String.format(Locale.ENGLISH, "%s (%.1f%s)", (dif > 0 ? "+" : "") + AndroidUtilities.formatWholeNumber(dif, 0), difPercent, "%");
+            }
+            boolean up = dif >= 0;
+            boolean isSectionVisible = dif != 0 || valueAndPrev.current != 0;
+            return new Quadruple<>(primary, secondary, up, isSectionVisible);
+        }
+
         public OverviewChannelData(TLRPC.TL_stats_broadcastStats stats) {
+            Quadruple<String, String, Boolean, Boolean> quadrupleData = prepare(stats.reactions_per_post);
+            reactionsPerPostTitle = LocaleController.getString("ReactionsPerPost", R.string.ReactionsPerPost);
+            reactionsPerPostPrimary = quadrupleData.fist;
+            reactionsPerPostSecondary = quadrupleData.second;
+            reactionsPerPostUp = quadrupleData.third;
+            reactionsPerPostVisible = quadrupleData.fourth;
+
+            quadrupleData = prepare(stats.reactions_per_story);
+            reactionsPerStoryTitle = LocaleController.getString("ReactionsPerStory", R.string.ReactionsPerStory);
+            reactionsPerStoryPrimary = quadrupleData.fist;
+            reactionsPerStorySecondary = quadrupleData.second;
+            reactionsPerStoryUp = quadrupleData.third;
+            reactionsPerStoryVisible = quadrupleData.fourth;
+
+            quadrupleData = prepare(stats.views_per_story);
+            viewsPerStoryTitle = LocaleController.getString("ViewsPerStory", R.string.ViewsPerStory);
+            viewsPerStoryPrimary = quadrupleData.fist;
+            viewsPerStorySecondary = quadrupleData.second;
+            viewsPerStoryUp = quadrupleData.third;
+            viewsPerStoryVisible = quadrupleData.fourth;
+
+            quadrupleData = prepare(stats.shares_per_story);
+            sharesPerStoryTitle = LocaleController.getString("SharesPerStory", R.string.SharesPerStory);
+            sharesPerStoryPrimary = quadrupleData.fist;
+            sharesPerStorySecondary = quadrupleData.second;
+            sharesPerStoryUp = quadrupleData.third;
+            sharesPerStoryVisible = quadrupleData.fourth;
+
             int dif = (int) (stats.followers.current - stats.followers.previous);
             float difPercent = stats.followers.previous == 0 ? 0 : Math.abs(dif / (float) stats.followers.previous * 100f);
             followersTitle = LocaleController.getString("FollowersChartTitle", R.string.FollowersChartTitle);
@@ -2497,16 +2794,22 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     public static class OverviewCell extends LinearLayout {
 
-        TextView[] primary = new TextView[4];
-        TextView[] secondary = new TextView[4];
-        TextView[] title = new TextView[4];
-
+        TextView[] primary;
+        TextView[] secondary;
+        TextView[] title;
 
         public OverviewCell(Context context) {
+            this(context, 2);
+        }
+
+        public OverviewCell(Context context, int maxRows) {
             super(context);
+            primary = new TextView[maxRows * 2];
+            secondary = new TextView[maxRows * 2];
+            title = new TextView[maxRows * 2];
             setOrientation(VERTICAL);
-            setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(16));
-            for (int i = 0; i < 2; i++) {
+            setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+            for (int i = 0; i < maxRows; i++) {
                 LinearLayout linearLayout = new LinearLayout(context);
                 linearLayout.setOrientation(HORIZONTAL);
 
@@ -2520,9 +2823,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     secondary[i * 2 + j] = new TextView(context);
                     title[i * 2 + j] = new TextView(context);
 
-                    primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                     primary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                     title[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    title[i * 2 + j].setGravity(Gravity.LEFT);
                     secondary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
                     secondary[i * 2 + j].setPadding(AndroidUtilities.dp(4), 0, 0, 0);
@@ -2534,29 +2838,88 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     contentCell.addView(title[i * 2 + j]);
                     linearLayout.addView(contentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f));
                 }
-                addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, i == 0 ? 16 : 0));
+                addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 16));
             }
         }
 
-        public void setData(OverviewChannelData data) {
-            primary[0].setText(data.followersPrimary);
-            primary[1].setText(data.notificationsPrimary);
-            primary[2].setText(data.viewsPrimary);
-            primary[3].setText(data.sharesPrimary);
-
-            secondary[0].setText(data.followersSecondary);
-            secondary[0].setTag(data.followersUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
-            secondary[1].setText("");
-            secondary[2].setText(data.viewsSecondary);
-            secondary[2].setTag(data.viewsUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
-            secondary[3].setText(data.sharesSecondary);
-            secondary[3].setTag(data.sharesUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
-
-            title[0].setText(data.followersTitle);
-            title[1].setText(data.notificationsTitle);
-            title[2].setText(data.viewsTitle);
-            title[3].setText(data.sharesTitle);
-
+        public void setData(OverviewChannelData data, TLRPC.ChatFull chatFull) {
+            int k = 0;
+            for (int i = 0; i < primary.length; i++) {
+                switch (i) {
+                    case 0:
+                        primary[k].setText(data.followersPrimary);
+                        secondary[k].setText(data.followersSecondary);
+                        secondary[k].setTag(data.followersUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.followersTitle);
+                        k++;
+                        break;
+                    case 1:
+                        primary[k].setText(data.notificationsPrimary);
+                        secondary[k].setText("");
+                        title[k].setText(data.notificationsTitle);
+                        k++;
+                        break;
+                    case 2:
+                        primary[k].setText(data.viewsPrimary);
+                        secondary[k].setText(data.viewsSecondary);
+                        secondary[k].setTag(data.viewsUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.viewsTitle);
+                        k++;
+                        break;
+                    case 3:
+                        primary[k].setText(data.viewsPerStoryPrimary);
+                        secondary[k].setText(data.viewsPerStorySecondary);
+                        secondary[k].setTag(data.viewsPerStoryUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.viewsPerStoryTitle);
+                        if (data.viewsPerStoryVisible) {
+                            k++;
+                        }
+                        break;
+                    case 4:
+                        primary[k].setText(data.sharesPrimary);
+                        secondary[k].setText(data.sharesSecondary);
+                        secondary[k].setTag(data.sharesUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.sharesTitle);
+                        k++;
+                        break;
+                    case 5:
+                        primary[k].setText(data.sharesPerStoryPrimary);
+                        secondary[k].setText(data.sharesPerStorySecondary);
+                        secondary[k].setTag(data.sharesPerStoryUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.sharesPerStoryTitle);
+                        if (data.sharesPerStoryVisible) {
+                            k++;
+                        }
+                        break;
+                    case 6:
+                        primary[k].setText(data.reactionsPerPostPrimary);
+                        secondary[k].setText(data.reactionsPerPostSecondary);
+                        secondary[k].setTag(data.reactionsPerPostUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.reactionsPerPostTitle);
+                        if (data.reactionsPerPostVisible) {
+                            k++;
+                        }
+                        break;
+                    case 7:
+                        primary[k].setText(data.reactionsPerStoryPrimary);
+                        secondary[k].setText(data.reactionsPerStorySecondary);
+                        secondary[k].setTag(data.reactionsPerStoryUp ? Theme.key_windowBackgroundWhiteGreenText2 : Theme.key_text_RedRegular);
+                        title[k].setText(data.reactionsPerStoryTitle);
+                        if (data.reactionsPerStoryVisible) {
+                            k++;
+                        }
+                        break;
+                }
+            }
+            for (int i = k; i < primary.length; i++) {
+                ((ViewGroup) title[i].getParent()).setVisibility(GONE);
+            }
+            for (int i = 0; i < getChildCount(); i++) {
+                ViewGroup viewGroup = (ViewGroup) getChildAt(i);
+                if (viewGroup.getChildAt(0).getVisibility() == GONE && viewGroup.getChildAt(1).getVisibility() == GONE) {
+                    viewGroup.setVisibility(GONE);
+                }
+            }
             updateColors();
         }
 
@@ -2594,7 +2957,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         private void updateColors() {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < primary.length; i++) {
                 primary[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 title[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
 

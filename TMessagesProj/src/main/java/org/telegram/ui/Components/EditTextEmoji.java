@@ -755,6 +755,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 if (i < 0) {
                     i = 0;
                 }
+
                 try {
                     innerTextChange = 2;
                     SpannableString spannable = new SpannableString(emoticon);

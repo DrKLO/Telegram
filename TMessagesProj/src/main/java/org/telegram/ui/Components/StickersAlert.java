@@ -1126,7 +1126,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     pickerBottomLayout.setBackground(null);
 
                     setButton(null, null, -1);
-                    premiumButtonView.setButton(LocaleController.getString("UnlockPremiumEmoji", R.string.UnlockPremiumEmoji), e -> {
+                    premiumButtonView.setButton(LocaleController.getString(R.string.UnlockPremiumEmoji), e -> {
                         if (parentFragment != null) {
                             new PremiumFeatureBottomSheet(parentFragment, PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI, false).show();
                         } else if (getContext() instanceof LaunchActivity) {

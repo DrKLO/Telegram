@@ -420,7 +420,7 @@ public class CodeHighlighting {
 
                 StringToken wrapped;
                 if (pattern.insideTokenPatterns != null) {
-                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns, depth + 1), match.length);
+                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns, pattern, depth + 1), match.length);
                 } else if (pattern.insideLanguage != null) {
                     wrapped = new StringToken(pattern.group, tokenize(match.string, compiledPatterns.get(pattern.insideLanguage), pattern, depth + 1), match.length);
                 } else {

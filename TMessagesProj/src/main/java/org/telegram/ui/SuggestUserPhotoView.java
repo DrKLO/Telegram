@@ -28,7 +28,7 @@ public class SuggestUserPhotoView extends View {
 
     public SuggestUserPhotoView(Context context) {
         super(context);
-        avatarDrawable.setInfo(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
+        avatarDrawable.setInfo(UserConfig.selectedAccount, UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
         currentPhoto.setForUserOrChat(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser(), avatarDrawable);
         newPhoto.setForUserOrChat(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser(), avatarDrawable);
         arrowDrawable = ContextCompat.getDrawable(context, R.drawable.msg_arrow_avatar);

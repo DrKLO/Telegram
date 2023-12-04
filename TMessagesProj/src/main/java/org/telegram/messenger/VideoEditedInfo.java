@@ -109,11 +109,12 @@ public class VideoEditedInfo {
 
     public static class MediaEntity {
 
-        public static final int TYPE_STICKER = 0;
-        public static final int TYPE_TEXT = 1;
-        public static final int TYPE_PHOTO = 2;
-        public static final int TYPE_LOCATION = 3;
+        public static final byte TYPE_STICKER = 0;
+        public static final byte TYPE_TEXT = 1;
+        public static final byte TYPE_PHOTO = 2;
+        public static final byte TYPE_LOCATION = 3;
         public static final byte TYPE_REACTION = 4;
+        public static final byte TYPE_ROUND = 5;
 
         public byte type;
         public byte subType;
@@ -152,11 +153,18 @@ public class VideoEditedInfo {
         public View view;
         public Canvas canvas;
         public AnimatedFileDrawable animatedFileDrawable;
+        public boolean looped;
         public Canvas roundRadiusCanvas;
+        public boolean firstSeek;
 
         public TL_stories.MediaArea mediaArea;
         public TLRPC.MessageMedia mediaGeo;
         public float density;
+
+        public long roundOffset;
+        public long roundLeft;
+        public long roundRight;
+        public long roundDuration;
 
         public int W, H;
         public ReactionsLayoutInBubble.VisibleReaction visibleReaction;
@@ -217,6 +225,12 @@ public class VideoEditedInfo {
             if (type == TYPE_REACTION) {
                 mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(false), false);
             }
+            if (type == TYPE_ROUND) {
+                roundOffset = data.readInt64(false);
+                roundLeft = data.readInt64(false);
+                roundRight = data.readInt64(false);
+                roundDuration = data.readInt64(false);
+            }
         }
 
         public void serializeTo(AbstractSerializedData data, boolean full) {
@@ -273,6 +287,12 @@ public class VideoEditedInfo {
             if (type == TYPE_REACTION) {
                 mediaArea.serializeToStream(data);
             }
+            if (type == TYPE_ROUND) {
+                data.writeInt64(roundOffset);
+                data.writeInt64(roundLeft);
+                data.writeInt64(roundRight);
+                data.writeInt64(roundDuration);
+            }
         }
 
         public MediaEntity copy() {
@@ -320,6 +340,10 @@ public class VideoEditedInfo {
             entity.W = W;
             entity.H = H;
             entity.visibleReaction = visibleReaction;
+            entity.roundOffset = roundOffset;
+            entity.roundDuration = roundDuration;
+            entity.roundLeft = roundLeft;
+            entity.roundRight = roundRight;
             return entity;
         }
     }

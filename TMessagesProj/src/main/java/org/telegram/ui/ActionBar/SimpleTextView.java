@@ -367,7 +367,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                         string = TextUtils.ellipsize(string, textPaint, width, TextUtils.TruncateAt.END);
                     }
                     if (!ellipsizeByGradient && !string.equals(text)) {
-                        fullLayout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, fullTextMaxLines, false);
+                        fullLayout = StaticLayoutEx.createStaticLayout(text, textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, fullTextMaxLines, false);
                         if (fullLayout != null) {
                             int end = fullLayout.getLineEnd(0);
                             int start = fullLayout.getLineStart(1);
@@ -386,7 +386,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                                 part = "\u200F" + part;
                             }
                             partLayout = new StaticLayout(part, 0, part.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
-                            fullLayout = StaticLayoutEx.createStaticLayout(full, 0, full.length(), textPaint, width + AndroidUtilities.dp(8) + fullLayoutAdditionalWidth, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width + fullLayoutAdditionalWidth, fullTextMaxLines, false);
+                            fullLayout = StaticLayoutEx.createStaticLayout(full, textPaint, width + AndroidUtilities.dp(8) + fullLayoutAdditionalWidth, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width + fullLayoutAdditionalWidth, fullTextMaxLines, false);
                         }
                     } else {
                         layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText || ellipsizeByGradient ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
@@ -395,7 +395,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                         firstLineLayout = null;
                     }
                 } else if (maxLines > 1) {
-                    layout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, maxLines, false);
+                    layout = StaticLayoutEx.createStaticLayout(text, textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, maxLines, false);
                 } else {
                     CharSequence string;
                     if (scrollNonFitText || ellipsizeByGradient) {

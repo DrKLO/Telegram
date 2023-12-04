@@ -9,6 +9,7 @@
     <item name="menu_strike" type="id"/>
     <item name="menu_underline" type="id"/>
     <item name="menu_groupbolditalic" type="id"/>
+    <item name="menu_delete" type="id"/>
     <item name="parent_tag" type="id"/>
     <item name="object_tag" type="id"/>
     <item name="spring_tag" type="id"/>

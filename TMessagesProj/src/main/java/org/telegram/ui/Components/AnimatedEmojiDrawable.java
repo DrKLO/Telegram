@@ -70,6 +70,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC = 13;
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW = 14;
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 = 15;
+    public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB = 16;
 
     public int rawDrawIndex;
 
@@ -520,7 +521,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         imageReceiver.setVideoThumbIsSame(true);
         boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !liteModeKeyboard || cacheType == CACHE_TYPE_ALERT_PREVIEW && !liteModeReactions;
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC) {
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB) {
             onlyStaticPreview = true;
         }
         String filter = sizedp + "_" + sizedp;
@@ -572,12 +573,16 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
         } else {
             if (onlyStaticPreview || (!liteModeKeyboard && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW)) {
+                ImageLocation thumbLocation = null;
+                if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB) {
+                    thumbLocation = ImageLocation.getForDocument(thumb, document);
+                }
                 if ("video/webm".equals(document.mime_type)) {
-                    imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 } else if (MessageObject.isAnimatedStickerDocument(document, true)) {
-                    imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 } else {
-                    imageReceiver.setImage(ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 }
             } else {
                 imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
@@ -586,7 +591,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         updateAutoRepeat(imageReceiver);
 
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
             imageReceiver.setLayerNum(7);
         }
         if (cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
@@ -1059,7 +1064,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             changeProgress.set(1, true);
         }
 
-        public boolean  set(long documentId, int cacheType, boolean animated) {
+        public boolean set(long documentId, int cacheType, boolean animated) {
             if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
                 return false;
             }

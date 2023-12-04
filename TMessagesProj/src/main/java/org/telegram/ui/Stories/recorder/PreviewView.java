@@ -37,6 +37,7 @@ import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Paint.Views.RoundView;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.VideoEditTextureView;
 import org.telegram.ui.Components.VideoPlayer;
@@ -59,6 +60,10 @@ public class PreviewView extends FrameLayout {
     public TextureView filterTextureView;
     private PhotoFilterView photoFilterView;
     public Runnable invalidateBlur;
+
+    private RoundView roundView;
+    private VideoPlayer roundPlayer;
+    private int roundPlayerWidth, roundPlayerHeight;
 
     private VideoPlayer audioPlayer;
 
@@ -110,6 +115,7 @@ public class PreviewView extends FrameLayout {
             setupParts(null);
             gradientPaint.setShader(null);
             setupAudio((StoryEntry) null, false);
+            setupRound(null, null, false);
             return;
         }
         if (entry.isVideo) {
@@ -128,6 +134,7 @@ public class PreviewView extends FrameLayout {
         setupParts(entry);
         applyMatrix();
         setupAudio(entry, false);
+        setupRound(entry, null, false);
     }
 
     public void setupAudio(StoryEntry entry, boolean animated) {
@@ -180,7 +187,7 @@ public class PreviewView extends FrameLayout {
                 }
             });
             audioPlayer.preparePlayer(Uri.fromFile(new File(entry.audioPath)), "other");
-            audioPlayer.setVolume(entry.audioVolume);
+            checkVolumes();
 
             if (videoPlayer != null && getDuration() > 0) {
                 long startPos = (long) (entry.left * getDuration());
@@ -235,10 +242,20 @@ public class PreviewView extends FrameLayout {
     private void seekTo(long position) {
         if (videoPlayer != null) {
             videoPlayer.seekTo(position, false);
+        } else if (roundPlayer != null) {
+            roundPlayer.seekTo(position, false);
         } else if (audioPlayer != null) {
             audioPlayer.seekTo(position, false);
         }
         updateAudioPlayer(true);
+        updateRoundPlayer(true);
+    }
+
+    public void seek(long position) {
+        seekTo(position);
+        if (timelineView != null) {
+            timelineView.setProgress(0);
+        }
     }
 
     public void setVideoTimelineView(TimelineView timelineView) {
@@ -259,6 +276,15 @@ public class PreviewView extends FrameLayout {
                     } else if (audioPlayer != null) {
                         audioPlayer.seekTo(progress, false);
                     }
+                }
+
+                @Override
+                public void onVideoVolumeChange(float volume) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.videoVolume = volume;
+                    checkVolumes();
                 }
 
                 @Override
@@ -324,12 +350,69 @@ public class PreviewView extends FrameLayout {
                     }
                     entry.audioVolume = volume;
                     entry.editedMedia = true;
-                    if (audioPlayer != null) {
-                        audioPlayer.setVolume(volume);
+                    checkVolumes();
+                }
+
+                @Override
+                public void onRoundLeftChange(float left) {
+                    if (entry == null) {
+                        return;
                     }
+                    entry.roundLeft = left;
+                    entry.editedMedia = true;
+                    updateRoundPlayer(true);
+                }
+
+                @Override
+                public void onRoundRightChange(float right) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.roundRight = right;
+                    entry.editedMedia = true;
+                    updateRoundPlayer(true);
+                }
+
+                @Override
+                public void onRoundOffsetChange(long offset) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.roundOffset = offset;
+                    entry.editedMedia = true;
+                    updateRoundPlayer(true);
+                }
+
+                @Override
+                public void onRoundRemove() {
+                    setupRound(null, null, true);
+                    PreviewView.this.onRoundRemove();
+                }
+
+                @Override
+                public void onRoundVolumeChange(float volume) {
+                    if (entry == null) {
+                        return;
+                    }
+                    entry.roundVolume = volume;
+                    entry.editedMedia = true;
+                    checkVolumes();
+                }
+
+                @Override
+                public void onRoundSelectChange(boolean selected) {
+                    PreviewView.this.onRoundSelectChange(selected);
                 }
             });
         }
+    }
+
+    public void onRoundRemove() {
+        // Override
+    }
+
+    public void onRoundSelectChange(boolean selected) {
+        // Override
     }
 
     private void setupImage(StoryEntry entry) {
@@ -483,7 +566,7 @@ public class PreviewView extends FrameLayout {
                 }).start();
             }
             if (timelineView != null) {
-                timelineView.setVideo(null, 1);
+                timelineView.setVideo(null, 1, 0);
             }
             AndroidUtilities.cancelRunOnUIThread(updateProgressRunnable);
             if (whenReady != null) {
@@ -539,10 +622,6 @@ public class PreviewView extends FrameLayout {
                     if (textureView != null) {
                         textureView.setVideoSize(videoWidth, videoHeight);
                     }
-//                    if (whenReadyFinal[0] != null && entry != null && entry.width > 0 && entry.height > 0) {
-//                        post(whenReadyFinal[0]);
-//                        whenReadyFinal[0] = null;
-//                    }
                 }
 
                 @Override
@@ -612,15 +691,92 @@ public class PreviewView extends FrameLayout {
             if (seekTo > 0) {
                 videoPlayer.seekTo(seekTo);
             }
-            videoPlayer.setMute(entry.muted);
+            checkVolumes();
             updateAudioPlayer(true);
 
-            timelineView.setVideo(entry.getOriginalFile().getAbsolutePath(), getDuration());
+            timelineView.setVideo(entry.getOriginalFile().getAbsolutePath(), getDuration(), entry.videoVolume);
             timelineView.setVideoLeft(entry.left);
             timelineView.setVideoRight(entry.right);
             if (timelineView != null && seekTo > 0) {
                 timelineView.setProgress(seekTo);
             }
+        }
+    }
+
+    public void setupRound(StoryEntry entry, RoundView roundView, boolean animated) {
+        if (entry == null || entry.round == null) {
+            if (roundPlayer != null) {
+                roundPlayer.pause();
+                roundPlayer.releasePlayer(true);
+                roundPlayer = null;
+            }
+            if (timelineView != null) {
+                timelineView.setRoundNull(animated);
+            }
+            this.roundView = null;
+            AndroidUtilities.cancelRunOnUIThread(updateProgressRunnable);
+        } else {
+            if (roundPlayer != null) {
+                roundPlayer.releasePlayer(true);
+                roundPlayer = null;
+            }
+
+            roundPlayer = new VideoPlayer();
+            roundPlayer.allowMultipleInstances = true;
+            roundPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+                @Override
+                public void onStateChanged(boolean playWhenReady, int playbackState) {
+                    if (roundPlayer == null) {
+                        return;
+                    }
+                    if (roundPlayer != null && roundPlayer.isPlaying()) {
+                        AndroidUtilities.runOnUIThread(updateRoundProgressRunnable);
+                    } else {
+                        AndroidUtilities.cancelRunOnUIThread(updateRoundProgressRunnable);
+                    }
+                }
+
+                @Override
+                public void onError(VideoPlayer player, Exception e) {
+
+                }
+
+                @Override
+                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+                    roundPlayerWidth = width;
+                    roundPlayerHeight = height;
+                    if (PreviewView.this.roundView != null) {
+                        PreviewView.this.roundView.resizeTextureView(width, height);
+                    }
+                }
+
+                @Override
+                public void onRenderedFirstFrame() {
+
+                }
+
+                @Override
+                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {}
+
+                @Override
+                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
+                    return false;
+                }
+            });
+
+            Uri uri = Uri.fromFile(entry.round);
+            roundPlayer.preparePlayer(uri, "other");
+            checkVolumes();
+            attachRoundView(roundView);
+            timelineView.setRound(entry.round.getAbsolutePath(), entry.roundDuration, entry.roundOffset, entry.roundLeft, entry.roundRight, entry.roundVolume, animated);
+            updateRoundPlayer(true);
+        }
+    }
+
+    public void attachRoundView(RoundView roundView) {
+        this.roundView = roundView;
+        if (roundView != null && roundPlayer != null) {
+            roundPlayer.setTextureView(roundView.textureView);
         }
     }
 
@@ -630,14 +786,20 @@ public class PreviewView extends FrameLayout {
             audioPlayer.releasePlayer(true);
             audioPlayer = null;
         }
+        long t = 0;
+        if (roundPlayer != null) {
+            t = roundPlayer.getCurrentPosition();
+            roundPlayer.pause();
+            roundPlayer.releasePlayer(true);
+            roundPlayer = null;
+        }
         if (videoPlayer != null) {
-            long t = videoPlayer.getCurrentPosition();
+            t = videoPlayer.getCurrentPosition();
             videoPlayer.pause();
             videoPlayer.releasePlayer(true);
             videoPlayer = null;
-            return t;
         }
-        return 0;
+        return t;
     }
 
     public void setupParts(StoryEntry entry) {
@@ -716,8 +878,10 @@ public class PreviewView extends FrameLayout {
                 seekedLastTime = System.currentTimeMillis();
                 videoPlayer.seekTo(pos = (long) (entry.left * getDuration()));
                 updateAudioPlayer(true);
+                updateRoundPlayer(true);
             } else {
                 updateAudioPlayer(pos < lastPos);
+                updateRoundPlayer(pos < lastPos);
             }
             timelineView.setProgress(videoPlayer.getCurrentPosition());
         } else {
@@ -731,7 +895,7 @@ public class PreviewView extends FrameLayout {
     };
 
     private final Runnable updateAudioProgressRunnable = () -> {
-        if (audioPlayer == null || videoPlayer != null || timelineView == null) {
+        if (audioPlayer == null || videoPlayer != null || roundPlayer != null || timelineView == null) {
             return;
         }
 
@@ -748,12 +912,31 @@ public class PreviewView extends FrameLayout {
         }
     };
 
+    private final Runnable updateRoundProgressRunnable = () -> {
+        if (roundPlayer == null || videoPlayer != null || timelineView == null) {
+            return;
+        }
+
+        long pos = roundPlayer.getCurrentPosition();
+        if (entry != null && (pos < entry.roundLeft * entry.roundDuration || pos > entry.roundRight * entry.roundDuration) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
+            seekedLastTime = System.currentTimeMillis();
+            roundPlayer.seekTo(pos = (long) (entry.roundLeft * entry.roundDuration));
+            updateAudioPlayer(true);
+        }
+        timelineView.setProgress(pos);
+
+        if (roundPlayer.isPlaying()) {
+            AndroidUtilities.cancelRunOnUIThread(this.updateRoundProgressRunnable);
+            AndroidUtilities.runOnUIThread(this.updateRoundProgressRunnable, (long) (1000L / AndroidUtilities.screenRefreshRate));
+        }
+    };
+
     private void updateAudioPlayer(boolean updateSeek) {
         if (audioPlayer == null || entry == null) {
             return;
         }
 
-        if (videoPlayer == null) {
+        if (videoPlayer == null && roundPlayer == null) {
             audioPlayer.setPlayWhenReady(pauseLinks.isEmpty());
             audioPlayer.setLooping(true);
 
@@ -768,9 +951,11 @@ public class PreviewView extends FrameLayout {
             return;
         }
 
-        final long pos = videoPlayer.getCurrentPosition();
+        VideoPlayer player = videoPlayer != null ? videoPlayer : roundPlayer;
+
+        final long pos = player.getCurrentPosition();
         final long duration = (long) ((entry.audioRight - entry.audioLeft) * entry.audioDuration);
-        boolean shouldPlaying = videoPlayer.isPlaying() && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
+        boolean shouldPlaying = player.isPlaying() && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
         long audioPos = pos - entry.audioOffset + (long) (entry.audioLeft * entry.audioDuration);
         if (audioPlayer.isPlaying() != shouldPlaying) {
             audioPlayer.setPlayWhenReady(shouldPlaying);
@@ -780,16 +965,65 @@ public class PreviewView extends FrameLayout {
         }
     }
 
+    private void updateRoundPlayer(boolean updateSeek) {
+        if (roundPlayer == null || entry == null) {
+            return;
+        }
+
+        if (videoPlayer == null) {
+            roundPlayer.setPlayWhenReady(pauseLinks.isEmpty());
+            roundPlayer.setLooping(true);
+            if (roundView != null) {
+                roundView.setShown(true, false);
+            }
+
+            long pos = roundPlayer.getCurrentPosition();
+            if (updateSeek && roundPlayer.getDuration() != C.TIME_UNSET) {
+                final float progress = pos / (float) roundPlayer.getDuration();
+                if ((progress < entry.roundLeft || progress > entry.roundRight) && System.currentTimeMillis() - seekedLastTime > MIN_DURATION / 2) {
+                    seekedLastTime = System.currentTimeMillis();
+                    roundPlayer.seekTo(pos = -entry.roundOffset);
+                }
+            }
+            return;
+        }
+
+        final long pos = videoPlayer.getCurrentPosition();
+        final long duration = (long) ((entry.roundRight - entry.roundLeft) * entry.roundDuration);
+        boolean shouldPlayingInSeek = pos >= entry.roundOffset && pos <= entry.roundOffset + duration;
+        boolean shouldPlaying = videoPlayer.isPlaying() && shouldPlayingInSeek;
+        long roundPos = pos - entry.roundOffset + (long) (entry.roundLeft * entry.roundDuration);
+        if (roundView != null) {
+            roundView.setShown(shouldPlayingInSeek, true);
+        }
+        if (roundPlayer.isPlaying() != shouldPlaying) {
+            roundPlayer.setPlayWhenReady(shouldPlaying);
+            roundPlayer.seekTo(roundPos);
+        } else if (updateSeek && Math.abs(roundPlayer.getCurrentPosition() - roundPos) > 120) {
+            roundPlayer.seekTo(roundPos);
+        }
+    }
+
     private Runnable onErrorListener;
     public void whenError(Runnable listener) {
         onErrorListener = listener;
     }
 
+    public boolean isMuted;
     public void mute(boolean value) {
-        if (videoPlayer == null) {
-            return;
+        isMuted = value;
+        checkVolumes();
+    }
+    public void checkVolumes() {
+        if (videoPlayer != null) {
+            videoPlayer.setVolume(isMuted || (entry != null && entry.muted) ? 0 : (entry != null ? entry.videoVolume : 1f));
         }
-        videoPlayer.setMute(value);
+        if (roundPlayer != null) {
+            roundPlayer.setVolume(isMuted ? 0 : (entry != null ? entry.roundVolume : 1f));
+        }
+        if (audioPlayer != null) {
+            audioPlayer.setVolume(isMuted ? 0 : (entry != null ? entry.audioVolume : 1f));
+        }
     }
 
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -1234,6 +1468,7 @@ public class PreviewView extends FrameLayout {
             videoPlayer.setPlayWhenReady(pauseLinks.isEmpty());
         }
         updateAudioPlayer(true);
+        updateRoundPlayer(true);
     }
 
     // ignores actual player and other reasons to pause a video

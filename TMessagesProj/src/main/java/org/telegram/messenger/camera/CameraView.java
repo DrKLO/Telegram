@@ -66,6 +66,7 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -677,6 +678,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         }
     }
 
+    protected boolean square() {
+        return false;
+    }
+
     private void updateCameraInfoSize(int i) {
         ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
         if (cameraInfos == null) {
@@ -706,7 +711,11 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
         int photoMaxWidth;
         int photoMaxHeight;
-        if (initialFrontface) {
+        if (square()) {
+            aspectRatio = new Size(1, 1);
+            photoMaxWidth = wantedWidth = 720;
+            photoMaxHeight = wantedHeight = 720;
+        } else if (initialFrontface) {
             aspectRatio = new Size(16, 9);
             photoMaxWidth = wantedWidth = 1280;
             photoMaxHeight = wantedHeight = 720;
@@ -1962,6 +1971,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         });
     }
 
+    protected void receivedAmplitude(double amplitude) {
+
+    }
+
 
     private class VideoRecorder implements Runnable {
 
@@ -2078,7 +2091,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         ByteBuffer byteBuffer = buffer.buffer[a];
                         byteBuffer.rewind();
                         readResult = audioRecorder.read(byteBuffer, 2048);
-
+                        if (readResult > 0 && a % 2 == 0) {
+                            byteBuffer.limit(readResult);
+                            double s = 0;
+                            for (int i = 0; i < readResult / 2; i++) {
+                                short p = byteBuffer.getShort();
+                                s += p * p;
+                            }
+                            double amplitude = Math.sqrt(s / readResult / 2);
+                            AndroidUtilities.runOnUIThread(() -> receivedAmplitude(amplitude));
+                            byteBuffer.position(0);
+                        }
                         if (readResult <= 0) {
                             buffer.results = a;
                             if (!running) {

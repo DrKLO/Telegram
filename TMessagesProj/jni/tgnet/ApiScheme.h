@@ -339,8 +339,10 @@ public:
     int32_t emojiStatusMagic;
     int64_t emojiStatusDocumentId;
     int32_t emojiStatusUntil;
-    int32_t color;
-    int64_t background_emoji_id;
+    int32_t color_color;
+    int64_t color_background_emoji_id;
+    int32_t profile_color_color;
+    int64_t profile_color_background_emoji_id;
 
     static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
@@ -357,7 +359,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0xeb602f25;
+    static const uint32_t constructor = 0x215c4438;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

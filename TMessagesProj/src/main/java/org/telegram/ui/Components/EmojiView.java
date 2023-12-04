@@ -7550,7 +7550,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         public int getItemViewType(int position) {
             if (position == 0) {
                 return VIEW_TYPE_SEARCHFIELD;
-            } else if (position == 1 && searchWas && result.isEmpty()) {
+            } else if (position == 1 && searchWas && result.isEmpty() && packs.isEmpty()) {
                 return VIEW_TYPE_HELP;
             }
             if (!packs.isEmpty()) {

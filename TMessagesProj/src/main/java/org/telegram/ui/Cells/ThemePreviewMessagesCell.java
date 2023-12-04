@@ -72,8 +72,12 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         this(context, layout, type, 0);
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     public ThemePreviewMessagesCell(Context context, INavigationLayout layout, int type, long dialogId) {
+        this(context, layout, type, dialogId, null);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public ThemePreviewMessagesCell(Context context, INavigationLayout layout, int type, long dialogId, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.type = type;
         int currentAccount = UserConfig.selectedAccount;
@@ -83,7 +87,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
         setPadding(0, AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11));
 
-        shadowDrawable = Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
+        shadowDrawable = Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow, resourcesProvider);
 
         int date = (int) (System.currentTimeMillis() / 1000) - 60 * 60;
 
@@ -91,10 +95,6 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         MessageObject message2 = null;
         if (type == TYPE_PEER_COLOR) {
             final boolean isChannel = dialogId < 0;
-
-            ChatActionCell actionCell = new ChatActionCell(context);
-            actionCell.setCustomText(LocaleController.getString(R.string.UserColorPreviewTitle));
-            addView(actionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 5));
 
             TLRPC.Message message = new TLRPC.TL_message();
             message.message = LocaleController.getString(isChannel ? R.string.ChannelColorPreview : R.string.UserColorPreview);
@@ -277,7 +277,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         }
 
         for (int a = 0; a < cells.length; a++) {
-            cells[a] = new ChatMessageCell(context) {
+            cells[a] = new ChatMessageCell(context, false, null, resourcesProvider) {
                 private GestureDetector gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {
@@ -340,12 +340,15 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                     if (getMessageObject() != null && getMessageObject().overrideLinkColor >= 0) {
                         final int colorId = getMessageObject().overrideLinkColor;
                         final int color1, color2;
-                        if (colorId >= 14) {
+                        if (getMessageObject().overrideProfilePeerColor != null) {
+                            color1 = getMessageObject().overrideProfilePeerColor.getAvatarColor1();
+                            color2 = getMessageObject().overrideProfilePeerColor.getAvatarColor2();
+                        } else if (colorId >= 14) {
                             MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
                             MessagesController.PeerColors peerColors = messagesController != null ? messagesController.peerColors : null;
                             MessagesController.PeerColor peerColor = peerColors != null ? peerColors.getColor(colorId) : null;
                             if (peerColor != null) {
-                                final int peerColorValue = messagesController.peerColors.getColor(colorId).getColor1();
+                                final int peerColorValue = peerColor.getColor1();
                                 color1 = getThemedColor(Theme.keys_avatar_background[AvatarDrawable.getPeerColorIndex(peerColorValue)]);
                                 color2 = getThemedColor(Theme.keys_avatar_background2[AvatarDrawable.getPeerColorIndex(peerColorValue)]);
                             } else {
@@ -437,9 +440,16 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         }
     }
 
+    private Drawable overrideDrawable;
+    public void setOverrideBackground(Drawable drawable) {
+        overrideDrawable = drawable;
+        invalidate();
+    }
+
+
     @Override
     protected void onDraw(Canvas canvas) {
-        Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
+        Drawable newDrawable = overrideDrawable != null ? overrideDrawable : Theme.getCachedWallpaperNonBlocking();
         if (Theme.wallpaperLoadTask != null) {
             invalidate();
         }

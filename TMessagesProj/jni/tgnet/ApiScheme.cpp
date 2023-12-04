@@ -518,11 +518,15 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     if ((flags2 & 32) != 0) {
         stories_max_id = stream->readInt32(&error);
     }
-    if ((flags2 & 128) != 0) {
-        color = stream->readInt32(&error);
+    if ((flags2 & 256) != 0) {
+        int magic = stream->readInt32(&error);
+        color_color = stream->readInt32(&error);
+        color_background_emoji_id = stream->readInt64(&error);
     }
-    if ((flags2 & 64) != 0) {
-        background_emoji_id = stream->readInt64(&error);
+    if ((flags2 & 512) != 0) {
+        int magic = stream->readInt32(&error);
+        profile_color_color = stream->readInt32(&error);
+        profile_color_background_emoji_id = stream->readInt64(&error);
     }
 }
 
@@ -591,11 +595,15 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     if ((flags2 & 32) != 0) {
         stream->writeInt32(stories_max_id);
     }
-    if ((flags2 & 128) != 0) {
-        stream->writeInt32(color);
+    if ((flags2 & 256) != 0) {
+        stream->writeInt32(0xba278146);
+        stream->writeInt32(color_color);
+        stream->writeInt32(color_background_emoji_id);
     }
-    if ((flags2 & 64) != 0) {
-        stream->writeInt64(background_emoji_id);
+    if ((flags2 & 512) != 0) {
+        stream->writeInt32(0xba278146);
+        stream->writeInt32(profile_color_color);
+        stream->writeInt32(profile_color_background_emoji_id);
     }
 }
 

@@ -63,6 +63,13 @@ public class StoryEntry extends IStoryPart {
     public boolean editedMedia, editedCaption, editedPrivacy;
     public ArrayList<TL_stories.MediaArea> editedMediaAreas;
 
+    public boolean isRepost;
+    public CharSequence repostPeerName;
+    public TLRPC.Peer repostPeer;
+    public int repostStoryId;
+    public String repostCaption;
+    public TLRPC.MessageMedia repostMedia;
+
     public boolean isError;
     public TLRPC.TL_error error;
 
@@ -82,6 +89,7 @@ public class StoryEntry extends IStoryPart {
     public boolean fileDeletable;
     public String thumbPath;
     public Bitmap thumbPathBitmap;
+    public float videoVolume = 1f;
 
     public boolean muted;
     public float left, right = 1;
@@ -97,6 +105,13 @@ public class StoryEntry extends IStoryPart {
 
     public int partsMaxId = 1;
     public final ArrayList<Part> parts = new ArrayList<>();
+
+    public File round;
+    public String roundThumb;
+    public long roundDuration;
+    public long roundOffset;
+    public float roundLeft, roundRight = 1;
+    public float roundVolume = 1;
 
     public TLRPC.InputPeer peer;
 
@@ -178,6 +193,9 @@ public class StoryEntry extends IStoryPart {
             return true;
         }
         if (audioPath != null) {
+            return true;
+        }
+        if (round != null) {
             return true;
         }
         if (mediaEntities != null && !mediaEntities.isEmpty()) {
@@ -485,7 +503,7 @@ public class StoryEntry extends IStoryPart {
             clearFilter();
             if (file != null) {
                 if (fileDeletable && (!isEdit || editedMedia)) {
-                       file.delete();
+                    file.delete();
                 }
                 file = null;
             }
@@ -501,12 +519,75 @@ public class StoryEntry extends IStoryPart {
                 }
                 part.file = null;
             }
+            if (round != null && (!isEdit || editedMedia)) {
+                round.delete();
+                round = null;
+            }
+            if (roundThumb != null && (!isEdit || editedMedia)) {
+                try {
+                    new File(roundThumb).delete();
+                } catch (Exception e) {}
+                roundThumb = null;
+            }
         }
         if (thumbPathBitmap != null) {
             thumbPathBitmap.recycle();
             thumbPathBitmap = null;
         }
         cancelCheckStickers();
+    }
+
+    public static StoryEntry repostStoryItem(File file, TL_stories.StoryItem storyItem) {
+        StoryEntry entry = new StoryEntry();
+        entry.isRepost = true;
+        entry.repostMedia = storyItem.media;
+        entry.repostPeer = MessagesController.getInstance(entry.currentAccount).getPeer(storyItem.dialogId);
+        entry.repostStoryId = storyItem.id;
+        entry.repostCaption = storyItem.caption;
+        entry.file = file;
+        entry.fileDeletable = false;
+        entry.width = 720;
+        entry.height = 1280;
+        if (storyItem.media instanceof TLRPC.TL_messageMediaPhoto) {
+            entry.isVideo = false;
+            if (file != null) {
+                entry.decodeBounds(file.getAbsolutePath());
+            }
+        } else if (storyItem.media instanceof TLRPC.TL_messageMediaDocument) {
+            entry.isVideo = true;
+            if (storyItem.media.document != null && storyItem.media.document.attributes != null) {
+                for (int i = 0; i < storyItem.media.document.attributes.size(); ++i) {
+                    TLRPC.DocumentAttribute attr = storyItem.media.document.attributes.get(i);
+                    if (attr instanceof TLRPC.TL_documentAttributeVideo) {
+                        entry.width = attr.w;
+                        entry.height = attr.h;
+                        entry.fileDuration = attr.duration;
+                        break;
+                    }
+                }
+            }
+            if (storyItem.media.document != null) {
+                if (storyItem.firstFramePath != null) {
+                    entry.thumbPath = storyItem.firstFramePath;
+                } else if (storyItem.media.document.thumbs != null) {
+                    for (int i = 0; i < storyItem.media.document.thumbs.size(); ++i) {
+                        TLRPC.PhotoSize photoSize = storyItem.media.document.thumbs.get(i);
+                        if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
+                            entry.thumbPathBitmap = ImageLoader.getStrippedPhotoBitmap(photoSize.bytes, null);
+                            continue;
+                        }
+                        File path = FileLoader.getInstance(entry.currentAccount).getPathToAttach(photoSize, true);
+                        if (path != null && path.exists()) {
+                            entry.thumbPath = path.getAbsolutePath();
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        entry.setupMatrix();
+        entry.checkStickers(storyItem);
+        return entry;
     }
 
     public static StoryEntry fromStoryItem(File file, TL_stories.StoryItem storyItem) {
@@ -809,7 +890,9 @@ public class StoryEntry extends IStoryPart {
                         info.originalPath = videoPath;
                     }
                     info.isPhoto = true;
-                    if (audioPath != null) {
+                    if (round != null) {
+                        info.estimatedDuration = info.originalDuration = duration = (long) ((roundRight - roundLeft) * roundDuration);
+                    } else if (audioPath != null) {
                         info.estimatedDuration = info.originalDuration = duration = (long) ((audioRight - audioLeft) * audioDuration);
                     } else {
                         info.estimatedDuration = info.originalDuration = duration = averageDuration;
@@ -839,6 +922,18 @@ public class StoryEntry extends IStoryPart {
                 info.parts = parts;
 
                 info.mixedSoundInfos.clear();
+                if (round != null) {
+                    final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(round.getAbsolutePath());
+                    soundInfo.volume = roundVolume;
+                    soundInfo.audioOffset = (long) (roundLeft * roundDuration) * 1000L;
+                    if (isVideo) {
+                        soundInfo.startTime = (long) (roundOffset - left * duration) * 1000L;
+                    } else {
+                        soundInfo.startTime = 0;
+                    }
+                    soundInfo.duration = (long) ((roundRight - roundLeft) * roundDuration) * 1000L;
+                    info.mixedSoundInfos.add(soundInfo);
+                }
                 if (audioPath != null) {
                     final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(audioPath);
                     soundInfo.volume = audioVolume;
@@ -1110,6 +1205,14 @@ public class StoryEntry extends IStoryPart {
         newEntry.thumbBitmap = thumbBitmap;
         newEntry.fromCamera = fromCamera;
         newEntry.thumbPathBitmap = thumbPathBitmap;
+        newEntry.isRepost = isRepost;
+        newEntry.round = round;
+        newEntry.roundLeft = roundLeft;
+        newEntry.roundRight = roundRight;
+        newEntry.roundDuration = roundDuration;
+        newEntry.roundThumb = roundThumb;
+        newEntry.roundOffset = roundOffset;
+        newEntry.roundVolume = roundVolume;
         return newEntry;
     }
 }

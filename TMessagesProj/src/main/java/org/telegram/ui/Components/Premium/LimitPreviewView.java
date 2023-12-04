@@ -17,6 +17,7 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.style.RelativeSizeSpan;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -100,7 +101,7 @@ public class LimitPreviewView extends LinearLayout {
 
             setIconValue(currentValue, false);
 
-            limitIcon.setPadding(dp(24), dp(6), dp(24), dp(14));
+            limitIcon.setPadding(dp(19), dp(6), dp(19), dp(14));
             addView(limitIcon, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.LEFT));
         }
 
@@ -269,7 +270,8 @@ public class LimitPreviewView extends LinearLayout {
 
     public void setIconValue(int currentValue, boolean animated) {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-        spannableStringBuilder.append("d ").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+        spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+        spannableStringBuilder.append(" ").setSpan(new RelativeSizeSpan(0.8f), 1, 2, 0);
         spannableStringBuilder.append(Integer.toString(currentValue));
         limitIcon.setText(spannableStringBuilder, animated);
         limitIcon.requestLayout();

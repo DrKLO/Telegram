@@ -42,6 +42,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.ColoredImageSpan;
@@ -136,6 +137,10 @@ public class StoriesUtilities {
             }
         } else {
             unreadState = state = getPredictiveUnreadState(storiesController, dialogId);
+        }
+
+        if (params.forceState != 0) {
+            unreadState = state = params.forceState;
         }
 
         if (params.currentState != state) {
@@ -1042,6 +1047,7 @@ public class StoriesUtilities {
 
         private long dialogId;
         public int currentState;
+        public int forceState;
         public int prevState;
         public float progressToSate = 1f;
         public boolean showProgress = false;
@@ -1313,6 +1319,92 @@ public class StoriesUtilities {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, false);
             canceled = true;
             params = null;
+        }
+    }
+
+    public static class StoryGradientTools {
+        public final int currentAccount = UserConfig.selectedAccount;
+
+        private final Runnable invalidate;
+        private final boolean isDialogCell;
+        private final GradientTools tools;
+
+        private int color1, color2;
+        private final AnimatedColor animatedColor1, animatedColor2;
+
+        public StoryGradientTools(View view, boolean isDialogCell) {
+            this(view::invalidate, isDialogCell);
+        }
+
+        public StoryGradientTools(Runnable invalidate, boolean isDialogCell) {
+            this.invalidate = invalidate;
+            this.isDialogCell = isDialogCell;
+
+            animatedColor1 = new AnimatedColor(invalidate, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+            animatedColor2 = new AnimatedColor(invalidate, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+            tools = new GradientTools();
+            tools.isDiagonal = true;
+            tools.isRotate = true;
+            resetColors(false);
+            tools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            tools.paint.setStyle(Paint.Style.STROKE);
+            tools.paint.setStrokeCap(Paint.Cap.ROUND);
+        }
+
+        public void setUser(TLRPC.User user, boolean animated) {
+            int colorId = -1;
+            if (user != null && user.profile_color != null) {
+                colorId = user.profile_color.color;
+            }
+            setColorId(colorId, animated);
+        }
+
+        public void setChat(TLRPC.Chat chat, boolean animated) {
+            int colorId = -1;
+//            if (chat != null && chat.profile_color != null) {
+//                colorId = chat.profile_color.color;
+//            }
+            setColorId(colorId, animated);
+        }
+
+        public void setColorId(int colorId, boolean animated) {
+            MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
+            MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(colorId);
+            if (peerColor != null) {
+                setColors(
+                    peerColor.getStoryColor1(Theme.isCurrentThemeDark()),
+                    peerColor.getStoryColor2(Theme.isCurrentThemeDark()),
+                    animated
+                );
+            } else {
+                resetColors(animated);
+            }
+        }
+        private void resetColors(boolean animated) {
+            if (isDialogCell) {
+                setColors(Theme.getColor(Theme.key_stories_circle_dialog1), Theme.getColor(Theme.key_stories_circle_dialog2), animated);
+            } else {
+                setColors(Theme.getColor(Theme.key_stories_circle1), Theme.getColor(Theme.key_stories_circle2), animated);
+            }
+        }
+
+        private void setColors(int color1, int color2, boolean animated) {
+            this.color1 = color1;
+            this.color2 = color2;
+            if (!animated) {
+                this.animatedColor1.set(color1, true);
+                this.animatedColor2.set(color2, true);
+            }
+            if (invalidate != null) {
+                invalidate.run();
+            }
+        }
+
+        public Paint getPaint(RectF bounds) {
+            tools.setColors(animatedColor1.set(color1), animatedColor2.set(color2));
+            tools.setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom);
+            return tools.paint;
         }
     }
 }

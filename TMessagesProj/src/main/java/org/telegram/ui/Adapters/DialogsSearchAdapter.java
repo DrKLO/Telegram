@@ -112,6 +112,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private Runnable cancelShowMoreAnimation;
     private ArrayList<Long> filterDialogIds;
     private final DialogsActivity dialogsActivity;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -163,11 +164,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         private final int currentAccount;
         private boolean drawChecked;
         private boolean forceDarkTheme;
+        private Theme.ResourcesProvider resourcesProvider;
 
-        public CategoryAdapterRecycler(Context context, int account, boolean drawChecked) {
+        public CategoryAdapterRecycler(Context context, int account, boolean drawChecked, Theme.ResourcesProvider resourcesProvider) {
             this.drawChecked = drawChecked;
             mContext = context;
             currentAccount = account;
+            this.resourcesProvider = resourcesProvider;
         }
 
         public void setIndex(int value) {
@@ -176,7 +179,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            HintDialogCell cell = new HintDialogCell(mContext, drawChecked);
+            HintDialogCell cell = new HintDialogCell(mContext, drawChecked, resourcesProvider);
             cell.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(86)));
             return new RecyclerListView.Holder(cell);
         }
@@ -244,9 +247,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         return false;
     }
 
-    public DialogsSearchAdapter(Context context, DialogsActivity dialogsActivity, int messagesSearch, int type, DefaultItemAnimator itemAnimator, boolean allowGlobalSearch) {
+    public DialogsSearchAdapter(Context context, DialogsActivity dialogsActivity, int messagesSearch, int type, DefaultItemAnimator itemAnimator, boolean allowGlobalSearch, Theme.ResourcesProvider resourcesProvider) {
         this.itemAnimator = itemAnimator;
         this.dialogsActivity = dialogsActivity;
+        this.resourcesProvider = resourcesProvider;
         searchAdapterHelper = new SearchAdapterHelper(false) {
             @Override
             protected boolean filter(TLObject obj) {
@@ -1418,7 +1422,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
                 horizontalListView.setLayoutManager(layoutManager);
                 //horizontalListView.setDisallowInterceptTouchEvents(true);
-                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount, false));
+                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount, false, resourcesProvider));
                 horizontalListView.setOnItemClickListener((view1, position) -> {
                     if (delegate != null) {
                         delegate.didPressedOnSubDialog((Long) view1.getTag());

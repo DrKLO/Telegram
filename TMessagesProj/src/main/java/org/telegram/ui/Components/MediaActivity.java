@@ -537,7 +537,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             hideFloatingButton(true, false);
         }
 
-        sharedMediaLayout = new SharedMediaLayout(context, dialogId, sharedMediaPreloader, 0, null, currentChatInfo, currentUserInfo, false, this, new SharedMediaLayout.Delegate() {
+        sharedMediaLayout = new SharedMediaLayout(context, dialogId, sharedMediaPreloader, 0, null, currentChatInfo, currentUserInfo, initialTab, this, new SharedMediaLayout.Delegate() {
             @Override
             public void scrollToSharedMedia() {
 
@@ -783,7 +783,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
                 if (user != null) {
                     nameTextView[0].setText(ContactsController.formatName(user.first_name, user.last_name));
-                    avatarDrawable.setInfo(user);
+                    avatarDrawable.setInfo(currentAccount, user);
                     avatarObject = user;
                 }
             }
@@ -796,7 +796,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                     avatarDrawable.setScaleSize(.8f);
                 } else {
                     nameTextView[0].setText(ContactsController.formatName(user.first_name, user.last_name));
-                    avatarDrawable.setInfo(user);
+                    avatarDrawable.setInfo(currentAccount, user);
                     avatarObject = user;
                 }
             }
@@ -804,7 +804,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chat != null) {
                 nameTextView[0].setText(chat.title);
-                avatarDrawable.setInfo(chat);
+                avatarDrawable.setInfo(currentAccount, chat);
                 avatarObject = chat;
             }
         }
@@ -937,7 +937,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             return;
         }
-        if (id < 0 || mediaCount[id] < 0) {
+        if (id < 0 || id < mediaCount.length && mediaCount[id] < 0) {
             return;
         }
         if (id == SharedMediaLayout.TAB_PHOTOVIDEO) {
@@ -964,6 +964,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         } else if (id == SharedMediaLayout.TAB_GIF) {
             showSubtitle(i, true, true);
             subtitleTextView[i].setText(LocaleController.formatPluralString("GIFs", mediaCount[MediaDataController.MEDIA_GIF]), animated);
+        } else if (id == SharedMediaLayout.TAB_RECOMMENDED_CHANNELS) {
+            showSubtitle(i, true, true);
+            MessagesController.ChannelRecommendations rec = MessagesController.getInstance(currentAccount).getChannelRecommendations(-dialogId);
+            subtitleTextView[i].setText(LocaleController.formatPluralString("Channels", rec == null ? 0 : rec.more + rec.chats.size()), animated);
         }
     }
 

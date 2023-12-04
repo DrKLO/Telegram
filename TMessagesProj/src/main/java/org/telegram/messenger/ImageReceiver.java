@@ -1113,25 +1113,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return false;
     }
 
-    private int bufferedFrame;
-    public void incrementFrames(int inc) {
-        if (currentMediaDrawable instanceof RLottieDrawable) {
-//            RLottieDrawable rlottie = (RLottieDrawable) currentMediaDrawable;
-//            inc = (int) Math.round((float) rlottie.getFramesCount() / rlottie.getDuration() * (1f / 30f));
-//            rlottie.setCurrentFrame(
-//                (rlottie.getCurrentFrame() + inc) % (int) rlottie.getFramesCount()
-//            );
-        } else if (currentMediaDrawable instanceof AnimatedFileDrawable) {
-            int lastFrame = (int) bufferedFrame;
-            bufferedFrame += inc;
-            int currentFrame = (int) bufferedFrame;
-            while (lastFrame != currentFrame) {
-                ((AnimatedFileDrawable) currentMediaDrawable).getNextFrame();
-                currentFrame--;
-            }
-        }
-    }
-
     public boolean onAttachedToWindow() {
         if (attachedToWindow) {
             return false;

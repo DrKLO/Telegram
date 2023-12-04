@@ -66,13 +66,21 @@ public class TimelineView extends View {
 
         void onVideoLeftChange(float left);
         void onVideoRightChange(float right);
+        void onVideoVolumeChange(float volume);
 
         void onAudioOffsetChange(long offset);
         void onAudioLeftChange(float left);
         void onAudioRightChange(float right);
-
         void onAudioVolumeChange(float volume);
         void onAudioRemove();
+
+        void onRoundOffsetChange(long offset);
+        void onRoundLeftChange(float left);
+        void onRoundRightChange(float right);
+        void onRoundVolumeChange(float volume);
+        void onRoundRemove();
+
+        void onRoundSelectChange(boolean selected);
     }
 
     private TimelineDelegate delegate;
@@ -85,7 +93,18 @@ public class TimelineView extends View {
     private long videoDuration;
     private float videoLeft;
     private float videoRight;
+    private float videoVolume;
     private VideoThumbsLoader thumbs;
+
+    private boolean hasRound;
+    private String roundPath;
+    private boolean roundSelected;
+    private long roundDuration;
+    private long roundOffset;
+    private float roundLeft;
+    private float roundRight;
+    private float roundVolume;
+    private VideoThumbsLoader roundThumbs;
 
     private boolean hasAudio;
     private String audioPath;
@@ -96,11 +115,15 @@ public class TimelineView extends View {
     private float audioRight;
     private boolean waveformIsLoaded;
     private float audioVolume;
+    private boolean resetWaveform;
     private AudioWaveformLoader waveform;
 
     private long getBaseDuration() {
         if (hasVideo) {
             return videoDuration;
+        }
+        if (hasRound) {
+            return roundDuration;
         }
         if (hasAudio) {
             return audioDuration;
@@ -108,8 +131,13 @@ public class TimelineView extends View {
         return Math.max(1, audioDuration);
     }
 
+    private final AnimatedFloat roundT = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat roundSelectedT = new AnimatedFloat(this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+
     private final AnimatedFloat audioT = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat audioSelectedT = new AnimatedFloat(this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    private final AnimatedFloat videoSelectedT = new AnimatedFloat(this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     private final AnimatedFloat waveformLoaded = new AnimatedFloat(this, 0, 600, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat waveformMax = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -123,6 +151,9 @@ public class TimelineView extends View {
     private final Paint videoFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Path videoClipPath = new Path();
     private final Path selectedVideoClipPath = new Path();
+
+    private final RectF roundBounds = new RectF();
+    private final Path roundClipPath = new Path();
 
     private final Paint regionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint regionCutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -190,11 +221,11 @@ public class TimelineView extends View {
         audioWaveformBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_AUDIO_WAVEFORM_BACKGROUND);
 
         onLongPress = () -> {
-            if (!pressVideo && hasAudio) {
+            if (pressType == 2 && hasAudio) {
                 SliderView slider =
                     new SliderView(getContext(), SliderView.TYPE_VOLUME)
-                        .setValue(audioVolume)
                         .setMinMax(0, 1.5f)
+                        .setValue(audioVolume)
                         .setOnValueChange(volume -> {
                             audioVolume = volume;
                             if (delegate != null) {
@@ -202,7 +233,8 @@ public class TimelineView extends View {
                             }
                         });
                 final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-                float uiRight = Math.min(w - px - ph, px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelectedT.get()) * audioDuration) / (float) videoScrollDuration * sw);
+                final float uiRight = Math.min(w - px - ph, px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelectedT.get()) * audioDuration) / (float) videoScrollDuration * sw);
+                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0) - (hasAudio ? getAudioHeight() + dp(4) : 0);
                 ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
                     .addView(slider)
                     .addSpaceGap()
@@ -213,10 +245,63 @@ public class TimelineView extends View {
                     })
                     .setGravity(Gravity.RIGHT)
                     .forceTop(true)
-                    .translate(-(w - uiRight) + dp(18), dp(4) + (!hasVideo ? dp(audioSelected ? 35 : 40) : 0))
+                    .translate(-(w - uiRight) + dp(18), y)
                     .show();
                 itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
 
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception e) {}
+            } else if (pressType == 1 && hasRound) {
+                SliderView slider =
+                    new SliderView(getContext(), SliderView.TYPE_VOLUME)
+                        .setMinMax(0, 1.5f)
+                        .setValue(roundVolume)
+                        .setOnValueChange(volume -> {
+                            roundVolume = volume;
+                            if (delegate != null) {
+                                delegate.onRoundVolumeChange(volume);
+                            }
+                        });
+                final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                final float uiRight = Math.min(w - px - ph, px + ph + (roundOffset - scroll + lerp(roundRight, 1, roundSelectedT.get()) * roundDuration) / (float) videoScrollDuration * sw);
+                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0);
+                ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
+                    .addView(slider)
+                    .addSpaceGap()
+                    .add(R.drawable.msg_delete, LocaleController.getString(R.string.StoryRoundRemove), () -> {
+                        if (delegate != null) {
+                            delegate.onRoundRemove();
+                        }
+                    })
+                    .setGravity(Gravity.RIGHT)
+                    .forceTop(true)
+                    .translate(-(w - uiRight) + dp(18), y)
+                    .show();
+                itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
+
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception e) {}
+            } else if (pressType == 0 && hasVideo) {
+                SliderView slider =
+                    new SliderView(getContext(), SliderView.TYPE_VOLUME)
+                        .setMinMax(0, 1.5f)
+                        .setValue(videoVolume)
+                        .setOnValueChange(volume -> {
+                            videoVolume = volume;
+                            if (delegate != null) {
+                                delegate.onVideoVolumeChange(volume);
+                            }
+                        });
+                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0);
+                ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
+                    .addView(slider)
+                    .setGravity(Gravity.RIGHT)
+                    .forceTop(true)
+                    .translate(dp(18), y)
+                    .show();
+                itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
                 try {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                 } catch (Exception e) {}
@@ -228,7 +313,7 @@ public class TimelineView extends View {
         this.delegate = delegate;
     }
 
-    public void setVideo(String videoPath, long videoDuration) {
+    public void setVideo(String videoPath, long videoDuration, float videoVolume) {
         if (TextUtils.equals(this.videoPath, videoPath)) {
             return;
         }
@@ -240,14 +325,76 @@ public class TimelineView extends View {
             scroll = 0;
             this.videoPath = videoPath;
             this.videoDuration = videoDuration;
+            this.videoVolume = videoVolume;
             setupVideoThumbs();
         } else {
             this.videoPath = null;
             this.videoDuration = 1;
             scroll = 0;
         }
+        if (!hasRound) {
+            roundSelected = false;
+        }
         hasVideo = this.videoPath != null;
         progress = 0;
+        invalidate();
+    }
+
+    public void setRoundNull(boolean animated) {
+        setRound(null, 0, 0, 0, 0, 0, animated);
+    }
+
+    public void setRound(String roundPath, long roundDuration, long offset, float left, float right, float volume, boolean animated) {
+        if (TextUtils.equals(this.roundPath, roundPath)) {
+            return;
+        }
+        if (roundThumbs != null) {
+            roundThumbs.destroy();
+            roundThumbs = null;
+        }
+        final long hadRoundDuration = this.roundDuration;
+        if (roundPath != null) {
+            this.roundPath = roundPath;
+            this.roundDuration = roundDuration;
+            this.roundOffset = offset - (long) (left * roundDuration);
+            this.roundLeft = left;
+            this.roundRight = right;
+            this.roundVolume = volume;
+            setupRoundThumbs();
+            if (!hasVideo) {
+                audioSelected = false;
+                roundSelected = true;
+            }
+        } else {
+            this.roundPath = null;
+            this.roundDuration = 1;
+            roundSelected = false;
+        }
+        hasRound = this.roundPath != null;
+        if (hadRoundDuration != roundDuration && !hasVideo && waveform != null) {
+            resetWaveform = true;
+            setupAudioWaveform();
+        }
+        if (hasAudio && hasRound && !hasVideo) {
+            audioLeft = 0;
+            audioRight = Utilities.clamp((float) roundDuration / audioDuration, 1, 0);
+        }
+        if (!animated) {
+            roundSelectedT.set(roundSelected, true);
+            audioSelectedT.set(audioSelected, true);
+            roundT.set(hasRound, true);
+        }
+        invalidate();
+    }
+
+    public void selectRound(boolean select) {
+        if (select && hasRound) {
+            roundSelected = true;
+            audioSelected = false;
+        } else {
+            roundSelected = false;
+            audioSelected = hasAudio && !hasVideo;
+        }
         invalidate();
     }
 
@@ -255,9 +402,20 @@ public class TimelineView extends View {
         if (getMeasuredWidth() <= 0 || this.thumbs != null) {
             return;
         }
-        this.thumbs = new VideoThumbsLoader(videoPath, getMeasuredWidth() - getPaddingLeft() - getPaddingRight(), dp(38));
+        this.thumbs = new VideoThumbsLoader(videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null);
         if (this.thumbs.getDuration() > 0) {
             videoDuration = this.thumbs.getDuration();
+        }
+        setupRoundThumbs();
+    }
+
+    private void setupRoundThumbs() {
+        if (getMeasuredWidth() <= 0 || this.roundThumbs != null || hasVideo && videoDuration < 1) {
+            return;
+        }
+        this.roundThumbs = new VideoThumbsLoader(roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION);
+        if (this.roundThumbs.getDuration() > 0) {
+            roundDuration = this.roundThumbs.getDuration();
         }
     }
 
@@ -266,7 +424,8 @@ public class TimelineView extends View {
     public void setProgress(long progress) {
         if (
             hasVideo && progress < this.progress && progress <= videoDuration * videoLeft + 240 && this.progress + 240 >= videoDuration * videoRight ||
-            hasAudio && progress < this.progress && progress <= audioDuration * audioLeft + 240 && this.progress + 240 >= audioDuration * audioRight
+            hasAudio && !hasRound && !hasVideo && progress < this.progress && progress <= audioDuration * audioLeft + 240 && this.progress + 240 >= audioDuration * audioRight ||
+            hasRound && !hasVideo && progress < this.progress && progress <= roundDuration * audioLeft + 240 && this.progress + 240 >= roundDuration * audioRight
         ) {
             loopProgressFrom = -1;
             loopProgress.set(1, true);
@@ -339,7 +498,7 @@ public class TimelineView extends View {
     }
 
     private void setupAudioWaveform() {
-        if (getMeasuredWidth() <= 0 || this.waveform != null) {
+        if (getMeasuredWidth() <= 0 || this.waveform != null && !resetWaveform) {
             return;
         }
         this.waveform = new AudioWaveformLoader(audioPath, getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
@@ -349,14 +508,21 @@ public class TimelineView extends View {
     }
 
     private static final int HANDLE_PROGRESS = 0;
+
     private static final int HANDLE_VIDEO_SCROLL = 1;
     private static final int HANDLE_VIDEO_LEFT = 2;
     private static final int HANDLE_VIDEO_RIGHT = 3;
     private static final int HANDLE_VIDEO_REGION = 4;
+
     private static final int HANDLE_AUDIO_SCROLL = 5;
     private static final int HANDLE_AUDIO_LEFT = 6;
     private static final int HANDLE_AUDIO_RIGHT = 7;
     private static final int HANDLE_AUDIO_REGION = 8;
+
+    private static final int HANDLE_ROUND_SCROLL = 9;
+    private static final int HANDLE_ROUND_LEFT = 10;
+    private static final int HANDLE_ROUND_RIGHT = 11;
+    private static final int HANDLE_ROUND_REGION = 12;
 
     private int detectHandle(MotionEvent event) {
         float x = event.getX();
@@ -369,7 +535,8 @@ public class TimelineView extends View {
             return HANDLE_PROGRESS;
         }
 
-        final boolean isInVideo = y > h - py - getVideoHeight() - dp(2);
+        final boolean isInVideo = hasVideo && y > h - py - getVideoHeight() - dp(2);
+        final boolean isInRound = hasRound && y > h - py - getVideoHeight() - dp(4) - getRoundHeight() - dp(4) - dp(2) && y < h - py - getVideoHeight() - dp(2);
 
         if (isInVideo) {
             final float leftX = px + ph + (videoLeft * videoDuration - scroll) / (float) scrollWidth * sw;
@@ -382,19 +549,36 @@ public class TimelineView extends View {
             } else if (x >= leftX && x <= rightX && (videoLeft > 0.01f || videoRight < .99f)) {
                 return HANDLE_VIDEO_REGION;
             }
+        } else if (isInRound) {
+            float leftX = px + ph + (roundOffset + roundLeft * roundDuration - scroll) / (float) scrollWidth * sw;
+            float rightX = px + ph + (roundOffset + roundRight * roundDuration - scroll) / (float) scrollWidth * sw;
+            if (roundSelected || !hasVideo) {
+                if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
+                    return HANDLE_ROUND_LEFT;
+                } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
+                    return HANDLE_ROUND_RIGHT;
+                } else if (x >= leftX && x <= rightX) {
+                    if (!hasVideo) {
+                        return HANDLE_ROUND_REGION;
+                    } else {
+                        return HANDLE_ROUND_SCROLL;
+                    }
+                }
+                leftX = px + ph + (roundOffset - scroll) / (float) scrollWidth * sw;
+                rightX = px + ph + (roundOffset + roundDuration - scroll) / (float) scrollWidth * sw;
+            }
+            if (x >= leftX && x <= rightX) {
+                return HANDLE_ROUND_SCROLL;
+            }
         } else if (hasAudio) {
             float leftX = px + ph + (audioOffset + audioLeft * audioDuration - scroll) / (float) scrollWidth * sw;
             float rightX = px + ph + (audioOffset + audioRight * audioDuration - scroll) / (float) scrollWidth * sw;
-
-            if (audioSelected || !hasVideo) {
+            if (audioSelected || !hasVideo && !hasRound) {
                 if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
                     return HANDLE_AUDIO_LEFT;
                 } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
                     return HANDLE_AUDIO_RIGHT;
                 } else if (x >= leftX && x <= rightX) {
-                    final float maxDuration = Math.min(MAX_SCROLL_DURATION, getBaseDuration());
-                    final float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-                    final float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + maxDuration) / (float) audioDuration);
                     if (!hasVideo) {
                         return HANDLE_AUDIO_REGION;
                     } else {
@@ -419,6 +603,12 @@ public class TimelineView extends View {
     public boolean onBackPressed() {
         if (audioSelected) {
             audioSelected = false;
+            if (hasRound && !hasVideo) {
+                roundSelected = true;
+                if (delegate != null) {
+                    delegate.onRoundSelectChange(true);
+                }
+            }
             return true;
         }
         return false;
@@ -465,8 +655,8 @@ public class TimelineView extends View {
     private float getVideoHeight() {
         if (!hasVideo)
             return 0;
-        float audioSelected = this.audioSelectedT.set(this.audioSelected);
-        return lerp(dp(28), dp(38), 1f - audioSelected);
+        float videoSelected = this.videoSelectedT.set(!this.audioSelected && !this.roundSelected);
+        return lerp(dp(28), dp(38), videoSelected);
     }
 
     private float getAudioHeight() {
@@ -474,11 +664,18 @@ public class TimelineView extends View {
         return lerp(dp(28), dp(38), audioSelected);
     }
 
+    private float getRoundHeight() {
+        if (!hasRound)
+            return 0;
+        float roundSelected = this.roundSelectedT.set(this.roundSelected);
+        return lerp(dp(28), dp(38), roundSelected);
+    }
+
     private long lastTime;
     private long pressTime;
     private float lastX;
     private int pressHandle = -1;
-    private boolean pressVideo = true;
+    private int pressType = -1;
     private boolean draggingProgress, dragged;
     private boolean hadDragChange;
     private VelocityTracker velocityTracker;
@@ -487,15 +684,12 @@ public class TimelineView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (!hasVideo && !hasAudio) {
+        if (!hasVideo && !hasAudio && !hasRound) {
             return false;
         }
 
-        if (hasVideo && !hasAudio && event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < h - py - getVideoHeight() - py) {
-            return false;
-        }
-
-        if (hasAudio && !hasVideo && event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < h - py - getAudioHeight() - py) {
+        final float top = h - py - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasAudio ? getAudioHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0);
+        if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < top) {
             return false;
         }
 
@@ -507,7 +701,26 @@ public class TimelineView extends View {
             }
             scroller.abortAnimation();
             pressHandle = detectHandle(event);
-            pressVideo = !hasAudio || event.getY() > h - py - getVideoHeight() - (hasVideo ? dp(4) : 0);
+            pressType = -1;
+            int y = h - py;
+            if (pressType == -1 && hasVideo) {
+                if (event.getY() < y && event.getY() > y - getVideoHeight() - dp(2)) {
+                    pressType = 0;
+                }
+                y -= getVideoHeight() + dp(4);
+            }
+            if (pressType == -1 && hasRound) {
+                if (event.getY() < y && event.getY() > y - getRoundHeight() - dp(2)) {
+                    pressType = 1;
+                }
+                y -= getRoundHeight() + dp(4);
+            }
+            if (pressType == -1 && hasAudio) {
+                if (event.getY() < y && event.getY() > y - getAudioHeight() - dp(2)) {
+                    pressType = 2;
+                }
+                y -= getAudioHeight() + dp(4);
+            }
             pressTime = System.currentTimeMillis();
             draggingProgress = pressHandle == HANDLE_PROGRESS || pressHandle == -1 || pressHandle == HANDLE_VIDEO_SCROLL;
             hadDragChange = false;
@@ -582,13 +795,15 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_AUDIO_LEFT) {
                         float maxValue = audioRight - minAudioSelect() / (float) audioDuration;
                         float minValue = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-                        if (!hasVideo) {
+                        if (!hasVideo && !hasRound) {
                             minValue = Math.max(minValue, audioRight - MAX_SELECT_DURATION / (float) audioDuration);
                             if (!hadDragChange && d < 0 && audioLeft <= (audioRight - MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else {
+                        } else if (hasVideo) {
                             minValue = Math.max(minValue, (videoLeft * videoDuration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (hasRound) {
+                            minValue = Math.max(minValue, (roundLeft * roundDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioLeft = audioLeft;
                         audioLeft = Utilities.clamp(audioLeft + d, maxValue, minValue);
@@ -604,13 +819,15 @@ public class TimelineView extends View {
                     } else if (pressHandle == HANDLE_AUDIO_RIGHT) {
                         float maxValue = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
                         float minValue = audioLeft + minAudioSelect() / (float) audioDuration;
-                        if (!hasVideo) {
+                        if (!hasVideo && !hasRound) {
                             maxValue = Math.min(maxValue, audioLeft + MAX_SELECT_DURATION / (float) audioDuration);
                             if (!hadDragChange && d > 0 && audioRight >= (audioLeft + MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else {
+                        } else if (hasVideo) {
                             maxValue = Math.min(maxValue, (videoRight * videoDuration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (hasRound) {
+                            maxValue = Math.min(maxValue, (roundRight * roundDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioRight = audioRight;
                         audioRight = Utilities.clamp(audioRight + d, maxValue, minValue);
@@ -625,9 +842,9 @@ public class TimelineView extends View {
                         float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
                         float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
                         if (d > 0) {
-                            d = Math.min(maxRight - audioRight, d);
+                            d = Math.min(Math.max(0, maxRight - audioRight), d);
                         } else {
-                            d = Math.max(minLeft - audioLeft, d);
+                            d = Math.max(Math.min(0, minLeft - audioLeft), d);
                         }
                         audioLeft += d;
                         audioRight += d;
@@ -641,8 +858,82 @@ public class TimelineView extends View {
                             delegate.onProgressDragChange(true);
                         }
                     }
-                    if (!hasVideo) {
+                    if (!hasVideo && !hasRound) {
                         progress = (long) (audioLeft * audioDuration);
+                        if (delegate != null) {
+                            delegate.onProgressDragChange(true);
+                            delegate.onProgressChange(progress, false);
+                        }
+                    }
+                    invalidate();
+                    dragged = true;
+                    draggingProgress = false;
+                } else if (pressHandle == HANDLE_ROUND_LEFT || pressHandle == HANDLE_ROUND_RIGHT || pressHandle == HANDLE_ROUND_REGION) {
+                    float d = Δx / sw * (videoScrollDuration / (float) roundDuration);
+                    if (pressHandle == HANDLE_ROUND_LEFT) {
+                        float maxValue = roundRight - minAudioSelect() / (float) roundDuration;
+                        float minValue = Math.max(0, scroll - roundOffset) / (float) roundDuration;
+                        if (!hasVideo) {
+                            minValue = Math.max(minValue, roundRight - MAX_SELECT_DURATION / (float) roundDuration);
+                            if (!hadDragChange && d < 0 && roundLeft <= (roundRight - MAX_SELECT_DURATION / (float) roundDuration)) {
+                                pressHandle = HANDLE_AUDIO_REGION;
+                            }
+                        } else {
+                            minValue = Math.max(minValue, (videoLeft * videoDuration + scroll - roundOffset) / (float) roundDuration);
+                        }
+                        float wasAudioLeft = roundLeft;
+                        roundLeft = Utilities.clamp(roundLeft + d, maxValue, minValue);
+                        if (Math.abs(wasAudioLeft - roundLeft) > 0.01f) {
+                            hadDragChange = true;
+                        }
+                        if (delegate != null) {
+                            delegate.onRoundOffsetChange(roundOffset + (long) (roundLeft * roundDuration));
+                        }
+                        if (delegate != null) {
+                            delegate.onRoundLeftChange(roundLeft);
+                        }
+                    } else if (pressHandle == HANDLE_ROUND_RIGHT) {
+                        float maxValue = Math.min(1, Math.max(0, scroll - roundOffset + videoScrollDuration) / (float) roundDuration);
+                        float minValue = roundLeft + minAudioSelect() / (float) roundDuration;
+                        if (!hasVideo) {
+                            maxValue = Math.min(maxValue, roundLeft + MAX_SELECT_DURATION / (float) roundDuration);
+                            if (!hadDragChange && d > 0 && roundRight >= (roundLeft + MAX_SELECT_DURATION / (float) roundDuration)) {
+                                pressHandle = HANDLE_AUDIO_REGION;
+                            }
+                        } else {
+                            maxValue = Math.min(maxValue, (videoRight * videoDuration + scroll - roundOffset) / (float) roundDuration);
+                        }
+                        float wasAudioRight = roundRight;
+                        roundRight = Utilities.clamp(roundRight + d, maxValue, minValue);
+                        if (Math.abs(wasAudioRight - roundRight) > 0.01f) {
+                            hadDragChange = true;
+                        }
+                        if (delegate != null) {
+                            delegate.onRoundRightChange(roundRight);
+                        }
+                    }
+                    if (pressHandle == HANDLE_ROUND_REGION) {
+                        float minLeft = Math.max(0, scroll - roundOffset) / (float) roundDuration;
+                        float maxRight = Math.min(1, Math.max(0, scroll - roundOffset + videoScrollDuration) / (float) roundDuration);
+                        if (d > 0) {
+                            d = Math.min(maxRight - roundRight, d);
+                        } else {
+                            d = Math.max(minLeft - roundLeft, d);
+                        }
+                        roundLeft += d;
+                        roundRight += d;
+
+                        if (delegate != null) {
+                            delegate.onRoundLeftChange(roundLeft);
+                            delegate.onRoundOffsetChange(roundOffset + (long) (roundLeft * roundDuration));
+                            delegate.onRoundRightChange(roundRight);
+                        }
+                        if (delegate != null) {
+                            delegate.onProgressDragChange(true);
+                        }
+                    }
+                    if (!hasVideo) {
+                        progress = (long) (roundLeft * roundDuration);
                         if (delegate != null) {
                             delegate.onProgressDragChange(true);
                             delegate.onProgressChange(progress, false);
@@ -654,6 +945,11 @@ public class TimelineView extends View {
                 } else if (pressHandle == HANDLE_AUDIO_SCROLL) {
                     float d = Δx / sw * videoScrollDuration;
                     moveAudioOffset(d);
+                    dragged = true;
+                    draggingProgress = false;
+                } else if (pressHandle == HANDLE_ROUND_SCROLL) {
+                    float d = Δx / sw * videoScrollDuration;
+                    moveRoundOffset(d);
                     dragged = true;
                     draggingProgress = false;
                 } else if (draggingProgress) {
@@ -677,11 +973,33 @@ public class TimelineView extends View {
             boolean scrollStopped = true;
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (System.currentTimeMillis() - pressTime <= ViewConfiguration.getTapTimeout() && !dragged) {
-                    if (!pressVideo && !audioSelected) {
+                    if (pressType == 2 && !audioSelected) {
                         audioSelected = true;
+                        roundSelected = false;
+                        if (delegate != null) {
+                            delegate.onRoundSelectChange(false);
+                        }
                         invalidate();
-                    } else if (pressVideo && audioSelected) {
+                    } else if (pressType == 1 && !roundSelected) {
                         audioSelected = false;
+                        roundSelected = true;
+                        if (delegate != null) {
+                            delegate.onRoundSelectChange(true);
+                        }
+                        invalidate();
+                    } else if (pressType != 2 && audioSelected) {
+                        audioSelected = false;
+                        roundSelected = false;
+                        if (delegate != null) {
+                            delegate.onRoundSelectChange(false);
+                        }
+                        invalidate();
+                    } else if (pressType != 1 && roundSelected) {
+                        audioSelected = false;
+                        roundSelected = false;
+                        if (delegate != null) {
+                            delegate.onRoundSelectChange(false);
+                        }
                         invalidate();
                     } else {
                         long wasProgress = progress;
@@ -714,9 +1032,31 @@ public class TimelineView extends View {
                         if (hasVideo) {
                             mx = (long) ((videoRight * videoDuration) - (0 * audioDuration));
                             mn = (long) ((videoLeft * videoDuration) - (1 * audioDuration));
+                        } else if (hasRound) {
+                            mx = (long) ((roundRight * roundDuration) - (0 * audioDuration));
+                            mn = (long) ((roundLeft * roundDuration) - (1 * audioDuration));
                         } else {
                             mx = 0;
                             mn = (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION));
+                        }
+                        scrolling = true;
+                        scroller.fling(wasScrollX = scrollX, 0, velocity, 0, (int) (px + ph + mn / (float) videoScrollDuration * sw), (int) (px + ph + mx / (float) videoScrollDuration * sw), 0, 0);
+                        scrollStopped = false;
+                    }
+                } else if ((pressHandle == HANDLE_ROUND_SCROLL || pressHandle == HANDLE_ROUND_REGION && !dragged) && roundSelected && velocityTracker != null) {
+                    velocityTracker.computeCurrentVelocity(hasVideo ? 1000 : 1500);
+                    final int velocity = (int) velocityTracker.getXVelocity();
+                    scrollingVideo = false;
+                    if (Math.abs(velocity) > dp(100)) {
+                        final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                        final int scrollX = (int) (px + ph + roundOffset / (float) videoScrollDuration * sw);
+                        final long mx, mn;
+                        if (hasVideo) {
+                            mx = (long) ((videoRight * videoDuration) - (0 * roundDuration));
+                            mn = (long) ((videoLeft * videoDuration) - (1 * roundDuration));
+                        } else {
+                            mx = 0;
+                            mn = (long) -(roundDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION));
                         }
                         scrolling = true;
                         scroller.fling(wasScrollX = scrollX, 0, velocity, 0, (int) (px + ph + mn / (float) videoScrollDuration * sw), (int) (px + ph + mx / (float) videoScrollDuration * sw), 0, 0);
@@ -745,12 +1085,11 @@ public class TimelineView extends View {
     }
 
     private long minAudioSelect() {
-        return (long) Math.max(MIN_SELECT_DURATION, Math.min(hasVideo ? videoDuration : audioDuration, MAX_SELECT_DURATION) * 0.15f);
+        return (long) Math.max(MIN_SELECT_DURATION, Math.min(hasVideo ? videoDuration : (hasRound ? roundDuration : audioDuration), MAX_SELECT_DURATION) * 0.15f);
     }
 
     private void moveAudioOffset(final float d) {
-        final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-        if (!hasVideo) {
+        if (!hasVideo && !hasRound) {
             long wasAudioOffset = audioOffset;
             audioOffset = Utilities.clamp(audioOffset + (long) d, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
             long rd = audioOffset - wasAudioOffset;
@@ -761,14 +1100,17 @@ public class TimelineView extends View {
                 delegate.onAudioRightChange(audioRight);
             }
         } else if (audioSelected) {
-            long mx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
-            long mn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
-            final float wasDuration = Math.min(audioRight - audioLeft, (videoRight - videoLeft) * videoDuration / (float) audioDuration);
+            final float L = hasVideo ? videoLeft * videoDuration : roundLeft * roundDuration;
+            final float R = hasVideo ? videoRight * videoDuration : roundRight * roundDuration;
+            final float D = hasVideo ? (videoRight - videoLeft) * videoDuration : (roundRight - roundLeft) * roundDuration;
+            long mx = (long) (R - (audioRight * audioDuration));
+            long mn = (long) (L - (audioLeft * audioDuration));
+            final float wasDuration = Math.min(audioRight - audioLeft, D / (float) audioDuration);
             if (audioOffset + (long) d > mx) {
-                audioRight = Utilities.clamp((videoRight * videoDuration - audioOffset - (long) d) / (float) audioDuration, 1, wasDuration);
+                audioRight = Utilities.clamp((R - audioOffset - (long) d) / (float) audioDuration, 1, wasDuration);
                 audioLeft = Utilities.clamp(audioRight - wasDuration, 1, 0);
-                long mmx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
-                long mmn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
+                long mmx = (long) (R - (audioRight * audioDuration));
+                long mmn = (long) (L - (audioLeft * audioDuration));
                 if (mmx < mmn) {
                     long t = mmx;
                     mmx = mmn;
@@ -780,10 +1122,10 @@ public class TimelineView extends View {
                     delegate.onAudioRightChange(audioRight);
                 }
             } else if (audioOffset + (long) d < mn) {
-                audioLeft = Utilities.clamp((videoLeft * videoDuration - audioOffset - (long) d) / (float) audioDuration, 1 - wasDuration, 0);
+                audioLeft = Utilities.clamp((L - audioOffset - (long) d) / (float) audioDuration, 1 - wasDuration, 0);
                 audioRight = Utilities.clamp(audioLeft + wasDuration, 1, 0);
-                long mmx = (long) ((videoRight * videoDuration) - (audioRight * audioDuration));
-                long mmn = (long) ((videoLeft * videoDuration) - (audioLeft * audioDuration));
+                long mmx = (long) (R - (audioRight * audioDuration));
+                long mmn = (long) (L - (audioLeft * audioDuration));
                 if (mmx < mmn) {
                     long t = mmx;
                     mmx = mmn;
@@ -810,6 +1152,8 @@ public class TimelineView extends View {
             long progressToStart;
             if (hasVideo) {
                 progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            } else if (hasRound) {
+                progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (roundRight * roundDuration), (long) (roundLeft * roundDuration));
             } else {
                 progressToStart = Utilities.clamp((long) (audioLeft * audioDuration), audioDuration, 0);
             }
@@ -821,8 +1165,91 @@ public class TimelineView extends View {
         } else if (dragged || scrolling) {
             if (hasVideo) {
                 progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            } else if (hasRound) {
+                progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (roundRight * videoDuration), (long) (roundLeft * videoDuration));
             } else {
                 progress = Utilities.clamp((long) (audioLeft * audioDuration), audioDuration, 0);
+            }
+            if (delegate != null) {
+                delegate.onProgressChange(progress, false);
+            }
+        }
+    }
+
+    private void moveRoundOffset(final float d) {
+        if (!hasVideo) {
+            long wasAudioOffset = roundOffset;
+            roundOffset = Utilities.clamp(roundOffset + (long) d, 0, (long) -(roundDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+            long rd = roundOffset - wasAudioOffset;
+            roundLeft = Utilities.clamp(roundLeft - (float) rd / roundDuration, 1, 0);
+            roundRight = Utilities.clamp(roundRight - (float) rd / roundDuration, 1, 0);
+            if (delegate != null) {
+                delegate.onAudioLeftChange(roundLeft);
+                delegate.onAudioRightChange(roundRight);
+            }
+        } else if (roundSelected) {
+            long mx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
+            long mn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
+            final float wasDuration = Math.min(roundRight - roundLeft, (videoRight - videoLeft) * videoDuration / (float) roundDuration);
+            if (roundOffset + (long) d > mx) {
+                roundRight = Utilities.clamp((videoRight * videoDuration - roundOffset - (long) d) / (float) roundDuration, 1, wasDuration);
+                roundLeft = Utilities.clamp(roundRight - wasDuration, 1, 0);
+                long mmx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
+                long mmn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                roundOffset = Utilities.clamp(roundOffset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onRoundLeftChange(roundLeft);
+                    delegate.onRoundRightChange(roundRight);
+                }
+            } else if (roundOffset + (long) d < mn) {
+                roundLeft = Utilities.clamp((videoLeft * videoDuration - roundOffset - (long) d) / (float) roundDuration, 1 - wasDuration, 0);
+                roundRight = Utilities.clamp(roundLeft + wasDuration, 1, 0);
+                long mmx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
+                long mmn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                roundOffset = Utilities.clamp(roundOffset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onRoundLeftChange(roundLeft);
+                    delegate.onRoundRightChange(roundRight);
+                }
+            } else {
+                roundOffset += (long) d;
+            }
+        } else {
+            roundOffset = Utilities.clamp(roundOffset + (long) d, (long) (getBaseDuration() - roundDuration * roundRight), (long) (-roundLeft * roundDuration));
+        }
+        invalidate();
+        if (delegate != null) {
+            delegate.onRoundOffsetChange(roundOffset + (long) (roundLeft * roundDuration));
+        }
+        if (!dragged && delegate != null) {
+            delegate.onProgressDragChange(true);
+
+            long progressToStart;
+            if (hasVideo) {
+                progressToStart = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            } else {
+                progressToStart = Utilities.clamp((long) (roundLeft * roundDuration), roundDuration, 0);
+            }
+            if (hasVideo && Math.abs(progress - progressToStart) > 400) {
+                loopProgressFrom = progress;
+                loopProgress.set(1, true);
+            }
+            delegate.onProgressChange(progress = progressToStart, false);
+        } else if (dragged || scrolling) {
+            if (hasVideo) {
+                progress = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            } else {
+                progress = Utilities.clamp((long) (roundLeft * roundDuration), roundDuration, 0);
             }
             if (delegate != null) {
                 delegate.onProgressChange(progress, false);
@@ -837,15 +1264,12 @@ public class TimelineView extends View {
             int scrollX = scroller.getCurrX();
             final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
             if (scrollingVideo) {
-                long wasScroll = scroll;
                 scroll = (long) Math.max(0, ((scrollX - px - ph) / (float) sw * videoScrollDuration));
-//                videoLeft = Utilities.clamp(videoLeft + (scroll - wasScroll) / (float) videoDuration, 1, 0);
-//                videoRight = Utilities.clamp(videoRight + (scroll - wasScroll) / (float) videoDuration, 1, 0);
-//                if (delegate != null) {
-//                    delegate.onVideoLeftChange(videoLeft);
-//                    delegate.onVideoRightChange(videoRight);
-//                }
             } else {
+                if (!audioSelected) {
+                    scroller.abortAnimation();
+                    return;
+                }
                 final float d = ((scrollX - px - ph) / (float) sw * videoScrollDuration) - ((wasScrollX - px - ph) / (float) sw * videoScrollDuration);
                 moveAudioOffset(d);
             }
@@ -958,6 +1382,7 @@ public class TimelineView extends View {
         final long scrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
         float videoHeight = 0;
         float videoT = hasVideo ? 1 : 0;
+        float videoSelected = videoSelectedT.set(!audioSelected && !roundSelected);
 
         // draw video thumbs
         if (hasVideo) {
@@ -975,7 +1400,7 @@ public class TimelineView extends View {
                 final int fromFrame = (int) Math.max(0, Math.floor((videoStartX - px) / frameWidth));
                 final int toFrame = (int) Math.min(thumbs.count, Math.ceil(((videoEndX - videoStartX) - px) / frameWidth) + 1);
 
-                final int y = (int) (h - py - videoHeight);
+                final int y = (int) videoBounds.top;
 
                 boolean allLoaded = thumbs.frames.size() >= toFrame;
                 boolean fullyCovered = allLoaded;
@@ -1029,16 +1454,103 @@ public class TimelineView extends View {
             canvas.restore();
         }
 
+        final float p = dp(4);
+        float roundT = this.roundT.set(hasRound);
+        float roundSelected = this.roundSelectedT.set(hasRound && this.roundSelected);
+        final float roundHeight = getRoundHeight() * roundT;
+        if (roundT > 0) {
+            float left, right;
+            if (hasVideo) {
+                left = px + ph + (roundOffset - scroll + lerp(roundLeft, 0, roundSelected) * roundDuration) / (float) scrollDuration * sw;
+                right = px + ph + (roundOffset - scroll + lerp(roundRight, 1, roundSelected) * roundDuration) / (float) scrollDuration * sw;
+            } else {
+                left = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
+                right = px + ph + (roundOffset - scroll + roundDuration) / (float) scrollDuration * sw;
+            }
+
+            final float bottom = h - py - videoHeight - p * videoT;
+            roundBounds.set(left - ph, bottom - roundHeight, right + ph, bottom);
+            roundClipPath.rewind();
+            roundClipPath.addRoundRect(roundBounds, dp(8), dp(8), Path.Direction.CW);
+            canvas.save();
+            canvas.clipPath(roundClipPath);
+            if (roundThumbs != null) {
+                final float roundStartX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset - scroll) / (float) scrollDuration * sw) - ph;
+                final float roundEndX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset + roundDuration - scroll) / (float) scrollDuration * sw) + ph;
+
+                float x = roundStartX;
+                final int frameWidth = roundThumbs.getFrameWidth();
+                final float L;
+                if (hasVideo) {
+                    L = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
+                } else {
+                    L = px;
+                }
+                final int fromFrame = (int) Math.max(0, Math.floor((roundStartX - L) / frameWidth));
+                final int toFrame = (int) Math.min(roundThumbs.count, Math.ceil((roundEndX - roundStartX) / frameWidth) + 1);
+
+                final int y = (int) roundBounds.top;
+
+                boolean allLoaded = roundThumbs.frames.size() >= toFrame;
+                boolean fullyCovered = allLoaded;
+                if (fullyCovered) {
+                    for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
+                        VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
+                        if (frame.bitmap == null) {
+                            fullyCovered = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!fullyCovered) {
+                    if (blurPaint == null) {
+                        canvas.drawColor(0x40000000);
+                    } else {
+                        canvas.drawRect(roundBounds, blurPaint);
+                        canvas.drawColor(0x33000000);
+                    }
+                }
+
+                for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
+                    VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
+                    if (frame.bitmap != null) {
+                        videoFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
+                        canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - roundHeight) / 2f), videoFramePaint);
+                    }
+                    x += frameWidth;
+                }
+
+                if (!allLoaded) {
+                    roundThumbs.load();
+                }
+            }
+            selectedVideoClipPath.rewind();
+            AndroidUtilities.rectTmp.set(
+                px + ph + (roundLeft * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw - (roundLeft <= 0 ? ph : 0) - ph * (1f - roundSelected),
+                roundBounds.top,
+                px + ph + (roundRight * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw + (roundRight >= 1 ? ph : 0) + ph * (1f - roundSelected),
+                roundBounds.bottom
+            );
+            selectedVideoClipPath.addRoundRect(
+                    AndroidUtilities.rectTmp,
+                    selectedVideoRadii,
+                    Path.Direction.CW
+            );
+            canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
+            canvas.drawColor(0x50000000);
+            canvas.restore();
+        }
+
         // draw audio
         float audioT = this.audioT.set(hasAudio);
         float audioSelected = this.audioSelectedT.set(hasAudio && this.audioSelected);
-        final float p = dp(4);
         final float audioHeight = getAudioHeight() * audioT;
         if (audioT > 0) {
             final Paint audioBlurPaint = audioBlur.getPaint(audioT);
             canvas.save();
             float left, right;
-            if (hasVideo) {
+            if (hasVideo || hasRound) {
                 left = px + ph + (audioOffset - scroll + lerp(audioLeft, 0, audioSelected) * audioDuration) / (float) scrollDuration * sw;
                 right = px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelected) * audioDuration) / (float) scrollDuration * sw;
             } else {
@@ -1046,7 +1558,7 @@ public class TimelineView extends View {
                 right = px + ph + (audioOffset - scroll + audioDuration) / (float) scrollDuration * sw;
             }
 
-            final float bottom = h - py - videoHeight - p * videoT;
+            final float bottom = h - py - videoHeight - p * videoT - roundHeight - p * roundT;
             audioBounds.set(left - ph, bottom - audioHeight, right + ph, bottom);
             audioClipPath.rewind();
             audioClipPath.addRoundRect(audioBounds, dp(8), dp(8), Path.Direction.CW);
@@ -1128,16 +1640,31 @@ public class TimelineView extends View {
         }
 
         // draw region
-        final float regionTop = lerp(h - py - videoHeight, h - py - videoHeight - p * videoT - audioHeight, hasVideo ? audioSelected : 1);
-        final float regionBottom = lerp(h - py, h - py - videoHeight - p * videoT, audioSelected);
-        final float left = lerp(videoLeft * videoDuration, audioOffset + audioLeft * audioDuration, hasVideo ? audioSelected : 1);
-        final float right = lerp(videoRight * videoDuration, audioOffset + audioRight * audioDuration, hasVideo ? audioSelected : 1);
+        final float audio = audioT * (hasVideo || hasRound ? audioSelected : 1);
+        final float round = roundT * (hasVideo || hasAudio ? roundSelected : 1);
+        final float video = videoSelected;
+        float regionTop = 0;
+        regionTop += (h - py - videoHeight - p * videoT - roundHeight - p * roundT - audioHeight) * audio;
+        regionTop += (h - py - videoHeight - p * videoT - roundHeight) * round;
+        regionTop += (h - py - videoHeight) * video;
+        float regionBottom = 0;
+        regionBottom += (h - py - videoHeight - p * videoT - roundHeight - p * roundT) * audio;
+        regionBottom += (h - py - videoHeight - p * videoT) * round;
+        regionBottom += (h - py) * video;
+        float left = 0;
+        left += (audioOffset + audioLeft * audioDuration) * audio;
+        left += (roundOffset + roundLeft * roundDuration) * round;
+        left += (videoLeft * videoDuration) * video;
+        float right = 0;
+        right += (audioOffset + audioRight * audioDuration) * audio;
+        right += (roundOffset + roundRight * roundDuration) * round;
+        right += (videoRight * videoDuration) * video;
         float leftX = px + ph + (left - scroll) / (float) scrollDuration * sw;
         float rightX = px + ph + (right - scroll) / (float) scrollDuration * sw;
-        float progressAlpha = (hasAudio && !hasVideo ? audioT : videoT);
-        if (audioT > 0. || videoT > 0.) {
-            drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, (hasVideo ? 1 : lerp(.6f, 1f, audioSelected) * audioT) * progressAlpha);
-            if (hasVideo && hasAudio && audioSelected > 0) {
+        float progressAlpha = (hasAudio && !hasVideo ? audioT : Math.max(videoT, roundT));
+        if (audioT > 0. || roundT > 0. || videoT > 0.) {
+            drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, (hasVideo || hasRound ? 1 : lerp(.6f, 1f, audioSelected) * audioT) * progressAlpha);
+            if (hasVideo && (hasAudio || hasRound) && (audioSelected > 0 || roundSelected > 0)) {
                 drawRegion(
                     canvas,
                     blurPaint,
@@ -1151,10 +1678,20 @@ public class TimelineView extends View {
 
             // draw progress
             float loopT = loopProgress.set(0);
-            final float y1 = h - py - videoHeight - (audioHeight + p * videoT) * audioT - dpf2(4.3f);
+            final float y1 = h - py - videoHeight - (audioHeight + p * Math.max(roundT, videoT)) * audioT - (roundHeight + p * videoT) * roundT - dpf2(4.3f);
             final float y2 = h - py + dpf2(4.3f);
             if (loopT > 0) {
-                drawProgress(canvas, y1, y2, loopProgressFrom != -1 ? loopProgressFrom : (long) (hasVideo ? videoDuration * videoRight : audioDuration * audioRight), loopT * progressAlpha);
+                final long end;
+                if (loopProgressFrom != -1) {
+                    end = loopProgressFrom;
+                } else if (hasVideo) {
+                    end = (long) (videoDuration * videoRight);
+                } else if (hasRound) {
+                    end = (long) (roundDuration * roundRight);
+                } else {
+                    end = (long) (audioDuration * audioRight);
+                }
+                drawProgress(canvas, y1, y2, end, loopT * progressAlpha);
             }
             drawProgress(canvas, y1, y2, progress, (1f - loopT) * progressAlpha);
         }
@@ -1195,7 +1732,9 @@ public class TimelineView extends View {
                     long wasOffset = audioOffset;
                     if (this.audioSelected && hasVideo) {
                         audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((videoRight * videoDuration) - (audioLeft * audioDuration)), (long) ((videoLeft * videoDuration) - (audioRight * audioDuration)));
-                    } else {
+                    } else if (this.roundSelected && hasRound) {
+                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((roundRight * roundDuration) - (audioLeft * audioDuration)), (long) ((roundLeft * roundDuration) - (audioRight * audioDuration)));
+                    } else{
                         audioOffset = Utilities.clamp(audioOffset - direction * Δd, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
                     }
                     float d = -(audioOffset - wasOffset) / (float) audioDuration;
@@ -1284,6 +1823,10 @@ public class TimelineView extends View {
     private int sw;
     private int w, h, ph, px, py;
 
+    public static int heightDp() {
+        return 5 + 38 + 4 + 28 + 4 + 28 + 5;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         audioAuthorPaint.setTextSize(dp(12));
@@ -1291,7 +1834,7 @@ public class TimelineView extends View {
         waveformRadii[0] = waveformRadii[1] = waveformRadii[2] = waveformRadii[3] = dp(2);
         waveformRadii[4] = waveformRadii[5] = waveformRadii[6] = waveformRadii[7] = 0;
         setPadding(px = dp(12), py = dp(5), dp(12), dp(5));
-        setMeasuredDimension(w = MeasureSpec.getSize(widthMeasureSpec), h = dp(80));
+        setMeasuredDimension(w = MeasureSpec.getSize(widthMeasureSpec), h = dp(heightDp()));
         ph = dp(10);
         sw = w - 2 * ph - 2 * px;
         if (videoPath != null && this.thumbs == null) {
@@ -1316,7 +1859,11 @@ public class TimelineView extends View {
 
         private boolean destroyed;
 
-        public VideoThumbsLoader(String path, int uiWidth, int uiHeight) {
+        public VideoThumbsLoader(String path, int uiWidth, int uiHeight, Long overrideDuration) {
+            this(path, uiWidth, uiHeight, overrideDuration, MAX_SCROLL_DURATION);
+        }
+
+        public VideoThumbsLoader(String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration) {
             metadataRetriever = new MediaMetadataRetriever();
             long duration = MAX_SCROLL_DURATION;
             int width = 0;
@@ -1349,6 +1896,9 @@ public class TimelineView extends View {
                 metadataRetriever = null;
                 FileLog.e(e);
             }
+            if (overrideDuration != null) {
+                this.duration = duration = overrideDuration;
+            }
             float aspectRatio = 1;
             if (width != 0 && height != 0) {
                 aspectRatio = width / (float) height;
@@ -1356,7 +1906,7 @@ public class TimelineView extends View {
             aspectRatio = Utilities.clamp(aspectRatio, 4 / 3f, 9f / 16f);
             frameHeight = Math.max(1, uiHeight);
             frameWidth = Math.max(1, (int) Math.ceil(uiHeight * aspectRatio));
-            final float uiScrollWidth = Math.max(duration, MAX_SCROLL_DURATION) / (float) MAX_SCROLL_DURATION * uiWidth;
+            final float uiScrollWidth = Math.max(duration, maxDuration) / (float) maxDuration * uiWidth;
             count = (int) Math.ceil(uiScrollWidth / frameWidth);
             frameIterator = (long) (duration / (float) count);
             nextFrame = -frameIterator;
@@ -1516,7 +2066,7 @@ public class TimelineView extends View {
                 FileLog.e(e);
             }
 
-            final float videoScrollWidth = Math.min(hasVideo ? videoDuration : duration * 1000, MAX_SCROLL_DURATION);
+            final float videoScrollWidth = Math.min(hasVideo ? videoDuration : (hasRound ? roundDuration : duration * 1000), MAX_SCROLL_DURATION);
             final float uiScrollWidth = (duration * 1000) / videoScrollWidth * uiWidth;
             final int sampleWidth = Math.round(dpf2(3.3333f));
             count = Math.round(uiScrollWidth / sampleWidth);
@@ -1696,5 +2246,9 @@ public class TimelineView extends View {
         public int getCount() {
             return count;
         }
+    }
+
+    public int getContentHeight() {
+        return (int) (py + (hasVideo ? getVideoHeight() + dp(4) : 0) + (hasRound ? getRoundHeight() + dp(4) : 0) + (hasAudio ? getAudioHeight() + dp(4) : 0) + py);
     }
 }

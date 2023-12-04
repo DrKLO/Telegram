@@ -211,6 +211,15 @@ public class RecordControl extends View implements FlashViews.Invertable {
         unlockDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert), PorterDuff.Mode.MULTIPLY));
     }
 
+    public float amplitude;
+    public final AnimatedFloat animatedAmplitude = new AnimatedFloat(this, 0, 200, CubicBezierInterpolator.DEFAULT);
+    public void setAmplitude(float amplitude, boolean animated) {
+        this.amplitude = amplitude;
+        if (!animated) {
+            this.animatedAmplitude.set(amplitude, true);
+        }
+    }
+
     private float cx, cy;
     private float leftCx, rightCx;
 
@@ -340,7 +349,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
         }
 
         canvas.save();
-        scale = lerp(recordButton.getScale(startModeIsVideo ? 0 : .2f), 1, recordingT);
+        scale = lerp(recordButton.getScale(startModeIsVideo ? 0 : .2f), 1 + .2f * animatedAmplitude.set(amplitude), recordingT);
         canvas.scale(scale, scale, cx, cy);
         mainPaint.setColor(ColorUtils.blendARGB(WHITE, RED, isVideo));
         float acx = lerp(cx, recordCx.set(cx + dp(4) * touchCenterT16), touchIsCenterT);

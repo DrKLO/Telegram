@@ -159,6 +159,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING = 19;
     public static final int PREMIUM_FEATURE_STORIES_PRIORITY_ORDER = 20;
     public static final int PREMIUM_FEATURE_STORIES_CAPTION = 21;
+    public final static int PREMIUM_FEATURE_WALLPAPER = 22;
+    public final static int PREMIUM_FEATURE_NAME_COLOR = 23;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -228,6 +230,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_STORIES_PRIORITY_ORDER;
             case "stories__caption":
                 return PREMIUM_FEATURE_STORIES_CAPTION;
+            case "wallpapers":
+                return PREMIUM_FEATURE_WALLPAPER;
+            case "peer_colors":
+                return PREMIUM_FEATURE_NAME_COLOR;
         }
         return -1;
     }
@@ -278,6 +284,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "stories__priority_order";
             case PREMIUM_FEATURE_STORIES_CAPTION:
                 return "stories__caption";
+            case PREMIUM_FEATURE_WALLPAPER:
+                return "wallpapers";
+            case PREMIUM_FEATURE_NAME_COLOR:
+                return "peer_colors";
         }
         return null;
     }
@@ -352,7 +362,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             public boolean dispatchTouchEvent(MotionEvent ev) {
                 float iconX = backgroundView.getX() + backgroundView.imageFrameLayout.getX();
                 float iconY = backgroundView.getY() + backgroundView.imageFrameLayout.getY();
-                AndroidUtilities.rectTmp.set(iconX, iconY, iconX + backgroundView.imageView.getMeasuredWidth(), iconY + backgroundView.imageView.getMeasuredHeight());
+                AndroidUtilities.rectTmp.set(iconX, iconY, iconX + (backgroundView.imageView == null ? 0 : backgroundView.imageView.getMeasuredWidth()), iconY + (backgroundView.imageView == null ? 0 : backgroundView.imageView.getMeasuredHeight()));
                 if ((AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY()) || iconInterceptedTouch) && !listView.scrollingByUser) {
                     ev.offsetLocation(-iconX, -iconY);
                     if (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) {
@@ -637,24 +647,26 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LIMITS, R.drawable.msg_premium_limits, LocaleController.getString("PremiumPreviewLimits", R.string.PremiumPreviewLimits), LocaleController.formatString("PremiumPreviewLimitsDescription", R.string.PremiumPreviewLimitsDescription,
                 messagesController.channelsLimitPremium, messagesController.dialogFiltersLimitPremium, messagesController.dialogFiltersPinnedLimitPremium, messagesController.publicLinksLimitPremium, 4)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STORIES, R.drawable.msg_filled_stories, applyNewSpan(LocaleController.getString("PremiumPreviewStories", R.string.PremiumPreviewStories)), LocaleController.formatString("PremiumPreviewStoriesDescription", R.string.PremiumPreviewStoriesDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STORIES, R.drawable.msg_filled_stories, LocaleController.getString("PremiumPreviewStories", R.string.PremiumPreviewStories), LocaleController.formatString("PremiumPreviewStoriesDescription", R.string.PremiumPreviewStoriesDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_UPLOAD_LIMIT, R.drawable.msg_premium_uploads, LocaleController.getString("PremiumPreviewUploads", R.string.PremiumPreviewUploads), LocaleController.getString("PremiumPreviewUploadsDescription", R.string.PremiumPreviewUploadsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_DOWNLOAD_SPEED, R.drawable.msg_premium_speed, LocaleController.getString("PremiumPreviewDownloadSpeed", R.string.PremiumPreviewDownloadSpeed), LocaleController.getString("PremiumPreviewDownloadSpeedDescription", R.string.PremiumPreviewDownloadSpeedDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_VOICE_TO_TEXT, R.drawable.msg_premium_voice, LocaleController.getString("PremiumPreviewVoiceToText", R.string.PremiumPreviewVoiceToText), LocaleController.getString("PremiumPreviewVoiceToTextDescription", R.string.PremiumPreviewVoiceToTextDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADS, R.drawable.msg_premium_ads, LocaleController.getString("PremiumPreviewNoAds", R.string.PremiumPreviewNoAds), LocaleController.getString("PremiumPreviewNoAdsDescription", R.string.PremiumPreviewNoAdsDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_REACTIONS, R.drawable.msg_premium_reactions, LocaleController.getString("PremiumPreviewReactions2", R.string.PremiumPreviewReactions2), LocaleController.getString("PremiumPreviewReactions2Description", R.string.PremiumPreviewReactions2Description)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STICKERS, R.drawable.msg_premium_stickers, LocaleController.getString("PremiumPreviewStickers", R.string.PremiumPreviewStickers), LocaleController.getString("PremiumPreviewStickersDescription", R.string.PremiumPreviewStickersDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, LocaleController.getString("PremiumPreviewEmoji", R.string.PremiumPreviewEmoji), LocaleController.getString("PremiumPreviewEmojiDescription", R.string.PremiumPreviewEmojiDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.msg_premium_tools, LocaleController.getString("PremiumPreviewAdvancedChatManagement", R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString("PremiumPreviewAdvancedChatManagementDescription", R.string.PremiumPreviewAdvancedChatManagementDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, LocaleController.getString("PremiumPreviewProfileBadge", R.string.PremiumPreviewProfileBadge), LocaleController.getString("PremiumPreviewProfileBadgeDescription", R.string.PremiumPreviewProfileBadgeDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, LocaleController.getString("PremiumPreviewAnimatedProfiles", R.string.PremiumPreviewAnimatedProfiles), LocaleController.getString("PremiumPreviewAnimatedProfilesDescription", R.string.PremiumPreviewAnimatedProfilesDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_APPLICATION_ICONS, R.drawable.msg_premium_icons, LocaleController.getString("PremiumPreviewAppIcon", R.string.PremiumPreviewAppIcon), LocaleController.getString("PremiumPreviewAppIconDescription", R.string.PremiumPreviewAppIconDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.msg_premium_status, LocaleController.getString("PremiumPreviewEmojiStatus", R.string.PremiumPreviewEmojiStatus), LocaleController.getString("PremiumPreviewEmojiStatusDescription", R.string.PremiumPreviewEmojiStatusDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TRANSLATIONS, R.drawable.msg_premium_translate, LocaleController.getString("PremiumPreviewTranslations", R.string.PremiumPreviewTranslations), LocaleController.getString("PremiumPreviewTranslationsDescription", R.string.PremiumPreviewTranslationsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_REACTIONS, R.drawable.msg_premium_reactions, LocaleController.getString(R.string.PremiumPreviewReactions2), LocaleController.getString(R.string.PremiumPreviewReactions2Description)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STICKERS, R.drawable.msg_premium_stickers, LocaleController.getString(R.string.PremiumPreviewStickers), LocaleController.getString(R.string.PremiumPreviewStickersDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, LocaleController.getString(R.string.PremiumPreviewEmoji), LocaleController.getString(R.string.PremiumPreviewEmojiDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.msg_premium_tools, LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, LocaleController.getString(R.string.PremiumPreviewProfileBadge), LocaleController.getString(R.string.PremiumPreviewProfileBadgeDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, LocaleController.getString(R.string.PremiumPreviewAnimatedProfiles), LocaleController.getString(R.string.PremiumPreviewAnimatedProfilesDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_APPLICATION_ICONS, R.drawable.msg_premium_icons, LocaleController.getString(R.string.PremiumPreviewAppIcon), LocaleController.getString(R.string.PremiumPreviewAppIconDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.premium_status, LocaleController.getString(R.string.PremiumPreviewEmojiStatus), LocaleController.getString(R.string.PremiumPreviewEmojiStatusDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TRANSLATIONS, R.drawable.msg_premium_translate, LocaleController.getString(R.string.PremiumPreviewTranslations), LocaleController.getString(R.string.PremiumPreviewTranslationsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_WALLPAPER, R.drawable.premium_wallpaper, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewWallpaper)), LocaleController.getString(R.string.PremiumPreviewWallpaperDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_NAME_COLOR, R.drawable.premium_colors, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewProfileColor)), LocaleController.getString(R.string.PremiumPreviewProfileColorDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
-                if (messagesController.premiumFeaturesTypesToPosition.get(premiumFeatures.get(i).type, -1) == -1) {
+                if (messagesController.premiumFeaturesTypesToPosition.get(premiumFeatures.get(i).type, -1) == -1 && !BuildVars.DEBUG_PRIVATE_VERSION) {
                     premiumFeatures.remove(i);
                     i--;
                 }
@@ -678,7 +690,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     }
 
     private void updateBackgroundImage() {
-        if (contentView.getMeasuredWidth() == 0 || contentView.getMeasuredHeight() == 0) {
+        if (contentView.getMeasuredWidth() == 0 || contentView.getMeasuredHeight() == 0 || backgroundView == null || backgroundView.imageView == null) {
             return;
         }
         gradientTools.gradientMatrix(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight(), 0, 0);
@@ -1572,21 +1584,27 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     @Override
     public void onResume() {
         super.onResume();
-        backgroundView.imageView.setPaused(false);
-        backgroundView.imageView.setDialogVisible(false);
+        if (backgroundView != null && backgroundView.imageView != null) {
+            backgroundView.imageView.setPaused(false);
+            backgroundView.imageView.setDialogVisible(false);
+        }
         particlesView.setPaused(false);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        backgroundView.imageView.setDialogVisible(true);
-        particlesView.setPaused(true);
+        if (backgroundView != null && backgroundView.imageView != null) {
+            backgroundView.imageView.setDialogVisible(true);
+        }
+        if (particlesView != null) {
+            particlesView.setPaused(true);
+        }
     }
 
     @Override
     public boolean canBeginSlide() {
-        return !backgroundView.imageView.touched;
+        return backgroundView == null || backgroundView.imageView == null || !backgroundView.imageView.touched;
     }
 
     @Override
@@ -1604,11 +1622,13 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         }
         actionBar.setItemsColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), false);
         actionBar.setItemsBackgroundColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), 60), false);
-        backgroundView.titleView.setTextColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay));
-        backgroundView.subtitleView.setTextColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay));
         particlesView.drawable.updateColors();
-        if (backgroundView.imageView.mRenderer != null) {
-            backgroundView.imageView.mRenderer.updateColors();
+        if (backgroundView != null) {
+            backgroundView.titleView.setTextColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay));
+            backgroundView.subtitleView.setTextColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay));
+            if (backgroundView.imageView != null && backgroundView.imageView.mRenderer != null) {
+                backgroundView.imageView.mRenderer.updateColors();
+            }
         }
         updateBackgroundImage();
     }
@@ -1649,7 +1669,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     private void updateDialogVisibility(boolean isVisible) {
         if (isVisible != isDialogVisible) {
             isDialogVisible = isVisible;
-            backgroundView.imageView.setDialogVisible(isVisible);
+            if (backgroundView != null && backgroundView.imageView != null) {
+                backgroundView.imageView.setDialogVisible(isVisible);
+            }
             particlesView.setPaused(isVisible);
             contentView.invalidate();
         }

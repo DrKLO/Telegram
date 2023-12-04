@@ -18,11 +18,10 @@ import android.graphics.Canvas;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -31,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.collection.ArraySet;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
@@ -55,14 +55,15 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LoadingCell;
@@ -72,12 +73,15 @@ import org.telegram.ui.Charts.BaseChartView;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.data.StackLinearChartData;
 import org.telegram.ui.Charts.view_data.ChartHeaderView;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatAvatarContainer;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Stories.StoriesListPlaceProvider;
+import org.telegram.ui.Stories.StoriesUtilities;
 
 import java.util.ArrayList;
 
@@ -93,19 +97,22 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
     private MessageObject messageObject;
     private StatisticActivity.ChartViewData interactionsViewData;
+    private StatisticActivity.ChartViewData reactionsByEmotionData;
     private LruCache<ChartData> childDataCache = new LruCache<>(15);
     private StatisticActivity.ZoomCancelable lastCancelable;
 
-    private ArrayList<TLRPC.Message> messages = new ArrayList<>();
+    private ArrayList<MessageObject> messages = new ArrayList<>();
     private boolean statsLoaded;
     private boolean loading;
     private boolean firstLoaded;
+    private String nextOffset = null;
 
     private int headerRow;
     private int startRow;
     private int endRow;
     private int loadingRow;
     private int interactionsChartRow;
+    private int reactionsByEmotionChartRow;
     private int overviewRow;
     private int overviewHeaderRow;
     private int emptyRow;
@@ -122,6 +129,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
     ImageReceiver thumbImage;
     boolean drawPlay;
+    boolean hasThumb;
 
     private final Runnable showProgressbar = new Runnable() {
         @Override
@@ -132,6 +140,8 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
     private FrameLayout listContainer;
     private ChatAvatarContainer avatarContainer;
     private BaseChartView.SharedUiComponents sharedUi;
+    private boolean needActionbarMenu;
+    private StatisticActivity.RecentPostInfo recentPostInfo;
 
     public MessageStatisticActivity(MessageObject message) {
         messageObject = message;
@@ -146,6 +156,19 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         this.chat = getMessagesController().getChatFull(chatId);
     }
 
+    public MessageStatisticActivity(StatisticActivity.RecentPostInfo recentPostInfo, long chatId, boolean needActionbarMenu) {
+        this(recentPostInfo.message, chatId, needActionbarMenu);
+        this.recentPostInfo = recentPostInfo;
+    }
+
+    public MessageStatisticActivity(MessageObject message, long chatId, boolean needActionbarMenu) {
+        messageObject = message;
+        messageId = 0;
+        this.chatId = chatId;
+        this.chat = getMessagesController().getChatFull(chatId);
+        this.needActionbarMenu = needActionbarMenu;
+    }
+
     private void updateRows() {
         shadowDivideCells.clear();
         headerRow = -1;
@@ -153,6 +176,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         endRow = -1;
         loadingRow = -1;
         interactionsChartRow = -1;
+        reactionsByEmotionChartRow = -1;
         overviewHeaderRow = -1;
         overviewRow = -1;
 
@@ -176,6 +200,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             shadowDivideCells.add(rowCount++);
             if (interactionsViewData != null) {
                 interactionsChartRow = rowCount++;
+                shadowDivideCells.add(rowCount++);
+            }
+            if (reactionsByEmotionData != null) {
+                reactionsByEmotionChartRow = rowCount++;
                 shadowDivideCells.add(rowCount++);
             }
 
@@ -220,12 +248,8 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
-            if (chat == null &&  chatFull.id == chatId) {
-                TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
-                if (chatLocal != null) {
-                    avatarContainer.setChatAvatar(chatLocal);
-                    avatarContainer.setTitle(chatLocal.title);
-                }
+            if (chat == null && chatFull.id == chatId) {
+                setAvatarAndTitle();
                 chat = chatFull;
                 loadStat();
                 loadChats(100);
@@ -234,12 +258,23 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         }
     }
 
+    private boolean checkIsDeletedStory(MessageObject message) {
+        if (message == null || !message.isStory()) {
+            return false;
+        }
+        if (message.storyItem instanceof TL_stories.TL_storyItemDeleted) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.story_bomb1, LocaleController.getString("StoryNotFound", R.string.StoryNotFound)).show();
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
         fragmentView = new FrameLayout(context);
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, getResourceProvider()));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         emptyView = new EmptyTextProgressView(context);
@@ -257,14 +292,14 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         TextView loadingTitle = new TextView(context);
         loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         loadingTitle.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
+        loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
         loadingTitle.setText(LocaleController.getString("LoadingStats", R.string.LoadingStats));
         loadingTitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         TextView loadingSubtitle = new TextView(context);
         loadingSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+        loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
         loadingSubtitle.setTag(Theme.key_player_actionBarSubtitle);
         loadingSubtitle.setText(LocaleController.getString("LoadingStatsDescription", R.string.LoadingStatsDescription));
         loadingSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -276,7 +311,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         frameLayout.addView(progressLayout, LayoutHelper.createFrame(240, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 30));
 
-        listView = new RecyclerListView(context);
+        listView = new RecyclerListView(context, getResourceProvider());
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         ((SimpleItemAnimator) listView.getItemAnimator()).setSupportsChangeAnimations(false);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
@@ -284,20 +319,68 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         listView.setOnItemClickListener((view, position) -> {
             if (position >= startRow && position < endRow) {
-                TLRPC.Message message = messages.get(position - startRow);
-                long did =  MessageObject.getDialogId(message);
+                MessageObject message = messages.get(position - startRow);
+                if (message.isStory()) {
+                    if (checkIsDeletedStory(message)) {
+                        return;
+                    }
+                    getOrCreateStoryViewer().open(getContext(), message.storyItem, StoriesListPlaceProvider.of(listView));
+                    return;
+                }
+                long did = MessageObject.getDialogId(message.messageOwner);
                 Bundle args = new Bundle();
                 if (DialogObject.isUserDialog(did)) {
                     args.putLong("user_id", did);
                 } else {
                     args.putLong("chat_id", -did);
                 }
-                args.putInt("message_id", message.id);
+                args.putInt("message_id", message.getId());
                 args.putBoolean("need_remove_previous_same_chat_activity", false);
                 if (getMessagesController().checkCanOpenChat(args, this)) {
                     presentFragment(new ChatActivity(args));
                 }
             }
+        });
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (position >= startRow && position < endRow) {
+                try {
+                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                } catch (Exception ignore) {}
+                MessageObject message = messages.get(position - startRow);
+                final long did = MessageObject.getDialogId(message.messageOwner);
+                final boolean isDialog = DialogObject.isUserDialog(did);
+                final ArrayList<String> items = new ArrayList<>();
+                final ArrayList<Integer> actions = new ArrayList<>();
+                final ArrayList<Integer> icons = new ArrayList<>();
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), getResourceProvider());
+                if (message.isStory()) {
+                    items.add(isDialog ? LocaleController.getString("OpenProfile", R.string.OpenProfile) : LocaleController.getString("OpenChannel2", R.string.OpenChannel2));
+                    icons.add(isDialog ? R.drawable.msg_openprofile : R.drawable.msg_channel);
+                } else {
+                    items.add(LocaleController.getString("ViewMessage", R.string.ViewMessage));
+                    icons.add(R.drawable.msg_msgbubble3);
+                }
+                actions.add(0);
+                builder.setItems(items.toArray(new CharSequence[actions.size()]), AndroidUtilities.toIntArray(icons), (dialogInterface, i) -> {
+                    if (message.isStory()) {
+                        presentFragment(isDialog ? ProfileActivity.of(did) : ChatActivity.of(did));
+                    } else {
+                        Bundle args = new Bundle();
+                        if (isDialog) {
+                            args.putLong("user_id", did);
+                        } else {
+                            args.putLong("chat_id", -did);
+                        }
+                        args.putInt("message_id", message.getId());
+                        args.putBoolean("need_remove_previous_same_chat_activity", false);
+                        if (getMessagesController().checkCanOpenChat(args, this)) {
+                            presentFragment(new ChatActivity(args));
+                        }
+                    }
+                });
+                showDialog(builder.create());
+            }
+            return false;
         });
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -335,8 +418,19 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
-                thumbImage.setImageCoords(avatarContainer.getSubtitleTextView().getX(), avatarContainer.getSubtitleTextView().getY(), AndroidUtilities.dp(18), AndroidUtilities.dp(18));
-                thumbImage.draw(canvas);
+                thumbImage.setImageCoords(
+                        avatarContainer.getAvatarImageView().getX(),
+                        avatarContainer.getAvatarImageView().getY(),
+                        avatarContainer.getAvatarImageView().getWidth(),
+                        avatarContainer.getAvatarImageView().getHeight());
+
+                if (hasThumb) {
+                    canvas.save();
+                    canvas.scale(0.9f, 0.9f, thumbImage.getCenterX(), thumbImage.getCenterY());
+                    thumbImage.draw(canvas);
+                    canvas.restore();
+                }
+
                 if (drawPlay) {
                     int x = (int) (thumbImage.getCenterX() - Theme.dialogs_playDrawable.getIntrinsicWidth() / 2);
                     int y = (int) (thumbImage.getCenterY() - Theme.dialogs_playDrawable.getIntrinsicHeight() / 2);
@@ -360,65 +454,66 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         thumbImage = new ImageReceiver();
         thumbImage.setParentView(avatarContainer);
-        thumbImage.setRoundRadius(AndroidUtilities.dp(2));
-        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 56 : 0, 0, 40, 0));
+        thumbImage.setRoundRadius(AndroidUtilities.dp(9));
 
-        TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
-        if (chatLocal != null) {
-            avatarContainer.setChatAvatar(chatLocal);
-            avatarContainer.setTitle(chatLocal.title);
-        }
-
-        boolean hasThumb = false;
-
-        if (!messageObject.needDrawBluredPreview() && (messageObject.isPhoto() || messageObject.isNewGif() || messageObject.isVideo())) {
-            String type = messageObject.isWebpage() ? messageObject.messageOwner.media.webpage.type : null;
-            if (!("app".equals(type) || "profile".equals(type) || "article".equals(type) || type != null && type.startsWith("telegram_"))) {
-                TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 40);
-                TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
-                if (smallThumb == bigThumb) {
-                    bigThumb = null;
-                }
-                if (smallThumb != null) {
-                    hasThumb = true;
-                    drawPlay = messageObject.isVideo();
-                    String fileName = FileLoader.getAttachFileName(bigThumb);
-                    if (messageObject.mediaExists || DownloadController.getInstance(currentAccount).canDownloadMedia(messageObject) || FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
-                        int size;
-                        if (messageObject.type == MessageObject.TYPE_PHOTO) {
-                            size = bigThumb != null ? bigThumb.size : 0;
+        hasThumb = false;
+        if (!messageObject.isStory()) {
+            if (!messageObject.needDrawBluredPreview() && (messageObject.isPhoto() || messageObject.isNewGif() || messageObject.isVideo())) {
+                String type = messageObject.isWebpage() ? messageObject.messageOwner.media.webpage.type : null;
+                if (!("app".equals(type) || "profile".equals(type) || "article".equals(type) || type != null && type.startsWith("telegram_"))) {
+                    TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 50);
+                    TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                    if (smallThumb == bigThumb) {
+                        bigThumb = null;
+                    }
+                    if (smallThumb != null) {
+                        hasThumb = true;
+                        drawPlay = messageObject.isVideo();
+                        String fileName = FileLoader.getAttachFileName(bigThumb);
+                        if (messageObject.mediaExists || DownloadController.getInstance(currentAccount).canDownloadMedia(messageObject) || FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                            int size;
+                            if (messageObject.type == MessageObject.TYPE_PHOTO) {
+                                size = bigThumb != null ? bigThumb.size : 0;
+                            } else {
+                                size = 0;
+                            }
+                            thumbImage.setImage(ImageLocation.getForObject(bigThumb, messageObject.photoThumbsObject), "50_50", ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "50_50", size, null, messageObject, 0);
                         } else {
-                            size = 0;
+                            thumbImage.setImage(null, null, ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "50_50", (Drawable) null, messageObject, 0);
                         }
-                        thumbImage.setImage(ImageLocation.getForObject(bigThumb, messageObject.photoThumbsObject), "20_20", ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "20_20", size, null, messageObject, 0);
-                    } else {
-                        thumbImage.setImage(null, null, ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "20_20", (Drawable) null, messageObject, 0);
                     }
                 }
             }
-        }
 
-        CharSequence message;
-        if (!TextUtils.isEmpty(messageObject.caption)) {
-            message = messageObject.caption;
-        } else if (!TextUtils.isEmpty(messageObject.messageOwner.message)) {
-            message = messageObject.messageText;
-            if (message.length() > 150) {
-                message = message.subSequence(0, 150);
+            CharSequence message;
+            if (!TextUtils.isEmpty(messageObject.caption)) {
+                message = messageObject.caption;
+            } else if (!TextUtils.isEmpty(messageObject.messageOwner.message)) {
+                message = messageObject.messageText;
+                if (message.length() > 150) {
+                    message = message.subSequence(0, 150);
+                }
+                message = Emoji.replaceEmoji(message, avatarContainer.getSubtitleTextView().getTextPaint().getFontMetricsInt(), AndroidUtilities.dp(17), false);
+            } else {
+                message = messageObject.messageText;
             }
-            message = Emoji.replaceEmoji(message, avatarContainer.getSubtitleTextView().getTextPaint().getFontMetricsInt(), AndroidUtilities.dp(17), false);
-        } else {
-            message = messageObject.messageText;
+
+            if (messageObject.isVideo() || messageObject.isPhoto()) {
+                avatarContainer.hideSubtitle();
+            } else {
+                avatarContainer.setSubtitle(message);
+            }
         }
 
-        if (hasThumb) {
-            SpannableStringBuilder builder = new SpannableStringBuilder(message);
-            builder.insert(0, " ");
-            builder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(18 + 6)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            avatarContainer.setSubtitle(builder);
-        } else {
-            avatarContainer.setSubtitle(messageObject.messageText);
+        int avatarContainerMarginLeft = 56;
+        if (hasThumb || messageObject.isStory()) {
+            avatarContainer.setRightAvatarPadding(-AndroidUtilities.dp(3));
+            avatarContainerMarginLeft = 50;
         }
+        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? avatarContainerMarginLeft : 0, 0, 40, 0));
+
+        setAvatarAndTitle();
+
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -427,26 +522,25 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                     finishFragment();
                 } else if (id == 1) {
                     Bundle args = new Bundle();
-                    if (messageObject.messageOwner.fwd_from == null) {
-                        args.putLong("chat_id", messageObject.getChatId());
-                    } else {
-                        args.putLong("chat_id", -messageObject.getFromChatId());
-                    }
+                    args.putLong("chat_id", chatId);
                     presentFragment(new StatisticActivity(args));
                 }
             }
         });
 
-        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
-        avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector, getResourceProvider()), false);
+        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
 
         avatarContainer.setOnClickListener(view -> {
+            if (messageObject.isStory()) {
+                return;
+            }
             if (getParentLayout().getFragmentStack().size() > 1) {
                 BaseFragment previousFragemnt = getParentLayout().getFragmentStack().get(getParentLayout().getFragmentStack().size() - 2);
-                if (previousFragemnt instanceof ChatActivity &&  ((ChatActivity) previousFragemnt).getCurrentChat().id  == chatId) {
+                if (previousFragemnt instanceof ChatActivity && ((ChatActivity) previousFragemnt).getCurrentChat().id == chatId) {
                     finishFragment();
                     return;
                 }
@@ -463,7 +557,35 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         return fragmentView;
     }
 
+    private void setAvatarAndTitle() {
+        if (messageObject.isStory()) {
+            avatarContainer.setTitle(LocaleController.getString("StoryStatistics", R.string.StoryStatistics));
+            avatarContainer.hideSubtitle();
+            avatarContainer.allowDrawStories = true;
+            avatarContainer.setStoriesForceState(StoriesUtilities.STATE_HAS_UNREAD);
+            if (messageObject.photoThumbs != null) {
+                TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 50);
+                avatarContainer.getAvatarImageView().setImage(
+                        ImageLocation.getForObject(size, messageObject.photoThumbsObject), "50_50",
+                        ImageLocation.getForObject(thumbSize, messageObject.photoThumbsObject), "b1", 0, messageObject);
+                avatarContainer.setClipChildren(false);
+                avatarContainer.getAvatarImageView().setScaleX(0.96f);
+                avatarContainer.getAvatarImageView().setScaleY(0.96f);
+            }
+        } else {
+            avatarContainer.setTitle(LocaleController.getString("PostStatistics", R.string.PostStatistics));
+            TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
+            if (chatLocal != null && !hasThumb) {
+                avatarContainer.setChatAvatar(chatLocal);
+            }
+        }
+    }
+
     private void updateMenu() {
+        if (!needActionbarMenu) {
+            return;
+        }
         if (chat != null && chat.can_view_stats) {
             ActionBarMenu menu = actionBar.createMenu();
             menu.clearItems();
@@ -480,6 +602,54 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+        if (messageObject.isStory()) {
+            TLRPC.TL_stats_getStoryPublicForwards req = new TLRPC.TL_stats_getStoryPublicForwards();
+            req.limit = count;
+            req.id = messageObject.storyItem.id;
+            req.peer = getMessagesController().getInputPeer(-chatId);
+            req.offset = nextOffset == null ? "" : nextOffset;
+            int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (error == null) {
+                    TLRPC.TL_stats_publicForwards res = (TLRPC.TL_stats_publicForwards) response;
+                    if ((res.flags & 1) != 0) {
+                        nextOffset = res.next_offset;
+                    } else {
+                        nextOffset = null;
+                    }
+                    if (res.count != 0) {
+                        publicChats = res.count;
+                    } else if (publicChats == 0) {
+                        publicChats = res.forwards.size();
+                    }
+                    endReached = nextOffset == null;
+                    getMessagesController().putChats(res.chats, false);
+                    getMessagesController().putUsers(res.users, false);
+
+                    for (TLRPC.PublicForward forward : res.forwards) {
+                        if (forward instanceof TL_stories.TL_publicForwardStory) {
+                            TL_stories.TL_publicForwardStory forwardStory = (TL_stories.TL_publicForwardStory) forward;
+                            forwardStory.story.dialogId = DialogObject.getPeerDialogId(forwardStory.peer);
+                            forwardStory.story.messageId = forwardStory.story.id;
+                            MessageObject msg = new MessageObject(currentAccount, forwardStory.story);
+                            msg.generateThumbs(false);
+                            messages.add(msg);
+                        } else if (forward instanceof TLRPC.TL_publicForwardMessage) {
+                            TLRPC.TL_publicForwardMessage forwardMessage = (TLRPC.TL_publicForwardMessage) forward;
+                            messages.add(new MessageObject(currentAccount, forwardMessage.message, false, true));
+                        }
+                    }
+
+                    if (emptyView != null) {
+                        emptyView.showTextView();
+                    }
+                }
+                firstLoaded = true;
+                loading = false;
+                updateRows();
+            }), null, null, 0, chat.stats_dc, ConnectionsManager.ConnectionTypeGeneric, true);
+            getConnectionsManager().bindRequestToGuid(reqId, classGuid);
+            return;
+        }
         TLRPC.TL_stats_getMessagePublicForwards req = new TLRPC.TL_stats_getMessagePublicForwards();
         req.limit = count;
         if (messageObject.messageOwner.fwd_from != null) {
@@ -490,7 +660,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
         }
         if (!messages.isEmpty()) {
-            TLRPC.Message message = messages.get(messages.size() - 1);
+            TLRPC.Message message = messages.get(messages.size() - 1).messageOwner;
             req.offset_id = message.id;
             req.offset_peer = getMessagesController().getInputPeer(MessageObject.getDialogId(message));
             req.offset_rate = nextRate;
@@ -511,7 +681,9 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 endReached = !(res instanceof TLRPC.TL_messages_messagesSlice);
                 getMessagesController().putChats(res.chats, false);
                 getMessagesController().putUsers(res.users, false);
-                messages.addAll(res.messages);
+                for (int i = 0; i < res.messages.size(); i++) {
+                    messages.add(new MessageObject(currentAccount, res.messages.get(i), false, true));
+                }
                 if (emptyView != null) {
                     emptyView.showTextView();
                 }
@@ -524,22 +696,45 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
     }
 
     private void loadStat() {
-        TLRPC.TL_stats_getMessageStats req = new TLRPC.TL_stats_getMessageStats();
-        if (messageObject.messageOwner.fwd_from != null) {
-            req.msg_id = messageObject.messageOwner.fwd_from.saved_from_msg_id;
-            req.channel = getMessagesController().getInputChannel(-messageObject.getFromChatId());
+        TLObject reqObject;
+        if (messageObject.isStory()) {
+            TL_stories.TL_stats_getStoryStats req = new TL_stories.TL_stats_getStoryStats();
+            req.id = messageObject.storyItem.id;
+            req.peer = getMessagesController().getInputPeer(-chatId);
+            reqObject = req;
         } else {
-            req.msg_id = messageObject.getId();
-            req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
+            TLRPC.TL_stats_getMessageStats req = new TLRPC.TL_stats_getMessageStats();
+            if (messageObject.messageOwner.fwd_from != null) {
+                req.msg_id = messageObject.messageOwner.fwd_from.saved_from_msg_id;
+                req.channel = getMessagesController().getInputChannel(-messageObject.getFromChatId());
+            } else {
+                req.msg_id = messageObject.getId();
+                req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
+            }
+            reqObject = req;
         }
-        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+
+        getConnectionsManager().sendRequest(reqObject, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             statsLoaded = true;
             if (error != null) {
                 updateRows();
                 return;
             }
-            TLRPC.TL_stats_messageStats res = (TLRPC.TL_stats_messageStats) response;
-            interactionsViewData = StatisticActivity.createViewData(res.views_graph, LocaleController.getString("InteractionsChartTitle", R.string.InteractionsChartTitle), 1, false);
+
+            TLRPC.StatsGraph views_graph;
+            TLRPC.StatsGraph reactions_by_emotion_graph;
+            if (response instanceof TL_stories.TL_stats_storyStats) {
+                TL_stories.TL_stats_storyStats res = (TL_stories.TL_stats_storyStats) response;
+                views_graph = res.views_graph;
+                reactions_by_emotion_graph = res.reactions_by_emotion_graph;
+            } else {
+                TLRPC.TL_stats_messageStats res = (TLRPC.TL_stats_messageStats) response;
+                views_graph = res.views_graph;
+                reactions_by_emotion_graph = res.reactions_by_emotion_graph;
+            }
+
+            interactionsViewData = StatisticActivity.createViewData(views_graph, LocaleController.getString("ViewsAndSharesChartTitle", R.string.ViewsAndSharesChartTitle), 1, false);
+            reactionsByEmotionData = StatisticActivity.createViewData(reactions_by_emotion_graph, LocaleController.getString("ReactionsByEmotionChartTitle", R.string.ReactionsByEmotionChartTitle), 2, false);
             if (interactionsViewData != null && interactionsViewData.chartData.x.length <= 5) {
                 statsLoaded = false;
                 TLRPC.TL_stats_loadAsyncGraph request = new TLRPC.TL_stats_loadAsyncGraph();
@@ -622,20 +817,23 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             View view;
             switch (viewType) {
                 case 0:
-                    view = new ManageChatUserCell(mContext, 6, 2, false);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ManageChatUserCell cell = new ManageChatUserCell(mContext, 6, 2, false, getResourceProvider());
+                    cell.setDividerColor(Theme.key_divider);
+                    view = cell;
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 1:
-                    view = new ShadowSectionCell(mContext);
+                    view = new ShadowSectionCell(mContext, getResourceProvider());
                     break;
                 case 2:
-                    HeaderCell headerCell = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 16, 11, false);
-                    headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    HeaderCell headerCell = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlackText, 16, 11, false, getResourceProvider());
+                    headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     headerCell.setHeight(43);
                     view = headerCell;
                     break;
                 case 4:
-                    view = new StatisticActivity.BaseChartCell(mContext, 1, sharedUi = new BaseChartView.SharedUiComponents()) {
+                case 7:
+                    view = new StatisticActivity.BaseChartCell(mContext, viewType == 4 ? 1 : 2, sharedUi = new BaseChartView.SharedUiComponents(getResourceProvider()), getResourceProvider()) {
 
                         @Override
                         public void onZoomed() {
@@ -729,17 +927,17 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                             //  viewData.load(currentAccount, classGuid, );
                         }
                     };
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 5:
                     view = new OverviewCell(mContext);
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 6:
                     view = new EmptyCell(mContext, 16);
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 16));
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 3:
                 default:
@@ -754,26 +952,38 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             switch (holder.getItemViewType()) {
                 case 0:
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
-                    TLRPC.Message item = getItem(position);
-                    long did = MessageObject.getDialogId(item);
+                    MessageObject item = getItem(position);
+                    long did = MessageObject.getDialogId(item.messageOwner);
                     TLObject object;
                     String status = null;
-                    if (DialogObject.isUserDialog(did)) {
-                        object = getMessagesController().getUser(did);
-                    } else {
-                        object = getMessagesController().getChat(-did);
-                        TLRPC.Chat chat = (TLRPC.Chat) object;
-                        if (chat.participants_count != 0) {
-                            if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                                status = LocaleController.formatPluralString("Subscribers", chat.participants_count);
-                            } else {
-                                status = LocaleController.formatPluralString("Members", chat.participants_count);
-                            }
-                            status = String.format("%1$s, %2$s", status, LocaleController.formatPluralString("Views", item.views));
-                        }
-                    }
-                    if (object != null) {
+                    if (item.isStory()) {
+                        object = DialogObject.isUserDialog(did) ? getMessagesController().getUser(did) : getMessagesController().getChat(-did);
+                        boolean isZeroViews = item.storyItem.views == null || item.storyItem.views.views_count == 0;
+                        status = isZeroViews ? LocaleController.getString("NoViews", R.string.NoViews) : LocaleController.formatPluralString("Views", item.storyItem.views.views_count);
                         userCell.setData(object, null, status, position != endRow - 1);
+                        userCell.setStoryItem(item.storyItem, v -> {
+                            if (checkIsDeletedStory(item)) {
+                                return;
+                            }
+                            getOrCreateStoryViewer().open(getContext(), item.storyItem, StoriesListPlaceProvider.of(listView));
+                        });
+                    } else {
+                        userCell.setStoryItem(null, null);
+                        if (DialogObject.isUserDialog(did)) {
+                            object = getMessagesController().getUser(did);
+                        } else {
+                            object = getMessagesController().getChat(-did);
+                            TLRPC.Chat chat = (TLRPC.Chat) object;
+                            if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                status = LocaleController.formatPluralString("Views", item.messageOwner.views);
+                            } else if (chat.participants_count != 0) {
+                                status = LocaleController.formatPluralString("Members", chat.participants_count);
+                                status = String.format("%1$s, %2$s", status, LocaleController.formatPluralString("Views", item.messageOwner.views));
+                            }
+                        }
+                        if (object != null) {
+                            userCell.setData(object, null, status, position != endRow - 1);
+                        }
                     }
                     break;
                 case 1:
@@ -782,9 +992,13 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 case 2:
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == overviewHeaderRow) {
+                        headerCell.setTopMargin(9);
+                        headerCell.setPadding(0, 0, 0, AndroidUtilities.dp(8));
                         headerCell.setText(LocaleController.formatString("StatisticOverview", R.string.StatisticOverview));
                     } else {
-                        headerCell.setText(LocaleController.formatPluralString("PublicSharesCount", publicChats));
+                        headerCell.setTopMargin(11);
+                        headerCell.setPadding(0, 0, 0, 0);
+                        headerCell.setText(LocaleController.formatString("PublicShares", R.string.PublicShares));
                     }
                     break;
                 case 4:
@@ -795,6 +1009,11 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 case 5:
                     OverviewCell overviewCell = (OverviewCell) holder.itemView;
                     overviewCell.setData();
+                    break;
+                case 7:
+                    StatisticActivity.BaseChartCell chartCell2 = (StatisticActivity.BaseChartCell) holder.itemView;
+                    chartCell2.updateData(reactionsByEmotionData, false);
+                    chartCell2.setLayoutParams(new RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
                     break;
             }
         }
@@ -820,11 +1039,13 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 return 5;
             } else if (position == emptyRow) {
                 return 6;
+            } else if (position == reactionsByEmotionChartRow) {
+                return 7;
             }
             return 0;
         }
 
-        public TLRPC.Message getItem(int position) {
+        public MessageObject getItem(int position) {
             if (position >= startRow && position < endRow) {
                 return messages.get(position - startRow);
             }
@@ -834,64 +1055,90 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
     public class OverviewCell extends LinearLayout {
 
-        TextView[] primary = new TextView[3];
-        TextView[] title = new TextView[3];
-        View[] cell = new View[3];
+        TextView[] primary = new TextView[4];
+        TextView[] title = new TextView[4];
 
         public OverviewCell(Context context) {
             super(context);
             setOrientation(VERTICAL);
             setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(16));
-            LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setOrientation(HORIZONTAL);
+            for (int i = 0; i < 2; i++) {
+                LinearLayout linearLayout = new LinearLayout(context);
+                linearLayout.setOrientation(HORIZONTAL);
 
-            for (int j = 0; j < 3; j++) {
-                LinearLayout contentCell = new LinearLayout(context);
-                cell[j] = contentCell;
-                contentCell.setOrientation(VERTICAL);
+                for (int j = 0; j < 2; j++) {
+                    LinearLayout contentCell = new LinearLayout(context);
+                    contentCell.setOrientation(VERTICAL);
 
-                primary[j] = new TextView(context);
-                title[j] = new TextView(context);
+                    LinearLayout infoLayout = new LinearLayout(context);
+                    infoLayout.setOrientation(HORIZONTAL);
+                    primary[i * 2 + j] = new TextView(context);
+                    title[i * 2 + j] = new TextView(context);
 
-                primary[j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                primary[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-                title[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    primary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+                    title[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    title[i * 2 + j].setGravity(Gravity.LEFT);
 
-                contentCell.addView(primary[j]);
-                contentCell.addView(title[j]);
-                linearLayout.addView(contentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f));
+                    infoLayout.addView(primary[i * 2 + j]);
+
+                    contentCell.addView(infoLayout);
+                    contentCell.addView(title[i * 2 + j]);
+                    linearLayout.addView(contentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f));
+                }
+                addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, i == 0 ? 16 : 0));
             }
-            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
         public void setData() {
-            primary[0].setText(AndroidUtilities.formatWholeNumber(messageObject.messageOwner.views, 0));
+            int views;
+            int forwards;
+            int reactions;
+
+            if (recentPostInfo != null) {
+                views = recentPostInfo.getViews();
+                forwards = recentPostInfo.getForwards();
+                reactions = recentPostInfo.getReactions();
+            } else {
+                views = messageObject.isStory() ? messageObject.storyItem.views.views_count : messageObject.messageOwner.views;
+                forwards = messageObject.isStory() ? messageObject.storyItem.views.forwards_count : messageObject.messageOwner.forwards;
+                reactions = 0;
+                if (messageObject.isStory()) {
+                    reactions = messageObject.storyItem.views.reactions_count;
+                } else {
+                    if (messageObject.messageOwner.reactions != null) {
+                        for (int i = 0; i < messageObject.messageOwner.reactions.results.size(); i++) {
+                            reactions += messageObject.messageOwner.reactions.results.get(i).count;
+                        }
+                    }
+                }
+            }
+
+            primary[0].setText(AndroidUtilities.formatWholeNumber(views, 0));
             title[0].setText(LocaleController.getString("StatisticViews", R.string.StatisticViews));
 
-            if (publicChats > 0) {
-                cell[1].setVisibility(View.VISIBLE);
-                primary[1].setText(AndroidUtilities.formatWholeNumber(publicChats, 0));
-                title[1].setText(LocaleController.formatString("PublicShares", R.string.PublicShares));
-            } else {
-                cell[1].setVisibility(View.GONE);
+            primary[1].setText(AndroidUtilities.formatWholeNumber(publicChats, 0));
+            title[1].setText(LocaleController.formatString("PublicShares", R.string.PublicShares));
+
+            primary[2].setText(AndroidUtilities.formatWholeNumber(reactions, 0));
+            title[2].setText(LocaleController.formatString("Reactions", R.string.Reactions));
+
+            boolean isReactionsNotVisible = chat != null && chat.available_reactions instanceof TLRPC.TL_chatReactionsNone && reactions == 0;
+            if (isReactionsNotVisible) {
+                ((ViewGroup) title[2].getParent()).setVisibility(GONE);
             }
 
-            int privateChats = messageObject.messageOwner.forwards - publicChats;
-            if (privateChats > 0) {
-                cell[2].setVisibility(View.VISIBLE);
-                primary[2].setText(AndroidUtilities.formatWholeNumber(privateChats, 0));
-                title[2].setText(LocaleController.formatString("PrivateShares", R.string.PrivateShares));
-            } else {
-                cell[2].setVisibility(View.GONE);
-            }
+            int privateChats = Math.max(0, forwards - publicChats);
+            primary[3].setText(AndroidUtilities.formatWholeNumber(privateChats, 0));
+            title[3].setText(LocaleController.formatString("PrivateShares", R.string.PrivateShares));
 
             updateColors();
         }
 
         private void updateColors() {
-            for (int i = 0; i < 3; i++) {
-                primary[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                title[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            for (int i = 0; i < 4; i++) {
+                primary[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, getResourceProvider()));
+                title[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, getResourceProvider()));
             }
         }
     }
@@ -924,7 +1171,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 sharedUi.invalidate();
             }
 
-            avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+            avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
         };
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
@@ -960,6 +1207,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubmenuItemIcon));
 
         StatisticActivity.putColorFromData(interactionsViewData, themeDescriptions, cellDelegate);
+        StatisticActivity.putColorFromData(reactionsByEmotionData, themeDescriptions, cellDelegate);
         return themeDescriptions;
     }
 
@@ -968,10 +1216,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             ((ManageChatUserCell) child).update(0);
         } else if (child instanceof StatisticActivity.BaseChartCell) {
             ((StatisticActivity.BaseChartCell) child).recolor();
-            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
         } else if (child instanceof ShadowSectionCell) {
             Drawable shadowDrawable = Theme.getThemedDrawableByKey(ApplicationLoader.applicationContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-            Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
+            Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, getResourceProvider()));
             CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
             combinedDrawable.setFullsize(true);
             child.setBackground(combinedDrawable);
@@ -979,10 +1227,16 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             ((ChartHeaderView) child).recolor();
         } else if (child instanceof OverviewCell) {
             ((OverviewCell) child).updateColors();
-            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
         }
         if (child instanceof EmptyCell) {
-            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            child.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
         }
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider());
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

@@ -219,6 +219,26 @@ public final class BulletinFactory {
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
+
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, int maxLines, int duration) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(iconRawId, 36, 36);
+        if (text != null) {
+            String string = text.toString();
+            SpannableStringBuilder ssb = text instanceof SpannableStringBuilder ? (SpannableStringBuilder) text : new SpannableStringBuilder(text);
+            for (int index = string.indexOf('\n'), l = 0; index >= 0 && index < text.length(); l++, index = string.indexOf('\n', index + 1)) {
+                if (l >= maxLines) {
+                    ssb.replace(index, index + 1, " ");
+                }
+            }
+            text = ssb;
+        }
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(maxLines);
+        return create(layout, duration);
+    }
+
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence subtext) {
         final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
@@ -490,6 +510,20 @@ public final class BulletinFactory {
             layout.imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_undo_infoColor), PorterDuff.Mode.SRC_IN));
         }
         layout.setAnimation(document, 36, 36);
+        layout.textView.setText(text);
+        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createStaticEmojiBulletin(TLRPC.Document document, CharSequence text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        if (MessageObject.isTextColorEmoji(document)) {
+            layout.imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_undo_infoColor), PorterDuff.Mode.SRC_IN));
+        }
+        layout.setAnimation(document, 36, 36);
+        layout.imageView.stopAnimation();
         layout.textView.setText(text);
         layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         layout.textView.setSingleLine(false);

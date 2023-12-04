@@ -696,6 +696,8 @@ public class BlurringShader {
         public static final int BLUR_TYPE_MENU_BACKGROUND = 5;
         public static final int BLUR_TYPE_SHADOW = 6;
         public static final int BLUR_TYPE_EMOJI_VIEW = 7;
+        public static final int BLUR_TYPE_REPLY_BACKGROUND = 8;
+        public static final int BLUR_TYPE_REPLY_TEXT_XFER = 9;
 
         private final BlurManager manager;
         private final View view;
@@ -728,10 +730,9 @@ public class BlurringShader {
             } else if (type == BLUR_TYPE_CAPTION_XFER) {
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.8f);
-                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.45f);
-                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 2.5f);
-                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.8f);
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.3f);
+//                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
             } else if (type == BLUR_TYPE_CAPTION) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.35f);
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.7f);
@@ -747,7 +748,16 @@ public class BlurringShader {
                 AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 0.35f);
             } else if (type == BLUR_TYPE_EMOJI_VIEW) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.5f);
-                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .85f);
+                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .95f);
+            } else if (type == BLUR_TYPE_REPLY_BACKGROUND) {
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, -.15f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.47f);
+            } else if (type == BLUR_TYPE_REPLY_TEXT_XFER) {
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.45f);
+//                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
             }
             paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             oldPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));

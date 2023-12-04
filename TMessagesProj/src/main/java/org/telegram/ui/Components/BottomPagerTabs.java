@@ -46,6 +46,7 @@ public class BottomPagerTabs extends View {
         final AnimatedFloat nonscrollingT = new AnimatedFloat(BottomPagerTabs.this, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
         public int customEndFrameMid;
         public int customEndFrameEnd;
+        public boolean customFrameInvert;
 
         public Tab(int i, int resId, CharSequence text) {
             this.i = i;
@@ -68,6 +69,9 @@ public class BottomPagerTabs extends View {
 
         private boolean active;
         public void setActive(boolean active, boolean animated) {
+            if (customFrameInvert) {
+                active = !active;
+            }
             if (this.active == active) {
                 return;
             }

@@ -1,7 +1,10 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
@@ -46,7 +49,7 @@ public class VectorAvatarThumbDrawable extends Drawable implements AnimatedEmoji
         this.type = type;
         this.isPremium = isPremiumUser;
         int color1 = ColorUtils.setAlphaComponent(vectorImageMarkup.background_colors.get(0), 255);
-        int color2 =  vectorImageMarkup.background_colors.size() > 1 ? ColorUtils.setAlphaComponent(vectorImageMarkup.background_colors.get(1), 255) : 0;
+        int color2 = vectorImageMarkup.background_colors.size() > 1 ? ColorUtils.setAlphaComponent(vectorImageMarkup.background_colors.get(1), 255) : 0;
         int color3 = vectorImageMarkup.background_colors.size() > 2 ? ColorUtils.setAlphaComponent(vectorImageMarkup.background_colors.get(2), 255) : 0;
         int color4 = vectorImageMarkup.background_colors.size() > 3 ? ColorUtils.setAlphaComponent(vectorImageMarkup.background_colors.get(3), 255) : 0;
         gradientTools.setColors(color1, color2, color3, color4);
@@ -60,6 +63,7 @@ public class VectorAvatarThumbDrawable extends Drawable implements AnimatedEmoji
             }
 
             animatedEmojiDrawable = new AnimatedEmojiDrawable(cacheType, UserConfig.selectedAccount, emojiMarkup.emoji_id);
+            animatedEmojiDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         } else if (vectorImageMarkup instanceof TLRPC.TL_videoSizeStickerMarkup) {
             sizeStickerMarkup = (TLRPC.TL_videoSizeStickerMarkup) vectorImageMarkup;
             imageReceiver = new ImageReceiver() {

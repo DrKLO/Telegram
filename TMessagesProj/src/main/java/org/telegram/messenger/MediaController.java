@@ -613,7 +613,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public final static int VIDEO_BITRATE_360 = 750_000;
 
     public final static String VIDEO_MIME_TYPE = "video/avc";
-    public final static String AUIDO_MIME_TYPE = "audio/mp4a-latm";
+    public final static String AUDIO_MIME_TYPE = "audio/mp4a-latm";
 
     private final Object videoConvertSync = new Object();
 

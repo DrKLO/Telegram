@@ -257,8 +257,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private List<PasscodeView> overlayPasscodeViews = new ArrayList<>();
     private TermsOfServiceView termsOfServiceView;
     private BlockingUpdateView blockingUpdateView;
-    private AlertDialog visibleDialog;
-    private AlertDialog proxyErrorDialog;
+    public Dialog visibleDialog;
+    private Dialog proxyErrorDialog;
     private RecyclerListView sideMenu;
     private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
     private SideMenultItemAnimator itemAnimator;
@@ -266,7 +266,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private View rippleAbove;
     private IUpdateLayout updateLayout;
 
-    private AlertDialog localeDialog;
+    private Dialog localeDialog;
     private boolean loadingLocaleDialog;
     private HashMap<String, String> systemLocaleStrings;
     private HashMap<String, String> englishLocaleStrings;
@@ -950,7 +950,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         BotWebViewSheet webViewSheet = new BotWebViewSheet(this, getLastFragment().getResourceProvider());
         webViewSheet.setParentActivity(this);
         webViewSheet.requestWebView(currentAccount, attachMenuBot.bot_id, attachMenuBot.bot_id, attachMenuBot.short_name, null, BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON, 0, false, null, null, false, startApp, null,  BotWebViewSheet.FLAG_FROM_SIDE_MENU);
+        if (visibleDialog != null) {
+            visibleDialog.dismiss();
+            visibleDialog = null;
+        }
         webViewSheet.show();
+        visibleDialog = webViewSheet;
     }
 
     @Override
@@ -3244,10 +3249,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private int runCommentRequest(int intentAccount, Runnable dismissLoading, Integer messageId, Integer commentId, Integer threadId, TLRPC.Chat chat) {
-        return runCommentRequest(intentAccount, dismissLoading, messageId, commentId, threadId, chat, null, null, 0);
+        return runCommentRequest(intentAccount, dismissLoading, messageId, commentId, threadId, chat, null, null, 0, -1);
     }
 
-    private int runCommentRequest(int intentAccount, Runnable dismissLoading, Integer messageId, Integer commentId, Integer threadId, TLRPC.Chat chat, Runnable onOpened, String quote, int fromMessageId) {
+    private int runCommentRequest(int intentAccount, Runnable dismissLoading, Integer messageId, Integer commentId, Integer threadId, TLRPC.Chat chat, Runnable onOpened, String quote, int fromMessageId, int quoteOffset) {
         if (chat == null) {
             return 0;
         }
@@ -3266,7 +3271,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
                 if (!arrayList.isEmpty() || chat.forum && threadId != null && threadId == 1) {
                     if (chat.forum) {
-                        openTopicRequest(intentAccount, threadId, chat, commentId != null ? commentId : messageId, null, onOpened, quote, fromMessageId, arrayList);
+                        openTopicRequest(intentAccount, threadId, chat, commentId != null ? commentId : messageId, null, onOpened, quote, fromMessageId, arrayList, quoteOffset);
                         chatOpened = true;
                     } else {
                         Bundle args = new Bundle();
@@ -3276,13 +3281,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         chatActivity.setThreadMessages(arrayList, chat, req.msg_id, res.read_inbox_max_id, res.read_outbox_max_id, null);
                         if (commentId != null) {
                             if (quote != null) {
-                                chatActivity.setHighlightQuote(commentId, quote);
+                                chatActivity.setHighlightQuote(commentId, quote, quoteOffset);
                             } else {
                                 chatActivity.setHighlightMessageId(commentId);
                             }
                         } else if (threadId != null) {
                             if (quote != null) {
-                                chatActivity.setHighlightQuote(messageId, quote);
+                                chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
                             } else {
                                 chatActivity.setHighlightMessageId(messageId);
                             }
@@ -3314,7 +3319,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }));
     }
 
-    private void openTopicRequest(int intentAccount, int topicId, TLRPC.Chat chat, int messageId, TLRPC.TL_forumTopic forumTopic, Runnable whenDone, String quote, int fromMessageId, ArrayList<MessageObject> arrayList) {
+    private void openTopicRequest(int intentAccount, int topicId, TLRPC.Chat chat, int messageId, TLRPC.TL_forumTopic forumTopic, Runnable whenDone, String quote, int fromMessageId, ArrayList<MessageObject> arrayList, int quoteOffset) {
         if (forumTopic == null) {
             forumTopic = MessagesController.getInstance(intentAccount).getTopicsController().findTopic(chat.id, topicId);
         }
@@ -3335,7 +3340,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     MessagesController.getInstance(intentAccount).getTopicsController().processTopics(chat.id, topics.topics, messagesMap, false, TopicsController.LOAD_TYPE_LOAD_UNKNOWN, -1);
 
                     TLRPC.TL_forumTopic topic = MessagesController.getInstance(intentAccount).getTopicsController().findTopic(chat.id, topicId);
-                    openTopicRequest(intentAccount, topicId, chat, messageId, topic, whenDone, quote, fromMessageId, arrayList);
+                    openTopicRequest(intentAccount, topicId, chat, messageId, topic, whenDone, quote, fromMessageId, arrayList, quoteOffset);
                 };
             }));
             return;
@@ -3343,7 +3348,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         BaseFragment lastFragment = !mainFragmentsStack.isEmpty() ? mainFragmentsStack.get(mainFragmentsStack.size() - 1) : null;
         if (lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == -chat.id && ((ChatActivity) lastFragment).isTopic && ((ChatActivity) lastFragment).getTopicId() == forumTopic.id) {
             if (quote != null) {
-                ((ChatActivity) lastFragment).setHighlightQuote(messageId, quote);
+                ((ChatActivity) lastFragment).setHighlightQuote(messageId, quote, quoteOffset);
             }
             ((ChatActivity) lastFragment).scrollToMessageId(messageId, fromMessageId, true, 0, true, 0, null);
         } else {
@@ -3362,7 +3367,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             chatActivity.setThreadMessages(arrayList, chat, messageId, forumTopic.read_inbox_max_id, forumTopic.read_outbox_max_id, forumTopic);
             if (messageId != forumTopic.id) {
                 if (quote != null) {
-                    chatActivity.setHighlightQuote(messageId, quote);
+                    chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
                 } else {
                     chatActivity.setHighlightMessageId(messageId);
                 }
@@ -3509,7 +3514,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         VoIPHelper.startCall(chat, null, hash, false, this, mainFragmentsStack.get(mainFragmentsStack.size() - 1), accountInstance);
     }
 
-    public void openMessage(long dialogId, int messageId, String quote, final Browser.Progress progress, int fromMessageId) {
+    public void openMessage(long dialogId, int messageId, String quote, final Browser.Progress progress, int fromMessageId, final int quoteOffset) {
         if (dialogId < 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chat != null && ChatObject.isForum(chat)) {
@@ -3520,7 +3525,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     if (progress != null) {
                         progress.end();
                     }
-                }, fromMessageId);
+                }, fromMessageId, quoteOffset);
                 return;
             }
         }
@@ -3537,7 +3542,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     if (progress != null) {
                         progress.end();
                     }
-                }, fromMessageId);
+                }, fromMessageId, quoteOffset);
                 return;
             }
             args.putLong("chat_id", -dialogId);
@@ -3547,7 +3552,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (lastFragment == null || MessagesController.getInstance(currentAccount).checkCanOpenChat(args, lastFragment)) {
             AndroidUtilities.runOnUIThread(() -> {
                 ChatActivity chatActivity = new ChatActivity(args);
-                chatActivity.setHighlightQuote(messageId, quote);
+                chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
                 if (!(AndroidUtilities.isTablet() ? rightActionBarLayout : getActionBarLayout()).presentFragment(chatActivity) && dialogId < 0) {
                     TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
                     TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
@@ -3569,7 +3574,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 }
                                 if (lastFragment == null || MessagesController.getInstance(currentAccount).checkCanOpenChat(args, lastFragment)) {
                                     ChatActivity chatActivity2 = new ChatActivity(args);
-                                    chatActivity.setHighlightQuote(messageId, quote);
+                                    chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
                                     getActionBarLayout().presentFragment(chatActivity2);
                                 }
                             }
@@ -4171,7 +4176,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         } else {
                                             Bundle bundle = new Bundle();
                                             bundle.putLong("chat_id", -dialog_id);
-                                            presentFragment(new TopicsFragment(bundle));
+                                            presentFragment(TopicsFragment.getTopicsOrChat(this, bundle));
                                             try {
                                                 dismissLoading.run();
                                             } catch (Exception e) {
@@ -4307,7 +4312,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     if (invite.chat.forum) {
                                         Bundle bundle = new Bundle();
                                         bundle.putLong("chat_id", invite.chat.id);
-                                        presentFragment(new TopicsFragment(bundle));
+                                        presentFragment(TopicsFragment.getTopicsOrChat(this, bundle));
                                     } else {
                                         MessagesController.getInstance(intentAccount).ensureMessagesLoaded(-invite.chat.id, 0, new MessagesController.MessagesLoadedCallback() {
                                             @Override
@@ -4874,7 +4879,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         BotWebViewSheet sheet = new BotWebViewSheet(LaunchActivity.this, lastFragment.getResourceProvider());
                         sheet.setParentActivity(LaunchActivity.this);
                         sheet.requestWebView(intentAccount, user.id, user.id, null, null, BotWebViewSheet.TYPE_WEB_VIEW_BOT_APP, 0, false, lastFragment, botApp.app, allowWrite.get(), botAppStartParam, user);
+                        if (visibleDialog != null) {
+                            visibleDialog.dismiss();
+                            visibleDialog = null;
+                        }
                         sheet.show();
+                        visibleDialog = sheet;
                         if (botApp.inactive || forceNotInternalForApps) {
                             sheet.showJustAddedBulletin();
                         }
@@ -5011,6 +5021,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
                 if (!attachMenuBot.inactive) {
                     if (dialogsActivity != null) {
+                        if (lastFragment != null) {
+                            lastFragment.dismissCurrentDialog();
+                        }
+                        if (visibleDialog != null) {
+                            visibleDialog.dismiss();
+                            visibleDialog = null;
+                        }
                         presentFragment(dialogsActivity);
                     } else if (lastFragment instanceof ChatActivity) {
                         ChatActivity chatActivity = (ChatActivity) lastFragment;
@@ -5038,6 +5055,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             if (response2 instanceof TLRPC.TL_boolTrue) {
                                 MediaDataController.getInstance(intentAccount).loadAttachMenuBots(false, true, () -> {
                                     if (dialogsActivity != null) {
+                                        if (lastFragment != null) {
+                                            lastFragment.dismissCurrentDialog();
+                                        }
+                                        if (visibleDialog != null) {
+                                            visibleDialog.dismiss();
+                                            visibleDialog = null;
+                                        }
                                         presentFragment(dialogsActivity);
                                     } else if (lastFragment instanceof ChatActivity) {
                                         ((ChatActivity) lastFragment).openAttachBotLayout(user.id, setAsAttachBot, true);
@@ -5054,14 +5078,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private void openForumFromLink(long dialogId, Integer messageId, Runnable onOpened) {
-        openForumFromLink(dialogId, messageId, null, onOpened, 0);
+        openForumFromLink(dialogId, messageId, null, onOpened, 0, -1);
     }
 
-    private void openForumFromLink(long dialogId, Integer messageId, String quote, Runnable onOpened, int fromMessageId) {
+    private void openForumFromLink(long dialogId, Integer messageId, String quote, Runnable onOpened, int fromMessageId, int quoteOffset) {
         if (messageId == null) {
             Bundle bundle = new Bundle();
             bundle.putLong("chat_id", -dialogId);
-            presentFragment(new TopicsFragment(bundle));
+            presentFragment(TopicsFragment.getTopicsOrChat(this, bundle));
 
             if (onOpened != null) {
                 onOpened.run();
@@ -5085,13 +5109,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
 
                 if (message != null) {
-                    runCommentRequest(currentAccount, null, message.id, null, MessageObject.getTopicId(message, MessagesController.getInstance(currentAccount).isForum(message)), MessagesController.getInstance(currentAccount).getChat(-dialogId), onOpened, quote, fromMessageId);
+                    runCommentRequest(currentAccount, null, message.id, null, MessageObject.getTopicId(message, MessagesController.getInstance(currentAccount).isForum(message)), MessagesController.getInstance(currentAccount).getChat(-dialogId), onOpened, quote, fromMessageId, quoteOffset);
                     return;
                 }
 
                 Bundle bundle = new Bundle();
                 bundle.putLong("chat_id", -dialogId);
-                presentFragment(new TopicsFragment(bundle));
+                presentFragment(TopicsFragment.getTopicsOrChat(this, bundle));
 
                 if (onOpened != null) {
                     onOpened.run();
@@ -5223,7 +5247,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         });
     }
 
-    public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
+    public Dialog showAlertDialog(AlertDialog.Builder builder) {
         try {
             if (visibleDialog != null) {
                 visibleDialog.dismiss();

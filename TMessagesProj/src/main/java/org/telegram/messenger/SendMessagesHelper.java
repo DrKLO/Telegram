@@ -156,6 +156,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     replyTo.quote_entities = new ArrayList<>(replyTo.quote_entities);
                     replyTo.flags |= 8;
                 }
+                replyTo.flags |= 16;
+                replyTo.quote_offset = replyQuote.start;
             }
         }
         if (replyQuote != null && replyQuote.message != null) {
@@ -188,6 +190,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             if ((replyHeader.flags & 128) != 0) {
                 replyTo.flags |= 8;
                 replyTo.quote_entities = replyHeader.quote_entities;
+            }
+            if ((replyHeader.flags & 1024) != 0) {
+                replyTo.flags |= 16;
+                replyTo.quote_offset = replyHeader.quote_offset;
             }
         }
         return replyTo;
@@ -3864,6 +3870,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (!TextUtils.isEmpty(newMsg.reply_to.quote_text)) {
                         newMsg.reply_to.quote = true;
                         newMsg.reply_to.flags |= 64;
+                        newMsg.reply_to.flags |= 1024;
+                        newMsg.reply_to.quote_offset = replyQuote.start;
                         newMsg.reply_to.quote_entities = replyQuote.getEntities();
                         if (newMsg.reply_to.quote_entities != null && !newMsg.reply_to.quote_entities.isEmpty()) {
                             newMsg.reply_to.quote_entities = new ArrayList<>(newMsg.reply_to.quote_entities);
@@ -3984,6 +3992,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (replyQuote.getText() != null) {
                             newMsg.reply_to.flags |= 64;
                             newMsg.reply_to.quote_text = replyQuote.getText();
+                            newMsg.reply_to.flags |= 1024;
+                            newMsg.reply_to.quote_offset = replyQuote.start;
                         }
                         if (replyQuote.getEntities() != null) {
                             newMsg.reply_to.flags |= 128;

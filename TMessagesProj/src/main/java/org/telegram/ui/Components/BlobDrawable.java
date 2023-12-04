@@ -178,6 +178,10 @@ public class BlobDrawable {
     private final static float animationSpeed = 1f - ANIMATION_SPEED_WAVE_HUGE;
     private final static float animationSpeedTiny = 1f - ANIMATION_SPEED_WAVE_SMALL;
 
+    public void setValue(float value) {
+        amplitude = value;
+    }
+
     public void setValue(float value, boolean isBig) {
         animateToAmplitude = value;
         if (!LiteMode.isEnabled(liteFlag)) {

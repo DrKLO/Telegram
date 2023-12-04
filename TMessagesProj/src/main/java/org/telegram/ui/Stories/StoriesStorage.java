@@ -78,6 +78,9 @@ public class StoriesStorage {
                         if (data != null) {
                             TL_stories.StoryItem storyItem = TL_stories.StoryItem.TLdeserialize(data, data.readInt32(true), true);
                             storyItem.dialogId = dialogId;
+                            if (storyItem.fwd_from != null && storyItem.fwd_from.from != null) {
+                                MessagesStorage.addLoadPeerInfo(storyItem.fwd_from.from, usersToLoad, chatsToLoad);
+                            }
                             StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                             storyItems.add(storyItem);
                             data.reuse();

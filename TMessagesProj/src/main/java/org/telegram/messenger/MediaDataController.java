@@ -408,7 +408,7 @@ public class MediaDataController extends BaseController {
 
     public void checkReactions() {
         if (!isLoadingReactions && Math.abs(System.currentTimeMillis() / 1000 - reactionsUpdateDate) >= 60 * 60) {
-            loadReactions(true, false);
+            loadReactions(true, null);
         }
     }
 
@@ -701,7 +701,7 @@ public class MediaDataController extends BaseController {
         return reactionsList;
     }
 
-    public void loadReactions(boolean cache, boolean force) {
+    public void loadReactions(boolean cache, Integer lastHash) {
         isLoadingReactions = true;
         if (cache) {
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
@@ -741,7 +741,7 @@ public class MediaDataController extends BaseController {
             });
         } else {
             TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
-            req.hash = force ? 0 : reactionsUpdateHash;
+            req.hash = lastHash != null ? lastHash : reactionsUpdateHash;
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 int date = (int) (System.currentTimeMillis() / 1000);
                 if (response instanceof TLRPC.TL_messages_availableReactionsNotModified) {
@@ -781,7 +781,7 @@ public class MediaDataController extends BaseController {
         if (!cache) {
             putReactionsToCache(reactions, hash, date);
         } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) {
-            loadReactions(false, true);
+            loadReactions(false, hash);
         }
     }
 
@@ -6344,6 +6344,9 @@ public class MediaDataController extends BaseController {
                     }
                 } else {
                     if (start + 1 != index) {
+                        if (message[0] instanceof Spanned && ((Spanned) message[0]).getSpans(Utilities.clamp(start, message[0].length(), 0), Utilities.clamp(start + 1, message[0].length(), 0), CodeHighlighting.Span.class).length > 0) {
+                            continue;
+                        }
                         message[0] = AndroidUtilities.concat(substring(message[0], 0, start), substring(message[0], start + 1, index), substring(message[0], index + 1, message[0].length()));
                         TLRPC.TL_messageEntityCode entity = new TLRPC.TL_messageEntityCode();
                         entity.offset = start;
@@ -6630,12 +6633,7 @@ public class MediaDataController extends BaseController {
         if (threads == null || threads.size() <= 0) {
             return null;
         }
-        for (int i = 0; i < threads.size(); ++i) {
-            if (threads.keyAt(i) != 0) {
-                return new Pair(threads.keyAt(i), threads.valueAt(i));
-            }
-        }
-        return null;
+        return new Pair(threads.keyAt(0), threads.valueAt(0));
     }
 
     public TLRPC.Message getDraftMessage(long dialogId, int threadId) {
@@ -6671,6 +6669,8 @@ public class MediaDataController extends BaseController {
                 draftMessage.reply_to.quote_text = quote.getText();
                 if (draftMessage.reply_to.quote_text != null) {
                     draftMessage.reply_to.flags |= 4;
+                    draftMessage.reply_to.flags |= 16;
+                    draftMessage.reply_to.quote_offset = quote.start;
                 }
                 draftMessage.reply_to.quote_entities = quote.getEntities();
                 if (draftMessage.reply_to.quote_entities != null && !draftMessage.reply_to.quote_entities.isEmpty()) {

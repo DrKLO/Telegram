@@ -34,7 +34,7 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.VoIPService;
@@ -469,7 +469,7 @@ public class GroupCallUserCell extends FrameLayout {
         if (id > 0) {
             currentUser = accountInstance.getMessagesController().getUser(id);
             currentChat = null;
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(accountInstance.getCurrentAccount(), currentUser);
 
             nameTextView.setText(UserObject.getUserName(currentUser));
             if (currentUser != null && currentUser.verified) {
@@ -509,7 +509,7 @@ public class GroupCallUserCell extends FrameLayout {
         } else {
             currentChat = accountInstance.getMessagesController().getChat(-id);
             currentUser = null;
-            avatarDrawable.setInfo(currentChat);
+            avatarDrawable.setInfo(accountInstance.getCurrentAccount(), currentChat);
 
             if (currentChat != null) {
                 nameTextView.setText(currentChat.title);

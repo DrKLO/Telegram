@@ -8,7 +8,6 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
@@ -30,6 +29,7 @@ import android.view.SoundEffectConstants;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
@@ -371,7 +371,7 @@ public class GiveawayMessageCell {
 
     private int getChatColor(TLRPC.Chat chat, Theme.ResourcesProvider resourcesProvider) {
         final int color;
-        int colorId = (chat.flags2 & 64) != 0 ? chat.color : (int) (chat.id % 7);
+        int colorId = ChatObject.getColorId(chat);
         if (colorId < 7) {
             color = Theme.getColor(Theme.keys_avatar_nameInMessage[colorId], resourcesProvider);
         } else {

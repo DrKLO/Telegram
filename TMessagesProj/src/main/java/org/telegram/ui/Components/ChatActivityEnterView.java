@@ -602,6 +602,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private boolean ignoreTextChange;
     private int innerTextChange;
     private MessageObject replyingMessageObject;
+    private MessageObject replyingTopMessage;
     private ChatActivity.ReplyQuote replyingQuote;
     private MessageObject botMessageObject;
     private TLRPC.WebPage messageWebPage;
@@ -840,7 +841,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
         public RecordDot(Context context) {
             super(context);
-            int resId = R.raw.chat_audio_record_delete;
+            int resId = R.raw.chat_audio_record_delete_2;
             drawable = new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), false, null);
             drawable.setCurrentParentView(this);
             drawable.setInvalidateOnProgressSet(true);
@@ -854,9 +855,6 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             drawable.beginApplyLayerColors();
             drawable.setLayerColor("Cup Red.**", dotColor);
             drawable.setLayerColor("Box.**", dotColor);
-            drawable.setLayerColor("Line 1.**", background);
-            drawable.setLayerColor("Line 2.**", background);
-            drawable.setLayerColor("Line 3.**", background);
             drawable.commitApplyLayerColors();
             if (playPauseDrawable != null) {
                 playPauseDrawable.setColor(getThemedColor(Theme.key_chat_recordedVoicePlayPause));
@@ -3496,7 +3494,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), parentFragment.getResourceProvider());
                 webViewSheet.setParentActivity(parentActivity);
                 webViewSheet.requestWebView(currentAccount, dialog_id, dialog_id, botMenuWebViewTitle, botMenuWebViewUrl, BotWebViewSheet.TYPE_BOT_MENU_BUTTON, 0, false);
-                webViewSheet.show();
+                parentFragment.showDialog(webViewSheet);
 
                 if (botCommandsMenuButton != null) {
                     botCommandsMenuButton.setOpened(false);
@@ -4263,6 +4261,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     } else {
                         if (clickMaybe) {
                             if (delegate != null) {
+                                fixHandlesColor();
                                 delegate.onKeyboardRequested();
                             }
                             if (messageEditText != null && !AndroidUtilities.showKeyboard(messageEditText)) {
@@ -4275,11 +4274,19 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 } else {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
                         if (delegate != null) {
+                            fixHandlesColor();
                             delegate.onKeyboardRequested();
                         }
                     }
                     return super.onTouchEvent(event);
                 }
+            }
+
+            /*
+             * The color of the handles changes when opened PhotoView and write a comment.
+             */
+            private void fixHandlesColor() {
+                setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
             }
 
             @Override
@@ -5381,6 +5388,17 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             messageEditText.setHintText(editingCaption ? LocaleController.getString("Caption", R.string.Caption) : LocaleController.getString("TypeMessage", R.string.TypeMessage));
         } else if (botKeyboardViewVisible && botButtonsMessageObject != null && botButtonsMessageObject.messageOwner.reply_markup != null && !TextUtils.isEmpty(botButtonsMessageObject.messageOwner.reply_markup.placeholder)) {
             messageEditText.setHintText(botButtonsMessageObject.messageOwner.reply_markup.placeholder, animated);
+        } else if (parentFragment != null && parentFragment.isForumInViewAsMessagesMode()) {
+            if (replyingTopMessage != null && replyingTopMessage.replyToForumTopic != null && replyingTopMessage.replyToForumTopic.title != null) {
+                messageEditText.setHintText(LocaleController.formatString("TypeMessageIn", R.string.TypeMessageIn, replyingTopMessage.replyToForumTopic.title), animated);
+            } else {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(parentFragment.getCurrentChat().id, 1);
+                if (topic != null && topic.title != null) {
+                    messageEditText.setHintText(LocaleController.formatString("TypeMessageIn", R.string.TypeMessageIn, topic.title), animated);
+                } else {
+                    messageEditText.setHintText(LocaleController.getString("TypeMessage", R.string.TypeMessage), animated);
+                }
+            }
         } else {
             boolean isChannel = false;
             boolean anonymously = false;
@@ -5413,27 +5431,35 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     }
 
     public void setReplyingMessageObject(MessageObject messageObject, ChatActivity.ReplyQuote quote) {
+        setReplyingMessageObject(messageObject, quote, null);
+    }
+
+    public void setReplyingMessageObject(MessageObject messageObject, ChatActivity.ReplyQuote quote, MessageObject replyingTopMessage) {
+        boolean animated = parentFragment != null && parentFragment.isForumInViewAsMessagesMode() && this.replyingTopMessage != replyingTopMessage;
         if (messageObject != null) {
             if (botMessageObject == null && botButtonsMessageObject != replyingMessageObject) {
                 botMessageObject = botButtonsMessageObject;
             }
             replyingMessageObject = messageObject;
             replyingQuote = quote;
+            this.replyingTopMessage = replyingTopMessage;
             if (!(parentFragment != null && parentFragment.isTopic && parentFragment.getThreadMessage() == replyingMessageObject)) {
                 setButtons(replyingMessageObject, true);
             }
         } else if (replyingMessageObject == botButtonsMessageObject) {
             replyingMessageObject = null;
+            this.replyingTopMessage = null;
             replyingQuote = null;
             setButtons(botMessageObject, false);
             botMessageObject = null;
         } else {
             replyingMessageObject = null;
             replyingQuote = null;
+            this.replyingTopMessage = null;
         }
         TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
         MediaController.getInstance().setReplyingMessage(messageObject, getThreadMessage(), storyItem);
-        updateFieldHint(false);
+        updateFieldHint(animated);
     }
 
     public void setWebPage(TLRPC.WebPage webPage, boolean searchWebPages) {
@@ -6048,9 +6074,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 updateStickersOrder = SendMessagesHelper.checkUpdateStickersOrder(text);
 
                 MessageObject replyToTopMsg = getThreadMessage();
-//                if (parentFragment != null && parentFragment.replyingTopMessage != null) {
-//                    replyToTopMsg = parentFragment.replyingTopMessage;
-//                }
+                if (replyToTopMsg == null && replyingTopMessage != null) {
+                    replyToTopMsg = replyingTopMessage;
+                }
                 SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(message[0].toString(), dialog_id, replyingMessageObject, replyToTopMsg, messageWebPage, messageWebPageSearch, entities, null, null, notify, scheduleDate, sendAnimationData, updateStickersOrder);
                 applyStoryToSendMessageParams(params);
                 params.invert_media = parentFragment != null && parentFragment.messagePreviewParams != null && parentFragment.messagePreviewParams.webpageTop;
@@ -7989,10 +8015,6 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             recordDeleteImageView.setLayerColor("Box Red.**", dotColor);
             recordDeleteImageView.setLayerColor("Cup Grey.**", greyColor);
             recordDeleteImageView.setLayerColor("Box Grey.**", greyColor);
-
-            recordDeleteImageView.setLayerColor("Line 1.**", background);
-            recordDeleteImageView.setLayerColor("Line 2.**", background);
-            recordDeleteImageView.setLayerColor("Line 3.**", background);
         }
     }
 
@@ -8612,7 +8634,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), resourcesProvider);
                     webViewSheet.setParentActivity(parentActivity);
                     webViewSheet.requestWebView(currentAccount, messageObject.messageOwner.dialog_id, botId, button.text, button.url, button instanceof TLRPC.TL_keyboardButtonSimpleWebView ? BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON : BotWebViewSheet.TYPE_WEB_VIEW_BUTTON, replyMessageObject != null ? replyMessageObject.messageOwner.id : 0, false);
-                    webViewSheet.show();
+                    if (parentFragment != null) {
+                        parentFragment.showDialog(webViewSheet);
+                    } else {
+                        webViewSheet.show();
+                    }
                 }
             };
             if (SharedPrefsHelper.isWebViewConfirmShown(currentAccount, botId)) {
@@ -10556,8 +10582,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             arrowPaint.setStrokeCap(Paint.Cap.ROUND);
             arrowPaint.setStrokeJoin(Paint.Join.ROUND);
 
-            slideToCancelString = LocaleController.getString("SlideToCancel", R.string.SlideToCancel);
-            slideToCancelString = slideToCancelString.charAt(0) + slideToCancelString.substring(1).toLowerCase();
+            slideToCancelString = LocaleController.getString(R.string.SlideToCancel2);
 
             cancelString = LocaleController.getString("Cancel", R.string.Cancel).toUpperCase();
 

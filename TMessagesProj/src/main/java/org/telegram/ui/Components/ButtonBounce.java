@@ -94,7 +94,7 @@ public class ButtonBounce {
         return isPressed;
     }
 
-    private void invalidate() {
+    public void invalidate() {
         if (view != null) {
             view.invalidate();
         }

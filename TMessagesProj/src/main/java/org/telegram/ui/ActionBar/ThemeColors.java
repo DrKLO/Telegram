@@ -1365,7 +1365,7 @@ public class ThemeColors {
         colorKeysMap.put(key_voipgroup_overlayAlertGradientUnmuted, "voipgroup_overlayAlertGradientUnmuted");
         colorKeysMap.put(key_voipgroup_overlayAlertGradientUnmuted2, "voipgroup_overlayAlertGradientUnmuted2");
         colorKeysMap.put(key_voipgroup_overlayAlertMutedByAdmin, "voipgroup_overlayAlertMutedByAdmin");
-        colorKeysMap.put(key_voipgroup_overlayAlertMutedByAdmin2, "kvoipgroup_overlayAlertMutedByAdmin2");
+        colorKeysMap.put(key_voipgroup_overlayAlertMutedByAdmin2, "voipgroup_overlayAlertMutedByAdmin2");
         colorKeysMap.put(key_voipgroup_mutedByAdminGradient, "voipgroup_mutedByAdminGradient");
         colorKeysMap.put(key_voipgroup_mutedByAdminGradient2, "voipgroup_mutedByAdminGradient2");
         colorKeysMap.put(key_voipgroup_mutedByAdminGradient3, "voipgroup_mutedByAdminGradient3");

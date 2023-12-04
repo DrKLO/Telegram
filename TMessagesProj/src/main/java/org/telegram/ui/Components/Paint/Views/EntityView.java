@@ -1002,6 +1002,10 @@ public class EntityView extends FrameLayout {
         }
     }
 
+    public boolean trashCenter() {
+        return false;
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         final float scale = bounce.getScale(.05f);
@@ -1009,9 +1013,13 @@ public class EntityView extends FrameLayout {
         canvas.scale(scale, scale, getWidth() / 2f, getHeight() / 2f);
         if (getParent() instanceof View) {
             View p = (View) getParent();
-            float px = p.getWidth() / 2f - getX();
-            float py = p.getHeight() - dp(76) - getY();
-            canvas.scale(trashScale, trashScale, px, py);
+            if (trashCenter()) {
+                canvas.scale(trashScale, trashScale, getWidth() / 2f, getHeight() / 2f);
+            } else {
+                float px = p.getWidth() / 2f - getX();
+                float py = p.getHeight() - dp(76) - getY();
+                canvas.scale(trashScale, trashScale, px, py);
+            }
         }
         super.dispatchDraw(canvas);
         canvas.restore();

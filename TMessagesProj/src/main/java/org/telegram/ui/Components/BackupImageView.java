@@ -42,6 +42,7 @@ public class BackupImageView extends View {
     public BackupImageView(Context context) {
         super(context);
         imageReceiver = createImageReciever();
+        imageReceiver.setCrossfadeByScale(0);
         imageReceiver.setAllowLoadingOnAttachedOnly(true);
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
             if (set && !thumb) {
@@ -180,6 +181,11 @@ public class BackupImageView extends View {
             thumb = new BitmapDrawable(null, thumbBitmap);
         }
         imageReceiver.setImage(imageLocation, imageFilter, thumbLocation, thumbFilter, thumb, size, ext, parentObject, 0);
+        onNewImageSet();
+    }
+
+    public void setImage(ImageLocation imageLocation, String imageFilter, ImageLocation thumbLocation, String thumbFilter, Drawable thumb, String ext, long size, int cacheType, Object parentObject) {
+        imageReceiver.setImage(imageLocation, imageFilter, thumbLocation, thumbFilter, thumb, size, ext, parentObject, cacheType);
         onNewImageSet();
     }
 

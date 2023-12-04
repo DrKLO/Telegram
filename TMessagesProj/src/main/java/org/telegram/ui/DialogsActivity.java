@@ -163,6 +163,7 @@ import org.telegram.ui.Components.ArchiveHelp;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurredRecyclerView;
+import org.telegram.ui.Components.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatActivityEnterView;
@@ -2855,6 +2856,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    public boolean dismissDialogOnPause(Dialog dialog) {
+        return !(dialog instanceof BotWebViewSheet) && super.dismissDialogOnPause(dialog);
+    }
+
+    @Override
     public ActionBar createActionBar(Context context) {
         ActionBar actionBar = new ActionBar(context) {
 
@@ -3497,7 +3503,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             switchItem.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
             TLRPC.User user = getUserConfig().getCurrentUser();
-            avatarDrawable.setInfo(user);
+            avatarDrawable.setInfo(currentAccount, user);
             imageView.getImageReceiver().setCurrentAccount(currentAccount);
             Drawable thumb = user != null && user.photo != null && user.photo.strippedBitmap != null ? user.photo.strippedBitmap : avatarDrawable;
             imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", thumb, user);
@@ -7737,22 +7743,36 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 slowedReloadAfterDialogClick = true;
                 if (getMessagesController().checkCanOpenChat(args, DialogsActivity.this)) {
                     TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
+                    TLRPC.Dialog dialog = getMessagesController().getDialog(dialogId);
+                    boolean needOpenChatActivity = dialog != null && dialog.view_forum_as_messages;
                     if (chat != null && chat.forum && topicId == 0) {
                         if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN)) {
-                            presentFragment(new TopicsFragment(args));
+                            if (needOpenChatActivity) {
+                                presentFragment(new ChatActivity(args));
+                            } else {
+                                presentFragment(new TopicsFragment(args));
+                            }
                         } else {
                             if (!canOpenInRightSlidingView) {
-                                presentFragment(new TopicsFragment(args));
-                            } else if (!searching) {
-                                if (rightSlidingDialogContainer.currentFragment != null && ((TopicsFragment) rightSlidingDialogContainer.currentFragment).getDialogId() == dialogId) {
-                                    rightSlidingDialogContainer.finishPreview();
+                                if (needOpenChatActivity) {
+                                    presentFragment(new ChatActivity(args));
                                 } else {
-                                    viewPages[0].listView.prepareSelectorForAnimation();
-                                    TopicsFragment topicsFragment = new TopicsFragment(args);
-                                    topicsFragment.parentDialogsActivity = this;
-                                    rightSlidingDialogContainer.presentFragment(getParentLayout(), topicsFragment);
+                                    presentFragment(new TopicsFragment(args));
                                 }
-                                searchViewPager.updateTabs();
+                            } else if (!searching) {
+                                if (needOpenChatActivity) {
+                                    presentFragment(new ChatActivity(args));
+                                } else {
+                                    if (rightSlidingDialogContainer.currentFragment != null && ((TopicsFragment) rightSlidingDialogContainer.currentFragment).getDialogId() == dialogId) {
+                                        rightSlidingDialogContainer.finishPreview();
+                                    } else {
+                                        viewPages[0].listView.prepareSelectorForAnimation();
+                                        TopicsFragment topicsFragment = new TopicsFragment(args);
+                                        topicsFragment.parentDialogsActivity = this;
+                                        rightSlidingDialogContainer.presentFragment(getParentLayout(), topicsFragment);
+                                    }
+                                    searchViewPager.updateTabs();
+                                }
                             }
                         }
                     } else {

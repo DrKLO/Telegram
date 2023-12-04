@@ -53,9 +53,7 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
-import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
-import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,6 +61,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public boolean allowDrawStories;
+    private Integer storiesForceState;
     public BackupImageView avatarImageView;
     private SimpleTextView titleTextView;
     private AtomicReference<SimpleTextView> titleTextLargerCopyView = new AtomicReference<>();
@@ -76,6 +75,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private int currentAccount = UserConfig.selectedAccount;
     private boolean occupyStatusBar = true;
     private int leftPadding = AndroidUtilities.dp(8);
+    private int rightAvatarPadding = 0;
     StatusDrawable currentTypingDrawable;
 
     private int lastWidth = -1;
@@ -105,6 +105,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     public void hideSubtitle() {
         subtitleTextView.setVisibility(View.GONE);
+    }
+
+    public void setStoriesForceState(Integer storiesForceState) {
+        this.storiesForceState = storiesForceState;
     }
 
     private class SimpleTextConnectedView extends SimpleTextView {
@@ -141,7 +145,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime) {
         this(context, baseFragment, needTime, null);
     }
-    
+
     public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -188,7 +192,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     params.drawSegments = true;
                     params.drawInside = true;
                     params.resourcesProvider = resourcesProvider;
-                    StoriesUtilities.drawAvatarWithStory(parentFragment.getDialogId(), canvas, imageReceiver, params);
+                    if (storiesForceState != null) {
+                        params.forceState = storiesForceState;
+                    }
+                    StoriesUtilities.drawAvatarWithStory(parentFragment != null ? parentFragment.getDialogId() : 0, canvas, imageReceiver, params);
                 } else {
                     super.onDraw(canvas);
                 }
@@ -523,7 +530,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
         int viewTop = (actionBarHeight - AndroidUtilities.dp(42)) / 2 + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
         avatarImageView.layout(leftPadding, viewTop + 1, leftPadding + AndroidUtilities.dp(42), viewTop + 1 + AndroidUtilities.dp(42));
-        int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE ? AndroidUtilities.dp( 54) : 0);
+        int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE ? AndroidUtilities.dp( 54) : 0) + rightAvatarPadding;
         SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
         if (subtitleTextView.getVisibility() != GONE) {
             titleTextView.layout(l, viewTop + AndroidUtilities.dp(1.3f) - titleTextView.getPaddingTop(), l + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + AndroidUtilities.dp(1.3f) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
@@ -548,6 +555,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     public void setLeftPadding(int value) {
         leftPadding = value;
+    }
+
+    public void setRightAvatarPadding(int value) {
+        rightAvatarPadding = value;
     }
 
     public void showTimeItem(boolean animated) {
@@ -954,7 +965,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     public void setChatAvatar(TLRPC.Chat chat) {
-        avatarDrawable.setInfo(chat);
+        avatarDrawable.setInfo(currentAccount, chat);
         if (avatarImageView != null) {
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
             avatarImageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
@@ -966,7 +977,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     public void setUserAvatar(TLRPC.User user, boolean showSelf) {
-        avatarDrawable.setInfo(user);
+        avatarDrawable.setInfo(currentAccount, user);
         if (UserObject.isReplyUser(user)) {
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
             avatarDrawable.setScaleSize(.8f);
@@ -994,7 +1005,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         TLRPC.User user = parentFragment.getCurrentUser();
         TLRPC.Chat chat = parentFragment.getCurrentChat();
         if (user != null) {
-            avatarDrawable.setInfo(user);
+            avatarDrawable.setInfo(currentAccount, user);
             if (UserObject.isReplyUser(user)) {
                 avatarDrawable.setScaleSize(.8f);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
@@ -1014,7 +1025,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
             }
         } else if (chat != null) {
-            avatarDrawable.setInfo(chat);
+            avatarDrawable.setInfo(currentAccount, chat);
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }

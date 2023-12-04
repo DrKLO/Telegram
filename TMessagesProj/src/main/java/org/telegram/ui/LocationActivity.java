@@ -1491,9 +1491,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             } else {
                 AvatarDrawable avatarDrawable = new AvatarDrawable();
                 if (liveLocation.user != null) {
-                    avatarDrawable.setInfo(liveLocation.user);
+                    avatarDrawable.setInfo(currentAccount, liveLocation.user);
                 } else if (liveLocation.chat != null) {
-                    avatarDrawable.setInfo(liveLocation.chat);
+                    avatarDrawable.setInfo(currentAccount, liveLocation.chat);
                 }
                 canvas.translate(AndroidUtilities.dp(6), AndroidUtilities.dp(6));
                 avatarDrawable.setBounds(0, 0, AndroidUtilities.dp(50), AndroidUtilities.dp(50));

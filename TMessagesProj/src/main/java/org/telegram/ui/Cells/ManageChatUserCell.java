@@ -26,44 +26,39 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Stories.StoriesUtilities;
 
 public class ManageChatUserCell extends FrameLayout {
 
-    private BackupImageView avatarImageView;
-    private SimpleTextView nameTextView;
-    private SimpleTextView statusTextView;
+    private final BackupImageView avatarImageView;
+    private final SimpleTextView nameTextView;
+    private final SimpleTextView statusTextView;
+    private final Theme.ResourcesProvider resourcesProvider;
+    private final AvatarDrawable avatarDrawable;
     private ImageView optionsButton;
     private ImageView customImageView;
-    private Theme.ResourcesProvider resourcesProvider;
-
-    private AvatarDrawable avatarDrawable;
     private Object currentObject;
-
+    private TL_stories.StoryItem storyItem;
     private CharSequence currentName;
-    private CharSequence currrntStatus;
-
+    private CharSequence currentStatus;
     private String lastName;
     private int lastStatus;
     private TLRPC.FileLocation lastAvatar;
     private boolean isAdmin;
-
     private boolean needDivider;
-
     private int statusColor;
     private int statusOnlineColor;
-
-    private int namePadding;
-
-    private int currentAccount = UserConfig.selectedAccount;
-
+    private final int namePadding;
     private int dividerColor = -1;
-
     private ManageChatUserCellDelegate delegate;
+    private final int currentAccount = UserConfig.selectedAccount;
+    private final StoriesUtilities.AvatarStoryParams storyAvatarParams = new StoriesUtilities.AvatarStoryParams(false);
 
     public interface ManageChatUserCellDelegate {
         boolean onOptionsButtonCheck(ManageChatUserCell cell, boolean click);
@@ -84,7 +79,24 @@ public class ManageChatUserCell extends FrameLayout {
 
         avatarDrawable = new AvatarDrawable();
 
-        avatarImageView = new BackupImageView(context);
+        avatarImageView = new BackupImageView(context) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (storyItem != null) {
+                    int pad = AndroidUtilities.dp(1);
+                    storyAvatarParams.originalAvatarRect.set(pad, pad, getMeasuredWidth() - pad, getMeasuredHeight() - pad);
+                    storyAvatarParams.drawSegments = false;
+                    storyAvatarParams.animate = false;
+                    storyAvatarParams.drawInside = true;
+                    storyAvatarParams.isArchive = false;
+                    storyAvatarParams.resourcesProvider = resourcesProvider;
+                    storyAvatarParams.storyItem = storyItem;
+                    StoriesUtilities.drawAvatarWithStory(storyItem.dialogId, canvas, imageReceiver, storyAvatarParams);
+                } else {
+                    super.onDraw(canvas);
+                }
+            }
+        };
         avatarImageView.setRoundRadius(AndroidUtilities.dp(23));
         addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + avatarPadding, 8, LocaleController.isRTL ? 7 + avatarPadding : 0, 0));
 
@@ -113,6 +125,23 @@ public class ManageChatUserCell extends FrameLayout {
         }
     }
 
+    public void setStoryItem(TL_stories.StoryItem storyItem, OnClickListener listener) {
+        this.storyItem = storyItem;
+        avatarImageView.setOnClickListener(listener);
+    }
+
+    public TL_stories.StoryItem getStoryItem() {
+        return storyItem;
+    }
+
+    public BackupImageView getAvatarImageView() {
+        return avatarImageView;
+    }
+
+    public StoriesUtilities.AvatarStoryParams getStoryAvatarParams() {
+        return storyAvatarParams;
+    }
+
     public void setCustomRightImage(int resId) {
         customImageView = new ImageView(getContext());
         customImageView.setImageResource(resId);
@@ -130,7 +159,7 @@ public class ManageChatUserCell extends FrameLayout {
 
     public void setData(Object object, CharSequence name, CharSequence status, boolean divider) {
         if (object == null) {
-            currrntStatus = null;
+            currentStatus = null;
             currentName = null;
             currentObject = null;
             nameTextView.setText("");
@@ -138,7 +167,7 @@ public class ManageChatUserCell extends FrameLayout {
             avatarImageView.setImageDrawable(null);
             return;
         }
-        currrntStatus = status;
+        currentStatus = status;
         currentName = name;
         currentObject = object;
         if (optionsButton != null) {
@@ -229,7 +258,7 @@ public class ManageChatUserCell extends FrameLayout {
                 }
             }
 
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
             if (currentUser.status != null) {
                 lastStatus = currentUser.status.expires;
             } else {
@@ -243,9 +272,9 @@ public class ManageChatUserCell extends FrameLayout {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
                 nameTextView.setText(Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(15), false));
             }
-            if (currrntStatus != null) {
+            if (currentStatus != null) {
                 statusTextView.setTextColor(statusColor);
-                statusTextView.setText(currrntStatus);
+                statusTextView.setText(currentStatus);
             } else {
                 if (currentUser.bot) {
                     statusTextView.setTextColor(statusColor);
@@ -293,7 +322,7 @@ public class ManageChatUserCell extends FrameLayout {
                 }
             }
 
-            avatarDrawable.setInfo(currentChat);
+            avatarDrawable.setInfo(currentAccount, currentChat);
 
             if (currentName != null) {
                 lastName = null;
@@ -302,9 +331,9 @@ public class ManageChatUserCell extends FrameLayout {
                 lastName = newName == null ? currentChat.title : newName;
                 nameTextView.setText(lastName);
             }
-            if (currrntStatus != null) {
+            if (currentStatus != null) {
                 statusTextView.setTextColor(statusColor);
-                statusTextView.setText(currrntStatus);
+                statusTextView.setText(currentStatus);
             } else {
                 statusTextView.setTextColor(statusColor);
                 if (currentChat.participants_count != 0) {
@@ -326,7 +355,7 @@ public class ManageChatUserCell extends FrameLayout {
         } else if (currentObject instanceof Integer) {
             nameTextView.setText(currentName);
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currrntStatus);
+            statusTextView.setText(currentStatus);
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SHARES);
             avatarImageView.setImage(null, "50_50", avatarDrawable);
         }

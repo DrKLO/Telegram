@@ -62,6 +62,7 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.BlurringShader;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextEffects;
 import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
@@ -205,6 +206,12 @@ public class TextureRenderer {
     private Bitmap stickerBitmap;
     private Canvas stickerCanvas;
     private float videoFps;
+
+    private Bitmap roundBitmap;
+    private Canvas roundCanvas;
+    private final android.graphics.Rect roundSrc = new android.graphics.Rect();
+    private final RectF roundDst = new RectF();
+    private Path roundClipPath;
 
     private int imageOrientation;
 
@@ -473,7 +480,7 @@ public class TextureRenderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
     }
 
-    public void drawFrame(SurfaceTexture st) {
+    public void drawFrame(SurfaceTexture st, long time) {
         boolean blurred = false;
         if (isPhoto) {
             drawGradient();
@@ -609,13 +616,13 @@ public class TextureRenderer {
         }
         if (stickerTexture != null) {
             for (int a = 0, N = mediaEntities.size(); a < N; a++) {
-                drawEntity(mediaEntities.get(a), mediaEntities.get(a).color);
+                drawEntity(mediaEntities.get(a), mediaEntities.get(a).color, time);
             }
         }
         GLES20.glFinish();
     }
 
-    private void drawEntity(VideoEditedInfo.MediaEntity entity, int textColor) {
+    private void drawEntity(VideoEditedInfo.MediaEntity entity, int textColor, long time) {
         if (entity.ptr != 0) {
             if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
                 return;
@@ -631,26 +638,102 @@ public class TextureRenderer {
             drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
         } else if (entity.animatedFileDrawable != null) {
             int lastFrame = (int) entity.currentFrame;
-            entity.currentFrame += entity.framesPerDraw;
-            int currentFrame = (int) entity.currentFrame;
-            while (lastFrame != currentFrame) {
-                entity.animatedFileDrawable.getNextFrame();
-                currentFrame--;
+            float scale = 1f;
+            if (entity.type == VideoEditedInfo.MediaEntity.TYPE_ROUND) {
+                long vstart, vend;
+                if (isPhoto) {
+                    vstart = 0;
+                    vend = entity.roundDuration;
+                } else {
+                    vstart = entity.roundOffset;
+                    vend = entity.roundOffset + (long) (entity.roundRight - entity.roundLeft);
+                }
+                final long ms = time / 1_000_000L;
+                if (ms < vstart) {
+                    scale = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(Utilities.clamp(1f - (vstart - ms) / 400f, 1, 0));
+                } else if (ms > vend) {
+                    scale = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(Utilities.clamp(1f - (ms - vend) / 400f, 1, 0));
+                }
+
+                if (scale > 0) {
+                    long roundMs;
+                    if (isPhoto) {
+                        roundMs = Utilities.clamp(ms, entity.roundDuration, 0);
+                    } else {
+                        roundMs = Utilities.clamp(ms - entity.roundOffset + entity.roundLeft, entity.roundDuration, 0);
+                    }
+                    while (!entity.looped && entity.animatedFileDrawable.getProgressMs() < Math.min(roundMs, entity.animatedFileDrawable.getDurationMs())) {
+                        int wasProgressMs = entity.animatedFileDrawable.getProgressMs();
+                        entity.animatedFileDrawable.getNextFrame(false);
+                        if (entity.animatedFileDrawable.getProgressMs() <= wasProgressMs && !(entity.animatedFileDrawable.getProgressMs() == 0 && wasProgressMs == 0)) {
+                            entity.looped = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                entity.currentFrame += entity.framesPerDraw;
+                int currentFrame = (int) entity.currentFrame;
+                while (lastFrame != currentFrame) {
+                    entity.animatedFileDrawable.getNextFrame(true);
+                    currentFrame--;
+                }
             }
             Bitmap frameBitmap = entity.animatedFileDrawable.getBackgroundBitmap();
             if (frameBitmap != null) {
-                if (stickerCanvas == null && stickerBitmap != null) {
-                    stickerCanvas = new Canvas(stickerBitmap);
-                    if (stickerBitmap.getHeight() != frameBitmap.getHeight() || stickerBitmap.getWidth() != frameBitmap.getWidth()) {
-                        stickerCanvas.scale(stickerBitmap.getWidth() / (float) frameBitmap.getWidth(), stickerBitmap.getHeight() / (float) frameBitmap.getHeight());
+                Bitmap endBitmap;
+                if (entity.type == VideoEditedInfo.MediaEntity.TYPE_ROUND) {
+                    if (roundBitmap == null) {
+                        final int side = Math.min(frameBitmap.getWidth(), frameBitmap.getHeight());
+                        roundBitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888);
+                        roundCanvas = new Canvas(roundBitmap);
                     }
+                    if (roundBitmap != null) {
+                        roundBitmap.eraseColor(Color.TRANSPARENT);
+                        roundCanvas.save();
+                        if (roundClipPath == null) {
+                            roundClipPath = new Path();
+                        }
+                        roundClipPath.rewind();
+                        roundClipPath.addCircle(roundBitmap.getWidth() / 2f, roundBitmap.getHeight() / 2f, roundBitmap.getWidth() / 2f * scale, Path.Direction.CW);
+                        roundCanvas.clipPath(roundClipPath);
+                        if (frameBitmap.getWidth() >= frameBitmap.getHeight()) {
+                            roundSrc.set(
+                                (frameBitmap.getWidth() - frameBitmap.getHeight()) / 2,
+                                0,
+                                frameBitmap.getWidth() - (frameBitmap.getWidth() - frameBitmap.getHeight()) / 2,
+                                frameBitmap.getHeight()
+                            );
+                        } else {
+                            roundSrc.set(
+                                0,
+                                (frameBitmap.getHeight() - frameBitmap.getWidth()) / 2,
+                                frameBitmap.getWidth(),
+                                frameBitmap.getHeight() - (frameBitmap.getHeight() - frameBitmap.getWidth()) / 2
+                            );
+                        }
+                        roundDst.set(0, 0, roundBitmap.getWidth(), roundBitmap.getHeight());
+                        roundCanvas.drawBitmap(frameBitmap, roundSrc, roundDst, null);
+                        roundCanvas.restore();
+                    }
+                    endBitmap = roundBitmap;
+                } else {
+                    if (stickerCanvas == null && stickerBitmap != null) {
+                        stickerCanvas = new Canvas(stickerBitmap);
+                        if (stickerBitmap.getHeight() != frameBitmap.getHeight() || stickerBitmap.getWidth() != frameBitmap.getWidth()) {
+                            stickerCanvas.scale(stickerBitmap.getWidth() / (float) frameBitmap.getWidth(), stickerBitmap.getHeight() / (float) frameBitmap.getHeight());
+                        }
+                    }
+                    if (stickerBitmap != null) {
+                        stickerBitmap.eraseColor(Color.TRANSPARENT);
+                        stickerCanvas.drawBitmap(frameBitmap, 0, 0, null);
+                        applyRoundRadius(entity, stickerBitmap, (entity.subType & 8) != 0 ? textColor : 0);
+                    }
+                    endBitmap = stickerBitmap;
                 }
-                if (stickerBitmap != null) {
-                    stickerBitmap.eraseColor(Color.TRANSPARENT);
-                    stickerCanvas.drawBitmap(frameBitmap, 0, 0, null);
-                    applyRoundRadius(entity, stickerBitmap, (entity.subType & 8) != 0 ? textColor : 0);
+                if (endBitmap != null) {
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
-                    GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
+                    GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, endBitmap, 0);
                     drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
                 }
             }
@@ -670,7 +753,7 @@ public class TextureRenderer {
                     if (entity1 == null) {
                         continue;
                     }
-                    drawEntity(entity1, entity.color);
+                    drawEntity(entity1, entity.color, time);
                 }
             }
         }
@@ -1040,7 +1123,11 @@ public class TextureRenderer {
                 GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
                 for (int a = 0, N = mediaEntities.size(); a < N; a++) {
                     VideoEditedInfo.MediaEntity entity = mediaEntities.get(a);
-                    if (entity.type == VideoEditedInfo.MediaEntity.TYPE_STICKER || entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO) {
+                    if (
+                        entity.type == VideoEditedInfo.MediaEntity.TYPE_STICKER ||
+                        entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO ||
+                        entity.type == VideoEditedInfo.MediaEntity.TYPE_ROUND
+                    ) {
                         initStickerEntity(entity);
                     } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT) {
                         EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext);
@@ -1239,10 +1326,14 @@ public class TextureRenderer {
             entity.ptr = RLottieDrawable.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
             entity.framesPerDraw = entity.metadata[1] / videoFps;
         } else if ((entity.subType & 4) != 0) {
+            entity.looped = false;
             entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512, null);
             entity.framesPerDraw = entity.animatedFileDrawable.getFps() / videoFps;
-            entity.currentFrame = 0;
-            entity.animatedFileDrawable.getNextFrame();
+            entity.currentFrame = 1;
+            entity.animatedFileDrawable.getNextFrame(true);
+            if (entity.type == VideoEditedInfo.MediaEntity.TYPE_ROUND) {
+                entity.firstSeek = true;
+            }
         } else {
             if (Build.VERSION.SDK_INT >= 19) {
                 BitmapFactory.Options opts = new BitmapFactory.Options();

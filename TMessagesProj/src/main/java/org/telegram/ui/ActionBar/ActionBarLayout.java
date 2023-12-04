@@ -63,6 +63,7 @@ import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
 import java.util.ArrayList;
@@ -250,10 +251,27 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             invalidate();
         }
 
+        float lastY, startY;
         // for menu buttons to be clicked by hover:
         private float pressX, pressY;
         private boolean allowToPressByHover;
         public void processMenuButtonsTouch(MotionEvent event) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                startY = event.getY();
+            }
+            if (isInPreviewMode() && previewMenu == null) {
+                lastY = event.getY();
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    finishPreviewFragment();
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    float dy = startY - lastY;
+                    movePreviewFragment(dy);
+                    if (dy < 0) {
+                        startY = lastY;
+                    }
+                }
+                return;
+            }
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 pressX = event.getX();
                 pressY = event.getY();
@@ -1237,14 +1255,16 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             return false;
         }
         BaseFragment lastFragment = getLastFragment();
-        if (lastFragment != null && lastFragment.getVisibleDialog() != null) {
-            if (shouldOpenFragmentOverlay(lastFragment.getVisibleDialog())) {
-                BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
-                bottomSheetParams.transitionFromLeft = true;
-                bottomSheetParams.allowNestedScroll = false;
-                lastFragment.showAsSheet(fragment, bottomSheetParams);
-                return true;
-            }
+        Dialog dialog = lastFragment != null ? lastFragment.getVisibleDialog() : null;
+        if (dialog == null && LaunchActivity.instance != null && LaunchActivity.instance.visibleDialog != null) {
+            dialog = LaunchActivity.instance.visibleDialog;
+        }
+        if (shouldOpenFragmentOverlay(dialog)) {
+            BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+            bottomSheetParams.transitionFromLeft = true;
+            bottomSheetParams.allowNestedScroll = false;
+            lastFragment.showAsSheet(fragment, bottomSheetParams);
+            return true;
         }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("present fragment " + fragment.getClass().getSimpleName() + " args=" + fragment.getArguments());
@@ -2052,7 +2072,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             for (int i = 0, N = presentingFragmentDescriptions.size(); i < N; i++) {
                 ThemeDescription description = presentingFragmentDescriptions.get(i);
                 int key = description.getCurrentKey();
-                description.setColor(Theme.getColor(key), false, false);
+                description.setColor(Theme.getColor(key, description.resourcesProvider), false, false);
             }
         }
         if (animationProgressListener != null) {

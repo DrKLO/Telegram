@@ -127,6 +127,9 @@ public class BoostDialogs {
     }
 
     public static void showBulletin(final BaseFragment baseFragment, final TLRPC.Chat chat, final boolean isGiveaway) {
+        if (baseFragment == null) {
+            return;
+        }
         BulletinFactory bulletinFactory = BulletinFactory.of(baseFragment);
         showBulletin(bulletinFactory, baseFragment.getResourceProvider(), chat, isGiveaway);
     }

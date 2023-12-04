@@ -6,6 +6,7 @@ import static org.telegram.tgnet.tl.TL_stories.TL_boost.NO_USER_ID;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -24,6 +25,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -161,7 +163,7 @@ public class TableCell extends FrameLayout {
                     canvas.clipPath(roundPath);
                 }
                 super.dispatchDraw(canvas);
-                linePaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+                linePaint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_divider, resourcesProvider), Color.WHITE, 0.1f));
                 linePaint.setStrokeWidth(AndroidUtilities.dp(1));
                 float oneRow = getHeight() / (tableRow4.getVisibility() == VISIBLE ? 5f : 4f);
                 for (int i = 1; i <= 4; i++) {

@@ -496,6 +496,16 @@ public class DraftsController {
         public float audioLeft, audioRight = 1;
         public float audioVolume = 1;
 
+        public String roundPath;
+        public String roundThumb;
+        public long roundDuration;
+        public long roundOffset;
+        public float roundLeft;
+        public float roundRight;
+        public float roundVolume = 1;
+
+        public float videoVolume = 1f;
+
         public TLRPC.InputPeer peer;
 
         public StoryDraft(@NonNull StoryEntry entry) {
@@ -544,6 +554,16 @@ public class DraftsController {
             this.audioLeft = entry.audioLeft;
             this.audioRight = entry.audioRight;
             this.audioVolume = entry.audioVolume;
+
+            this.roundPath = entry.round == null ? "" : entry.round.getAbsolutePath();
+            this.roundThumb = entry.roundThumb;
+            this.roundDuration = entry.roundDuration;
+            this.roundOffset = entry.roundOffset;
+            this.roundLeft = entry.roundLeft;
+            this.roundRight = entry.roundRight;
+            this.roundVolume = entry.roundVolume;
+
+            this.videoVolume = entry.videoVolume;
 
             this.peer = entry.peer;
         }
@@ -632,6 +652,19 @@ public class DraftsController {
             entry.audioLeft = audioLeft;
             entry.audioRight = audioRight;
             entry.audioVolume = audioVolume;
+
+            if (roundPath != null) {
+                entry.round = new File(roundPath);
+            }
+            entry.roundThumb = roundThumb;
+            entry.roundDuration = roundDuration;
+            entry.roundOffset = roundOffset;
+            entry.roundLeft = roundLeft;
+            entry.roundRight = roundRight;
+            entry.roundVolume = roundVolume;
+
+            entry.videoVolume = videoVolume;
+
             entry.peer = peer;
             return entry;
         }
@@ -741,11 +774,26 @@ public class DraftsController {
                 stream.writeFloat(audioRight);
                 stream.writeFloat(audioVolume);
             }
+
             if (peer != null) {
                 peer.serializeToStream(stream);
             } else {
                 new TLRPC.TL_inputPeerSelf().serializeToStream(stream);
             }
+
+            if (roundPath == null) {
+                stream.writeInt32(TLRPC.TL_null.constructor);
+            } else {
+                stream.writeInt32(TLRPC.TL_documentAttributeVideo.constructor);
+                stream.writeString(roundPath);
+                stream.writeInt64(roundDuration);
+                stream.writeInt64(roundOffset);
+                stream.writeFloat(roundLeft);
+                stream.writeFloat(roundRight);
+                stream.writeFloat(roundVolume);
+            }
+
+            stream.writeFloat(videoVolume);
         }
 
         public int getObjectSize() {
@@ -922,6 +970,20 @@ public class DraftsController {
             }
             if (stream.remaining() > 0) {
                 peer = TLRPC.InputPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (stream.remaining() > 0) {
+                magic = stream.readInt32(exception);
+                if (magic == TLRPC.TL_documentAttributeVideo.constructor) {
+                    roundPath = stream.readString(exception);
+                    roundDuration = stream.readInt64(exception);
+                    roundOffset = stream.readInt64(exception);
+                    roundLeft = stream.readFloat(exception);
+                    roundRight = stream.readFloat(exception);
+                    roundVolume = stream.readFloat(exception);
+                }
+            }
+            if (stream.remaining() > 0) {
+                videoVolume = stream.readFloat(exception);
             }
         }
     }

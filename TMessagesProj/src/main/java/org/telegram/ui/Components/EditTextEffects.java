@@ -150,7 +150,7 @@ public class EditTextEffects extends EditText {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        updateAnimatedEmoji(false);
+        updateAnimatedEmoji(true);
         invalidateQuotes(false);
     }
 

@@ -33,11 +33,11 @@ import org.telegram.ui.Components.LayoutHelper;
 
 public class MentionCell extends LinearLayout {
 
-    private BackupImageView imageView;
-    private TextView nameTextView;
-    private TextView usernameTextView;
-    private AvatarDrawable avatarDrawable;
-    private Theme.ResourcesProvider resourcesProvider;
+    private final BackupImageView imageView;
+    private final TextView nameTextView;
+    private final TextView usernameTextView;
+    private final AvatarDrawable avatarDrawable;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private Drawable emojiDrawable;
 

@@ -1,5 +1,6 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
+import static org.telegram.messenger.AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
@@ -186,12 +187,12 @@ public class HeaderCell extends FrameLayout {
             TLRPC.User toUser = MessagesController.getInstance(UserConfig.selectedAccount).getUser(toUserId);
             SpannableStringBuilder userName = new SpannableStringBuilder();
             userName.append("**");
-            userName.append(Emoji.replaceEmoji(UserObject.getUserName(toUser), subtitleView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(12), false));
+            userName.append(Emoji.replaceEmoji(UserObject.getUserName(toUser), subtitleView.getPaint().getFontMetricsInt(), false));
             userName.append("**");
 
             descriptionStart = AndroidUtilities.replaceSingleTag(
                     descriptionStart.toString().replace("**%1$s**", userName),
-                    Theme.key_chat_messageLinkIn, 0,
+                    Theme.key_chat_messageLinkIn, REPLACING_TAG_TYPE_LINKBOLD,
                     () -> onObjectClicked.run(toUser),
                     resourcesProvider
             );

@@ -94,7 +94,7 @@ public class MessageTopicButton {
         if (topicClosed) {
             maxWidth -= AndroidUtilities.dp(18);
         }
-        topicNameLayout = StaticLayoutEx.createStaticLayout(title, 0, title.length(), Theme.chat_topicTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1f, 0, false, TextUtils.TruncateAt.END, maxWidth, 2, false);
+        topicNameLayout = StaticLayoutEx.createStaticLayout(title, Theme.chat_topicTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1f, 0, false, TextUtils.TruncateAt.END, maxWidth, 2, false);
         topicHeight = AndroidUtilities.dp(4 + 4.5f) + Math.min(AndroidUtilities.dp(24), topicNameLayout == null ? 0 : topicNameLayout.getHeight());
         float textWidth = 0;
         int lineCount = topicNameLayout == null ? 0 : topicNameLayout.getLineCount();

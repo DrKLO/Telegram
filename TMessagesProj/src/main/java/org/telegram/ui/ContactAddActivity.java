@@ -203,6 +203,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         doneButton = menu.addItem(done_button, LocaleController.getString("Done", R.string.Done).toUpperCase());
 
         fragmentView = new ScrollView(context);
+        fragmentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
 
         linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -873,7 +874,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 if (user == null) {
                     return;
                 }
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(currentAccount, user);
                 avatarImage.invalidate();
             }
         };

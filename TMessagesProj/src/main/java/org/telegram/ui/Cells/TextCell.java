@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -31,6 +32,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Switch;
+import org.telegram.ui.FilterCreateActivity;
 
 public class TextCell extends FrameLayout {
 
@@ -255,11 +257,26 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
+    protected int processColor(int color) {
+        return color;
+    }
+
+    public void updateColors() {
+        int textKey = textView.getTag() instanceof Integer ? (int) textView.getTag() : Theme.key_windowBackgroundWhiteBlackText;
+        textView.setTextColor(processColor(Theme.getColor(textKey, resourcesProvider)));
+        if (imageView.getTag() instanceof Integer) {
+            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor((int) imageView.getTag(), resourcesProvider)), PorterDuff.Mode.MULTIPLY));
+        }
+        subtitleView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)));
+        valueTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
+        valueSpoilersTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
+    }
+
     public void setColors(int icon, int text) {
-        textView.setTextColor(Theme.getColor(text, resourcesProvider));
+        textView.setTextColor(processColor(Theme.getColor(text, resourcesProvider)));
         textView.setTag(text);
         if (icon >= 0) {
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor(icon, resourcesProvider)), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }
     }
@@ -408,7 +425,7 @@ public class TextCell extends FrameLayout {
         setTextAndValueAndIcon(text, value, false, resId, divider);
     }
 
-    public void setTextAndValueAndIcon(String text, String value, boolean animated, int resId, boolean divider) {
+    public void setTextAndValueAndIcon(CharSequence text, String value, boolean animated, int resId, boolean divider) {
         imageLeft = 21;
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
@@ -426,6 +443,15 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+    }
+
+    public static CharSequence applyNewSpan(String str) {
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        spannableStringBuilder.append("  d");
+        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(10);
+        span.setColor(Theme.getColor(Theme.key_premiumGradient1));
+        spannableStringBuilder.setSpan(span, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+        return spannableStringBuilder;
     }
 
     public void setColorfulIcon(int color, int resId) {
