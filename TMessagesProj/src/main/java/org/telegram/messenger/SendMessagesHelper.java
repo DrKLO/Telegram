@@ -595,6 +595,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public boolean forceImage;
         public boolean updateStickersOrder;
         public boolean hasMediaSpoilers;
+        public boolean doNotCompress;
         public TLRPC.VideoSize emojiMarkup;
     }
 
@@ -8175,7 +8176,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             videoEditedInfo = info.videoEditedInfo != null ? info.videoEditedInfo : createCompressionSettings(info.path);
                         }
 
-                        if (!forceDocument && (videoEditedInfo != null || info.path.endsWith("mp4"))) {
+                        if (info.doNotCompress || (!forceDocument && (videoEditedInfo != null || info.path.endsWith("mp4")))) {
                             if (info.path == null && info.searchImage != null) {
                                 if (info.searchImage.photo instanceof TLRPC.TL_photo) {
                                     info.path = FileLoader.getInstance(accountInstance.getCurrentAccount()).getPathToAttach(info.searchImage.photo, true).getAbsolutePath();
@@ -8229,6 +8230,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     }
                                 }
                                 document = new TLRPC.TL_document();
+                                if (info.doNotCompress) {
+                                    TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
+                                    fileName.file_name = new File(path).getName();
+                                    document.attributes.add(fileName);
+                                }
                                 document.file_reference = new byte[0];
                                 if (size != null) {
                                     document.thumbs.add(size);
@@ -8916,6 +8922,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         document.thumbs.add(size);
                         document.flags |= 1;
                     }
+                    TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
+                    fileName.file_name = new File(path).getName();
+                    document.attributes.add(fileName);
                     document.file_reference = new byte[0];
                     document.mime_type = "video/mp4";
                     accountInstance.getUserConfig().saveConfig(false);
