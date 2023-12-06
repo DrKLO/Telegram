@@ -1229,7 +1229,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 @Override
                 public void onLongPress() {
                     super.onLongPress();
-                    if (settingsView != null && !BuildVars.DEBUG_PRIVATE_VERSION) {
+                    if (settingsView != null || !BuildVars.DEBUG_PRIVATE_VERSION) {
                         return;
                     }
 
