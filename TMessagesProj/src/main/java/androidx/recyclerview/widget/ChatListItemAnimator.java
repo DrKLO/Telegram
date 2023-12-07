@@ -1413,7 +1413,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     protected long getMoveAnimationDelay() {
-        return 0;
+        return 1000;
     }
 
     @Override

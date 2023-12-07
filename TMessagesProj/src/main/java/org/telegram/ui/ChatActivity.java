@@ -233,6 +233,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.DeleteAnimationEffect;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.EmbedBottomSheet;
@@ -419,6 +420,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ActionBarMenuItem.Item muteItem;
     private ActionBarMenuItem.Item muteItemGap;
     private ChatNotificationsPopupWrapper chatNotificationsPopupWrapper;
+    private DeleteAnimationEffect deleteAnimationEffect;
     private float pagedownButtonEnterProgress;
     private float mentionsButtonEnterProgress;
     private float reactionsMentionButtonEnterProgress;
@@ -2078,6 +2080,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             translation += chatActivityEnterView.getTopViewTranslation();
             mentionContainer.setTranslationY(translation);
             chatListView.setTranslationY(translation);
+            // update deleteAnimation's translationY to match chat list view
+            deleteAnimationEffect.setTranslationY(translation);
 
             invalidateChatListViewTopPadding();
             invalidateMessagesVisiblePart();
@@ -4470,6 +4474,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             private void updateSkeletonGradient() {
+                //TODO YL here
                 long newUpdateTime = SystemClock.elapsedRealtime();
                 long dt = Math.abs(skeletonLastUpdateTime - newUpdateTime);
                 if (dt > 17) {
@@ -5265,6 +5270,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         chatListView.setDisableHighlightState(true);
         chatListView.setTag(1);
         chatListView.setVerticalScrollBarEnabled(!SharedConfig.chatBlurEnabled());
+        //TODO YL adapter init
         chatListView.setAdapter(chatAdapter = new ChatActivityAdapter(context));
         chatListView.setClipToPadding(false);
         chatListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA_SCALE);
@@ -5745,6 +5751,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         progressBar.setProgressColor(getThemedColor(Theme.key_chat_serviceText));
         progressView.addView(progressBar, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
 
+        // create an instance for delete animation effect
+        deleteAnimationEffect = new DeleteAnimationEffect(context);
+        deleteAnimationEffect.setVisibility(View.INVISIBLE);
+        contentView.addView(deleteAnimationEffect, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         floatingDateView = new ChatActionCell(context, false, themeDelegate) {
 
             @Override
@@ -6515,6 +6525,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
 
                         chatListView.setTranslationY(dy);
+                        // set deleteAnimation's translationY to match chatListView
+                        deleteAnimationEffect.setTranslationY(dy);
+
                         if (topView != null && topView.getVisibility() == View.VISIBLE) {
                             topView.setTranslationY(animatedTop + (1f - topViewEnterProgress) * topView.getLayoutParams().height);
                             if (topLineView != null) {
@@ -6539,6 +6552,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     mentionContainer.setTranslationY(top);
                                 }
                                 chatListView.setTranslationY(top);
+                                // update deleteAnimationEffect's translationY to match chatListView
+                                deleteAnimationEffect.setTranslationY(top);
                                 invalidateChatListViewTopPadding();
                                 invalidateMessagesVisiblePart();
                             }
@@ -6556,6 +6571,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                 } else {
                                     chatListView.setTranslationY(0);
+                                    // update deleteAnimationEffect's translationY to match chatListView
+                                    deleteAnimationEffect.setTranslationY(0);
                                     if (mentionContainer != null) {
                                         mentionContainer.setTranslationY(0);
                                     }
@@ -6642,6 +6659,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatListView != null) {
                         chatListView.setTranslationY(translationY);
                     }
+                    if(deleteAnimationEffect != null) {
+                        // update deleteAnimationEffect's translationY to match chatListView
+                        deleteAnimationEffect.setTranslationY(translationY);
+                    }
                     if (progressView != null) {
                         progressView.setTranslationY(translationY);
                     }
@@ -6664,6 +6685,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (visibility == GONE) {
                     if (chatListView != null) {
                         chatListView.setTranslationY(0);
+                    }
+                    if(deleteAnimationEffect != null) {
+                        // update deleteAnimationEffect's translationY to match chatListView
+                        deleteAnimationEffect.setTranslationY(0);
                     }
                     if (progressView != null) {
                         progressView.setTranslationY(0);
@@ -9175,6 +9200,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
 
                 chatListView.setPadding(0, p, 0, AndroidUtilities.dp(3) + blurredViewBottomOffset);
+                // TODO:: CHECK
+                //deleteAnimationEffect.setPadding(0, p, 0, AndroidUtilities.dp(3) + blurredViewBottomOffset);
 
                 if (scrollToMessageObject != null) {
                     chatAdapter.updateRowsSafe();
@@ -14644,7 +14671,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (keyboardSize > AndroidUtilities.dp(20) && getLayoutParams().height < 0) {
                         childTop -= keyboardSize;
                     }
-                } else if (child == instantCameraView || child == overlayView || child == animatingImageView) {
+                } else if (child == instantCameraView || child == overlayView || child == animatingImageView || child == deleteAnimationEffect) {
+                    // layout `deleteAnimationEffect` like other children
                     childTop = 0;
                 } else if (child == textSelectionHelper.getOverlayView(getContext())) {
                     childTop -= paddingBottom;
@@ -14669,6 +14697,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         private void setNonNoveTranslation(float y) {
             contentView.setTranslationY(y);
+            deleteAnimationEffect.setTranslationY(y);
             actionBar.setTranslationY(0);
             emptyViewContainer.setTranslationY(0);
             progressView.setTranslationY(0);
@@ -17586,6 +17615,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 chatAdapter.notifyDataSetChanged(false);
             }
         } else if (id == NotificationCenter.messagesDeleted) {
+            //TODO YL deleted messages
             boolean scheduled = (Boolean) args[2];
             if (scheduled != (chatMode == MODE_SCHEDULED)) {
                 return;
@@ -20875,6 +20905,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (chatAdapter != null) {
                 int prevLoadingUpRow = chatAdapter.loadingUpRow;
                 int prevLoadingDownRow = chatAdapter.loadingDownRow;
+
+                // here we process deleting messages animations
+                if (chatListView != null) {
+                    Rect chatListVisibleRect = new Rect();
+                    Rect chatEffectRect = new Rect();
+                    chatListView.getGlobalVisibleRect(chatListVisibleRect);
+                    deleteAnimationEffect.getGlobalVisibleRect(chatEffectRect);
+
+                    // loop on removed indexes
+                    List<View> removedCells = new ArrayList<>(removedIndexes.size());
+                    for (int index = 0; index < chatListView.getChildCount(); index++) {
+                        View child = chatListView.getChildAt(index);
+                        if (removedIndexes.contains(chatListView.getChildAdapterPosition(child)))
+                            removedCells.add(child);
+                    }
+                    deleteAnimationEffect.playDeleteEffect(removedCells, chatEffectRect.top - chatListVisibleRect.top);
+                }
+
                 for (int a = 0, N = removedIndexes.size(); a < N; a++) {
                     chatAdapter.notifyItemRemoved(removedIndexes.get(a));
                 }
@@ -21813,6 +21861,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 searchExpandAnimator.addUpdateListener(animation -> {
                     searchExpandProgress = (float) animation.getAnimatedValue();
                     chatListView.setTranslationY(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
+                    deleteAnimationEffect.setTranslationY(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
                     chatActivityEnterView.setChatSearchExpandOffset(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
                     invalidateChatListViewTopPadding();
                 });
@@ -21870,6 +21919,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     searchExpandProgress = (float) animation.getAnimatedValue();
                     chatListView.setTranslationY(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
                     chatActivityEnterView.setChatSearchExpandOffset(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
+                    deleteAnimationEffect.setTranslationY(searchExpandProgress * (chatActivityEnterView.getMeasuredHeight() - AndroidUtilities.dp(searchContainerHeight)));
                     invalidateChatListViewTopPadding();
                 });
                 searchExpandAnimator.addListener(new AnimatorListenerAdapter() {
@@ -28274,6 +28324,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
         messages.remove(index);
+
+        //TODO YL check here looks like doesn't work
         if (chatAdapter != null) {
             chatAdapter.notifyItemRemoved(chatAdapter.messagesStartRow + index);
         }
@@ -30008,6 +30060,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemRemoved(int position) {
+            //TODO YL this call
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("notify item removed " + position);
             }

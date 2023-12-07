@@ -37,3 +37,23 @@ You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
 ### Localization
 
 We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+
+## Telegram Contest (Delete message UI 2023)
+
+### Overview
+
+This open-source software is a forked branch of the Telegram Android application, with message delete animation effect developed for the December 2023 Telegram Android contest.
+
+### Features
+
+-   **Message Delete Animation Effect:** Disappearing dust animation when a message is deleted in any chat. (like the video)
+
+-   **Versatile Conversation Support:** Whether it's a chat, channel, or any other conversation type, this implementation seamlessly integrates the message delete animation across various communication contexts.
+
+-   **Bulk Message Deletion:** Effortlessly delete multiple messages at once with the added convenience of bulk message deletion support.
+
+-   **Cross-Device Compatibility:** Tested rigorously on a spectrum of devices, from high-end smartphones to more budget-friendly options, ensuring a consistent and reliable user experience across the board.
+
+### Important ACKNOWLEDGEMENT & DISCLAIMER
+
+Special thanks to the Telegram Android contest community for inspiring and fostering the development of this exciting message delete animation feature. During the development of this feature, We drew inspiration from @tg's work, addressing several issues in the original code including but not limited to bulk message deletion issue, performance issues, animation motion, screen turning black when keyboard opens, etc.

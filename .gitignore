@@ -4,3 +4,4 @@ build/
 obj/
 *.iml
 local.properties
+.DS_Store
