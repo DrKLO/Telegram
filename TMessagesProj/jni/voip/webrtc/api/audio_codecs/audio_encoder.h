@@ -95,13 +95,13 @@ class AudioEncoder {
 
   // This is the main struct for auxiliary encoding information. Each encoded
   // packet should be accompanied by one EncodedInfo struct, containing the
-  // total number of |encoded_bytes|, the |encoded_timestamp| and the
-  // |payload_type|. If the packet contains redundant encodings, the |redundant|
+  // total number of `encoded_bytes`, the `encoded_timestamp` and the
+  // `payload_type`. If the packet contains redundant encodings, the `redundant`
   // vector will be populated with EncodedInfoLeaf structs. Each struct in the
   // vector represents one encoding; the order of structs in the vector is the
   // same as the order in which the actual payloads are written to the byte
   // stream. When EncoderInfoLeaf structs are present in the vector, the main
-  // struct's |encoded_bytes| will be the sum of all the |encoded_bytes| in the
+  // struct's `encoded_bytes` will be the sum of all the `encoded_bytes` in the
   // vector.
   struct EncodedInfo : public EncodedInfoLeaf {
     EncodedInfo();
@@ -143,7 +143,7 @@ class AudioEncoder {
 
   // Accepts one 10 ms block of input audio (i.e., SampleRateHz() / 100 *
   // NumChannels() samples). Multi-channel audio must be sample-interleaved.
-  // The encoder appends zero or more bytes of output to |encoded| and returns
+  // The encoder appends zero or more bytes of output to `encoded` and returns
   // additional encoding information.  Encode() checks some preconditions, calls
   // EncodeImpl() which does the actual work, and then checks some
   // postconditions.
@@ -205,7 +205,7 @@ class AudioEncoder {
   virtual void DisableAudioNetworkAdaptor();
 
   // Provides uplink packet loss fraction to this encoder to allow it to adapt.
-  // |uplink_packet_loss_fraction| is in the range [0.0, 1.0].
+  // `uplink_packet_loss_fraction` is in the range [0.0, 1.0].
   virtual void OnReceivedUplinkPacketLossFraction(
       float uplink_packet_loss_fraction);
 
@@ -245,6 +245,9 @@ class AudioEncoder {
   // overhead.
   virtual absl::optional<std::pair<TimeDelta, TimeDelta>> GetFrameLengthRange()
       const = 0;
+
+  // The maximum number of audio channels supported by WebRTC encoders.
+  static constexpr int kMaxNumberOfChannels = 24;
 
  protected:
   // Subclasses implement this to perform the actual encoding. Called by

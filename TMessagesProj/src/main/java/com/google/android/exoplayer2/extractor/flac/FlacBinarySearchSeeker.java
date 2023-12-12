@@ -15,13 +15,14 @@
  */
 package com.google.android.exoplayer2.extractor.flac;
 
+import static java.lang.Math.max;
+
 import com.google.android.exoplayer2.extractor.BinarySearchSeeker;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.FlacFrameReader;
 import com.google.android.exoplayer2.extractor.FlacFrameReader.SampleNumberHolder;
+import com.google.android.exoplayer2.extractor.FlacStreamMetadata;
 import com.google.android.exoplayer2.extractor.SeekMap;
-import com.google.android.exoplayer2.util.FlacConstants;
-import com.google.android.exoplayer2.util.FlacStreamMetadata;
 import java.io.IOException;
 
 /**
@@ -55,7 +56,7 @@ import java.io.IOException;
         /* floorBytePosition= */ firstFramePosition,
         /* ceilingBytePosition= */ inputLength,
         /* approxBytesPerFrame= */ flacStreamMetadata.getApproxBytesPerFrame(),
-        /* minimumSearchRange= */ Math.max(
+        /* minimumSearchRange= */ max(
             FlacConstants.MIN_FRAME_HEADER_SIZE, flacStreamMetadata.minFrameSize));
   }
 
@@ -73,7 +74,7 @@ import java.io.IOException;
 
     @Override
     public TimestampSearchResult searchForTimestamp(ExtractorInput input, long targetSampleNumber)
-        throws IOException, InterruptedException {
+        throws IOException {
       long searchPosition = input.getPosition();
 
       // Find left frame.
@@ -81,7 +82,7 @@ import java.io.IOException;
       long leftFramePosition = input.getPeekPosition();
 
       input.advancePeekPosition(
-          Math.max(FlacConstants.MIN_FRAME_HEADER_SIZE, flacStreamMetadata.minFrameSize));
+          max(FlacConstants.MIN_FRAME_HEADER_SIZE, flacStreamMetadata.minFrameSize));
 
       // Find right frame.
       long rightFrameFirstSampleNumber = findNextFrame(input);
@@ -110,10 +111,8 @@ import java.io.IOException;
      *     the stream if no frame was found.
      * @throws IOException If peeking from the input fails. In this case, there is no guarantee on
      *     the peek position.
-     * @throws InterruptedException If interrupted while peeking from input. In this case, there is
-     *     no guarantee on the peek position.
      */
-    private long findNextFrame(ExtractorInput input) throws IOException, InterruptedException {
+    private long findNextFrame(ExtractorInput input) throws IOException {
       while (input.getPeekPosition() < input.getLength() - FlacConstants.MIN_FRAME_HEADER_SIZE
           && !FlacFrameReader.checkFrameHeaderFromPeek(
               input, flacStreamMetadata, frameStartMarker, sampleNumberHolder)) {

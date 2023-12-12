@@ -6,9 +6,12 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
@@ -39,7 +42,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
     private NumberPicker picker;
 
     String[] strings = new String[6];
-    String[] backgroundKeys = new String[6];
+    int[] backgroundKeys = new int[6];
     RLottieDrawable[] icons = new RLottieDrawable[6];
 
     int currentIconIndex;
@@ -49,7 +52,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
     float progressToSwipeFolders;
     float colorProgress = 1f;
     int fromColor;
-    String currentColorKey;
+    int currentColorKey;
 
 
     public SwipeGestureSettingsView(Context context, int currentAccount) {
@@ -96,6 +99,8 @@ public class SwipeGestureSettingsView extends FrameLayout {
         picker.setDrawDividers(false);
         hasTabs = !MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();
         picker.setMaxValue(hasTabs ? strings.length - 1 : strings.length - 2);
+        picker.setAllItemsCount(hasTabs ? strings.length : strings.length - 1);
+        picker.setWrapSelectorWheel(true);
         picker.setFormatter(value -> strings[value]);
         picker.setOnValueChangedListener((picker, oldVal, newVal) -> {
             swapIcons();
@@ -104,7 +109,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
             invalidate();
             picker.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         });
-
+        picker.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         picker.setValue(SharedConfig.getChatSwipeAction(currentAccount));
 
         addView(picker, LayoutHelper.createFrame(132, LayoutHelper.MATCH_PARENT, Gravity.RIGHT, 21, 0, 21, 0));
@@ -204,12 +209,12 @@ public class SwipeGestureSettingsView extends FrameLayout {
 
 
         int color;
-        if (currentColorKey == null) {
+        if (currentColorKey < 0) {
             currentColorKey = backgroundKeys[picker.getValue()];
             colorProgress = 1f;
             color = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(currentColorKey), 0.9f);
             fromColor = color;
-        } else if (!backgroundKeys[picker.getValue()].equals(currentColorKey)) {
+        } else if (backgroundKeys[picker.getValue()] != currentColorKey) {
             fromColor = ColorUtils.blendARGB(fromColor, ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(currentColorKey), 0.9f), colorProgress);
             colorProgress = 0;
             currentColorKey = backgroundKeys[picker.getValue()];
@@ -326,5 +331,28 @@ public class SwipeGestureSettingsView extends FrameLayout {
         updateColors();
         picker.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         picker.invalidate();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setEnabled(true);
+        info.setContentDescription(strings[picker.getValue()]);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, null));
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+        super.onInitializeAccessibilityEvent(event);
+        if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            int newValue = picker.getValue() + 1;
+            if (newValue > picker.getMaxValue() || newValue < 0) {
+                newValue = 0;
+            }
+            setContentDescription(strings[newValue]);
+            picker.changeValueByOne(true);
+        }
     }
 }

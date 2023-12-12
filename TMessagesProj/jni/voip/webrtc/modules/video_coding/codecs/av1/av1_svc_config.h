@@ -10,12 +10,22 @@
 #ifndef MODULES_VIDEO_CODING_CODECS_AV1_AV1_SVC_CONFIG_H_
 #define MODULES_VIDEO_CODING_CODECS_AV1_AV1_SVC_CONFIG_H_
 
+#include <vector>
+
+#include "absl/container/inlined_vector.h"
 #include "api/video_codecs/video_codec.h"
 
 namespace webrtc {
 
+absl::InlinedVector<ScalabilityMode, kScalabilityModeCount>
+LibaomAv1EncoderSupportedScalabilityModes();
+
+bool LibaomAv1EncoderSupportsScalabilityMode(ScalabilityMode scalability_mode);
+
 // Fills `video_codec.spatialLayers` using other members.
-bool SetAv1SvcConfig(VideoCodec& video_codec);
+bool SetAv1SvcConfig(VideoCodec& video_codec,
+                     int num_temporal_layers,
+                     int num_spatial_layers);
 
 }  // namespace webrtc
 

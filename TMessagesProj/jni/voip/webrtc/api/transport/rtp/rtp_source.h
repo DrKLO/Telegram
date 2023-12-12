@@ -15,6 +15,7 @@
 
 #include "absl/types/optional.h"
 #include "api/rtp_headers.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -28,23 +29,20 @@ class RtpSource {
  public:
   struct Extensions {
     absl::optional<uint8_t> audio_level;
+
+    // Fields from the Absolute Capture Time header extension:
+    // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time
     absl::optional<AbsoluteCaptureTime> absolute_capture_time;
+
+    // Clock offset between the local clock and the capturer's clock.
+    // Do not confuse with `AbsoluteCaptureTime::estimated_capture_clock_offset`
+    // which instead represents the clock offset between a remote sender and the
+    // capturer. The following holds:
+    //   Capture's NTP Clock = Local NTP Clock + Local-Capture Clock Offset
+    absl::optional<TimeDelta> local_capture_clock_offset;
   };
 
   RtpSource() = delete;
-
-  // TODO(bugs.webrtc.org/10739): Remove this constructor once all clients
-  // migrate to the version with absolute capture time.
-  RtpSource(int64_t timestamp_ms,
-            uint32_t source_id,
-            RtpSourceType source_type,
-            absl::optional<uint8_t> audio_level,
-            uint32_t rtp_timestamp)
-      : RtpSource(timestamp_ms,
-                  source_id,
-                  source_type,
-                  rtp_timestamp,
-                  {audio_level, absl::nullopt}) {}
 
   RtpSource(int64_t timestamp_ms,
             uint32_t source_id,
@@ -85,6 +83,10 @@ class RtpSource {
 
   absl::optional<AbsoluteCaptureTime> absolute_capture_time() const {
     return extensions_.absolute_capture_time;
+  }
+
+  absl::optional<TimeDelta> local_capture_clock_offset() const {
+    return extensions_.local_capture_clock_offset;
   }
 
   bool operator==(const RtpSource& o) const {

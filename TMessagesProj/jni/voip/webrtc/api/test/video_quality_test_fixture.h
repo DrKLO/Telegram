@@ -24,8 +24,8 @@
 #include "api/transport/network_control.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder_factory.h"
-#include "api/video_codecs/video_encoder_config.h"
 #include "api/video_codecs/video_encoder_factory.h"
+#include "video/config/video_encoder_config.h"
 
 namespace webrtc {
 
@@ -98,7 +98,7 @@ class VideoQualityTestFixtureInterface {
       InterLayerPredMode inter_layer_pred = InterLayerPredMode::kOn;
       // If empty, bitrates are generated in VP9Impl automatically.
       std::vector<SpatialLayer> spatial_layers;
-      // If set, default parameters will be used instead of |streams|.
+      // If set, default parameters will be used instead of `streams`.
       bool infer_streams = false;
     } ss[2];
     struct Logging {

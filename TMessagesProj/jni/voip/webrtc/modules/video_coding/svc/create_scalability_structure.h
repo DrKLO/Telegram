@@ -13,7 +13,8 @@
 #include <memory>
 #include <vector>
 
-#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "modules/video_coding/svc/scalable_video_controller.h"
 
 namespace webrtc {
@@ -22,7 +23,12 @@ namespace webrtc {
 // https://w3c.github.io/webrtc-svc/#scalabilitymodes*
 // Returns nullptr for unknown name.
 std::unique_ptr<ScalableVideoController> CreateScalabilityStructure(
-    absl::string_view name);
+    ScalabilityMode name);
+
+// Returns description of the scalability structure identified by 'name',
+// Return nullopt for unknown name.
+absl::optional<ScalableVideoController::StreamLayersConfig>
+ScalabilityStructureConfig(ScalabilityMode name);
 
 }  // namespace webrtc
 

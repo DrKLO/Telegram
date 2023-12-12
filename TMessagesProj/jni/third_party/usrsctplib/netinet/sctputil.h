@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctputil.h 352592 2019-09-22 10:40:15Z tuexen $");
+__FBSDID("$FreeBSD$");
 #endif
 
 #ifndef _NETINET_SCTP_UTIL_H_
@@ -57,13 +57,12 @@ void sctp_m_freem(struct mbuf *m);
 #define sctp_m_freem m_freem
 #endif
 
-#if defined(SCTP_LOCAL_TRACE_BUF) || defined(__APPLE__)
+#if defined(SCTP_LOCAL_TRACE_BUF)
 void
 sctp_log_trace(uint32_t fr, const char *str SCTP_UNUSED, uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f);
 #endif
 
 #define sctp_get_associd(stcb) ((sctp_assoc_t)stcb->asoc.assoc_id)
-
 
 /*
  * Function prototypes
@@ -84,7 +83,7 @@ uint32_t sctp_select_initial_TSN(struct sctp_pcb *);
 
 uint32_t sctp_select_a_tag(struct sctp_inpcb *, uint16_t lport, uint16_t rport, int);
 
-int sctp_init_asoc(struct sctp_inpcb *, struct sctp_tcb *, uint32_t, uint32_t, uint16_t);
+int sctp_init_asoc(struct sctp_inpcb *, struct sctp_tcb *, uint32_t, uint32_t, uint32_t, uint16_t);
 
 void sctp_fill_random_store(struct sctp_pcb *);
 
@@ -94,6 +93,14 @@ sctp_notify_stream_reset_add(struct sctp_tcb *stcb, uint16_t numberin,
 void
 sctp_notify_stream_reset_tsn(struct sctp_tcb *stcb, uint32_t sending_tsn, uint32_t recv_tsn, int flag);
 
+/*
+ * NOTE: sctp_timer_start() will increment the reference count of any relevant
+ * structure the timer is referencing, in order to prevent a race condition
+ * between the timer executing and the structure being freed.
+ *
+ * When the timer fires or sctp_timer_stop() is called, these references are
+ * removed.
+ */
 void
 sctp_timer_start(int, struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
@@ -111,7 +118,7 @@ sctp_mtu_size_reset(struct sctp_inpcb *, struct sctp_association *, uint32_t);
 void
 sctp_wakeup_the_read_socket(struct sctp_inpcb *inp, struct sctp_tcb *stcb,
     int so_locked
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
+#if !(defined(__APPLE__) && !defined(__Userspace__))
     SCTP_UNUSED
 #endif
 );
@@ -130,11 +137,7 @@ sctp_add_to_readq(struct sctp_inpcb *inp,
     struct sockbuf *sb,
     int end,
     int inpread_locked,
-    int so_locked
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-    );
+    int so_locked);
 
 void sctp_iterator_worker(void);
 
@@ -162,60 +165,45 @@ sctp_add_pad_tombuf(struct mbuf *, int);
 struct mbuf *
 sctp_pad_lastmbuf(struct mbuf *, int, struct mbuf *);
 
-void sctp_ulp_notify(uint32_t, struct sctp_tcb *, uint32_t, void *, int
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-    );
+void sctp_ulp_notify(uint32_t, struct sctp_tcb *, uint32_t, void *, int);
 
 void
 sctp_pull_off_control_to_new_inp(struct sctp_inpcb *old_inp,
     struct sctp_inpcb *new_inp,
     struct sctp_tcb *stcb, int waitflags);
 
-
 void sctp_stop_timers_for_shutdown(struct sctp_tcb *);
 
-void sctp_report_all_outbound(struct sctp_tcb *, uint16_t, int, int
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-    );
+/* Stop all timers for association and remote addresses. */
+void sctp_stop_association_timers(struct sctp_tcb *, bool);
+
+void sctp_report_all_outbound(struct sctp_tcb *, uint16_t, int);
 
 int sctp_expand_mapping_array(struct sctp_association *, uint32_t);
 
-void sctp_abort_notification(struct sctp_tcb *, uint8_t, uint16_t,
-			     struct sctp_abort_chunk *, int
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-    );
+void sctp_abort_notification(struct sctp_tcb *, bool, bool, uint16_t,
+                             struct sctp_abort_chunk *, int);
 
 /* We abort responding to an IP packet for some reason */
 void
 sctp_abort_association(struct sctp_inpcb *, struct sctp_tcb *, struct mbuf *,
                        int, struct sockaddr *, struct sockaddr *,
                        struct sctphdr *, struct mbuf *,
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) && !defined(__Userspace__)
                        uint8_t, uint32_t,
 #endif
                        uint32_t, uint16_t);
 
-
 /* We choose to abort via user input */
 void
 sctp_abort_an_association(struct sctp_inpcb *, struct sctp_tcb *,
-    struct mbuf *, int
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-);
+    struct mbuf *, bool, int);
 
 void sctp_handle_ootb(struct mbuf *, int, int,
                       struct sockaddr *, struct sockaddr *,
                       struct sctphdr *, struct sctp_inpcb *,
                       struct mbuf *,
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) && !defined(__Userspace__)
                       uint8_t, uint32_t, uint16_t,
 #endif
                       uint32_t, uint16_t);
@@ -276,21 +264,16 @@ void sctp_print_address(struct sockaddr *);
 
 int
 sctp_release_pr_sctp_chunk(struct sctp_tcb *, struct sctp_tmit_chunk *,
-    uint8_t, int
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-    SCTP_UNUSED
-#endif
-);
+    uint8_t, int);
 
 struct mbuf *sctp_generate_cause(uint16_t, char *);
 struct mbuf *sctp_generate_no_user_data_cause(uint32_t);
 
 void sctp_bindx_add_address(struct socket *so, struct sctp_inpcb *inp,
-			    struct sockaddr *sa, sctp_assoc_t assoc_id,
-			    uint32_t vrf_id, int *error, void *p);
-void sctp_bindx_delete_address(struct sctp_inpcb *inp,
-			       struct sockaddr *sa, sctp_assoc_t assoc_id,
-			       uint32_t vrf_id, int *error);
+                            struct sockaddr *sa, uint32_t vrf_id, int *error,
+                            void *p);
+void sctp_bindx_delete_address(struct sctp_inpcb *inp, struct sockaddr *sa,
+                               uint32_t vrf_id, int *error);
 
 int sctp_local_addr_count(struct sctp_tcb *stcb);
 
@@ -352,11 +335,11 @@ do { \
 } while (0)
 
 /* functions to start/stop udp tunneling */
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if (defined(__APPLE__) || defined(__FreeBSD__)) && !defined(__Userspace__)
 void sctp_over_udp_stop(void);
 int sctp_over_udp_start(void);
 #endif
-#if defined(__Windows__)
+#if defined(_WIN32) && !defined(__Userspace__)
 void sctp_over_udp_restart(void);
 #endif
 
@@ -377,7 +360,6 @@ sctp_wakeup_log(struct sctp_tcb *stcb,
 void sctp_log_strm_del_alt(struct sctp_tcb *stcb, uint32_t, uint16_t, uint16_t, int);
 
 void sctp_log_nagle_event(struct sctp_tcb *stcb, int action);
-
 
 #ifdef SCTP_MBUF_LOGGING
 void
@@ -412,7 +394,6 @@ void sctp_log_map(uint32_t, uint32_t, uint32_t, int);
 void sctp_print_mapping_array(struct sctp_association *asoc);
 void sctp_clr_stat_log(void);
 
-
 #ifdef SCTP_AUDITING_ENABLED
 void
 sctp_auditing(int, struct sctp_inpcb *, struct sctp_tcb *,
@@ -421,11 +402,16 @@ void sctp_audit_log(uint8_t, uint8_t);
 
 #endif
 uint32_t sctp_min_mtu(uint32_t, uint32_t, uint32_t);
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 void sctp_hc_set_mtu(union sctp_sockstore *, uint16_t, uint32_t);
 uint32_t sctp_hc_get_mtu(union sctp_sockstore *, uint16_t);
 #endif
 void sctp_set_state(struct sctp_tcb *, int);
 void sctp_add_substate(struct sctp_tcb *, int);
+uint32_t sctp_ticks_to_msecs(uint32_t);
+uint32_t sctp_msecs_to_ticks(uint32_t);
+uint32_t sctp_ticks_to_secs(uint32_t);
+uint32_t sctp_secs_to_ticks(uint32_t);
+
 #endif				/* _KERNEL */
 #endif

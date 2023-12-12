@@ -3,6 +3,7 @@ package org.telegram.messenger.video;
 import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.PhotoViewerWebView;
 import org.telegram.ui.Components.VideoForwardDrawable;
 import org.telegram.ui.Components.VideoPlayer;
 
@@ -19,14 +20,15 @@ public class VideoPlayerRewinder {
     private float playSpeed = 1f;
 
     private VideoPlayer videoPlayer;
+    private PhotoViewerWebView webView;
 
     private final Runnable backSeek = new Runnable() {
         @Override
         public void run() {
-            if (videoPlayer == null) {
+            if (videoPlayer == null && webView == null) {
                 return;
             }
-            long duration = videoPlayer.getDuration();
+            long duration = getDuration();
             if (duration == 0 || duration == C.TIME_UNSET) {
                 rewindLastTime = System.currentTimeMillis();
                 return;
@@ -52,21 +54,19 @@ public class VideoPlayerRewinder {
             } else if (rewindBackSeekPlayerPosition > duration) {
                 rewindBackSeekPlayerPosition = duration;
             }
-            if (rewindByBackSeek && videoPlayer != null && rewindLastTime - rewindLastUpdatePlayerTime > 350) {
+            if (rewindByBackSeek && rewindLastTime - rewindLastUpdatePlayerTime > 350) {
                 rewindLastUpdatePlayerTime = rewindLastTime;
-                videoPlayer.seekTo(rewindBackSeekPlayerPosition);
+                seekTo(rewindBackSeekPlayerPosition);
             }
 
-            if (videoPlayer != null) {
-                long timeDiff = rewindBackSeekPlayerPosition - startRewindFrom;
-                float progress = rewindBackSeekPlayerPosition / (float) videoPlayer.getDuration();
-                updateRewindProgressUi(timeDiff, progress, rewindByBackSeek);
-            }
+            long timeDiff = rewindBackSeekPlayerPosition - startRewindFrom;
+            float progress = rewindBackSeekPlayerPosition / (float) getDuration();
+            updateRewindProgressUi(timeDiff, progress, rewindByBackSeek);
 
             if (rewindBackSeekPlayerPosition == 0 || rewindBackSeekPlayerPosition >= duration) {
-                if (rewindByBackSeek && videoPlayer != null) {
+                if (rewindByBackSeek) {
                     rewindLastUpdatePlayerTime = rewindLastTime;
-                    videoPlayer.seekTo(rewindBackSeekPlayerPosition);
+                    seekTo(rewindBackSeekPlayerPosition);
                 }
                 cancelRewind();
             }
@@ -75,6 +75,14 @@ public class VideoPlayerRewinder {
             }
         }
     };
+
+    public void startRewind(PhotoViewerWebView webView, boolean forward, float playbackSpeed) {
+        this.webView = webView;
+        this.playSpeed = playbackSpeed;
+        rewindForward = forward;
+        cancelRewind();
+        incrementRewindCount();
+    }
 
     public void startRewind(VideoPlayer videoPlayer, boolean forward, float playbackSpeed) {
         this.videoPlayer = videoPlayer;
@@ -88,14 +96,14 @@ public class VideoPlayerRewinder {
         if (rewindCount != 0) {
             rewindCount = 0;
 
-            if (videoPlayer != null) {
+            if (videoPlayer != null || webView != null) {
                 if (rewindByBackSeek) {
-                    videoPlayer.seekTo(rewindBackSeekPlayerPosition);
+                    seekTo(rewindBackSeekPlayerPosition);
                 } else {
-                    long current = videoPlayer.getCurrentPosition();
-                    videoPlayer.seekTo(current);
+                    long current = getCurrentPosition();
+                    seekTo(current);
                 }
-                videoPlayer.setPlaybackSpeed(playSpeed);
+                setPlaybackSpeed(playSpeed);
             }
         }
         AndroidUtilities.cancelRunOnUIThread(backSeek);
@@ -109,13 +117,13 @@ public class VideoPlayerRewinder {
     }
 
     private void incrementRewindCount() {
-        if (videoPlayer == null) {
+        if (videoPlayer == null && webView == null) {
             return;
         }
         rewindCount++;
         boolean needUpdate = false;
         if (rewindCount == 1) {
-            if (rewindForward && videoPlayer.isPlaying()) {
+            if (rewindForward && isPlaying()) {
                 rewindByBackSeek = false;
             } else {
                 rewindByBackSeek = true;
@@ -123,13 +131,13 @@ public class VideoPlayerRewinder {
         }
         if (rewindForward && !rewindByBackSeek) {
             if (rewindCount == 1) {
-                videoPlayer.setPlaybackSpeed(4);
+                setPlaybackSpeed(4);
                 needUpdate = true;
             } else if (rewindCount == 2) {
-                videoPlayer.setPlaybackSpeed(7);
+                setPlaybackSpeed(7);
                 needUpdate = true;
             } else {
-                videoPlayer.setPlaybackSpeed(13);
+                setPlaybackSpeed(13);
             }
         } else {
             if (rewindCount == 1 || rewindCount == 2) {
@@ -139,10 +147,10 @@ public class VideoPlayerRewinder {
 
 
         if (rewindCount == 1) {
-            rewindBackSeekPlayerPosition = videoPlayer.getCurrentPosition();
+            rewindBackSeekPlayerPosition = getCurrentPosition();
             rewindLastTime = System.currentTimeMillis();
             rewindLastUpdatePlayerTime = rewindLastTime;
-            startRewindFrom = videoPlayer.getCurrentPosition();
+            startRewindFrom = getCurrentPosition();
             onRewindStart(rewindForward);
         }
 
@@ -173,7 +181,62 @@ public class VideoPlayerRewinder {
 
     }
 
+    private void seekTo(long position) {
+        if (webView != null) {
+            webView.seekTo(position);
+        } else {
+            if (videoPlayer == null) {
+                return;
+            }
+            videoPlayer.seekTo(position);
+        }
+    }
+
+    private void setPlaybackSpeed(float speed) {
+        if (webView != null) {
+            webView.setPlaybackSpeed(speed);
+        } else {
+            if (videoPlayer == null) {
+                return;
+            }
+            videoPlayer.setPlaybackSpeed(speed);
+        }
+    }
+
+    private long getCurrentPosition() {
+        if (webView != null) {
+            return webView.getCurrentPosition();
+        } else {
+            if (videoPlayer == null) {
+                return 0;
+            }
+            return videoPlayer.getCurrentPosition();
+        }
+    }
+
+    private long getDuration() {
+        if (webView != null) {
+            return webView.getVideoDuration();
+        } else {
+            if (videoPlayer == null) {
+                return 0;
+            }
+            return videoPlayer.getDuration();
+        }
+    }
+
+    private boolean isPlaying() {
+        if (webView != null) {
+            return webView.isPlaying();
+        } else {
+            if (videoPlayer == null) {
+                return false;
+            }
+            return videoPlayer.isPlaying();
+        }
+    }
+
     public float getVideoProgress() {
-        return rewindBackSeekPlayerPosition / (float) videoPlayer.getDuration();
+        return rewindBackSeekPlayerPosition / (float) getDuration();
     }
 }

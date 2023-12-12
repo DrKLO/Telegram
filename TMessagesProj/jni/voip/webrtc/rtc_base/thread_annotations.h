@@ -88,6 +88,9 @@
 #define RTC_UNLOCK_FUNCTION(...) \
   RTC_THREAD_ANNOTATION_ATTRIBUTE__(unlock_function(__VA_ARGS__))
 
+#define RTC_ASSERT_EXCLUSIVE_LOCK(...) \
+  RTC_THREAD_ANNOTATION_ATTRIBUTE__(assert_exclusive_lock(__VA_ARGS__))
+
 // An escape hatch for thread safety analysis to ignore the annotated function.
 #define RTC_NO_THREAD_SAFETY_ANALYSIS \
   RTC_THREAD_ANNOTATION_ATTRIBUTE__(no_thread_safety_analysis)

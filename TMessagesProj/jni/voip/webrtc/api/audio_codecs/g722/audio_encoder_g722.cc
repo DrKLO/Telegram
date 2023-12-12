@@ -38,8 +38,11 @@ absl::optional<AudioEncoderG722Config> AudioEncoderG722::SdpToConfig(
       config.frame_size_ms = rtc::SafeClamp<int>(whole_packets * 10, 10, 60);
     }
   }
-  return config.IsOk() ? absl::optional<AudioEncoderG722Config>(config)
-                       : absl::nullopt;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return absl::nullopt;
+  }
+  return config;
 }
 
 void AudioEncoderG722::AppendSupportedEncoders(
@@ -59,8 +62,12 @@ AudioCodecInfo AudioEncoderG722::QueryAudioEncoder(
 std::unique_ptr<AudioEncoder> AudioEncoderG722::MakeAudioEncoder(
     const AudioEncoderG722Config& config,
     int payload_type,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioEncoderG722Impl>(config, payload_type);
 }
 

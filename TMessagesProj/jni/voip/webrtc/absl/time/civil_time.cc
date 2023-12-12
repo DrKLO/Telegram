@@ -15,6 +15,7 @@
 #include "absl/time/civil_time.h"
 
 #include <cstdlib>
+#include <ostream>
 #include <string>
 
 #include "absl/strings/str_cat.h"
@@ -38,9 +39,7 @@ std::string FormatYearAnd(string_view fmt, CivilSecond cs) {
   const CivilSecond ncs(NormalizeYear(cs.year()), cs.month(), cs.day(),
                         cs.hour(), cs.minute(), cs.second());
   const TimeZone utc = UTCTimeZone();
-  // TODO(absl-team): Avoid conversion of fmt string.
-  return StrCat(cs.year(),
-                FormatTime(std::string(fmt), FromCivil(ncs, utc), utc));
+  return StrCat(cs.year(), FormatTime(fmt, FromCivil(ncs, utc), utc));
 }
 
 template <typename CivilT>
@@ -98,26 +97,26 @@ bool ParseLenient(string_view s, CivilT* c) {
 }  // namespace
 
 std::string FormatCivilTime(CivilSecond c) {
-  return FormatYearAnd("-%m-%dT%H:%M:%S", c);
+  return FormatYearAnd("-%m-%d%ET%H:%M:%S", c);
 }
 std::string FormatCivilTime(CivilMinute c) {
-  return FormatYearAnd("-%m-%dT%H:%M", c);
+  return FormatYearAnd("-%m-%d%ET%H:%M", c);
 }
 std::string FormatCivilTime(CivilHour c) {
-  return FormatYearAnd("-%m-%dT%H", c);
+  return FormatYearAnd("-%m-%d%ET%H", c);
 }
 std::string FormatCivilTime(CivilDay c) { return FormatYearAnd("-%m-%d", c); }
 std::string FormatCivilTime(CivilMonth c) { return FormatYearAnd("-%m", c); }
 std::string FormatCivilTime(CivilYear c) { return FormatYearAnd("", c); }
 
 bool ParseCivilTime(string_view s, CivilSecond* c) {
-  return ParseYearAnd("-%m-%dT%H:%M:%S", s, c);
+  return ParseYearAnd("-%m-%d%ET%H:%M:%S", s, c);
 }
 bool ParseCivilTime(string_view s, CivilMinute* c) {
-  return ParseYearAnd("-%m-%dT%H:%M", s, c);
+  return ParseYearAnd("-%m-%d%ET%H:%M", s, c);
 }
 bool ParseCivilTime(string_view s, CivilHour* c) {
-  return ParseYearAnd("-%m-%dT%H", s, c);
+  return ParseYearAnd("-%m-%d%ET%H", s, c);
 }
 bool ParseCivilTime(string_view s, CivilDay* c) {
   return ParseYearAnd("-%m-%d", s, c);
@@ -168,6 +167,31 @@ std::ostream& operator<<(std::ostream& os, CivilMinute m) {
 std::ostream& operator<<(std::ostream& os, CivilSecond s) {
   return os << FormatCivilTime(s);
 }
+
+bool AbslParseFlag(string_view s, CivilSecond* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+bool AbslParseFlag(string_view s, CivilMinute* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+bool AbslParseFlag(string_view s, CivilHour* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+bool AbslParseFlag(string_view s, CivilDay* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+bool AbslParseFlag(string_view s, CivilMonth* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+bool AbslParseFlag(string_view s, CivilYear* c, std::string*) {
+  return ParseLenientCivilTime(s, c);
+}
+std::string AbslUnparseFlag(CivilSecond c) { return FormatCivilTime(c); }
+std::string AbslUnparseFlag(CivilMinute c) { return FormatCivilTime(c); }
+std::string AbslUnparseFlag(CivilHour c) { return FormatCivilTime(c); }
+std::string AbslUnparseFlag(CivilDay c) { return FormatCivilTime(c); }
+std::string AbslUnparseFlag(CivilMonth c) { return FormatCivilTime(c); }
+std::string AbslUnparseFlag(CivilYear c) { return FormatCivilTime(c); }
 
 }  // namespace time_internal
 

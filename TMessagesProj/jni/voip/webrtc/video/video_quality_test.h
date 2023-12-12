@@ -97,7 +97,7 @@ class VideoQualityTest : public test::CallTest,
                              bool use_real_adm);
   void SetupAudio(Transport* transport);
 
-  void StartEncodedFrameLogs(VideoReceiveStream* stream);
+  void StartEncodedFrameLogs(VideoReceiveStreamInterface* stream);
 
   virtual std::unique_ptr<test::LayerFilteringTransport> CreateSendTransport();
   virtual std::unique_ptr<test::DirectTransport> CreateReceiveTransport();
@@ -118,8 +118,8 @@ class VideoQualityTest : public test::CallTest,
   std::vector<VideoSendStream::Config> thumbnail_send_configs_;
   std::vector<VideoEncoderConfig> thumbnail_encoder_configs_;
   std::vector<VideoSendStream*> thumbnail_send_streams_;
-  std::vector<VideoReceiveStream::Config> thumbnail_receive_configs_;
-  std::vector<VideoReceiveStream*> thumbnail_receive_streams_;
+  std::vector<VideoReceiveStreamInterface::Config> thumbnail_receive_configs_;
+  std::vector<VideoReceiveStreamInterface*> thumbnail_receive_streams_;
 
   int receive_logs_;
   int send_logs_;

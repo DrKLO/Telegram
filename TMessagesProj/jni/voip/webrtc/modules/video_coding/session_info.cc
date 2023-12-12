@@ -10,7 +10,6 @@
 
 #include "modules/video_coding/session_info.h"
 
-#include <assert.h>
 #include <string.h>
 
 #include <vector>
@@ -49,7 +48,7 @@ void VCMSessionInfo::UpdateDataPointers(const uint8_t* old_base_ptr,
                                         const uint8_t* new_base_ptr) {
   for (PacketIterator it = packets_.begin(); it != packets_.end(); ++it)
     if ((*it).dataPtr != NULL) {
-      assert(old_base_ptr != NULL && new_base_ptr != NULL);
+      RTC_DCHECK(old_base_ptr != NULL && new_base_ptr != NULL);
       (*it).dataPtr = new_base_ptr + ((*it).dataPtr - old_base_ptr);
     }
 }
@@ -294,6 +293,9 @@ size_t VCMSessionInfo::Insert(const uint8_t* buffer,
                               size_t length,
                               bool insert_start_code,
                               uint8_t* frame_buffer) {
+  if (!buffer || !frame_buffer) {
+    return 0;
+  }
   if (insert_start_code) {
     const unsigned char startCode[] = {0, 0, 0, 1};
     memcpy(frame_buffer, startCode, kH264StartCodeLengthBytes);
@@ -343,7 +345,7 @@ bool VCMSessionInfo::complete() const {
   return complete_;
 }
 
-// Find the end of the NAL unit which the packet pointed to by |packet_it|
+// Find the end of the NAL unit which the packet pointed to by `packet_it`
 // belongs to. Returns an iterator to the last packet of the frame if the end
 // of the NAL unit wasn't found.
 VCMSessionInfo::PacketIterator VCMSessionInfo::FindNaluEnd(
@@ -398,7 +400,7 @@ VCMSessionInfo::PacketIterator VCMSessionInfo::FindNextPartitionBeginning(
 
 VCMSessionInfo::PacketIterator VCMSessionInfo::FindPartitionEnd(
     PacketIterator it) const {
-  assert((*it).codec() == kVideoCodecVP8);
+  RTC_DCHECK_EQ((*it).codec(), kVideoCodecVP8);
   PacketIterator prev_it = it;
   const int partition_id =
       absl::get<RTPVideoHeaderVP8>((*it).video_header.video_type_header)
@@ -557,7 +559,7 @@ int VCMSessionInfo::InsertPacket(const VCMPacket& packet,
     }
   }
 
-  // The insert operation invalidates the iterator |rit|.
+  // The insert operation invalidates the iterator `rit`.
   PacketIterator packet_list_it = packets_.insert(rit.base(), packet);
 
   size_t returnLength = InsertBuffer(frame_buffer, packet_list_it);

@@ -1,9 +1,9 @@
 package org.telegram.ui;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
+import android.view.ViewGroup;
 
 import org.telegram.messenger.NotificationCenter;
 
@@ -14,11 +14,13 @@ public class MessageEnterTransitionContainer extends View {
 
     private ArrayList<Transition> transitions = new ArrayList<>();
     private final int currentAccount;
+    private final ViewGroup parent;
 
     Runnable hideRunnable = () -> setVisibility(View.GONE);
 
-    public MessageEnterTransitionContainer(Context context, int currentAccount) {
-        super(context);
+    public MessageEnterTransitionContainer(ViewGroup parent, int currentAccount) {
+        super(parent.getContext());
+        this.parent = parent;
         this.currentAccount = currentAccount;
     }
 
@@ -29,11 +31,13 @@ public class MessageEnterTransitionContainer extends View {
     void addTransition(Transition transition) {
         transitions.add(transition);
         checkVisibility();
+        parent.invalidate();
     }
 
     void removeTransition(Transition transition) {
         transitions.remove(transition);
         checkVisibility();
+        parent.invalidate();
     }
 
     @Override
@@ -54,5 +58,9 @@ public class MessageEnterTransitionContainer extends View {
             NotificationCenter.getInstance(currentAccount).removeDelayed(hideRunnable);
             setVisibility(View.VISIBLE);
         }
+    }
+
+    public boolean isRunning() {
+        return transitions.size() > 0;
     }
 }

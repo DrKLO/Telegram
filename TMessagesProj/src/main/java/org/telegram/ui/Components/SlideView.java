@@ -30,15 +30,21 @@ public class SlideView extends LinearLayout {
         return true;
     }
 
-    public void onShow() {
+    public void onShow() {}
 
+    public void onHide() {}
+
+    public void updateColors() {}
+
+    public boolean hasCustomKeyboard() {
+        return false;
     }
 
     public void onDestroyActivity() {
 
     }
 
-    public void onNextPressed() {
+    public void onNextPressed(String code) {
 
     }
 

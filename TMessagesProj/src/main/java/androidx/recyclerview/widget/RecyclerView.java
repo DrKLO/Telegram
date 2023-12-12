@@ -22,6 +22,7 @@ import static androidx.core.view.ViewCompat.TYPE_NON_TOUCH;
 import static androidx.core.view.ViewCompat.TYPE_TOUCH;
 
 import android.animation.LayoutTransition;
+import android.animation.TimeInterpolator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
@@ -70,6 +71,7 @@ import androidx.annotation.Px;
 import androidx.annotation.RestrictTo;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.os.TraceCompat;
+import androidx.core.util.Consumer;
 import androidx.core.util.Preconditions;
 import androidx.core.view.AccessibilityDelegateCompat;
 import androidx.core.view.InputDeviceCompat;
@@ -583,8 +585,16 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         topGlowOffset = offset;
     }
 
+    public int getTopGlowOffset() {
+        return topGlowOffset;
+    }
+
     public void setBottomGlowOffset(int offset) {
         bottomGlowOffset = offset;
+    }
+
+    public int getBottomGlowOffset() {
+        return bottomGlowOffset;
     }
 
     public void setGlowColor(int color) {
@@ -619,6 +629,18 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     public View getHiddenChildAt(int index) {
         return mChildHelper.getHiddenChildAt(index);
+    }
+
+    public void forAllChild(Consumer<View> callback) {
+        for (int i = 0; i < getChildCount(); i++) {
+            callback.accept(getChildAt(i));
+        }
+        for (int i = 0; i < getHiddenChildCount(); i++) {
+            callback.accept(getHiddenChildAt(i));
+        }
+        for (int i = 0; i < getAttachedScrapChildCount(); i++) {
+            callback.accept(getAttachedScrapChildAt(i));
+        }
     }
 
     void applyEdgeEffectColor(EdgeEffect edgeEffect) {
@@ -2351,6 +2373,35 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
         if (dx != 0 || dy != 0) {
             mViewFlinger.smoothScrollBy(dx, dy, UNDEFINED_DURATION, interpolator);
+        }
+    }
+
+    /**
+     * Animate a scroll by the given amount of pixels along either axis.
+     *
+     * @param dx Pixels to scroll horizontally
+     * @param dy Pixels to scroll vertically
+     * @param duration Duration of scrolling
+     * @param interpolator {@link Interpolator} to be used for scrolling. If it is
+     *                     {@code null}, RecyclerView is going to use the default interpolator.
+     */
+    public void smoothScrollBy(@Px int dx, @Px int dy, int duration, @Nullable Interpolator interpolator) {
+        if (mLayout == null) {
+            Log.e(TAG, "Cannot smooth scroll without a LayoutManager set. "
+                    + "Call setLayoutManager with a non-null argument.");
+            return;
+        }
+        if (mLayoutSuppressed) {
+            return;
+        }
+        if (!mLayout.canScrollHorizontally()) {
+            dx = 0;
+        }
+        if (!mLayout.canScrollVertically()) {
+            dy = 0;
+        }
+        if (dx != 0 || dy != 0) {
+            mViewFlinger.smoothScrollBy(dx, dy, duration, interpolator);
         }
     }
 
@@ -4094,7 +4145,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             try {
                 for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
                     ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
-                    if (holder.shouldIgnore()) {
+                    if (holder == null || holder.shouldIgnore()) {
                         continue;
                     }
                     long key = getChangedHolderKey(holder);
@@ -4139,7 +4190,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                 StringBuilder builder = new StringBuilder();
                 for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
                     ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
-                    if (holder.shouldIgnore()) {
+                    if (holder == null || holder.shouldIgnore()) {
                         continue;
                     }
                     builder.append("Holder at" + i + " " + holder + "\n");
@@ -4255,7 +4306,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         int maxPositionPreLayout = Integer.MIN_VALUE;
         for (int i = 0; i < count; ++i) {
             final ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
-            if (holder.shouldIgnore()) {
+            if (holder == null || holder.shouldIgnore()) {
                 continue;
             }
             final int pos = holder.getLayoutPosition();
@@ -4504,7 +4555,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         final int childCount = mChildHelper.getUnfilteredChildCount();
         for (int i = 0; i < childCount; i++) {
             final ViewHolder holder = getChildViewHolderInt(mChildHelper.getUnfilteredChildAt(i));
-            if (!holder.shouldIgnore()) {
+            if (holder != null && !holder.shouldIgnore()) {
                 holder.clearOldPosition();
             }
         }
@@ -10233,7 +10284,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             }
         }
 
-        void onSmoothScrollerStopped(SmoothScroller smoothScroller) {
+        public void onSmoothScrollerStopped(SmoothScroller smoothScroller) {
             if (mSmoothScroller == smoothScroller) {
                 mSmoothScroller = null;
             }
@@ -11607,7 +11658,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          */
         @Deprecated
         public int getViewPosition() {
-            return mViewHolder.getPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION : mViewHolder.getPosition();
         }
 
         /**
@@ -11617,7 +11668,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @return the adapter position this view as of latest layout pass
          */
         public int getViewLayoutPosition() {
-            return mViewHolder.getLayoutPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION : mViewHolder.getLayoutPosition();
         }
 
         /**
@@ -11629,7 +11680,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * its up-to-date position cannot be calculated.
          */
         public int getViewAdapterPosition() {
-            return mViewHolder.getAdapterPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION :mViewHolder.getAdapterPosition();
         }
     }
 
@@ -12701,13 +12752,24 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         @Retention(RetentionPolicy.SOURCE)
         public @interface AdapterChanges {}
         private ItemAnimatorListener mListener = null;
-        private ArrayList<ItemAnimatorFinishedListener> mFinishedListeners =
-                new ArrayList<ItemAnimatorFinishedListener>();
+        private ArrayList<ItemAnimatorFinishedListener> mFinishedListeners = new ArrayList<>();
 
         private long mAddDuration = 120;
         private long mRemoveDuration = 120;
         private long mMoveDuration = 250;
-        private long mChangeDuration = 250;
+        private long mChangeAddDuration = 250;
+        private long mChangeRemoveDuration = 250;
+
+        private TimeInterpolator mAddInterpolator;
+        private TimeInterpolator mMoveInterpolator;
+        private TimeInterpolator mRemoveInterpolator;
+        private TimeInterpolator mChangeInterpolator;
+
+        private long mAddDelay = 0;
+        private long mRemoveDelay = 0;
+        private long mMoveDelay = 0;
+        private long mDelay = 0;
+        private long mChangeDelay = 0;
 
         /**
          * Gets the current duration for which all move animations will run.
@@ -12764,12 +12826,30 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
 
         /**
+         * Gets the current duration for which all change animations of item appearance
+         *
+         * @return The current change duration
+         */
+        public long getChangeAddDuration() {
+            return mChangeAddDuration;
+        }
+
+        /**
          * Gets the current duration for which all change animations will run.
          *
          * @return The current change duration
          */
         public long getChangeDuration() {
-            return mChangeDuration;
+            return Math.max(mChangeAddDuration, mChangeRemoveDuration);
+        }
+
+        /**
+         * Gets the current duration for which all change animations of item disappearance
+         *
+         * @return The current change duration
+         */
+        public long getChangeRemoveDuration() {
+            return mChangeRemoveDuration;
         }
 
         /**
@@ -12778,7 +12858,87 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @param changeDuration The change duration
          */
         public void setChangeDuration(long changeDuration) {
-            mChangeDuration = changeDuration;
+            mChangeAddDuration = changeDuration;
+            mChangeRemoveDuration = changeDuration;
+        }
+
+        /**
+         * Sets the duration for which all change animations will run.
+         *
+         * @param changeNewDuration The duration of showing new view of change
+         * @param changeOldDuration The duration of hiding old view of change
+         */
+        public void setChangeDuration(long changeNewDuration, long changeOldDuration) {
+            mChangeAddDuration = changeNewDuration;
+            mChangeRemoveDuration = changeOldDuration;
+        }
+
+
+        public void setAddDelay(long addDelay) {
+            mAddDelay = addDelay;
+        }
+
+        public void setRemoveDelay(long removeDelay) {
+            mRemoveDelay = removeDelay;
+        }
+
+        public void setMoveDelay(long moveDelay) {
+            mMoveDelay = moveDelay;
+        }
+
+        public void setChangeDelay(long changeDelay) {
+            mChangeDelay = changeDelay;
+        }
+
+        public long getAddDelay() {
+            return mAddDelay;
+        }
+
+        public long getRemoveDelay() {
+            return mRemoveDelay;
+        }
+
+        public long getMoveDelay() {
+            return mMoveDelay;
+        }
+
+        public long getChangeDelay() {
+            return mChangeDelay;
+        }
+
+        public void setDurations(long duration) {
+            mAddDuration = duration;
+            mMoveDuration = duration;
+            mRemoveDuration = duration;
+            mChangeAddDuration = duration;
+            mChangeRemoveDuration = duration;
+        }
+
+        public void setMoveInterpolator(TimeInterpolator interpolator) {
+            mMoveInterpolator = interpolator;
+        }
+
+        public void setInterpolator(TimeInterpolator interpolator) {
+            mAddInterpolator = interpolator;
+            mMoveInterpolator = interpolator;
+            mRemoveInterpolator = interpolator;
+            mChangeInterpolator = interpolator;
+        }
+
+        public TimeInterpolator getAddInterpolator() {
+            return mAddInterpolator;
+        }
+
+        public TimeInterpolator getMoveInterpolator() {
+            return mMoveInterpolator;
+        }
+
+        public TimeInterpolator getRemoveInterpolator() {
+            return mRemoveInterpolator;
+        }
+
+        public TimeInterpolator getChangeInterpolator() {
+            return mChangeInterpolator;
         }
 
         /**

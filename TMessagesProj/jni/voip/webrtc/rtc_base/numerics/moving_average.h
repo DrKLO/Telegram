@@ -35,7 +35,7 @@ class MovingAverage {
   // Adds new sample. If the window is full, the oldest element is pushed out.
   void AddSample(int sample);
 
-  // Returns rounded down average of last |window_size| elements or all
+  // Returns rounded down average of last `window_size` elements or all
   // elements if there are not enough of them. Returns nullopt if there were
   // no elements added.
   absl::optional<int> GetAverageRoundedDown() const;
@@ -58,7 +58,7 @@ class MovingAverage {
   // Sum of the samples in the moving window.
   int64_t sum_ = 0;
   // Circular buffer for all the samples in the moving window.
-  // Size is always |window_size|
+  // Size is always `window_size`
   std::vector<int> history_;
 };
 

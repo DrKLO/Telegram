@@ -10,6 +10,9 @@
 #include "rtc_base/ref_counted_object.h"
 #include <string>
 
+struct AVFrame;
+struct AVCodecContext;
+
 namespace tgcalls {
 
 enum class VideoState;
@@ -292,28 +295,43 @@ private:
     rtc::scoped_refptr<webrtc::AudioDeviceModule> _impl;
 };
 
+class PlatformVideoFrame {
+public:
+    PlatformVideoFrame() {
+    }
+    
+    virtual ~PlatformVideoFrame() = default;
+};
+
 class PlatformInterface {
 public:
 	static PlatformInterface *SharedInstance();
 	virtual ~PlatformInterface() = default;
 
-	virtual void configurePlatformAudio() {
+	virtual void configurePlatformAudio(int numChannels = 1) {
 	}
 
     virtual std::unique_ptr<rtc::NetworkMonitorFactory> createNetworkMonitorFactory() {
         return nullptr;
     }
-    
-	virtual std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext) = 0;
+
+	virtual std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext, bool preferHardwareEncoding = false, bool isScreencast = false) = 0;
 	virtual std::unique_ptr<webrtc::VideoDecoderFactory> makeVideoDecoderFactory(std::shared_ptr<PlatformContext> platformContext) = 0;
 	virtual bool supportsEncoding(const std::string &codecName, std::shared_ptr<PlatformContext> platformContext) = 0;
 	virtual rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> makeVideoSource(rtc::Thread *signalingThread, rtc::Thread *workerThread, bool screencapture) = 0;
     virtual void adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> videoSource, int width, int height, int fps) = 0;
 	virtual std::unique_ptr<VideoCapturerInterface> makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::function<void(PlatformCaptureInfo)> captureInfoUpdated, std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) = 0;
     virtual rtc::scoped_refptr<WrappedAudioDeviceModule> wrapAudioDeviceModule(rtc::scoped_refptr<webrtc::AudioDeviceModule> module) {
-        return new rtc::RefCountedObject<DefaultWrappedAudioDeviceModule>(module);
+        return rtc::make_ref_counted<DefaultWrappedAudioDeviceModule>(module);
+    }
+    virtual void setupVideoDecoding(AVCodecContext *codecContext) {
+    }
+    virtual rtc::scoped_refptr<webrtc::VideoFrameBuffer> createPlatformFrameFromData(AVFrame const *frame) {
+        return nullptr;
     }
 
+public:
+    bool preferX264 = false;
 };
 
 std::unique_ptr<PlatformInterface> CreatePlatformInterface();

@@ -8,6 +8,7 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -114,7 +115,7 @@ public class SlotsDrawable extends RLottieDrawable {
                             if (secondFrameNums[0] == secondFrameCounts[0] - 100) {
                                 playWinAnimation = true;
                                 if (left == ReelValue.sevenWin) {
-                                    Runnable runnable = onFinishCallback.get();
+                                    Runnable runnable = onFinishCallback == null ? null : onFinishCallback.get();
                                     if (runnable != null) {
                                         AndroidUtilities.runOnUIThread(runnable);
                                     }
@@ -195,7 +196,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 AndroidUtilities.runOnUIThread(() -> {
                     loadingInBackground = false;
                     if (!secondLoadingInBackground && destroyAfterLoading) {
-                        recycle();
+                        recycle(true);
                     }
                 });
                 return;
@@ -218,14 +219,14 @@ public class SlotsDrawable extends RLottieDrawable {
                     num = 2;
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
-                File path = FileLoader.getPathToAttach(document, true);
+                File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                 String json = readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;
                     AndroidUtilities.runOnUIThread(() -> {
                         String fileName = FileLoader.getAttachFileName(document);
                         DownloadController.getInstance(account).addLoadingFileObserver(fileName, currentMessageObject, messageCell);
-                        FileLoader.getInstance(account).loadFile(document, stickerSet, 1, 1);
+                        FileLoader.getInstance(account).loadFile(document, stickerSet, FileLoader.PRIORITY_NORMAL, 1);
                     });
                 } else {
                     nativePtrs[a] = createWithJson(json, "dice", metaData, null);
@@ -239,7 +240,7 @@ public class SlotsDrawable extends RLottieDrawable {
             AndroidUtilities.runOnUIThread(() -> {
                 loadingInBackground = false;
                 if (!secondLoadingInBackground && destroyAfterLoading) {
-                    recycle();
+                    recycle(true);
                     return;
                 }
                 nativePtr = nativePtrs[0];
@@ -267,7 +268,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 AndroidUtilities.runOnUIThread(() -> {
                     secondLoadingInBackground = false;
                     if (!loadingInBackground && destroyAfterLoading) {
-                        recycle();
+                        recycle(true);
                     }
                 });
                 return;
@@ -328,14 +329,14 @@ public class SlotsDrawable extends RLottieDrawable {
                     }
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
-                File path = FileLoader.getPathToAttach(document, true);
+                File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                 String json = readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;
                     AndroidUtilities.runOnUIThread(() -> {
                         String fileName = FileLoader.getAttachFileName(document);
                         DownloadController.getInstance(account).addLoadingFileObserver(fileName, currentMessageObject, messageCell);
-                        FileLoader.getInstance(account).loadFile(document, stickerSet, 1, 1);
+                        FileLoader.getInstance(account).loadFile(document, stickerSet, FileLoader.PRIORITY_NORMAL, 1);
                     });
                 } else {
                     if (a <= 2) {
@@ -358,7 +359,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 }
                 secondLoadingInBackground = false;
                 if (!loadingInBackground && destroyAfterLoading) {
-                    recycle();
+                    recycle(true);
                     return;
                 }
                 secondNativePtr = secondNativePtrs[0];
@@ -372,7 +373,7 @@ public class SlotsDrawable extends RLottieDrawable {
     }
 
     @Override
-    public void recycle() {
+    public void recycle(boolean uiThread) {
         isRunning = false;
         isRecycled = true;
         checkRunningTasks();

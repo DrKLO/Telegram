@@ -9,19 +9,18 @@
  */
 #include "modules/video_coding/jitter_buffer.h"
 
-#include <assert.h>
-
 #include <algorithm>
 #include <limits>
 #include <utility>
 
+#include "api/units/timestamp.h"
 #include "modules/video_coding/frame_buffer.h"
 #include "modules/video_coding/include/video_coding.h"
-#include "modules/video_coding/inter_frame_delay.h"
 #include "modules/video_coding/internal_defines.h"
 #include "modules/video_coding/jitter_buffer_common.h"
-#include "modules/video_coding/jitter_estimator.h"
 #include "modules/video_coding/packet.h"
+#include "modules/video_coding/timing/inter_frame_delay.h"
+#include "modules/video_coding/timing/jitter_estimator.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/clock.h"
@@ -110,7 +109,8 @@ void FrameList::Reset(UnorderedFrameList* free_frames) {
 }
 
 VCMJitterBuffer::VCMJitterBuffer(Clock* clock,
-                                 std::unique_ptr<EventWrapper> event)
+                                 std::unique_ptr<EventWrapper> event,
+                                 const FieldTrialsView& field_trials)
     : clock_(clock),
       running_(false),
       frame_event_(std::move(event)),
@@ -123,8 +123,7 @@ VCMJitterBuffer::VCMJitterBuffer(Clock* clock,
       num_consecutive_old_packets_(0),
       num_packets_(0),
       num_duplicated_packets_(0),
-      jitter_estimate_(clock),
-      inter_frame_delay_(clock_->TimeInMilliseconds()),
+      jitter_estimate_(clock, field_trials),
       missing_sequence_numbers_(SequenceNumberLessThan()),
       latest_received_sequence_number_(0),
       max_nack_list_size_(0),
@@ -193,7 +192,7 @@ void VCMJitterBuffer::Flush() {
   num_consecutive_old_packets_ = 0;
   // Also reset the jitter and delay estimates
   jitter_estimate_.Reset();
-  inter_frame_delay_.Reset(clock_->TimeInMilliseconds());
+  inter_frame_delay_.Reset();
   waiting_for_completion_.frame_size = 0;
   waiting_for_completion_.timestamp = 0;
   waiting_for_completion_.latest_packet_time = -1;
@@ -211,8 +210,8 @@ int VCMJitterBuffer::num_duplicated_packets() const {
   return num_duplicated_packets_;
 }
 
-// Returns immediately or a |max_wait_time_ms| ms event hang waiting for a
-// complete frame, |max_wait_time_ms| decided by caller.
+// Returns immediately or a `max_wait_time_ms` ms event hang waiting for a
+// complete frame, `max_wait_time_ms` decided by caller.
 VCMEncodedFrame* VCMJitterBuffer::NextCompleteFrame(uint32_t max_wait_time_ms) {
   MutexLock lock(&mutex_);
   if (!running_) {
@@ -347,7 +346,7 @@ VCMFrameBufferEnum VCMJitterBuffer::GetFrame(const VCMPacket& packet,
 
 int64_t VCMJitterBuffer::LastPacketTime(const VCMEncodedFrame* frame,
                                         bool* retransmitted) const {
-  assert(retransmitted);
+  RTC_DCHECK(retransmitted);
   MutexLock lock(&mutex_);
   const VCMFrameBuffer* frame_buffer =
       static_cast<const VCMFrameBuffer*>(frame);
@@ -393,13 +392,13 @@ VCMFrameBufferEnum VCMJitterBuffer::InsertPacket(const VCMPacket& packet,
   if (error != kNoError)
     return error;
 
-  int64_t now_ms = clock_->TimeInMilliseconds();
+  Timestamp now = clock_->CurrentTime();
   // We are keeping track of the first and latest seq numbers, and
   // the number of wraps to be able to calculate how many packets we expect.
   if (first_packet_since_reset_) {
     // Now it's time to start estimating jitter
     // reset the delay estimate.
-    inter_frame_delay_.Reset(now_ms);
+    inter_frame_delay_.Reset();
   }
 
   // Empty packets may bias the jitter estimate (lacking size component),
@@ -409,9 +408,9 @@ VCMFrameBufferEnum VCMJitterBuffer::InsertPacket(const VCMPacket& packet,
       // This can get bad if we have a lot of duplicate packets,
       // we will then count some packet multiple times.
       waiting_for_completion_.frame_size += packet.sizeBytes;
-      waiting_for_completion_.latest_packet_time = now_ms;
+      waiting_for_completion_.latest_packet_time = now.ms();
     } else if (waiting_for_completion_.latest_packet_time >= 0 &&
-               waiting_for_completion_.latest_packet_time + 2000 <= now_ms) {
+               waiting_for_completion_.latest_packet_time + 2000 <= now.ms()) {
       // A packet should never be more than two seconds late
       UpdateJitterEstimate(waiting_for_completion_, true);
       waiting_for_completion_.latest_packet_time = -1;
@@ -426,7 +425,7 @@ VCMFrameBufferEnum VCMJitterBuffer::InsertPacket(const VCMPacket& packet,
   frame_data.rtt_ms = kDefaultRtt;
   frame_data.rolling_average_packets_per_frame = average_packets_per_frame_;
   VCMFrameBufferEnum buffer_state =
-      frame->InsertPacket(packet, now_ms, frame_data);
+      frame->InsertPacket(packet, now.ms(), frame_data);
 
   if (buffer_state > 0) {
     if (first_packet_since_reset_) {
@@ -498,7 +497,7 @@ VCMFrameBufferEnum VCMJitterBuffer::InsertPacket(const VCMPacket& packet,
       RecycleFrameBuffer(frame);
       return kFlushIndicator;
     default:
-      assert(false);
+      RTC_DCHECK_NOTREACHED();
   }
   return buffer_state;
 }
@@ -573,15 +572,15 @@ void VCMJitterBuffer::FindAndInsertContinuousFramesWithState(
 uint32_t VCMJitterBuffer::EstimatedJitterMs() {
   MutexLock lock(&mutex_);
   const double rtt_mult = 1.0f;
-  return jitter_estimate_.GetJitterEstimate(rtt_mult, absl::nullopt);
+  return jitter_estimate_.GetJitterEstimate(rtt_mult, absl::nullopt).ms();
 }
 
 void VCMJitterBuffer::SetNackSettings(size_t max_nack_list_size,
                                       int max_packet_age_to_nack,
                                       int max_incomplete_time_ms) {
   MutexLock lock(&mutex_);
-  assert(max_packet_age_to_nack >= 0);
-  assert(max_incomplete_time_ms_ >= 0);
+  RTC_DCHECK_GE(max_packet_age_to_nack, 0);
+  RTC_DCHECK_GE(max_incomplete_time_ms_, 0);
   max_nack_list_size_ = max_nack_list_size;
   max_packet_age_to_nack_ = max_packet_age_to_nack;
   max_incomplete_time_ms_ = max_incomplete_time_ms;
@@ -600,7 +599,7 @@ int VCMJitterBuffer::NonContinuousOrIncompleteDuration() {
 
 uint16_t VCMJitterBuffer::EstimatedLowSequenceNumber(
     const VCMFrameBuffer& frame) const {
-  assert(frame.GetLowSeqNum() >= 0);
+  RTC_DCHECK_GE(frame.GetLowSeqNum(), 0);
   if (frame.HaveFirstPacket())
     return frame.GetLowSeqNum();
 
@@ -821,7 +820,7 @@ void VCMJitterBuffer::UpdateAveragePacketsPerFrame(int current_number_packets) {
   }
 }
 
-// Must be called under the critical section |mutex_|.
+// Must be called under the critical section `mutex_`.
 void VCMJitterBuffer::CleanUpOldOrEmptyFrames() {
   decodable_frames_.CleanUpOldOrEmptyFrames(&last_decoded_state_,
                                             &free_frames_);
@@ -832,13 +831,13 @@ void VCMJitterBuffer::CleanUpOldOrEmptyFrames() {
   }
 }
 
-// Must be called from within |mutex_|.
+// Must be called from within `mutex_`.
 bool VCMJitterBuffer::IsPacketRetransmitted(const VCMPacket& packet) const {
   return missing_sequence_numbers_.find(packet.seqNum) !=
          missing_sequence_numbers_.end();
 }
 
-// Must be called under the critical section |mutex_|. Should never be
+// Must be called under the critical section `mutex_`. Should never be
 // called with retransmitted frames, they must be filtered out before this
 // function is called.
 void VCMJitterBuffer::UpdateJitterEstimate(const VCMJitterSample& sample,
@@ -864,23 +863,24 @@ void VCMJitterBuffer::UpdateJitterEstimate(const VCMFrameBuffer& frame,
                        frame.size(), incomplete_frame);
 }
 
-// Must be called under the critical section |mutex_|. Should never be
+// Must be called under the critical section `mutex_`. Should never be
 // called with retransmitted frames, they must be filtered out before this
 // function is called.
 void VCMJitterBuffer::UpdateJitterEstimate(int64_t latest_packet_time_ms,
                                            uint32_t timestamp,
                                            unsigned int frame_size,
-                                           bool incomplete_frame) {
+                                           bool /*incomplete_frame*/) {
   if (latest_packet_time_ms == -1) {
     return;
   }
-  int64_t frame_delay;
-  bool not_reordered = inter_frame_delay_.CalculateDelay(
-      timestamp, &frame_delay, latest_packet_time_ms);
+  auto frame_delay = inter_frame_delay_.CalculateDelay(
+      timestamp, Timestamp::Millis(latest_packet_time_ms));
+
+  bool not_reordered = frame_delay.has_value();
   // Filter out frames which have been reordered in time by the network
   if (not_reordered) {
     // Update the jitter estimate with the new samples
-    jitter_estimate_.UpdateEstimate(frame_delay, frame_size, incomplete_frame);
+    jitter_estimate_.UpdateEstimate(*frame_delay, DataSize::Bytes(frame_size));
   }
 }
 

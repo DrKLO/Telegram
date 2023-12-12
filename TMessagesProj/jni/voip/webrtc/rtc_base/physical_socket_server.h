@@ -11,6 +11,7 @@
 #ifndef RTC_BASE_PHYSICAL_SOCKET_SERVER_H_
 #define RTC_BASE_PHYSICAL_SOCKET_SERVER_H_
 
+#include "api/units/time_delta.h"
 #if defined(WEBRTC_POSIX) && defined(WEBRTC_LINUX)
 #include <sys/epoll.h>
 #define WEBRTC_USE_EPOLL 1
@@ -69,13 +70,12 @@ class RTC_EXPORT PhysicalSocketServer : public SocketServer {
 
   // SocketFactory:
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
   // Internal Factory for Accept (virtual so it can be overwritten in tests).
-  virtual AsyncSocket* WrapSocket(SOCKET s);
+  virtual Socket* WrapSocket(SOCKET s);
 
   // SocketServer:
-  bool Wait(int cms, bool process_io) override;
+  bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) override;
   void WakeUp() override;
 
   void Add(Dispatcher* dispatcher);
@@ -85,16 +85,19 @@ class RTC_EXPORT PhysicalSocketServer : public SocketServer {
  private:
   // The number of events to process with one call to "epoll_wait".
   static constexpr size_t kNumEpollEvents = 128;
+  // A local historical definition of "foreverness", in milliseconds.
+  static constexpr int kForeverMs = -1;
 
+  static int ToCmsWait(webrtc::TimeDelta max_wait_duration);
 #if defined(WEBRTC_POSIX)
-  bool WaitSelect(int cms, bool process_io);
+  bool WaitSelect(int cmsWait, bool process_io);
 #endif  // WEBRTC_POSIX
 #if defined(WEBRTC_USE_EPOLL)
   void AddEpoll(Dispatcher* dispatcher, uint64_t key);
   void RemoveEpoll(Dispatcher* dispatcher);
   void UpdateEpoll(Dispatcher* dispatcher, uint64_t key);
-  bool WaitEpoll(int cms);
-  bool WaitPoll(int cms, Dispatcher* dispatcher);
+  bool WaitEpoll(int cmsWait);
+  bool WaitPoll(int cmsWait, Dispatcher* dispatcher);
 
   // This array is accessed in isolation by a thread calling into Wait().
   // It's useless to use a SequenceChecker to guard it because a socket
@@ -130,7 +133,7 @@ class RTC_EXPORT PhysicalSocketServer : public SocketServer {
   bool waiting_ = false;
 };
 
-class PhysicalSocket : public AsyncSocket, public sigslot::has_slots<> {
+class PhysicalSocket : public Socket, public sigslot::has_slots<> {
  public:
   PhysicalSocket(PhysicalSocketServer* ss, SOCKET s = INVALID_SOCKET);
   ~PhysicalSocket() override;
@@ -164,7 +167,7 @@ class PhysicalSocket : public AsyncSocket, public sigslot::has_slots<> {
                int64_t* timestamp) override;
 
   int Listen(int backlog) override;
-  AsyncSocket* Accept(SocketAddress* out_addr) override;
+  Socket* Accept(SocketAddress* out_addr) override;
 
   int Close() override;
 

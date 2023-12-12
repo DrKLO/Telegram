@@ -62,8 +62,10 @@ public class ChatBigEmptyView extends LinearLayout {
             textViews.add(statusTextView);
             addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
         } else {
-            ImageView imageView = new ImageView(context);
-            imageView.setImageResource(R.drawable.cloud_big);
+            RLottieImageView imageView = new RLottieImageView(context);
+            imageView.setAutoRepeat(true);
+            imageView.setAnimation(R.raw.utyan_saved_messages, 120, 120);
+            imageView.playAnimation();
             addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 2, 0, 0));
         }
 
@@ -182,9 +184,8 @@ public class ChatBigEmptyView extends LinearLayout {
         statusTextView.setText(text);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     private Paint getThemedPaint(String paintKey) {

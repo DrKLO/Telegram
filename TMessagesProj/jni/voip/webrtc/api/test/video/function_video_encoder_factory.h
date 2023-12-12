@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "rtc_base/checks.h"
 
@@ -39,7 +40,7 @@ class FunctionVideoEncoderFactory final : public VideoEncoderFactory {
 
   // Unused by tests.
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return {};
   }
 

@@ -11,6 +11,8 @@
 #ifndef RTC_BASE_EVENT_H_
 #define RTC_BASE_EVENT_H_
 
+#include "api/units/time_delta.h"
+
 #if defined(WEBRTC_WIN)
 #include <windows.h>
 #elif defined(WEBRTC_POSIX)
@@ -19,11 +21,43 @@
 #error "Must define either WEBRTC_WIN or WEBRTC_POSIX."
 #endif
 
+#include "rtc_base/synchronization/yield_policy.h"
+
 namespace rtc {
+
+// RTC_DISALLOW_WAIT() utility
+//
+// Sets a stack-scoped flag that disallows use of `rtc::Event::Wait` by means
+// of raising a DCHECK when a call to `rtc::Event::Wait()` is made..
+// This is useful to guard synchronization-free scopes against regressions.
+//
+// Example of what this would catch (`ScopeToProtect` calls `Foo`):
+//
+//  void Foo(TaskQueue* tq) {
+//    Event event;
+//    tq->PostTask([&event]() {
+//      event.Set();
+//    });
+//    event.Wait(Event::kForever);  // <- Will trigger a DCHECK.
+//  }
+//
+//  void ScopeToProtect() {
+//    TaskQueue* tq = GetSomeTaskQueue();
+//    RTC_DISALLOW_WAIT();  // Policy takes effect.
+//    Foo(tq);
+//  }
+//
+#if RTC_DCHECK_IS_ON
+#define RTC_DISALLOW_WAIT() ScopedDisallowWait disallow_wait_##__LINE__
+#else
+#define RTC_DISALLOW_WAIT()
+#endif
 
 class Event {
  public:
-  static const int kForever = -1;
+  // TODO(bugs.webrtc.org/14366): Consider removing this redundant alias.
+  static constexpr webrtc::TimeDelta kForever =
+      webrtc::TimeDelta::PlusInfinity();
 
   Event();
   Event(bool manual_reset, bool initially_signaled);
@@ -35,19 +69,22 @@ class Event {
   void Reset();
 
   // Waits for the event to become signaled, but logs a warning if it takes more
-  // than `warn_after_ms` milliseconds, and gives up completely if it takes more
-  // than `give_up_after_ms` milliseconds. (If `warn_after_ms >=
-  // give_up_after_ms`, no warning will be logged.) Either or both may be
-  // `kForever`, which means wait indefinitely.
+  // than `warn_after`, and gives up completely if it takes more than
+  // `give_up_after`. (If `warn_after >= give_up_after`, no warning will be
+  // logged.) Either or both may be `kForever`, which means wait indefinitely.
+  //
+  // Care is taken so that the underlying OS wait call isn't requested to sleep
+  // shorter than `give_up_after`.
   //
   // Returns true if the event was signaled, false if there was a timeout or
   // some other error.
-  bool Wait(int give_up_after_ms, int warn_after_ms);
+  bool Wait(webrtc::TimeDelta give_up_after, webrtc::TimeDelta warn_after);
 
   // Waits with the given timeout and a reasonable default warning timeout.
-  bool Wait(int give_up_after_ms) {
-    return Wait(give_up_after_ms,
-                give_up_after_ms == kForever ? 3000 : kForever);
+  bool Wait(webrtc::TimeDelta give_up_after) {
+    return Wait(give_up_after, give_up_after.IsPlusInfinity()
+                                   ? webrtc::TimeDelta::Seconds(3)
+                                   : kForever);
   }
 
  private:
@@ -80,6 +117,20 @@ class ScopedAllowBaseSyncPrimitivesForTesting {
   ScopedAllowBaseSyncPrimitivesForTesting() {}
   ~ScopedAllowBaseSyncPrimitivesForTesting() {}
 };
+
+#if RTC_DCHECK_IS_ON
+class ScopedDisallowWait {
+ public:
+  ScopedDisallowWait() = default;
+
+ private:
+  class DisallowYieldHandler : public YieldInterface {
+   public:
+    void YieldExecution() override { RTC_DCHECK_NOTREACHED(); }
+  } handler_;
+  rtc::ScopedYieldPolicy policy{&handler_};
+};
+#endif
 
 }  // namespace rtc
 

@@ -12,7 +12,7 @@
 
 namespace webrtc {
 namespace {
-// Try to convert |enum_value| into the enum class T. |enum_bitmask| is created
+// Try to convert `enum_value` into the enum class T. `enum_bitmask` is created
 // by the funciton below. Returns true if conversion was successful, false
 // otherwise.
 template <typename T>
@@ -43,7 +43,7 @@ constexpr int MakeMask(const int index, const int length, T (&values)[N]) {
 }
 
 // Create a bitmask where each bit corresponds to one potential enum value.
-// |values| should be an array listing all possible enum values. The bit is set
+// `values` should be an array listing all possible enum values. The bit is set
 // to one if the corresponding enum exists. Only works for enums with values
 // less than 64.
 template <typename T, size_t N>

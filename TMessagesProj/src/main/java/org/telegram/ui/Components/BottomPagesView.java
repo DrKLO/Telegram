@@ -7,10 +7,10 @@ import android.graphics.RectF;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
+import androidx.viewpager.widget.ViewPager;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.viewpager.widget.ViewPager;
 
 public class BottomPagesView extends View {
 
@@ -24,8 +24,8 @@ public class BottomPagesView extends View {
     private ViewPager viewPager;
     private int pagesCount;
 
-    private String colorKey;
-    private String selectedColorKey;
+    private int colorKey = -1;
+    private int selectedColorKey = -1;
 
     public BottomPagesView(Context context, ViewPager pager, int count) {
         super(context);
@@ -44,7 +44,7 @@ public class BottomPagesView extends View {
         invalidate();
     }
 
-    public void setColor(String key, String selectedKey) {
+    public void setColor(int key, int selectedKey) {
         colorKey = key;
         selectedColorKey = selectedKey;
     }
@@ -52,10 +52,10 @@ public class BottomPagesView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         float d = AndroidUtilities.dp(5);
-        if (colorKey != null) {
+        if (colorKey >= 0) {
             paint.setColor((Theme.getColor(colorKey) & 0x00ffffff) | 0xb4000000);
         } else {
-            paint.setColor(0xffbbbbbb);
+            paint.setColor(Theme.getCurrentTheme().isDark() ? 0xff555555 : 0xffbbbbbb);
         }
         int x;
         currentPage = viewPager.getCurrentItem();
@@ -67,7 +67,7 @@ public class BottomPagesView extends View {
             rect.set(x, 0, x + AndroidUtilities.dp(5), AndroidUtilities.dp(5));
             canvas.drawRoundRect(rect, AndroidUtilities.dp(2.5f), AndroidUtilities.dp(2.5f), paint);
         }
-        if (selectedColorKey != null) {
+        if (selectedColorKey >= 0) {
             paint.setColor(Theme.getColor(selectedColorKey));
         } else {
             paint.setColor(0xff2ca5e0);

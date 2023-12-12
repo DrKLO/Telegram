@@ -17,26 +17,23 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 
-public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
+public class SizeNotifierFrameLayoutPhoto extends SizeNotifierFrameLayout {
 
+    private Activity activity;
     private Rect rect = new Rect();
     private int keyboardHeight;
-    private SizeNotifierFrameLayoutPhotoDelegate delegate;
     private WindowManager windowManager;
     private boolean withoutWindow;
     private boolean useSmoothKeyboard;
 
-    public interface SizeNotifierFrameLayoutPhotoDelegate {
-        void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
-    }
-
-    public SizeNotifierFrameLayoutPhoto(Context context, boolean smoothKeyboard) {
+    public SizeNotifierFrameLayoutPhoto(Context context, Activity activity, boolean smoothKeyboard) {
         super(context);
+        setActivity(activity);
         useSmoothKeyboard = smoothKeyboard;
     }
 
-    public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
-        delegate = sizeNotifierFrameLayoutPhotoDelegate;
+    public void setActivity(Activity activity) {
+        this.activity = activity;
     }
 
     public void setWithoutWindow(boolean value) {
@@ -49,14 +46,20 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         notifyHeightChanged();
     }
 
+    @Override
     public int getKeyboardHeight() {
+       return keyboardHeight;
+    }
+
+    @Override
+    public int measureKeyboardHeight() {
         View rootView = getRootView();
         getWindowVisibleDisplayFrame(rect);
         if (withoutWindow) {
             int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
             return usableViewHeight - (rect.bottom - rect.top);
         } else {
-            int size = ((Activity) rootView.getContext()).getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
+            int size = activity.getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
             if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
                 size = 0;
             }
@@ -64,9 +67,10 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         }
     }
 
+    @Override
     public void notifyHeightChanged() {
-        if (delegate != null) {
-            keyboardHeight = getKeyboardHeight();
+        if (super.delegate != null) {
+            keyboardHeight = measureKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
             post(() -> {
                 if (delegate != null) {

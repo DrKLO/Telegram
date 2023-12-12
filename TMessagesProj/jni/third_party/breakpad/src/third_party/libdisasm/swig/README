@@ -1,0 +1,128 @@
+			Libdisasm SWIG README
+
+The SWIG utility (www.swig.org) can be used to generate 
+
+
+Building SWIG Modules
+---------------------
+
+	make
+	make install
+
+Make and Install both build Python, Perl, Ruby, and Tcl modules. If you
+do not have one of these languages installed, comment out the relevant
+target in the main Makefile.
+
+Install uses 'sudo' to put files in the correct locations; if you
+do not have sudo installed, change the install targets.
+
+The Module API
+--------------
+
+The OOP API
+-----------
+
+
+The Python Module
+-----------------
+
+To test that the module loads:
+
+	bash# python
+	>>> import x86disasm
+	>>> x86disasm.version_string()
+	'0.21-pre'
+	>>>^D
+	bash#
+
+	>>> import x86disasm
+	>>> import array
+	>>> disasm = x86disasm.X86_Disasm( )
+	>>> tgt = open( "/tmp/a.out", "rb" )
+	>>> tgt.seek( 0, 2 )
+	>>> size = tgt.tell()
+	>>> tgt.seek( 0, 0 )
+	>>> buf = array.array( 'B' )
+	>>> buf.fromfile( tgt, size )
+	>>> tgt.close()
+	>>> data = x86disasm.byteArray( size )
+	>>> for i in range( size ):
+	...     data[i] = buf.pop(0)
+	...
+	>>> del buf
+	>>> del tgt
+	>>> insn = disasm.disasm( data, size - 1, 0, 0 )
+	>>> insn.format( x86disasm.att_syntax )
+	 'jg\t0x00000047'
+	>>> insn.format( x86disasm.raw_syntax )
+	'0x00000000|0x00000000|2|7F 45 |||controlflow|jcc|jg|80386|General Purpose|||zero_clear sign_eq_oflow |0|0|relative|sbyte|00000047|'
+	>>> ops = insn.operand_list()
+	>>> node = ops.first()
+	>>> while node is not None:
+	...     s = node.op.format(x86disasm.raw_syntax)
+	...     print s
+	...     node = ops.next()
+	... 
+	relative|sbyte|00000047|
+
+
+
+
+
+
+The Perl Module
+---------------
+
+To test that the module loads:
+
+	bash# perl
+	use x86disasm;
+	print x86disasm::version_string() . "\n";
+	^D
+	0.21-pre
+	bash#
+
+The Ruby Module
+---------------
+
+To test that the module loads:
+
+	bash# irb
+	irb(main):001:0> require 'x86disasm'
+	=> true
+	irb(main):002:0> X86disasm.version_string()
+	=> "0.21-pre"
+	irb(main):003:0> x = X86disasm::X86_Disasm.new
+	=> #<X86disasm::X86_Disasm:0xb7d624a4>
+	irb(main):004:0> x.max_register_string()
+	=> 8
+	irb(main):003:0> ^D
+	bash#
+
+The Tcl Module
+---------------
+
+To test that the module loads:
+
+	bash# tclsh
+	% load /usr/lib/tcl8.3/x86disasm.so X86disasm
+	% version_string
+	0.21-pre
+	% ^D
+	bash#
+
+	% x86_init 0 NULL NULL
+		OR
+	% x86disasm dis
+	_486b0708_p_x86disasm
+	%  puts "[dis cget -last_error]"
+	0
+
+
+
+
+The Interface Files
+-------------------
+
+	libdisasm.i	-- interface file without shadow classes
+	libdisasm_oop.i	-- interface file with shadow classes

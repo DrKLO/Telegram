@@ -24,8 +24,13 @@
 #ifdef __GLIBC__
 #include <sys/platform/ppc.h>
 #elif defined(__FreeBSD__)
-#include <sys/sysctl.h>
+// clang-format off
+// This order does actually matter =(.
 #include <sys/types.h>
+#include <sys/sysctl.h>
+// clang-format on
+
+#include "absl/base/call_once.h"
 #endif
 #endif
 
@@ -48,12 +53,6 @@ double UnscaledCycleClock::Frequency() {
 }
 
 #elif defined(__x86_64__)
-
-int64_t UnscaledCycleClock::Now() {
-  uint64_t low, high;
-  __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
-  return (high << 32) | low;
-}
 
 double UnscaledCycleClock::Frequency() {
   return base_internal::NominalCPUFrequency();
@@ -87,6 +86,10 @@ int64_t UnscaledCycleClock::Now() {
 double UnscaledCycleClock::Frequency() {
 #ifdef __GLIBC__
   return __ppc_get_timebase_freq();
+#elif defined(_AIX)
+  // This is the same constant value as returned by
+  // __ppc_get_timebase_freq().
+  return static_cast<double>(512000000);
 #elif defined(__FreeBSD__)
   static once_flag init_timebase_frequency_once;
   static double timebase_frequency = 0.0;
@@ -119,13 +122,23 @@ double UnscaledCycleClock::Frequency() {
   return aarch64_timer_frequency;
 }
 
+#elif defined(__riscv)
+
+int64_t UnscaledCycleClock::Now() {
+  int64_t virtual_timer_value;
+  asm volatile("rdcycle %0" : "=r"(virtual_timer_value));
+  return virtual_timer_value;
+}
+
+double UnscaledCycleClock::Frequency() {
+  return base_internal::NominalCPUFrequency();
+}
+
 #elif defined(_M_IX86) || defined(_M_X64)
 
 #pragma intrinsic(__rdtsc)
 
-int64_t UnscaledCycleClock::Now() {
-  return __rdtsc();
-}
+int64_t UnscaledCycleClock::Now() { return __rdtsc(); }
 
 double UnscaledCycleClock::Frequency() {
   return base_internal::NominalCPUFrequency();

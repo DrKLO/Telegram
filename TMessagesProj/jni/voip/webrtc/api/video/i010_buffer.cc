@@ -11,9 +11,9 @@
 
 #include <utility>
 
+#include "api/make_ref_counted.h"
 #include "api/video/i420_buffer.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/ref_counted_object.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
 #include "third_party/libyuv/include/libyuv/scale.h"
 
@@ -117,7 +117,7 @@ rtc::scoped_refptr<I010Buffer> I010Buffer::Rotate(
       switch (rotation) {
         // This case is covered by the early return.
         case webrtc::kVideoRotation_0:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
           break;
         case webrtc::kVideoRotation_90:
           dest_x = src.height() - y - 1;
@@ -230,37 +230,6 @@ void I010Buffer::CropAndScaleFrom(const I010BufferInterface& src,
 
 void I010Buffer::ScaleFrom(const I010BufferInterface& src) {
   CropAndScaleFrom(src, 0, 0, src.width(), src.height());
-}
-
-void I010Buffer::PasteFrom(const I010BufferInterface& picture,
-                           int offset_col,
-                           int offset_row) {
-  RTC_CHECK_LE(picture.width() + offset_col, width());
-  RTC_CHECK_LE(picture.height() + offset_row, height());
-  RTC_CHECK_GE(offset_col, 0);
-  RTC_CHECK_GE(offset_row, 0);
-
-  // Pasted picture has to be aligned so subsumpled UV plane isn't corrupted.
-  RTC_CHECK(offset_col % 2 == 0);
-  RTC_CHECK(offset_row % 2 == 0);
-  RTC_CHECK(picture.width() % 2 == 0 ||
-            picture.width() + offset_col == width());
-  RTC_CHECK(picture.height() % 2 == 0 ||
-            picture.height() + offset_row == height());
-
-  libyuv::CopyPlane_16(picture.DataY(), picture.StrideY(),
-                       MutableDataY() + StrideY() * offset_row + offset_col,
-                       StrideY(), picture.width(), picture.height());
-
-  libyuv::CopyPlane_16(
-      picture.DataU(), picture.StrideU(),
-      MutableDataU() + StrideU() * offset_row / 2 + offset_col / 2, StrideU(),
-      picture.width() / 2, picture.height() / 2);
-
-  libyuv::CopyPlane_16(
-      picture.DataV(), picture.StrideV(),
-      MutableDataV() + StrideV() * offset_row / 2 + offset_col / 2, StrideV(),
-      picture.width() / 2, picture.height() / 2);
 }
 
 }  // namespace webrtc

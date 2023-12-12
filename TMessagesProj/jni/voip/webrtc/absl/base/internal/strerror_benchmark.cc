@@ -20,15 +20,6 @@
 #include "benchmark/benchmark.h"
 
 namespace {
-#if defined(__GLIBC__) || defined(__APPLE__)
-void BM_SysErrList(benchmark::State& state) {
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(std::string(sys_errlist[ERANGE]));
-  }
-}
-BENCHMARK(BM_SysErrList);
-#endif
-
 void BM_AbslStrError(benchmark::State& state) {
   for (auto _ : state) {
     benchmark::DoNotOptimize(absl::base_internal::StrError(ERANGE));

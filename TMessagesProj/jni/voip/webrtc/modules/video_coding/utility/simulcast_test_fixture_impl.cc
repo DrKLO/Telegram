@@ -143,7 +143,7 @@ class SimulcastTestFixtureImpl::TestDecodedImageCallback
     return 0;
   }
   int32_t Decoded(VideoFrame& decoded_image, int64_t decode_time_ms) override {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return -1;
   }
   void Decoded(VideoFrame& decoded_image,
@@ -169,7 +169,7 @@ void SetPlane(uint8_t* data, uint8_t value, int width, int height, int stride) {
   }
 }
 
-// Fills in an I420Buffer from |plane_colors|.
+// Fills in an I420Buffer from `plane_colors`.
 void CreateImage(const rtc::scoped_refptr<I420Buffer>& buffer,
                  int plane_colors[kNumOfPlanes]) {
   SetPlane(buffer->MutableDataY(), plane_colors[0], buffer->width(),
@@ -188,9 +188,9 @@ void ConfigureStream(int width,
                      int min_bitrate,
                      int target_bitrate,
                      float max_framerate,
-                     SpatialLayer* stream,
+                     SimulcastStream* stream,
                      int num_temporal_layers) {
-  assert(stream);
+  RTC_DCHECK(stream);
   stream->width = width;
   stream->height = height;
   stream->maxBitrate = max_bitrate;
@@ -242,13 +242,12 @@ void SimulcastTestFixtureImpl::DefaultSettings(
                   kMinBitrates[2], kTargetBitrates[2], kMaxFramerates[2],
                   &settings->simulcastStream[layer_order[2]],
                   temporal_layer_profile[2]);
+  settings->SetFrameDropEnabled(true);
   if (codec_type == kVideoCodecVP8) {
     settings->VP8()->denoisingOn = true;
     settings->VP8()->automaticResizeOn = false;
-    settings->VP8()->frameDroppingOn = true;
     settings->VP8()->keyFrameInterval = 3000;
   } else {
-    settings->H264()->frameDroppingOn = true;
     settings->H264()->keyFrameInterval = 3000;
   }
 }
@@ -276,7 +275,10 @@ void SimulcastTestFixtureImpl::SetUpCodec(const int* temporal_layer_profile) {
   DefaultSettings(&settings_, temporal_layer_profile, codec_type_);
   SetUpRateAllocator();
   EXPECT_EQ(0, encoder_->InitEncode(&settings_, kSettings));
-  EXPECT_EQ(0, decoder_->InitDecode(&settings_, 1));
+  VideoDecoder::Settings decoder_settings;
+  decoder_settings.set_max_render_resolution({kDefaultWidth, kDefaultHeight});
+  decoder_settings.set_codec_type(codec_type_);
+  EXPECT_TRUE(decoder_->Configure(decoder_settings));
   input_buffer_ = I420Buffer::Create(kDefaultWidth, kDefaultHeight);
   input_buffer_->InitializeData();
   input_frame_ = std::make_unique<webrtc::VideoFrame>(
@@ -465,7 +467,7 @@ void SimulcastTestFixtureImpl::TestPaddingTwoStreams() {
 
 void SimulcastTestFixtureImpl::TestPaddingTwoStreamsOneMaxedOut() {
   // We are just below limit of sending second stream, so we should get
-  // the first stream maxed out (at |maxBitrate|), and padding for two.
+  // the first stream maxed out (at `maxBitrate`), and padding for two.
   SetRates(kTargetBitrates[0] + kMinBitrates[1] - 1, 30);
   std::vector<VideoFrameType> frame_types(kNumberOfSimulcastStreams,
                                           VideoFrameType::kVideoFrameDelta);
@@ -492,7 +494,7 @@ void SimulcastTestFixtureImpl::TestPaddingOneStream() {
 
 void SimulcastTestFixtureImpl::TestPaddingOneStreamTwoMaxedOut() {
   // We are just below limit of sending third stream, so we should get
-  // first stream's rate maxed out at |targetBitrate|, second at |maxBitrate|.
+  // first stream's rate maxed out at `targetBitrate`, second at `maxBitrate`.
   SetRates(kTargetBitrates[0] + kTargetBitrates[1] + kMinBitrates[2] - 1, 30);
   std::vector<VideoFrameType> frame_types(kNumberOfSimulcastStreams,
                                           VideoFrameType::kVideoFrameDelta);
@@ -590,6 +592,7 @@ void SimulcastTestFixtureImpl::SwitchingToOneStream(int width, int height) {
     settings_.VP8()->numberOfTemporalLayers = 1;
     temporal_layer_profile = kDefaultTemporalLayerProfile;
   } else {
+    settings_.H264()->numberOfTemporalLayers = 1;
     temporal_layer_profile = kNoTemporalLayerProfile;
   }
   settings_.maxBitrate = 100;
@@ -648,7 +651,7 @@ void SimulcastTestFixtureImpl::SwitchingToOneStream(int width, int height) {
   EXPECT_EQ(0, encoder_->InitEncode(&settings_, kSettings));
   SetRates(settings_.startBitrate, 30);
   ExpectStreams(VideoFrameType::kVideoFrameKey, 1);
-  // Resize |input_frame_| to the new resolution.
+  // Resize `input_frame_` to the new resolution.
   input_buffer_ = I420Buffer::Create(settings_.width, settings_.height);
   input_buffer_->InitializeData();
   input_frame_ = std::make_unique<webrtc::VideoFrame>(

@@ -14,15 +14,13 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 class AggregatedCounter;
 class Clock;
 class Samples;
 
-// |StatsCounterObserver| is called periodically when a metric is updated.
+// `StatsCounterObserver` is called periodically when a metric is updated.
 class StatsCounterObserver {
  public:
   virtual void OnMetricUpdated(int sample) = 0;
@@ -43,13 +41,13 @@ struct AggregatedStats {
 
 // Classes which periodically computes a metric.
 //
-// During a period, |kProcessIntervalMs|, different metrics can be computed e.g:
-// - |AvgCounter|: average of samples
-// - |PercentCounter|: percentage of samples
-// - |PermilleCounter|: permille of samples
+// During a period, `kProcessIntervalMs`, different metrics can be computed e.g:
+// - `AvgCounter`: average of samples
+// - `PercentCounter`: percentage of samples
+// - `PermilleCounter`: permille of samples
 //
 // Each periodic metric can be either:
-// - reported to an |observer| each period
+// - reported to an `observer` each period
 // - aggregated during the call (e.g. min, max, average)
 //
 //                 periodically computed
@@ -76,7 +74,7 @@ struct AggregatedStats {
 // stats: {min:4, max:15, avg:8}
 //
 
-// Note: StatsCounter takes ownership of |observer|.
+// Note: StatsCounter takes ownership of `observer`.
 
 class StatsCounter {
  public:
@@ -145,7 +143,7 @@ class StatsCounter {
 //           | Add(5) Add(1) Add(6) | Add(5)      Add(5)  |
 // GetMetric | (5 + 1 + 6) / 3      | (5 + 5) / 2         |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //
@@ -156,6 +154,9 @@ class AvgCounter : public StatsCounter {
              bool include_empty_intervals);
   ~AvgCounter() override {}
 
+  AvgCounter(const AvgCounter&) = delete;
+  AvgCounter& operator=(const AvgCounter&) = delete;
+
   void Add(int sample);
 
  private:
@@ -163,8 +164,6 @@ class AvgCounter : public StatsCounter {
 
   // Returns the last computed metric (i.e. from GetMetric).
   int GetValueForEmptyInterval() const override;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AvgCounter);
 };
 
 // MaxCounter: maximum of samples
@@ -180,13 +179,14 @@ class MaxCounter : public StatsCounter {
              int64_t process_intervals_ms);
   ~MaxCounter() override {}
 
+  MaxCounter(const MaxCounter&) = delete;
+  MaxCounter& operator=(const MaxCounter&) = delete;
+
   void Add(int sample);
 
  private:
   bool GetMetric(int* metric) const override;
   int GetValueForEmptyInterval() const override;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(MaxCounter);
 };
 
 // PercentCounter: percentage of samples
@@ -200,13 +200,14 @@ class PercentCounter : public StatsCounter {
   PercentCounter(Clock* clock, StatsCounterObserver* observer);
   ~PercentCounter() override {}
 
+  PercentCounter(const PercentCounter&) = delete;
+  PercentCounter& operator=(const PercentCounter&) = delete;
+
   void Add(bool sample);
 
  private:
   bool GetMetric(int* metric) const override;
   int GetValueForEmptyInterval() const override;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PercentCounter);
 };
 
 // PermilleCounter: permille of samples
@@ -220,13 +221,14 @@ class PermilleCounter : public StatsCounter {
   PermilleCounter(Clock* clock, StatsCounterObserver* observer);
   ~PermilleCounter() override {}
 
+  PermilleCounter(const PermilleCounter&) = delete;
+  PermilleCounter& operator=(const PermilleCounter&) = delete;
+
   void Add(bool sample);
 
  private:
   bool GetMetric(int* metric) const override;
   int GetValueForEmptyInterval() const override;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PermilleCounter);
 };
 
 // RateCounter: units per second
@@ -236,7 +238,7 @@ class PermilleCounter : public StatsCounter {
 //           |<------ 2 sec ------->|                     |
 // GetMetric | (5 + 1 + 6) / 2      | (5 + 5) / 2         |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //
@@ -247,13 +249,14 @@ class RateCounter : public StatsCounter {
               bool include_empty_intervals);
   ~RateCounter() override {}
 
+  RateCounter(const RateCounter&) = delete;
+  RateCounter& operator=(const RateCounter&) = delete;
+
   void Add(int sample);
 
  private:
   bool GetMetric(int* metric) const override;
   int GetValueForEmptyInterval() const override;  // Returns zero.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RateCounter);
 };
 
 // RateAccCounter: units per second (used for counters)
@@ -263,7 +266,7 @@ class RateCounter : public StatsCounter {
 //           |<------ 2 sec ------->|                     |
 // GetMetric | (8 - 0) / 2          | (13 - 8) / 2        |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //
@@ -274,6 +277,9 @@ class RateAccCounter : public StatsCounter {
                  bool include_empty_intervals);
   ~RateAccCounter() override {}
 
+  RateAccCounter(const RateAccCounter&) = delete;
+  RateAccCounter& operator=(const RateAccCounter&) = delete;
+
   void Set(int64_t sample, uint32_t stream_id);
 
   // Sets the value for previous interval.
@@ -283,8 +289,6 @@ class RateAccCounter : public StatsCounter {
  private:
   bool GetMetric(int* metric) const override;
   int GetValueForEmptyInterval() const override;  // Returns zero.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RateAccCounter);
 };
 
 }  // namespace webrtc

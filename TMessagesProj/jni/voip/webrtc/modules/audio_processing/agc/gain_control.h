@@ -20,12 +20,12 @@ namespace webrtc {
 // Recommended to be enabled on the client-side.
 class GainControl {
  public:
-  // When an analog mode is set, this must be called prior to |ProcessStream()|
+  // When an analog mode is set, this must be called prior to `ProcessStream()`
   // to pass the current analog level from the audio HAL. Must be within the
-  // range provided to |set_analog_level_limits()|.
+  // range provided to `set_analog_level_limits()`.
   virtual int set_stream_analog_level(int level) = 0;
 
-  // When an analog mode is set, this should be called after |ProcessStream()|
+  // When an analog mode is set, this should be called after `ProcessStream()`
   // to obtain the recommended new analog level for the audio HAL. It is the
   // users responsibility to apply this level.
   virtual int stream_analog_level() const = 0;
@@ -33,7 +33,7 @@ class GainControl {
   enum Mode {
     // Adaptive mode intended for use if an analog volume control is available
     // on the capture device. It will require the user to provide coupling
-    // between the OS mixer controls and AGC through the |stream_analog_level()|
+    // between the OS mixer controls and AGC through the `stream_analog_level()`
     // functions.
     //
     // It consists of an analog gain prescription for the audio device and a
@@ -61,7 +61,7 @@ class GainControl {
   virtual int set_mode(Mode mode) = 0;
   virtual Mode mode() const = 0;
 
-  // Sets the target peak |level| (or envelope) of the AGC in dBFs (decibels
+  // Sets the target peak `level` (or envelope) of the AGC in dBFs (decibels
   // from digital full-scale). The convention is to use positive values. For
   // instance, passing in a value of 3 corresponds to -3 dBFs, or a target
   // level 3 dB below full-scale. Limited to [0, 31].
@@ -71,7 +71,7 @@ class GainControl {
   virtual int set_target_level_dbfs(int level) = 0;
   virtual int target_level_dbfs() const = 0;
 
-  // Sets the maximum |gain| the digital compression stage may apply, in dB. A
+  // Sets the maximum `gain` the digital compression stage may apply, in dB. A
   // higher number corresponds to greater compression, while a value of 0 will
   // leave the signal uncompressed. Limited to [0, 90].
   virtual int set_compression_gain_db(int gain) = 0;
@@ -83,7 +83,7 @@ class GainControl {
   virtual int enable_limiter(bool enable) = 0;
   virtual bool is_limiter_enabled() const = 0;
 
-  // Sets the |minimum| and |maximum| analog levels of the audio capture device.
+  // Sets the `minimum` and `maximum` analog levels of the audio capture device.
   // Must be set if and only if an analog mode is used. Limited to [0, 65535].
   virtual int set_analog_level_limits(int minimum, int maximum) = 0;
   virtual int analog_level_minimum() const = 0;

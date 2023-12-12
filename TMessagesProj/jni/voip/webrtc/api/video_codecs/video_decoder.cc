@@ -10,6 +10,10 @@
 
 #include "api/video_codecs/video_decoder.h"
 
+#include "absl/types/optional.h"
+#include "api/video/render_resolution.h"
+#include "api/video/video_codec_type.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/strings/string_builder.h"
 
 namespace webrtc {
@@ -51,6 +55,11 @@ std::string VideoDecoder::DecoderInfo::ToString() const {
 bool VideoDecoder::DecoderInfo::operator==(const DecoderInfo& rhs) const {
   return is_hardware_accelerated == rhs.is_hardware_accelerated &&
          implementation_name == rhs.implementation_name;
+}
+
+void VideoDecoder::Settings::set_number_of_cores(int value) {
+  RTC_DCHECK_GT(value, 0);
+  number_of_cores_ = value;
 }
 
 }  // namespace webrtc

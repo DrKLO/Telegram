@@ -17,10 +17,16 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.core.graphics.ColorUtils;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -30,10 +36,6 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.core.graphics.ColorUtils;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 public class GroupCallRecordAlert extends BottomSheet {
 
@@ -275,7 +277,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         positiveButton.invalidate();
     }
 
-    protected void onStartRecord(int type) {
+    public void onStartRecord(@ChatObject.Call.RecordType int type) {
 
     }
 
@@ -289,11 +291,31 @@ public class GroupCallRecordAlert extends BottomSheet {
         public Object instantiateItem(ViewGroup container, int position) {
             View view;
 
-            ImageView imageView = new ImageView(getContext());
+            ImageView imageView = new ImageView(getContext()) {
+                @Override
+                public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+                    super.onInitializeAccessibilityEvent(event);
+                    if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+                        viewPager.setCurrentItem(position, true);
+                    }
+                }
+            };
+            imageView.setOnClickListener((e) -> {
+                onStartRecord(position);
+                dismiss();
+            });
+            imageView.setFocusable(true);
             imageView.setTag(position);
             imageView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             imageView.setScaleType(ImageView.ScaleType.FIT_XY);
             imageView.setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(200), ViewGroup.LayoutParams.MATCH_PARENT));
+            if (position == 0) {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordAudio", R.string.VoipRecordAudio));
+            } else if (position == 1) {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordPortrait", R.string.VoipRecordPortrait));
+            } else {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordLandscape", R.string.VoipRecordLandscape));
+            }
             view = imageView;
             int res;
             if (position == 0) {

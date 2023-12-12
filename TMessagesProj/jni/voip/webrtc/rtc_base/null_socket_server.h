@@ -11,7 +11,6 @@
 #ifndef RTC_BASE_NULL_SOCKET_SERVER_H_
 #define RTC_BASE_NULL_SOCKET_SERVER_H_
 
-#include "rtc_base/async_socket.h"
 #include "rtc_base/event.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_server.h"
@@ -24,11 +23,10 @@ class RTC_EXPORT NullSocketServer : public SocketServer {
   NullSocketServer();
   ~NullSocketServer() override;
 
-  bool Wait(int cms, bool process_io) override;
+  bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) override;
   void WakeUp() override;
 
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
  private:
   Event event_;

@@ -16,26 +16,21 @@
 #include <atomic>
 
 #include "absl/base/attributes.h"
+#include "absl/base/internal/atomic_hook.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace status_internal {
 
-namespace {
-// Tried constant initialized global variable but it doesn't work with Lexan
-// (MSVC's `std::atomic` has trouble constant initializing).
-std::atomic<StatusPayloadPrinter>& GetStatusPayloadPrinterStorage() {
-  ABSL_CONST_INIT static std::atomic<StatusPayloadPrinter> instance{nullptr};
-  return instance;
-}
-}  // namespace
+ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES
+static absl::base_internal::AtomicHook<StatusPayloadPrinter> storage;
 
 void SetStatusPayloadPrinter(StatusPayloadPrinter printer) {
-  GetStatusPayloadPrinterStorage().store(printer, std::memory_order_relaxed);
+  storage.Store(printer);
 }
 
 StatusPayloadPrinter GetStatusPayloadPrinter() {
-  return GetStatusPayloadPrinterStorage().load(std::memory_order_relaxed);
+  return storage.Load();
 }
 
 }  // namespace status_internal

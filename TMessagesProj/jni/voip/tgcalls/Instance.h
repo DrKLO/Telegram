@@ -8,6 +8,7 @@
 #include <map>
 
 #include "Stats.h"
+#include "DirectConnectionChannel.h"
 
 namespace rtc {
 template <typename VideoFrameT>
@@ -43,11 +44,13 @@ struct Proxy {
 };
 
 struct RtcServer {
+    uint8_t id = 0;
 	std::string host;
 	uint16_t port = 0;
 	std::string login;
 	std::string password;
 	bool isTurn = false;
+    bool isTcp = false;
 };
 
 enum class EndpointType {
@@ -184,7 +187,7 @@ public:
 	virtual void setEchoCancellationStrength(int strength) = 0;
 
 	virtual bool supportsVideo() = 0;
-	virtual void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
+	virtual void setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
 
 	virtual void setAudioInputDevice(std::string id) = 0;
 	virtual void setAudioOutputDevice(std::string id) = 0;
@@ -215,6 +218,7 @@ template <typename Implementation>
 bool Register();
 
 struct Descriptor {
+    std::string version;
 	Config config;
 	PersistentState persistentState;
 	std::vector<Endpoint> endpoints;
@@ -226,12 +230,15 @@ struct Descriptor {
 	std::shared_ptr<VideoCaptureInterface> videoCapture;
 	std::function<void(State)> stateUpdated;
 	std::function<void(int)> signalBarsUpdated;
-    std::function<void(float)> audioLevelUpdated;
+    std::function<void(float, float)> audioLevelsUpdated;
     std::function<void(bool)> remoteBatteryLevelIsLowUpdated;
 	std::function<void(AudioState, VideoState)> remoteMediaStateUpdated;
     std::function<void(float)> remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> signalingDataEmitted;
 	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
+    std::string initialInputDeviceId;
+    std::string initialOutputDeviceId;
+    std::shared_ptr<DirectConnectionChannel> directConnectionChannel;
 
 	std::shared_ptr<PlatformContext> platformContext;
 };

@@ -54,7 +54,7 @@ struct RTC_EXPORT VideoSinkWants {
   int max_framerate_fps = std::numeric_limits<int>::max();
 
   // Tells the source that the sink wants width and height of the video frames
-  // to be divisible by |resolution_alignment|.
+  // to be divisible by `resolution_alignment`.
   // For example: With I420, this value would be a multiple of 2.
   // Note that this field is unrelated to any horizontal or vertical stride
   // requirements the encoder has on the incoming video frame buffers.
@@ -71,20 +71,43 @@ struct RTC_EXPORT VideoSinkWants {
   // to scaleResolutionDownBy or turning off simulcast or SVC layers.
   //
   // For example, we may capture at 720p and due to adaptation (e.g. applying
-  // |max_pixel_count| constraints) create webrtc::VideoFrames of size 480p, but
+  // `max_pixel_count` constraints) create webrtc::VideoFrames of size 480p, but
   // if we do scaleResolutionDownBy:2 then the only resolution we end up
   // encoding is 240p. In this case we still need to provide webrtc::VideoFrames
   // of size 480p but we can optimize internal buffers for 240p, avoiding
   // downsampling to 480p if possible.
   //
-  // Note that the |resolutions| can change while frames are in flight and
+  // Note that the `resolutions` can change while frames are in flight and
   // should only be used as a hint when constructing the webrtc::VideoFrame.
   std::vector<FrameSize> resolutions;
+
+  // This is the resolution requested by the user using RtpEncodingParameters.
+  absl::optional<FrameSize> requested_resolution;
+
+  // `active` : is (any) of the layers/sink(s) active.
+  bool is_active = true;
+
+  // This sub-struct contains information computed by VideoBroadcaster
+  // that aggregates several VideoSinkWants (and sends them to
+  // AdaptedVideoTrackSource).
+  struct Aggregates {
+    // `active_without_requested_resolution` is set by VideoBroadcaster
+    // when aggregating sink wants if there exists any sink (encoder) that is
+    // active but has not set the `requested_resolution`, i.e is relying on
+    // OnOutputFormatRequest to handle encode resolution.
+    bool any_active_without_requested_resolution = false;
+  };
+  absl::optional<Aggregates> aggregates;
 };
 
 inline bool operator==(const VideoSinkWants::FrameSize& a,
                        const VideoSinkWants::FrameSize& b) {
   return a.width == b.width && a.height == b.height;
+}
+
+inline bool operator!=(const VideoSinkWants::FrameSize& a,
+                       const VideoSinkWants::FrameSize& b) {
+  return !(a == b);
 }
 
 template <typename VideoFrameT>
@@ -97,6 +120,10 @@ class VideoSourceInterface {
   // RemoveSink must guarantee that at the time the method returns,
   // there is no current and no future calls to VideoSinkInterface::OnFrame.
   virtual void RemoveSink(VideoSinkInterface<VideoFrameT>* sink) = 0;
+
+  // Request underlying source to capture a new frame.
+  // TODO(crbug/1255737): make pure virtual once downstream projects adapt.
+  virtual void RequestRefreshFrame() {}
 };
 
 }  // namespace rtc

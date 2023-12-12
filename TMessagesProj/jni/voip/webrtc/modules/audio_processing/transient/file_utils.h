@@ -50,63 +50,63 @@ int ConvertFloatToByteArray(float value, uint8_t out_bytes[4]);
 // Returns 0 if correct, -1 on error.
 int ConvertDoubleToByteArray(double value, uint8_t out_bytes[8]);
 
-// Reads |length| 16-bit integers from |file| to |buffer|.
-// |file| must be previously opened.
+// Reads `length` 16-bit integers from `file` to `buffer`.
+// `file` must be previously opened.
 // Returns the number of 16-bit integers read or -1 on error.
 size_t ReadInt16BufferFromFile(FileWrapper* file,
                                size_t length,
                                int16_t* buffer);
 
-// Reads |length| 16-bit integers from |file| and stores those values
-// (converting them) in |buffer|.
-// |file| must be previously opened.
+// Reads `length` 16-bit integers from `file` and stores those values
+// (converting them) in `buffer`.
+// `file` must be previously opened.
 // Returns the number of 16-bit integers read or -1 on error.
 size_t ReadInt16FromFileToFloatBuffer(FileWrapper* file,
                                       size_t length,
                                       float* buffer);
 
-// Reads |length| 16-bit integers from |file| and stores those values
-// (converting them) in |buffer|.
-// |file| must be previously opened.
+// Reads `length` 16-bit integers from `file` and stores those values
+// (converting them) in `buffer`.
+// `file` must be previously opened.
 // Returns the number of 16-bit integers read or -1 on error.
 size_t ReadInt16FromFileToDoubleBuffer(FileWrapper* file,
                                        size_t length,
                                        double* buffer);
 
-// Reads |length| floats in binary representation (4 bytes) from |file| to
-// |buffer|.
-// |file| must be previously opened.
+// Reads `length` floats in binary representation (4 bytes) from `file` to
+// `buffer`.
+// `file` must be previously opened.
 // Returns the number of floats read or -1 on error.
 size_t ReadFloatBufferFromFile(FileWrapper* file, size_t length, float* buffer);
 
-// Reads |length| doubles in binary representation (8 bytes) from |file| to
-// |buffer|.
-// |file| must be previously opened.
+// Reads `length` doubles in binary representation (8 bytes) from `file` to
+// `buffer`.
+// `file` must be previously opened.
 // Returns the number of doubles read or -1 on error.
 size_t ReadDoubleBufferFromFile(FileWrapper* file,
                                 size_t length,
                                 double* buffer);
 
-// Writes |length| 16-bit integers from |buffer| in binary representation (2
-// bytes) to |file|. It flushes |file|, so after this call there are no
+// Writes `length` 16-bit integers from `buffer` in binary representation (2
+// bytes) to `file`. It flushes `file`, so after this call there are no
 // writings pending.
-// |file| must be previously opened.
+// `file` must be previously opened.
 // Returns the number of doubles written or -1 on error.
 size_t WriteInt16BufferToFile(FileWrapper* file,
                               size_t length,
                               const int16_t* buffer);
 
-// Writes |length| floats from |buffer| in binary representation (4 bytes) to
-// |file|. It flushes |file|, so after this call there are no writtings pending.
-// |file| must be previously opened.
+// Writes `length` floats from `buffer` in binary representation (4 bytes) to
+// `file`. It flushes `file`, so after this call there are no writtings pending.
+// `file` must be previously opened.
 // Returns the number of doubles written or -1 on error.
 size_t WriteFloatBufferToFile(FileWrapper* file,
                               size_t length,
                               const float* buffer);
 
-// Writes |length| doubles from |buffer| in binary representation (8 bytes) to
-// |file|. It flushes |file|, so after this call there are no writings pending.
-// |file| must be previously opened.
+// Writes `length` doubles from `buffer` in binary representation (8 bytes) to
+// `file`. It flushes `file`, so after this call there are no writings pending.
+// `file` must be previously opened.
 // Returns the number of doubles written or -1 on error.
 size_t WriteDoubleBufferToFile(FileWrapper* file,
                                size_t length,

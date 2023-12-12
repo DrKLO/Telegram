@@ -158,6 +158,8 @@ struct PacketResult {
   PacketResult(const PacketResult&);
   ~PacketResult();
 
+  inline bool IsReceived() const { return !receive_time.IsPlusInfinity(); }
+
   SentPacket sent_packet;
   Timestamp receive_time = Timestamp::PlusInfinity();
 };
@@ -239,9 +241,6 @@ struct NetworkControlUpdate {
 
 // Process control
 struct ProcessInterval {
-  ProcessInterval();
-  ProcessInterval(const ProcessInterval&);
-  ~ProcessInterval();
   Timestamp at_time = Timestamp::PlusInfinity();
   absl::optional<DataSize> pacer_queue;
 };

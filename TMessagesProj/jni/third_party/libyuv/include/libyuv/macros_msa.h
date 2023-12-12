@@ -81,25 +81,35 @@
   })
 #endif  // !(__mips == 64)
 #else   // !(__mips_isa_rev >= 6)
-#define LW(psrc)                                       \
-  ({                                                   \
-    const uint8_t* psrc_lw_m = (const uint8_t*)(psrc); \
-    uint32_t val_m;                                    \
-    asm volatile("ulw  %[val_m],  %[psrc_lw_m]  \n"    \
-                 : [val_m] "=r"(val_m)                 \
-                 : [psrc_lw_m] "m"(*psrc_lw_m));       \
-    val_m;                                             \
+#define LW(psrc)                                \
+  ({                                            \
+    uint8_t* psrc_lw_m = (uint8_t*)(psrc);      \
+    uint32_t val_lw_m;                          \
+                                                \
+    __asm__ volatile(                           \
+        "lwr %[val_lw_m], 0(%[psrc_lw_m]) \n\t" \
+        "lwl %[val_lw_m], 3(%[psrc_lw_m]) \n\t" \
+                                                \
+        : [val_lw_m] "=&r"(val_lw_m)            \
+        : [psrc_lw_m] "r"(psrc_lw_m));          \
+                                                \
+    val_lw_m;                                   \
   })
 
 #if (__mips == 64)
-#define LD(psrc)                                       \
-  ({                                                   \
-    const uint8_t* psrc_ld_m = (const uint8_t*)(psrc); \
-    uint64_t val_m = 0;                                \
-    asm volatile("uld  %[val_m],  %[psrc_ld_m]  \n"    \
-                 : [val_m] "=r"(val_m)                 \
-                 : [psrc_ld_m] "m"(*psrc_ld_m));       \
-    val_m;                                             \
+#define LD(psrc)                                \
+  ({                                            \
+    uint8_t* psrc_ld_m = (uint8_t*)(psrc);      \
+    uint64_t val_ld_m = 0;                      \
+                                                \
+    __asm__ volatile(                           \
+        "ldr %[val_ld_m], 0(%[psrc_ld_m]) \n\t" \
+        "ldl %[val_ld_m], 7(%[psrc_ld_m]) \n\t" \
+                                                \
+        : [val_ld_m] "=&r"(val_ld_m)            \
+        : [psrc_ld_m] "r"(psrc_ld_m));          \
+                                                \
+    val_ld_m;                                   \
   })
 #else  // !(__mips == 64)
 #define LD(psrc)                                                         \

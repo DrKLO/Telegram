@@ -15,10 +15,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/frame_transformer_interface.h"
 #include "api/scoped_refptr.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
@@ -27,7 +28,6 @@
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
-#include "rtc_base/constructor_magic.h"
 #include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
@@ -35,7 +35,6 @@ namespace webrtc {
 // Forward declarations.
 class FrameEncryptorInterface;
 class RateLimiter;
-class RemoteBitrateEstimator;
 class RtcEventLog;
 class RTPSender;
 class Transport;
@@ -46,6 +45,9 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   struct Configuration {
     Configuration() = default;
     Configuration(Configuration&& rhs) = default;
+
+    Configuration(const Configuration&) = delete;
+    Configuration& operator=(const Configuration&) = delete;
 
     // True for a audio version of the RTP/RTCP module object false will create
     // a video version.
@@ -84,10 +86,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     RtcpCnameCallback* rtcp_cname_callback = nullptr;
     ReportBlockDataObserver* report_block_data_observer = nullptr;
 
-    // Estimates the bandwidth available for a set of streams from the same
-    // client.
-    RemoteBitrateEstimator* remote_bitrate_estimator = nullptr;
-
     // Spread any bursts of packets into smaller bursts to minimize packet loss.
     RtpPacketSender* paced_sender = nullptr;
 
@@ -124,12 +122,12 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     // done by RTCP RR acking.
     bool always_send_mid_and_rid = false;
 
-    // If set, field trials are read from |field_trials|, otherwise
+    // If set, field trials are read from `field_trials`, otherwise
     // defaults to  webrtc::FieldTrialBasedConfig.
-    const WebRtcKeyValueConfig* field_trials = nullptr;
+    const FieldTrialsView* field_trials = nullptr;
 
     // SSRCs for media and retransmission, respectively.
-    // FlexFec SSRC is fetched from |flexfec_sender|.
+    // FlexFec SSRC is fetched from `flexfec_sender`.
     uint32_t local_media_ssrc = 0;
     absl::optional<uint32_t> rtx_send_ssrc;
 
@@ -146,14 +144,17 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     // https://tools.ietf.org/html/rfc3611#section-4.4 and #section-4.5
     bool non_sender_rtt_measurement = false;
 
-   private:
-    RTC_DISALLOW_COPY_AND_ASSIGN(Configuration);
+    // If non-empty, sets the value for sending in the RID (and Repaired) RTP
+    // header extension. RIDs are used to identify an RTP stream if SSRCs are
+    // not negotiated. If the RID and Repaired RID extensions are not
+    // registered, the RID will not be sent.
+    std::string rid;
   };
 
   // Stats for RTCP sender reports (SR) for a specific SSRC.
   // Refer to https://tools.ietf.org/html/rfc3550#section-6.4.1.
   struct SenderReportStats {
-    // Arrival NPT timestamp for the last received RTCP SR.
+    // Arrival NTP timestamp for the last received RTCP SR.
     NtpTime last_arrival_timestamp;
     // Received (a.k.a., remote) NTP timestamp for the last received RTCP SR.
     NtpTime last_remote_timestamp;
@@ -170,6 +171,16 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-reportssent.
     uint64_t reports_count;
   };
+  // Stats about the non-sender SSRC, based on RTCP extended reports (XR).
+  // Refer to https://datatracker.ietf.org/doc/html/rfc3611#section-2.
+  struct NonSenderRttStats {
+    // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptime
+    absl::optional<TimeDelta> round_trip_time;
+    // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-totalroundtriptime
+    TimeDelta total_round_trip_time = TimeDelta::Zero();
+    // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptimemeasurements
+    int round_trip_time_measurements = 0;
+  };
 
   // **************************************************************************
   // Receiver functions
@@ -179,6 +190,10 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
                                   size_t incoming_packet_length) = 0;
 
   virtual void SetRemoteSSRC(uint32_t ssrc) = 0;
+
+  // Called when the local ssrc changes (post initialization) for receive
+  // streams to match with send. Called on the packet receive thread/tq.
+  virtual void SetLocalSsrc(uint32_t ssrc) = 0;
 
   // **************************************************************************
   // Sender
@@ -195,7 +210,7 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
                                             int payload_frequency) = 0;
 
   // Unregisters a send payload.
-  // |payload_type| - payload type of codec
+  // `payload_type` - payload type of codec
   // Returns -1 on failure else 0.
   virtual int32_t DeRegisterSendPayload(int8_t payload_type) = 0;
 
@@ -204,7 +219,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   // Register extension by uri, triggers CHECK on falure.
   virtual void RegisterRtpHeaderExtension(absl::string_view uri, int id) = 0;
 
-  virtual int32_t DeregisterSendRtpHeaderExtension(RTPExtensionType type) = 0;
   virtual void DeregisterSendRtpHeaderExtension(absl::string_view uri) = 0;
 
   // Returns true if RTP module is send media, and any of the extensions
@@ -233,22 +247,19 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   virtual RtpState GetRtpState() const = 0;
   virtual RtpState GetRtxState() const = 0;
 
+  // This can be used to enable/disable receive-side RTT.
+  virtual void SetNonSenderRttMeasurement(bool enabled) = 0;
+
   // Returns SSRC.
   virtual uint32_t SSRC() const = 0;
-
-  // Sets the value for sending in the RID (and Repaired) RTP header extension.
-  // RIDs are used to identify an RTP stream if SSRCs are not negotiated.
-  // If the RID and Repaired RID extensions are not registered, the RID will
-  // not be sent.
-  virtual void SetRid(const std::string& rid) = 0;
 
   // Sets the value for sending in the MID RTP header extension.
   // The MID RTP header extension should be registered for this to do anything.
   // Once set, this value can not be changed or removed.
-  virtual void SetMid(const std::string& mid) = 0;
+  virtual void SetMid(absl::string_view mid) = 0;
 
   // Sets CSRC.
-  // |csrcs| - vector of CSRCs
+  // `csrcs` - vector of CSRCs
   virtual void SetCsrcs(const std::vector<uint32_t>& csrcs) = 0;
 
   // Turns on/off sending RTX (RFC 4588). The modes can be set as a combination
@@ -320,6 +331,9 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   // returned from the FEC generator.
   virtual std::vector<std::unique_ptr<RtpPacketToSend>> FetchFecPackets() = 0;
 
+  virtual void OnAbortedRetransmissions(
+      rtc::ArrayView<const uint16_t> sequence_numbers) = 0;
+
   virtual void OnPacketsAcknowledged(
       rtc::ArrayView<const uint16_t> sequence_numbers) = 0;
 
@@ -336,6 +350,15 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   // when we expect to send them).
   virtual size_t ExpectedPerPacketOverhead() const = 0;
 
+  // Access to packet state (e.g. sequence numbering) must only be access by
+  // one thread at a time. It may be only one thread, or a construction thread
+  // that calls SetRtpState() - handing over to a pacer thread that calls
+  // TrySendPacket() - and at teardown ownership is handed to a destruciton
+  // thread that calls GetRtpState().
+  // This method is used to signal that "ownership" of the rtp state is being
+  // transferred to another thread.
+  virtual void OnPacketSendingThreadSwitched() = 0;
+
   // **************************************************************************
   // RTCP
   // **************************************************************************
@@ -344,12 +367,12 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   virtual RtcpMode RTCP() const = 0;
 
   // Sets RTCP status i.e on(compound or non-compound)/off.
-  // |method| - RTCP method to use.
+  // `method` - RTCP method to use.
   virtual void SetRTCPStatus(RtcpMode method) = 0;
 
   // Sets RTCP CName (i.e unique identifier).
   // Returns -1 on failure else 0.
-  virtual int32_t SetCNAME(const char* cname) = 0;
+  virtual int32_t SetCNAME(absl::string_view cname) = 0;
 
   // Returns remote NTP.
   // Returns -1 on failure else 0.
@@ -387,6 +410,8 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   virtual std::vector<ReportBlockData> GetLatestReportBlockData() const = 0;
   // Returns stats based on the received RTCP SRs.
   virtual absl::optional<SenderReportStats> GetSenderReportStats() const = 0;
+  // Returns non-sender RTT stats, based on DLRR.
+  virtual absl::optional<NonSenderRttStats> GetNonSenderRttStats() const = 0;
 
   // (REMB) Receiver Estimated Max Bitrate.
   // Schedules sending REMB on next and following sender/receiver reports.

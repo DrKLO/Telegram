@@ -31,7 +31,7 @@ class MockRenderDelayController : public RenderDelayController {
               GetDelay,
               (const DownsampledRenderBuffer& render_buffer,
                size_t render_delay_buffer_delay,
-               const std::vector<std::vector<float>>& capture),
+               const Block& capture),
               (override));
   MOCK_METHOD(bool, HasClockdrift, (), (const, override));
 };

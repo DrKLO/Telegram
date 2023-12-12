@@ -10,6 +10,7 @@
 
 #include "video/video_stream_decoder2.h"
 
+#include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/video_receiver2.h"
 #include "rtc_base/checks.h"
 #include "video/receive_statistics_proxy2.h"
@@ -38,15 +39,15 @@ VideoStreamDecoder::~VideoStreamDecoder() {
   video_receiver_->RegisterReceiveCallback(nullptr);
 }
 
-// Do not acquire the lock of |video_receiver_| in this function. Decode
+// Do not acquire the lock of `video_receiver_` in this function. Decode
 // callback won't necessarily be called from the decoding thread. The decoding
 // thread may have held the lock when calling VideoDecoder::Decode, Reset, or
 // Release. Acquiring the same lock in the path of decode callback can deadlock.
 int32_t VideoStreamDecoder::FrameToRender(VideoFrame& video_frame,
                                           absl::optional<uint8_t> qp,
-                                          int32_t decode_time_ms,
+                                          TimeDelta decode_time,
                                           VideoContentType content_type) {
-  receive_stats_callback_->OnDecodedFrame(video_frame, qp, decode_time_ms,
+  receive_stats_callback_->OnDecodedFrame(video_frame, qp, decode_time,
                                           content_type);
   incoming_video_stream_->OnFrame(video_frame);
   return 0;
@@ -60,9 +61,9 @@ void VideoStreamDecoder::OnIncomingPayloadType(int payload_type) {
   receive_stats_callback_->OnIncomingPayloadType(payload_type);
 }
 
-void VideoStreamDecoder::OnDecoderImplementationName(
-    const char* implementation_name) {
-  receive_stats_callback_->OnDecoderImplementationName(implementation_name);
+void VideoStreamDecoder::OnDecoderInfoChanged(
+    const VideoDecoder::DecoderInfo& decoder_info) {
+  receive_stats_callback_->OnDecoderInfo(decoder_info);
 }
 
 }  // namespace internal

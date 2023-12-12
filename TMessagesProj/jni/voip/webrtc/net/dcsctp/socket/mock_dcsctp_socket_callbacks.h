@@ -20,6 +20,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/public/dcsctp_message.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
 #include "net/dcsctp/public/timeout.h"
@@ -56,10 +57,11 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
       : log_prefix_(name.empty() ? "" : std::string(name) + ": "),
         random_(internal::GetUniqueSeed()),
         timeout_manager_([this]() { return now_; }) {
-    ON_CALL(*this, SendPacket)
+    ON_CALL(*this, SendPacketWithStatus)
         .WillByDefault([this](rtc::ArrayView<const uint8_t> data) {
           sent_packets_.emplace_back(
               std::vector<uint8_t>(data.begin(), data.end()));
+          return SendPacketStatus::kSuccess;
         });
     ON_CALL(*this, OnMessageReceived)
         .WillByDefault([this](DcSctpMessage message) {
@@ -80,12 +82,15 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
         });
     ON_CALL(*this, TimeMillis).WillByDefault([this]() { return now_; });
   }
-  MOCK_METHOD(void,
-              SendPacket,
+
+  MOCK_METHOD(SendPacketStatus,
+              SendPacketWithStatus,
               (rtc::ArrayView<const uint8_t> data),
               (override));
 
-  std::unique_ptr<Timeout> CreateTimeout() override {
+  std::unique_ptr<Timeout> CreateTimeout(
+      webrtc::TaskQueueBase::DelayPrecision precision) override {
+    // The fake timeout manager does not implement |precision|.
     return timeout_manager_.CreateTimeout();
   }
 
@@ -93,7 +98,6 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override {
     return random_.Rand(low, high);
   }
-  MOCK_METHOD(void, NotifyOutgoingMessageBufferEmpty, (), (override));
 
   MOCK_METHOD(void, OnMessageReceived, (DcSctpMessage message), (override));
   MOCK_METHOD(void,
@@ -120,6 +124,21 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               OnIncomingStreamsReset,
               (rtc::ArrayView<const StreamID> incoming_streams),
               (override));
+  MOCK_METHOD(void, OnBufferedAmountLow, (StreamID stream_id), (override));
+  MOCK_METHOD(void, OnTotalBufferedAmountLow, (), (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageExpired,
+              (LifecycleId lifecycle_id, bool maybe_delivered),
+              (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageFullySent,
+              (LifecycleId lifecycle_id),
+              (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageDelivered,
+              (LifecycleId lifecycle_id),
+              (override));
+  MOCK_METHOD(void, OnLifecycleEnd, (LifecycleId lifecycle_id), (override));
 
   bool HasPacket() const { return !sent_packets_.empty(); }
 

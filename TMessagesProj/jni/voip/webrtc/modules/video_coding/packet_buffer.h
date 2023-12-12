@@ -71,7 +71,7 @@ class PacketBuffer {
     bool buffer_cleared = false;
   };
 
-  // Both |start_buffer_size| and |max_buffer_size| must be a power of 2.
+  // Both `start_buffer_size` and `max_buffer_size` must be a power of 2.
   PacketBuffer(size_t start_buffer_size, size_t max_buffer_size);
   ~PacketBuffer();
 
@@ -82,6 +82,7 @@ class PacketBuffer {
   void Clear();
 
   void ForceSpsPpsIdrIsH264Keyframe();
+  void ResetSpsPpsIdrIsH264Keyframe();
 
  private:
   void ClearInternal();
@@ -107,7 +108,7 @@ class PacketBuffer {
   // If the packet buffer has received its first packet.
   bool first_packet_received_;
 
-  // If the buffer is cleared to |first_seq_num_|.
+  // If the buffer is cleared to `first_seq_num_`.
   bool is_cleared_to_first_seq_num_;
 
   // Buffer that holds the the inserted packets and information needed to
@@ -116,6 +117,8 @@ class PacketBuffer {
 
   absl::optional<uint16_t> newest_inserted_seq_num_;
   std::set<uint16_t, DescendingSeqNumComp<uint16_t>> missing_packets_;
+
+  std::set<uint16_t, DescendingSeqNumComp<uint16_t>> received_padding_;
 
   // Indicates if we should require SPS, PPS, and IDR for a particular
   // RTP timestamp to treat the corresponding frame as a keyframe.

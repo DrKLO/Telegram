@@ -18,6 +18,7 @@
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
 #include <algorithm>
+#include <utility>
 #include <openssl/bn.h>
 #include "ByteStream.h"
 #include "ConnectionSocket.h"
@@ -29,6 +30,7 @@
 #include "NativeByteBuffer.h"
 #include "BuffersStorage.h"
 #include "Connection.h"
+#include <random>
 
 #ifndef EPOLLRDHUP
 #define EPOLLRDHUP 0x2000
@@ -134,7 +136,7 @@ public:
             grease[a] = (uint8_t) ((grease[a] & 0xf0) + 0x0A);
         }
         for (size_t i = 1; i < MAX_GREASE; i += 2) {
-            if (grease[i] == grease[i - 1]) {
+            if (grease[i] == grease[i + 1]) {
                 grease[i] ^= 0x10;
             }
         }
@@ -142,12 +144,13 @@ public:
 
     struct Op {
         enum class Type {
-            String, Random, K, Zero, Domain, Grease, BeginScope, EndScope
+            String, Random, K, Zero, Domain, Grease, BeginScope, EndScope, Permutation
         };
         Type type;
         size_t length;
         int seed;
         std::string data;
+        std::vector<std::vector<Op>> entities;
 
         static Op string(const char str[], size_t len) {
             Op res;
@@ -201,6 +204,14 @@ public:
             res.type = Type::EndScope;
             return res;
         }
+
+        static Op permutation(std::vector<std::vector<Op>> entities) {
+            Op res;
+            res.type = Type::Permutation;
+            res.entities = std::move(entities);
+            return res;
+        }
+
     };
 
     static const TlsHello &getDefault() {
@@ -213,32 +224,81 @@ public:
                     Op::random(32),
                     Op::string("\x00\x20", 2),
                     Op::grease(0),
-                    Op::string("\x13\x01\x13\x02\x13\x03\xc0\x2b\xc0\x2f\xc0\x2c\xc0\x30\xcc\xa9\xcc\xa8\xc0\x13\xc0\x14\x00\x9c"
-                               "\x00\x9d\x00\x2f\x00\x35\x01\x00\x01\x93", 34),
+                    Op::string("\x13\x01\x13\x02\x13\x03\xc0\x2b\xc0\x2f\xc0\x2c\xc0\x30\xcc\xa9\xcc\xa8\xc0\x13\xc0\x14\x00\x9c\x00\x9d\x00\x2f\x00\x35\x01\x00\x01\x93", 34),
                     Op::grease(2),
-                    Op::string("\x00\x00\x00\x00", 4),
-                    Op::begin_scope(),
-                    Op::begin_scope(),
-                    Op::string("\x00", 1),
-                    Op::begin_scope(),
-                    Op::domain(),
-                    Op::end_scope(),
-                    Op::end_scope(),
-                    Op::end_scope(),
-                    Op::string("\x00\x17\x00\x00\xff\x01\x00\x01\x00\x00\x0a\x00\x0a\x00\x08", 15),
-                    Op::grease(4),
-                    Op::string(
-                            "\x00\x1d\x00\x17\x00\x18\x00\x0b\x00\x02\x01\x00\x00\x23\x00\x00\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08"
-                            "\x68\x74\x74\x70\x2f\x31\x2e\x31\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00\x0d\x00\x12\x00\x10\x04\x03\x08"
-                            "\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01\x00\x12\x00\x00\x00\x33\x00\x2b\x00\x29", 75),
-                    Op::grease(4),
-                    Op::string("\x00\x01\x00\x00\x1d\x00\x20", 7),
-                    Op::K(),
-                    Op::string("\x00\x2d\x00\x02\x01\x01\x00\x2b\x00\x0b\x0a", 11),
-                    Op::grease(6),
-                    Op::string("\x03\x04\x03\x03\x03\x02\x03\x01\x00\x1b\x00\x03\x02\x00\x02", 15),
+                    Op::string("\x00\x00", 2),
+                    Op::permutation({
+                                            {
+                                                    Op::string("\x00\x00", 2),
+                                                    Op::begin_scope(),
+                                                    Op::begin_scope(),
+                                                    Op::string("\x00", 1),
+                                                    Op::begin_scope(),
+                                                    Op::domain(),
+                                                    Op::end_scope(),
+                                                    Op::end_scope(),
+                                                    Op::end_scope()
+                                            },
+                                            {
+                                                    Op::string(
+                                                            "\x00\x05\x00\x05\x01\x00\x00\x00\x00",
+                                                            9)
+                                            },
+                                            {
+                                                    Op::string("\x00\x0a\x00\x0a\x00\x08", 6),
+                                                    Op::grease(4),
+                                                    Op::string("\x00\x1d\x00\x17\x00\x18", 6)
+                                            },
+                                            {
+                                                    Op::string("\x00\x0b\x00\x02\x01\x00", 6),
+                                            },
+                                            {
+                                                    Op::string(
+                                                            "\x00\x0d\x00\x12\x00\x10\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01",
+                                                            22),
+                                            },
+                                            {
+                                                    Op::string(
+                                                            "\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08\x68\x74\x74\x70\x2f\x31\x2e\x31",
+                                                            18),
+                                            },
+                                            {
+                                                    Op::string("\x00\x12\x00\x00", 4)
+                                            },
+                                            {
+                                                    Op::string("\x00\x17\x00\x00", 4)
+                                            },
+                                            {
+                                                    Op::string("\x00\x1b\x00\x03\x02\x00\x02", 7)
+                                            },
+                                            {
+                                                    Op::string("\x00\x23\x00\x00", 4)
+                                            },
+                                            {
+                                                    Op::string("\x00\x2b\x00\x07\x06", 5),
+                                                    Op::grease(6),
+                                                    Op::string("\x03\x04\x03\x03", 4)
+                                            },
+                                            {
+                                                    Op::string("\x00\x2d\x00\x02\x01\x01", 6)
+                                            },
+                                            {
+                                                    Op::string("\x00\x33\x00\x2b\x00\x29", 6),
+                                                    Op::grease(4),
+                                                    Op::string("\x00\x01\x00\x00\x1d\x00\x20", 7),
+                                                    Op::K()
+                                            },
+                                            {
+                                                    Op::string("\x44\x69\x00\x05\x00\x03\x02\x68\x32",9),
+                                            },
+                                            {
+                                                    Op::string("\xff\x01\x00\x01\x00", 5),
+                                            }
+                    }),
+
                     Op::grease(3),
-                    Op::string("\x00\x01\x00\x00\x15", 5)};
+                    Op::string("\x00\x01\x00\x00\x15", 5)
+            };
             return res;
         }();
         return result;
@@ -317,6 +377,25 @@ private:
                 size_t size = offset - begin_offset - 2;
                 data[begin_offset] = static_cast<uint8_t>((size >> 8) & 0xff);
                 data[begin_offset + 1] = static_cast<uint8_t>(size & 0xff);
+                break;
+            }
+            case Type::Permutation: {
+                std::vector<std::vector<Op>> list = {};
+                for (const auto &part : op.entities) {
+                    list.push_back(part);
+                }
+                size_t size = list.size();
+                for (int i = 0; i < size - 1; i++) {
+                    int j = i + rand() % (size - i);
+                    if (i != j) {
+                        std::swap(list[i], list[j]);
+                    }
+                }
+                for (const auto &part : list) {
+                    for (const auto &op_local: part) {
+                        writeOp(op_local, data, offset);
+                    }
+                }
                 break;
             }
         }

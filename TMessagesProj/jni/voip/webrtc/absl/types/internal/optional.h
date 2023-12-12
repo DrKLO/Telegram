@@ -91,7 +91,15 @@ class optional_data_dtor_base {
 
   void destruct() noexcept {
     if (engaged_) {
+      // `data_` must be initialized if `engaged_` is true.
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
       data_.~T();
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
+#pragma GCC diagnostic pop
+#endif
       engaged_ = false;
     }
   }

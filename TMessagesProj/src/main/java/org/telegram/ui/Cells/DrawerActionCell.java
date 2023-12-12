@@ -8,28 +8,44 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.FilterCreateActivity;
 
 import java.util.Set;
 
 public class DrawerActionCell extends FrameLayout {
 
+    private BackupImageView imageView;
     private TextView textView;
     private int currentId;
     private RectF rect = new RectF();
@@ -37,16 +53,16 @@ public class DrawerActionCell extends FrameLayout {
     public DrawerActionCell(Context context) {
         super(context);
 
+        imageView = new BackupImageView(context);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
+
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setLines(1);
-        textView.setMaxLines(1);
-        textView.setSingleLine(true);
-        textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
+        textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+        addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 72, 0, 16, 0));
 
         setWillNotDraw(false);
     }
@@ -90,13 +106,60 @@ public class DrawerActionCell extends FrameLayout {
         currentId = id;
         try {
             textView.setText(text);
-            Drawable drawable = getResources().getDrawable(resId).mutate();
-            if (drawable != null) {
-                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
-            }
-            textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+            imageView.setImageResource(resId);
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    public void updateTextAndIcon(String text, int resId) {
+        try {
+            textView.setText(text);
+            imageView.setImageResource(resId);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public BackupImageView getImageView() {
+        return imageView;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
+        info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+        info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+        info.setText(textView.getText());
+        info.setClassName(TextView.class.getName());
+    }
+
+    public void setBot(TLRPC.TL_attachMenuBot bot) {
+        currentId = (int) bot.bot_id;
+        try {
+            if (bot.side_menu_disclaimer_needed) {
+                textView.setText(applyNewSpan(bot.short_name));
+            } else {
+                textView.setText(bot.short_name);
+            }
+            TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
+            if (botIcon != null) {
+                imageView.setImage(ImageLocation.getForDocument(botIcon.icon), "24_24", (Drawable) null, bot);
+            } else {
+                imageView.setImageResource(R.drawable.msg_bot);
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static CharSequence applyNewSpan(String str) {
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        spannableStringBuilder.append("  d");
+        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(10);
+        span.setColor(Theme.getColor(Theme.key_premiumGradient1));
+        spannableStringBuilder.setSpan(span, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+        return spannableStringBuilder;
     }
 }

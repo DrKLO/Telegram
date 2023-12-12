@@ -34,6 +34,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.service.media.MediaBrowserService;
 import android.text.TextUtils;
+import android.widget.Toast;
+
+import androidx.collection.LongSparseArray;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.audioinfo.AudioInfo;
@@ -46,8 +49,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import androidx.collection.LongSparseArray;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class MusicBrowserService extends MediaBrowserService implements NotificationCenter.NotificationCenterDelegate {
@@ -97,7 +98,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
         Context context = getApplicationContext();
         Intent intent = new Intent(context, LaunchActivity.class);
-        PendingIntent pi = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pi = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         mediaSession.setSessionActivity(pi);
 
         Bundle extras = new Bundle();
@@ -139,7 +140,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
     @Override
     public BrowserRoot onGetRoot(String clientPackageName, int clientUid, Bundle rootHints) {
-        if (clientPackageName == null || Process.SYSTEM_UID != clientUid && Process.myUid() != clientUid && !clientPackageName.equals("com.google.android.mediasimulator") && !clientPackageName.equals("com.google.android.projection.gearhead")) {
+        if (clientPackageName == null || Process.SYSTEM_UID != clientUid && Process.myUid() != clientUid && !clientPackageName.equals("com.google.android.mediasimulator") && !clientPackageName.equals("com.google.android.projection.gearhead") || passcode()) {
             return null;
         }
         return new BrowserRoot(MEDIA_ID_ROOT, null);
@@ -147,6 +148,12 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
     @Override
     public void onLoadChildren(String parentMediaId, Result<List<MediaBrowser.MediaItem>> result) {
+        if (passcode()) {
+            Toast.makeText(getApplicationContext(), LocaleController.getString(R.string.EnterYourTelegramPasscode), Toast.LENGTH_LONG).show();
+            stopSelf();
+            result.detach();
+            return;
+        }
         if (!chatsLoaded) {
             result.detach();
             if (loadingChats) {
@@ -252,7 +259,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                             }
                             MessageObject messageObject = arrayList.get(0);
                             MediaMetadata.Builder builder = new MediaMetadata.Builder();
-                            builder.putLong(MediaMetadata.METADATA_KEY_DURATION, messageObject.getDuration() * 1000);
+                            builder.putLong(MediaMetadata.METADATA_KEY_DURATION, (long) (messageObject.getDuration() * 1000));
                             builder.putString(MediaMetadata.METADATA_KEY_ARTIST, messageObject.getMusicAuthor());
                             builder.putString(MediaMetadata.METADATA_KEY_TITLE, messageObject.getMusicTitle());
                             mediaSession.setMetadata(builder.build());
@@ -264,6 +271,17 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         } else {
             loadChildrenImpl(parentMediaId, result);
         }
+    }
+
+    private static boolean passcode() {
+        final int uptime = (int) (SystemClock.elapsedRealtime() / 1000);
+        return (
+            SharedConfig.passcodeHash.length() > 0 && (
+                SharedConfig.appLocked ||
+                SharedConfig.autoLockIn != 0 && SharedConfig.lastPauseTime != 0 && (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= uptime ||
+                uptime + 5 < SharedConfig.lastPauseTime
+            )
+        );
     }
 
     private void loadChildrenImpl(String parentMediaId, Result<List<MediaBrowser.MediaItem>> result) {
@@ -297,7 +315,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                 }
                 Bitmap bitmap = null;
                 if (avatar != null) {
-                    bitmap = createRoundBitmap(FileLoader.getPathToAttach(avatar, true));
+                    bitmap = createRoundBitmap(FileLoader.getInstance(currentAccount).getPathToAttach(avatar, true));
                     if (bitmap != null) {
                         builder.setIconBitmap(bitmap);
                     }
@@ -545,7 +563,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
             return;
         }
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
-        builder.putLong(MediaMetadata.METADATA_KEY_DURATION, messageObject.getDuration() * 1000);
+        builder.putLong(MediaMetadata.METADATA_KEY_DURATION, (long) (messageObject.getDuration() * 1000));
         builder.putString(MediaMetadata.METADATA_KEY_ARTIST, messageObject.getMusicAuthor());
         builder.putString(MediaMetadata.METADATA_KEY_TITLE, messageObject.getMusicTitle());
         AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();

@@ -16,6 +16,8 @@
 #include <limits>
 #include <string>
 
+#include "api/units/time_delta.h"
+
 namespace webrtc {
 
 // Video timing timestamps in ms counted from capture_time_ms of a frame.
@@ -34,6 +36,7 @@ struct VideoSendTiming {
   // https://webrtc.org/experiments/rtp-hdrext/video-timing/ extension stores
   // 16-bit deltas of timestamps from packet capture time.
   static uint16_t GetDeltaCappedMs(int64_t base_ms, int64_t time_ms);
+  static uint16_t GetDeltaCappedMs(TimeDelta delta);
 
   uint16_t encode_start_delta_ms;
   uint16_t encode_finish_delta_ms;
@@ -41,7 +44,7 @@ struct VideoSendTiming {
   uint16_t pacer_exit_delta_ms;
   uint16_t network_timestamp_delta_ms;
   uint16_t network2_timestamp_delta_ms;
-  uint8_t flags;
+  uint8_t flags = TimingFrameFlags::kInvalid;
 };
 
 // Used to report precise timings of a 'timing frames'. Contains all important
@@ -55,7 +58,7 @@ struct TimingFrameInfo {
   // synchronized, -1 otherwise.
   int64_t EndToEndDelay() const;
 
-  // Returns true if current frame took longer to process than |other| frame.
+  // Returns true if current frame took longer to process than `other` frame.
   // If other frame's clocks are not synchronized, current frame is always
   // preferred.
   bool IsLongerThan(const TimingFrameInfo& other) const;

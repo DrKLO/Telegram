@@ -23,12 +23,12 @@ SmoothingFilterImpl::SmoothingFilterImpl(int init_time_ms)
     : init_time_ms_(init_time_ms),
       // Duing the initalization time, we use an increasing alpha. Specifically,
       //   alpha(n) = exp(-powf(init_factor_, n)),
-      // where |init_factor_| is chosen such that
+      // where `init_factor_` is chosen such that
       //   alpha(init_time_ms_) = exp(-1.0f / init_time_ms_),
       init_factor_(init_time_ms_ == 0
                        ? 0.0f
                        : powf(init_time_ms_, -1.0f / init_time_ms_)),
-      // |init_const_| is to a factor to help the calculation during
+      // `init_const_` is to a factor to help the calculation during
       // initialization phase.
       init_const_(init_time_ms_ == 0
                       ? 0.0f
@@ -57,7 +57,7 @@ void SmoothingFilterImpl::AddSample(float sample) {
 
 absl::optional<float> SmoothingFilterImpl::GetAverage() {
   if (!init_end_time_ms_) {
-    // |init_end_time_ms_| undefined since we have not received any sample.
+    // `init_end_time_ms_` undefined since we have not received any sample.
     return absl::nullopt;
   }
   ExtrapolateLastSample(rtc::TimeMillis());
@@ -84,17 +84,17 @@ void SmoothingFilterImpl::ExtrapolateLastSample(int64_t time_ms) {
 
   if (time_ms <= *init_end_time_ms_) {
     // Current update is to be made during initialization phase.
-    // We update the state as if the |alpha| has been increased according
+    // We update the state as if the `alpha` has been increased according
     //   alpha(n) = exp(-powf(init_factor_, n)),
     // where n is the time (in millisecond) since the first sample received.
     // With algebraic derivation as shown in the Appendix, we can find that the
     // state can be updated in a similar manner as if alpha is a constant,
     // except for a different multiplier.
     if (init_time_ms_ == 0) {
-      // This means |init_factor_| = 0.
+      // This means `init_factor_` = 0.
       multiplier = 0.0f;
     } else if (init_time_ms_ == 1) {
-      // This means |init_factor_| = 1.
+      // This means `init_factor_` = 1.
       multiplier = std::exp(last_state_time_ms_ - time_ms);
     } else {
       multiplier = std::exp(

@@ -25,7 +25,7 @@ namespace rtc {
 
 class FirewallSocket : public AsyncSocketAdapter {
  public:
-  FirewallSocket(FirewallSocketServer* server, AsyncSocket* socket, int type)
+  FirewallSocket(FirewallSocketServer* server, Socket* socket, int type)
       : AsyncSocketAdapter(socket), server_(server), type_(type) {}
 
   int Bind(const SocketAddress& addr) override {
@@ -96,9 +96,9 @@ class FirewallSocket : public AsyncSocketAdapter {
 
     return AsyncSocketAdapter::Listen(backlog);
   }
-  AsyncSocket* Accept(SocketAddress* paddr) override {
+  Socket* Accept(SocketAddress* paddr) override {
     SocketAddress addr;
-    while (AsyncSocket* sock = AsyncSocketAdapter::Accept(&addr)) {
+    while (Socket* sock = AsyncSocketAdapter::Accept(&addr)) {
       if (server_->Check(FP_TCP, addr, GetLocalAddress())) {
         if (paddr)
           *paddr = addr;
@@ -203,26 +203,23 @@ bool FirewallSocketServer::IsBindableIp(const rtc::IPAddress& ip) {
 }
 
 Socket* FirewallSocketServer::CreateSocket(int family, int type) {
-  return WrapSocket(server_->CreateAsyncSocket(family, type), type);
-}
-
-AsyncSocket* FirewallSocketServer::CreateAsyncSocket(int family, int type) {
-  return WrapSocket(server_->CreateAsyncSocket(family, type), type);
+  return WrapSocket(server_->CreateSocket(family, type), type);
 }
 
 void FirewallSocketServer::SetMessageQueue(Thread* queue) {
   server_->SetMessageQueue(queue);
 }
 
-bool FirewallSocketServer::Wait(int cms, bool process_io) {
-  return server_->Wait(cms, process_io);
+bool FirewallSocketServer::Wait(webrtc::TimeDelta max_wait_duration,
+                                bool process_io) {
+  return server_->Wait(max_wait_duration, process_io);
 }
 
 void FirewallSocketServer::WakeUp() {
   return server_->WakeUp();
 }
 
-AsyncSocket* FirewallSocketServer::WrapSocket(AsyncSocket* sock, int type) {
+Socket* FirewallSocketServer::WrapSocket(Socket* sock, int type) {
   if (!sock || (type == SOCK_STREAM && !tcp_sockets_enabled_) ||
       (type == SOCK_DGRAM && !udp_sockets_enabled_)) {
     RTC_LOG(LS_VERBOSE) << "FirewallSocketServer socket creation denied";

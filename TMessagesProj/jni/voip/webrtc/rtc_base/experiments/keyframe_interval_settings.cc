@@ -21,7 +21,7 @@ constexpr char kFieldTrialName[] = "WebRTC-KeyframeInterval";
 }  // namespace
 
 KeyframeIntervalSettings::KeyframeIntervalSettings(
-    const WebRtcKeyValueConfig* const key_value_config)
+    const FieldTrialsView* const key_value_config)
     : min_keyframe_send_interval_ms_("min_keyframe_send_interval_ms") {
   ParseFieldTrial({&min_keyframe_send_interval_ms_},
                   key_value_config->Lookup(kFieldTrialName));

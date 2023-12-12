@@ -53,9 +53,9 @@ struct MediaStreamAllocationConfig {
   uint32_t pad_up_bitrate_bps;
   int64_t priority_bitrate_bps;
   // True means track may not be paused by allocating 0 bitrate will allocate at
-  // least |min_bitrate_bps| for this observer, even if the BWE is too low,
+  // least `min_bitrate_bps` for this observer, even if the BWE is too low,
   // false will allocate 0 to the observer if BWE doesn't allow
-  // |min_bitrate_bps|.
+  // `min_bitrate_bps`.
   bool enforce_min_bitrate;
   // The amount of bitrate allocated to this observer relative to all other
   // observers. If an observer has twice the bitrate_priority of other
@@ -119,12 +119,12 @@ class BitrateAllocator : public BitrateAllocatorInterface {
   void OnNetworkEstimateChanged(TargetTransferRate msg);
 
   // Set the configuration used by the bandwidth management.
-  // |observer| updates bitrates if already in use.
-  // |config| is the configuration to use for allocation.
-  // Note that |observer|->OnBitrateUpdated() will be called
+  // `observer` updates bitrates if already in use.
+  // `config` is the configuration to use for allocation.
+  // Note that `observer`->OnBitrateUpdated() will be called
   // within the scope of this method with the current rtt, fraction_loss and
   // available bitrate and that the bitrate in OnBitrateUpdated will be zero if
-  // the |observer| is currently not allowed to send data.
+  // the `observer` is currently not allowed to send data.
   void AddObserver(BitrateAllocatorObserver* observer,
                    MediaStreamAllocationConfig config) override;
 
@@ -132,7 +132,7 @@ class BitrateAllocator : public BitrateAllocatorInterface {
   // allocation.
   void RemoveObserver(BitrateAllocatorObserver* observer) override;
 
-  // Returns initial bitrate allocated for |observer|. If |observer| is not in
+  // Returns initial bitrate allocated for `observer`. If `observer` is not in
   // the list of added observers, a best guess is returned.
   int GetStartBitrate(BitrateAllocatorObserver* observer) const override;
 

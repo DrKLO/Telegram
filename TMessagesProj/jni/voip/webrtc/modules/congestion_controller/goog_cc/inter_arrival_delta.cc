@@ -71,9 +71,9 @@ bool InterArrivalDelta::ComputeDeltas(Timestamp send_time,
         ++num_consecutive_reordered_packets_;
         if (num_consecutive_reordered_packets_ >= kReorderedResetThreshold) {
           RTC_LOG(LS_WARNING)
-              << "Packets between send burst arrived out of order, resetting."
-              << " arrival_time_delta" << arrival_time_delta->ms()
-              << " send time delta " << send_time_delta->ms();
+              << "Packets between send burst arrived out of order, resetting:"
+              << " arrival_time_delta_ms=" << arrival_time_delta->ms()
+              << ", send_time_delta_ms=" << send_time_delta->ms();
           Reset();
         }
         return false;
@@ -102,8 +102,8 @@ bool InterArrivalDelta::ComputeDeltas(Timestamp send_time,
   return calculated_deltas;
 }
 
-// Assumes that |timestamp| is not reordered compared to
-// |current_timestamp_group_|.
+// Assumes that `timestamp` is not reordered compared to
+// `current_timestamp_group_`.
 bool InterArrivalDelta::NewTimestampGroup(Timestamp arrival_time,
                                           Timestamp send_time) const {
   if (current_timestamp_group_.IsFirstPacket()) {

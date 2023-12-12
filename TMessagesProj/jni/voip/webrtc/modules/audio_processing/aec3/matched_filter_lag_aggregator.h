@@ -26,10 +26,9 @@ class ApmDataDumper;
 // reliable combined lag estimate.
 class MatchedFilterLagAggregator {
  public:
-  MatchedFilterLagAggregator(
-      ApmDataDumper* data_dumper,
-      size_t max_filter_lag,
-      const EchoCanceller3Config::Delay::DelaySelectionThresholds& thresholds);
+  MatchedFilterLagAggregator(ApmDataDumper* data_dumper,
+                             size_t max_filter_lag,
+                             const EchoCanceller3Config::Delay& delay_config);
 
   MatchedFilterLagAggregator() = delete;
   MatchedFilterLagAggregator(const MatchedFilterLagAggregator&) = delete;
@@ -43,18 +42,55 @@ class MatchedFilterLagAggregator {
 
   // Aggregates the provided lag estimates.
   absl::optional<DelayEstimate> Aggregate(
-      rtc::ArrayView<const MatchedFilter::LagEstimate> lag_estimates);
+      const absl::optional<const MatchedFilter::LagEstimate>& lag_estimate);
 
   // Returns whether a reliable delay estimate has been found.
   bool ReliableDelayFound() const { return significant_candidate_found_; }
 
+  // Returns the delay candidate that is computed by looking at the highest peak
+  // on the matched filters.
+  int GetDelayAtHighestPeak() const {
+    return highest_peak_aggregator_.candidate();
+  }
+
  private:
+  class PreEchoLagAggregator {
+   public:
+    PreEchoLagAggregator(size_t max_filter_lag, size_t down_sampling_factor);
+    void Reset();
+    void Aggregate(int pre_echo_lag);
+    int pre_echo_candidate() const { return pre_echo_candidate_; }
+    void Dump(ApmDataDumper* const data_dumper);
+
+   private:
+    const int block_size_log2_;
+    std::array<int, 250> histogram_data_;
+    std::vector<int> histogram_;
+    int histogram_data_index_ = 0;
+    int pre_echo_candidate_ = 0;
+  };
+
+  class HighestPeakAggregator {
+   public:
+    explicit HighestPeakAggregator(size_t max_filter_lag);
+    void Reset();
+    void Aggregate(int lag);
+    int candidate() const { return candidate_; }
+    rtc::ArrayView<const int> histogram() const { return histogram_; }
+
+   private:
+    std::vector<int> histogram_;
+    std::array<int, 250> histogram_data_;
+    int histogram_data_index_ = 0;
+    int candidate_ = -1;
+  };
+
   ApmDataDumper* const data_dumper_;
-  std::vector<int> histogram_;
-  std::array<int, 250> histogram_data_;
-  int histogram_data_index_ = 0;
   bool significant_candidate_found_ = false;
   const EchoCanceller3Config::Delay::DelaySelectionThresholds thresholds_;
+  const int headroom_;
+  HighestPeakAggregator highest_peak_aggregator_;
+  std::unique_ptr<PreEchoLagAggregator> pre_echo_lag_aggregator_;
 };
 }  // namespace webrtc
 

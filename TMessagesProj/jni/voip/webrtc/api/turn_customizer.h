@@ -13,9 +13,10 @@
 
 #include <stdlib.h>
 
+#include "api/transport/stun.h"
+
 namespace cricket {
 class PortInterface;
-class StunMessage;
 }  // namespace cricket
 
 namespace webrtc {
@@ -29,7 +30,7 @@ class TurnCustomizer {
       cricket::StunMessage* message) = 0;
 
   // TURN can send data using channel data messages or Send indication.
-  // This method should return false if |data| should be sent using
+  // This method should return false if `data` should be sent using
   // a Send indication instead of a ChannelData message, even if a
   // channel is bound.
   virtual bool AllowChannelData(cricket::PortInterface* port,

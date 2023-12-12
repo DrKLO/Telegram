@@ -22,19 +22,19 @@
 namespace webrtc {
 class RtpDependencyDescriptorWriter {
  public:
-  // Assumes |structure| and |descriptor| are valid and
-  // |descriptor| matches the |structure|.
+  // Assumes `structure` and `descriptor` are valid and
+  // `descriptor` matches the `structure`.
   RtpDependencyDescriptorWriter(rtc::ArrayView<uint8_t> data,
                                 const FrameDependencyStructure& structure,
                                 std::bitset<32> active_chains,
                                 const DependencyDescriptor& descriptor);
 
   // Serializes DependencyDescriptor rtp header extension.
-  // Returns false if |data| is too small to serialize the |descriptor|.
+  // Returns false if `data` is too small to serialize the `descriptor`.
   bool Write();
 
   // Returns minimum number of bits needed to serialize descriptor with respect
-  // to the |structure|. Returns 0 if |descriptor| can't be serialized.
+  // to the `structure`. Returns 0 if `descriptor` can't be serialized.
   int ValueSizeBits() const;
 
  private:

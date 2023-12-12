@@ -22,7 +22,7 @@ Bool *Bool::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in Bool", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in Bool", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -40,7 +40,7 @@ void TL_boolFalse::serializeToStream(NativeByteBuffer *stream) {
 TL_dcOption *TL_dcOption::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_dcOption::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_dcOption", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_dcOption", constructor);
         return nullptr;
     }
     TL_dcOption *result = new TL_dcOption();
@@ -55,6 +55,8 @@ void TL_dcOption::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool
     tcpo_only = (flags & 4) != 0;
     cdn = (flags & 8) != 0;
     isStatic = (flags & 16) != 0;
+    thisPortOnly = (flags & 32) != 0;
+    force_try_ipv6 = (flags & 16384) != 0;
     id = stream->readInt32(&error);
     ip_address = stream->readString(&error);
     port = stream->readInt32(&error);
@@ -70,6 +72,8 @@ void TL_dcOption::serializeToStream(NativeByteBuffer *stream) {
     flags = tcpo_only ? (flags | 4) : (flags &~ 4);
     flags = cdn ? (flags | 8) : (flags &~ 8);
     flags = isStatic ? (flags | 16) : (flags &~ 16);
+    flags = thisPortOnly ? (flags | 32) : (flags &~ 32);
+    flags = force_try_ipv6 ? (flags | 16384) : (flags &~ 16384);
     stream->writeInt32(flags);
     stream->writeInt32(id);
     stream->writeString(ip_address);
@@ -82,7 +86,7 @@ void TL_dcOption::serializeToStream(NativeByteBuffer *stream) {
 TL_cdnPublicKey *TL_cdnPublicKey::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_cdnPublicKey::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_cdnPublicKey", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_cdnPublicKey", constructor);
         return nullptr;
     }
     TL_cdnPublicKey *result = new TL_cdnPublicKey();
@@ -104,7 +108,7 @@ void TL_cdnPublicKey::serializeToStream(NativeByteBuffer *stream) {
 TL_cdnConfig *TL_cdnConfig::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_cdnConfig::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_cdnConfig", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_cdnConfig", constructor);
         return nullptr;
     }
     TL_cdnConfig *result = new TL_cdnConfig();
@@ -116,7 +120,7 @@ void TL_cdnConfig::readParams(NativeByteBuffer *stream, int32_t instanceNum, boo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_cdnConfig, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -154,7 +158,7 @@ void TL_help_getCdnConfig::serializeToStream(NativeByteBuffer *stream) {
 TL_config *TL_config::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_config::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_config", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_config", constructor);
         return nullptr;
     }
     TL_config *result = new TL_config();
@@ -171,7 +175,7 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_config, got %x", magic);
         return;
     }
     int32_t count = stream->readInt32(&error);
@@ -194,19 +198,19 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     notify_default_delay_ms = stream->readInt32(&error);
     push_chat_period_ms = stream->readInt32(&error);
     push_chat_limit = stream->readInt32(&error);
-    saved_gifs_limit = stream->readInt32(&error);
+    // saved_gifs_limit = stream->readInt32(&error);
     edit_time_limit = stream->readInt32(&error);
     revoke_time_limit = stream->readInt32(&error);
     revoke_pm_time_limit = stream->readInt32(&error);
     rating_e_decay = stream->readInt32(&error);
     stickers_recent_limit = stream->readInt32(&error);
-    stickers_faved_limit = stream->readInt32(&error);
+    // stickers_faved_limit = stream->readInt32(&error);
     channels_read_media_period = stream->readInt32(&error);
     if ((flags & 1) != 0) {
         tmp_sessions = stream->readInt32(&error);
     }
-    pinned_dialogs_count_max = stream->readInt32(&error);
-    pinned_infolder_count_max = stream->readInt32(&error);
+    // pinned_dialogs_count_max = stream->readInt32(&error);
+    // pinned_infolder_count_max = stream->readInt32(&error);
     call_receive_timeout_ms = stream->readInt32(&error);
     call_ring_timeout_ms = stream->readInt32(&error);
     call_connect_timeout_ms = stream->readInt32(&error);
@@ -239,6 +243,12 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     if ((flags & 4) != 0) {
         base_lang_pack_version = stream->readInt32(&error);
     }
+    if ((flags & 32768) != 0) {
+        reactions_default = std::unique_ptr<Reaction>(Reaction::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+    if ((flags & 65536) != 0) {
+        autologin_token = stream->readString(&error);
+    }
 }
 
 void TL_config::serializeToStream(NativeByteBuffer *stream) {
@@ -266,19 +276,19 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(notify_default_delay_ms);
     stream->writeInt32(push_chat_period_ms);
     stream->writeInt32(push_chat_limit);
-    stream->writeInt32(saved_gifs_limit);
+    // stream->writeInt32(saved_gifs_limit);
     stream->writeInt32(edit_time_limit);
     stream->writeInt32(revoke_time_limit);
     stream->writeInt32(revoke_pm_time_limit);
     stream->writeInt32(rating_e_decay);
     stream->writeInt32(stickers_recent_limit);
-    stream->writeInt32(stickers_faved_limit);
+    // stream->writeInt32(stickers_faved_limit);
     stream->writeInt32(channels_read_media_period);
     if ((flags & 1) != 0) {
         stream->writeInt32(tmp_sessions);
     }
-    stream->writeInt32(pinned_dialogs_count_max);
-    stream->writeInt32(pinned_infolder_count_max);
+    // stream->writeInt32(pinned_dialogs_count_max);
+    // stream->writeInt32(pinned_infolder_count_max);
     stream->writeInt32(call_receive_timeout_ms);
     stream->writeInt32(call_ring_timeout_ms);
     stream->writeInt32(call_connect_timeout_ms);
@@ -311,6 +321,12 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     if ((flags & 4) != 0) {
         stream->writeInt32(base_lang_pack_version);
     }
+    if ((flags & 32768) != 0 && reactions_default != nullptr) {
+        reactions_default->serializeToStream(stream);
+    }
+    if ((flags & 65536) != 0) {
+        stream->writeString(autologin_token);
+    }
 }
 
 TLObject *TL_help_getConfig::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -342,10 +358,21 @@ void TL_account_registerDevice::serializeToStream(NativeByteBuffer *stream) {
 TL_restrictionReason *TL_restrictionReason::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_restrictionReason::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_restrictionReason", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_restrictionReason", constructor);
         return nullptr;
     }
     TL_restrictionReason *result = new TL_restrictionReason();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+TL_username *TL_username::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_username::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_username", constructor);
+        return nullptr;
+    }
+    TL_username *result = new TL_username();
     result->readParams(stream, instanceNum, error);
     return result;
 }
@@ -363,18 +390,33 @@ void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(text);
 }
 
+void TL_username::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    editable = (flags & 1) != 0;
+    active = (flags & 2) != 0;
+    username = stream->readString(&error);
+}
+
+void TL_username::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = editable ? (flags | 1) : (flags &~ 1);
+    flags = active ? (flags | 2) : (flags &~ 2);
+    stream->writeInt32(flags);
+    stream->writeString(username);
+}
+
 User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     User *result = nullptr;
     switch (constructor) {
-        case 0xd3bc4b7a:
+        case TL_userEmpty::constructor:
             result = new TL_userEmpty();
             break;
-        case 0x3ff6ecb0:
+        case TL_user::constructor:
             result = new TL_user();
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in User", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in User", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -392,6 +434,7 @@ void TL_userEmpty::serializeToStream(NativeByteBuffer *stream) {
 
 void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
+    flags2 = stream->readInt32(&error);
     id = stream->readInt64(&error);
     if ((flags & 1) != 0) {
         access_hash = stream->readInt64(&error);
@@ -421,7 +464,7 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         uint32_t magic = stream->readUint32(&error);
         if (magic != 0x1cb5c415) {
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user, got %x", magic);
             return;
         }
         int32_t count = stream->readInt32(&error);
@@ -439,11 +482,58 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     if ((flags & 4194304) != 0) {
         lang_code = stream->readString(&error);
     }
+    if ((flags & 1073741824) != 0) {
+        emojiStatusMagic = stream->readUint32(&error);
+        if (emojiStatusMagic == 0x2de11aae) {
+            // emojiStatusEmpty
+        } else if (emojiStatusMagic == 0x929b619d) {
+            // emojiStatus
+            emojiStatusDocumentId = stream->readInt64(&error);
+        } else if (emojiStatusMagic == 0xfa30a8c7) {
+            // emojiStatusUntil
+            emojiStatusDocumentId = stream->readInt64(&error);
+            emojiStatusUntil = stream->readInt32(&error);
+        } else {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong EmojiStatus magic, got %x", emojiStatusMagic);
+            return;
+        }
+    }
+    if ((flags2 & 1) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user (2), got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_username *object = TL_username::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            usernames.push_back(std::unique_ptr<TL_username>(object));
+        }
+    }
+    if ((flags2 & 32) != 0) {
+        stories_max_id = stream->readInt32(&error);
+    }
+    if ((flags2 & 256) != 0) {
+        int magic = stream->readInt32(&error);
+        color_color = stream->readInt32(&error);
+        color_background_emoji_id = stream->readInt64(&error);
+    }
+    if ((flags2 & 512) != 0) {
+        int magic = stream->readInt32(&error);
+        profile_color_color = stream->readInt32(&error);
+        profile_color_background_emoji_id = stream->readInt64(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
+    stream->writeInt32(flags2);
     stream->writeInt64(id);
     if ((flags & 1) != 0) {
         stream->writeInt64(access_hash);
@@ -483,6 +573,38 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     if ((flags & 4194304) != 0) {
         stream->writeString(lang_code);
     }
+    if ((flags & 1073741824) != 0) {
+        stream->writeInt32(emojiStatusMagic);
+        if (emojiStatusMagic == 0x929b619d) {
+            // emojiStatus
+            stream->writeInt64(emojiStatusDocumentId);
+        } else if (emojiStatusMagic == 0xfa30a8c7) {
+            // emojiStatusUntil
+            stream->writeInt64(emojiStatusDocumentId);
+            stream->writeInt32(emojiStatusUntil);
+        }
+    }
+    if ((flags2 & 1) != 0) {
+        stream->writeInt32(0x1cb5c415);
+        int32_t count = (int32_t) usernames.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            usernames[a]->serializeToStream(stream);
+        }
+    }
+    if ((flags2 & 32) != 0) {
+        stream->writeInt32(stories_max_id);
+    }
+    if ((flags2 & 256) != 0) {
+        stream->writeInt32(0xba278146);
+        stream->writeInt32(color_color);
+        stream->writeInt32(color_background_emoji_id);
+    }
+    if ((flags2 & 512) != 0) {
+        stream->writeInt32(0xba278146);
+        stream->writeInt32(profile_color_color);
+        stream->writeInt32(profile_color_background_emoji_id);
+    }
 }
 
 InputPeer *InputPeer::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -511,7 +633,7 @@ InputPeer *InputPeer::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in InputPeer", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in InputPeer", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -600,7 +722,7 @@ InputUser *InputUser::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in InputUser", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in InputUser", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -698,7 +820,7 @@ MessageEntity *MessageEntity::TLdeserialize(NativeByteBuffer *stream, uint32_t c
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in MessageEntity", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in MessageEntity", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -914,7 +1036,7 @@ void TL_messageEntityPhone::serializeToStream(NativeByteBuffer *stream) {
 TL_dataJSON *TL_dataJSON::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_dataJSON::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_dataJSON", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_dataJSON", constructor);
         return nullptr;
     }
     TL_dataJSON *result = new TL_dataJSON();
@@ -934,7 +1056,7 @@ void TL_dataJSON::serializeToStream(NativeByteBuffer *stream) {
 TL_help_termsOfService *TL_help_termsOfService::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_help_termsOfService::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_help_termsOfService", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_help_termsOfService", constructor);
         return nullptr;
     }
     TL_help_termsOfService *result = new TL_help_termsOfService();
@@ -950,7 +1072,7 @@ void TL_help_termsOfService::readParams(NativeByteBuffer *stream, int32_t instan
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_help_termsOfService, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -989,12 +1111,12 @@ auth_Authorization *auth_Authorization::TLdeserialize(NativeByteBuffer *stream, 
         case 0x44747e9a:
             result = new TL_auth_authorizationSignUpRequired();
             break;
-        case 0xcd050916:
+        case 0x2ea2c0d4:
             result = new TL_auth_authorization();
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in auth_Authorization", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in auth_Authorization", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -1018,8 +1140,14 @@ void TL_auth_authorizationSignUpRequired::serializeToStream(NativeByteBuffer *st
 
 void TL_auth_authorization::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
+    if ((flags & 2) != 0) {
+        otherwise_relogin_days = stream->readInt32(&error);
+    }
     if ((flags & 1) != 0) {
         tmp_sessions = stream->readInt32(&error);
+    }
+    if ((flags & 4) != 0) {
+        future_auth_token = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
     }
     user = std::unique_ptr<User>(User::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
 }
@@ -1036,7 +1164,7 @@ void TL_auth_authorization::serializeToStream(NativeByteBuffer *stream) {
 TL_auth_exportedAuthorization *TL_auth_exportedAuthorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_auth_exportedAuthorization::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_auth_exportedAuthorization", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_auth_exportedAuthorization", constructor);
         return nullptr;
     }
     TL_auth_exportedAuthorization *result = new TL_auth_exportedAuthorization();
@@ -1099,7 +1227,7 @@ UserStatus *UserStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t constru
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in UserStatus", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in UserStatus", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -1148,7 +1276,7 @@ FileLocation *FileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t con
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in FileLocation", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in FileLocation", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -1177,7 +1305,7 @@ UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in UserProfilePhoto", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in UserProfilePhoto", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -1212,3 +1340,52 @@ void TL_userProfilePhoto::serializeToStream(NativeByteBuffer *stream) {
 void TL_updatesTooLong::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
 }
+
+Reaction *Reaction::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    Reaction *result = nullptr;
+    switch (constructor) {
+        case 0x79f5d419:
+            result = new TL_reactionEmpty();
+            break;
+        case 0x8935fc73:
+            result = new TL_reactionCustomEmoji();
+            break;
+        case 0x1b2286b8:
+            result = new TL_reactionEmoji();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in Reaction", constructor);
+            return nullptr;
+    }
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_reactionEmpty::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+
+}
+
+void TL_reactionEmpty::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_reactionCustomEmoji::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    document_id = stream->readInt64(&error);
+}
+
+void TL_reactionCustomEmoji::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt64(document_id);
+}
+
+void TL_reactionEmoji::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    emoticon = stream->readString(&error);
+}
+
+void TL_reactionEmoji::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(emoticon);
+}
+
+

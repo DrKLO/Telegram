@@ -27,7 +27,7 @@ static JavaVM* g_jvm = nullptr;
 
 static pthread_once_t g_jni_ptr_once = PTHREAD_ONCE_INIT;
 
-// Key for per-thread JNIEnv* data.  Non-NULL in threads attached to |g_jvm| by
+// Key for per-thread JNIEnv* data.  Non-NULL in threads attached to `g_jvm` by
 // AttachCurrentThreadIfNeeded(), NULL in unattached threads and threads that
 // were attached by the JVM because of a Java->native call.
 static pthread_key_t g_jni_ptr;
@@ -48,7 +48,7 @@ JNIEnv* GetEnv() {
 }
 
 static void ThreadDestructor(void* prev_jni_ptr) {
-  // This function only runs on threads where |g_jni_ptr| is non-NULL, meaning
+  // This function only runs on threads where `g_jni_ptr` is non-NULL, meaning
   // we were responsible for originally attaching the thread, so are responsible
   // for detaching it now.  However, because some JVM implementations (notably
   // Oracle's http://goo.gl/eHApYT) also use the pthread_key_create mechanism,
@@ -102,7 +102,7 @@ static std::string GetThreadName() {
   return std::string(name);
 }
 
-// Return a |JNIEnv*| usable on this thread.  Attaches to |g_jvm| if necessary.
+// Return a |JNIEnv*| usable on this thread.  Attaches to `g_jvm` if necessary.
 JNIEnv* AttachCurrentThreadIfNeeded() {
   JNIEnv* jni = GetEnv();
   if (jni)

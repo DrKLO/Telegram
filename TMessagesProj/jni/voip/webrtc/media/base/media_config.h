@@ -18,12 +18,16 @@ namespace cricket {
 struct MediaConfig {
   // Set DSCP value on packets. This flag comes from the
   // PeerConnection constraint 'googDscp'.
-  bool enable_dscp = false;
+  // TODO(https://crbug.com/1315574): Remove the ability to set it in Chromium
+  // and delete this flag.
+  bool enable_dscp = true;
 
   // Video-specific config.
   struct Video {
     // Enable WebRTC CPU Overuse Detection. This flag comes from the
     // PeerConnection constraint 'googCpuOveruseDetection'.
+    // TODO(https://crbug.com/1315569): Remove the ability to set it in Chromium
+    // and delete this flag.
     bool enable_cpu_adaptation = true;
 
     // Enable WebRTC suspension of video. No video frames will be sent
@@ -31,6 +35,8 @@ struct MediaConfig {
     // flag comes from the PeerConnection constraint
     // 'googSuspendBelowMinBitrate', and WebRtcVideoChannel copies it
     // to VideoSendStream::Config::suspend_below_min_bitrate.
+    // TODO(https://crbug.com/1315564): Remove the ability to set it in Chromium
+    // and delete this flag.
     bool suspend_below_min_bitrate = false;
 
     // Enable buffering and playout timing smoothing of decoded frames.

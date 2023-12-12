@@ -16,12 +16,12 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/alignment_mixer.h"
+#include "modules/audio_processing/aec3/block.h"
 #include "modules/audio_processing/aec3/clockdrift_detector.h"
 #include "modules/audio_processing/aec3/decimator.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
 #include "modules/audio_processing/aec3/matched_filter.h"
 #include "modules/audio_processing/aec3/matched_filter_lag_aggregator.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -37,6 +37,9 @@ class EchoPathDelayEstimator {
                          size_t num_capture_channels);
   ~EchoPathDelayEstimator();
 
+  EchoPathDelayEstimator(const EchoPathDelayEstimator&) = delete;
+  EchoPathDelayEstimator& operator=(const EchoPathDelayEstimator&) = delete;
+
   // Resets the estimation. If the delay confidence is reset, the reset behavior
   // is as if the call is restarted.
   void Reset(bool reset_delay_confidence);
@@ -44,7 +47,7 @@ class EchoPathDelayEstimator {
   // Produce a delay estimate if such is avaliable.
   absl::optional<DelayEstimate> EstimateDelay(
       const DownsampledRenderBuffer& render_buffer,
-      const std::vector<std::vector<float>>& capture);
+      const Block& capture);
 
   // Log delay estimator properties.
   void LogDelayEstimationProperties(int sample_rate_hz, size_t shift) const {
@@ -71,8 +74,6 @@ class EchoPathDelayEstimator {
 
   // Internal reset method with more granularity.
   void Reset(bool reset_lag_aggregator, bool reset_delay_confidence);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(EchoPathDelayEstimator);
 };
 }  // namespace webrtc
 

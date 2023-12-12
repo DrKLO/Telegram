@@ -14,34 +14,63 @@ import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class VideoEncodingService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
     private NotificationCompat.Builder builder;
-    private String path;
-    private int currentProgress;
-    private int currentAccount;
+    private MediaController.VideoConvertMessage currentMessage;
+    private static VideoEncodingService instance;
+
+    int currentAccount;
+    String currentPath;
 
     public VideoEncodingService() {
         super();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopEncodingService);
+    }
+
+    public static void start(boolean cancelled) {
+        if (instance == null) {
+            Intent intent = new Intent(ApplicationLoader.applicationContext, VideoEncodingService.class);
+            ApplicationLoader.applicationContext.startService(intent);
+        } else if (cancelled) {
+            MediaController.VideoConvertMessage messageInController = MediaController.getInstance().getCurrentForegroundConverMessage();
+            if (instance.currentMessage != messageInController) {
+                if (messageInController != null) {
+                    instance.setCurrentMessage(messageInController);
+                } else {
+                    instance.stopSelf();
+                }
+            }
+        }
+    }
+
+    public static void stop() {
+        if (instance != null) {
+            instance.stopSelf();
+        }
     }
 
     public IBinder onBind(Intent arg2) {
         return null;
     }
 
+
     public void onDestroy() {
         super.onDestroy();
+        instance = null;
         try {
             stopForeground(true);
         } catch (Throwable ignore) {
 
         }
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(4);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopEncodingService);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
+        currentMessage = null;
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("destroy video service");
+            FileLog.d("VideoEncodingService: destroy video service");
         }
     }
 
@@ -49,12 +78,12 @@ public class VideoEncodingService extends Service implements NotificationCenter.
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.fileUploadProgressChanged) {
             String fileName = (String) args[0];
-            if (account == currentAccount && path != null && path.equals(fileName)) {
+            if (account == currentAccount && currentPath != null && currentPath.equals(fileName)) {
                 Long loadedSize = (Long) args[1];
                 Long totalSize = (Long) args[2];
                 float progress = Math.min(1f, loadedSize / (float) totalSize);
                 Boolean enc = (Boolean) args[3];
-                currentProgress = (int) (progress * 100);
+                int currentProgress = (int) (progress * 100);
                 builder.setProgress(100, currentProgress, currentProgress == 0);
                 try {
                     NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
@@ -62,54 +91,86 @@ public class VideoEncodingService extends Service implements NotificationCenter.
                     FileLog.e(e);
                 }
             }
-        } else if (id == NotificationCenter.stopEncodingService) {
-            String filepath = (String) args[0];
-            account = (Integer) args[1];
-            if (account == currentAccount && (filepath == null || filepath.equals(path))) {
-                stopSelf();
+        } else if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
+            String fileName = (String) args[0];
+            if (account == currentAccount && currentPath != null && currentPath.equals(fileName)) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    MediaController.VideoConvertMessage message = MediaController.getInstance().getCurrentForegroundConverMessage();
+                    if (message != null) {
+                        setCurrentMessage(message);
+                    } else {
+                        stopSelf();
+                    }
+                });
             }
         }
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-        path = intent.getStringExtra("path");
-        int oldAccount = currentAccount;
-        currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
-        if (!UserConfig.isValidAccount(currentAccount)) {
-            stopSelf();
+        if (isRunning()) {
             return Service.START_NOT_STICKY;
         }
-        if (oldAccount != currentAccount) {
-            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadProgressChanged);
-        }
-        boolean isGif = intent.getBooleanExtra("gif", false);
-        if (path == null) {
-            stopSelf();
-            return Service.START_NOT_STICKY;
-        }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start video service");
-        }
+        instance = this;
+        MediaController.VideoConvertMessage videoConvertMessage = MediaController.getInstance().getCurrentForegroundConverMessage();
         if (builder == null) {
             NotificationsController.checkOtherNotificationsChannel();
-            builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
+            builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
-            if (isGif) {
-                builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));
-                builder.setContentText(LocaleController.getString("SendingGif", R.string.SendingGif));
-            } else {
-                builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
-                builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
-            }
         }
-        currentProgress = 0;
-        builder.setProgress(100, currentProgress, true);
-        startForeground(4, builder.build());
-        NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
+
+        setCurrentMessage(videoConvertMessage);
+        try {
+            startForeground(4, builder.build());
+        } catch (Throwable e) {
+            //ignore ForegroundServiceStartNotAllowedException
+            FileLog.e(e);
+        }
+        AndroidUtilities.runOnUIThread(() -> NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build()));
         return Service.START_NOT_STICKY;
     }
+
+    private void updateBuilderForMessage(MediaController.VideoConvertMessage videoConvertMessage) {
+        if (videoConvertMessage == null) {
+            return;
+        }
+        boolean isGif = videoConvertMessage.messageObject != null && MessageObject.isGifMessage(videoConvertMessage.messageObject.messageOwner);
+        if (isGif) {
+            builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));
+            builder.setContentText(LocaleController.getString("SendingGif", R.string.SendingGif));
+        } else {
+            builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+        }
+        int currentProgress = 0;
+        builder.setProgress(100, currentProgress, true);
+    }
+
+    private void setCurrentMessage(MediaController.VideoConvertMessage message) {
+        if (currentMessage == message) {
+            return;
+        }
+        if (currentMessage != null) {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
+        }
+        updateBuilderForMessage(message);
+        currentMessage = message;
+        currentAccount = message.currentAccount;
+        currentPath = message.messageObject.messageOwner.attachPath;
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadProgressChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
+        if (isRunning()) {
+            NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
+        }
+    }
+
+    public static boolean isRunning() {
+        return instance != null;
+    }
+
 }

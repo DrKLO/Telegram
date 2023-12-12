@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/background_noise.h"
 
-#include <assert.h>
 #include <string.h>  // memcpy
 
 #include <algorithm>  // min, max
@@ -109,8 +108,8 @@ bool BackgroundNoise::Update(const AudioMultiVector& input,
       if ((sample_energy > 0) &&
           (int64_t{5} * residual_energy >= int64_t{16} * sample_energy)) {
         // Spectrum is flat enough; save filter parameters.
-        // |temp_signal| + |kVecLen| - |kMaxLpcOrder| points at the first of the
-        // |kMaxLpcOrder| samples in the residual signal, which will form the
+        // `temp_signal` + `kVecLen` - `kMaxLpcOrder` points at the first of the
+        // `kMaxLpcOrder` samples in the residual signal, which will form the
         // filter state for the next noise generation.
         SaveParameters(channel_ix, lpc_coefficients,
                        temp_signal + kVecLen - kMaxLpcOrder, sample_energy,
@@ -118,7 +117,7 @@ bool BackgroundNoise::Update(const AudioMultiVector& input,
         filter_params_saved = true;
       }
     } else {
-      // Will only happen if post-decode VAD is disabled and |sample_energy| is
+      // Will only happen if post-decode VAD is disabled and `sample_energy` is
       // not low enough. Increase the threshold for update so that it increases
       // by a factor 4 in 4 seconds.
       IncrementEnergyThreshold(channel_ix, sample_energy);
@@ -136,7 +135,7 @@ void BackgroundNoise::GenerateBackgroundNoise(
     int16_t* buffer) {
   constexpr size_t kNoiseLpcOrder = kMaxLpcOrder;
   int16_t scaled_random_vector[kMaxSampleRate / 8000 * 125];
-  assert(num_noise_samples <= (kMaxSampleRate / 8000 * 125));
+  RTC_DCHECK_LE(num_noise_samples, (kMaxSampleRate / 8000 * 125));
   RTC_DCHECK_GE(random_vector.size(), num_noise_samples);
   int16_t* noise_samples = &buffer[kNoiseLpcOrder];
   if (initialized()) {
@@ -178,44 +177,44 @@ void BackgroundNoise::GenerateBackgroundNoise(
 }
 
 int32_t BackgroundNoise::Energy(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].energy;
 }
 
 void BackgroundNoise::SetMuteFactor(size_t channel, int16_t value) {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   channel_parameters_[channel].mute_factor = value;
 }
 
 int16_t BackgroundNoise::MuteFactor(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].mute_factor;
 }
 
 const int16_t* BackgroundNoise::Filter(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].filter;
 }
 
 const int16_t* BackgroundNoise::FilterState(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].filter_state;
 }
 
 void BackgroundNoise::SetFilterState(size_t channel,
                                      rtc::ArrayView<const int16_t> input) {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   size_t length = std::min(input.size(), kMaxLpcOrder);
   memcpy(channel_parameters_[channel].filter_state, input.data(),
          length * sizeof(int16_t));
 }
 
 int16_t BackgroundNoise::Scale(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].scale;
 }
 int16_t BackgroundNoise::ScaleShift(size_t channel) const {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   return channel_parameters_[channel].scale_shift;
 }
 
@@ -240,7 +239,7 @@ void BackgroundNoise::IncrementEnergyThreshold(size_t channel,
   // to the limited-width operations, it is not exactly the same. The
   // difference should be inaudible, but bit-exactness would not be
   // maintained.
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   ChannelParameters& parameters = channel_parameters_[channel];
   int32_t temp_energy =
       (kThresholdIncrement * parameters.low_energy_update_threshold) >> 16;
@@ -265,8 +264,8 @@ void BackgroundNoise::IncrementEnergyThreshold(size_t channel,
     parameters.max_energy = sample_energy;
   }
 
-  // Set |energy_update_threshold| to no less than 60 dB lower than
-  // |max_energy_|. Adding 524288 assures proper rounding.
+  // Set `energy_update_threshold` to no less than 60 dB lower than
+  // `max_energy_`. Adding 524288 assures proper rounding.
   int32_t energy_update_threshold = (parameters.max_energy + 524288) >> 20;
   if (energy_update_threshold > parameters.energy_update_threshold) {
     parameters.energy_update_threshold = energy_update_threshold;
@@ -278,7 +277,7 @@ void BackgroundNoise::SaveParameters(size_t channel,
                                      const int16_t* filter_state,
                                      int32_t sample_energy,
                                      int32_t residual_energy) {
-  assert(channel < num_channels_);
+  RTC_DCHECK_LT(channel, num_channels_);
   ChannelParameters& parameters = channel_parameters_[channel];
   memcpy(parameters.filter, lpc_coefficients,
          (kMaxLpcOrder + 1) * sizeof(int16_t));
@@ -298,9 +297,9 @@ void BackgroundNoise::SaveParameters(size_t channel,
 
   // Calculate scale and shift factor.
   parameters.scale = static_cast<int16_t>(WebRtcSpl_SqrtFloor(residual_energy));
-  // Add 13 to the |scale_shift_|, since the random numbers table is in
+  // Add 13 to the `scale_shift_`, since the random numbers table is in
   // Q13.
-  // TODO(hlundin): Move the "13" to where the |scale_shift_| is used?
+  // TODO(hlundin): Move the "13" to where the `scale_shift_` is used?
   parameters.scale_shift =
       static_cast<int16_t>(13 + ((kLogResidualLength + norm_shift) / 2));
 

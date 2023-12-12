@@ -15,8 +15,8 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/transport/network_types.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/units/data_rate.h"
 #include "modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator_interface.h"
 #include "modules/congestion_controller/goog_cc/bitrate_estimator.h"
@@ -27,11 +27,11 @@ class AcknowledgedBitrateEstimator
     : public AcknowledgedBitrateEstimatorInterface {
  public:
   AcknowledgedBitrateEstimator(
-      const WebRtcKeyValueConfig* key_value_config,
+      const FieldTrialsView* key_value_config,
       std::unique_ptr<BitrateEstimator> bitrate_estimator);
 
   explicit AcknowledgedBitrateEstimator(
-      const WebRtcKeyValueConfig* key_value_config);
+      const FieldTrialsView* key_value_config);
   ~AcknowledgedBitrateEstimator() override;
 
   void IncomingPacketFeedbackVector(

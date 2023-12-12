@@ -20,7 +20,9 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -38,6 +40,7 @@ public class HintDialogCell extends FrameLayout {
     private TextView nameTextView;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
     private RectF rect = new RectF();
+    private Theme.ResourcesProvider resourcesProvider;
 
     private int lastUnreadCount;
     private TLRPC.User currentUser;
@@ -51,7 +54,7 @@ public class HintDialogCell extends FrameLayout {
     CheckBox2 checkBox;
     private final boolean drawCheckbox;
 
-    public HintDialogCell(Context context, boolean drawCheckbox) {
+    public HintDialogCell(Context context, boolean drawCheckbox, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.drawCheckbox = drawCheckbox;
 
@@ -59,8 +62,15 @@ public class HintDialogCell extends FrameLayout {
         imageView.setRoundRadius(AndroidUtilities.dp(27));
         addView(imageView, LayoutHelper.createFrame(54, 54, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
-        nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView = new TextView(context) {
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(10), false);
+                super.setText(text, type);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(nameTextView);
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         nameTextView.setMaxLines(1);
         nameTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
@@ -68,13 +78,13 @@ public class HintDialogCell extends FrameLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 64, 6, 0));
 
-        counterView = new CounterView(context, null);
+        counterView = new CounterView(context, resourcesProvider);
         addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP,0 ,4,0,0));
         counterView.setColors(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter);
         counterView.setGravity(Gravity.RIGHT);
 
         if (drawCheckbox) {
-            checkBox = new CheckBox2(context, 21);
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
             checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(4);
@@ -85,7 +95,7 @@ public class HintDialogCell extends FrameLayout {
                 invalidate();
             });
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, 42, 0, 0));
-            checkBox.setChecked(true, false);
+            checkBox.setChecked(false, false);
             setWillNotDraw(false);
         }
     }
@@ -122,12 +132,18 @@ public class HintDialogCell extends FrameLayout {
     public void update() {
         if (DialogObject.isUserDialog(dialogId)) {
             currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-            avatarDrawable.setInfo(chat);
+            avatarDrawable.setInfo(currentAccount, chat);
             currentUser = null;
         }
+    }
+
+    public void setColors(int textColorKey, int backgroundColorKey) {
+        nameTextView.setTextColor(Theme.getColor(textColorKey, resourcesProvider));
+        this.backgroundColorKey = backgroundColorKey;
+        checkBox.setColor(Theme.key_dialogRoundCheckBox, backgroundColorKey, Theme.key_dialogRoundCheckBoxCheck);
     }
 
     public void setDialog(long uid, boolean counter, CharSequence name) {
@@ -145,7 +161,7 @@ public class HintDialogCell extends FrameLayout {
             } else {
                 nameTextView.setText("");
             }
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
             imageView.setForUserOrChat(currentUser, avatarDrawable);
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
@@ -156,7 +172,7 @@ public class HintDialogCell extends FrameLayout {
             } else {
                 nameTextView.setText("");
             }
-            avatarDrawable.setInfo(chat);
+            avatarDrawable.setInfo(currentAccount, chat);
             currentUser = null;
             imageView.setForUserOrChat(chat, avatarDrawable);
         }
@@ -164,6 +180,8 @@ public class HintDialogCell extends FrameLayout {
             update(0);
         }
     }
+
+    private int backgroundColorKey = Theme.key_windowBackgroundWhite;
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -191,7 +209,7 @@ public class HintDialogCell extends FrameLayout {
                 int left = AndroidUtilities.dp(59);
                 canvas.save();
                 canvas.scale(showOnlineProgress, showOnlineProgress, left, top);
-                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(backgroundColorKey));
                 canvas.drawCircle(left, top, AndroidUtilities.dp(7), Theme.dialogs_onlineCirclePaint);
                 Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
                 canvas.drawCircle(left, top, AndroidUtilities.dp(5), Theme.dialogs_onlineCirclePaint);

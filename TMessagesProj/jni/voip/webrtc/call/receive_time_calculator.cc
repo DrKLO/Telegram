@@ -16,22 +16,20 @@
 
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/numerics/safe_minmax.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
-using ::webrtc::field_trial::IsEnabled;
 
 const char kBweReceiveTimeCorrection[] = "WebRTC-Bwe-ReceiveTimeFix";
 }  // namespace
 
-ReceiveTimeCalculatorConfig::ReceiveTimeCalculatorConfig()
+ReceiveTimeCalculatorConfig::ReceiveTimeCalculatorConfig(
+    const FieldTrialsView& field_trials)
     : max_packet_time_repair("maxrep", TimeDelta::Millis(2000)),
       stall_threshold("stall", TimeDelta::Millis(5)),
       tolerance("tol", TimeDelta::Millis(1)),
       max_stall("maxstall", TimeDelta::Seconds(5)) {
-  std::string trial_string =
-      field_trial::FindFullName(kBweReceiveTimeCorrection);
+  std::string trial_string = field_trials.Lookup(kBweReceiveTimeCorrection);
   ParseFieldTrial(
       {&max_packet_time_repair, &stall_threshold, &tolerance, &max_stall},
       trial_string);
@@ -40,14 +38,16 @@ ReceiveTimeCalculatorConfig::ReceiveTimeCalculatorConfig(
     const ReceiveTimeCalculatorConfig&) = default;
 ReceiveTimeCalculatorConfig::~ReceiveTimeCalculatorConfig() = default;
 
-ReceiveTimeCalculator::ReceiveTimeCalculator()
-    : config_(ReceiveTimeCalculatorConfig()) {}
+ReceiveTimeCalculator::ReceiveTimeCalculator(
+    const FieldTrialsView& field_trials)
+    : config_(field_trials) {}
 
 std::unique_ptr<ReceiveTimeCalculator>
-ReceiveTimeCalculator::CreateFromFieldTrial() {
-  if (!IsEnabled(kBweReceiveTimeCorrection))
+ReceiveTimeCalculator::CreateFromFieldTrial(
+    const FieldTrialsView& field_trials) {
+  if (!field_trials.IsEnabled(kBweReceiveTimeCorrection))
     return nullptr;
-  return std::make_unique<ReceiveTimeCalculator>();
+  return std::make_unique<ReceiveTimeCalculator>(field_trials);
 }
 
 int64_t ReceiveTimeCalculator::ReconcileReceiveTimes(int64_t packet_time_us,

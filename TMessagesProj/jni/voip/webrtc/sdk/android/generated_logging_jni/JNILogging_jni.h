@@ -58,7 +58,4 @@ static void Java_JNILogging_logToInjectable(JNIEnv* env, const base::android::Ja
           call_context.base.method_id, message.obj(), severity.obj(), tag.obj());
 }
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_JNILogging_JNI

@@ -13,6 +13,8 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace webrtc {
 
 // NOTE: This class is still under development and may change without notice.
@@ -29,9 +31,9 @@ class RtcEventLogOutput {
   // Write encoded events to an output. Returns true if the output was
   // successfully written in its entirety. Otherwise, no guarantee is given
   // about how much data was written, if any. The output sink becomes inactive
-  // after the first time |false| is returned. Write() may not be called on
+  // after the first time `false` is returned. Write() may not be called on
   // an inactive output sink.
-  virtual bool Write(const std::string& output) = 0;
+  virtual bool Write(absl::string_view output) = 0;
 
   // Indicates that buffers should be written to disk if applicable.
   virtual void Flush() {}

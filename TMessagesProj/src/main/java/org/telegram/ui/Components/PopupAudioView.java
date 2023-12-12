@@ -151,7 +151,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         }
         canvas.restore();
 
-        int state = buttonState + 5;
+        int state = buttonState;
         timePaint.setColor(0xffa1aab3);
         Drawable buttonDrawable = Theme.chat_fileStatesDrawable[state][buttonPressed];
         int side = AndroidUtilities.dp(36);
@@ -234,7 +234,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 4;
             invalidate();
         } else if (buttonState == 3) {
@@ -258,7 +258,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             for (int a = 0; a < currentMessageObject.getDocument().attributes.size(); a++) {
                 TLRPC.DocumentAttribute attribute = currentMessageObject.getDocument().attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                    duration = attribute.duration;
+                    duration = (int) attribute.duration;
                     break;
                 }
             }
@@ -275,7 +275,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 3;
             invalidate();
         }
@@ -283,7 +283,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void updateButtonState() {
         String fileName = currentMessageObject.getFileName();
-        File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+        File cacheFile = FileLoader.getInstance(currentAccount).getPathToMessage(currentMessageObject.messageOwner);
         if (cacheFile.exists()) {
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);

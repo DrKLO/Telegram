@@ -25,7 +25,9 @@ RaceChecker::RaceChecker() {}
 bool RaceChecker::Acquire() const {
   const PlatformThreadRef current_thread = CurrentThreadRef();
   // Set new accessing thread if this is a new use.
-  if (access_count_++ == 0)
+  const int current_access_count = access_count_;
+  access_count_ = access_count_ + 1;
+  if (current_access_count == 0)
     accessing_thread_ = current_thread;
   // If this is being used concurrently this check will fail for the second
   // thread entering since it won't set the thread. Recursive use of checked
@@ -35,7 +37,7 @@ bool RaceChecker::Acquire() const {
 }
 
 void RaceChecker::Release() const {
-  --access_count_;
+  access_count_ = access_count_ - 1;
 }
 
 namespace internal {

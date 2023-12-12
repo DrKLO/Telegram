@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">حظر المستخدم</string>
     <string name="DeleteReportSpam">إبلاغ عن إزعاج</string>
     <string name="DeleteAllFrom">حذف جميع مشاركات %1$s</string>
-    <string name="ClearRecentEmoji">مسح الرموز التعبيرية الأخيرة؟</string>
+    <string name="ClearRecentEmojiTitle">مسح الرموز التعبيرية الأخيرة</string>
     <string name="Emoji1">الابتسامات والناس</string>
     <string name="Emoji2">حيوانات وطبيعة</string>
     <string name="Emoji3">أطعمة وأشربة</string>
@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; تذكير</string>
     <string name="OneResult">نتيجة واحدة</string>
     <string name="VideoQualityIsTooLow">جودة المقطع المرئي أقل مما ينبغي لتغيير إعدادات الضغط.</string>
-    <string name="TextSelectionHit">اضغط باستمرار على **كلمة** ما، ثم حرّك المؤشر لتحديد المزيد والنسخ.</string>
     <string name="CardNumberCopied">تم نسخ رقم البطاقة للحافظة</string>
     <string name="CopyCardNumber">نسخ</string>
     <string name="DiceInfo2">أرسل الرمز التعبيري **&#127922;** لرمي حجر النرد.</string>
@@ -2494,7 +2493,6 @@
     <string name="FilterChatRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
     <string name="FilterChatsRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">وصلت الحد الأقصى</string>
-    <string name="FilterRemoveFromAlertFullText">عذرًا، لايمكنك إضافة أكثر من 100 محادثة إلى مجلد.</string>
     <string name="FilterAddToAlertFullText">عذرًا، لايمكنك استثناء أكثر من 100 محادثة من مجلد.</string>
     <!--passcode view-->
     <string name="Passcode">رمز القفل</string>
@@ -3167,7 +3165,7 @@
     <string name="InvalidLastName">المعذرة، لا يمكن استخدام اسم العائلة هذا.</string>
     <string name="Loading">يتم التحميل...</string>
     <string name="NoPlayerInstalled">لا تملك أي مشغل للمقاطع المرئية على جهازك، يرجى تنزيل واحد للمتابعة</string>
-    <string name="NoMailInstalled">يرجى مراسلتنا عبر البريد الإلكتروني reports@stel.com لإخبارنا بمشكلتك.</string>
+    <string name="NoMailInstalled">يرجى مراسلتنا عبر البريد الإلكتروني sms@telegram.org لإخبارنا بمشكلتك.</string>
     <string name="NoHandleAppInstalled">لا تملك تطبيقًا يمكنه فتح صيغة الملفات \'%1$s\'، يرجى تنزيل تطبيق مناسب للاستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد، هل تريد دعوته؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>

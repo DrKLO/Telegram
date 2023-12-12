@@ -39,6 +39,7 @@
 #endif
 
 #include <string.h>
+
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -50,22 +51,92 @@
 #include <vector>
 
 #include "absl/base/call_once.h"
+#include "absl/base/config.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/spinlock.h"
 #include "absl/base/internal/unscaledcycleclock.h"
+#include "absl/base/thread_annotations.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
 
+namespace {
+
+#if defined(_WIN32)
+
+// Returns number of bits set in `bitMask`
+DWORD Win32CountSetBits(ULONG_PTR bitMask) {
+  for (DWORD bitSetCount = 0; ; ++bitSetCount) {
+    if (bitMask == 0) return bitSetCount;
+    bitMask &= bitMask - 1;
+  }
+}
+
+// Returns the number of logical CPUs using GetLogicalProcessorInformation(), or
+// 0 if the number of processors is not available or can not be computed.
+// https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlogicalprocessorinformation
+int Win32NumCPUs() {
+#pragma comment(lib, "kernel32.lib")
+  using Info = SYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+
+  DWORD info_size = sizeof(Info);
+  Info* info(static_cast<Info*>(malloc(info_size)));
+  if (info == nullptr) return 0;
+
+  bool success = GetLogicalProcessorInformation(info, &info_size);
+  if (!success && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+    free(info);
+    info = static_cast<Info*>(malloc(info_size));
+    if (info == nullptr) return 0;
+    success = GetLogicalProcessorInformation(info, &info_size);
+  }
+
+  DWORD logicalProcessorCount = 0;
+  if (success) {
+    Info* ptr = info;
+    DWORD byteOffset = 0;
+    while (byteOffset + sizeof(Info) <= info_size) {
+      switch (ptr->Relationship) {
+        case RelationProcessorCore:
+          logicalProcessorCount += Win32CountSetBits(ptr->ProcessorMask);
+          break;
+
+        case RelationNumaNode:
+        case RelationCache:
+        case RelationProcessorPackage:
+          // Ignore other entries
+          break;
+
+        default:
+          // Ignore unknown entries
+          break;
+      }
+      byteOffset += sizeof(Info);
+      ptr++;
+    }
+  }
+  free(info);
+  return static_cast<int>(logicalProcessorCount);
+}
+
+#endif
+
+}  // namespace
+
 static int GetNumCPUs() {
 #if defined(__myriad2__)
   return 1;
+#elif defined(_WIN32)
+  const int hardware_concurrency = Win32NumCPUs();
+  return hardware_concurrency ? hardware_concurrency : 1;
+#elif defined(_AIX)
+  return sysconf(_SC_NPROCESSORS_ONLN);
 #else
   // Other possibilities:
   //  - Read /sys/devices/system/cpu/online and use cpumask_parse()
   //  - sysconf(_SC_NPROCESSORS_ONLN)
-  return std::thread::hardware_concurrency();
+  return static_cast<int>(std::thread::hardware_concurrency());
 #endif
 }
 
@@ -118,12 +189,15 @@ static double GetNominalCPUFrequency() {
 // and the memory location pointed to by value is set to the value read.
 static bool ReadLongFromFile(const char *file, long *value) {
   bool ret = false;
-  int fd = open(file, O_RDONLY);
+  int fd = open(file, O_RDONLY | O_CLOEXEC);
   if (fd != -1) {
     char line[1024];
     char *err;
     memset(line, '\0', sizeof(line));
-    int len = read(fd, line, sizeof(line) - 1);
+    ssize_t len;
+    do {
+      len = read(fd, line, sizeof(line) - 1);
+    } while (len < 0 && errno == EINTR);
     if (len <= 0) {
       ret = false;
     } else {
@@ -305,7 +379,7 @@ pid_t GetTID() {
 #endif
 
 pid_t GetTID() {
-  return syscall(SYS_gettid);
+  return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
 #elif defined(__akaros__)
@@ -343,25 +417,26 @@ pid_t GetTID() {
 #else
 
 // Fallback implementation of GetTID using pthread_getspecific.
-static once_flag tid_once;
-static pthread_key_t tid_key;
-static absl::base_internal::SpinLock tid_lock(
-    absl::base_internal::kLinkerInitialized);
+ABSL_CONST_INIT static once_flag tid_once;
+ABSL_CONST_INIT static pthread_key_t tid_key;
+ABSL_CONST_INIT static absl::base_internal::SpinLock tid_lock(
+    absl::kConstInit, base_internal::SCHEDULE_KERNEL_ONLY);
 
 // We set a bit per thread in this array to indicate that an ID is in
 // use. ID 0 is unused because it is the default value returned by
 // pthread_getspecific().
-static std::vector<uint32_t>* tid_array ABSL_GUARDED_BY(tid_lock) = nullptr;
+ABSL_CONST_INIT static std::vector<uint32_t> *tid_array
+    ABSL_GUARDED_BY(tid_lock) = nullptr;
 static constexpr int kBitsPerWord = 32;  // tid_array is uint32_t.
 
 // Returns the TID to tid_array.
 static void FreeTID(void *v) {
   intptr_t tid = reinterpret_cast<intptr_t>(v);
-  int word = tid / kBitsPerWord;
+  intptr_t word = tid / kBitsPerWord;
   uint32_t mask = ~(1u << (tid % kBitsPerWord));
   absl::base_internal::SpinLockHolder lock(&tid_lock);
   assert(0 <= word && static_cast<size_t>(word) < tid_array->size());
-  (*tid_array)[word] &= mask;
+  (*tid_array)[static_cast<size_t>(word)] &= mask;
 }
 
 static void InitGetTID() {
@@ -383,7 +458,7 @@ pid_t GetTID() {
 
   intptr_t tid = reinterpret_cast<intptr_t>(pthread_getspecific(tid_key));
   if (tid != 0) {
-    return tid;
+    return static_cast<pid_t>(tid);
   }
 
   int bit;  // tid_array[word] = 1u << bit;
@@ -404,7 +479,8 @@ pid_t GetTID() {
     while (bit < kBitsPerWord && (((*tid_array)[word] >> bit) & 1) != 0) {
       ++bit;
     }
-    tid = (word * kBitsPerWord) + bit;
+    tid =
+        static_cast<intptr_t>((word * kBitsPerWord) + static_cast<size_t>(bit));
     (*tid_array)[word] |= 1u << bit;  // Mark the TID as allocated.
   }
 
@@ -417,6 +493,18 @@ pid_t GetTID() {
 }
 
 #endif
+
+// GetCachedTID() caches the thread ID in thread-local storage (which is a
+// userspace construct) to avoid unnecessary system calls. Without this caching,
+// it can take roughly 98ns, while it takes roughly 1ns with this caching.
+pid_t GetCachedTID() {
+#ifdef ABSL_HAVE_THREAD_LOCAL
+  static thread_local pid_t thread_id = GetTID();
+  return thread_id;
+#else
+  return GetTID();
+#endif  // ABSL_HAVE_THREAD_LOCAL
+}
 
 }  // namespace base_internal
 ABSL_NAMESPACE_END

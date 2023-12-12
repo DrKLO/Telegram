@@ -21,9 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- * Utility methods for ClearKey.
- */
+/** Utility methods for ClearKey. */
 /* package */ final class ClearKeyUtil {
 
   private static final String TAG = "ClearKeyUtil";
@@ -93,5 +91,4 @@ import org.json.JSONObject;
   private static String base64UrlToBase64(String base64Url) {
     return base64Url.replace('-', '+').replace('_', '/');
   }
-
 }

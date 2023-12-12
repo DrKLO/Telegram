@@ -24,6 +24,10 @@ AudioDecoderIsacFloat::SdpToConfig(const SdpAudioFormat& format) {
       format.num_channels == 1) {
     Config config;
     config.sample_rate_hz = format.clockrate_hz;
+    if (!config.IsOk()) {
+      RTC_DCHECK_NOTREACHED();
+      return absl::nullopt;
+    }
     return config;
   } else {
     return absl::nullopt;
@@ -38,10 +42,14 @@ void AudioDecoderIsacFloat::AppendSupportedDecoders(
 
 std::unique_ptr<AudioDecoder> AudioDecoderIsacFloat::MakeAudioDecoder(
     Config config,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
   AudioDecoderIsacFloatImpl::Config c;
   c.sample_rate_hz = config.sample_rate_hz;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioDecoderIsacFloatImpl>(c);
 }
 

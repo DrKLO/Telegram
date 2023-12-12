@@ -16,6 +16,7 @@
 #include "absl/types/optional.h"
 #include "api/audio/echo_canceller3_config.h"
 #include "api/audio/echo_control.h"
+#include "modules/audio_processing/aec3/block.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
 #include "modules/audio_processing/aec3/echo_path_variability.h"
 #include "modules/audio_processing/aec3/render_buffer.h"
@@ -42,8 +43,8 @@ class EchoRemover {
       bool capture_signal_saturation,
       const absl::optional<DelayEstimate>& external_delay,
       RenderBuffer* render_buffer,
-      std::vector<std::vector<std::vector<float>>>* linear_output,
-      std::vector<std::vector<std::vector<float>>>* capture) = 0;
+      Block* linear_output,
+      Block* capture) = 0;
 
   // Updates the status on whether echo leakage is detected in the output of the
   // echo remover.

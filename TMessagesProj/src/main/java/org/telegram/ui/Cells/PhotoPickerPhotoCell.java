@@ -136,7 +136,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, thumb);
         } else if (photoEntry.path != null) {
-            imageView.setOrientation(photoEntry.orientation, true);
+            imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
             if (photoEntry.isVideo) {
                 videoInfoContainer.setVisibility(View.VISIBLE);
                 videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));

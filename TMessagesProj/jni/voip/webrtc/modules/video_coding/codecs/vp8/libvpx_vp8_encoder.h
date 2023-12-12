@@ -24,12 +24,13 @@
 #include "modules/video_coding/codecs/interface/libvpx_interface.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/include/video_codec_interface.h"
-#include "modules/video_coding/utility/framerate_controller.h"
+#include "modules/video_coding/utility/framerate_controller_deprecated.h"
+#include "modules/video_coding/utility/vp8_constants.h"
 #include "rtc_base/experiments/cpu_speed_experiment.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
 #include "rtc_base/experiments/rate_control_settings.h"
-#include "vpx/vp8cx.h"
-#include "vpx/vpx_encoder.h"
+#include <libvpx/vp8cx.h>
+#include <libvpx/vpx_encoder.h>
 
 namespace webrtc {
 
@@ -83,7 +84,7 @@ class LibvpxVp8Encoder : public VideoEncoder {
   int GetEncodedPartitions(const VideoFrame& input_image,
                            bool retransmission_allowed);
 
-  // Set the stream state for stream |stream_idx|.
+  // Set the stream state for stream `stream_idx`.
   void SetStreamState(bool send_stream, int stream_idx);
 
   uint32_t MaxIntraTarget(uint32_t optimal_buffer_size);
@@ -95,8 +96,8 @@ class LibvpxVp8Encoder : public VideoEncoder {
   bool UpdateVpxConfiguration(size_t stream_index);
 
   void MaybeUpdatePixelFormat(vpx_img_fmt fmt);
-  // Prepares |raw_image_| to reference image data of |buffer|, or of mapped or
-  // scaled versions of |buffer|. Returns a list of buffers that got referenced
+  // Prepares `raw_image_` to reference image data of `buffer`, or of mapped or
+  // scaled versions of `buffer`. Returns a list of buffers that got referenced
   // as a result, allowing the caller to keep references to them until after
   // encoding has finished. On failure to convert the buffer, an empty list is
   // returned.
@@ -138,14 +139,14 @@ class LibvpxVp8Encoder : public VideoEncoder {
     // Framerate is limited to this value in steady state.
     float framerate_limit = 5.0;
     // This qp or below is considered a steady state.
-    int steady_state_qp = 15;
+    int steady_state_qp = kVp8SteadyStateQpThreshold;
     // Frames of at least this percentage below ideal for configured bitrate are
     // considered in a steady state.
     int steady_state_undershoot_percentage = 30;
   } variable_framerate_experiment_;
   static VariableFramerateExperiment ParseVariableFramerateConfig(
       std::string group_name);
-  FramerateController framerate_controller_;
+  FramerateControllerDeprecated framerate_controller_;
   int num_steady_state_frames_ = 0;
 
   FecControllerOverride* fec_controller_override_ = nullptr;

@@ -12,16 +12,16 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -38,6 +38,7 @@ import org.telegram.ui.Components.LayoutHelper;
 
 public class UserCell2 extends FrameLayout {
 
+    private Theme.ResourcesProvider resourcesProvider;
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
     private SimpleTextView statusTextView;
@@ -49,7 +50,7 @@ public class UserCell2 extends FrameLayout {
     private TLObject currentObject;
 
     private CharSequence currentName;
-    private CharSequence currrntStatus;
+    private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
 
@@ -63,10 +64,15 @@ public class UserCell2 extends FrameLayout {
     private int statusOnlineColor;
 
     public UserCell2(Context context, int padding, int checkbox) {
-        super(context);
+        this(context, padding, checkbox, null);
+    }
 
-        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
-        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+    public UserCell2(Context context, int padding, int checkbox, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
+        this.resourcesProvider = resourcesProvider;
+
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
 
         avatarDrawable = new AvatarDrawable();
 
@@ -74,8 +80,15 @@ public class UserCell2 extends FrameLayout {
         avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
         addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 11, LocaleController.isRTL ? 7 + padding : 0, 0));
 
-        nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView = new SimpleTextView(context) {
+            @Override
+            public boolean setText(CharSequence value) {
+                value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(15), false);
+                return super.setText(value);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(nameTextView);
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 14.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
@@ -87,24 +100,24 @@ public class UserCell2 extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
         if (checkbox == 2) {
-            checkBoxBig = new CheckBoxSquare(context, false);
+            checkBoxBig = new CheckBoxSquare(context, false, resourcesProvider);
             addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
         } else if (checkbox == 1) {
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
+            checkBox.setColor(Theme.getColor(Theme.key_checkbox, resourcesProvider), Theme.getColor(Theme.key_checkboxCheck, resourcesProvider));
             addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 41, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
     }
 
     public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
         if (object == null && name == null && status == null) {
-            currrntStatus = null;
+            currentStatus = null;
             currentName = null;
             currentObject = null;
             nameTextView.setText("");
@@ -112,7 +125,7 @@ public class UserCell2 extends FrameLayout {
             avatarImageView.setImageDrawable(null);
             return;
         }
-        currrntStatus = status;
+        currentStatus = status;
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
@@ -215,14 +228,14 @@ public class UserCell2 extends FrameLayout {
         lastAvatar = photo;
 
         if (currentUser != null) {
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
             if (currentUser.status != null) {
                 lastStatus = currentUser.status.expires;
             } else {
                 lastStatus = 0;
             }
         } else if (currentChat != null) {
-            avatarDrawable.setInfo(currentChat);
+            avatarDrawable.setInfo(currentAccount, currentChat);
         } else if (currentName != null) {
             avatarDrawable.setInfo(currentId, currentName.toString(), null);
         } else {
@@ -240,9 +253,13 @@ public class UserCell2 extends FrameLayout {
             }
             nameTextView.setText(lastName);
         }
-        if (currrntStatus != null) {
+
+        if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currrntStatus);
+            statusTextView.setText(currentStatus);
+            if (avatarImageView != null) {
+                avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
+            }
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
@@ -266,7 +283,7 @@ public class UserCell2 extends FrameLayout {
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
                 if (currentChat.participants_count != 0) {
                     statusTextView.setText(LocaleController.formatPluralString("Subscribers", currentChat.participants_count));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
+                } else if (!ChatObject.isPublic(currentChat)) {
                     statusTextView.setText(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
                 } else {
                     statusTextView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic));
@@ -276,7 +293,7 @@ public class UserCell2 extends FrameLayout {
                     statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
                 } else if (currentChat.has_geo) {
                     statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
+                } else if (!ChatObject.isPublic(currentChat)) {
                     statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
                 } else {
                     statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
@@ -286,6 +303,8 @@ public class UserCell2 extends FrameLayout {
         } else {
             avatarImageView.setImageDrawable(avatarDrawable);
         }
+
+        avatarImageView.setRoundRadius(currentChat != null && currentChat.forum ? AndroidUtilities.dp(14) : AndroidUtilities.dp(24));
 
         if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);

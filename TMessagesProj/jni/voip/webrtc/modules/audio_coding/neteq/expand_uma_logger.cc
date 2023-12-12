@@ -9,6 +9,7 @@
 
 #include "modules/audio_coding/neteq/expand_uma_logger.h"
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "system_wrappers/include/metrics.h"
 
@@ -22,7 +23,7 @@ std::unique_ptr<TickTimer::Countdown> GetNewCountdown(
 }
 }  // namespace
 
-ExpandUmaLogger::ExpandUmaLogger(std::string uma_name,
+ExpandUmaLogger::ExpandUmaLogger(absl::string_view uma_name,
                                  int logging_period_s,
                                  const TickTimer* tick_timer)
     : uma_name_(uma_name),

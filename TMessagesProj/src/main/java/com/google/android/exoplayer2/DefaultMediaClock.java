@@ -16,32 +16,31 @@
 package com.google.android.exoplayer2;
 
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Clock;
 import com.google.android.exoplayer2.util.MediaClock;
 import com.google.android.exoplayer2.util.StandaloneMediaClock;
 
 /**
- * Default {@link MediaClock} which uses a renderer media clock and falls back to a
- * {@link StandaloneMediaClock} if necessary.
+ * Default {@link MediaClock} which uses a renderer media clock and falls back to a {@link
+ * StandaloneMediaClock} if necessary.
  */
 /* package */ final class DefaultMediaClock implements MediaClock {
 
-  /**
-   * Listener interface to be notified of changes to the active playback parameters.
-   */
-  public interface PlaybackParameterListener {
+  /** Listener interface to be notified of changes to the active playback parameters. */
+  public interface PlaybackParametersListener {
 
     /**
      * Called when the active playback parameters changed. Will not be called for {@link
      * #setPlaybackParameters(PlaybackParameters)}.
      *
-     * @param newPlaybackParameters The newly active {@link PlaybackParameters}.
+     * @param newPlaybackParameters The newly active playback parameters.
      */
     void onPlaybackParametersChanged(PlaybackParameters newPlaybackParameters);
   }
 
   private final StandaloneMediaClock standaloneClock;
-  private final PlaybackParameterListener listener;
+  private final PlaybackParametersListener listener;
 
   @Nullable private Renderer rendererClockSource;
   @Nullable private MediaClock rendererClock;
@@ -49,30 +48,25 @@ import com.google.android.exoplayer2.util.StandaloneMediaClock;
   private boolean standaloneClockIsStarted;
 
   /**
-   * Creates a new instance with listener for playback parameter changes and a {@link Clock} to use
-   * for the standalone clock implementation.
+   * Creates a new instance with a listener for playback parameters changes and a {@link Clock} to
+   * use for the standalone clock implementation.
    *
-   * @param listener A {@link PlaybackParameterListener} to listen for playback parameter
-   *     changes.
+   * @param listener A {@link PlaybackParametersListener} to listen for playback parameters changes.
    * @param clock A {@link Clock}.
    */
-  public DefaultMediaClock(PlaybackParameterListener listener, Clock clock) {
+  public DefaultMediaClock(PlaybackParametersListener listener, Clock clock) {
     this.listener = listener;
     this.standaloneClock = new StandaloneMediaClock(clock);
     isUsingStandaloneClock = true;
   }
 
-  /**
-   * Starts the standalone fallback clock.
-   */
+  /** Starts the standalone fallback clock. */
   public void start() {
     standaloneClockIsStarted = true;
     standaloneClock.start();
   }
 
-  /**
-   * Stops the standalone fallback clock.
-   */
+  /** Stops the standalone fallback clock. */
   public void stop() {
     standaloneClockIsStarted = false;
     standaloneClock.stop();
@@ -96,7 +90,7 @@ import com.google.android.exoplayer2.util.StandaloneMediaClock;
    *     clock is already provided.
    */
   public void onRendererEnabled(Renderer renderer) throws ExoPlaybackException {
-    MediaClock rendererMediaClock = renderer.getMediaClock();
+    @Nullable MediaClock rendererMediaClock = renderer.getMediaClock();
     if (rendererMediaClock != null && rendererMediaClock != rendererClock) {
       if (rendererClock != null) {
         throw ExoPlaybackException.createForUnexpected(
@@ -136,7 +130,9 @@ import com.google.android.exoplayer2.util.StandaloneMediaClock;
 
   @Override
   public long getPositionUs() {
-    return isUsingStandaloneClock ? standaloneClock.getPositionUs() : rendererClock.getPositionUs();
+    return isUsingStandaloneClock
+        ? standaloneClock.getPositionUs()
+        : Assertions.checkNotNull(rendererClock).getPositionUs();
   }
 
   @Override
@@ -163,6 +159,9 @@ import com.google.android.exoplayer2.util.StandaloneMediaClock;
       }
       return;
     }
+    // We are either already using the renderer clock or switching from the standalone to the
+    // renderer clock, so it must be non-null.
+    MediaClock rendererClock = Assertions.checkNotNull(this.rendererClock);
     long rendererClockPositionUs = rendererClock.getPositionUs();
     if (isUsingStandaloneClock) {
       // Ensure enabling the renderer clock doesn't jump backwards in time.

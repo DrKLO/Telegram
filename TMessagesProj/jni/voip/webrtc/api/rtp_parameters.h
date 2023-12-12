@@ -17,11 +17,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/media_types.h"
 #include "api/priority.h"
 #include "api/rtp_transceiver_direction.h"
+#include "api/video/resolution.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -126,7 +129,7 @@ struct RTC_EXPORT RtpCodecCapability {
   RtpCodecCapability();
   ~RtpCodecCapability();
 
-  // Build MIME "type/subtype" string from |name| and |kind|.
+  // Build MIME "type/subtype" string from `name` and `kind`.
   std::string mime_type() const { return MediaTypeToString(kind) + "/" + name; }
 
   // Used to identify the codec. Equivalent to MIME subtype.
@@ -186,6 +189,9 @@ struct RTC_EXPORT RtpCodecCapability {
   // TODO(deadbeef): Not implemented.
   bool svc_multi_stream_support = false;
 
+  // https://w3c.github.io/webrtc-svc/#dom-rtcrtpcodeccapability-scalabilitymodes
+  absl::InlinedVector<ScalabilityMode, kScalabilityModeCount> scalability_modes;
+
   bool operator==(const RtpCodecCapability& o) const {
     return name == o.name && kind == o.kind && clock_rate == o.clock_rate &&
            preferred_payload_type == o.preferred_payload_type &&
@@ -194,7 +200,8 @@ struct RTC_EXPORT RtpCodecCapability {
            parameters == o.parameters && options == o.options &&
            max_temporal_layer_extensions == o.max_temporal_layer_extensions &&
            max_spatial_layer_extensions == o.max_spatial_layer_extensions &&
-           svc_multi_stream_support == o.svc_multi_stream_support;
+           svc_multi_stream_support == o.svc_multi_stream_support &&
+           scalability_modes == o.scalability_modes;
   }
   bool operator!=(const RtpCodecCapability& o) const { return !(*this == o); }
 };
@@ -246,6 +253,18 @@ struct RTC_EXPORT RtpHeaderExtensionCapability {
 
 // RTP header extension, see RFC8285.
 struct RTC_EXPORT RtpExtension {
+  enum Filter {
+    // Encrypted extensions will be ignored and only non-encrypted extensions
+    // will be considered.
+    kDiscardEncryptedExtension,
+    // Encrypted extensions will be preferred but will fall back to
+    // non-encrypted extensions if necessary.
+    kPreferEncryptedExtension,
+    // Encrypted extensions will be required, so any non-encrypted extensions
+    // will be discarded.
+    kRequireEncryptedExtension,
+  };
+
   RtpExtension();
   RtpExtension(absl::string_view uri, int id);
   RtpExtension(absl::string_view uri, int id, bool encrypt);
@@ -260,17 +279,26 @@ struct RTC_EXPORT RtpExtension {
   // Return "true" if the given RTP header extension URI may be encrypted.
   static bool IsEncryptionSupported(absl::string_view uri);
 
-  // Returns the named header extension if found among all extensions,
-  // nullptr otherwise.
+  // Returns the header extension with the given URI or nullptr if not found.
   static const RtpExtension* FindHeaderExtensionByUri(
       const std::vector<RtpExtension>& extensions,
-      absl::string_view uri);
+      absl::string_view uri,
+      Filter filter);
 
-  // Return a list of RTP header extensions with the non-encrypted extensions
-  // removed if both the encrypted and non-encrypted extension is present for
-  // the same URI.
-  static std::vector<RtpExtension> FilterDuplicateNonEncrypted(
-      const std::vector<RtpExtension>& extensions);
+  // Returns the header extension with the given URI and encrypt parameter,
+  // if found, otherwise nullptr.
+  static const RtpExtension* FindHeaderExtensionByUriAndEncryption(
+      const std::vector<RtpExtension>& extensions,
+      absl::string_view uri,
+      bool encrypt);
+
+  // Returns a list of extensions where any extension URI is unique.
+  // The returned list will be sorted by uri first, then encrypt and id last.
+  // Having the list sorted allows the caller fo compare filtered lists for
+  // equality to detect when changes have been made.
+  static const std::vector<RtpExtension> DeduplicateHeaderExtensions(
+      const std::vector<RtpExtension>& extensions,
+      Filter filter);
 
   // Encryption of Header Extensions, see RFC 6904 for details:
   // https://tools.ietf.org/html/rfc6904
@@ -356,6 +384,11 @@ struct RTC_EXPORT RtpExtension {
   // Header extension to propagate webrtc::VideoFrame id field
   static constexpr char kVideoFrameTrackingIdUri[] =
       "http://www.webrtc.org/experiments/rtp-hdrext/video-frame-tracking-id";
+
+  // Header extension for Mixer-to-Client audio levels per CSRC as defined in
+  // https://tools.ietf.org/html/rfc6465
+  static constexpr char kCsrcAudioLevelsUri[] =
+      "urn:ietf:params:rtp-hdrext:csrc-audio-level";
 
   // Inclusive min and max IDs for two-byte header extensions and one-byte
   // header extensions, per RFC8285 Section 4.2-4.3.
@@ -461,8 +494,6 @@ struct RTC_EXPORT RtpEncodingParameters {
 
   // Specifies the number of temporal layers for video (if the feature is
   // supported by the codec implementation).
-  // TODO(asapersson): Different number of temporal layers are not supported
-  // per simulcast layer.
   // Screencast support is experimental.
   absl::optional<int> num_temporal_layers;
 
@@ -471,6 +502,24 @@ struct RTC_EXPORT RtpEncodingParameters {
 
   // https://w3c.github.io/webrtc-svc/#rtcrtpencodingparameters
   absl::optional<std::string> scalability_mode;
+
+  // Requested encode resolution.
+  //
+  // This field provides an alternative to `scale_resolution_down_by`
+  // that is not dependent on the video source.
+  //
+  // When setting requested_resolution it is not necessary to adapt the
+  // video source using OnOutputFormatRequest, since the VideoStreamEncoder
+  // will apply downscaling if necessary. requested_resolution will also be
+  // propagated to the video source, this allows downscaling earlier in the
+  // pipeline which can be beneficial if the source is consumed by multiple
+  // encoders, but is not strictly necessary.
+  //
+  // The `requested_resolution` is subject to resource adaptation.
+  //
+  // It is an error to set both `requested_resolution` and
+  // `scale_resolution_down_by`.
+  absl::optional<Resolution> requested_resolution;
 
   // For an RtpSender, set to true to cause this encoding to be encoded and
   // sent, and false for it not to be encoded and sent. This allows control
@@ -497,7 +546,8 @@ struct RTC_EXPORT RtpEncodingParameters {
            num_temporal_layers == o.num_temporal_layers &&
            scale_resolution_down_by == o.scale_resolution_down_by &&
            active == o.active && rid == o.rid &&
-           adaptive_ptime == o.adaptive_ptime;
+           adaptive_ptime == o.adaptive_ptime &&
+           requested_resolution == o.requested_resolution;
   }
   bool operator!=(const RtpEncodingParameters& o) const {
     return !(*this == o);
@@ -509,7 +559,7 @@ struct RTC_EXPORT RtpCodecParameters {
   RtpCodecParameters(const RtpCodecParameters&);
   ~RtpCodecParameters();
 
-  // Build MIME "type/subtype" string from |name| and |kind|.
+  // Build MIME "type/subtype" string from `name` and `kind`.
   std::string mime_type() const { return MediaTypeToString(kind) + "/" + name; }
 
   // Used to identify the codec. Equivalent to MIME subtype.
@@ -534,7 +584,7 @@ struct RTC_EXPORT RtpCodecParameters {
   absl::optional<int> num_channels;
 
   // The maximum packetization time to be used by an RtpSender.
-  // If |ptime| is also set, this will be ignored.
+  // If `ptime` is also set, this will be ignored.
   // TODO(deadbeef): Not implemented.
   absl::optional<int> max_ptime;
 
@@ -579,7 +629,7 @@ struct RTC_EXPORT RtpCapabilities {
 
   // Supported Forward Error Correction (FEC) mechanisms. Note that the RED,
   // ulpfec and flexfec codecs used by these mechanisms will still appear in
-  // |codecs|.
+  // `codecs`.
   std::vector<FecMechanism> fec;
 
   bool operator==(const RtpCapabilities& o) const {

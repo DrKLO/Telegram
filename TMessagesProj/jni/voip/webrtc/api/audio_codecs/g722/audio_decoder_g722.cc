@@ -21,12 +21,12 @@ namespace webrtc {
 
 absl::optional<AudioDecoderG722::Config> AudioDecoderG722::SdpToConfig(
     const SdpAudioFormat& format) {
-  return absl::EqualsIgnoreCase(format.name, "G722") &&
-                 format.clockrate_hz == 8000 &&
-                 (format.num_channels == 1 || format.num_channels == 2)
-             ? absl::optional<Config>(
-                   Config{rtc::dchecked_cast<int>(format.num_channels)})
-             : absl::nullopt;
+  if (absl::EqualsIgnoreCase(format.name, "G722") &&
+      format.clockrate_hz == 8000 &&
+      (format.num_channels == 1 || format.num_channels == 2)) {
+    return Config{rtc::dchecked_cast<int>(format.num_channels)};
+  }
+  return absl::nullopt;
 }
 
 void AudioDecoderG722::AppendSupportedDecoders(
@@ -36,13 +36,19 @@ void AudioDecoderG722::AppendSupportedDecoders(
 
 std::unique_ptr<AudioDecoder> AudioDecoderG722::MakeAudioDecoder(
     Config config,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   switch (config.num_channels) {
     case 1:
       return std::make_unique<AudioDecoderG722Impl>();
     case 2:
       return std::make_unique<AudioDecoderG722StereoImpl>();
     default:
+      RTC_DCHECK_NOTREACHED();
       return nullptr;
   }
 }

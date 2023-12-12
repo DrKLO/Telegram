@@ -11,6 +11,7 @@
 #ifndef RTC_BASE_GUNIT_H_
 #define RTC_BASE_GUNIT_H_
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/fake_clock.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/thread.h"
@@ -30,11 +31,11 @@
 #define WAIT_(ex, timeout, res)                                   \
   do {                                                            \
     int64_t start = rtc::SystemTimeMillis();                      \
-    res = (ex);                                                   \
+    res = (ex) && true;                                           \
     while (!res && rtc::SystemTimeMillis() < start + (timeout)) { \
       rtc::Thread::Current()->ProcessMessages(0);                 \
       rtc::Thread::Current()->SleepMs(1);                         \
-      res = (ex);                                                 \
+      res = (ex) && true;                                         \
     }                                                             \
   } while (0)
 
@@ -162,7 +163,7 @@ testing::AssertionResult AssertStartsWith(const char* text_expr,
 // Usage: EXPECT_PRED_FORMAT2(AssertStringContains, str, "substring");
 testing::AssertionResult AssertStringContains(const char* str_expr,
                                               const char* substr_expr,
-                                              const std::string& str,
-                                              const std::string& substr);
+                                              absl::string_view str,
+                                              absl::string_view substr);
 
 #endif  // RTC_BASE_GUNIT_H_

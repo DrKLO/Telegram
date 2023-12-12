@@ -11,6 +11,7 @@
 #ifndef RTC_BASE_ASYNC_RESOLVER_INTERFACE_H_
 #define RTC_BASE_ASYNC_RESOLVER_INTERFACE_H_
 
+#include "rtc_base/checks.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
@@ -23,12 +24,14 @@ class RTC_EXPORT AsyncResolverInterface {
   AsyncResolverInterface();
   virtual ~AsyncResolverInterface();
 
-  // Start address resolution of the hostname in |addr|.
+  // Start address resolution of the hostname in `addr`.
   virtual void Start(const SocketAddress& addr) = 0;
-  // Returns true iff the address from |Start| was successfully resolved.
-  // If the address was successfully resolved, sets |addr| to a copy of the
-  // address from |Start| with the IP address set to the top most resolved
-  // address of |family| (|addr| will have both hostname and the resolved ip).
+  // Start address resolution of the hostname in `addr` matching `family`.
+  virtual void Start(const SocketAddress& addr, int family) = 0;
+  // Returns true iff the address from `Start` was successfully resolved.
+  // If the address was successfully resolved, sets `addr` to a copy of the
+  // address from `Start` with the IP address set to the top most resolved
+  // address of `family` (`addr` will have both hostname and the resolved ip).
   virtual bool GetResolvedAddress(int family, SocketAddress* addr) const = 0;
   // Returns error from resolver.
   virtual int GetError() const = 0;

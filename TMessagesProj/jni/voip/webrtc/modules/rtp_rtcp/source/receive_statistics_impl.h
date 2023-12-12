@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -22,6 +21,7 @@
 #include "modules/include/module_common_types_public.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
+#include "rtc_base/containers/flat_map.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -65,6 +65,7 @@ class StreamStatisticianImpl : public StreamStatisticianImplInterface {
   bool IsRetransmitOfOldPacket(const RtpPacketReceived& packet,
                                int64_t now_ms) const;
   void UpdateJitter(const RtpPacketReceived& packet, int64_t receive_time_ms);
+  void ReviseFrequencyAndJitter(int payload_type_frequency);
   // Updates StreamStatistician for out of order packets.
   // Returns true if packet considered to be out of order.
   bool UpdateOutOfOrder(const RtpPacketReceived& packet,
@@ -108,6 +109,9 @@ class StreamStatisticianImpl : public StreamStatisticianImplInterface {
   // Counter values when we sent the last report.
   int32_t last_report_cumulative_loss_;
   int64_t last_report_seq_max_;
+
+  // The sample frequency of the last received packet.
+  int last_payload_type_frequency_;
 };
 
 // Thread-safe implementation of StreamStatisticianImplInterface.
@@ -195,8 +199,7 @@ class ReceiveStatisticsImpl : public ReceiveStatistics {
   size_t last_returned_ssrc_idx_;
   std::vector<uint32_t> all_ssrcs_;
   int max_reordering_threshold_;
-  std::unordered_map<uint32_t /*ssrc*/,
-                     std::unique_ptr<StreamStatisticianImplInterface>>
+  flat_map<uint32_t /*ssrc*/, std::unique_ptr<StreamStatisticianImplInterface>>
       statisticians_;
 };
 

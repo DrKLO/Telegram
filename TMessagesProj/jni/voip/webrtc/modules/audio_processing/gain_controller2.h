@@ -11,15 +11,17 @@
 #ifndef MODULES_AUDIO_PROCESSING_GAIN_CONTROLLER2_H_
 #define MODULES_AUDIO_PROCESSING_GAIN_CONTROLLER2_H_
 
+#include <atomic>
 #include <memory>
 #include <string>
 
-#include "modules/audio_processing/agc2/adaptive_agc.h"
+#include "modules/audio_processing/agc2/adaptive_digital_gain_controller.h"
+#include "modules/audio_processing/agc2/cpu_features.h"
 #include "modules/audio_processing/agc2/gain_applier.h"
 #include "modules/audio_processing/agc2/limiter.h"
+#include "modules/audio_processing/agc2/vad_wrapper.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,27 +31,42 @@ class AudioBuffer;
 // microphone gain and/or applying digital gain.
 class GainController2 {
  public:
-  GainController2();
+  // Ctor. If `use_internal_vad` is true, an internal voice activity
+  // detector is used for digital adaptive gain.
+  GainController2(const AudioProcessing::Config::GainController2& config,
+                  int sample_rate_hz,
+                  int num_channels,
+                  bool use_internal_vad);
   GainController2(const GainController2&) = delete;
   GainController2& operator=(const GainController2&) = delete;
   ~GainController2();
 
-  void Initialize(int sample_rate_hz, int num_channels);
-  void Process(AudioBuffer* audio);
-  void NotifyAnalogLevel(int level);
+  // Sets the fixed digital gain.
+  void SetFixedGainDb(float gain_db);
 
-  void ApplyConfig(const AudioProcessing::Config::GainController2& config);
+  // Applies fixed and adaptive digital gains to `audio` and runs a limiter.
+  // If the internal VAD is used, `speech_probability` is ignored. Otherwise
+  // `speech_probability` is used for digital adaptive gain if it's available
+  // (limited to values [0.0, 1.0]). Handles input volume changes; if the caller
+  // cannot determine whether an input volume change occurred, set
+  // `input_volume_changed` to false.
+  void Process(absl::optional<float> speech_probability,
+               bool input_volume_changed,
+               AudioBuffer* audio);
+
   static bool Validate(const AudioProcessing::Config::GainController2& config);
 
+  AvailableCpuFeatures GetCpuFeatures() const { return cpu_features_; }
+
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
+  const AvailableCpuFeatures cpu_features_;
   ApmDataDumper data_dumper_;
-  AudioProcessing::Config::GainController2 config_;
-  GainApplier gain_applier_;
-  std::unique_ptr<AdaptiveAgc> adaptive_agc_;
+  GainApplier fixed_gain_applier_;
+  std::unique_ptr<VoiceActivityDetectorWrapper> vad_;
+  std::unique_ptr<AdaptiveDigitalGainController> adaptive_digital_controller_;
   Limiter limiter_;
   int calls_since_last_limiter_log_;
-  int analog_level_ = -1;
 };
 
 }  // namespace webrtc

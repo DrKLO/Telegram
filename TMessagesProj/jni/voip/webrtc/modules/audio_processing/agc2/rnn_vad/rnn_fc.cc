@@ -32,7 +32,7 @@ std::vector<float> GetScaledParams(rtc::ArrayView<const int8_t> params) {
 
 // TODO(bugs.chromium.org/10480): Hard-code optimized layout and remove this
 // function to improve setup time.
-// Casts and scales |weights| and re-arranges the layout.
+// Casts and scales `weights` and re-arranges the layout.
 std::vector<float> PreprocessWeights(rtc::ArrayView<const int8_t> weights,
                                      int output_size) {
   if (output_size == 1) {
@@ -56,10 +56,8 @@ rtc::FunctionView<float(float)> GetActivationFunction(
   switch (activation_function) {
     case ActivationFunction::kTansigApproximated:
       return ::rnnoise::TansigApproximated;
-      break;
     case ActivationFunction::kSigmoidApproximated:
       return ::rnnoise::SigmoidApproximated;
-      break;
   }
 }
 

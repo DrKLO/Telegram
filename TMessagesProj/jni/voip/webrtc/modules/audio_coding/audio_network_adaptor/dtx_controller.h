@@ -14,7 +14,6 @@
 #include "absl/types/optional.h"
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,6 +34,9 @@ class DtxController final : public Controller {
 
   ~DtxController() override;
 
+  DtxController(const DtxController&) = delete;
+  DtxController& operator=(const DtxController&) = delete;
+
   void UpdateNetworkMetrics(const NetworkMetrics& network_metrics) override;
 
   void MakeDecision(AudioEncoderRuntimeConfig* config) override;
@@ -43,7 +45,6 @@ class DtxController final : public Controller {
   const Config config_;
   bool dtx_enabled_;
   absl::optional<int> uplink_bandwidth_bps_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtxController);
 };
 
 }  // namespace webrtc

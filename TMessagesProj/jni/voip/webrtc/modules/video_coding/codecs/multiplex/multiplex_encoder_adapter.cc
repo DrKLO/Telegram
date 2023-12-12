@@ -22,7 +22,7 @@
 
 namespace webrtc {
 
-// Callback wrapper that helps distinguish returned results from |encoders_|
+// Callback wrapper that helps distinguish returned results from `encoders_`
 // instances.
 class MultiplexEncoderAdapter::AdapterEncodedImageCallback
     : public webrtc::EncodedImageCallback {
@@ -147,8 +147,6 @@ int MultiplexEncoderAdapter::InitEncode(
       encoder_info_.apply_alignment_to_all_simulcast_layers = true;
     }
 
-    encoder_info_.has_internal_source = false;
-
     encoders_.emplace_back(std::move(encoder));
   }
   encoder_info_.implementation_name += ")";
@@ -164,7 +162,7 @@ int MultiplexEncoderAdapter::Encode(
   }
 
   // The input image is forwarded as-is, unless it is a native buffer and
-  // |supports_augmented_data_| is true in which case we need to map it in order
+  // `supports_augmented_data_` is true in which case we need to map it in order
   // to access the underlying AugmentedVideoFrameBuffer.
   VideoFrame forwarded_image = input_image;
   if (supports_augmented_data_ &&
@@ -222,7 +220,7 @@ int MultiplexEncoderAdapter::Encode(
       encoders_[kYUVStream]->Encode(forwarded_image, &adjusted_frame_types);
 
   // If we do not receive an alpha frame, we send a single frame for this
-  // |picture_index_|. The receiver will receive |frame_count| as 1 which
+  // `picture_index_`. The receiver will receive `frame_count` as 1 which
   // specifies this case.
   if (rv || !has_alpha)
     return rv;
@@ -265,7 +263,7 @@ void MultiplexEncoderAdapter::SetRates(
   bitrate_allocation.SetBitrate(
       0, 0, parameters.bitrate.GetBitrate(0, 0) - augmenting_data_size_);
   for (auto& encoder : encoders_) {
-    // TODO(emircan): |framerate| is used to calculate duration in encoder
+    // TODO(emircan): `framerate` is used to calculate duration in encoder
     // instances. We report the total frame rate to keep real time for now.
     // Remove this after refactoring duration logic.
     encoder->SetRates(RateControlParameters(

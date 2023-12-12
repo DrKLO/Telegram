@@ -160,7 +160,7 @@ int WebRtcAgc_AddMic(void* state,
 
   /* apply slowly varying digital gain */
   if (stt->micVol > stt->maxAnalog) {
-    /* |maxLevel| is strictly >= |micVol|, so this condition should be
+    /* `maxLevel` is strictly >= `micVol`, so this condition should be
      * satisfied here, ensuring there is no divide-by-zero. */
     RTC_DCHECK_GT(stt->maxLevel, stt->maxAnalog);
 

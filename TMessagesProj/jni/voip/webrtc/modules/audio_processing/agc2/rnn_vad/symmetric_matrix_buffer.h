@@ -46,9 +46,9 @@ class SymmetricMatrixBuffer {
     buf_.fill(0);
   }
   // Pushes the results from the comparison between the most recent item and
-  // those that are still in the ring buffer. The first element in |values| must
+  // those that are still in the ring buffer. The first element in `values` must
   // correspond to the comparison between the most recent item and the second
-  // most recent one in the ring buffer, whereas the last element in |values|
+  // most recent one in the ring buffer, whereas the last element in `values`
   // must correspond to the comparison between the most recent item and the
   // oldest one in the ring buffer.
   void Push(rtc::ArrayView<T, S - 1> values) {
@@ -64,7 +64,7 @@ class SymmetricMatrixBuffer {
     }
   }
   // Reads the value that corresponds to comparison of two items in the ring
-  // buffer having delay |delay1| and |delay2|. The two arguments must not be
+  // buffer having delay `delay1` and `delay2`. The two arguments must not be
   // equal and both must be in {0, ..., S - 1}.
   T GetValue(int delay1, int delay2) const {
     int row = S - 1 - delay1;

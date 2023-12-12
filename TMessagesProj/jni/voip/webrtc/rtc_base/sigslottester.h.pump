@@ -35,7 +35,6 @@
 //   EXPECT_EQ("hello", capture);
 //   /* See unit-tests for more examples */
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace rtc {
@@ -47,13 +46,14 @@ class SigslotTester0 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester0::OnSignalCallback);
   }
 
+  SigslotTester0(const SigslotTester0&) = delete;
+  SigslotTester0& operator=(const SigslotTester0&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
   void OnSignalCallback() { callback_count_++; }
   int callback_count_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester0);
 };
 
 // Versions below are for testing signals that pass arguments. For all the
@@ -78,6 +78,9 @@ class SigslotTester$i : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester$i::OnSignalCallback);
   }
 
+  SigslotTester$i(const SigslotTester$i&) = delete;
+  SigslotTester$i& operator=(const SigslotTester$i&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
@@ -91,9 +94,6 @@ class SigslotTester$i : public sigslot::has_slots<> {
   int callback_count_;$for j [[
 
   C$j* capture$j[[]]_;]]
-
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester$i);
 };
 
 ]]

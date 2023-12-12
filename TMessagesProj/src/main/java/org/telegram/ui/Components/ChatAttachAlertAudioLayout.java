@@ -19,6 +19,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -280,7 +281,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         } else {
             visible = audioEntries.isEmpty();
         }
-        currentEmptyView.setVisibility(visible ? VISIBLE : GONE);
+        currentEmptyView.setVisibility(visible ? VISIBLE :  GONE);
         updateEmptyViewPosition();
     }
 
@@ -364,7 +365,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     @Override
-    void onShow() {
+    void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         layoutManager.scrollToPositionWithOffset(0, 0);
         listAdapter.notifyDataSetChanged();
     }
@@ -463,7 +464,13 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         SharedAudioCell audioCell = (SharedAudioCell) view;
         MediaController.AudioEntry audioEntry = (MediaController.AudioEntry) audioCell.getTag();
         boolean add;
-        if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
+        if (parentAlert.isStoryAudioPicker) {
+            sendPressed = true;
+            ArrayList<MessageObject> audios = new ArrayList<>();
+            audios.add(audioEntry.messageObject);
+            delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), false, 0);
+            add = true;
+        } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
             selectedAudiosOrder.remove(audioEntry);
             audioCell.setChecked(false, true);
@@ -496,7 +503,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         for (int a = 0; a < selectedAudiosOrder.size(); a++) {
             audios.add(selectedAudiosOrder.get(a).messageObject);
         }
-        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText().toString(), notify, scheduleDate);
+        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), notify, scheduleDate);
     }
 
     public void setDelegate(AudioSelectDelegate audioSelectDelegate) {
@@ -590,10 +597,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public int getItemCount() {
-            if (audioEntries.isEmpty()) {
-                return 1;
-            }
-            return audioEntries.size() + (audioEntries.isEmpty() ? 0 : 2);
+            return 1 + audioEntries.size() + (audioEntries.isEmpty() ? 0 : 1);
         }
 
         @Override
@@ -767,10 +771,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public int getItemCount() {
-            if (searchResult.isEmpty()) {
-                return 1;
-            }
-            return searchResult.size() + (searchResult.isEmpty() ? 0 : 2);
+            return 1 + searchResult.size() + (searchResult.isEmpty() ? 0 : 1);
         }
 
         @Override

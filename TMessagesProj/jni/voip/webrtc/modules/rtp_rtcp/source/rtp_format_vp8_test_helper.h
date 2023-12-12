@@ -21,7 +21,6 @@
 #include "modules/rtp_rtcp/source/rtp_format_vp8.h"
 #include "modules/video_coding/codecs/vp8/include/vp8_globals.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,6 +28,10 @@ class RtpFormatVp8TestHelper {
  public:
   RtpFormatVp8TestHelper(const RTPVideoHeaderVP8* hdr, size_t payload_len);
   ~RtpFormatVp8TestHelper();
+
+  RtpFormatVp8TestHelper(const RtpFormatVp8TestHelper&) = delete;
+  RtpFormatVp8TestHelper& operator=(const RtpFormatVp8TestHelper&) = delete;
+
   void GetAllPacketsAndCheck(RtpPacketizerVp8* packetizer,
                              rtc::ArrayView<const size_t> expected_sizes);
 
@@ -46,8 +49,6 @@ class RtpFormatVp8TestHelper {
 
   const RTPVideoHeaderVP8* const hdr_info_;
   rtc::Buffer payload_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtpFormatVp8TestHelper);
 };
 
 }  // namespace webrtc

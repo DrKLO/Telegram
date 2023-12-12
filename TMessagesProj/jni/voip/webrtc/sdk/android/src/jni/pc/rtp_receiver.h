@@ -23,7 +23,7 @@ ScopedJavaLocalRef<jobject> NativeToJavaRtpReceiver(
     JNIEnv* env,
     rtc::scoped_refptr<RtpReceiverInterface> receiver);
 
-// Takes ownership of the passed |j_receiver| and stores it as a global
+// Takes ownership of the passed `j_receiver` and stores it as a global
 // reference. Will call dispose() in the dtor.
 class JavaRtpReceiverGlobalOwner {
  public:

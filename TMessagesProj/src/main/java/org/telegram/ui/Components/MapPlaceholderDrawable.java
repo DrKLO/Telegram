@@ -22,12 +22,16 @@ public class MapPlaceholderDrawable extends Drawable {
     private Paint linePaint;
 
     public MapPlaceholderDrawable() {
+        this(Theme.getCurrentTheme().isDark());
+    }
+
+    public MapPlaceholderDrawable(boolean isDark) {
         super();
         paint = new Paint();
         linePaint = new Paint();
         linePaint.setStrokeWidth(AndroidUtilities.dp(1));
 
-        if (Theme.getCurrentTheme().isDark()) {
+        if (isDark) {
             paint.setColor(0xff1d2c4d);
             linePaint.setColor(0xff0e1626);
         } else {

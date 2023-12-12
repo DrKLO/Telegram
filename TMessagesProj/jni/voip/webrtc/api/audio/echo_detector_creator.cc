@@ -9,8 +9,8 @@
  */
 #include "api/audio/echo_detector_creator.h"
 
+#include "api/make_ref_counted.h"
 #include "modules/audio_processing/residual_echo_detector.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 

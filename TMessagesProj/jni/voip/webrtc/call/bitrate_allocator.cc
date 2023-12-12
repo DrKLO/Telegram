@@ -23,7 +23,6 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_minmax.h"
 #include "system_wrappers/include/clock.h"
-#include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
@@ -70,9 +69,9 @@ bool EnoughBitrateForAllObservers(
   return true;
 }
 
-// Splits |bitrate| evenly to observers already in |allocation|.
-// |include_zero_allocations| decides if zero allocations should be part of
-// the distribution or not. The allowed max bitrate is |max_multiplier| x
+// Splits `bitrate` evenly to observers already in `allocation`.
+// `include_zero_allocations` decides if zero allocations should be part of
+// the distribution or not. The allowed max bitrate is `max_multiplier` x
 // observer max bitrate.
 void DistributeBitrateEvenly(
     const std::vector<AllocatableTrack>& allocatable_tracks,
@@ -110,7 +109,7 @@ void DistributeBitrateEvenly(
   }
 }
 
-// From the available |bitrate|, each observer will be allocated a
+// From the available `bitrate`, each observer will be allocated a
 // proportional amount based upon its bitrate priority. If that amount is
 // more than the observer's capacity, it will be allocated its capacity, and
 // the excess bitrate is still allocated proportionally to other observers.

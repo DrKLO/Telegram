@@ -9,10 +9,13 @@
 package org.telegram.messenger.video;
 
 import android.graphics.SurfaceTexture;
+import android.opengl.GLES20;
 import android.view.Surface;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.util.ArrayList;
 
@@ -36,8 +39,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private boolean mFrameAvailable;
     private TextureRenderer mTextureRender;
 
-    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int rotation, float fps, boolean photo) {
-        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, mediaEntities, cropState, w, h, rotation, fps, photo);
+    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, String blurPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo, Integer gradientTopColor, Integer gradientBottomColor, StoryEntry.HDRInfo hdrInfo, ArrayList<StoryEntry.Part> parts) {
+        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, blurPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo, gradientTopColor, gradientBottomColor, hdrInfo, parts);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);
@@ -145,8 +148,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         mSurfaceTexture.updateTexImage();
     }
 
-    public void drawImage() {
-        mTextureRender.drawFrame(mSurfaceTexture);
+    public void drawImage(long time) {
+        mTextureRender.drawFrame(mSurfaceTexture, time);
     }
 
     @Override
@@ -164,5 +167,19 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         if (mEGL.eglGetError() != EGL10.EGL_SUCCESS) {
             throw new RuntimeException("EGL error encountered (see log)");
         }
+    }
+
+    public void changeFragmentShader(String fragmentExternalShader, String fragmentShader, boolean is300) {
+        mTextureRender.changeFragmentShader(fragmentExternalShader, fragmentShader, is300);
+    }
+
+    public boolean supportsEXTYUV() {
+        try {
+            String extensions = GLES20.glGetString(GLES20.GL_EXTENSIONS);
+            return extensions.contains("GL_EXT_YUV_target");
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
     }
 }

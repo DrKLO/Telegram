@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/accelerate.h"
 
-#include <assert.h>
 
 #include "api/array_view.h"
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
@@ -58,26 +57,26 @@ Accelerate::ReturnCodes Accelerate::CheckCriteriaAndStretch(
   if ((best_correlation > correlation_threshold) || !active_speech) {
     // Do accelerate operation by overlap add.
 
-    // Pre-calculate common multiplication with |fs_mult_|.
+    // Pre-calculate common multiplication with `fs_mult_`.
     // 120 corresponds to 15 ms.
     size_t fs_mult_120 = fs_mult_ * 120;
 
     if (fast_mode) {
-      // Fit as many multiples of |peak_index| as possible in fs_mult_120.
+      // Fit as many multiples of `peak_index` as possible in fs_mult_120.
       // TODO(henrik.lundin) Consider finding multiple correlation peaks and
       // pick the one with the longest correlation lag in this case.
       peak_index = (fs_mult_120 / peak_index) * peak_index;
     }
 
-    assert(fs_mult_120 >= peak_index);  // Should be handled in Process().
+    RTC_DCHECK_GE(fs_mult_120, peak_index);  // Should be handled in Process().
     // Copy first part; 0 to 15 ms.
     output->PushBackInterleaved(
         rtc::ArrayView<const int16_t>(input, fs_mult_120 * num_channels_));
-    // Copy the |peak_index| starting at 15 ms to |temp_vector|.
+    // Copy the `peak_index` starting at 15 ms to `temp_vector`.
     AudioMultiVector temp_vector(num_channels_);
     temp_vector.PushBackInterleaved(rtc::ArrayView<const int16_t>(
         &input[fs_mult_120 * num_channels_], peak_index * num_channels_));
-    // Cross-fade |temp_vector| onto the end of |output|.
+    // Cross-fade `temp_vector` onto the end of `output`.
     output->CrossFade(temp_vector, peak_index);
     // Copy the last unmodified part, 15 ms + pitch period until the end.
     output->PushBackInterleaved(rtc::ArrayView<const int16_t>(

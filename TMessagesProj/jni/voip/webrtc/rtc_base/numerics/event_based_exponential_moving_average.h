@@ -26,11 +26,11 @@ namespace rtc {
  * https://en.wikipedia.org/wiki/Talk:Moving_average.
  *
  * A sample gets exponentially less weight so that it's 50%
- * after |half_time| time units.
+ * after `half_time` time units.
  */
 class EventBasedExponentialMovingAverage {
  public:
-  // |half_time| specifies how much weight will be given to old samples,
+  // `half_time` specifies how much weight will be given to old samples,
   // see example above.
   explicit EventBasedExponentialMovingAverage(int half_time);
 

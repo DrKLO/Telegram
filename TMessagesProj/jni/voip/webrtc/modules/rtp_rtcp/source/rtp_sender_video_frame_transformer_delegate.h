@@ -15,7 +15,9 @@
 
 #include "api/frame_transformer_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/task_queue/task_queue_factory.h"
 #include "api/video/video_layers_allocation.h"
 #include "rtc_base/synchronization/mutex.h"
 
@@ -32,7 +34,7 @@ class RTPSenderVideoFrameTransformerDelegate : public TransformedFrameCallback {
       RTPSenderVideo* sender,
       rtc::scoped_refptr<FrameTransformerInterface> frame_transformer,
       uint32_t ssrc,
-      TaskQueueBase* send_transport_queue);
+      TaskQueueFactory* send_transport_queue);
 
   void Init();
 
@@ -45,26 +47,27 @@ class RTPSenderVideoFrameTransformerDelegate : public TransformedFrameCallback {
                       absl::optional<int64_t> expected_retransmission_time_ms);
 
   // Implements TransformedFrameCallback. Can be called on any thread. Posts
-  // the transformed frame to be sent on the |encoder_queue_|.
+  // the transformed frame to be sent on the `encoder_queue_`.
   void OnTransformedFrame(
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
-  // Delegates the call to RTPSendVideo::SendVideo on the |encoder_queue_|.
-  void SendVideo(std::unique_ptr<TransformableFrameInterface> frame) const;
+  // Delegates the call to RTPSendVideo::SendVideo on the `encoder_queue_`.
+  void SendVideo(std::unique_ptr<TransformableFrameInterface> frame) const
+      RTC_RUN_ON(encoder_queue_);
 
   // Delegates the call to RTPSendVideo::SetVideoStructureAfterTransformation
-  // under |sender_lock_|.
+  // under `sender_lock_`.
   void SetVideoStructureUnderLock(
       const FrameDependencyStructure* video_structure);
 
   // Delegates the call to
   // RTPSendVideo::SetVideoLayersAllocationAfterTransformation under
-  // |sender_lock_|.
+  // `sender_lock_`.
   void SetVideoLayersAllocationUnderLock(VideoLayersAllocation allocation);
 
-  // Unregisters and releases the |frame_transformer_| reference, and resets
-  // |sender_| under lock. Called from RTPSenderVideo destructor to prevent the
-  // |sender_| to dangle.
+  // Unregisters and releases the `frame_transformer_` reference, and resets
+  // `sender_` under lock. Called from RTPSenderVideo destructor to prevent the
+  // `sender_` to dangle.
   void Reset();
 
  protected:
@@ -76,7 +79,10 @@ class RTPSenderVideoFrameTransformerDelegate : public TransformedFrameCallback {
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_;
   const uint32_t ssrc_;
   TaskQueueBase* encoder_queue_ = nullptr;
-  TaskQueueBase* send_transport_queue_;
+  TaskQueueFactory* task_queue_factory_;
+  // Used when the encoded frames arrives without a current task queue. This can
+  // happen if a hardware encoder was used.
+  std::unique_ptr<TaskQueueBase, TaskQueueDeleter> owned_encoder_queue_;
 };
 
 }  // namespace webrtc

@@ -63,7 +63,7 @@ bool LossNotification::Create(uint8_t* packet,
 
   const size_t index_end = *index + BlockLength();
 
-  // Note: |index| updated by the function below.
+  // Note: `index` updated by the function below.
   CreateHeader(Psfb::kAfbMessageType, kPacketType, HeaderLength(), packet,
                index);
 

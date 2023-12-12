@@ -10,6 +10,7 @@
 
 #include "media/base/video_broadcaster.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "absl/types/optional.h"
@@ -30,8 +31,15 @@ void VideoBroadcaster::AddOrUpdateSink(
   RTC_DCHECK(sink != nullptr);
   webrtc::MutexLock lock(&sinks_and_wants_lock_);
   if (!FindSinkPair(sink)) {
-    // |Sink| is a new sink, which didn't receive previous frame.
+    // `Sink` is a new sink, which didn't receive previous frame.
     previous_frame_sent_to_all_sinks_ = false;
+
+    if (last_constraints_.has_value()) {
+      RTC_LOG(LS_INFO) << __func__ << " forwarding stored constraints min_fps "
+                       << last_constraints_->min_fps.value_or(-1) << " max_fps "
+                       << last_constraints_->max_fps.value_or(-1);
+      sink->OnConstraintsChanged(*last_constraints_);
+    }
   }
   VideoSourceBase::AddOrUpdateSink(sink, wants);
   UpdateWants();
@@ -100,11 +108,45 @@ void VideoBroadcaster::OnDiscardedFrame() {
   }
 }
 
+void VideoBroadcaster::ProcessConstraints(
+    const webrtc::VideoTrackSourceConstraints& constraints) {
+  webrtc::MutexLock lock(&sinks_and_wants_lock_);
+  RTC_LOG(LS_INFO) << __func__ << " min_fps "
+                   << constraints.min_fps.value_or(-1) << " max_fps "
+                   << constraints.max_fps.value_or(-1) << " broadcasting to "
+                   << sink_pairs().size() << " sinks.";
+  last_constraints_ = constraints;
+  for (auto& sink_pair : sink_pairs())
+    sink_pair.sink->OnConstraintsChanged(constraints);
+}
+
 void VideoBroadcaster::UpdateWants() {
   VideoSinkWants wants;
   wants.rotation_applied = false;
   wants.resolution_alignment = 1;
+  wants.aggregates.emplace(VideoSinkWants::Aggregates());
+  wants.is_active = false;
+
+  // TODO(webrtc:14451) : I think it makes sense to always
+  // "ignore" encoders that are not active. But that would
+  // probably require a controlled roll out with a field trials?
+  // To play it safe, only ignore inactive encoders is there is an
+  // active encoder using the new api (requested_resolution),
+  // this means that there is only a behavioural change when using new
+  // api.
+  bool ignore_inactive_encoders_old_api = false;
   for (auto& sink : sink_pairs()) {
+    if (sink.wants.is_active && sink.wants.requested_resolution.has_value()) {
+      ignore_inactive_encoders_old_api = true;
+      break;
+    }
+  }
+
+  for (auto& sink : sink_pairs()) {
+    if (!sink.wants.is_active &&
+        (sink.wants.requested_resolution || ignore_inactive_encoders_old_api)) {
+      continue;
+    }
     // wants.rotation_applied == ANY(sink.wants.rotation_applied)
     if (sink.wants.rotation_applied) {
       wants.rotation_applied = true;
@@ -128,6 +170,25 @@ void VideoBroadcaster::UpdateWants() {
     }
     wants.resolution_alignment = cricket::LeastCommonMultiple(
         wants.resolution_alignment, sink.wants.resolution_alignment);
+
+    // Pick MAX(requested_resolution) since the actual can be downscaled
+    // in encoder instead.
+    if (sink.wants.requested_resolution) {
+      if (!wants.requested_resolution) {
+        wants.requested_resolution = sink.wants.requested_resolution;
+      } else {
+        wants.requested_resolution->width =
+            std::max(wants.requested_resolution->width,
+                     sink.wants.requested_resolution->width);
+        wants.requested_resolution->height =
+            std::max(wants.requested_resolution->height,
+                     sink.wants.requested_resolution->height);
+      }
+    } else if (sink.wants.is_active) {
+      wants.aggregates->any_active_without_requested_resolution = true;
+    }
+
+    wants.is_active |= sink.wants.is_active;
   }
 
   if (wants.target_pixel_count &&

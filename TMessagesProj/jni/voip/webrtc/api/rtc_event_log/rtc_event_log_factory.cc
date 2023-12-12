@@ -27,8 +27,8 @@ RtcEventLogFactory::RtcEventLogFactory(TaskQueueFactory* task_queue_factory)
   RTC_DCHECK(task_queue_factory_);
 }
 
-std::unique_ptr<RtcEventLog> RtcEventLogFactory::CreateRtcEventLog(
-    RtcEventLog::EncodingType encoding_type) {
+std::unique_ptr<RtcEventLog> RtcEventLogFactory::Create(
+    RtcEventLog::EncodingType encoding_type) const {
 #ifdef WEBRTC_ENABLE_RTC_EVENT_LOG
   if (field_trial::IsEnabled("WebRTC-RtcEventLogKillSwitch")) {
     return std::make_unique<RtcEventLogNull>();
@@ -37,6 +37,11 @@ std::unique_ptr<RtcEventLog> RtcEventLogFactory::CreateRtcEventLog(
 #else
   return std::make_unique<RtcEventLogNull>();
 #endif
+}
+
+std::unique_ptr<RtcEventLog> RtcEventLogFactory::CreateRtcEventLog(
+    RtcEventLog::EncodingType encoding_type) {
+  return Create(encoding_type);
 }
 
 }  // namespace webrtc

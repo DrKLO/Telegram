@@ -21,6 +21,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <sched.h>
 #include <unistd.h>
 #endif
 
@@ -41,7 +42,6 @@
 #include <ctime>
 
 #include "absl/base/attributes.h"
-#include "absl/base/internal/errno_saver.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/sysinfo.h"
 #include "absl/debugging/internal/examine_stack.h"
@@ -50,8 +50,10 @@
 #ifndef _WIN32
 #define ABSL_HAVE_SIGACTION
 // Apple WatchOS and TVOS don't allow sigaltstack
-#if !(defined(TARGET_OS_WATCH) && TARGET_OS_WATCH) && \
-    !(defined(TARGET_OS_TV) && TARGET_OS_TV)
+// Apple macOS has sigaltstack, but using it makes backtrace() unusable.
+#if !(defined(TARGET_OS_OSX) && TARGET_OS_OSX) &&     \
+    !(defined(TARGET_OS_WATCH) && TARGET_OS_WATCH) && \
+    !(defined(TARGET_OS_TV) && TARGET_OS_TV) && !defined(__QNX__)
 #define ABSL_HAVE_SIGALTSTACK
 #endif
 #endif
@@ -133,11 +135,13 @@ static bool SetupAlternateStackOnce() {
 #if defined(__wasm__) || defined (__asjms__)
   const size_t page_mask = getpagesize() - 1;
 #else
-  const size_t page_mask = sysconf(_SC_PAGESIZE) - 1;
+  const size_t page_mask = static_cast<size_t>(sysconf(_SC_PAGESIZE)) - 1;
 #endif
-  size_t stack_size = (std::max(SIGSTKSZ, 65536) + page_mask) & ~page_mask;
-#if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
-    defined(THREAD_SANITIZER)
+  size_t stack_size =
+      (std::max(static_cast<size_t>(SIGSTKSZ), size_t{65536}) + page_mask) &
+      ~page_mask;
+#if defined(ABSL_HAVE_ADDRESS_SANITIZER) || \
+    defined(ABSL_HAVE_MEMORY_SANITIZER) || defined(ABSL_HAVE_THREAD_SANITIZER)
   // Account for sanitizer instrumentation requiring additional stack space.
   stack_size *= 5;
 #endif
@@ -215,21 +219,27 @@ static void InstallOneFailureHandler(FailureSignalData* data,
 #endif
 
 static void WriteToStderr(const char* data) {
-  absl::base_internal::ErrnoSaver errno_saver;
-  absl::raw_logging_internal::SafeWriteToStderr(data, strlen(data));
+  absl::raw_log_internal::AsyncSignalSafeWriteToStderr(data, strlen(data));
 }
 
-static void WriteSignalMessage(int signo, void (*writerfn)(const char*)) {
-  char buf[64];
+static void WriteSignalMessage(int signo, int cpu,
+                               void (*writerfn)(const char*)) {
+  char buf[96];
+  char on_cpu[32] = {0};
+  if (cpu != -1) {
+    snprintf(on_cpu, sizeof(on_cpu), " on cpu %d", cpu);
+  }
   const char* const signal_string =
       debugging_internal::FailureSignalToString(signo);
   if (signal_string != nullptr && signal_string[0] != '\0') {
-    snprintf(buf, sizeof(buf), "*** %s received at time=%ld ***\n",
+    snprintf(buf, sizeof(buf), "*** %s received at time=%ld%s ***\n",
              signal_string,
-             static_cast<long>(time(nullptr)));  // NOLINT(runtime/int)
+             static_cast<long>(time(nullptr)),   // NOLINT(runtime/int)
+             on_cpu);
   } else {
-    snprintf(buf, sizeof(buf), "*** Signal %d received at time=%ld ***\n",
-             signo, static_cast<long>(time(nullptr)));  // NOLINT(runtime/int)
+    snprintf(buf, sizeof(buf), "*** Signal %d received at time=%ld%s ***\n",
+             signo, static_cast<long>(time(nullptr)),  // NOLINT(runtime/int)
+             on_cpu);
   }
   writerfn(buf);
 }
@@ -269,10 +279,10 @@ ABSL_ATTRIBUTE_NOINLINE static void WriteStackTrace(
 // Called by AbslFailureSignalHandler() to write the failure info. It is
 // called once with writerfn set to WriteToStderr() and then possibly
 // with writerfn set to the user provided function.
-static void WriteFailureInfo(int signo, void* ucontext,
+static void WriteFailureInfo(int signo, void* ucontext, int cpu,
                              void (*writerfn)(const char*)) {
   WriterFnStruct writerfn_struct{writerfn};
-  WriteSignalMessage(signo, writerfn);
+  WriteSignalMessage(signo, cpu, writerfn);
   WriteStackTrace(ucontext, fsh_options.symbolize_stacktrace, WriterFnWrapper,
                   &writerfn_struct);
 }
@@ -282,7 +292,7 @@ static void WriteFailureInfo(int signo, void* ucontext,
 // some platforms.
 static void PortableSleepForSeconds(int seconds) {
 #ifdef _WIN32
-  Sleep(seconds * 1000);
+  Sleep(static_cast<DWORD>(seconds * 1000));
 #else
   struct timespec sleep_time;
   sleep_time.tv_sec = seconds;
@@ -316,9 +326,9 @@ static void AbslFailureSignalHandler(int signo, siginfo_t*, void* ucontext) {
 
   const GetTidType this_tid = absl::base_internal::GetTID();
   GetTidType previous_failed_tid = 0;
-  if (!failed_tid.compare_exchange_strong(
-          previous_failed_tid, static_cast<intptr_t>(this_tid),
-          std::memory_order_acq_rel, std::memory_order_relaxed)) {
+  if (!failed_tid.compare_exchange_strong(previous_failed_tid, this_tid,
+                                          std::memory_order_acq_rel,
+                                          std::memory_order_relaxed)) {
     ABSL_RAW_LOG(
         ERROR,
         "Signal %d raised at PC=%p while already in AbslFailureSignalHandler()",
@@ -334,22 +344,31 @@ static void AbslFailureSignalHandler(int signo, siginfo_t*, void* ucontext) {
     }
   }
 
+  // Increase the chance that the CPU we report was the same CPU on which the
+  // signal was received by doing this as early as possible, i.e. after
+  // verifying that this is not a recursive signal handler invocation.
+  int my_cpu = -1;
+#ifdef ABSL_HAVE_SCHED_GETCPU
+  my_cpu = sched_getcpu();
+#endif
+
 #ifdef ABSL_HAVE_ALARM
   // Set an alarm to abort the program in case this code hangs or deadlocks.
   if (fsh_options.alarm_on_failure_secs > 0) {
     alarm(0);  // Cancel any existing alarms.
     signal(SIGALRM, ImmediateAbortSignalHandler);
-    alarm(fsh_options.alarm_on_failure_secs);
+    alarm(static_cast<unsigned int>(fsh_options.alarm_on_failure_secs));
   }
 #endif
 
   // First write to stderr.
-  WriteFailureInfo(signo, ucontext, WriteToStderr);
+  WriteFailureInfo(signo, ucontext, my_cpu, WriteToStderr);
 
   // Riskier code (because it is less likely to be async-signal-safe)
   // goes after this point.
   if (fsh_options.writerfn != nullptr) {
-    WriteFailureInfo(signo, ucontext, fsh_options.writerfn);
+    WriteFailureInfo(signo, ucontext, my_cpu, fsh_options.writerfn);
+    fsh_options.writerfn(nullptr);
   }
 
   if (fsh_options.call_previous_handler) {

@@ -88,7 +88,7 @@ void EchoAudibility::UpdateRenderNoiseEstimator(
 
 bool EchoAudibility::IsRenderTooLow(const BlockBuffer& block_buffer) {
   const int num_render_channels =
-      static_cast<int>(block_buffer.buffer[0][0].size());
+      static_cast<int>(block_buffer.buffer[0].NumChannels());
   bool too_low = false;
   const int render_block_write_current = block_buffer.write;
   if (render_block_write_current == render_block_write_prev_) {
@@ -98,7 +98,8 @@ bool EchoAudibility::IsRenderTooLow(const BlockBuffer& block_buffer) {
          idx = block_buffer.IncIndex(idx)) {
       float max_abs_over_channels = 0.f;
       for (int ch = 0; ch < num_render_channels; ++ch) {
-        auto block = block_buffer.buffer[idx][0][ch];
+        rtc::ArrayView<const float, kBlockSize> block =
+            block_buffer.buffer[idx].View(/*band=*/0, /*channel=*/ch);
         auto r = std::minmax_element(block.cbegin(), block.cend());
         float max_abs_channel =
             std::max(std::fabs(*r.first), std::fabs(*r.second));

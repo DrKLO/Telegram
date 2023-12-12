@@ -65,8 +65,46 @@ std::vector<webrtc::RtpExtension> GetDefaultEnabledRtpHeaderExtensions(
   return extensions;
 }
 
+webrtc::RTCError CheckScalabilityModeValues(
+    const webrtc::RtpParameters& rtp_parameters,
+    rtc::ArrayView<cricket::VideoCodec> codecs) {
+  using webrtc::RTCErrorType;
+
+  if (codecs.empty()) {
+    // This is an audio sender or an extra check in the stack where the codec
+    // list is not available and we can't check the scalability_mode values.
+    return webrtc::RTCError::OK();
+  }
+
+  for (size_t i = 0; i < rtp_parameters.encodings.size(); ++i) {
+    if (rtp_parameters.encodings[i].scalability_mode) {
+      bool scalabilityModeFound = false;
+      for (const cricket::VideoCodec& codec : codecs) {
+        for (const auto& scalability_mode : codec.scalability_modes) {
+          if (ScalabilityModeToString(scalability_mode) ==
+              *rtp_parameters.encodings[i].scalability_mode) {
+            scalabilityModeFound = true;
+            break;
+          }
+        }
+        if (scalabilityModeFound)
+          break;
+      }
+
+      if (!scalabilityModeFound) {
+        LOG_AND_RETURN_ERROR(RTCErrorType::UNSUPPORTED_OPERATION,
+                             "Attempted to set RtpParameters scalabilityMode "
+                             "to an unsupported value for the current codecs.");
+      }
+    }
+  }
+
+  return webrtc::RTCError::OK();
+}
+
 webrtc::RTCError CheckRtpParametersValues(
-    const webrtc::RtpParameters& rtp_parameters) {
+    const webrtc::RtpParameters& rtp_parameters,
+    rtc::ArrayView<cricket::VideoCodec> codecs) {
   using webrtc::RTCErrorType;
 
   for (size_t i = 0; i < rtp_parameters.encodings.size(); ++i) {
@@ -106,23 +144,29 @@ webrtc::RTCError CheckRtpParametersValues(
                              "num_temporal_layers to an invalid number.");
       }
     }
-    if (i > 0 && (rtp_parameters.encodings[i].num_temporal_layers !=
-                  rtp_parameters.encodings[i - 1].num_temporal_layers)) {
-      LOG_AND_RETURN_ERROR(
-          RTCErrorType::INVALID_MODIFICATION,
-          "Attempted to set RtpParameters num_temporal_layers "
-          "at encoding layer i: " +
-              rtc::ToString(i) +
-              " to a different value than other encoding layers.");
+
+    if (rtp_parameters.encodings[i].requested_resolution &&
+        rtp_parameters.encodings[i].scale_resolution_down_by) {
+      LOG_AND_RETURN_ERROR(RTCErrorType::INVALID_RANGE,
+                           "Attempted to set scale_resolution_down_by and "
+                           "requested_resolution simultaniously.");
     }
   }
 
-  return webrtc::RTCError::OK();
+  return CheckScalabilityModeValues(rtp_parameters, codecs);
 }
 
 webrtc::RTCError CheckRtpParametersInvalidModificationAndValues(
     const webrtc::RtpParameters& old_rtp_parameters,
     const webrtc::RtpParameters& rtp_parameters) {
+  return CheckRtpParametersInvalidModificationAndValues(old_rtp_parameters,
+                                                        rtp_parameters, {});
+}
+
+webrtc::RTCError CheckRtpParametersInvalidModificationAndValues(
+    const webrtc::RtpParameters& old_rtp_parameters,
+    const webrtc::RtpParameters& rtp_parameters,
+    rtc::ArrayView<cricket::VideoCodec> codecs) {
   using webrtc::RTCErrorType;
   if (rtp_parameters.encodings.size() != old_rtp_parameters.encodings.size()) {
     LOG_AND_RETURN_ERROR(
@@ -157,11 +201,11 @@ webrtc::RTCError CheckRtpParametersInvalidModificationAndValues(
                          "Attempted to set RtpParameters with modified SSRC");
   }
 
-  return CheckRtpParametersValues(rtp_parameters);
+  return CheckRtpParametersValues(rtp_parameters, codecs);
 }
 
 CompositeMediaEngine::CompositeMediaEngine(
-    std::unique_ptr<webrtc::WebRtcKeyValueConfig> trials,
+    std::unique_ptr<webrtc::FieldTrialsView> trials,
     std::unique_ptr<VoiceEngineInterface> audio_engine,
     std::unique_ptr<VideoEngineInterface> video_engine)
     : trials_(std::move(trials)),

@@ -17,9 +17,14 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.core.widget.NestedScrollView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -43,10 +48,6 @@ import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.ShareDialogCell;
 
 import java.util.ArrayList;
-
-import androidx.core.widget.NestedScrollView;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class JoinCallAlert extends BottomSheet {
 
@@ -121,12 +122,13 @@ public class JoinCallAlert extends BottomSheet {
 
             background = new View(context);
             if (hasBackground) {
-                background.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+                background.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
             }
             addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, withoutBackground ? 0 : 16, 16, 16));
 
             for (int a = 0; a < 2; a++) {
                 textView[a] = new TextView(context);
+                textView[a].setFocusable(false);
                 textView[a].setLines(1);
                 textView[a].setSingleLine(true);
                 textView[a].setGravity(Gravity.CENTER_HORIZONTAL);
@@ -138,6 +140,7 @@ public class JoinCallAlert extends BottomSheet {
                 } else {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 }
+                textView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 textView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView[a].setPadding(0, 0, 0, hasBackground ? 0 : AndroidUtilities.dp(13));
                 addView(textView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 0));
@@ -152,7 +155,10 @@ public class JoinCallAlert extends BottomSheet {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(hasBackground ? 80 : 50), MeasureSpec.EXACTLY));
         }
 
+        private CharSequence text;
+
         public void setText(CharSequence text, boolean animated) {
+            this.text = text;
             if (!animated) {
                 textView[0].setText(text);
             } else {
@@ -179,6 +185,16 @@ public class JoinCallAlert extends BottomSheet {
                 animatorSet.start();
             }
         }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName("android.widget.Button");
+            info.setClickable(true);
+            if (text != null) {
+//                info.setText(text);
+            }
+        }
     }
 
     public static void checkFewUsers(Context context, long did, AccountInstance accountInstance, MessagesStorage.BooleanCallback callback) {
@@ -186,7 +202,7 @@ public class JoinCallAlert extends BottomSheet {
             callback.run(cachedChats.size() == 1);
             return;
         }
-        final AlertDialog progressDialog = new AlertDialog(context, 3);
+        final AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
         TLRPC.TL_phone_getGroupCallJoinAs req = new TLRPC.TL_phone_getGroupCallJoinAs();
         req.peer = accountInstance.getMessagesController().getInputPeer(did);
         int reqId = accountInstance.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -226,7 +242,7 @@ public class JoinCallAlert extends BottomSheet {
                 showAlert(context, did, cachedChats, fragment, type, scheduledPeer, delegate);
             }
         } else {
-            final AlertDialog progressDialog = new AlertDialog(context, 3);
+            final AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
             TLRPC.TL_phone_getGroupCallJoinAs req = new TLRPC.TL_phone_getGroupCallJoinAs();
             req.peer = accountInstance.getMessagesController().getInputPeer(did);
             int reqId = accountInstance.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -261,6 +277,10 @@ public class JoinCallAlert extends BottomSheet {
     }
 
     private static void showAlert(Context context, long dialogId, ArrayList<TLRPC.Peer> peers, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
+        if (type == TYPE_CREATE) {
+            CreateGroupCallBottomSheet.show(peers, fragment, dialogId, delegate);
+            return;
+        }
         JoinCallAlert alert = new JoinCallAlert(context, dialogId, peers, type, scheduledPeer, delegate);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
@@ -278,6 +298,7 @@ public class JoinCallAlert extends BottomSheet {
         this.delegate = delegate;
         currentType = type;
 
+        int backgroundColor;
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         if (type == TYPE_DISPLAY) {
             if (VoIPService.getSharedInstance() != null) {
@@ -301,11 +322,12 @@ public class JoinCallAlert extends BottomSheet {
             } else {
                 selectedPeer = chats.get(0);
             }
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_inviteMembersBackground), PorterDuff.Mode.MULTIPLY));
+            shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = Theme.getColor(Theme.key_voipgroup_inviteMembersBackground), PorterDuff.Mode.MULTIPLY));
         } else {
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+            shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
             selectedPeer = chats.get(0);
         }
+        fixNavigationBar(backgroundColor);
 
         ViewGroup internalLayout;
         if (currentType == TYPE_CREATE) {
@@ -437,6 +459,7 @@ public class JoinCallAlert extends BottomSheet {
         listView.setVerticalScrollBarEnabled(false);
         listView.setClipToPadding(false);
         listView.setEnabled(true);
+        listView.setSelectorDrawableColor(0);
         listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -679,7 +702,7 @@ public class JoinCallAlert extends BottomSheet {
                 view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE, null);
                 view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(100)));
             } else {
-                view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY);
+                view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY, null);
             }
             return new RecyclerListView.Holder(view);
         }

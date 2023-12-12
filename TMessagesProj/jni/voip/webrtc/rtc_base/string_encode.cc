@@ -12,6 +12,8 @@
 
 #include <cstdio>
 
+#include "absl/strings/string_view.h"
+#include "api/array_view.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
 
@@ -49,18 +51,18 @@ size_t hex_encode_output_length(size_t srclen, char delimiter) {
 }
 
 // hex_encode shows the hex representation of binary data in ascii, with
-// |delimiter| between bytes, or none if |delimiter| == 0.
+// `delimiter` between bytes, or none if `delimiter` == 0.
 void hex_encode_with_delimiter(char* buffer,
-                               const char* csource,
-                               size_t srclen,
+                               absl::string_view source,
                                char delimiter) {
   RTC_DCHECK(buffer);
 
   // Init and check bounds.
   const unsigned char* bsource =
-      reinterpret_cast<const unsigned char*>(csource);
+      reinterpret_cast<const unsigned char*>(source.data());
   size_t srcpos = 0, bufpos = 0;
 
+  size_t srclen = source.length();
   while (srcpos < srclen) {
     unsigned char ch = bsource[srcpos++];
     buffer[bufpos] = hex_encode((ch >> 4) & 0xF);
@@ -77,43 +79,30 @@ void hex_encode_with_delimiter(char* buffer,
 
 }  // namespace
 
-std::string hex_encode(const std::string& str) {
-  return hex_encode(str.c_str(), str.size());
+std::string hex_encode(absl::string_view str) {
+  return hex_encode_with_delimiter(str, 0);
 }
 
-std::string hex_encode(const char* source, size_t srclen) {
-  return hex_encode_with_delimiter(source, srclen, 0);
-}
-
-std::string hex_encode_with_delimiter(const char* source,
-                                      size_t srclen,
+std::string hex_encode_with_delimiter(absl::string_view source,
                                       char delimiter) {
-  std::string s(hex_encode_output_length(srclen, delimiter), 0);
-  hex_encode_with_delimiter(&s[0], source, srclen, delimiter);
+  std::string s(hex_encode_output_length(source.length(), delimiter), 0);
+  hex_encode_with_delimiter(&s[0], source, delimiter);
   return s;
 }
 
-size_t hex_decode(char* cbuffer,
-                  size_t buflen,
-                  const char* source,
-                  size_t srclen) {
-  return hex_decode_with_delimiter(cbuffer, buflen, source, srclen, 0);
-}
-
-size_t hex_decode_with_delimiter(char* cbuffer,
-                                 size_t buflen,
-                                 const char* source,
-                                 size_t srclen,
+size_t hex_decode_with_delimiter(ArrayView<char> cbuffer,
+                                 absl::string_view source,
                                  char delimiter) {
-  RTC_DCHECK(cbuffer);  // TODO(kwiberg): estimate output size
-  if (buflen == 0)
+  if (cbuffer.empty())
     return 0;
 
   // Init and bounds check.
-  unsigned char* bbuffer = reinterpret_cast<unsigned char*>(cbuffer);
+  unsigned char* bbuffer = reinterpret_cast<unsigned char*>(cbuffer.data());
   size_t srcpos = 0, bufpos = 0;
+  size_t srclen = source.length();
+
   size_t needed = (delimiter) ? (srclen + 1) / 3 : srclen / 2;
-  if (buflen < needed)
+  if (cbuffer.size() < needed)
     return 0;
 
   while (srcpos < srclen) {
@@ -141,18 +130,11 @@ size_t hex_decode_with_delimiter(char* cbuffer,
   return bufpos;
 }
 
-size_t hex_decode(char* buffer, size_t buflen, const std::string& source) {
-  return hex_decode_with_delimiter(buffer, buflen, source, 0);
-}
-size_t hex_decode_with_delimiter(char* buffer,
-                                 size_t buflen,
-                                 const std::string& source,
-                                 char delimiter) {
-  return hex_decode_with_delimiter(buffer, buflen, source.c_str(),
-                                   source.length(), delimiter);
+size_t hex_decode(ArrayView<char> buffer, absl::string_view source) {
+  return hex_decode_with_delimiter(buffer, source, 0);
 }
 
-size_t tokenize(const std::string& source,
+size_t tokenize(absl::string_view source,
                 char delimiter,
                 std::vector<std::string>* fields) {
   fields->clear();
@@ -160,146 +142,61 @@ size_t tokenize(const std::string& source,
   for (size_t i = 0; i < source.length(); ++i) {
     if (source[i] == delimiter) {
       if (i != last) {
-        fields->push_back(source.substr(last, i - last));
+        fields->emplace_back(source.substr(last, i - last));
       }
       last = i + 1;
     }
   }
   if (last != source.length()) {
-    fields->push_back(source.substr(last, source.length() - last));
+    fields->emplace_back(source.substr(last, source.length() - last));
   }
   return fields->size();
 }
 
-size_t tokenize_with_empty_tokens(const std::string& source,
-                                  char delimiter,
-                                  std::vector<std::string>* fields) {
-  fields->clear();
-  size_t last = 0;
-  for (size_t i = 0; i < source.length(); ++i) {
-    if (source[i] == delimiter) {
-      fields->push_back(source.substr(last, i - last));
-      last = i + 1;
-    }
-  }
-  fields->push_back(source.substr(last, source.length() - last));
-  return fields->size();
-}
-
-size_t tokenize_append(const std::string& source,
-                       char delimiter,
-                       std::vector<std::string>* fields) {
-  if (!fields)
-    return 0;
-
-  std::vector<std::string> new_fields;
-  tokenize(source, delimiter, &new_fields);
-  fields->insert(fields->end(), new_fields.begin(), new_fields.end());
-  return fields->size();
-}
-
-size_t tokenize(const std::string& source,
-                char delimiter,
-                char start_mark,
-                char end_mark,
-                std::vector<std::string>* fields) {
-  if (!fields)
-    return 0;
-  fields->clear();
-
-  std::string remain_source = source;
-  while (!remain_source.empty()) {
-    size_t start_pos = remain_source.find(start_mark);
-    if (std::string::npos == start_pos)
-      break;
-    std::string pre_mark;
-    if (start_pos > 0) {
-      pre_mark = remain_source.substr(0, start_pos - 1);
-    }
-
-    ++start_pos;
-    size_t end_pos = remain_source.find(end_mark, start_pos);
-    if (std::string::npos == end_pos)
-      break;
-
-    // We have found the matching marks. First tokenize the pre-mask. Then add
-    // the marked part as a single field. Finally, loop back for the post-mark.
-    tokenize_append(pre_mark, delimiter, fields);
-    fields->push_back(remain_source.substr(start_pos, end_pos - start_pos));
-    remain_source = remain_source.substr(end_pos + 1);
-  }
-
-  return tokenize_append(remain_source, delimiter, fields);
-}
-
-bool tokenize_first(const std::string& source,
+bool tokenize_first(absl::string_view source,
                     const char delimiter,
                     std::string* token,
                     std::string* rest) {
   // Find the first delimiter
   size_t left_pos = source.find(delimiter);
-  if (left_pos == std::string::npos) {
+  if (left_pos == absl::string_view::npos) {
     return false;
   }
 
   // Look for additional occurrances of delimiter.
   size_t right_pos = left_pos + 1;
-  while (source[right_pos] == delimiter) {
+  while (right_pos < source.size() && source[right_pos] == delimiter) {
     right_pos++;
   }
 
-  *token = source.substr(0, left_pos);
-  *rest = source.substr(right_pos);
+  *token = std::string(source.substr(0, left_pos));
+  *rest = std::string(source.substr(right_pos));
   return true;
 }
 
-std::string join(const std::vector<std::string>& source, char delimiter) {
-  if (source.size() == 0) {
-    return std::string();
-  }
-  // Find length of the string to be returned to pre-allocate memory.
-  size_t source_string_length = 0;
-  for (size_t i = 0; i < source.size(); ++i) {
-    source_string_length += source[i].length();
-  }
-
-  // Build the joined string.
-  std::string joined_string;
-  joined_string.reserve(source_string_length + source.size() - 1);
-  for (size_t i = 0; i < source.size(); ++i) {
-    if (i != 0) {
-      joined_string += delimiter;
-    }
-    joined_string += source[i];
-  }
-  return joined_string;
-}
-
-size_t split(const std::string& source,
-             char delimiter,
-             std::vector<std::string>* fields) {
-  RTC_DCHECK(fields);
-  fields->clear();
+std::vector<absl::string_view> split(absl::string_view source, char delimiter) {
+  std::vector<absl::string_view> fields;
   size_t last = 0;
   for (size_t i = 0; i < source.length(); ++i) {
     if (source[i] == delimiter) {
-      fields->push_back(source.substr(last, i - last));
+      fields.push_back(source.substr(last, i - last));
       last = i + 1;
     }
   }
-  fields->push_back(source.substr(last, source.length() - last));
-  return fields->size();
+  fields.push_back(source.substr(last));
+  return fields;
 }
 
 std::string ToString(const bool b) {
   return b ? "true" : "false";
 }
 
-std::string ToString(const char* const s) {
+std::string ToString(absl::string_view s) {
   return std::string(s);
 }
-std::string ToString(const std::string s) {
-  return s;
+
+std::string ToString(const char* s) {
+  return std::string(s);
 }
 
 std::string ToString(const short s) {
@@ -372,7 +269,7 @@ std::string ToString(const void* const p) {
   return std::string(&buf[0], len);
 }
 
-bool FromString(const std::string& s, bool* b) {
+bool FromString(absl::string_view s, bool* b) {
   if (s == "false") {
     *b = false;
     return true;

@@ -37,7 +37,7 @@ class SctpDataChannel;
 
 // TODO(deadbeef): Get rid of this and have SctpDataChannel depend on
 // SctpTransportInternal (pure virtual SctpTransport interface) instead.
-class SctpDataChannelProviderInterface {
+class SctpDataChannelControllerInterface {
  public:
   // Sends the data to the transport.
   virtual bool SendData(int sid,
@@ -57,14 +57,14 @@ class SctpDataChannelProviderInterface {
   virtual bool ReadyToSendData() const = 0;
 
  protected:
-  virtual ~SctpDataChannelProviderInterface() {}
+  virtual ~SctpDataChannelControllerInterface() {}
 };
 
 // TODO(tommi): Change to not inherit from DataChannelInit but to have it as
 // a const member. Block access to the 'id' member since it cannot be const.
 struct InternalDataChannelInit : public DataChannelInit {
   enum OpenHandshakeRole { kOpener, kAcker, kNone };
-  // The default role is kOpener because the default |negotiated| is false.
+  // The default role is kOpener because the default `negotiated` is false.
   InternalDataChannelInit() : open_handshake_role(kOpener) {}
   explicit InternalDataChannelInit(const DataChannelInit& base);
   OpenHandshakeRole open_handshake_role;
@@ -73,7 +73,7 @@ struct InternalDataChannelInit : public DataChannelInit {
 // Helper class to allocate unique IDs for SCTP DataChannels.
 class SctpSidAllocator {
  public:
-  // Gets the first unused odd/even id based on the DTLS role. If |role| is
+  // Gets the first unused odd/even id based on the DTLS role. If `role` is
   // SSL_CLIENT, the allocated id starts from 0 and takes even numbers;
   // otherwise, the id starts from 1 and takes odd numbers.
   // Returns false if no ID can be allocated.
@@ -82,11 +82,11 @@ class SctpSidAllocator {
   // Attempts to reserve a specific sid. Returns false if it's unavailable.
   bool ReserveSid(int sid);
 
-  // Indicates that |sid| isn't in use any more, and is thus available again.
+  // Indicates that `sid` isn't in use any more, and is thus available again.
   void ReleaseSid(int sid);
 
  private:
-  // Checks if |sid| is available to be assigned to a new SCTP data channel.
+  // Checks if `sid` is available to be assigned to a new SCTP data channel.
   bool IsSidAvailable(int sid) const;
 
   std::set<int> used_sids_;
@@ -120,7 +120,7 @@ class SctpDataChannel : public DataChannelInterface,
                         public sigslot::has_slots<> {
  public:
   static rtc::scoped_refptr<SctpDataChannel> Create(
-      SctpDataChannelProviderInterface* provider,
+      SctpDataChannelControllerInterface* controller,
       const std::string& label,
       const InternalDataChannelInit& config,
       rtc::Thread* signaling_thread,
@@ -130,6 +130,9 @@ class SctpDataChannel : public DataChannelInterface,
   // handed out to external callers.
   static rtc::scoped_refptr<DataChannelInterface> CreateProxy(
       rtc::scoped_refptr<SctpDataChannel> channel);
+
+  // Invalidate the link to the controller (DataChannelController);
+  void DetachFromController();
 
   void RegisterObserver(DataChannelObserver* observer) override;
   void UnregisterObserver() override;
@@ -177,13 +180,11 @@ class SctpDataChannel : public DataChannelInterface,
   void CloseAbruptlyWithError(RTCError error);
   // Specializations of CloseAbruptlyWithError
   void CloseAbruptlyWithDataChannelFailure(const std::string& message);
-  void CloseAbruptlyWithSctpCauseCode(const std::string& message,
-                                      uint16_t cause_code);
 
-  // Slots for provider to connect signals to.
+  // Slots for controller to connect signals to.
   //
   // TODO(deadbeef): Make these private once we're hooking up signals ourselves,
-  // instead of relying on SctpDataChannelProviderInterface.
+  // instead of relying on SctpDataChannelControllerInterface.
 
   // Called when the SctpTransport's ready to use. That can happen when we've
   // finished negotiation, or if the channel was created after negotiation has
@@ -209,7 +210,7 @@ class SctpDataChannel : public DataChannelInterface,
   // Called when the transport channel is unusable.
   // This method makes sure the DataChannel is disconnected and changes state
   // to kClosed.
-  void OnTransportChannelClosed();
+  void OnTransportChannelClosed(RTCError error);
 
   DataChannelStats GetStats() const;
 
@@ -225,7 +226,7 @@ class SctpDataChannel : public DataChannelInterface,
 
  protected:
   SctpDataChannel(const InternalDataChannelInit& config,
-                  SctpDataChannelProviderInterface* client,
+                  SctpDataChannelControllerInterface* client,
                   const std::string& label,
                   rtc::Thread* signaling_thread,
                   rtc::Thread* network_thread);
@@ -244,7 +245,7 @@ class SctpDataChannel : public DataChannelInterface,
   bool Init();
   void UpdateState();
   void SetState(DataState state);
-  void DisconnectFromProvider();
+  void DisconnectFromTransport();
 
   void DeliverQueuedReceivedData();
 
@@ -268,14 +269,12 @@ class SctpDataChannel : public DataChannelInterface,
   uint64_t bytes_sent_ RTC_GUARDED_BY(signaling_thread_) = 0;
   uint32_t messages_received_ RTC_GUARDED_BY(signaling_thread_) = 0;
   uint64_t bytes_received_ RTC_GUARDED_BY(signaling_thread_) = 0;
-  // Number of bytes of data that have been queued using Send(). Increased
-  // before each transport send and decreased after each successful send.
-  uint64_t buffered_amount_ RTC_GUARDED_BY(signaling_thread_) = 0;
-  SctpDataChannelProviderInterface* const provider_
+  SctpDataChannelControllerInterface* const controller_
       RTC_GUARDED_BY(signaling_thread_);
+  bool controller_detached_ RTC_GUARDED_BY(signaling_thread_) = false;
   HandshakeState handshake_state_ RTC_GUARDED_BY(signaling_thread_) =
       kHandshakeInit;
-  bool connected_to_provider_ RTC_GUARDED_BY(signaling_thread_) = false;
+  bool connected_to_transport_ RTC_GUARDED_BY(signaling_thread_) = false;
   bool writable_ RTC_GUARDED_BY(signaling_thread_) = false;
   // Did we already start the graceful SCTP closing procedure?
   bool started_closing_procedure_ RTC_GUARDED_BY(signaling_thread_) = false;
@@ -285,6 +284,11 @@ class SctpDataChannel : public DataChannelInterface,
   PacketQueue queued_received_data_ RTC_GUARDED_BY(signaling_thread_);
   PacketQueue queued_send_data_ RTC_GUARDED_BY(signaling_thread_);
 };
+
+// Downcast a PeerConnectionInterface that points to a proxy object
+// to its underlying SctpDataChannel object. For testing only.
+SctpDataChannel* DowncastProxiedDataChannelInterfaceToSctpDataChannelForTesting(
+    DataChannelInterface* channel);
 
 }  // namespace webrtc
 

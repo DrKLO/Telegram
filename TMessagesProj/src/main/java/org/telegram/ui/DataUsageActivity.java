@@ -27,6 +27,9 @@ import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -45,9 +48,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class DataUsageActivity extends BaseFragment {
 
@@ -462,7 +462,7 @@ public class DataUsageActivity extends BaseFragment {
             viewPages[a].listView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
             viewPages[a].listView.setItemAnimator(null);
             viewPages[a].listView.setClipToPadding(false);
-            viewPages[a].listView.setSectionsType(2);
+            viewPages[a].listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
             viewPages[a].listView.setLayoutManager(layoutManager);
             viewPages[a].addView(viewPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             viewPages[a].listView.setOnItemClickListener((view, position) -> {
@@ -483,7 +483,7 @@ public class DataUsageActivity extends BaseFragment {
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 }
             });
@@ -735,18 +735,18 @@ public class DataUsageActivity extends BaseFragment {
             switch (holder.getItemViewType()) {
                 case 0: {
                     if (position == resetSection2Row) {
-                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else {
-                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 }
                 case 1: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == resetRow) {
-                        textCell.setTag(Theme.key_windowBackgroundWhiteRedText2);
+                        textCell.setTag(Theme.key_text_RedRegular);
                         textCell.setText(LocaleController.getString("ResetStatistics", R.string.ResetStatistics), false);
-                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
+                        textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     } else {
                         int type;
                         textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
@@ -806,7 +806,7 @@ public class DataUsageActivity extends BaseFragment {
                 }
                 case 3: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    cell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    cell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     cell.setText(LocaleController.formatString("NetworkUsageSince", R.string.NetworkUsageSince, LocaleController.getInstance().formatterStats.format(StatsController.getInstance(currentAccount).getResetStatsDate(currentType))));
                     break;
                 }
@@ -889,7 +889,7 @@ public class DataUsageActivity extends BaseFragment {
 
             arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
             arrayList.add(new ThemeDescription(viewPages[a].listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
-            arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText2));
+            arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
         }
 
         return arrayList;

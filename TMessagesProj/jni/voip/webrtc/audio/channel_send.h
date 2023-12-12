@@ -18,6 +18,7 @@
 #include "api/audio/audio_frame.h"
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/crypto/crypto_options.h"
+#include "api/field_trials_view.h"
 #include "api/frame_transformer_interface.h"
 #include "api/function_view.h"
 #include "api/task_queue/task_queue_factory.h"
@@ -28,7 +29,6 @@
 namespace webrtc {
 
 class FrameEncryptorInterface;
-class ProcessThread;
 class RtcEventLog;
 class RtpTransportControllerSendInterface;
 
@@ -39,6 +39,8 @@ struct CallSendStatistics {
   // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedbytessent
   uint64_t retransmitted_bytes_sent;
   int packetsSent;
+  // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalpacketsenddelay
+  TimeDelta total_packet_send_delay = TimeDelta::Zero();
   // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedpacketssent
   uint64_t retransmitted_packets_sent;
   // A snapshot of Report Blocks with additional data of interest to statistics.
@@ -46,6 +48,7 @@ struct CallSendStatistics {
   // ReportBlockData represents the latest Report Block that was received for
   // that pair.
   std::vector<ReportBlockData> report_block_datas;
+  uint32_t nacks_rcvd;
 };
 
 // See section 6.4.2 in http://www.ietf.org/rfc/rfc3550.txt for details.
@@ -91,19 +94,19 @@ class ChannelSendInterface {
                                                 int payload_frequency) = 0;
   virtual bool SendTelephoneEventOutband(int event, int duration_ms) = 0;
   virtual void OnBitrateAllocation(BitrateAllocationUpdate update) = 0;
-  virtual int GetBitrate() const = 0;
+  virtual int GetTargetBitrate() const = 0;
   virtual void SetInputMute(bool muted) = 0;
 
   virtual void ProcessAndEncodeAudio(
       std::unique_ptr<AudioFrame> audio_frame) = 0;
   virtual RtpRtcpInterface* GetRtpRtcp() const = 0;
 
-  // In RTP we currently rely on RTCP packets (|ReceivedRTCPPacket|) to inform
+  // In RTP we currently rely on RTCP packets (`ReceivedRTCPPacket`) to inform
   // about RTT.
   // In media transport we rely on the TargetTransferRateObserver instead.
   // In other words, if you are using RTP, you should expect
-  // |ReceivedRTCPPacket| to be called, if you are using media transport,
-  // |OnTargetTransferRate| will be called.
+  // `ReceivedRTCPPacket` to be called, if you are using media transport,
+  // `OnTargetTransferRate` will be called.
   //
   // In future, RTP media will move to the media transport implementation and
   // these conditions will be removed.
@@ -126,7 +129,6 @@ class ChannelSendInterface {
 std::unique_ptr<ChannelSendInterface> CreateChannelSend(
     Clock* clock,
     TaskQueueFactory* task_queue_factory,
-    ProcessThread* module_process_thread,
     Transport* rtp_transport,
     RtcpRttStats* rtcp_rtt_stats,
     RtcEventLog* rtc_event_log,
@@ -136,7 +138,8 @@ std::unique_ptr<ChannelSendInterface> CreateChannelSend(
     int rtcp_report_interval_ms,
     uint32_t ssrc,
     rtc::scoped_refptr<FrameTransformerInterface> frame_transformer,
-    TransportFeedbackObserver* feedback_observer);
+    TransportFeedbackObserver* feedback_observer,
+    const FieldTrialsView& field_trials);
 
 }  // namespace voe
 }  // namespace webrtc

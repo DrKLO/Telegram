@@ -47,7 +47,7 @@ class RateTracker {
   // these samples, and increments the count for that bucket by sample_count.
   void AddSamples(int64_t sample_count);
 
-  // Increment count for bucket at |current_time_ms|.
+  // Increment count for bucket at `current_time_ms`.
   void AddSamplesAtTime(int64_t current_time_ms, int64_t sample_count);
 
  protected:

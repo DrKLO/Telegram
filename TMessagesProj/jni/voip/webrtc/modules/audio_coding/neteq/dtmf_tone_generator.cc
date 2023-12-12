@@ -119,7 +119,7 @@ int DtmfToneGenerator::Init(int fs, int event, int attenuation) {
   } else if (fs == 48000) {
     fs_index = 3;
   } else {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     fs_index = 1;  // Default to 8000 Hz.
   }
 
@@ -167,7 +167,7 @@ void DtmfToneGenerator::Reset() {
   initialized_ = false;
 }
 
-// Generate num_samples of DTMF signal and write to |output|.
+// Generate num_samples of DTMF signal and write to `output`.
 int DtmfToneGenerator::Generate(size_t num_samples, AudioMultiVector* output) {
   if (!initialized_) {
     return kNotInitialized;

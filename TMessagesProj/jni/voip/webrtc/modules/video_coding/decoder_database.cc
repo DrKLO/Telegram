@@ -10,195 +10,143 @@
 
 #include "modules/video_coding/decoder_database.h"
 
+#include <memory>
+#include <utility>
+
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
 
-VCMDecoderMapItem::VCMDecoderMapItem(VideoCodec* settings, int number_of_cores)
-    : settings(settings), number_of_cores(number_of_cores) {
-  RTC_DCHECK_GE(number_of_cores, 0);
+VCMDecoderDatabase::VCMDecoderDatabase() {
+  decoder_sequence_checker_.Detach();
 }
 
-VCMExtDecoderMapItem::VCMExtDecoderMapItem(
-    VideoDecoder* external_decoder_instance,
-    uint8_t payload_type)
-    : payload_type(payload_type),
-      external_decoder_instance(external_decoder_instance) {}
-
-VCMDecoderMapItem::~VCMDecoderMapItem() {}
-
-VCMDecoderDataBase::VCMDecoderDataBase()
-    : current_payload_type_(0),
-      receive_codec_(),
-      dec_map_(),
-      dec_external_map_() {}
-
-VCMDecoderDataBase::~VCMDecoderDataBase() {
-  ptr_decoder_.reset();
-  for (auto& kv : dec_map_)
-    delete kv.second;
-  for (auto& kv : dec_external_map_)
-    delete kv.second;
-}
-
-bool VCMDecoderDataBase::DeregisterExternalDecoder(uint8_t payload_type) {
-  ExternalDecoderMap::iterator it = dec_external_map_.find(payload_type);
-  if (it == dec_external_map_.end()) {
-    // Not found.
-    return false;
+void VCMDecoderDatabase::DeregisterExternalDecoder(uint8_t payload_type) {
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
+  auto it = decoders_.find(payload_type);
+  if (it == decoders_.end()) {
+    return;
   }
+
   // We can't use payload_type to check if the decoder is currently in use,
   // because payload type may be out of date (e.g. before we decode the first
   // frame after RegisterReceiveCodec).
-  if (ptr_decoder_ &&
-      ptr_decoder_->IsSameDecoder((*it).second->external_decoder_instance)) {
+  if (current_decoder_ && current_decoder_->IsSameDecoder(it->second.get())) {
     // Release it if it was registered and in use.
-    ptr_decoder_.reset();
+    current_decoder_ = absl::nullopt;
   }
-  delete it->second;
-  dec_external_map_.erase(it);
-  return true;
+  decoders_.erase(it);
 }
 
 // Add the external decoder object to the list of external decoders.
 // Won't be registered as a receive codec until RegisterReceiveCodec is called.
-void VCMDecoderDataBase::RegisterExternalDecoder(VideoDecoder* external_decoder,
-                                                 uint8_t payload_type) {
+void VCMDecoderDatabase::RegisterExternalDecoder(
+    uint8_t payload_type,
+    std::unique_ptr<VideoDecoder> external_decoder) {
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
   // If payload value already exists, erase old and insert new.
-  VCMExtDecoderMapItem* ext_decoder =
-      new VCMExtDecoderMapItem(external_decoder, payload_type);
   DeregisterExternalDecoder(payload_type);
-  dec_external_map_[payload_type] = ext_decoder;
+  if (external_decoder) {
+    decoders_.emplace(
+        std::make_pair(payload_type, std::move(external_decoder)));
+  }
 }
 
-bool VCMDecoderDataBase::IsExternalDecoderRegistered(
+bool VCMDecoderDatabase::IsExternalDecoderRegistered(
     uint8_t payload_type) const {
-  return payload_type == current_payload_type_ ||
-         FindExternalDecoderItem(payload_type);
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
+  return decoders_.find(payload_type) != decoders_.end();
 }
 
-bool VCMDecoderDataBase::RegisterReceiveCodec(uint8_t payload_type,
-                                              const VideoCodec* receive_codec,
-                                              int number_of_cores) {
-  if (number_of_cores < 0) {
-    return false;
-  }
+void VCMDecoderDatabase::RegisterReceiveCodec(
+    uint8_t payload_type,
+    const VideoDecoder::Settings& settings) {
   // If payload value already exists, erase old and insert new.
-  DeregisterReceiveCodec(payload_type);
-  VideoCodec* new_receive_codec = new VideoCodec(*receive_codec);
-  dec_map_[payload_type] =
-      new VCMDecoderMapItem(new_receive_codec, number_of_cores);
-  return true;
+  if (payload_type == current_payload_type_) {
+    current_payload_type_ = absl::nullopt;
+  }
+  decoder_settings_[payload_type] = settings;
 }
 
-bool VCMDecoderDataBase::DeregisterReceiveCodec(uint8_t payload_type) {
-  DecoderMap::iterator it = dec_map_.find(payload_type);
-  if (it == dec_map_.end()) {
+bool VCMDecoderDatabase::DeregisterReceiveCodec(uint8_t payload_type) {
+  if (decoder_settings_.erase(payload_type) == 0) {
     return false;
   }
-  delete it->second;
-  dec_map_.erase(it);
   if (payload_type == current_payload_type_) {
     // This codec is currently in use.
-    receive_codec_ = {};
-    current_payload_type_ = 0;
+    current_payload_type_ = absl::nullopt;
   }
   return true;
 }
 
-VCMGenericDecoder* VCMDecoderDataBase::GetDecoder(
+void VCMDecoderDatabase::DeregisterReceiveCodecs() {
+  current_payload_type_ = absl::nullopt;
+  decoder_settings_.clear();
+}
+
+VCMGenericDecoder* VCMDecoderDatabase::GetDecoder(
     const VCMEncodedFrame& frame,
     VCMDecodedFrameCallback* decoded_frame_callback) {
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
   RTC_DCHECK(decoded_frame_callback->UserReceiveCallback());
   uint8_t payload_type = frame.PayloadType();
   if (payload_type == current_payload_type_ || payload_type == 0) {
-    return ptr_decoder_.get();
+    return current_decoder_.has_value() ? &*current_decoder_ : nullptr;
   }
   // If decoder exists - delete.
-  if (ptr_decoder_) {
-    ptr_decoder_.reset();
-    receive_codec_ = {};
-    current_payload_type_ = 0;
+  if (current_decoder_.has_value()) {
+    current_decoder_ = absl::nullopt;
+    current_payload_type_ = absl::nullopt;
   }
-  ptr_decoder_ = CreateAndInitDecoder(frame, &receive_codec_);
-  if (!ptr_decoder_) {
+
+  CreateAndInitDecoder(frame);
+  if (current_decoder_ == absl::nullopt) {
     return nullptr;
   }
-  current_payload_type_ = frame.PayloadType();
+
   VCMReceiveCallback* callback = decoded_frame_callback->UserReceiveCallback();
-  callback->OnIncomingPayloadType(current_payload_type_);
-  if (ptr_decoder_->RegisterDecodeCompleteCallback(decoded_frame_callback) <
+  callback->OnIncomingPayloadType(payload_type);
+  if (current_decoder_->RegisterDecodeCompleteCallback(decoded_frame_callback) <
       0) {
-    ptr_decoder_.reset();
-    receive_codec_ = {};
-    current_payload_type_ = 0;
+    current_decoder_ = absl::nullopt;
     return nullptr;
   }
-  return ptr_decoder_.get();
+
+  current_payload_type_ = payload_type;
+  return &*current_decoder_;
 }
 
-std::unique_ptr<VCMGenericDecoder> VCMDecoderDataBase::CreateAndInitDecoder(
-    const VCMEncodedFrame& frame,
-    VideoCodec* new_codec) const {
+void VCMDecoderDatabase::CreateAndInitDecoder(const VCMEncodedFrame& frame) {
   uint8_t payload_type = frame.PayloadType();
-  RTC_LOG(LS_INFO) << "Initializing decoder with payload type '"
-                   << static_cast<int>(payload_type) << "'.";
-  RTC_DCHECK(new_codec);
-  const VCMDecoderMapItem* decoder_item = FindDecoderItem(payload_type);
-  if (!decoder_item) {
+  RTC_DLOG(LS_INFO) << "Initializing decoder with payload type '"
+                    << int{payload_type} << "'.";
+  auto decoder_item = decoder_settings_.find(payload_type);
+  if (decoder_item == decoder_settings_.end()) {
     RTC_LOG(LS_ERROR) << "Can't find a decoder associated with payload type: "
-                      << static_cast<int>(payload_type);
-    return nullptr;
+                      << int{payload_type};
+    return;
   }
-  std::unique_ptr<VCMGenericDecoder> ptr_decoder;
-  const VCMExtDecoderMapItem* external_dec_item =
-      FindExternalDecoderItem(payload_type);
-  if (external_dec_item) {
-    // External codec.
-    ptr_decoder.reset(new VCMGenericDecoder(
-        external_dec_item->external_decoder_instance, true));
-  } else {
+  auto external_dec_item = decoders_.find(payload_type);
+  if (external_dec_item == decoders_.end()) {
     RTC_LOG(LS_ERROR) << "No decoder of this type exists.";
+    return;
   }
-  if (!ptr_decoder)
-    return nullptr;
+  current_decoder_.emplace(external_dec_item->second.get());
 
   // Copy over input resolutions to prevent codec reinitialization due to
   // the first frame being of a different resolution than the database values.
   // This is best effort, since there's no guarantee that width/height have been
   // parsed yet (and may be zero).
-  if (frame.EncodedImage()._encodedWidth > 0 &&
-      frame.EncodedImage()._encodedHeight > 0) {
-    decoder_item->settings->width = frame.EncodedImage()._encodedWidth;
-    decoder_item->settings->height = frame.EncodedImage()._encodedHeight;
+  RenderResolution frame_resolution(frame.EncodedImage()._encodedWidth,
+                                    frame.EncodedImage()._encodedHeight);
+  if (frame_resolution.Valid()) {
+    decoder_item->second.set_max_render_resolution(frame_resolution);
   }
-  int err = ptr_decoder->InitDecode(decoder_item->settings.get(),
-                                    decoder_item->number_of_cores);
-  if (err < 0) {
-    RTC_LOG(LS_ERROR) << "Failed to initialize decoder. Error code: " << err;
-    return nullptr;
+  if (!current_decoder_->Configure(decoder_item->second)) {
+    current_decoder_ = absl::nullopt;
+    RTC_LOG(LS_ERROR) << "Failed to initialize decoder.";
   }
-  *new_codec = *decoder_item->settings.get();
-  return ptr_decoder;
-}
-
-const VCMDecoderMapItem* VCMDecoderDataBase::FindDecoderItem(
-    uint8_t payload_type) const {
-  DecoderMap::const_iterator it = dec_map_.find(payload_type);
-  if (it != dec_map_.end()) {
-    return (*it).second;
-  }
-  return nullptr;
-}
-
-const VCMExtDecoderMapItem* VCMDecoderDataBase::FindExternalDecoderItem(
-    uint8_t payload_type) const {
-  ExternalDecoderMap::const_iterator it = dec_external_map_.find(payload_type);
-  if (it != dec_external_map_.end()) {
-    return (*it).second;
-  }
-  return nullptr;
 }
 
 }  // namespace webrtc

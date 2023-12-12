@@ -34,35 +34,32 @@ BlockFramer::~BlockFramer() = default;
 // samples for InsertBlockAndExtractSubFrame to produce a frame. In order to
 // achieve this, the InsertBlockAndExtractSubFrame and InsertBlock methods need
 // to be called in the correct order.
-void BlockFramer::InsertBlock(
-    const std::vector<std::vector<std::vector<float>>>& block) {
-  RTC_DCHECK_EQ(num_bands_, block.size());
+void BlockFramer::InsertBlock(const Block& block) {
+  RTC_DCHECK_EQ(num_bands_, block.NumBands());
+  RTC_DCHECK_EQ(num_channels_, block.NumChannels());
   for (size_t band = 0; band < num_bands_; ++band) {
-    RTC_DCHECK_EQ(num_channels_, block[band].size());
     for (size_t channel = 0; channel < num_channels_; ++channel) {
-      RTC_DCHECK_EQ(kBlockSize, block[band][channel].size());
       RTC_DCHECK_EQ(0, buffer_[band][channel].size());
 
       buffer_[band][channel].insert(buffer_[band][channel].begin(),
-                                    block[band][channel].begin(),
-                                    block[band][channel].end());
+                                    block.begin(band, channel),
+                                    block.end(band, channel));
     }
   }
 }
 
 void BlockFramer::InsertBlockAndExtractSubFrame(
-    const std::vector<std::vector<std::vector<float>>>& block,
+    const Block& block,
     std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame) {
   RTC_DCHECK(sub_frame);
-  RTC_DCHECK_EQ(num_bands_, block.size());
+  RTC_DCHECK_EQ(num_bands_, block.NumBands());
+  RTC_DCHECK_EQ(num_channels_, block.NumChannels());
   RTC_DCHECK_EQ(num_bands_, sub_frame->size());
   for (size_t band = 0; band < num_bands_; ++band) {
-    RTC_DCHECK_EQ(num_channels_, block[band].size());
     RTC_DCHECK_EQ(num_channels_, (*sub_frame)[0].size());
     for (size_t channel = 0; channel < num_channels_; ++channel) {
       RTC_DCHECK_LE(kSubFrameLength,
                     buffer_[band][channel].size() + kBlockSize);
-      RTC_DCHECK_EQ(kBlockSize, block[band][channel].size());
       RTC_DCHECK_GE(kBlockSize, buffer_[band][channel].size());
       RTC_DCHECK_EQ(kSubFrameLength, (*sub_frame)[band][channel].size());
 
@@ -71,14 +68,14 @@ void BlockFramer::InsertBlockAndExtractSubFrame(
       std::copy(buffer_[band][channel].begin(), buffer_[band][channel].end(),
                 (*sub_frame)[band][channel].begin());
       std::copy(
-          block[band][channel].begin(),
-          block[band][channel].begin() + samples_to_frame,
+          block.begin(band, channel),
+          block.begin(band, channel) + samples_to_frame,
           (*sub_frame)[band][channel].begin() + buffer_[band][channel].size());
       buffer_[band][channel].clear();
       buffer_[band][channel].insert(
           buffer_[band][channel].begin(),
-          block[band][channel].begin() + samples_to_frame,
-          block[band][channel].end());
+          block.begin(band, channel) + samples_to_frame,
+          block.end(band, channel));
     }
   }
 }

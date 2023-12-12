@@ -35,23 +35,25 @@ inline std::vector<T> MakeVector(const T a[], size_t s) {
 }
 #define MAKE_VECTOR(a) cricket::MakeVector(a, arraysize(a))
 
-// Checks whether |codecs| contains |codec|; checks using Codec::Matches().
+// Checks whether `codecs` contains `codec`; checks using Codec::Matches().
 template <class C>
-bool ContainsMatchingCodec(const std::vector<C>& codecs, const C& codec) {
+bool ContainsMatchingCodec(const std::vector<C>& codecs,
+                           const C& codec,
+                           const webrtc::FieldTrialsView* field_trials) {
   typename std::vector<C>::const_iterator it;
   for (it = codecs.begin(); it != codecs.end(); ++it) {
-    if (it->Matches(codec)) {
+    if (it->Matches(codec, field_trials)) {
       return true;
     }
   }
   return false;
 }
 
-// Create Simulcast StreamParams with given |ssrcs| and |cname|.
+// Create Simulcast StreamParams with given `ssrcs` and `cname`.
 cricket::StreamParams CreateSimStreamParams(const std::string& cname,
                                             const std::vector<uint32_t>& ssrcs);
-// Create Simulcast stream with given |ssrcs| and |rtx_ssrcs|.
-// The number of |rtx_ssrcs| must match number of |ssrcs|.
+// Create Simulcast stream with given `ssrcs` and `rtx_ssrcs`.
+// The number of `rtx_ssrcs` must match number of `ssrcs`.
 cricket::StreamParams CreateSimWithRtxStreamParams(
     const std::string& cname,
     const std::vector<uint32_t>& ssrcs,

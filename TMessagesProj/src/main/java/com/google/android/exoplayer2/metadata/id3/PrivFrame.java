@@ -23,9 +23,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 
-/**
- * PRIV (Private) ID3 frame.
- */
+/** PRIV (Private) ID3 frame. */
 public final class PrivFrame extends Id3Frame {
 
   public static final String ID = "PRIV";
@@ -77,18 +75,17 @@ public final class PrivFrame extends Id3Frame {
     dest.writeByteArray(privateData);
   }
 
-  public static final Parcelable.Creator<PrivFrame> CREATOR = new Parcelable.Creator<PrivFrame>() {
+  public static final Parcelable.Creator<PrivFrame> CREATOR =
+      new Parcelable.Creator<PrivFrame>() {
 
-    @Override
-    public PrivFrame createFromParcel(Parcel in) {
-      return new PrivFrame(in);
-    }
+        @Override
+        public PrivFrame createFromParcel(Parcel in) {
+          return new PrivFrame(in);
+        }
 
-    @Override
-    public PrivFrame[] newArray(int size) {
-      return new PrivFrame[size];
-    }
-
-  };
-
+        @Override
+        public PrivFrame[] newArray(int size) {
+          return new PrivFrame[size];
+        }
+      };
 }

@@ -22,6 +22,10 @@ public class UndoStore {
         return !operations.isEmpty();
     }
 
+    public UndoStoreDelegate getDelegate() {
+        return delegate;
+    }
+
     public void setDelegate(UndoStoreDelegate undoStoreDelegate) {
         delegate = undoStoreDelegate;
     }
@@ -53,6 +57,12 @@ public class UndoStore {
 
         undoRunnable.run();
         notifyOfHistoryChanges();
+    }
+
+    public void clear() {
+        while (!operations.isEmpty()) {
+            undo();
+        }
     }
 
     public void reset() {

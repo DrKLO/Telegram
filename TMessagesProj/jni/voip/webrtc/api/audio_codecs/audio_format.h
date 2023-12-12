@@ -39,7 +39,7 @@ struct RTC_EXPORT SdpAudioFormat {
                  Parameters&& param);
   ~SdpAudioFormat();
 
-  // Returns true if this format is compatible with |o|. In SDP terminology:
+  // Returns true if this format is compatible with `o`. In SDP terminology:
   // would it represent the same codec between an offer and an answer? As
   // opposed to operator==, this method disregards codec parameters.
   bool Matches(const SdpAudioFormat& o) const;

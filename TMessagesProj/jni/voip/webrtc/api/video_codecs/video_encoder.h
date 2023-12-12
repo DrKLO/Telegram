@@ -66,6 +66,10 @@ class RTC_EXPORT EncodedImageCallback {
   // kDroppedByMediaOptimizations - dropped by MediaOptimizations (for rate
   // limiting purposes).
   // kDroppedByEncoder - dropped by encoder's internal rate limiter.
+  // TODO(bugs.webrtc.org/10164): Delete this enum? It duplicates the more
+  // general VideoStreamEncoderObserver::DropReason. Also,
+  // kDroppedByMediaOptimizations is not produced by any encoder, but by
+  // VideoStreamEncoder.
   enum class DropReason : uint8_t {
     kDroppedByMediaOptimizations,
     kDroppedByEncoder
@@ -96,11 +100,9 @@ class RTC_EXPORT VideoEncoder {
     struct KOff {};
 
    public:
-    // TODO(nisse): Would be nicer if kOff were a constant ScalingSettings
-    // rather than a magic value. However, absl::optional is not trivially copy
-    // constructible, and hence a constant ScalingSettings needs a static
-    // initializer, which is strongly discouraged in Chrome. We can hopefully
-    // fix this when we switch to absl::optional or std::optional.
+    // TODO(bugs.webrtc.org/9078): Since absl::optional should be trivially copy
+    // constructible, this magic value can likely be replaced by a constexpr
+    // ScalingSettings value.
     static constexpr KOff kOff = {};
 
     ScalingSettings(int low, int high);
@@ -167,7 +169,7 @@ class RTC_EXPORT VideoEncoder {
     ScalingSettings scaling_settings;
 
     // The width and height of the incoming video frames should be divisible
-    // by |requested_resolution_alignment|. If they are not, the encoder may
+    // by `requested_resolution_alignment`. If they are not, the encoder may
     // drop the incoming frame.
     // For example: With I420, this value would be a multiple of 2.
     // Note that this field is unrelated to any horizontal or vertical stride
@@ -175,12 +177,12 @@ class RTC_EXPORT VideoEncoder {
     int requested_resolution_alignment;
 
     // Same as above but if true, each simulcast layer should also be divisible
-    // by |requested_resolution_alignment|.
-    // Note that scale factors |scale_resolution_down_by| may be adjusted so a
+    // by `requested_resolution_alignment`.
+    // Note that scale factors `scale_resolution_down_by` may be adjusted so a
     // common multiple is not too large to avoid largely cropped frames and
     // possibly with an aspect ratio far from the original.
     // Warning: large values of scale_resolution_down_by could be changed
-    // considerably, especially if |requested_resolution_alignment| is large.
+    // considerably, especially if `requested_resolution_alignment` is large.
     bool apply_alignment_to_all_simulcast_layers;
 
     // If true, encoder supports working with a native handle (e.g. texture
@@ -207,15 +209,8 @@ class RTC_EXPORT VideoEncoder {
     // thresholds will be used in CPU adaptation.
     bool is_hardware_accelerated;
 
-    // If this field is true, the encoder uses internal camera sources, meaning
-    // that it does not require/expect frames to be delivered via
-    // webrtc::VideoEncoder::Encode.
-    // Internal source encoders are deprecated and support for them will be
-    // phased out.
-    bool has_internal_source;
-
     // For each spatial layer (simulcast stream or SVC layer), represented as an
-    // element in |fps_allocation| a vector indicates how many temporal layers
+    // element in `fps_allocation` a vector indicates how many temporal layers
     // the encoder is using for that spatial layer.
     // For each spatial/temporal layer pair, the frame rate fraction is given as
     // an 8bit unsigned integer where 0 = 0% and 255 = 100%.
@@ -243,8 +238,8 @@ class RTC_EXPORT VideoEncoder {
     // Recommended bitrate limits for different resolutions.
     std::vector<ResolutionBitrateLimits> resolution_bitrate_limits;
 
-    // Obtains the limits from |resolution_bitrate_limits| that best matches the
-    // |frame_size_pixels|.
+    // Obtains the limits from `resolution_bitrate_limits` that best matches the
+    // `frame_size_pixels`.
     absl::optional<ResolutionBitrateLimits>
     GetEncoderBitrateLimitsForResolution(int frame_size_pixels) const;
 
@@ -260,6 +255,10 @@ class RTC_EXPORT VideoEncoder {
     // preferred pixel format. The order of the formats does not matter.
     absl::InlinedVector<VideoFrameBuffer::Type, kMaxPreferredPixelFormats>
         preferred_pixel_formats;
+
+    // Indicates whether or not QP value encoder writes into frame/slice/tile
+    // header can be interpreted as average frame/slice/tile QP.
+    absl::optional<bool> is_qp_trusted;
   };
 
   struct RTC_EXPORT RateControlParameters {
@@ -279,11 +278,11 @@ class RTC_EXPORT VideoEncoder {
     VideoBitrateAllocation bitrate;
     // Target framerate, in fps. A value <= 0.0 is invalid and should be
     // interpreted as framerate target not available. In this case the encoder
-    // should fall back to the max framerate specified in |codec_settings| of
+    // should fall back to the max framerate specified in `codec_settings` of
     // the last InitEncode() call.
     double framerate_fps;
     // The network bandwidth available for video. This is at least
-    // |bitrate.get_sum_bps()|, but may be higher if the application is not
+    // `bitrate.get_sum_bps()`, but may be higher if the application is not
     // network constrained.
     DataRate bandwidth_allocation;
 
@@ -299,15 +298,15 @@ class RTC_EXPORT VideoEncoder {
     uint32_t timestamp_of_last_received;
     // Describes whether the dependencies of the last received frame were
     // all decodable.
-    // |false| if some dependencies were undecodable, |true| if all dependencies
-    // were decodable, and |nullopt| if the dependencies are unknown.
+    // `false` if some dependencies were undecodable, `true` if all dependencies
+    // were decodable, and `nullopt` if the dependencies are unknown.
     absl::optional<bool> dependencies_of_last_received_decodable;
     // Describes whether the received frame was decodable.
-    // |false| if some dependency was undecodable or if some packet belonging
+    // `false` if some dependency was undecodable or if some packet belonging
     // to the last received frame was missed.
-    // |true| if all dependencies were decodable and all packets belonging
+    // `true` if all dependencies were decodable and all packets belonging
     // to the last received frame were received.
-    // |nullopt| if no packet belonging to the last frame was missed, but the
+    // `nullopt` if no packet belonging to the last frame was missed, but the
     // last packet in the frame was not yet received.
     absl::optional<bool> last_received_decodable;
   };

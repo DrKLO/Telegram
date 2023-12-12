@@ -15,6 +15,9 @@
  */
 package com.google.android.exoplayer2.util;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -27,6 +30,7 @@ import androidx.annotation.StringRes;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /** Utility methods for displaying {@link Notification Notifications}. */
 @SuppressLint("InlinedApi")
@@ -39,6 +43,7 @@ public final class NotificationUtil {
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({
     IMPORTANCE_UNSPECIFIED,
     IMPORTANCE_NONE,
@@ -48,26 +53,30 @@ public final class NotificationUtil {
     IMPORTANCE_HIGH
   })
   public @interface Importance {}
-  /** @see NotificationManager#IMPORTANCE_UNSPECIFIED */
+  /**
+   * @see NotificationManager#IMPORTANCE_UNSPECIFIED
+   */
   public static final int IMPORTANCE_UNSPECIFIED = NotificationManager.IMPORTANCE_UNSPECIFIED;
-  /** @see NotificationManager#IMPORTANCE_NONE */
+  /**
+   * @see NotificationManager#IMPORTANCE_NONE
+   */
   public static final int IMPORTANCE_NONE = NotificationManager.IMPORTANCE_NONE;
-  /** @see NotificationManager#IMPORTANCE_MIN */
+  /**
+   * @see NotificationManager#IMPORTANCE_MIN
+   */
   public static final int IMPORTANCE_MIN = NotificationManager.IMPORTANCE_MIN;
-  /** @see NotificationManager#IMPORTANCE_LOW */
+  /**
+   * @see NotificationManager#IMPORTANCE_LOW
+   */
   public static final int IMPORTANCE_LOW = NotificationManager.IMPORTANCE_LOW;
-  /** @see NotificationManager#IMPORTANCE_DEFAULT */
+  /**
+   * @see NotificationManager#IMPORTANCE_DEFAULT
+   */
   public static final int IMPORTANCE_DEFAULT = NotificationManager.IMPORTANCE_DEFAULT;
-  /** @see NotificationManager#IMPORTANCE_HIGH */
+  /**
+   * @see NotificationManager#IMPORTANCE_HIGH
+   */
   public static final int IMPORTANCE_HIGH = NotificationManager.IMPORTANCE_HIGH;
-
-  /** @deprecated Use {@link #createNotificationChannel(Context, String, int, int, int)}. */
-  @Deprecated
-  public static void createNotificationChannel(
-      Context context, String id, @StringRes int nameResourceId, @Importance int importance) {
-    createNotificationChannel(
-        context, id, nameResourceId, /* descriptionResourceId= */ 0, importance);
-  }
 
   /**
    * Creates a notification channel that notifications can be posted to. See {@link
@@ -99,7 +108,8 @@ public final class NotificationUtil {
       @Importance int importance) {
     if (Util.SDK_INT >= 26) {
       NotificationManager notificationManager =
-          (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+          checkNotNull(
+              (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE));
       NotificationChannel channel =
           new NotificationChannel(id, context.getString(nameResourceId), importance);
       if (descriptionResourceId != 0) {
@@ -122,7 +132,7 @@ public final class NotificationUtil {
    */
   public static void setNotification(Context context, int id, @Nullable Notification notification) {
     NotificationManager notificationManager =
-        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        checkNotNull((NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE));
     if (notification != null) {
       notificationManager.notify(id, notification);
     } else {

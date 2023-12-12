@@ -226,7 +226,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             if (peerId > 0) {
                 currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
                 currentChat = null;
-                avatarDrawable.setInfo(currentUser);
+                avatarDrawable.setInfo(currentAccount, currentUser);
 
                 name = UserObject.getFirstName(currentUser);
                 avatarImageView.getImageReceiver().setCurrentAccount(currentAccount);
@@ -237,7 +237,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             } else {
                 currentChat = AccountInstance.getInstance(currentAccount).getMessagesController().getChat(-peerId);
                 currentUser = null;
-                avatarDrawable.setInfo(currentChat);
+                avatarDrawable.setInfo(currentAccount, currentChat);
 
                 if (currentChat != null) {
                     name = currentChat.title;
@@ -580,10 +580,14 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             ArrayList<ChatObject.VideoParticipant> oldVideoParticipants = new ArrayList<>(videoParticipants);
 
             participants.clear();
-            participants.addAll(groupCall.visibleParticipants);
+            if (!groupCall.call.rtmp_stream) {
+                participants.addAll(groupCall.visibleParticipants);
+            }
 
             videoParticipants.clear();
-            videoParticipants.addAll(groupCall.visibleVideoParticipants);
+            if (!groupCall.call.rtmp_stream) {
+                videoParticipants.addAll(groupCall.visibleVideoParticipants);
+            }
 
             DiffUtil.calculateDiff(new DiffUtil.Callback() {
                 @Override
@@ -634,10 +638,14 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             AndroidUtilities.updateVisibleRows(listView);
         } else {
             participants.clear();
-            participants.addAll(groupCall.visibleParticipants);
+            if (!groupCall.call.rtmp_stream) {
+                participants.addAll(groupCall.visibleParticipants);
+            }
 
             videoParticipants.clear();
-            videoParticipants.addAll(groupCall.visibleVideoParticipants);
+            if (!groupCall.call.rtmp_stream) {
+                videoParticipants.addAll(groupCall.visibleVideoParticipants);
+            }
             notifyDataSetChanged();
         }
     }

@@ -1,0 +1,64 @@
+ifndef BASE_NAME
+BASE_NAME	=	x86disasm
+endif
+
+ifndef SWIG
+SWIG		=	swig	# apt-get install swig !
+endif
+
+ifndef GCC
+GCC		=	gcc
+endif
+
+ifndef CC_FLAGS
+CC_FLAGS	=	-c -fPIC
+endif
+
+ifndef LD_FLAGS
+LD_FLAGS	=	-shared -L.. -ldisasm
+endif
+
+INTERFACE_FILE	=	libdisasm_oop.i
+
+SWIG_INTERFACE	=	../$(INTERFACE_FILE)
+
+# PYTHON rules
+PYTHON_MOD	=	$(BASE_NAME)-python.so
+PYTHON_SHADOW	=	$(BASE_NAME)_wrap.c
+PYTHON_SWIG	=	$(BASE_NAME).py
+PYTHON_OBJ	=	$(BASE_NAME)_wrap.o
+PYTHON_INC	=	`/bin/echo -e 'import sys\nprint sys.prefix + "/include/python" + sys.version[:3]' | python`
+PYTHON_LIB	=	`/bin/echo -e 'import sys\nprint sys.prefix + "/lib/python" + sys.version[:3]' | python`
+PYTHON_DEST	=	$(PYTHON_LIB)/lib-dynload/_$(BASE_NAME).so
+
+#====================================================
+# TARGETS
+
+all: swig-python
+
+dummy: swig-python install uninstall clean
+
+swig-python: $(PYTHON_MOD)
+
+$(PYTHON_MOD): $(PYTHON_OBJ)
+	$(GCC) $(LD_FLAGS) $(PYTHON_OBJ) -o $@
+
+$(PYTHON_OBJ): $(PYTHON_SHADOW)
+	$(GCC) $(CC_FLAGS) -I$(PYTHON_INC) -I.. -o $@ $<
+
+$(PYTHON_SHADOW): $(SWIG_INTERFACE)
+	swig -python -shadow -o $(PYTHON_SHADOW) -outdir . $<
+
+# ==================================================================
+install: $(PYTHON_MOD)
+	sudo cp $(PYTHON_MOD) $(PYTHON_DEST)
+	sudo cp $(PYTHON_SWIG) $(PYTHON_LIB)
+
+# ==================================================================
+uninstall:
+
+# ==================================================================
+clean: 
+	rm $(PYTHON_MOD) $(PYTHON_SWIG) $(PYTHON_OBJ)
+	rm $(PYTHON_SHADOW)
+

@@ -18,9 +18,13 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
     private boolean skipFirstItem;
     private boolean bind = true;
     private boolean canScrollVertically = true;
+    boolean fixedLastItemHeight;
+    private int minimumHeight;
+    private boolean setMeassuredHeightToLastItem = true;
 
     public FillLastLinearLayoutManager(Context context, int h, RecyclerView recyclerView) {
         super(context);
+        listView = recyclerView;
         additionalHeight = h;
     }
 
@@ -63,6 +67,7 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
         }
         int count = adapter.getItemCount() - 1;
         int allHeight = 0;
+        int firstItemHeight = 0;
         for (int a = skipFirstItem ? 1 : 0; a < count; a++) {
             int type = adapter.getItemViewType(a);
             RecyclerView.ViewHolder holder = heights.get(type, null);
@@ -82,11 +87,24 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
             final int heightSpec = getChildMeasureSpec(listHeight, getHeightMode(), getPaddingTop() + getPaddingBottom() + lp.topMargin + lp.bottomMargin, lp.height, canScrollVertically());
             holder.itemView.measure(widthSpec, heightSpec);
             allHeight += holder.itemView.getMeasuredHeight();
-            if (allHeight >= listHeight) {
-                break;
+            if (a == 0) {
+                firstItemHeight = holder.itemView.getMeasuredHeight();
+            }
+            if (fixedLastItemHeight) {
+                if (allHeight >= listHeight + firstItemHeight) {
+                    break;
+                }
+            } else {
+                if (allHeight >= listHeight) {
+                    break;
+                }
             }
         }
-        lastItemHeight = Math.max(0, listHeight - allHeight - additionalHeight - listView.getPaddingBottom());
+        if (fixedLastItemHeight) {
+            lastItemHeight = Math.max(minimumHeight, firstItemHeight + (listHeight - allHeight - additionalHeight - listView.getPaddingBottom()));
+        } else {
+            lastItemHeight = Math.max(minimumHeight, listHeight - allHeight - additionalHeight - listView.getPaddingBottom());
+        }
     }
 
     @Override
@@ -146,12 +164,30 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
 
     @Override
     public void measureChildWithMargins(View child, int widthUsed, int heightUsed) {
-        RecyclerView.ViewHolder holder = listView.findContainingViewHolder(child);
-        int pos = holder.getAdapterPosition();
-        if (pos == getItemCount() - 1) {
-            RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) child.getLayoutParams();
-            layoutParams.height = Math.max(lastItemHeight, 0);
+        if (setMeassuredHeightToLastItem) {
+            RecyclerView.ViewHolder holder = listView.findContainingViewHolder(child);
+            int pos = holder.getAdapterPosition();
+            if (pos == getItemCount() - 1) {
+                RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) child.getLayoutParams();
+                layoutParams.height = Math.max(lastItemHeight, 0);
+            }
         }
         super.measureChildWithMargins(child, 0, 0);
+    }
+
+    public void setFixedLastItemHeight() {
+        fixedLastItemHeight = true;
+    }
+
+    public void setMinimumLastViewHeight(int height) {
+        minimumHeight = height;
+    }
+
+    public void setSetMeassuredHeightToLastItem(boolean setMeassuredHeightToLastItem) {
+        this.setMeassuredHeightToLastItem = setMeassuredHeightToLastItem;
+    }
+
+    public int getLastItemHeight() {
+        return lastItemHeight;
     }
 }

@@ -41,17 +41,24 @@ void BlockDelayBuffer::DelaySignal(AudioBuffer* frame) {
     RTC_DCHECK_EQ(buf_[ch].size(), frame->num_bands());
     RTC_DCHECK_EQ(buf_[ch].size(), num_bands);
     rtc::ArrayView<float* const> frame_ch(frame->split_bands(ch), num_bands);
+    const size_t delay = delay_;
 
     for (size_t band = 0; band < num_bands; ++band) {
       RTC_DCHECK_EQ(delay_, buf_[ch][band].size());
       i = i_start;
 
-      for (size_t k = 0; k < frame_length_; ++k) {
-        const float tmp = buf_[ch][band][i];
-        buf_[ch][band][i] = frame_ch[band][k];
-        frame_ch[band][k] = tmp;
+      // Offloading these pointers and class variables to local variables allows
+      // the compiler to optimize the below loop when compiling with
+      // '-fno-strict-aliasing'.
+      float* buf_ch_band = buf_[ch][band].data();
+      float* frame_ch_band = frame_ch[band];
 
-        i = i < delay_ - 1 ? i + 1 : 0;
+      for (size_t k = 0, frame_length = frame_length_; k < frame_length; ++k) {
+        const float tmp = buf_ch_band[i];
+        buf_ch_band[i] = frame_ch_band[k];
+        frame_ch_band[k] = tmp;
+
+        i = i < delay - 1 ? i + 1 : 0;
       }
     }
   }

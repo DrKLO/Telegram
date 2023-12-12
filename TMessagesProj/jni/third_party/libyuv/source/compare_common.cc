@@ -17,36 +17,6 @@ namespace libyuv {
 extern "C" {
 #endif
 
-#if ORIGINAL_OPT
-uint32_t HammingDistance_C1(const uint8_t* src_a,
-                            const uint8_t* src_b,
-                            int count) {
-  uint32_t diff = 0u;
-
-  int i;
-  for (i = 0; i < count; ++i) {
-    int x = src_a[i] ^ src_b[i];
-    if (x & 1)
-      ++diff;
-    if (x & 2)
-      ++diff;
-    if (x & 4)
-      ++diff;
-    if (x & 8)
-      ++diff;
-    if (x & 16)
-      ++diff;
-    if (x & 32)
-      ++diff;
-    if (x & 64)
-      ++diff;
-    if (x & 128)
-      ++diff;
-  }
-  return diff;
-}
-#endif
-
 // Hakmem method for hamming distance.
 uint32_t HammingDistance_C(const uint8_t* src_a,
                            const uint8_t* src_b,

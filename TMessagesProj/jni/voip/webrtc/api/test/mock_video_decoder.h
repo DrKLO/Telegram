@@ -11,6 +11,8 @@
 #ifndef API_TEST_MOCK_VIDEO_DECODER_H_
 #define API_TEST_MOCK_VIDEO_DECODER_H_
 
+#include <utility>
+
 #include "api/video_codecs/video_decoder.h"
 #include "test/gmock.h"
 
@@ -37,10 +39,15 @@ class MockDecodedImageCallback : public DecodedImageCallback {
 
 class MockVideoDecoder : public VideoDecoder {
  public:
-  MOCK_METHOD(int32_t,
-              InitDecode,
-              (const VideoCodec* codec_settings, int32_t number_of_cores),
-              (override));
+  MockVideoDecoder() {
+    // Make `Configure` succeed by default, so that individual tests that
+    // verify other methods wouldn't need to stub `Configure`.
+    ON_CALL(*this, Configure).WillByDefault(testing::Return(true));
+  }
+
+  ~MockVideoDecoder() override { Destruct(); }
+
+  MOCK_METHOD(bool, Configure, (const Settings& settings), (override));
   MOCK_METHOD(int32_t,
               Decode,
               (const EncodedImage& input_image,
@@ -52,6 +59,10 @@ class MockVideoDecoder : public VideoDecoder {
               (DecodedImageCallback * callback),
               (override));
   MOCK_METHOD(int32_t, Release, (), (override));
+
+  // Special utility method that allows a test to monitor/verify when
+  // destruction of the decoder instance occurs.
+  MOCK_METHOD(void, Destruct, (), ());
 };
 
 }  // namespace webrtc

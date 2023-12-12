@@ -20,7 +20,7 @@ namespace webrtc {
 
 namespace {
 
-// Produces "[a,b,c]". Works for non-vector |RTCStatsMemberInterface::Type|
+// Produces "[a,b,c]". Works for non-vector `RTCStatsMemberInterface::Type`
 // types.
 template <typename T>
 std::string VectorToString(const std::vector<T>& vector) {
@@ -65,6 +65,20 @@ std::string VectorOfStringsToString(const std::vector<T>& strings) {
 }
 
 template <typename T>
+std::string MapToString(const std::map<std::string, T>& map) {
+  rtc::StringBuilder sb;
+  sb << "{";
+  const char* separator = "";
+  for (const auto& element : map) {
+    sb << separator << rtc::ToString(element.first) << ":"
+       << rtc::ToString(element.second);
+    separator = ",";
+  }
+  sb << "}";
+  return sb.Release();
+}
+
+template <typename T>
 std::string ToStringAsDouble(const T value) {
   // JSON represents numbers as floating point numbers with about 15 decimal
   // digits of precision.
@@ -85,6 +99,20 @@ std::string VectorToStringAsDouble(const std::vector<T>& vector) {
     separator = ",";
   }
   sb << "]";
+  return sb.Release();
+}
+
+template <typename T>
+std::string MapToStringAsDouble(const std::map<std::string, T>& map) {
+  rtc::StringBuilder sb;
+  sb << "{";
+  const char* separator = "";
+  for (const auto& element : map) {
+    sb << separator << "\"" << rtc::ToString(element.first)
+       << "\":" << ToStringAsDouble(element.second);
+    separator = ",";
+  }
+  sb << "}";
   return sb.Release();
 }
 
@@ -159,12 +187,12 @@ RTCStats::MembersOfThisObjectAndAncestors(size_t additional_capacity) const {
   }                                                                            \
   template <>                                                                  \
   std::string RTCStatsMember<T>::ValueToString() const {                       \
-    RTC_DCHECK(is_defined_);                                                   \
+    RTC_DCHECK(value_.has_value());                                            \
     return to_str;                                                             \
   }                                                                            \
   template <>                                                                  \
   std::string RTCStatsMember<T>::ValueToJson() const {                         \
-    RTC_DCHECK(is_defined_);                                                   \
+    RTC_DCHECK(value_.has_value());                                            \
     return to_json;                                                            \
   }                                                                            \
   template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT) RTCStatsMember<T>
@@ -173,81 +201,146 @@ WEBRTC_DEFINE_RTCSTATSMEMBER(bool,
                              kBool,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             rtc::ToString(value_));
+                             rtc::ToString(*value_),
+                             rtc::ToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(int32_t,
                              kInt32,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             rtc::ToString(value_));
+                             rtc::ToString(*value_),
+                             rtc::ToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(uint32_t,
                              kUint32,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             rtc::ToString(value_));
+                             rtc::ToString(*value_),
+                             rtc::ToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(int64_t,
                              kInt64,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             ToStringAsDouble(value_));
+                             rtc::ToString(*value_),
+                             ToStringAsDouble(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(uint64_t,
                              kUint64,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             ToStringAsDouble(value_));
+                             rtc::ToString(*value_),
+                             ToStringAsDouble(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(double,
                              kDouble,
                              false,
                              false,
-                             rtc::ToString(value_),
-                             ToStringAsDouble(value_));
-WEBRTC_DEFINE_RTCSTATSMEMBER(std::string, kString, false, true, value_, value_);
+                             rtc::ToString(*value_),
+                             ToStringAsDouble(*value_));
+WEBRTC_DEFINE_RTCSTATSMEMBER(std::string,
+                             kString,
+                             false,
+                             true,
+                             *value_,
+                             *value_);
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<bool>,
                              kSequenceBool,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToString(value_));
+                             VectorToString(*value_),
+                             VectorToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<int32_t>,
                              kSequenceInt32,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToString(value_));
+                             VectorToString(*value_),
+                             VectorToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<uint32_t>,
                              kSequenceUint32,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToString(value_));
+                             VectorToString(*value_),
+                             VectorToString(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<int64_t>,
                              kSequenceInt64,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToStringAsDouble(value_));
+                             VectorToString(*value_),
+                             VectorToStringAsDouble(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<uint64_t>,
                              kSequenceUint64,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToStringAsDouble(value_));
+                             VectorToString(*value_),
+                             VectorToStringAsDouble(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<double>,
                              kSequenceDouble,
                              true,
                              false,
-                             VectorToString(value_),
-                             VectorToStringAsDouble(value_));
+                             VectorToString(*value_),
+                             VectorToStringAsDouble(*value_));
 WEBRTC_DEFINE_RTCSTATSMEMBER(std::vector<std::string>,
                              kSequenceString,
                              true,
                              false,
-                             VectorOfStringsToString(value_),
-                             VectorOfStringsToString(value_));
+                             VectorOfStringsToString(*value_),
+                             VectorOfStringsToString(*value_));
+WEBRTC_DEFINE_RTCSTATSMEMBER(rtc_stats_internal::MapStringUint64,
+                             kMapStringUint64,
+                             false,
+                             false,
+                             MapToString(*value_),
+                             MapToStringAsDouble(*value_));
+WEBRTC_DEFINE_RTCSTATSMEMBER(rtc_stats_internal::MapStringDouble,
+                             kMapStringDouble,
+                             false,
+                             false,
+                             MapToString(*value_),
+                             MapToStringAsDouble(*value_));
+
+// Restricted members that expose hardware capabilites.
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<bool, StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<int32_t,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<uint32_t,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<int64_t,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<uint64_t,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<double, StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::string,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<bool>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<int32_t>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<uint32_t>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<int64_t>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<uint64_t>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<double>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::vector<std::string>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::map<std::string, uint64_t>,
+                             StatExposureCriteria::kHardwareCapability>;
+template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
+    RTCRestrictedStatsMember<std::map<std::string, double>,
+                             StatExposureCriteria::kHardwareCapability>;
 
 template class RTC_EXPORT_TEMPLATE_DEFINE(RTC_EXPORT)
     RTCNonStandardStatsMember<bool>;

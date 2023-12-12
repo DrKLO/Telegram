@@ -53,13 +53,16 @@
  * per socket level locking
  */
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 /* Lock for INFO stuff */
 #define SCTP_INP_INFO_LOCK_INIT()
 #define SCTP_INP_INFO_RLOCK()
 #define SCTP_INP_INFO_RUNLOCK()
 #define SCTP_INP_INFO_WLOCK()
 #define SCTP_INP_INFO_WUNLOCK()
+#define SCTP_INP_INFO_LOCK_ASSERT()
+#define SCTP_INP_INFO_RLOCK_ASSERT()
+#define SCTP_INP_INFO_WLOCK_ASSERT()
 #define SCTP_INP_INFO_LOCK_DESTROY()
 #define SCTP_IPI_COUNT_INIT()
 #define SCTP_IPI_COUNT_DESTROY()
@@ -69,6 +72,9 @@
 #define SCTP_INP_INFO_RUNLOCK()
 #define SCTP_INP_INFO_WLOCK()
 #define SCTP_INP_INFO_WUNLOCK()
+#define SCTP_INP_INFO_LOCK_ASSERT()
+#define SCTP_INP_INFO_RLOCK_ASSERT()
+#define SCTP_INP_INFO_WLOCK_ASSERT()
 #define SCTP_INP_INFO_LOCK_DESTROY()
 #define SCTP_IPI_COUNT_INIT()
 #define SCTP_IPI_COUNT_DESTROY()
@@ -86,7 +92,9 @@
 #define SCTP_INP_RLOCK(_inp)
 #define SCTP_INP_RUNLOCK(_inp)
 #define SCTP_INP_WLOCK(_inp)
-#define SCTP_INP_WUNLOCK(_inep)
+#define SCTP_INP_WUNLOCK(_inp)
+#define SCTP_INP_RLOCK_ASSERT(_inp)
+#define SCTP_INP_WLOCK_ASSERT(_inp)
 #define SCTP_INP_INCR_REF(_inp)
 #define SCTP_INP_DECR_REF(_inp)
 
@@ -115,7 +123,7 @@
  */
 #define SCTP_IPI_COUNT_INIT()
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 #define SCTP_WQ_ADDR_INIT() \
 	InitializeCriticalSection(&SCTP_BASE_INFO(wq_addr_mtx))
 #define SCTP_WQ_ADDR_DESTROY() \
@@ -124,7 +132,7 @@
 	EnterCriticalSection(&SCTP_BASE_INFO(wq_addr_mtx))
 #define SCTP_WQ_ADDR_UNLOCK() \
 	LeaveCriticalSection(&SCTP_BASE_INFO(wq_addr_mtx))
-
+#define SCTP_WQ_ADDR_LOCK_ASSERT()
 
 #define SCTP_INP_INFO_LOCK_INIT() \
 	InitializeCriticalSection(&SCTP_BASE_INFO(ipi_ep_mtx))
@@ -140,6 +148,9 @@
 	LeaveCriticalSection(&SCTP_BASE_INFO(ipi_ep_mtx))
 #define SCTP_INP_INFO_WUNLOCK()	\
 	LeaveCriticalSection(&SCTP_BASE_INFO(ipi_ep_mtx))
+#define SCTP_INP_INFO_LOCK_ASSERT()
+#define SCTP_INP_INFO_RLOCK_ASSERT()
+#define SCTP_INP_INFO_WLOCK_ASSERT()
 
 #define SCTP_IP_PKTLOG_INIT() \
 	InitializeCriticalSection(&SCTP_BASE_INFO(ipi_pktlog_mtx))
@@ -185,6 +196,8 @@
 #define SCTP_INP_WLOCK(_inp) \
 	EnterCriticalSection(&(_inp)->inp_mtx)
 #endif
+#define SCTP_INP_RLOCK_ASSERT(_tcb)
+#define SCTP_INP_WLOCK_ASSERT(_tcb)
 
 #define SCTP_TCB_SEND_LOCK_INIT(_tcb) \
 	InitializeCriticalSection(&(_tcb)->tcb_send_mtx)
@@ -263,6 +276,8 @@
 #define SCTP_WQ_ADDR_UNLOCK() \
 	(void)pthread_mutex_unlock(&SCTP_BASE_INFO(wq_addr_mtx))
 #endif
+#define SCTP_WQ_ADDR_LOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(wq_addr_mtx)) == EBUSY, ("%s: wq_addr_mtx not locked", __func__))
 
 #define SCTP_INP_INFO_LOCK_INIT() \
 	(void)pthread_mutex_init(&SCTP_BASE_INFO(ipi_ep_mtx), &SCTP_BASE_VAR(mtx_attr))
@@ -287,6 +302,12 @@
 #define SCTP_INP_INFO_WUNLOCK() \
 	(void)pthread_mutex_unlock(&SCTP_BASE_INFO(ipi_ep_mtx))
 #endif
+#define SCTP_INP_INFO_LOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_ep_mtx)) == EBUSY, ("%s: ipi_ep_mtx not locked", __func__))
+#define SCTP_INP_INFO_RLOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_ep_mtx)) == EBUSY, ("%s: ipi_ep_mtx not locked", __func__))
+#define SCTP_INP_INFO_WLOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_ep_mtx)) == EBUSY, ("%s: ipi_ep_mtx not locked", __func__))
 #define SCTP_INP_INFO_TRYLOCK() \
 	(!(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_ep_mtx))))
 
@@ -377,6 +398,10 @@
 #define SCTP_INP_WUNLOCK(_inp) \
 	(void)pthread_mutex_unlock(&(_inp)->inp_mtx)
 #endif
+#define SCTP_INP_RLOCK_ASSERT(_inp) \
+	KASSERT(pthread_mutex_trylock(&(_inp)->inp_mtx) == EBUSY, ("%s: inp_mtx not locked", __func__))
+#define SCTP_INP_WLOCK_ASSERT(_inp) \
+	KASSERT(pthread_mutex_trylock(&(_inp)->inp_mtx) == EBUSY, ("%s: inp_mtx not locked", __func__))
 #define SCTP_INP_INCR_REF(_inp) atomic_add_int(&((_inp)->refcount), 1)
 #define SCTP_INP_DECR_REF(_inp) atomic_add_int(&((_inp)->refcount), -1)
 
@@ -484,7 +509,7 @@
 
 /* socket locks */
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 #define SOCKBUF_LOCK_ASSERT(_so_buf)
 #define SOCKBUF_LOCK(_so_buf) \
 	EnterCriticalSection(&(_so_buf)->sb_mtx)
@@ -519,7 +544,7 @@
 #define SCTP_STATLOG_UNLOCK()
 #define SCTP_STATLOG_DESTROY()
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 /* address list locks */
 #define SCTP_IPI_ADDR_INIT() \
 	InitializeCriticalSection(&SCTP_BASE_INFO(ipi_addr_mtx))
@@ -533,6 +558,8 @@
 	EnterCriticalSection(&SCTP_BASE_INFO(ipi_addr_mtx))
 #define SCTP_IPI_ADDR_WUNLOCK() \
 	LeaveCriticalSection(&SCTP_BASE_INFO(ipi_addr_mtx))
+#define SCTP_IPI_ADDR_LOCK_ASSERT()
+#define SCTP_IPI_ADDR_WLOCK_ASSERT()
 
 
 /* iterator locks */
@@ -554,7 +581,7 @@
 #define SCTP_IPI_ITERATOR_WQ_UNLOCK() \
 	LeaveCriticalSection(&sctp_it_ctl.ipi_iterator_wq_mtx)
 
-#else /* end of __Userspace_os_Windows */
+#else
 /* address list locks */
 #define SCTP_IPI_ADDR_INIT() \
 	(void)pthread_mutex_init(&SCTP_BASE_INFO(ipi_addr_mtx), &SCTP_BASE_VAR(mtx_attr))
@@ -569,6 +596,10 @@
 	KASSERT(pthread_mutex_lock(&SCTP_BASE_INFO(ipi_addr_mtx)) == 0, ("%s: ipi_addr_mtx already locked", __func__))
 #define SCTP_IPI_ADDR_WUNLOCK() \
 	KASSERT(pthread_mutex_unlock(&SCTP_BASE_INFO(ipi_addr_mtx)) == 0, ("%s: ipi_addr_mtx not locked", __func__))
+#define SCTP_IPI_ADDR_LOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_addr_mtx)) == EBUSY, ("%s: ipi_addr_mtx not locked", __func__))
+#define SCTP_IPI_ADDR_WLOCK_ASSERT() \
+	KASSERT(pthread_mutex_trylock(&SCTP_BASE_INFO(ipi_addr_mtx)) == EBUSY, ("%s: ipi_addr_mtx not locked", __func__))
 #else
 #define SCTP_IPI_ADDR_RLOCK() \
 	(void)pthread_mutex_lock(&SCTP_BASE_INFO(ipi_addr_mtx))
@@ -578,6 +609,8 @@
 	(void)pthread_mutex_lock(&SCTP_BASE_INFO(ipi_addr_mtx))
 #define SCTP_IPI_ADDR_WUNLOCK() \
 	(void)pthread_mutex_unlock(&SCTP_BASE_INFO(ipi_addr_mtx))
+#define SCTP_IPI_ADDR_LOCK_ASSERT()
+#define SCTP_IPI_ADDR_WLOCK_ASSERT()
 #endif
 
 /* iterator locks */

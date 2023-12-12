@@ -27,6 +27,11 @@
 // More information about the Googletest testing framework is available at
 // https://github.com/google/googletest
 //
+// EXPECT_CALL and ON_CALL need to be made within the same DLL component as
+// the call to absl::Uniform and related methods, otherwise mocking will fail
+// since the  underlying implementation creates a type-specific pointer which
+// will be distinct across different DLL boundaries.
+//
 // Example:
 //
 //   absl::MockingBitGen mock;

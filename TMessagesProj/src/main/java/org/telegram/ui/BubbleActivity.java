@@ -8,11 +8,7 @@
 
 package org.telegram.ui;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.View;
@@ -25,19 +21,14 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PasscodeView;
@@ -45,13 +36,13 @@ import org.telegram.ui.Components.ThemeEditorView;
 
 import java.util.ArrayList;
 
-public class BubbleActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate {
+public class BubbleActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate {
 
     private boolean finished;
     private ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
 
     private PasscodeView passcodeView;
-    private ActionBarLayout actionBarLayout;
+    private INavigationLayout actionBarLayout;
     protected DrawerLayoutContainer drawerLayoutContainer;
 
     private Intent passcodeSaveIntent;
@@ -63,7 +54,6 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
     private Runnable lockRunnable;
 
     private long dialogId;
-    private int currentAccount = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,11 +76,11 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
             SharedConfig.lastPauseTime = (int) (SystemClock.elapsedRealtime() / 1000);
         }
 
-        AndroidUtilities.fillStatusBarHeight(this);
+        AndroidUtilities.fillStatusBarHeight(this, false);
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
-        actionBarLayout = new ActionBarLayout(this);
+        actionBarLayout = INavigationLayout.newLayout(this);
         actionBarLayout.setInBubbleMode(true);
         actionBarLayout.setRemoveActionBarExtraHeight(true);
 
@@ -100,11 +90,11 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
 
         RelativeLayout launchLayout = new RelativeLayout(this);
         drawerLayoutContainer.addView(launchLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        launchLayout.addView(actionBarLayout, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        launchLayout.addView(actionBarLayout.getView(), LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         drawerLayoutContainer.setParentActionBarLayout(actionBarLayout);
         actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
-        actionBarLayout.init(mainFragmentsStack);
+        actionBarLayout.setFragmentStack(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
 
         passcodeView = new PasscodeView(this);
@@ -132,7 +122,7 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         passcodeView.onShow(true, false);
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
-        passcodeView.setDelegate(() -> {
+        passcodeView.setDelegate(view -> {
             SharedConfig.isWaitingForPasscodeEnter = false;
             if (passcodeSaveIntent != null) {
                 handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true, passcodeSaveIntentAccount, passcodeSaveIntentState);
@@ -140,6 +130,8 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
             }
             drawerLayoutContainer.setAllowOpenDrawer(true, false);
             actionBarLayout.showLastFragment();
+
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.passcodeDismissed, view);
         });
     }
 
@@ -187,11 +179,6 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         actionBarLayout.showLastFragment();
 
         return true;
-    }
-
-    @Override
-    public boolean onPreIme() {
-        return false;
     }
 
     @Override
@@ -247,8 +234,8 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         if (editorView != null) {
             editorView.onActivityResult(requestCode, resultCode, data);
         }
-        if (actionBarLayout.fragmentsStack.size() != 0) {
-            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+        if (actionBarLayout.getFragmentStack().size() != 0) {
+            BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
             fragment.onActivityResultFragment(requestCode, resultCode, data);
         }
     }
@@ -256,88 +243,14 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults == null) {
-            grantResults = new int[0];
-        }
-        if (permissions == null) {
-            permissions = new String[0];
-        }
+        if (!checkPermissionsResult(requestCode, permissions, grantResults)) return;
 
-        boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-
-        if (requestCode == 104) {
-            if (granted) {
-                if (GroupCallActivity.groupCallInstance != null) {
-                    GroupCallActivity.groupCallInstance.enableCamera();
-                }
-            } else {
-                showPermissionErrorAlert(LocaleController.getString("VoipNeedCameraPermission", R.string.VoipNeedCameraPermission));
-            }
-        } else if (requestCode == 4) {
-            if (!granted) {
-                showPermissionErrorAlert(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
-            } else {
-                ImageLoader.getInstance().checkMediaPaths();
-            }
-        } else if (requestCode == 5) {
-            if (!granted) {
-                showPermissionErrorAlert(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
-                return;
-            } else {
-                ContactsController.getInstance(currentAccount).forceImportContacts();
-            }
-        } else if (requestCode == 3) {
-            boolean audioGranted = true;
-            boolean cameraGranted = true;
-            for (int i = 0, size = Math.min(permissions.length, grantResults.length); i < size; i++) {
-                if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
-                    audioGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
-                } else if (Manifest.permission.CAMERA.equals(permissions[i])) {
-                    cameraGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
-                }
-            }
-            if (!audioGranted) {
-                showPermissionErrorAlert(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
-            } else if (!cameraGranted) {
-                showPermissionErrorAlert(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
-            } else {
-                if (SharedConfig.inappCamera) {
-                    CameraController.getInstance().initCamera(null);
-                }
-                return;
-            }
-        } else if (requestCode == 18 || requestCode == 19 || requestCode == 20 || requestCode == 22) {
-            if (!granted) {
-                showPermissionErrorAlert(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
-            }
-        } else if (requestCode == 2) {
-            if (granted) {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.locationPermissionGranted);
-            }
-        }
-        if (actionBarLayout.fragmentsStack.size() != 0) {
-            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+        if (actionBarLayout.getFragmentStack().size() != 0) {
+            BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
             fragment.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
         }
 
         VoIPFragment.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    private void showPermissionErrorAlert(String message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        builder.setMessage(message);
-        builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
-            try {
-                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        builder.show();
     }
 
     @Override
@@ -436,27 +349,12 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     @Override
-    public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
-        return true;
-    }
-
-    @Override
-    public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
-        return true;
-    }
-
-    @Override
-    public boolean needCloseLastFragment(ActionBarLayout layout) {
-        if (layout.fragmentsStack.size() <= 1) {
+    public boolean needCloseLastFragment(INavigationLayout layout) {
+        if (layout.getFragmentStack().size() <= 1) {
             onFinish();
             finish();
             return false;
         }
         return true;
-    }
-
-    @Override
-    public void onRebuildAllFragments(ActionBarLayout layout, boolean last) {
-
     }
 }

@@ -15,13 +15,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/crypto/crypto_options.h"
+#include "api/dtls_transport_interface.h"
 #include "api/sequence_checker.h"
 #include "p2p/base/dtls_transport_internal.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/buffer_queue.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/stream.h"
 #include "rtc_base/strings/string_builder.h"
@@ -38,6 +39,9 @@ namespace cricket {
 class StreamInterfaceChannel : public rtc::StreamInterface {
  public:
   explicit StreamInterfaceChannel(IceTransportInternal* ice_transport);
+
+  StreamInterfaceChannel(const StreamInterfaceChannel&) = delete;
+  StreamInterfaceChannel& operator=(const StreamInterfaceChannel&) = delete;
 
   // Push in a packet; this gets pulled out from Read().
   bool OnPacketReceived(const char* data, size_t size);
@@ -59,8 +63,6 @@ class StreamInterfaceChannel : public rtc::StreamInterface {
   IceTransportInternal* const ice_transport_;  // owned by DtlsTransport
   rtc::StreamState state_ RTC_GUARDED_BY(sequence_checker_);
   rtc::BufferQueue packets_ RTC_GUARDED_BY(sequence_checker_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(StreamInterfaceChannel);
 };
 
 // This class provides a DTLS SSLStreamAdapter inside a TransportChannel-style
@@ -93,13 +95,13 @@ class StreamInterfaceChannel : public rtc::StreamInterface {
 // as the constructor.
 class DtlsTransport : public DtlsTransportInternal {
  public:
-  // |ice_transport| is the ICE transport this DTLS transport is wrapping.  It
+  // `ice_transport` is the ICE transport this DTLS transport is wrapping.  It
   // must outlive this DTLS transport.
   //
-  // |crypto_options| are the options used for the DTLS handshake. This affects
+  // `crypto_options` are the options used for the DTLS handshake. This affects
   // whether GCM crypto suites are negotiated.
   //
-  // |event_log| is an optional RtcEventLog for logging state changes. It should
+  // `event_log` is an optional RtcEventLog for logging state changes. It should
   // outlive the DtlsTransport.
   DtlsTransport(
       IceTransportInternal* ice_transport,
@@ -109,7 +111,10 @@ class DtlsTransport : public DtlsTransportInternal {
 
   ~DtlsTransport() override;
 
-  DtlsTransportState dtls_state() const override;
+  DtlsTransport(const DtlsTransport&) = delete;
+  DtlsTransport& operator=(const DtlsTransport&) = delete;
+
+  webrtc::DtlsTransportState dtls_state() const override;
   const std::string& transport_name() const override;
   int component() const override;
 
@@ -131,9 +136,16 @@ class DtlsTransport : public DtlsTransportInternal {
   // SetRemoteFingerprint must be called after SetLocalCertificate, and any
   // other methods like SetDtlsRole. It's what triggers the actual DTLS setup.
   // TODO(deadbeef): Rename to "Start" like in ORTC?
-  bool SetRemoteFingerprint(const std::string& digest_alg,
+  bool SetRemoteFingerprint(absl::string_view digest_alg,
                             const uint8_t* digest,
                             size_t digest_len) override;
+
+  // SetRemoteParameters must be called after SetLocalCertificate.
+  webrtc::RTCError SetRemoteParameters(
+      absl::string_view digest_alg,
+      const uint8_t* digest,
+      size_t digest_len,
+      absl::optional<rtc::SSLRole> role) override;
 
   // Called to send a packet (via DTLS, if turned on).
   int SendPacket(const char* data,
@@ -163,7 +175,7 @@ class DtlsTransport : public DtlsTransportInternal {
   // method extracts the keys negotiated during the DTLS handshake, for use in
   // external encryption. DTLS-SRTP uses this to extract the needed SRTP keys.
   // See the SSLStreamAdapter documentation for info on the specific parameters.
-  bool ExportKeyingMaterial(const std::string& label,
+  bool ExportKeyingMaterial(absl::string_view label,
                             const uint8_t* context,
                             size_t context_len,
                             bool use_context,
@@ -219,12 +231,12 @@ class DtlsTransport : public DtlsTransportInternal {
   void set_receiving(bool receiving);
   void set_writable(bool writable);
   // Sets the DTLS state, signaling if necessary.
-  void set_dtls_state(DtlsTransportState state);
+  void set_dtls_state(webrtc::DtlsTransportState state);
 
   webrtc::SequenceChecker thread_checker_;
 
   const int component_;
-  DtlsTransportState dtls_state_ = DTLS_TRANSPORT_NEW;
+  webrtc::DtlsTransportState dtls_state_ = webrtc::DtlsTransportState::kNew;
   // Underlying ice_transport, not owned by this class.
   IceTransportInternal* const ice_transport_;
   std::unique_ptr<rtc::SSLStreamAdapter> dtls_;  // The DTLS stream
@@ -247,8 +259,6 @@ class DtlsTransport : public DtlsTransportInternal {
   bool writable_ = false;
 
   webrtc::RtcEventLog* const event_log_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtlsTransport);
 };
 
 }  // namespace cricket

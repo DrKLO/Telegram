@@ -15,9 +15,12 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -27,9 +30,6 @@ import org.telegram.ui.Cells.ArchivedStickerSetCell;
 import org.telegram.ui.StickersActivity;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class StickersArchiveAlert extends AlertDialog.Builder {
 
@@ -82,7 +82,7 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         setNegativeButton(LocaleController.getString("Close", R.string.Close), (dialog, which) -> dialog.dismiss());
         if (parentFragment != null) {
             setPositiveButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
-                parentFragment.presentFragment(new StickersActivity(currentType));
+                parentFragment.presentFragment(new StickersActivity(currentType, null));
                 dialog.dismiss();
             });
         }

@@ -14,13 +14,14 @@
 #include <utility>
 
 #include "api/sequence_checker.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 
 namespace webrtc {
 
 BalancedConstraint::BalancedConstraint(
-    DegradationPreferenceProvider* degradation_preference_provider)
+    DegradationPreferenceProvider* degradation_preference_provider,
+    const FieldTrialsView& field_trials)
     : encoder_target_bitrate_bps_(absl::nullopt),
+      balanced_settings_(field_trials),
       degradation_preference_provider_(degradation_preference_provider) {
   RTC_DCHECK(degradation_preference_provider_);
   sequence_checker_.Detach();
@@ -41,16 +42,16 @@ bool BalancedConstraint::IsAdaptationUpAllowed(
   // exceed bitrate constraints.
   if (degradation_preference_provider_->degradation_preference() ==
       DegradationPreference::BALANCED) {
+    int frame_size_pixels = input_state.single_active_stream_pixels().value_or(
+        input_state.frame_size_pixels().value());
     if (!balanced_settings_.CanAdaptUp(
-            input_state.video_codec_type(),
-            input_state.frame_size_pixels().value(),
+            input_state.video_codec_type(), frame_size_pixels,
             encoder_target_bitrate_bps_.value_or(0))) {
       return false;
     }
     if (DidIncreaseResolution(restrictions_before, restrictions_after) &&
         !balanced_settings_.CanAdaptUpResolution(
-            input_state.video_codec_type(),
-            input_state.frame_size_pixels().value(),
+            input_state.video_codec_type(), frame_size_pixels,
             encoder_target_bitrate_bps_.value_or(0))) {
       return false;
     }

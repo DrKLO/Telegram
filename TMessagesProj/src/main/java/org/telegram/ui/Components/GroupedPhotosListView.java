@@ -129,7 +129,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             }
             MessageObject messageObject = imagesArr.get(currentIndex);
             currentObject = messageObject;
-            long localGroupId = delegate.validGroupId(messageObject.getGroupIdForUse()) ? messageObject.getGroupIdForUse() : 0;
+            long localGroupId = messageObject.getGroupIdForUse();
             if (localGroupId != currentGroupId) {
                 changed = true;
                 currentGroupId = localGroupId;
@@ -345,6 +345,14 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         }
     }
 
+    public int getCount() {
+        return currentPhotos.size();
+    }
+
+    public int getIndex() {
+        return currentImage;
+    }
+
     public void setMoveProgress(float progress) {
         if (scrolling || animateToItem >= 0) {
             return;
@@ -373,6 +381,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         ImageReceiver receiver;
         if (unusedReceivers.isEmpty()) {
             receiver = new ImageReceiver(this);
+            receiver.setAllowLoadingOnAttachedOnly(false);
         } else {
             receiver = unusedReceivers.get(0);
             unusedReceivers.remove(0);
@@ -743,6 +752,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 }
             }
             receiver.setAlpha(drawAlpha);
+            receiver.setRoundRadius(AndroidUtilities.dp(2));
             receiver.draw(canvas);
         }
 

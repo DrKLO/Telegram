@@ -414,6 +414,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         if (currentAddressNum + 1 < addresses->size()) {
             currentAddressNum++;
         } else {
+            repeatCheckingAddresses = true;
             currentAddressNum = 0;
         }
         currentPortNum = 0;
@@ -1434,14 +1435,14 @@ void Datacenter::exportAuthorization() {
     auto request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
     if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         if (error == nullptr) {
             auto res = (TL_auth_exportedAuthorization *) response;
             auto request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
             if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
-            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime) {
+            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime, int64_t msgId) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);
@@ -1475,6 +1476,12 @@ bool Datacenter::hasMediaAddress() {
 void Datacenter::resetInitVersion() {
     lastInitVersion = 0;
     lastInitMediaVersion = 0;
+}
+
+bool Datacenter::isRepeatCheckingAddresses() {
+    bool b = repeatCheckingAddresses;
+    repeatCheckingAddresses = false;
+    return b;
 }
 
 TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {

@@ -48,6 +48,7 @@
 #include "absl/base/optimization.h"
 #include "absl/synchronization/internal/kernel_timeout.h"
 
+
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace synchronization_internal {
@@ -66,68 +67,9 @@ static void MaybeBecomeIdle() {
 
 #if ABSL_WAITER_MODE == ABSL_WAITER_MODE_FUTEX
 
-// Some Android headers are missing these definitions even though they
-// support these futex operations.
-#ifdef __BIONIC__
-#ifndef SYS_futex
-#define SYS_futex __NR_futex
-#endif
-#ifndef FUTEX_WAIT_BITSET
-#define FUTEX_WAIT_BITSET 9
-#endif
-#ifndef FUTEX_PRIVATE_FLAG
-#define FUTEX_PRIVATE_FLAG 128
-#endif
-#ifndef FUTEX_CLOCK_REALTIME
-#define FUTEX_CLOCK_REALTIME 256
-#endif
-#ifndef FUTEX_BITSET_MATCH_ANY
-#define FUTEX_BITSET_MATCH_ANY 0xFFFFFFFF
-#endif
-#endif
-
-class Futex {
- public:
-  static int WaitUntil(std::atomic<int32_t> *v, int32_t val,
-                       KernelTimeout t) {
-    int err = 0;
-    if (t.has_timeout()) {
-      // https://locklessinc.com/articles/futex_cheat_sheet/
-      // Unlike FUTEX_WAIT, FUTEX_WAIT_BITSET uses absolute time.
-      struct timespec abs_timeout = t.MakeAbsTimespec();
-      // Atomically check that the futex value is still 0, and if it
-      // is, sleep until abs_timeout or until woken by FUTEX_WAKE.
-      err = syscall(
-          SYS_futex, reinterpret_cast<int32_t *>(v),
-          FUTEX_WAIT_BITSET | FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME, val,
-          &abs_timeout, nullptr, FUTEX_BITSET_MATCH_ANY);
-    } else {
-      // Atomically check that the futex value is still 0, and if it
-      // is, sleep until woken by FUTEX_WAKE.
-      err = syscall(SYS_futex, reinterpret_cast<int32_t *>(v),
-                    FUTEX_WAIT | FUTEX_PRIVATE_FLAG, val, nullptr);
-    }
-    if (err != 0) {
-      err = -errno;
-    }
-    return err;
-  }
-
-  static int Wake(std::atomic<int32_t> *v, int32_t count) {
-    int err = syscall(SYS_futex, reinterpret_cast<int32_t *>(v),
-                      FUTEX_WAKE | FUTEX_PRIVATE_FLAG, count);
-    if (ABSL_PREDICT_FALSE(err < 0)) {
-      err = -errno;
-    }
-    return err;
-  }
-};
-
 Waiter::Waiter() {
   futex_.store(0, std::memory_order_relaxed);
 }
-
-Waiter::~Waiter() = default;
 
 bool Waiter::Wait(KernelTimeout t) {
   // Loop until we can atomically decrement futex from a positive
@@ -135,6 +77,7 @@ bool Waiter::Wait(KernelTimeout t) {
   // Note that, since the thread ticker is just reset, we don't need to check
   // whether the thread is idle on the very first pass of the loop.
   bool first_pass = true;
+
   while (true) {
     int32_t x = futex_.load(std::memory_order_relaxed);
     while (x != 0) {
@@ -145,7 +88,6 @@ bool Waiter::Wait(KernelTimeout t) {
       }
       return true;  // Consumed a wakeup, we are done.
     }
-
 
     if (!first_pass) MaybeBecomeIdle();
     const int err = Futex::WaitUntil(&futex_, 0, t);
@@ -217,18 +159,6 @@ Waiter::Waiter() {
   wakeup_count_ = 0;
 }
 
-Waiter::~Waiter() {
-  const int err = pthread_mutex_destroy(&mu_);
-  if (err != 0) {
-    ABSL_RAW_LOG(FATAL, "pthread_mutex_destroy failed: %d", err);
-  }
-
-  const int err2 = pthread_cond_destroy(&cv_);
-  if (err2 != 0) {
-    ABSL_RAW_LOG(FATAL, "pthread_cond_destroy failed: %d", err2);
-  }
-}
-
 bool Waiter::Wait(KernelTimeout t) {
   struct timespec abs_timeout;
   if (t.has_timeout()) {
@@ -294,12 +224,6 @@ Waiter::Waiter() {
     ABSL_RAW_LOG(FATAL, "sem_init failed with errno %d\n", errno);
   }
   wakeups_.store(0, std::memory_order_relaxed);
-}
-
-Waiter::~Waiter() {
-  if (sem_destroy(&sem_) != 0) {
-    ABSL_RAW_LOG(FATAL, "sem_destroy failed with errno %d\n", errno);
-  }
 }
 
 bool Waiter::Wait(KernelTimeout t) {
@@ -418,11 +342,6 @@ Waiter::Waiter() {
   waiter_count_ = 0;
   wakeup_count_ = 0;
 }
-
-// SRW locks and condition variables do not need to be explicitly destroyed.
-// https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializesrwlock
-// https://stackoverflow.com/questions/28975958/why-does-windows-have-no-deleteconditionvariable-function-to-go-together-with
-Waiter::~Waiter() = default;
 
 bool Waiter::Wait(KernelTimeout t) {
   SRWLOCK *mu = WinHelper::GetLock(this);

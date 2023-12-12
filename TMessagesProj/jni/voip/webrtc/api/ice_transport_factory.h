@@ -35,9 +35,9 @@ RTC_EXPORT rtc::scoped_refptr<IceTransportInterface> CreateIceTransport(
 // without using a webrtc::PeerConnection.
 // The returned object must be accessed and destroyed on the thread that
 // created it.
-// |init.port_allocator()| is required and must outlive the created
+// `init.port_allocator()` is required and must outlive the created
 //     IceTransportInterface object.
-// |init.async_resolver_factory()| and |init.event_log()| are optional, but if
+// `init.async_resolver_factory()` and `init.event_log()` are optional, but if
 //     provided must outlive the created IceTransportInterface object.
 RTC_EXPORT rtc::scoped_refptr<IceTransportInterface> CreateIceTransport(
     IceTransportInit);

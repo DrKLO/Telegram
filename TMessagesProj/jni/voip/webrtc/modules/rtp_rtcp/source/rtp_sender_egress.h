@@ -20,10 +20,12 @@
 #include "api/call/transport.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/data_rate.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/packet_sequencer.h"
 #include "modules/rtp_rtcp/source/rtp_packet_history.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -31,7 +33,6 @@
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -43,8 +44,7 @@ class RtpSenderEgress {
   // without passing through an actual paced sender.
   class NonPacedPacketSender : public RtpPacketSender {
    public:
-    NonPacedPacketSender(RtpSenderEgress* sender,
-                         SequenceNumberAssigner* sequence_number_assigner);
+    NonPacedPacketSender(RtpSenderEgress* sender, PacketSequencer* sequencer);
     virtual ~NonPacedPacketSender();
 
     void EnqueuePackets(
@@ -54,7 +54,7 @@ class RtpSenderEgress {
     void PrepareForSend(RtpPacketToSend* packet);
     uint16_t transport_sequence_number_;
     RtpSenderEgress* const sender_;
-    SequenceNumberAssigner* sequence_number_assigner_;
+    PacketSequencer* sequencer_;
   };
 
   RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
@@ -78,7 +78,7 @@ class RtpSenderEgress {
   void SetMediaHasBeenSent(bool media_sent) RTC_LOCKS_EXCLUDED(lock_);
   void SetTimestampOffset(uint32_t timestamp) RTC_LOCKS_EXCLUDED(lock_);
 
-  // For each sequence number in |sequence_number|, recall the last RTP packet
+  // For each sequence number in `sequence_number`, recall the last RTP packet
   // which bore it - its timestamp and whether it was the first and/or last
   // packet in that frame. If all of the given sequence numbers could be
   // recalled, return a vector with all of them (in corresponding order).
@@ -90,6 +90,10 @@ class RtpSenderEgress {
   void SetFecProtectionParameters(const FecProtectionParams& delta_params,
                                   const FecProtectionParams& key_params);
   std::vector<std::unique_ptr<RtpPacketToSend>> FetchFecPackets();
+
+  // Clears pending status for these sequence numbers in the packet history.
+  void OnAbortedRetransmissions(
+      rtc::ArrayView<const uint16_t> sequence_numbers);
 
  private:
   // Maps capture time in milliseconds to send-side delay in milliseconds.
@@ -110,7 +114,7 @@ class RtpSenderEgress {
   void UpdateOnSendPacket(int packet_id,
                           int64_t capture_time_ms,
                           uint32_t ssrc);
-  // Sends packet on to |transport_|, leaving the RTP module.
+  // Sends packet on to `transport_`, leaving the RTP module.
   bool SendPacketToNetwork(const RtpPacketToSend& packet,
                            const PacketOptions& options,
                            const PacedPacketInfo& pacing_info);
@@ -143,6 +147,8 @@ class RtpSenderEgress {
 #endif
   const bool need_rtp_packet_infos_;
   VideoFecGenerator* const fec_generator_ RTC_GUARDED_BY(pacer_checker_);
+  absl::optional<uint16_t> last_sent_seq_ RTC_GUARDED_BY(pacer_checker_);
+  absl::optional<uint16_t> last_sent_rtx_seq_ RTC_GUARDED_BY(pacer_checker_);
 
   TransportFeedbackObserver* const transport_feedback_observer_;
   SendSideDelayObserver* const send_side_delay_observer_;
@@ -159,7 +165,6 @@ class RtpSenderEgress {
   SendDelayMap::const_iterator max_delay_it_ RTC_GUARDED_BY(lock_);
   // The sum of delays over a kSendSideDelayWindowMs sliding window.
   int64_t sum_delays_ms_ RTC_GUARDED_BY(lock_);
-  uint64_t total_packet_send_delay_ms_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtp_stats_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtx_rtp_stats_ RTC_GUARDED_BY(lock_);
   // One element per value in RtpPacketMediaType, with index matching value.

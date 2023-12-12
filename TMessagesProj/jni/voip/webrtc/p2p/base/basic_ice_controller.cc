@@ -83,6 +83,8 @@ void BasicIceController::OnConnectionDestroyed(const Connection* connection) {
   pinged_connections_.erase(connection);
   unpinged_connections_.erase(connection);
   connections_.erase(absl::c_find(connections_, connection));
+  if (selected_connection_ == connection)
+    selected_connection_ = nullptr;
 }
 
 bool BasicIceController::HasPingableConnection() const {
@@ -339,7 +341,7 @@ const Connection* BasicIceController::MorePingable(const Connection* conn1,
   }
 
   // During the initial state when nothing has been pinged yet, return the first
-  // one in the ordered |connections_|.
+  // one in the ordered `connections_`.
   auto connections = connections_;
   return *(std::find_if(connections.begin(), connections.end(),
                         [conn1, conn2](const Connection* conn) {
@@ -382,7 +384,7 @@ const Connection* BasicIceController::LeastRecentlyPinged(
 
 std::map<const rtc::Network*, const Connection*>
 BasicIceController::GetBestConnectionByNetwork() const {
-  // |connections_| has been sorted, so the first one in the list on a given
+  // `connections_` has been sorted, so the first one in the list on a given
   // network is the best connection on the network, except that the selected
   // connection is always the best connection on the network.
   std::map<const rtc::Network*, const Connection*> best_connection_by_network;
@@ -390,7 +392,7 @@ BasicIceController::GetBestConnectionByNetwork() const {
     best_connection_by_network[selected_connection_->network()] =
         selected_connection_;
   }
-  // TODO(honghaiz): Need to update this if |connections_| are not sorted.
+  // TODO(honghaiz): Need to update this if `connections_` are not sorted.
   for (const Connection* conn : connections_) {
     const rtc::Network* network = conn->network();
     // This only inserts when the network does not exist in the map.
@@ -413,7 +415,7 @@ BasicIceController::GetBestWritableConnectionPerNetwork() const {
 
 IceControllerInterface::SwitchResult
 BasicIceController::HandleInitialSelectDampening(
-    IceControllerEvent reason,
+    IceSwitchReason reason,
     const Connection* new_connection) {
   if (!field_trials_->initial_select_dampening.has_value() &&
       !field_trials_->initial_select_dampening_ping_received.has_value()) {
@@ -462,13 +464,13 @@ BasicIceController::HandleInitialSelectDampening(
   }
 
   RTC_LOG(LS_INFO) << "delay initial selection up to " << min_delay << "ms";
-  reason.type = IceControllerEvent::ICE_CONTROLLER_RECHECK;
-  reason.recheck_delay_ms = min_delay;
-  return {absl::nullopt, reason};
+  return {.connection = absl::nullopt,
+          .recheck_event = IceRecheckEvent(
+              IceSwitchReason::ICE_CONTROLLER_RECHECK, min_delay)};
 }
 
 IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
-    IceControllerEvent reason,
+    IceSwitchReason reason,
     const Connection* new_connection) {
   if (!ReadyToSend(new_connection) || selected_connection_ == new_connection) {
     return {absl::nullopt, absl::nullopt};
@@ -494,16 +496,15 @@ IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
                                receiving_unchanged_threshold,
                                &missed_receiving_unchanged_threshold);
 
-  absl::optional<IceControllerEvent> recheck_event;
+  absl::optional<IceRecheckEvent> recheck_event;
   if (missed_receiving_unchanged_threshold &&
       config_.receiving_switching_delay_or_default()) {
     // If we do not switch to the connection because it missed the receiving
     // threshold, the new connection is in a better receiving state than the
     // currently selected connection. So we need to re-check whether it needs
     // to be switched at a later time.
-    recheck_event = reason;
-    recheck_event->recheck_delay_ms =
-        config_.receiving_switching_delay_or_default();
+    recheck_event.emplace(reason,
+                          config_.receiving_switching_delay_or_default());
   }
 
   if (cmp < 0) {
@@ -522,7 +523,7 @@ IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
 }
 
 IceControllerInterface::SwitchResult
-BasicIceController::SortAndSwitchConnection(IceControllerEvent reason) {
+BasicIceController::SortAndSwitchConnection(IceSwitchReason reason) {
   // Find the best alternative connection by sorting.  It is important to note
   // that amongst equal preference, writable connections, this will choose the
   // one whose estimated latency is lowest.  So it is the only one that we
@@ -645,7 +646,7 @@ int BasicIceController::CompareConnectionStates(
 }
 
 // Compares two connections based only on the candidate and network information.
-// Returns positive if |a| is better than |b|.
+// Returns positive if `a` is better than `b`.
 int BasicIceController::CompareConnectionCandidates(const Connection* a,
                                                     const Connection* b) const {
   int compare_a_b_by_networks =
@@ -739,6 +740,31 @@ int BasicIceController::CompareCandidatePairNetworks(
     return compare_a_b_by_network_preference;
   }
 
+  bool a_vpn = a->network()->IsVpn();
+  bool b_vpn = b->network()->IsVpn();
+  switch (config_.vpn_preference) {
+    case webrtc::VpnPreference::kDefault:
+      break;
+    case webrtc::VpnPreference::kOnlyUseVpn:
+    case webrtc::VpnPreference::kPreferVpn:
+      if (a_vpn && !b_vpn) {
+        return a_is_better;
+      } else if (!a_vpn && b_vpn) {
+        return b_is_better;
+      }
+      break;
+    case webrtc::VpnPreference::kNeverUseVpn:
+    case webrtc::VpnPreference::kAvoidVpn:
+      if (a_vpn && !b_vpn) {
+        return b_is_better;
+      } else if (!a_vpn && b_vpn) {
+        return a_is_better;
+      }
+      break;
+    default:
+      break;
+  }
+
   uint32_t a_cost = a->ComputeNetworkCost();
   uint32_t b_cost = b->ComputeNetworkCost();
   // Prefer lower network cost.
@@ -758,7 +784,7 @@ std::vector<const Connection*> BasicIceController::PruneConnections() {
   // which point, we would prune out the current selected connection).  We leave
   // connections on other networks because they may not be using the same
   // resources and they may represent very distinct paths over which we can
-  // switch. If |best_conn_on_network| is not connected, we may be reconnecting
+  // switch. If `best_conn_on_network` is not connected, we may be reconnecting
   // a TCP connection and should not prune connections in this network.
   // See the big comment in CompareConnectionStates.
   //
@@ -770,7 +796,7 @@ std::vector<const Connection*> BasicIceController::PruneConnections() {
   auto best_connection_by_network = GetBestConnectionByNetwork();
   for (const Connection* conn : connections_) {
     const Connection* best_conn = selected_connection_;
-    if (!rtc::IPIsAny(conn->network()->ip())) {
+    if (!rtc::IPIsAny(conn->network()->GetBestIP())) {
       // If the connection is bound to a specific network interface (not an
       // "any address" network), compare it against the best connection for
       // that network interface rather than the best connection overall. This
@@ -804,13 +830,13 @@ bool BasicIceController::GetUseCandidateAttr(const Connection* conn,
     case NominationMode::SEMI_AGGRESSIVE: {
       // Nominate if
       // a) Remote is in FULL ICE AND
-      //    a.1) |conn| is the selected connection OR
+      //    a.1) `conn` is the selected connection OR
       //    a.2) there is no selected connection OR
       //    a.3) the selected connection is unwritable OR
-      //    a.4) |conn| has higher priority than selected_connection.
+      //    a.4) `conn` has higher priority than selected_connection.
       // b) Remote is in LITE ICE AND
-      //    b.1) |conn| is the selected_connection AND
-      //    b.2) |conn| is writable.
+      //    b.1) `conn` is the selected_connection AND
+      //    b.2) `conn` is writable.
       bool selected = conn == selected_connection_;
       if (remote_ice_mode == ICEMODE_LITE) {
         return selected && conn->writable();
@@ -821,7 +847,7 @@ bool BasicIceController::GetUseCandidateAttr(const Connection* conn,
       return selected || better_than_selected;
     }
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return false;
   }
 }

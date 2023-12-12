@@ -56,7 +56,7 @@ bool Vp8FrameConfig::References(Buffer buffer) const {
     case Buffer::kCount:
       break;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return false;
 }
 
@@ -71,7 +71,7 @@ bool Vp8FrameConfig::Updates(Buffer buffer) const {
     case Buffer::kCount:
       break;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return false;
 }
 

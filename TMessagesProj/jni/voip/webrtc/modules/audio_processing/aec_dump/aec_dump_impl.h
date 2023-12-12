@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "modules/audio_processing/aec_dump/capture_stream_info.h"
-#include "modules/audio_processing/aec_dump/write_to_file_task.h"
 #include "modules/audio_processing/include/aec_dump.h"
 #include "rtc_base/ignore_wundef.h"
 #include "rtc_base/race_checker.h"
@@ -33,21 +32,19 @@ RTC_PUSH_IGNORING_WUNDEF()
 #endif
 RTC_POP_IGNORING_WUNDEF()
 
-namespace rtc {
-class TaskQueue;
-}  // namespace rtc
-
 namespace webrtc {
 
 // Task-queue based implementation of AecDump. It is thread safe by
 // relying on locks in TaskQueue.
 class AecDumpImpl : public AecDump {
  public:
-  // Does member variables initialization shared across all c-tors.
+  // `max_log_size_bytes` - maximum number of bytes to write to the debug file,
+  // `max_log_size_bytes == -1` means the log size will be unlimited.
   AecDumpImpl(FileWrapper debug_file,
               int64_t max_log_size_bytes,
               rtc::TaskQueue* worker_queue);
-
+  AecDumpImpl(const AecDumpImpl&) = delete;
+  AecDumpImpl& operator=(const AecDumpImpl&) = delete;
   ~AecDumpImpl() override;
 
   void WriteInitMessage(const ProcessingConfig& api_format,
@@ -75,7 +72,7 @@ class AecDumpImpl : public AecDump {
       const AudioProcessing::RuntimeSetting& runtime_setting) override;
 
  private:
-  std::unique_ptr<WriteToFileTask> CreateWriteToFileTask();
+  void PostWriteToFileTask(std::unique_ptr<audioproc::Event> event);
 
   FileWrapper debug_file_;
   int64_t num_bytes_left_for_log_ = 0;

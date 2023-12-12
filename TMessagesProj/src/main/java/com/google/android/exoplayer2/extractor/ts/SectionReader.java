@@ -15,6 +15,9 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
@@ -45,7 +48,9 @@ public final class SectionReader implements TsPayloadReader {
   }
 
   @Override
-  public void init(TimestampAdjuster timestampAdjuster, ExtractorOutput extractorOutput,
+  public void init(
+      TimestampAdjuster timestampAdjuster,
+      ExtractorOutput extractorOutput,
       TrackIdGenerator idGenerator) {
     reader.init(timestampAdjuster, extractorOutput, idGenerator);
     waitingForPayloadStart = true;
@@ -87,11 +92,14 @@ public final class SectionReader implements TsPayloadReader {
             return;
           }
         }
-        int headerBytesToRead = Math.min(data.bytesLeft(), SECTION_HEADER_LENGTH - bytesRead);
-        data.readBytes(sectionData.data, bytesRead, headerBytesToRead);
+        int headerBytesToRead = min(data.bytesLeft(), SECTION_HEADER_LENGTH - bytesRead);
+        // sectionData is guaranteed to have enough space because it's initialized with a 32-element
+        // backing array and headerBytesToRead is at most 3.
+        data.readBytes(sectionData.getData(), bytesRead, headerBytesToRead);
         bytesRead += headerBytesToRead;
         if (bytesRead == SECTION_HEADER_LENGTH) {
-          sectionData.reset(SECTION_HEADER_LENGTH);
+          sectionData.setPosition(0);
+          sectionData.setLimit(SECTION_HEADER_LENGTH);
           sectionData.skipBytes(1); // Skip table id (8).
           int secondHeaderByte = sectionData.readUnsignedByte();
           int thirdHeaderByte = sectionData.readUnsignedByte();
@@ -100,35 +108,35 @@ public final class SectionReader implements TsPayloadReader {
               (((secondHeaderByte & 0x0F) << 8) | thirdHeaderByte) + SECTION_HEADER_LENGTH;
           if (sectionData.capacity() < totalSectionLength) {
             // Ensure there is enough space to keep the whole section.
-            byte[] bytes = sectionData.data;
-            sectionData.reset(
-                Math.min(MAX_SECTION_LENGTH, Math.max(totalSectionLength, bytes.length * 2)));
-            System.arraycopy(bytes, 0, sectionData.data, 0, SECTION_HEADER_LENGTH);
+            int limit =
+                min(MAX_SECTION_LENGTH, max(totalSectionLength, sectionData.capacity() * 2));
+            sectionData.ensureCapacity(limit);
           }
         }
       } else {
         // Reading the body.
-        int bodyBytesToRead = Math.min(data.bytesLeft(), totalSectionLength - bytesRead);
-        data.readBytes(sectionData.data, bytesRead, bodyBytesToRead);
+        int bodyBytesToRead = min(data.bytesLeft(), totalSectionLength - bytesRead);
+        // sectionData has been sized large enough for totalSectionLength when reading the header.
+        data.readBytes(sectionData.getData(), bytesRead, bodyBytesToRead);
         bytesRead += bodyBytesToRead;
         if (bytesRead == totalSectionLength) {
           if (sectionSyntaxIndicator) {
             // This section has common syntax as defined in ISO/IEC 13818-1, section 2.4.4.11.
-            if (Util.crc32(sectionData.data, 0, totalSectionLength, 0xFFFFFFFF) != 0) {
+            if (Util.crc32(sectionData.getData(), 0, totalSectionLength, 0xFFFFFFFF) != 0) {
               // The CRC is invalid so discard the section.
               waitingForPayloadStart = true;
               return;
             }
-            sectionData.reset(totalSectionLength - 4); // Exclude the CRC_32 field.
+            sectionData.setLimit(totalSectionLength - 4); // Exclude the CRC_32 field.
           } else {
             // This is a private section with private defined syntax.
-            sectionData.reset(totalSectionLength);
+            sectionData.setLimit(totalSectionLength);
           }
+          sectionData.setPosition(0);
           reader.consume(sectionData);
           bytesRead = 0;
         }
       }
     }
   }
-
 }

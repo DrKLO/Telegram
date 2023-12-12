@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.os.Handler;
+import com.google.android.exoplayer2.util.Util;
 
 /* package */ final class AudioBecomingNoisyManager {
 
@@ -46,8 +47,8 @@ import android.os.Handler;
    */
   public void setEnabled(boolean enabled) {
     if (enabled && !receiverRegistered) {
-      context.registerReceiver(
-          receiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+      Util.registerReceiverNotExported(
+          context, receiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
       receiverRegistered = true;
     } else if (!enabled && receiverRegistered) {
       context.unregisterReceiver(receiver);

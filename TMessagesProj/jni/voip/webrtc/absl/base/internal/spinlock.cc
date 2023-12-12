@@ -19,6 +19,7 @@
 #include <limits>
 
 #include "absl/base/attributes.h"
+#include "absl/base/config.h"
 #include "absl/base/internal/atomic_hook.h"
 #include "absl/base/internal/cycleclock.h"
 #include "absl/base/internal/spinlock_wait.h"
@@ -66,33 +67,19 @@ void RegisterSpinLockProfiler(void (*fn)(const void *contendedlock,
   submit_profile_data.Store(fn);
 }
 
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+// Static member variable definitions.
+constexpr uint32_t SpinLock::kSpinLockHeld;
+constexpr uint32_t SpinLock::kSpinLockCooperative;
+constexpr uint32_t SpinLock::kSpinLockDisabledScheduling;
+constexpr uint32_t SpinLock::kSpinLockSleeper;
+constexpr uint32_t SpinLock::kWaitTimeMask;
+#endif
+
 // Uncommon constructors.
 SpinLock::SpinLock(base_internal::SchedulingMode mode)
     : lockword_(IsCooperative(mode) ? kSpinLockCooperative : 0) {
   ABSL_TSAN_MUTEX_CREATE(this, __tsan_mutex_not_static);
-}
-
-SpinLock::SpinLock(base_internal::LinkerInitialized,
-                   base_internal::SchedulingMode mode) {
-  ABSL_TSAN_MUTEX_CREATE(this, 0);
-  if (IsCooperative(mode)) {
-    InitLinkerInitializedAndCooperative();
-  }
-  // Otherwise, lockword_ is already initialized.
-}
-
-// Static (linker initialized) spinlocks always start life as functional
-// non-cooperative locks.  When their static constructor does run, it will call
-// this initializer to augment the lockword with the cooperative bit.  By
-// actually taking the lock when we do this we avoid the need for an atomic
-// operation in the regular unlock path.
-//
-// SlowLock() must be careful to re-test for this bit so that any outstanding
-// waiters may be upgraded to cooperative status.
-void SpinLock::InitLinkerInitializedAndCooperative() {
-  Lock();
-  lockword_.fetch_or(kSpinLockCooperative, std::memory_order_relaxed);
-  Unlock();
 }
 
 // Monitor the lock to see if its value changes within some time period
@@ -121,6 +108,14 @@ void SpinLock::SlowLock() {
   if ((lock_value & kSpinLockHeld) == 0) {
     return;
   }
+
+  base_internal::SchedulingMode scheduling_mode;
+  if ((lock_value & kSpinLockCooperative) != 0) {
+    scheduling_mode = base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL;
+  } else {
+    scheduling_mode = base_internal::SCHEDULE_KERNEL_ONLY;
+  }
+
   // The lock was not obtained initially, so this thread needs to wait for
   // it.  Record the current timestamp in the local variable wait_start_time
   // so the total wait time can be stored in the lockword once this thread
@@ -133,8 +128,9 @@ void SpinLock::SlowLock() {
     // it as having a sleeper.
     if ((lock_value & kWaitTimeMask) == 0) {
       // Here, just "mark" that the thread is going to sleep.  Don't store the
-      // lock wait time in the lock as that will cause the current lock
-      // owner to think it experienced contention.
+      // lock wait time in the lock -- the lock word stores the amount of time
+      // that the current holder waited before acquiring the lock, not the wait
+      // time of any thread currently waiting to acquire it.
       if (lockword_.compare_exchange_strong(
               lock_value, lock_value | kSpinLockSleeper,
               std::memory_order_relaxed, std::memory_order_relaxed)) {
@@ -148,15 +144,17 @@ void SpinLock::SlowLock() {
         // this thread obtains the lock.
         lock_value = TryLockInternal(lock_value, wait_cycles);
         continue;   // Skip the delay at the end of the loop.
+      } else if ((lock_value & kWaitTimeMask) == 0) {
+        // The lock is still held, without a waiter being marked, but something
+        // else about the lock word changed, causing our CAS to fail. For
+        // example, a new lock holder may have acquired the lock with
+        // kSpinLockDisabledScheduling set, whereas the previous holder had not
+        // set that flag. In this case, attempt again to mark ourselves as a
+        // waiter.
+        continue;
       }
     }
 
-    base_internal::SchedulingMode scheduling_mode;
-    if ((lock_value & kSpinLockCooperative) != 0) {
-      scheduling_mode = base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL;
-    } else {
-      scheduling_mode = base_internal::SCHEDULE_KERNEL_ONLY;
-    }
     // SpinLockDelay() calls into fiber scheduler, we need to see
     // synchronization there to avoid false positives.
     ABSL_TSAN_MUTEX_PRE_DIVERT(this, 0);
@@ -180,7 +178,7 @@ void SpinLock::SlowUnlock(uint32_t lock_value) {
   // reserve a unitary wait time to represent that a waiter exists without our
   // own acquisition having been contended.
   if ((lock_value & kWaitTimeMask) != kSpinLockSleeper) {
-    const uint64_t wait_cycles = DecodeWaitCycles(lock_value);
+    const int64_t wait_cycles = DecodeWaitCycles(lock_value);
     ABSL_TSAN_MUTEX_PRE_DIVERT(this, 0);
     submit_profile_data(this, wait_cycles);
     ABSL_TSAN_MUTEX_POST_DIVERT(this, 0);
@@ -222,9 +220,9 @@ uint32_t SpinLock::EncodeWaitCycles(int64_t wait_start_time,
   return clamped;
 }
 
-uint64_t SpinLock::DecodeWaitCycles(uint32_t lock_value) {
+int64_t SpinLock::DecodeWaitCycles(uint32_t lock_value) {
   // Cast to uint32_t first to ensure bits [63:32] are cleared.
-  const uint64_t scaled_wait_time =
+  const int64_t scaled_wait_time =
       static_cast<uint32_t>(lock_value & kWaitTimeMask);
   return scaled_wait_time << (kProfileTimestampShift - kLockwordReservedShift);
 }

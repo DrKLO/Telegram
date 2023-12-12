@@ -64,7 +64,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_NativeCapturerObserver_Co
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_NativeCapturerObserver_JNI

@@ -10,6 +10,7 @@
 
 #include "logging/rtc_event_log/encoder/var_int.h"
 
+#include "rtc_base/bitstream_reader.h"
 #include "rtc_base/checks.h"
 
 // TODO(eladalon): Add unit tests.
@@ -58,23 +59,18 @@ std::pair<bool, absl::string_view> DecodeVarInt(absl::string_view input,
 
 // There is some code duplication between the flavors of this function.
 // For performance's sake, it's best to just keep it.
-size_t DecodeVarInt(rtc::BitBuffer* input, uint64_t* output) {
-  RTC_DCHECK(output);
-
+uint64_t DecodeVarInt(BitstreamReader& input) {
   uint64_t decoded = 0;
   for (size_t i = 0; i < kMaxVarIntLengthBytes; ++i) {
-    uint8_t byte;
-    if (!input->ReadUInt8(byte)) {
-      return 0;
-    }
+    uint8_t byte = input.Read<uint8_t>();
     decoded +=
         (static_cast<uint64_t>(byte & 0x7f) << static_cast<uint64_t>(7 * i));
     if (!(byte & 0x80)) {
-      *output = decoded;
-      return i + 1;
+      return decoded;
     }
   }
 
+  input.Invalidate();
   return 0;
 }
 

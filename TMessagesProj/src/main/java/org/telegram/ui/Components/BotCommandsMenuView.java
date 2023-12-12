@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -22,7 +24,9 @@ import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.MenuDrawable;
@@ -42,13 +46,31 @@ public class BotCommandsMenuView extends View {
             invalidate();
         }
     };
+    RLottieDrawable webViewAnimation = new RLottieDrawable(R.raw.bot_webview_sheet_to_cross, String.valueOf(R.raw.bot_webview_sheet_to_cross) + hashCode(), AndroidUtilities.dp(20), AndroidUtilities.dp(20)) {
+        @Override
+        public void invalidateSelf() {
+            super.invalidateSelf();
+            invalidate();
+        }
+
+        @Override
+        protected void invalidateInternal() {
+            super.invalidateInternal();
+            invalidate();
+        }
+    };
     boolean expanded;
     float expandProgress;
 
-    StaticLayout menuText;
+    private String menuText = LocaleController.getString(R.string.BotsMenuTitle);
+    StaticLayout menuTextLayout;
     boolean isOpened;
 
+    boolean isWebView;
+    boolean isWebViewOpened;
+
     Drawable backgroundDrawable;
+    boolean drawBackgroundDrawable = true;
 
     public BotCommandsMenuView(Context context) {
         super(context);
@@ -59,15 +81,42 @@ public class BotCommandsMenuView extends View {
         backDrawable.setCallback(this);
         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         backDrawable.setRoundCap();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_windowBackgroundWhite));
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         backgroundDrawable.setCallback(this);
+        setContentDescription(LocaleController.getString("AccDescrBotMenu", R.string.AccDescrBotMenu));
+    }
+
+    public void setDrawBackgroundDrawable(boolean drawBackgroundDrawable) {
+        this.drawBackgroundDrawable = drawBackgroundDrawable;
+        invalidate();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        webViewAnimation.setMasterParent(this);
+        webViewAnimation.setCurrentParentView(this);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        webViewAnimation.setMasterParent(this);
+    }
+
+    public void setWebView(boolean webView) {
+        isWebView = webView;
+        invalidate();
     }
 
     private void updateColors() {
         paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-        int textColor = Theme.getColor(Theme.key_chat_messagePanelVoicePressed);
+        int textColor = Theme.getColor(Theme.key_chat_messagePanelVoiceDuration);
         backDrawable.setBackColor(textColor);
         backDrawable.setIconColor(textColor);
+        if (webViewAnimation != null) {
+            webViewAnimation.setColorFilter(new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN));
+        }
         textPaint.setColor(textColor);
     }
 
@@ -76,18 +125,17 @@ public class BotCommandsMenuView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int size = MeasureSpec.getSize(widthMeasureSpec) + MeasureSpec.getSize(heightMeasureSpec) << 16;
-        if (lastSize != size || menuText == null) {
+        if (lastSize != size || menuTextLayout == null) {
             backDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
             textPaint.setTextSize(AndroidUtilities.dp(15));
             lastSize = size;
-            String string = LocaleController.getString("BotsMenuTitle", R.string.BotsMenuTitle);
-            int w = (int) textPaint.measureText(string);
-            menuText = StaticLayoutEx.createStaticLayout(string, textPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false, TextUtils.TruncateAt.END, w, 1);
+            int w = (int) textPaint.measureText(menuText);
+            menuTextLayout = StaticLayoutEx.createStaticLayout(menuText, textPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false, TextUtils.TruncateAt.END, w, 1);
         }
-        onTranslationChanged((menuText.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
+        onTranslationChanged((menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
         int width = AndroidUtilities.dp(40);
         if (expanded) {
-            width += menuText.getWidth() + AndroidUtilities.dp(4);
+            width += menuTextLayout.getWidth() + AndroidUtilities.dp(4);
         }
 
         super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
@@ -95,7 +143,7 @@ public class BotCommandsMenuView extends View {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        if (menuText != null) {
+        if (menuTextLayout != null) {
             boolean update = false;
             if (expanded && expandProgress != 1f) {
                 expandProgress += 16f / 150f;
@@ -119,24 +167,41 @@ public class BotCommandsMenuView extends View {
             if (update && expandProgress > 0) {
                 textPaint.setAlpha((int) (255 * expandProgress));
             }
-            rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuText.getWidth() + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
-            canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
-            backgroundDrawable.setBounds((int) rectTmp.left, (int) rectTmp.top, (int) rectTmp.right, (int) rectTmp.bottom);
-            backgroundDrawable.draw(canvas);
-            canvas.save();
-            canvas.translate(AndroidUtilities.dp(8), AndroidUtilities.dp(4));
-            backDrawable.draw(canvas);
-            canvas.restore();
+
+            if (drawBackgroundDrawable) {
+                rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
+                canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
+                backgroundDrawable.setBounds((int) rectTmp.left, (int) rectTmp.top, (int) rectTmp.right, (int) rectTmp.bottom);
+                backgroundDrawable.draw(canvas);
+            }
+
+            if (isWebView) {
+                canvas.save();
+                canvas.translate(AndroidUtilities.dp(9.5f), AndroidUtilities.dp(6));
+                RLottieDrawable drawable = webViewAnimation;
+                drawable.setBounds(0, 0, drawable.width, drawable.height);
+                drawable.draw(canvas);
+                canvas.restore();
+
+                if (drawable.isRunning()) {
+                    invalidate();
+                }
+            } else {
+                canvas.save();
+                canvas.translate(AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+                backDrawable.draw(canvas);
+                canvas.restore();
+            }
 
             if (expandProgress > 0) {
                 canvas.save();
-                canvas.translate(AndroidUtilities.dp(34), (getMeasuredHeight() - menuText.getHeight()) / 2f);
-                menuText.draw(canvas);
+                canvas.translate(AndroidUtilities.dp(34), (getMeasuredHeight() - menuTextLayout.getHeight()) / 2f);
+                menuTextLayout.draw(canvas);
                 canvas.restore();
             }
 
             if (update) {
-                onTranslationChanged((menuText.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
+                onTranslationChanged((menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
             }
         }
         super.dispatchDraw(canvas);
@@ -144,6 +209,17 @@ public class BotCommandsMenuView extends View {
 
     protected void onTranslationChanged(float translationX) {
 
+    }
+
+    public boolean setMenuText(String menuText) {
+        if (menuText == null) {
+            menuText = LocaleController.getString(R.string.BotsMenuTitle);
+        }
+        boolean changed = this.menuText == null || !this.menuText.equals(menuText);
+        this.menuText = menuText;
+        menuTextLayout = null;
+        requestLayout();
+        return changed;
     }
 
     public void setExpanded(boolean expanded, boolean animated) {
@@ -209,11 +285,7 @@ public class BotCommandsMenuView extends View {
                     TLRPC.TL_botCommand botCommand = info.commands.get(a);
                     if (botCommand != null && botCommand.command != null) {
                         newResult.add("/" + botCommand.command);
-                        if (botCommand.description != null && botCommand.description.length() > 1) {
-                            newResultHelp.add(botCommand.description.substring(0, 1).toUpperCase() + botCommand.description.substring(1).toLowerCase());
-                        } else {
-                            newResultHelp.add(botCommand.description);
-                        }
+                        newResultHelp.add(botCommand.description);
                     }
                 }
             }
@@ -225,7 +297,18 @@ public class BotCommandsMenuView extends View {
         if (isOpened != opened) {
             isOpened = opened;
         }
-        backDrawable.setRotation(opened ? 1f : 0f, true);
+        if (isWebView) {
+            if (isWebViewOpened != opened) {
+                RLottieDrawable drawable = webViewAnimation;
+                drawable.stop();
+                drawable.setPlayInDirectionOfCustomEndFrame(true);
+                drawable.setCustomEndFrame(opened ? drawable.getFramesCount() : 1);
+                drawable.start();
+                isWebViewOpened = opened;
+            }
+        } else {
+            backDrawable.setRotation(opened ? 1f : 0f, true);
+        }
     }
 
     public static class BotCommandView extends LinearLayout {
@@ -237,13 +320,20 @@ public class BotCommandsMenuView extends View {
         public BotCommandView(@NonNull Context context) {
             super(context);
             setOrientation(HORIZONTAL);
-            setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+            setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(8));
 
-            description = new TextView(context);
+            description = new TextView(context) {
+                @Override
+                public void setText(CharSequence text, BufferType type) {
+                    text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    super.setText(text, type);
+                }
+            };
+            NotificationCenter.listenEmojiLoading(description);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             description.setTag(Theme.key_windowBackgroundWhiteBlackText);
-            description.setLines(1);
+            description.setMaxLines(2);
             description.setEllipsize(TextUtils.TruncateAt.END);
             addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 0, 0, AndroidUtilities.dp(8), 0));
 
@@ -252,11 +342,6 @@ public class BotCommandsMenuView extends View {
             command.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             command.setTag(Theme.key_windowBackgroundWhiteGrayText);
             addView(command, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL));
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(36), MeasureSpec.EXACTLY));
         }
 
         public String getCommand() {

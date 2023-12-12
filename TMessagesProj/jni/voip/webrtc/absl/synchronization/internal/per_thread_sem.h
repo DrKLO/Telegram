@@ -66,10 +66,6 @@ class PerThreadSem {
   // REQUIRES: May only be called by ThreadIdentity.
   static void Init(base_internal::ThreadIdentity* identity);
 
-  // Destroy the PerThreadSem associated with "identity".
-  // REQUIRES: May only be called by ThreadIdentity.
-  static void Destroy(base_internal::ThreadIdentity* identity);
-
   // Increments "identity"'s count.
   static inline void Post(base_internal::ThreadIdentity* identity);
 
@@ -78,11 +74,10 @@ class PerThreadSem {
   // !t.has_timeout() => Wait(t) will return true.
   static inline bool Wait(KernelTimeout t);
 
-  // White-listed callers.
+  // Permitted callers.
   friend class PerThreadSemTest;
   friend class absl::Mutex;
-  friend absl::base_internal::ThreadIdentity* CreateThreadIdentity();
-  friend void ReclaimThreadIdentity(void* v);
+  friend void OneTimeInitThreadIdentity(absl::base_internal::ThreadIdentity*);
 };
 
 }  // namespace synchronization_internal
@@ -96,20 +91,20 @@ ABSL_NAMESPACE_END
 // By changing our extension points to be extern "C", we dodge this
 // check.
 extern "C" {
-void AbslInternalPerThreadSemPost(
+void ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)(
     absl::base_internal::ThreadIdentity* identity);
-bool AbslInternalPerThreadSemWait(
+bool ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemWait)(
     absl::synchronization_internal::KernelTimeout t);
 }  // extern "C"
 
 void absl::synchronization_internal::PerThreadSem::Post(
     absl::base_internal::ThreadIdentity* identity) {
-  AbslInternalPerThreadSemPost(identity);
+  ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)(identity);
 }
 
 bool absl::synchronization_internal::PerThreadSem::Wait(
     absl::synchronization_internal::KernelTimeout t) {
-  return AbslInternalPerThreadSemWait(t);
+  return ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemWait)(t);
 }
 
 #endif  // ABSL_SYNCHRONIZATION_INTERNAL_PER_THREAD_SEM_H_

@@ -19,33 +19,18 @@ namespace jni {
 
 SdpVideoFormat VideoCodecInfoToSdpVideoFormat(JNIEnv* jni,
                                               const JavaRef<jobject>& j_info) {
-  std::string codecName =
-      JavaToNativeString(jni, Java_VideoCodecInfo_getName(jni, j_info));
-  std::string sdpCodecName;
-  if (codecName == "AV1") {
-    // TODO(yyaroshevich): Undo mapping once AV1 sdp name is standardized
-    sdpCodecName = "AV1X";
-  } else {
-    sdpCodecName = codecName;
-  }
   return SdpVideoFormat(
-      sdpCodecName,
+      JavaToNativeString(jni, Java_VideoCodecInfo_getName(jni, j_info)),
       JavaToNativeStringMap(jni, Java_VideoCodecInfo_getParams(jni, j_info)));
 }
 
 ScopedJavaLocalRef<jobject> SdpVideoFormatToVideoCodecInfo(
     JNIEnv* jni,
     const SdpVideoFormat& format) {
-  std::string codecName;
-  if (format.name == "AV1X" || format.name == "AV1") {
-    codecName = "AV1";
-  } else {
-    codecName = format.name;
-  }
   ScopedJavaLocalRef<jobject> j_params =
       NativeToJavaStringMap(jni, format.parameters);
   return Java_VideoCodecInfo_Constructor(
-      jni, NativeToJavaString(jni, codecName), j_params);
+      jni, NativeToJavaString(jni, format.name), j_params);
 }
 
 }  // namespace jni

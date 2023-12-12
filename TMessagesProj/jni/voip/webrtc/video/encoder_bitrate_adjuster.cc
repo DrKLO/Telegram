@@ -17,7 +17,6 @@
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/time_utils.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
@@ -163,7 +162,7 @@ VideoBitrateAllocation EncoderBitrateAdjuster::AdjustRateAllocation(
             weight * ti_media_utilization_factor.value();
       }
     } else {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
 
     if (layer_info.link_utilization_factor < 1.0) {

@@ -16,14 +16,14 @@
 #include <map>
 #include <utility>
 
-#include "rtc_base/async_socket.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace webrtc {
 namespace testing {
 
 ///////////////////////////////////////////////////////////////////////////////
-// StreamSink - Monitor asynchronously signalled events from AsyncSocket.
+// StreamSink - Monitor asynchronously signalled events from Socket.
 ///////////////////////////////////////////////////////////////////////////////
 
 // Note: Any event that is an error is treated as SSE_ERROR instead of that
@@ -42,7 +42,7 @@ class StreamSink : public sigslot::has_slots<> {
   StreamSink();
   ~StreamSink() override;
 
-  void Monitor(rtc::AsyncSocket* socket) {
+  void Monitor(rtc::Socket* socket) {
     socket->SignalConnectEvent.connect(this, &StreamSink::OnConnectEvent);
     socket->SignalReadEvent.connect(this, &StreamSink::OnReadEvent);
     socket->SignalWriteEvent.connect(this, &StreamSink::OnWriteEvent);
@@ -50,30 +50,28 @@ class StreamSink : public sigslot::has_slots<> {
     // In case you forgot to unmonitor a previous object with this address
     events_.erase(socket);
   }
-  void Unmonitor(rtc::AsyncSocket* socket) {
+  void Unmonitor(rtc::Socket* socket) {
     socket->SignalConnectEvent.disconnect(this);
     socket->SignalReadEvent.disconnect(this);
     socket->SignalWriteEvent.disconnect(this);
     socket->SignalCloseEvent.disconnect(this);
     events_.erase(socket);
   }
-  bool Check(rtc::AsyncSocket* socket,
-             StreamSinkEvent event,
-             bool reset = true) {
+  bool Check(rtc::Socket* socket, StreamSinkEvent event, bool reset = true) {
     return DoCheck(socket, event, reset);
   }
 
  private:
-  typedef std::map<rtc::AsyncSocket*, int> EventMap;
+  typedef std::map<rtc::Socket*, int> EventMap;
 
-  void OnConnectEvent(rtc::AsyncSocket* socket) { AddEvents(socket, SSE_OPEN); }
-  void OnReadEvent(rtc::AsyncSocket* socket) { AddEvents(socket, SSE_READ); }
-  void OnWriteEvent(rtc::AsyncSocket* socket) { AddEvents(socket, SSE_WRITE); }
-  void OnCloseEvent(rtc::AsyncSocket* socket, int error) {
+  void OnConnectEvent(rtc::Socket* socket) { AddEvents(socket, SSE_OPEN); }
+  void OnReadEvent(rtc::Socket* socket) { AddEvents(socket, SSE_READ); }
+  void OnWriteEvent(rtc::Socket* socket) { AddEvents(socket, SSE_WRITE); }
+  void OnCloseEvent(rtc::Socket* socket, int error) {
     AddEvents(socket, (0 == error) ? SSE_CLOSE : SSE_ERROR);
   }
 
-  void AddEvents(rtc::AsyncSocket* obj, int events) {
+  void AddEvents(rtc::Socket* obj, int events) {
     EventMap::iterator it = events_.find(obj);
     if (events_.end() == it) {
       events_.insert(EventMap::value_type(obj, events));
@@ -81,7 +79,7 @@ class StreamSink : public sigslot::has_slots<> {
       it->second |= events;
     }
   }
-  bool DoCheck(rtc::AsyncSocket* obj, StreamSinkEvent event, bool reset) {
+  bool DoCheck(rtc::Socket* obj, StreamSinkEvent event, bool reset) {
     EventMap::iterator it = events_.find(obj);
     if ((events_.end() == it) || (0 == (it->second & event))) {
       return false;

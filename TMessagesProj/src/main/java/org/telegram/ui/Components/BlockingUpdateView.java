@@ -6,15 +6,11 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
-import androidx.core.content.FileProvider;
 import android.text.SpannableStringBuilder;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,13 +21,10 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
@@ -40,11 +33,9 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
-import java.io.File;
 import java.util.Locale;
 
 public class BlockingUpdateView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -129,7 +120,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
                 }
                 cellFlickerDrawable.setParentWidth(getMeasuredWidth());
                 AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
+                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4), null);
                 invalidate();
             }
 
@@ -144,20 +135,26 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             }
         };
         acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
-        acceptButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        acceptButton.setBackgroundDrawable(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
         acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 46, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
         acceptButton.setOnClickListener(view1 -> {
-            if (!checkApkInstallPermissions(getContext())) {
-                return;
-            }
-            if (appUpdate.document instanceof TLRPC.TL_document) {
-                if (!openApkInstall((Activity) getContext(), appUpdate.document)) {
-                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", 2, 1);
-                    showProgress(true);
+            if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
+                if (!ApplicationLoader.applicationLoaderInstance.checkApkInstallPermissions(getContext())) {
+                    return;
                 }
-            } else if (appUpdate.url != null) {
-                Browser.openUrl(getContext(), appUpdate.url);
+                if (appUpdate.document instanceof TLRPC.TL_document) {
+                    if (!ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document)) {
+                        FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
+                        showProgress(true);
+                    }
+                } else if (appUpdate.url != null) {
+                    Browser.openUrl(getContext(), appUpdate.url);
+                }
+            } else if (BuildVars.isHuaweiStoreApp()){
+                Browser.openUrl(context, BuildVars.HUAWEI_STORE_URL);
+            } else {
+                Browser.openUrl(context, BuildVars.PLAYSTORE_APP_URL);
             }
         });
 
@@ -212,7 +209,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
-                openApkInstall((Activity) getContext(), appUpdate.document);
+                ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document);
             }
         } else if (id == NotificationCenter.fileLoadFailed) {
             String location = (String) args[0];
@@ -230,50 +227,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         }
     }
 
-    public static boolean checkApkInstallPermissions(final Context context) {
-        if (Build.VERSION.SDK_INT >= 26 && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.getString("ApkRestricted", R.string.ApkRestricted));
-            builder.setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
-                try {
-                    context.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName())));
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            });
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            builder.show();
-            return false;
-        }
-        return true;
-    }
 
-    public static boolean openApkInstall(Activity activity, TLRPC.Document document) {
-        boolean exists = false;
-        try {
-            String fileName = FileLoader.getAttachFileName(document);
-            File f = FileLoader.getPathToAttach(document, true);
-            if (exists = f.exists()) {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                if (Build.VERSION.SDK_INT >= 24) {
-                    intent.setDataAndType(FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", f), "application/vnd.android.package-archive");
-                } else {
-                    intent.setDataAndType(Uri.fromFile(f), "application/vnd.android.package-archive");
-                }
-                try {
-                    activity.startActivityForResult(intent, 500);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return exists;
-    }
 
     private void showProgress(final boolean show) {
         if (progressAnimation != null) {
@@ -346,7 +300,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoaded);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadFailed);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadProgressChanged);
-        if (check) {
+        if (check && ApplicationLoader.isStandaloneBuild()) {
             TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
             try {
                 req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());

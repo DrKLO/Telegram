@@ -24,18 +24,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Represents a splice insert command defined in SCTE35, Section 9.3.3.
- */
+/** Represents a splice insert command defined in SCTE35, Section 9.3.3. */
 public final class SpliceInsertCommand extends SpliceCommand {
 
-  /**
-   * The splice event id.
-   */
+  /** The splice event id. */
   public final long spliceEventId;
-  /**
-   * True if the event with id {@link #spliceEventId} has been canceled.
-   */
+  /** True if the event with id {@link #spliceEventId} has been canceled. */
   public final boolean spliceEventCancelIndicator;
   /**
    * If true, the splice event is an opportunity to exit from the network feed. If false, indicates
@@ -49,53 +43,53 @@ public final class SpliceInsertCommand extends SpliceCommand {
   public final boolean programSpliceFlag;
   /**
    * Whether splicing should be done at the nearest opportunity. If false, splicing should be done
-   * at the moment indicated by {@link #programSplicePlaybackPositionUs} or
-   * {@link ComponentSplice#componentSplicePlaybackPositionUs}, depending on
-   * {@link #programSpliceFlag}.
+   * at the moment indicated by {@link #programSplicePlaybackPositionUs} or {@link
+   * ComponentSplice#componentSplicePlaybackPositionUs}, depending on {@link #programSpliceFlag}.
    */
   public final boolean spliceImmediateFlag;
   /**
-   * If {@link #programSpliceFlag} is true, the PTS at which the program splice should occur.
-   * {@link C#TIME_UNSET} otherwise.
+   * If {@link #programSpliceFlag} is true, the PTS at which the program splice should occur. {@link
+   * C#TIME_UNSET} otherwise.
    */
   public final long programSplicePts;
-  /**
-   * Equivalent to {@link #programSplicePts} but in the playback timebase.
-   */
+  /** Equivalent to {@link #programSplicePts} but in the playback timebase. */
   public final long programSplicePlaybackPositionUs;
   /**
-   * If {@link #programSpliceFlag} is false, a non-empty list containing the
-   * {@link ComponentSplice}s. Otherwise, an empty list.
+   * If {@link #programSpliceFlag} is false, a non-empty list containing the {@link
+   * ComponentSplice}s. Otherwise, an empty list.
    */
   public final List<ComponentSplice> componentSpliceList;
   /**
-   * If {@link #breakDurationUs} is not {@link C#TIME_UNSET}, defines whether
-   * {@link #breakDurationUs} should be used to know when to return to the network feed. If
-   * {@link #breakDurationUs} is {@link C#TIME_UNSET}, the value is undefined.
+   * If {@link #breakDurationUs} is not {@link C#TIME_UNSET}, defines whether {@link
+   * #breakDurationUs} should be used to know when to return to the network feed. If {@link
+   * #breakDurationUs} is {@link C#TIME_UNSET}, the value is undefined.
    */
   public final boolean autoReturn;
   /**
    * The duration of the splice in microseconds, or {@link C#TIME_UNSET} if no duration is present.
    */
   public final long breakDurationUs;
-  /**
-   * The unique program id as defined in SCTE35, Section 9.3.3.
-   */
+  /** The unique program id as defined in SCTE35, Section 9.3.3. */
   public final int uniqueProgramId;
-  /**
-   * Holds the value of {@code avail_num} as defined in SCTE35, Section 9.3.3.
-   */
+  /** Holds the value of {@code avail_num} as defined in SCTE35, Section 9.3.3. */
   public final int availNum;
-  /**
-   * Holds the value of {@code avails_expected} as defined in SCTE35, Section 9.3.3.
-   */
+  /** Holds the value of {@code avails_expected} as defined in SCTE35, Section 9.3.3. */
   public final int availsExpected;
 
-  private SpliceInsertCommand(long spliceEventId, boolean spliceEventCancelIndicator,
-      boolean outOfNetworkIndicator, boolean programSpliceFlag, boolean spliceImmediateFlag,
-      long programSplicePts, long programSplicePlaybackPositionUs,
-      List<ComponentSplice> componentSpliceList, boolean autoReturn, long breakDurationUs,
-      int uniqueProgramId, int availNum, int availsExpected) {
+  private SpliceInsertCommand(
+      long spliceEventId,
+      boolean spliceEventCancelIndicator,
+      boolean outOfNetworkIndicator,
+      boolean programSpliceFlag,
+      boolean spliceImmediateFlag,
+      long programSplicePts,
+      long programSplicePlaybackPositionUs,
+      List<ComponentSplice> componentSpliceList,
+      boolean autoReturn,
+      long breakDurationUs,
+      int uniqueProgramId,
+      int availNum,
+      int availsExpected) {
     this.spliceEventId = spliceEventId;
     this.spliceEventCancelIndicator = spliceEventCancelIndicator;
     this.outOfNetworkIndicator = outOfNetworkIndicator;
@@ -132,8 +126,8 @@ public final class SpliceInsertCommand extends SpliceCommand {
     availsExpected = in.readInt();
   }
 
-  /* package */ static SpliceInsertCommand parseFromSection(ParsableByteArray sectionData,
-      long ptsAdjustment, TimestampAdjuster timestampAdjuster) {
+  /* package */ static SpliceInsertCommand parseFromSection(
+      ParsableByteArray sectionData, long ptsAdjustment, TimestampAdjuster timestampAdjuster) {
     long spliceEventId = sectionData.readUnsignedInt();
     // splice_event_cancel_indicator(1), reserved(7).
     boolean spliceEventCancelIndicator = (sectionData.readUnsignedByte() & 0x80) != 0;
@@ -165,8 +159,11 @@ public final class SpliceInsertCommand extends SpliceCommand {
           if (!spliceImmediateFlag) {
             componentSplicePts = TimeSignalCommand.parseSpliceTime(sectionData, ptsAdjustment);
           }
-          componentSplices.add(new ComponentSplice(componentTag, componentSplicePts,
-              timestampAdjuster.adjustTsTimestamp(componentSplicePts)));
+          componentSplices.add(
+              new ComponentSplice(
+                  componentTag,
+                  componentSplicePts,
+                  timestampAdjuster.adjustTsTimestamp(componentSplicePts)));
         }
       }
       if (durationFlag) {
@@ -179,23 +176,31 @@ public final class SpliceInsertCommand extends SpliceCommand {
       availNum = sectionData.readUnsignedByte();
       availsExpected = sectionData.readUnsignedByte();
     }
-    return new SpliceInsertCommand(spliceEventId, spliceEventCancelIndicator, outOfNetworkIndicator,
-        programSpliceFlag, spliceImmediateFlag, programSplicePts,
-        timestampAdjuster.adjustTsTimestamp(programSplicePts), componentSplices, autoReturn,
-        breakDurationUs, uniqueProgramId, availNum, availsExpected);
+    return new SpliceInsertCommand(
+        spliceEventId,
+        spliceEventCancelIndicator,
+        outOfNetworkIndicator,
+        programSpliceFlag,
+        spliceImmediateFlag,
+        programSplicePts,
+        timestampAdjuster.adjustTsTimestamp(programSplicePts),
+        componentSplices,
+        autoReturn,
+        breakDurationUs,
+        uniqueProgramId,
+        availNum,
+        availsExpected);
   }
 
-  /**
-   * Holds splicing information for specific splice insert command components.
-   */
+  /** Holds splicing information for specific splice insert command components. */
   public static final class ComponentSplice {
 
     public final int componentTag;
     public final long componentSplicePts;
     public final long componentSplicePlaybackPositionUs;
 
-    private ComponentSplice(int componentTag, long componentSplicePts,
-        long componentSplicePlaybackPositionUs) {
+    private ComponentSplice(
+        int componentTag, long componentSplicePts, long componentSplicePlaybackPositionUs) {
       this.componentTag = componentTag;
       this.componentSplicePts = componentSplicePts;
       this.componentSplicePlaybackPositionUs = componentSplicePlaybackPositionUs;
@@ -210,7 +215,6 @@ public final class SpliceInsertCommand extends SpliceCommand {
     public static ComponentSplice createFromParcel(Parcel in) {
       return new ComponentSplice(in.readInt(), in.readLong(), in.readLong());
     }
-
   }
 
   // Parcelable implementation.
@@ -239,16 +243,14 @@ public final class SpliceInsertCommand extends SpliceCommand {
   public static final Parcelable.Creator<SpliceInsertCommand> CREATOR =
       new Parcelable.Creator<SpliceInsertCommand>() {
 
-    @Override
-    public SpliceInsertCommand createFromParcel(Parcel in) {
-      return new SpliceInsertCommand(in);
-    }
+        @Override
+        public SpliceInsertCommand createFromParcel(Parcel in) {
+          return new SpliceInsertCommand(in);
+        }
 
-    @Override
-    public SpliceInsertCommand[] newArray(int size) {
-      return new SpliceInsertCommand[size];
-    }
-
-  };
-
+        @Override
+        public SpliceInsertCommand[] newArray(int size) {
+          return new SpliceInsertCommand[size];
+        }
+      };
 }

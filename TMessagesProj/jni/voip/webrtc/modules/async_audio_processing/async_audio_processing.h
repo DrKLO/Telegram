@@ -53,16 +53,16 @@ class AsyncAudioProcessing final {
   ~AsyncAudioProcessing();
 
   // Creates AsyncAudioProcessing which will pass audio frames to
-  // |frame_processor| on |task_queue_| and reply with processed frames passed
-  // into |on_frame_processed_callback|, which is posted back onto
-  // |task_queue_|. |task_queue_| is created using the provided
-  // |task_queue_factory|.
+  // `frame_processor` on `task_queue_` and reply with processed frames passed
+  // into `on_frame_processed_callback`, which is posted back onto
+  // `task_queue_`. `task_queue_` is created using the provided
+  // `task_queue_factory`.
   AsyncAudioProcessing(
       AudioFrameProcessor& frame_processor,
       TaskQueueFactory& task_queue_factory,
       AudioFrameProcessor::OnAudioFrameCallback on_frame_processed_callback);
 
-  // Accepts |frame| for asynchronous processing. Thread-safe.
+  // Accepts `frame` for asynchronous processing. Thread-safe.
   void Process(std::unique_ptr<AudioFrame> frame);
 
  private:

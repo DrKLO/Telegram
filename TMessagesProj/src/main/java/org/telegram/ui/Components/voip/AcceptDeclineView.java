@@ -213,7 +213,7 @@ public class AcceptDeclineView extends View {
                         leftAnimator = animator;
                         if (listener != null) {
                             if ((!startDrag && Math.abs(dy) < touchSlop && !screenWasWakeup) || leftOffsetX > maxOffset * 0.8f) {
-                                listener.onDicline();
+                                listener.onDecline();
                             }
                         }
                     } else {
@@ -387,7 +387,7 @@ public class AcceptDeclineView extends View {
     public interface Listener {
         void onAccept();
 
-        void onDicline();
+        void onDecline();
     }
 
     public void setRetryMod(boolean retryMod) {
@@ -481,7 +481,7 @@ public class AcceptDeclineView extends View {
                         if (virtualViewId == ACCEPT_VIEW_ID) {
                             listener.onAccept();
                         } else if (virtualViewId == DECLINE_VIEW_ID) {
-                            listener.onDicline();
+                            listener.onDecline();
                         }
                     }
                 }
@@ -494,7 +494,7 @@ public class AcceptDeclineView extends View {
         this.screenWasWakeup = screenWasWakeup;
     }
 
-    private static abstract class AcceptDeclineAccessibilityNodeProvider extends AccessibilityNodeProvider {
+    public static abstract class AcceptDeclineAccessibilityNodeProvider extends AccessibilityNodeProvider {
 
         private final View hostView;
         private final int virtualViewsCount;
@@ -503,7 +503,7 @@ public class AcceptDeclineView extends View {
 
         private int currentFocusedVirtualViewId = View.NO_ID;
 
-        private AcceptDeclineAccessibilityNodeProvider(View hostView, int virtualViewsCount) {
+        protected AcceptDeclineAccessibilityNodeProvider(View hostView, int virtualViewsCount) {
             this.hostView = hostView;
             this.virtualViewsCount = virtualViewsCount;
             this.accessibilityManager = ContextCompat.getSystemService(hostView.getContext(), AccessibilityManager.class);

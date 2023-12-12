@@ -18,7 +18,7 @@
 namespace webrtc {
 
 QualityRampupExperiment::QualityRampupExperiment(
-    const WebRtcKeyValueConfig* const key_value_config)
+    const FieldTrialsView* const key_value_config)
     : min_pixels_("min_pixels"),
       min_duration_ms_("min_duration_ms"),
       max_bitrate_factor_("max_bitrate_factor") {
@@ -70,8 +70,13 @@ bool QualityRampupExperiment::BwHigh(int64_t now_ms,
   return (now_ms - *start_ms_) >= min_duration_ms_.Value();
 }
 
+void QualityRampupExperiment::Reset() {
+  start_ms_.reset();
+  max_bitrate_kbps_.reset();
+}
+
 bool QualityRampupExperiment::Enabled() const {
-  return min_pixels_ || min_duration_ms_ || max_bitrate_kbps_;
+  return min_pixels_ && min_duration_ms_;
 }
 
 }  // namespace webrtc

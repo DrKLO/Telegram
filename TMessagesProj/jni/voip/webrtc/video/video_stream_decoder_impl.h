@@ -16,10 +16,13 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
+#include "api/transport/field_trial_based_config.h"
 #include "api/video/video_stream_decoder.h"
 #include "modules/video_coding/frame_buffer2.h"
-#include "modules/video_coding/timing.h"
+#include "modules/video_coding/timing/timing.h"
+#include "rtc_base/memory/always_valid_pointer.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/task_queue.h"
@@ -33,7 +36,8 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
       VideoStreamDecoderInterface::Callbacks* callbacks,
       VideoDecoderFactory* decoder_factory,
       TaskQueueFactory* task_queue_factory,
-      std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings);
+      std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings,
+      const FieldTrialsView* field_trials);
 
   ~VideoStreamDecoderImpl() override;
 
@@ -72,8 +76,7 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
   void SaveFrameInfo(const EncodedFrame& frame) RTC_RUN_ON(bookkeeping_queue_);
   FrameInfo* GetFrameInfo(int64_t timestamp) RTC_RUN_ON(bookkeeping_queue_);
   void StartNextDecode() RTC_RUN_ON(bookkeeping_queue_);
-  void OnNextFrameCallback(std::unique_ptr<EncodedFrame> frame,
-                           video_coding::FrameBuffer::ReturnReason res)
+  void OnNextFrameCallback(std::unique_ptr<EncodedFrame> frame)
       RTC_RUN_ON(bookkeeping_queue_);
   void OnDecodedFrameCallback(VideoFrame& decodedImage,  // NOLINT
                               absl::optional<int32_t> decode_time_ms,
@@ -83,6 +86,8 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
   VideoStreamDecoderImpl::DecodeResult DecodeFrame(
       std::unique_ptr<EncodedFrame> frame) RTC_RUN_ON(decode_queue_);
 
+  AlwaysValidPointer<const FieldTrialsView, FieldTrialBasedConfig>
+      field_trials_;
   VCMTiming timing_;
   DecodeCallbacks decode_callbacks_;
 
@@ -102,14 +107,14 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
   std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings_
       RTC_GUARDED_BY(decode_queue_);
 
-  // The |bookkeeping_queue_| use the |frame_buffer_| and also posts tasks to
-  // the |decode_queue_|. The |decode_queue_| in turn use the |decoder_| to
-  // decode frames. When the |decoder_| is done it will post back to the
-  // |bookkeeping_queue_| with the decoded frame. During shutdown we start by
-  // isolating the |bookkeeping_queue_| from the |decode_queue_|, so now it's
-  // safe for the |decode_queue_| to be destructed. After that the |decoder_|
-  // can be destructed, and then the |bookkeeping_queue_|. Finally the
-  // |frame_buffer_| can be destructed.
+  // The `bookkeeping_queue_` use the `frame_buffer_` and also posts tasks to
+  // the `decode_queue_`. The `decode_queue_` in turn use the `decoder_` to
+  // decode frames. When the `decoder_` is done it will post back to the
+  // `bookkeeping_queue_` with the decoded frame. During shutdown we start by
+  // isolating the `bookkeeping_queue_` from the `decode_queue_`, so now it's
+  // safe for the `decode_queue_` to be destructed. After that the `decoder_`
+  // can be destructed, and then the `bookkeeping_queue_`. Finally the
+  // `frame_buffer_` can be destructed.
   Mutex shut_down_mutex_;
   bool shut_down_ RTC_GUARDED_BY(shut_down_mutex_);
   video_coding::FrameBuffer frame_buffer_ RTC_GUARDED_BY(bookkeeping_queue_);

@@ -1,19 +1,31 @@
 package org.telegram.ui.Components;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -21,6 +33,9 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -30,17 +45,22 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.util.Consumer;
 import androidx.core.view.ViewCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -51,32 +71,37 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static java.lang.annotation.RetentionPolicy.SOURCE;
-
-public final class Bulletin {
+public class Bulletin {
 
     public static final int DURATION_SHORT = 1500;
     public static final int DURATION_LONG = 2750;
+    public static final int DURATION_PROLONG = 5000;
 
     public static final int TYPE_STICKER = 0;
     public static final int TYPE_ERROR = 1;
     public static final int TYPE_BIO_CHANGED = 2;
     public static final int TYPE_NAME_CHANGED = 3;
+    public static final int TYPE_ERROR_SUBTITLE = 4;
+    public static final int TYPE_APP_ICON = 5;
+    public static final int TYPE_SUCCESS = 6;
 
     public int tag;
+    public int hash;
+    private View.OnLayoutChangeListener containerLayoutListener;
+    private SpringAnimation bottomOffsetSpring;
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
-        return new Bulletin(containerLayout, contentLayout, duration);
+        return new Bulletin(null, containerLayout, contentLayout, duration);
     }
 
     @SuppressLint("RtlHardcoded")
     public static Bulletin make(@NonNull BaseFragment fragment, @NonNull Layout contentLayout, int duration) {
         if (fragment instanceof ChatActivity) {
-            contentLayout.setWideScreenParams(ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT);
+            contentLayout.setWideScreenParams(ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
         } else if (fragment instanceof DialogsActivity) {
             contentLayout.setWideScreenParams(ViewGroup.LayoutParams.MATCH_PARENT, Gravity.NO_GRAVITY);
         }
-        return new Bulletin(fragment.getLayoutContainer(), contentLayout, duration);
+        return new Bulletin(fragment, fragment.getLayoutContainer(), contentLayout, duration);
     }
 
     public static Bulletin find(@NonNull FrameLayout containerLayout) {
@@ -101,24 +126,37 @@ public final class Bulletin {
     }
 
     private static final HashMap<FrameLayout, Delegate> delegates = new HashMap<>();
+    private static final HashMap<BaseFragment, Delegate> fragmentDelegates = new HashMap<>();
 
     @SuppressLint("StaticFieldLeak")
     private static Bulletin visibleBulletin;
 
     private final Layout layout;
     private final ParentLayout parentLayout;
+    private final BaseFragment containerFragment;
     private final FrameLayout containerLayout;
     private final Runnable hideRunnable = this::hide;
     private int duration;
 
     private boolean showing;
     private boolean canHide;
+    private boolean loaded = true;
     public int currentBottomOffset;
+    public int lastBottomOffset;
     private Delegate currentDelegate;
     private Layout.Transition layoutTransition;
+    public boolean hideAfterBottomSheet = true;
 
-    private Bulletin(@NonNull FrameLayout containerLayout, @NonNull Layout layout, int duration) {
+    private Bulletin() {
+        layout = null;
+        parentLayout = null;
+        containerFragment = null;
+        containerLayout = null;
+    }
+
+    private Bulletin(BaseFragment fragment, @NonNull FrameLayout containerLayout, @NonNull Layout layout, int duration) {
         this.layout = layout;
+        this.loaded = !(this.layout instanceof LoadingLayout);
         this.parentLayout = new ParentLayout(layout) {
             @Override
             protected void onPressedStateChanged(boolean pressed) {
@@ -133,6 +171,7 @@ public final class Bulletin {
                 hide();
             }
         };
+        this.containerFragment = fragment;
         this.containerLayout = containerLayout;
         this.duration = duration;
     }
@@ -141,13 +180,46 @@ public final class Bulletin {
         return visibleBulletin;
     }
 
-    public void setDuration(int duration) {
+    public static void hideVisible() {
+        if (visibleBulletin != null) {
+            visibleBulletin.hide();
+        }
+    }
+
+    public static void hideVisible(ViewGroup container) {
+        if (visibleBulletin != null && visibleBulletin.containerLayout == container) {
+            visibleBulletin.hide();
+        }
+    }
+
+    public Bulletin setDuration(int duration) {
         this.duration = duration;
+        return this;
+    }
+
+    public Bulletin hideAfterBottomSheet(boolean hide) {
+        this.hideAfterBottomSheet = hide;
+        return this;
+    }
+
+    public Bulletin setTag(int tag) {
+        this.tag = tag;
+        return this;
     }
 
     public Bulletin show() {
+        return show(false);
+    }
+
+    public Bulletin show(boolean top) {
         if (!showing && containerLayout != null) {
             showing = true;
+            layout.setTop(top);
+
+            CharSequence text = layout.getAccessibilityText();
+            if (text != null) {
+                AndroidUtilities.makeAccessibilityAnnouncement(text);
+            }
 
             if (layout.getParent() != parentLayout) {
                 throw new IllegalStateException("Layout has incorrect parent");
@@ -159,34 +231,66 @@ public final class Bulletin {
             visibleBulletin = this;
             layout.onAttach(this);
 
+            containerLayout.addOnLayoutChangeListener(containerLayoutListener = (v, left, top1, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                if (currentDelegate != null && !currentDelegate.allowLayoutChanges()) {
+                    return;
+                }
+                if (!top) {
+                    int newOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
+                    if (lastBottomOffset != newOffset) {
+                        if (bottomOffsetSpring == null || !bottomOffsetSpring.isRunning()) {
+                            bottomOffsetSpring = new SpringAnimation(new FloatValueHolder(lastBottomOffset))
+                                    .setSpring(new SpringForce()
+                                            .setFinalPosition(newOffset)
+                                            .setStiffness(900f)
+                                            .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
+                            bottomOffsetSpring.addUpdateListener((animation, value, velocity) -> {
+                                lastBottomOffset = (int) value;
+                                updatePosition();
+                            });
+                            bottomOffsetSpring.addEndListener((animation, canceled, value, velocity) -> {
+                                if (bottomOffsetSpring == animation) {
+                                    bottomOffsetSpring = null;
+                                }
+                            });
+                        } else {
+                            bottomOffsetSpring.getSpring().setFinalPosition(newOffset);
+                        }
+                        bottomOffsetSpring.start();
+                    }
+                }
+            });
+
             layout.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override
-                public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                public void onLayoutChange(View v, int left, int t, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                     layout.removeOnLayoutChangeListener(this);
                     if (showing) {
                         layout.onShow();
-                        currentDelegate = delegates.get(containerLayout);
-                        currentBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
+                        currentDelegate = findDelegate(containerFragment, containerLayout);
+                        if (bottomOffsetSpring == null || !bottomOffsetSpring.isRunning()) {
+                            lastBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
+                        }
                         if (currentDelegate != null) {
                             currentDelegate.onShow(Bulletin.this);
                         }
                         if (isTransitionsEnabled()) {
                             ensureLayoutTransitionCreated();
-                            layout.transitionRunning = true;
+                            layout.transitionRunningEnter = true;
                             layout.delegate = currentDelegate;
                             layout.invalidate();
                             layoutTransition.animateEnter(layout, layout::onEnterTransitionStart, () -> {
-                                layout.transitionRunning = false;
+                                layout.transitionRunningEnter = false;
                                 layout.onEnterTransitionEnd();
                                 setCanHide(true);
                             }, offset -> {
-                                if (currentDelegate != null) {
-                                    currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                                if (currentDelegate != null && !top) {
+                                    currentDelegate.onBottomOffsetChange(layout.getHeight() - offset);
                                 }
                             }, currentBottomOffset);
                         } else {
-                            if (currentDelegate != null) {
-                                currentDelegate.onOffsetChange(layout.getHeight() - currentBottomOffset);
+                            if (currentDelegate != null && !top) {
+                                currentDelegate.onBottomOffsetChange(layout.getHeight() - currentBottomOffset);
                             }
                             updatePosition();
                             layout.onEnterTransitionStart();
@@ -201,6 +305,7 @@ public final class Bulletin {
                 @Override
                 public void onViewAttachedToWindow(View v) {
                 }
+
                 @Override
                 public void onViewDetachedFromWindow(View v) {
                     layout.removeOnAttachStateChangeListener(this);
@@ -213,8 +318,9 @@ public final class Bulletin {
         return this;
     }
 
-    private void setCanHide(boolean canHide) {
-        if (this.canHide != canHide) {
+    public void setCanHide(boolean canHide) {
+        canHide = canHide && loaded;
+        if (this.canHide != canHide && layout != null) {
             this.canHide = canHide;
             if (canHide) {
                 layout.postDelayed(hideRunnable, duration);
@@ -224,8 +330,15 @@ public final class Bulletin {
         }
     }
 
+    private Runnable onHideListener;
+
+    public Bulletin setOnHideListener(Runnable listener) {
+        this.onHideListener = listener;
+        return this;
+    }
+
     private void ensureLayoutTransitionCreated() {
-        if (layoutTransition == null) {
+        if (layout != null && layoutTransition == null) {
             layoutTransition = layout.createTransition();
         }
     }
@@ -239,6 +352,9 @@ public final class Bulletin {
     }
 
     public void hide(boolean animated, long duration) {
+        if (layout == null) {
+            return;
+        }
         if (showing) {
             showing = false;
 
@@ -252,7 +368,7 @@ public final class Bulletin {
             if (ViewCompat.isLaidOut(layout)) {
                 layout.removeCallbacks(hideRunnable);
                 if (animated) {
-                    layout.transitionRunning = true;
+                    layout.transitionRunningExit = true;
                     layout.delegate = currentDelegate;
                     layout.invalidate();
                     if (duration >= 0) {
@@ -263,35 +379,47 @@ public final class Bulletin {
                         ensureLayoutTransitionCreated();
                     }
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
-                        if (currentDelegate != null) {
-                            currentDelegate.onOffsetChange(0);
+                        if (currentDelegate != null && !layout.top) {
+                            currentDelegate.onBottomOffsetChange(0);
                             currentDelegate.onHide(this);
                         }
-                        layout.transitionRunning = false;
+                        layout.transitionRunningExit = false;
                         layout.onExitTransitionEnd();
                         layout.onHide();
                         containerLayout.removeView(parentLayout);
+                        containerLayout.removeOnLayoutChangeListener(containerLayoutListener);
                         layout.onDetach();
+
+                        if (onHideListener != null) {
+                            onHideListener.run();
+                        }
                     }, offset -> {
-                        if (currentDelegate != null) {
-                            currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                        if (currentDelegate != null && !layout.top) {
+                            currentDelegate.onBottomOffsetChange(layout.getHeight() - offset);
                         }
                     }, bottomOffset);
                     return;
                 }
             }
 
-            if (currentDelegate != null) {
-                currentDelegate.onOffsetChange(0);
+            if (currentDelegate != null && !layout.top) {
+                currentDelegate.onBottomOffsetChange(0);
                 currentDelegate.onHide(this);
             }
             layout.onExitTransitionStart();
             layout.onExitTransitionEnd();
             layout.onHide();
             if (containerLayout != null) {
-                AndroidUtilities.runOnUIThread(() -> containerLayout.removeView(parentLayout));
+                AndroidUtilities.runOnUIThread(() -> {
+                    containerLayout.removeView(parentLayout);
+                    containerLayout.removeOnLayoutChangeListener(containerLayoutListener);
+                });
             }
             layout.onDetach();
+
+            if (onHideListener != null) {
+                onHideListener.run();
+            }
         }
     }
 
@@ -324,7 +452,7 @@ public final class Bulletin {
     private @interface GravityDef {
     }
 
-    private static abstract class ParentLayout extends FrameLayout {
+    public static abstract class ParentLayout extends FrameLayout {
 
         private final Layout layout;
         private final Rect rect = new Rect();
@@ -443,26 +571,32 @@ public final class Bulletin {
         }
 
         protected abstract void onPressedStateChanged(boolean pressed);
+
         protected abstract void onHide();
     }
 
     //region Offset Providers
     public static void addDelegate(@NonNull BaseFragment fragment, @NonNull Delegate delegate) {
-        final FrameLayout containerLayout = fragment.getLayoutContainer();
-        if (containerLayout != null) {
-            addDelegate(containerLayout, delegate);
-        }
+        fragmentDelegates.put(fragment, delegate);
     }
 
     public static void addDelegate(@NonNull FrameLayout containerLayout, @NonNull Delegate delegate) {
         delegates.put(containerLayout, delegate);
     }
 
-    public static void removeDelegate(@NonNull BaseFragment fragment) {
-        final FrameLayout containerLayout = fragment.getLayoutContainer();
-        if (containerLayout != null) {
-            removeDelegate(containerLayout);
+    private static Delegate findDelegate(BaseFragment probableFragment, FrameLayout probableContainer) {
+        Delegate delegate;
+        if ((delegate = fragmentDelegates.get(probableFragment)) != null) {
+            return delegate;
         }
+        if ((delegate = delegates.get(probableContainer)) != null) {
+            return delegate;
+        }
+        return null;
+    }
+
+    public static void removeDelegate(@NonNull BaseFragment fragment) {
+        fragmentDelegates.remove(fragment);
     }
 
     public static void removeDelegate(@NonNull FrameLayout containerLayout) {
@@ -475,13 +609,33 @@ public final class Bulletin {
             return 0;
         }
 
-        default void onOffsetChange(float offset) {
+        default int getLeftPadding() {
+            return 0;
+        }
+
+        default int getRightPadding() {
+            return 0;
+        }
+
+        default int getTopOffset(int tag) {
+            return 0;
+        }
+
+        default boolean clipWithGradient(int tag) {
+            return false;
+        }
+
+        default void onBottomOffsetChange(float offset) {
         }
 
         default void onShow(Bulletin bulletin) {
         }
 
         default void onHide(Bulletin bulletin) {
+        }
+
+        default boolean allowLayoutChanges() {
+            return true;
         }
     }
     //endregion
@@ -490,12 +644,18 @@ public final class Bulletin {
     public abstract static class Layout extends FrameLayout {
 
         private final List<Callback> callbacks = new ArrayList<>();
-        public boolean transitionRunning;
+        public boolean transitionRunningEnter;
+        public boolean transitionRunningExit;
         Delegate delegate;
         public float inOutOffset;
 
         protected Bulletin bulletin;
         Drawable background;
+        private boolean top;
+
+        public boolean isTransitionRunning() {
+            return transitionRunningEnter || transitionRunningExit;
+        }
 
         @WidthDef
         private int wideScreenWidth = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -509,12 +669,12 @@ public final class Bulletin {
             setMinimumHeight(AndroidUtilities.dp(48));
             setBackground(getThemedColor(Theme.key_undo_background));
             updateSize();
-            setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8),  AndroidUtilities.dp(8),  AndroidUtilities.dp(8));
+            setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             setWillNotDraw(false);
         }
 
         protected void setBackground(int color) {
-            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), color);
+            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(10), color);
         }
 
         public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {
@@ -548,9 +708,14 @@ public final class Bulletin {
             updateSize();
         }
 
+        private void setTop(boolean top) {
+            this.top = top;
+            updateSize();
+        }
+
         private void updateSize() {
             final boolean isWideScreen = isWideScreen();
-            setLayoutParams(LayoutHelper.createFrame(isWideScreen ? wideScreenWidth : LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, isWideScreen ? Gravity.BOTTOM | wideScreenGravity : Gravity.BOTTOM));
+            setLayoutParams(LayoutHelper.createFrame(isWideScreen ? wideScreenWidth : LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, isWideScreen ? (top ? Gravity.TOP : Gravity.BOTTOM) | wideScreenGravity : (top ? Gravity.TOP : Gravity.BOTTOM)));
         }
 
         private boolean isWideScreen() {
@@ -588,6 +753,10 @@ public final class Bulletin {
             } else {
                 return wideScreenGravity != Gravity.RIGHT;
             }
+        }
+
+        protected CharSequence getAccessibilityText() {
+            return null;
         }
 
         public Bulletin getBulletin() {
@@ -648,6 +817,7 @@ public final class Bulletin {
                 callbacks.get(i).onExitTransitionStart(this);
             }
         }
+
         @CallSuper
         protected void onExitTransitionEnd() {
             for (int i = 0, size = callbacks.size(); i < size; i++) {
@@ -665,30 +835,48 @@ public final class Bulletin {
         }
 
         public void updatePosition() {
-            float tranlsation = 0;
+            float translation = 0;
             if (delegate != null) {
-                tranlsation += delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0) ;
+                if (top) {
+                    translation -= delegate.getTopOffset(bulletin != null ? bulletin.tag : 0);
+                } else {
+                    translation += getBottomOffset();
+                }
             }
-            setTranslationY(-tranlsation + inOutOffset);
+            setTranslationY(-translation + inOutOffset * (top ? -1 : 1));
+        }
+
+        public float getBottomOffset() {
+            if (bulletin != null && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
+                return bulletin.lastBottomOffset;
+            }
+            return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
         }
 
         public interface Callback {
+            default void onAttach(@NonNull Layout layout, @NonNull Bulletin bulletin) {
+            }
 
-            void onAttach(@NonNull Layout layout, @NonNull Bulletin bulletin);
+            default void onDetach(@NonNull Layout layout) {
+            }
 
-            void onDetach(@NonNull Layout layout);
+            default void onShow(@NonNull Layout layout) {
+            }
 
-            void onShow(@NonNull Layout layout);
+            default void onHide(@NonNull Layout layout) {
+            }
 
-            void onHide(@NonNull Layout layout);
+            default void onEnterTransitionStart(@NonNull Layout layout) {
+            }
 
-            void onEnterTransitionStart(@NonNull Layout layout);
+            default void onEnterTransitionEnd(@NonNull Layout layout) {
+            }
 
-            void onEnterTransitionEnd(@NonNull Layout layout);
+            default void onExitTransitionStart(@NonNull Layout layout) {
+            }
 
-            void onExitTransitionStart(@NonNull Layout layout);
-
-            void onExitTransitionEnd(@NonNull Layout layout);
+            default void onExitTransitionEnd(@NonNull Layout layout) {
+            }
         }
         //endregion
 
@@ -700,6 +888,7 @@ public final class Bulletin {
 
         public interface Transition {
             void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset);
+
             void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset);
         }
 
@@ -800,7 +989,7 @@ public final class Bulletin {
             }
 
             @Override
-            public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate,int bottomOffset) {
+            public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
                 final SpringAnimation springAnimation = new SpringAnimation(layout, IN_OUT_OFFSET_Y, layout.getHeight());
                 springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
                 springAnimation.getSpring().setStiffness(STIFFNESS);
@@ -826,16 +1015,48 @@ public final class Bulletin {
             updatePosition();
         }
 
+        private LinearGradient clipGradient;
+        private Matrix clipMatrix;
+        private Paint clipPaint;
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
-            background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
-            if (transitionRunning && delegate != null) {
-                int clipBottom = ((View)getParent()).getMeasuredHeight() - delegate.getBottomOffset(bulletin.tag);
-                int viewBottom = (int) (getY() + getMeasuredHeight());
+            if (bulletin == null) {
+                return;
+            }
+            background.setBounds(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
+            if (isTransitionRunning() && delegate != null) {
+                final float top = delegate.getTopOffset(bulletin.tag) - getY();
+                final float bottom = ((View) getParent()).getMeasuredHeight() - getBottomOffset() - getY();
+                final boolean clip = delegate.clipWithGradient(bulletin.tag);
                 canvas.save();
-                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - (viewBottom - clipBottom));
+                canvas.clipRect(0, top, getMeasuredWidth(), bottom);
+                if (clip) {
+                    canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+                }
                 background.draw(canvas);
                 super.dispatchDraw(canvas);
+                if (clip) {
+                    if (clipPaint == null) {
+                        clipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        clipPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+                        clipGradient = new LinearGradient(0, 0, 0, AndroidUtilities.dp(8), this.top ? new int[] {0xff000000, 0} : new int[] {0, 0xff000000}, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+                        clipMatrix = new Matrix();
+                        clipGradient.setLocalMatrix(clipMatrix);
+                        clipPaint.setShader(clipGradient);
+                    }
+                    canvas.save();
+                    clipMatrix.reset();
+                    clipMatrix.postTranslate(0, this.top ? top : bottom - AndroidUtilities.dp(8));
+                    clipGradient.setLocalMatrix(clipMatrix);
+                    if (this.top) {
+                        canvas.drawRect(0, top, getWidth(), top + AndroidUtilities.dp(8), clipPaint);
+                    } else {
+                        canvas.drawRect(0, bottom - AndroidUtilities.dp(8), getWidth(), bottom, clipPaint);
+                    }
+                    canvas.restore();
+                    canvas.restore();
+                }
                 canvas.restore();
                 invalidate();
             } else {
@@ -844,9 +1065,8 @@ public final class Bulletin {
             }
         }
 
-        protected int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
         //endregion
     }
@@ -855,11 +1075,14 @@ public final class Bulletin {
     public static class ButtonLayout extends Layout {
 
         private Button button;
+        public TimerView timerView;
 
         private int childrenMeasuredWidth;
+        Theme.ResourcesProvider resourcesProvider;
 
         public ButtonLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
+            this.resourcesProvider = resourcesProvider;
         }
 
         @Override
@@ -898,12 +1121,18 @@ public final class Bulletin {
                 addView(button, 0, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL));
             }
         }
+
+        public void setTimer() {
+            timerView = new TimerView(getContext(), resourcesProvider);
+            timerView.timeLeft = 5000;
+            addView(timerView, LayoutHelper.createFrameRelatively(20, 20, Gravity.START | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        }
     }
 
     public static class SimpleLayout extends ButtonLayout {
 
         public final ImageView imageView;
-        public final TextView textView;
+        public final LinkSpanDrawable.LinksTextView textView;
 
         public SimpleLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
@@ -914,12 +1143,17 @@ public final class Bulletin {
             imageView.setColorFilter(new PorterDuffColorFilter(undoInfoColor, PorterDuff.Mode.MULTIPLY));
             addView(imageView, LayoutHelper.createFrameRelatively(24, 24, Gravity.START | Gravity.CENTER_VERTICAL, 16, 12, 16, 12));
 
-            textView = new TextView(context);
+            textView = new LinkSpanDrawable.LinksTextView(context);
+            textView.setDisablePaddingsOffsetY(true);
             textView.setSingleLine();
             textView.setTextColor(undoInfoColor);
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+        }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
         }
     }
 
@@ -940,6 +1174,10 @@ public final class Bulletin {
             textView.setTypeface(Typeface.SANS_SERIF);
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
         }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
+        }
     }
 
     @SuppressLint("ViewConstructor")
@@ -948,6 +1186,7 @@ public final class Bulletin {
         public final BackupImageView imageView;
         public final TextView titleTextView;
         public final TextView subtitleTextView;
+        private final LinearLayout linearLayout;
 
         public TwoLineLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
@@ -956,7 +1195,7 @@ public final class Bulletin {
 
             addView(imageView = new BackupImageView(context), LayoutHelper.createFrameRelatively(29, 29, Gravity.START | Gravity.CENTER_VERTICAL, 12, 12, 12, 12));
 
-            final LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 54, 8, 12, 8));
 
@@ -970,18 +1209,29 @@ public final class Bulletin {
             subtitleTextView = new TextView(context);
             subtitleTextView.setMaxLines(2);
             subtitleTextView.setTextColor(undoInfoColor);
+            subtitleTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
+            subtitleTextView.setMovementMethod(new LinkMovementMethod());
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
         }
 
+        public CharSequence getAccessibilityText() {
+            return titleTextView.getText() + ".\n" + subtitleTextView.getText();
+        }
+
+        public void hideImage() {
+            imageView.setVisibility(GONE);
+            ((MarginLayoutParams) linearLayout.getLayoutParams()).setMarginStart(AndroidUtilities.dp(12));
+        }
     }
 
     public static class TwoLineLottieLayout extends ButtonLayout {
 
         public final RLottieImageView imageView;
-        public final TextView titleTextView;
-        public final TextView subtitleTextView;
+        public final LinkSpanDrawable.LinksTextView titleTextView;
+        public final LinkSpanDrawable.LinksTextView subtitleTextView;
+        private final LinearLayout linearLayout;
 
         private final int textColor;
 
@@ -995,20 +1245,24 @@ public final class Bulletin {
             addView(imageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.START | Gravity.CENTER_VERTICAL));
 
             final int undoInfoColor = getThemedColor(Theme.key_undo_infoColor);
+            final int undoLinkColor = getThemedColor(Theme.key_undo_cancelColor);
 
-            final LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
-            addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 8, 12, 8));
+            addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 52, 8, 8, 8));
 
-            titleTextView = new TextView(context);
+            titleTextView = new LinkSpanDrawable.LinksTextView(context);
+            titleTextView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(titleTextView);
 
-            subtitleTextView = new TextView(context);
+            subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
+            subtitleTextView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             subtitleTextView.setTextColor(undoInfoColor);
+            subtitleTextView.setLinkTextColor(undoLinkColor);
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
@@ -1030,12 +1284,21 @@ public final class Bulletin {
                 imageView.setLayerColor(layer + ".**", textColor);
             }
         }
+
+        public CharSequence getAccessibilityText() {
+            return titleTextView.getText() + ".\n" + subtitleTextView.getText();
+        }
+
+        public void hideImage() {
+            imageView.setVisibility(GONE);
+            ((MarginLayoutParams) linearLayout.getLayoutParams()).setMarginStart(AndroidUtilities.dp(10));
+        }
     }
 
     public static class LottieLayout extends ButtonLayout {
 
         public RLottieImageView imageView;
-        public TextView textView;
+        public LinkSpanDrawable.LinksTextView textView;
 
         private int textColor;
 
@@ -1046,14 +1309,23 @@ public final class Bulletin {
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             addView(imageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.START | Gravity.CENTER_VERTICAL));
 
-            textView = new TextView(context);
+            textView = new LinkSpanDrawable.LinksTextView(context) {
+                @Override
+                public void setText(CharSequence text, BufferType type) {
+                    text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(13), false);
+                    super.setText(text, type);
+                }
+            };
+            NotificationCenter.listenEmojiLoading(textView);
+            textView.setDisablePaddingsOffset(true);
             textView.setSingleLine();
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
-            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 8, 0));
 
+            textView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
             setTextColor(getThemedColor(Theme.key_undo_infoColor));
             setBackground(getThemedColor(Theme.key_undo_background));
         }
@@ -1086,8 +1358,151 @@ public final class Bulletin {
             }
         }
 
+        public void setAnimation(TLRPC.Document document, int w, int h, String... layers) {
+            imageView.setAutoRepeat(true);
+            imageView.setAnimation(document, w, h);
+            for (String layer : layers) {
+                imageView.setLayerColor(layer + ".**", textColor);
+            }
+        }
+
         public void setIconPaddingBottom(int paddingBottom) {
             imageView.setLayoutParams(LayoutHelper.createFrameRelatively(56, 48 - paddingBottom, Gravity.START | Gravity.CENTER_VERTICAL, 0, 0, 0, paddingBottom));
+        }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
+        }
+    }
+
+    public static interface LoadingLayout {
+        void onTextLoaded(CharSequence text);
+    }
+
+    public static class LoadingLottieLayout extends LottieLayout implements LoadingLayout {
+
+        public LinkSpanDrawable.LinksTextView textLoadingView;
+
+        public LoadingLottieLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+
+            textLoadingView = new LinkSpanDrawable.LinksTextView(context);
+            textLoadingView.setDisablePaddingsOffset(true);
+            textLoadingView.setSingleLine();
+            textLoadingView.setTypeface(Typeface.SANS_SERIF);
+            textLoadingView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            textLoadingView.setEllipsize(TextUtils.TruncateAt.END);
+            textLoadingView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
+            textView.setVisibility(View.GONE);
+            addView(textLoadingView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 8, 0));
+
+            setTextColor(getThemedColor(Theme.key_undo_infoColor));
+        }
+
+        public LoadingLottieLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor, int textColor) {
+            this(context, resourcesProvider);
+            setBackground(backgroundColor);
+            setTextColor(textColor);
+        }
+
+        @Override
+        public void setTextColor(int textColor) {
+            super.setTextColor(textColor);
+            if (textLoadingView != null) {
+                textLoadingView.setTextColor(textColor);
+            }
+        }
+
+        public void onTextLoaded(CharSequence text) {
+            textView.setText(text);
+            AndroidUtilities.updateViewShow(textLoadingView, false, false, true);
+            AndroidUtilities.updateViewShow(textView, true, false, true);
+        }
+    }
+
+    public static class UsersLayout extends ButtonLayout {
+
+        public AvatarsImageView avatarsImageView;
+        public TextView textView;
+        public TextView subtitleView;
+        LinearLayout linearLayout;
+
+        public UsersLayout(@NonNull Context context, boolean subtitle, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+
+            avatarsImageView = new AvatarsImageView(context, false);
+            avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
+            avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(18));
+            addView(avatarsImageView, LayoutHelper.createFrameRelatively(24 + 12 + 12 + 8, 48, Gravity.START | Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+
+            if (!subtitle) {
+                textView = new LinkSpanDrawable.LinksTextView(context) {
+                    @Override
+                    public void setText(CharSequence text, BufferType type) {
+                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(13), false);
+                        super.setText(text, type);
+                    }
+                };
+                NotificationCenter.listenEmojiLoading(textView);
+                textView.setTypeface(Typeface.SANS_SERIF);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                textView.setEllipsize(TextUtils.TruncateAt.END);
+                textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
+                textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+                addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 12 + 56 + 2, 0, 12, 0));
+            } else {
+                linearLayout = new LinearLayout(getContext());
+                linearLayout.setOrientation(LinearLayout.VERTICAL);
+                addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 18 + 56 + 2, 0, 12, 0));
+
+                textView = new LinkSpanDrawable.LinksTextView(context) {
+                    @Override
+                    public void setText(CharSequence text, BufferType type) {
+                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(13), false);
+                        super.setText(text, type);
+                    }
+                };
+                NotificationCenter.listenEmojiLoading(textView);
+                textView.setTypeface(Typeface.SANS_SERIF);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                textView.setEllipsize(TextUtils.TruncateAt.END);
+                textView.setMaxLines(1);
+                linearLayout.addView(textView);
+
+                subtitleView = new LinkSpanDrawable.LinksTextView(context);
+                subtitleView.setTypeface(Typeface.SANS_SERIF);
+                subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                subtitleView.setEllipsize(TextUtils.TruncateAt.END);
+                subtitleView.setMaxLines(1);
+                subtitleView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
+                linearLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
+            }
+            textView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
+
+            setTextColor(getThemedColor(Theme.key_undo_infoColor));
+            setBackground(getThemedColor(Theme.key_undo_background));
+        }
+
+        public UsersLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor, int textColor) {
+            this(context, false, resourcesProvider);
+            setBackground(backgroundColor);
+            setTextColor(textColor);
+        }
+
+        public void setTextColor(int textColor) {
+            textView.setTextColor(textColor);
+            if (subtitleView != null) {
+                subtitleView.setTextColor(textColor);
+            }
+        }
+
+        @Override
+        protected void onShow() {
+            super.onShow();
+        }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
         }
     }
     //endregion
@@ -1141,6 +1556,7 @@ public final class Bulletin {
         private Runnable delayedAction;
 
         private Bulletin bulletin;
+        private TextView undoTextView;
         private boolean isUndone;
 
         public UndoButton(@NonNull Context context, boolean text) {
@@ -1154,18 +1570,16 @@ public final class Bulletin {
             final int undoCancelColor = getThemedColor(Theme.key_undo_cancelColor);
 
             if (text) {
-                TextView undoTextView = new TextView(context);
+                undoTextView = new TextView(context);
                 undoTextView.setOnClickListener(v -> undo());
-                final int leftInset = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
-                final int rightInset = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
-                undoTextView.setBackground(Theme.createCircleSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, leftInset, rightInset));
+                undoTextView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 undoTextView.setTextColor(undoCancelColor);
                 undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);
-                ViewHelper.setPaddingRelative(undoTextView, 16, 0, 16, 0);
-                addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 48, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+                ViewHelper.setPaddingRelative(undoTextView, 12, 8, 12, 8);
+                addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
             } else {
                 final ImageView undoImageView = new ImageView(getContext());
                 undoImageView.setOnClickListener(v -> undo());
@@ -1177,13 +1591,22 @@ public final class Bulletin {
             }
         }
 
+        public UndoButton setText(CharSequence text) {
+            if (undoTextView != null) {
+                undoTextView.setText(text);
+            }
+            return this;
+        }
+
         public void undo() {
             if (bulletin != null) {
                 isUndone = true;
                 if (undoAction != null) {
                     undoAction.run();
                 }
-                bulletin.hide();
+                if (bulletin != null) {
+                    bulletin.hide();
+                }
             }
         }
 
@@ -1210,10 +1633,273 @@ public final class Bulletin {
             return this;
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            if (resourcesProvider != null) {
+                return resourcesProvider.getColor(key);
+            }
+            return Theme.getColor(key);
         }
     }
+
+    // TODO: possibility of loading icon as well
+    public void onLoaded(CharSequence text) {
+        loaded = true;
+        if (layout instanceof LoadingLayout) {
+            ((LoadingLayout) layout).onTextLoaded(text);
+        }
+        setCanHide(true);
+    }
+
     //endregion
+
+    public static class EmptyBulletin extends Bulletin {
+
+        public EmptyBulletin() {
+            super();
+        }
+
+        @Override
+        public Bulletin show() {
+            return this;
+        }
+    }
+
+    private static class TimerView extends View {
+
+        private final Paint progressPaint;
+        private long timeLeft;
+        private int prevSeconds;
+        private String timeLeftString;
+        private int textWidth;
+
+        StaticLayout timeLayout;
+        StaticLayout timeLayoutOut;
+        int textWidthOut;
+
+        float timeReplaceProgress = 1f;
+
+        private TextPaint textPaint;
+        private long lastUpdateTime;
+        RectF rect = new RectF();
+
+        public TimerView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setTextSize(AndroidUtilities.dp(12));
+            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+
+            progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            progressPaint.setStyle(Paint.Style.STROKE);
+            progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            progressPaint.setStrokeCap(Paint.Cap.ROUND);
+            progressPaint.setColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int newSeconds = timeLeft > 0 ? (int) Math.ceil(timeLeft / 1000.0f) : 0;
+            rect.set(AndroidUtilities.dp(1), AndroidUtilities.dp(1), getMeasuredWidth() - AndroidUtilities.dp(1), getMeasuredHeight() - AndroidUtilities.dp(1));
+            if (prevSeconds != newSeconds) {
+                prevSeconds = newSeconds;
+                timeLeftString = String.valueOf(Math.max(0, newSeconds));
+                if (timeLayout != null) {
+                    timeLayoutOut = timeLayout;
+                    timeReplaceProgress = 0;
+                    textWidthOut = textWidth;
+                }
+                textWidth = (int) Math.ceil(textPaint.measureText(timeLeftString));
+                timeLayout = new StaticLayout(timeLeftString, textPaint, Integer.MAX_VALUE, android.text.Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            }
+
+            if (timeReplaceProgress < 1f) {
+                timeReplaceProgress += 16f / 150f;
+                if (timeReplaceProgress > 1f) {
+                    timeReplaceProgress = 1f;
+                } else {
+                    invalidate();
+                }
+            }
+
+            int alpha = textPaint.getAlpha();
+
+            if (timeLayoutOut != null && timeReplaceProgress < 1f) {
+                textPaint.setAlpha((int) (alpha * (1f - timeReplaceProgress)));
+                canvas.save();
+                canvas.translate(rect.centerX() - textWidthOut / 2f, rect.centerY() - timeLayoutOut.getHeight() / 2f + AndroidUtilities.dp(10) * timeReplaceProgress);
+                timeLayoutOut.draw(canvas);
+                textPaint.setAlpha(alpha);
+                canvas.restore();
+            }
+
+            if (timeLayout != null) {
+                if (timeReplaceProgress != 1f) {
+                    textPaint.setAlpha((int) (alpha * timeReplaceProgress));
+                }
+                canvas.save();
+                canvas.translate(rect.centerX() - textWidth / 2f, rect.centerY() - timeLayout.getHeight() / 2f - AndroidUtilities.dp(10) * (1f - timeReplaceProgress));
+                timeLayout.draw(canvas);
+                if (timeReplaceProgress != 1f) {
+                    textPaint.setAlpha(alpha);
+                }
+                canvas.restore();
+            }
+
+            canvas.drawArc(rect, -90, -360 * (Math.max(0, timeLeft) / 5000.0f), false, progressPaint);
+
+            if (lastUpdateTime != 0) {
+                long newTime = System.currentTimeMillis();
+                long dt = newTime - lastUpdateTime;
+                timeLeft -= dt;
+                lastUpdateTime = newTime;
+            } else {
+                lastUpdateTime = System.currentTimeMillis();
+            }
+            invalidate();
+        }
+    }
+
+    // to make bulletin above everything
+    // use as BulletinFactory.of(BulletinWindow.make(context), resourcesProvider)...
+    public static class BulletinWindow extends Dialog {
+
+        public static BulletinWindowLayout make(Context context, Delegate delegate) {
+            return new BulletinWindow(context, delegate).container;
+        }
+
+        public static BulletinWindowLayout make(Context context) {
+            return new BulletinWindow(context, null).container;
+        }
+
+        private final BulletinWindowLayout container;
+        private BulletinWindow(Context context, Delegate delegate) {
+            super(context);
+            setContentView(
+                container = new BulletinWindowLayout(context),
+                new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            );
+            if (Build.VERSION.SDK_INT >= 21) {
+                container.setFitsSystemWindows(true);
+                container.setOnApplyWindowInsetsListener((v, insets) -> {
+                    applyInsets(insets);
+                    v.requestLayout();
+                    if (Build.VERSION.SDK_INT >= 30) {
+                        return WindowInsets.CONSUMED;
+                    } else {
+                        return insets.consumeSystemWindowInsets();
+                    }
+                });
+                if (Build.VERSION.SDK_INT >= 30) {
+                    container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |  View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                } else {
+                    container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                }
+            }
+
+            addDelegate(container, new Delegate() {
+                @Override
+                public int getBottomOffset(int tag) {
+                    return delegate == null ? 0 : delegate.getBottomOffset(tag);
+                }
+
+                @Override
+                public int getTopOffset(int tag) {
+                    return delegate == null ? AndroidUtilities.statusBarHeight : delegate.getTopOffset(tag);
+                }
+
+                @Override
+                public boolean clipWithGradient(int tag) {
+                    return delegate != null && delegate.clipWithGradient(tag);
+                }
+            });
+
+            try {
+                Window window = getWindow();
+                window.setWindowAnimations(R.style.DialogNoAnimation);
+                window.setBackgroundDrawable(null);
+                params = window.getAttributes();
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.gravity = Gravity.TOP | Gravity.LEFT;
+                params.dimAmount = 0;
+                params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    params.flags |= WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
+                }
+                params.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                            WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
+                }
+                params.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                if (Build.VERSION.SDK_INT >= 28) {
+                    params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                }
+                window.setAttributes(params);
+                AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f);
+            } catch (Exception ignore) {}
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT_WATCH)
+        private void applyInsets(WindowInsets insets) {
+            if (container != null) {
+                container.setPadding(
+                        insets.getSystemWindowInsetLeft(),
+                        insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(),
+                        insets.getSystemWindowInsetBottom()
+                );
+            }
+        }
+
+        private WindowManager.LayoutParams params;
+
+        public class BulletinWindowLayout extends FrameLayout {
+            public BulletinWindowLayout(Context context) {
+                super(context);
+            }
+
+            @Override
+            public void addView(View child) {
+                super.addView(child);
+                BulletinWindow.this.show();
+            }
+
+            @Override
+            public void removeView(View child) {
+                super.removeView(child);
+                try {
+                    BulletinWindow.this.dismiss();
+                } catch (Exception ignore) {
+
+                }
+                removeDelegate(container);
+            }
+
+            public void setTouchable(boolean touchable) {
+                if (params == null) {
+                    return;
+                }
+                if (!touchable) {
+                    params.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                } else {
+                    params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                }
+                BulletinWindow.this.getWindow().setAttributes(params);
+            }
+
+            @Nullable
+            public WindowManager.LayoutParams getLayout() {
+                return params;
+            }
+
+            public void updateLayout() {
+                BulletinWindow.this.getWindow().setAttributes(params);
+            }
+        }
+    }
 }

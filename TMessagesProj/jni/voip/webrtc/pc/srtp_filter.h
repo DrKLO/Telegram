@@ -27,7 +27,6 @@
 #include "api/sequence_checker.h"
 #include "pc/session_description.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_stream_adapter.h"
 
 // Forward declaration to avoid pulling in libsrtp headers here

@@ -42,6 +42,7 @@ extern const char kCodecParamRtxTime[];
 extern const char kCodecParamAssociatedPayloadType[];
 
 extern const char kCodecParamAssociatedCodecName[];
+extern const char kCodecParamNotInNameValueFormat[];
 
 extern const char kOpusCodecName[];
 extern const char kIsacCodecName[];
@@ -67,7 +68,7 @@ extern const char kCodecParamMaxPlaybackRate[];
 
 extern const char kParamValueTrue[];
 // Parameters are stored as parameter/value pairs. For parameters who do not
-// have a value, |kParamValueEmpty| should be used as value.
+// have a value, `kParamValueEmpty` should be used as value.
 extern const char kParamValueEmpty[];
 
 // opus parameters.
@@ -135,6 +136,8 @@ extern const char kH264FmtpSpropParameterSets[];
 extern const char kH264FmtpSpsPpsIdrInKeyframe[];
 extern const char kH264ProfileLevelConstrainedBaseline[];
 extern const char kH264ProfileLevelConstrainedHigh[];
+
+extern const char kVP9ProfileId[];
 
 #ifndef DISABLE_H265
 // RFC 7798 RTP Payload Format for H.265 video

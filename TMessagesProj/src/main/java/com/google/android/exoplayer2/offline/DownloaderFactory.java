@@ -21,8 +21,8 @@ public interface DownloaderFactory {
   /**
    * Creates a {@link Downloader} to perform the given {@link DownloadRequest}.
    *
-   * @param action The action.
+   * @param request The download request.
    * @return The downloader.
    */
-  Downloader createDownloader(DownloadRequest action);
+  Downloader createDownloader(DownloadRequest request);
 }

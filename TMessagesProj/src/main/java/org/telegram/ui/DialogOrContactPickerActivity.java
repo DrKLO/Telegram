@@ -20,6 +20,9 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -40,9 +43,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class DialogOrContactPickerActivity extends BaseFragment {
 
@@ -87,18 +87,19 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         args.putBoolean("onlySelect", true);
         args.putBoolean("checkCanWrite", false);
         args.putBoolean("resetDelegate", false);
-        args.putInt("dialogsType", 9);
+        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_BLOCK);
         dialogsActivity = new DialogsActivity(args);
-        dialogsActivity.setDelegate((fragment, dids, message, param) -> {
+        dialogsActivity.setDelegate((fragment, dids, message, param, topicsFragment) -> {
             if (dids.isEmpty()) {
-                return;
+                return true;
             }
-            long did = dids.get(0);
+            long did = dids.get(0).dialogId;
             if (!DialogObject.isUserDialog(did)) {
-                return;
+                return true;
             }
             TLRPC.User user = getMessagesController().getUser(did);
             showBlockAlert(user);
+            return true;
         });
         dialogsActivity.onFragmentCreate();
 
@@ -505,6 +506,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
             viewPages[a].fragmentView = (FrameLayout) viewPages[a].parentFragment.getFragmentView();
             viewPages[a].actionBar = viewPages[a].parentFragment.getActionBar();
             viewPages[a].addView(viewPages[a].fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            AndroidUtilities.removeFromParent(viewPages[a].actionBar);
             viewPages[a].addView(viewPages[a].actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             viewPages[a].actionBar.setVisibility(View.GONE);
 
@@ -637,7 +639,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         showDialog(dialog);
         TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

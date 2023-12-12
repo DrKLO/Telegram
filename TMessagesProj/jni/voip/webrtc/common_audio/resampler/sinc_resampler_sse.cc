@@ -27,7 +27,7 @@ float SincResampler::Convolve_SSE(const float* input_ptr,
   __m128 m_sums1 = _mm_setzero_ps();
   __m128 m_sums2 = _mm_setzero_ps();
 
-  // Based on |input_ptr| alignment, we need to use loadu or load.  Unrolling
+  // Based on `input_ptr` alignment, we need to use loadu or load.  Unrolling
   // these loops hurt performance in local testing.
   if (reinterpret_cast<uintptr_t>(input_ptr) & 0x0F) {
     for (size_t i = 0; i < kKernelSize; i += 4) {

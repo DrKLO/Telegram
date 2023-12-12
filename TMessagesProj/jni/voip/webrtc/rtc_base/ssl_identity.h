@@ -14,10 +14,12 @@
 #define RTC_BASE_SSL_IDENTITY_H_
 
 #include <stdint.h>
+
 #include <ctime>
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -85,7 +87,7 @@ class RTC_EXPORT KeyParams {
 // appropriately we can change KeyType enum -> class without breaking Chromium.
 KeyType IntKeyTypeFamilyToKeyType(int key_type_family);
 
-// Parameters for generating a certificate. If |common_name| is non-empty, it
+// Parameters for generating a certificate. If `common_name` is non-empty, it
 // will be used for the certificate's subject and issuer name, otherwise a
 // random string will be used.
 struct SSLIdentityParams {
@@ -101,19 +103,19 @@ struct SSLIdentityParams {
 class RTC_EXPORT SSLIdentity {
  public:
   // Generates an identity (keypair and self-signed certificate). If
-  // |common_name| is non-empty, it will be used for the certificate's subject
+  // `common_name` is non-empty, it will be used for the certificate's subject
   // and issuer name, otherwise a random string will be used. The key type and
-  // parameters are defined in |key_param|. The certificate's lifetime in
-  // seconds from the current time is defined in |certificate_lifetime|; it
+  // parameters are defined in `key_param`. The certificate's lifetime in
+  // seconds from the current time is defined in `certificate_lifetime`; it
   // should be a non-negative number.
   // Returns null on failure.
   // Caller is responsible for freeing the returned object.
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              const KeyParams& key_param,
                                              time_t certificate_lifetime);
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              const KeyParams& key_param);
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              KeyType key_type);
 
   // Allows fine-grained control over expiration time.
@@ -122,13 +124,13 @@ class RTC_EXPORT SSLIdentity {
 
   // Construct an identity from a private key and a certificate.
   static std::unique_ptr<SSLIdentity> CreateFromPEMStrings(
-      const std::string& private_key,
-      const std::string& certificate);
+      absl::string_view private_key,
+      absl::string_view certificate);
 
   // Construct an identity from a private key and a certificate chain.
   static std::unique_ptr<SSLIdentity> CreateFromPEMChainStrings(
-      const std::string& private_key,
-      const std::string& certificate_chain);
+      absl::string_view private_key,
+      absl::string_view certificate_chain);
 
   virtual ~SSLIdentity() {}
 
@@ -144,10 +146,10 @@ class RTC_EXPORT SSLIdentity {
   virtual std::string PublicKeyToPEMString() const = 0;
 
   // Helpers for parsing converting between PEM and DER format.
-  static bool PemToDer(const std::string& pem_type,
-                       const std::string& pem_string,
+  static bool PemToDer(absl::string_view pem_type,
+                       absl::string_view pem_string,
                        std::string* der);
-  static std::string DerToPem(const std::string& pem_type,
+  static std::string DerToPem(absl::string_view pem_type,
                               const unsigned char* data,
                               size_t length);
 
@@ -160,7 +162,7 @@ bool operator!=(const SSLIdentity& a, const SSLIdentity& b);
 
 // Convert from ASN1 time as restricted by RFC 5280 to seconds from 1970-01-01
 // 00.00 ("epoch").  If the ASN1 time cannot be read, return -1.  The data at
-// |s| is not 0-terminated; its char count is defined by |length|.
+// `s` is not 0-terminated; its char count is defined by `length`.
 int64_t ASN1TimeToSec(const unsigned char* s, size_t length, bool long_format);
 
 extern const char kPemTypeCertificate[];

@@ -28,9 +28,7 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Parses DVB subtitle data and extracts individual frames.
- */
+/** Parses DVB subtitle data and extracts individual frames. */
 public final class DvbSubtitleReader implements ElementaryStreamReader {
 
   private final List<DvbSubtitleInfo> subtitleInfos;
@@ -47,11 +45,13 @@ public final class DvbSubtitleReader implements ElementaryStreamReader {
   public DvbSubtitleReader(List<DvbSubtitleInfo> subtitleInfos) {
     this.subtitleInfos = subtitleInfos;
     outputs = new TrackOutput[subtitleInfos.size()];
+    sampleTimeUs = C.TIME_UNSET;
   }
 
   @Override
   public void seek() {
     writingSample = false;
+    sampleTimeUs = C.TIME_UNSET;
   }
 
   @Override
@@ -61,15 +61,12 @@ public final class DvbSubtitleReader implements ElementaryStreamReader {
       idGenerator.generateNewId();
       TrackOutput output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_TEXT);
       output.format(
-          Format.createImageSampleFormat(
-              idGenerator.getFormatId(),
-              MimeTypes.APPLICATION_DVBSUBS,
-              null,
-              Format.NO_VALUE,
-              0,
-              Collections.singletonList(subtitleInfo.initializationData),
-              subtitleInfo.language,
-              null));
+          new Format.Builder()
+              .setId(idGenerator.getFormatId())
+              .setSampleMimeType(MimeTypes.APPLICATION_DVBSUBS)
+              .setInitializationData(Collections.singletonList(subtitleInfo.initializationData))
+              .setLanguage(subtitleInfo.language)
+              .build());
       outputs[i] = output;
     }
   }
@@ -80,7 +77,9 @@ public final class DvbSubtitleReader implements ElementaryStreamReader {
       return;
     }
     writingSample = true;
-    sampleTimeUs = pesTimeUs;
+    if (pesTimeUs != C.TIME_UNSET) {
+      sampleTimeUs = pesTimeUs;
+    }
     sampleBytesWritten = 0;
     bytesToCheck = 2;
   }
@@ -88,8 +87,10 @@ public final class DvbSubtitleReader implements ElementaryStreamReader {
   @Override
   public void packetFinished() {
     if (writingSample) {
-      for (TrackOutput output : outputs) {
-        output.sampleMetadata(sampleTimeUs, C.BUFFER_FLAG_KEY_FRAME, sampleBytesWritten, 0, null);
+      if (sampleTimeUs != C.TIME_UNSET) {
+        for (TrackOutput output : outputs) {
+          output.sampleMetadata(sampleTimeUs, C.BUFFER_FLAG_KEY_FRAME, sampleBytesWritten, 0, null);
+        }
       }
       writingSample = false;
     }
@@ -126,5 +127,4 @@ public final class DvbSubtitleReader implements ElementaryStreamReader {
     bytesToCheck--;
     return writingSample;
   }
-
 }

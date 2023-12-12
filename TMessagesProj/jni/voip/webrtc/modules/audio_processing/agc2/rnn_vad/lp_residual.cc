@@ -22,9 +22,9 @@ namespace webrtc {
 namespace rnn_vad {
 namespace {
 
-// Computes auto-correlation coefficients for |x| and writes them in
-// |auto_corr|. The lag values are in {0, ..., max_lag - 1}, where max_lag
-// equals the size of |auto_corr|.
+// Computes auto-correlation coefficients for `x` and writes them in
+// `auto_corr`. The lag values are in {0, ..., max_lag - 1}, where max_lag
+// equals the size of `auto_corr`.
 void ComputeAutoCorrelation(
     rtc::ArrayView<const float> x,
     rtc::ArrayView<float, kNumLpcCoefficients> auto_corr) {

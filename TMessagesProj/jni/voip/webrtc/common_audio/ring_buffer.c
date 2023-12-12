@@ -18,9 +18,9 @@
 #include <string.h>
 
 // Get address of region(s) from which we can read data.
-// If the region is contiguous, |data_ptr_bytes_2| will be zero.
-// If non-contiguous, |data_ptr_bytes_2| will be the size in bytes of the second
-// region. Returns room available to be read or |element_count|, whichever is
+// If the region is contiguous, `data_ptr_bytes_2` will be zero.
+// If non-contiguous, `data_ptr_bytes_2` will be the size in bytes of the second
+// region. Returns room available to be read or `element_count`, whichever is
 // smaller.
 static size_t GetBufferReadRegions(RingBuffer* buf,
                                    size_t element_count,
@@ -120,7 +120,7 @@ size_t WebRtc_ReadBuffer(RingBuffer* self,
                                                    &buf_ptr_bytes_2);
     if (buf_ptr_bytes_2 > 0) {
       // We have a wrap around when reading the buffer. Copy the buffer data to
-      // |data| and point to it.
+      // `data` and point to it.
       memcpy(data, buf_ptr_1, buf_ptr_bytes_1);
       memcpy(((char*) data) + buf_ptr_bytes_1, buf_ptr_2, buf_ptr_bytes_2);
       buf_ptr_1 = data;
@@ -129,7 +129,7 @@ size_t WebRtc_ReadBuffer(RingBuffer* self,
       memcpy(data, buf_ptr_1, buf_ptr_bytes_1);
     }
     if (data_ptr) {
-      // |buf_ptr_1| == |data| in the case of a wrap.
+      // `buf_ptr_1` == `data` in the case of a wrap.
       *data_ptr = read_count == 0 ? NULL : buf_ptr_1;
     }
 

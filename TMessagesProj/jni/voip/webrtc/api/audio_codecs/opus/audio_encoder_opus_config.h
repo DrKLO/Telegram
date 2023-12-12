@@ -49,10 +49,10 @@ struct RTC_EXPORT AudioEncoderOpusConfig {
   bool cbr_enabled;
   int max_playback_rate_hz;
 
-  // |complexity| is used when the bitrate goes above
-  // |complexity_threshold_bps| + |complexity_threshold_window_bps|;
-  // |low_rate_complexity| is used when the bitrate falls below
-  // |complexity_threshold_bps| - |complexity_threshold_window_bps|. In the
+  // `complexity` is used when the bitrate goes above
+  // `complexity_threshold_bps` + `complexity_threshold_window_bps`;
+  // `low_rate_complexity` is used when the bitrate falls below
+  // `complexity_threshold_bps` - `complexity_threshold_window_bps`. In the
   // interval in the middle, we keep using the most recent of the two
   // complexity settings.
   int complexity;

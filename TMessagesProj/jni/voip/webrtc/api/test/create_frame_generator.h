@@ -24,8 +24,8 @@ namespace test {
 
 // Creates a frame generator that produces frames with small squares that
 // move randomly towards the lower right corner.
-// |type| has the default value FrameGeneratorInterface::OutputType::I420.
-// |num_squares| has the default value 10.
+// `type` has the default value FrameGeneratorInterface::OutputType::I420.
+// `num_squares` has the default value 10.
 std::unique_ptr<FrameGeneratorInterface> CreateSquareFrameGenerator(
     int width,
     int height,
@@ -40,6 +40,15 @@ std::unique_ptr<FrameGeneratorInterface> CreateFromYuvFileFrameGenerator(
     size_t width,
     size_t height,
     int frame_repeat_count);
+
+// Creates a frame generator that repeatedly plays a set of nv12 files.
+// The frame_repeat_count determines how many times each frame is shown,
+// with 1 = show each frame once, etc.
+std::unique_ptr<FrameGeneratorInterface> CreateFromNV12FileFrameGenerator(
+    std::vector<std::string> filenames,
+    size_t width,
+    size_t height,
+    int frame_repeat_count = 1);
 
 // Creates a frame generator that repeatedly plays an ivf file.
 std::unique_ptr<FrameGeneratorInterface> CreateFromIvfFileFrameGenerator(
@@ -66,7 +75,7 @@ CreateScrollingInputFromYuvFilesFrameGenerator(
 
 // Creates a frame generator that produces randomly generated slides. It fills
 // the frames with randomly sized and colored squares.
-// |frame_repeat_count| determines how many times each slide is shown.
+// `frame_repeat_count` determines how many times each slide is shown.
 std::unique_ptr<FrameGeneratorInterface>
 CreateSlideFrameGenerator(int width, int height, int frame_repeat_count);
 

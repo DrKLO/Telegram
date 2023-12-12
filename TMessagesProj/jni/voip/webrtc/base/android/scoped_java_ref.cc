@@ -7,6 +7,8 @@
 #include "base/android/jni_android.h"
 #include "base/logging.h"
 
+#include <tgnet/FileLog.h>
+
 namespace base {
 namespace android {
 namespace {
@@ -60,10 +62,14 @@ void JavaRef<jobject>::SetNewGlobalRef(JNIEnv* env, jobject obj) {
   } else {
     DCHECK_EQ(env, AttachCurrentThread());  // Is |env| on correct thread.
   }
-  if (obj)
+  if (obj) {
+    DEBUG_REF("scoped_java_ref.cc");
     obj = env->NewGlobalRef(obj);
-  if (obj_)
+  }
+  if (obj_) {
+    DEBUG_DELREF("scoped_java_ref.cc");
     env->DeleteGlobalRef(obj_);
+  }
   obj_ = obj;
 }
 
@@ -77,6 +83,7 @@ void JavaRef<jobject>::ResetLocalRef(JNIEnv* env) {
 
 void JavaRef<jobject>::ResetGlobalRef() {
   if (obj_) {
+      DEBUG_DELREF("webrtc ResetGlobalRef");
     AttachCurrentThread()->DeleteGlobalRef(obj_);
     obj_ = nullptr;
   }

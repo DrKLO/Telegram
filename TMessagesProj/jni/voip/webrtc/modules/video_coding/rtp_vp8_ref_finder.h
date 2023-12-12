@@ -38,9 +38,16 @@ class RtpVp8RefFinder {
   static constexpr int kMaxStashedFrames = 100;
   static constexpr int kMaxTemporalLayers = 5;
 
+  struct UnwrappedTl0Frame {
+    int64_t unwrapped_tl0;
+    std::unique_ptr<RtpFrameObject> frame;
+  };
+
   enum FrameDecision { kStash, kHandOff, kDrop };
 
-  FrameDecision ManageFrameInternal(RtpFrameObject* frame);
+  FrameDecision ManageFrameInternal(RtpFrameObject* frame,
+                                    const RTPVideoHeaderVP8& codec_header,
+                                    int64_t unwrapped_tl0);
   void RetryStashedFrames(RtpFrameReferenceFinder::ReturnVector& res);
   void UpdateLayerInfoVp8(RtpFrameObject* frame,
                           int64_t unwrapped_tl0,
@@ -58,7 +65,7 @@ class RtpVp8RefFinder {
 
   // Frames that have been fully received but didn't have all the information
   // needed to determine their references.
-  std::deque<std::unique_ptr<RtpFrameObject>> stashed_frames_;
+  std::deque<UnwrappedTl0Frame> stashed_frames_;
 
   // Holds the information about the last completed frame for a given temporal
   // layer given an unwrapped Tl0 picture index.

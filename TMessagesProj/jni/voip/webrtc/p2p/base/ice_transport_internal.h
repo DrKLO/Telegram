@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/candidate.h"
 #include "api/rtc_error.h"
@@ -38,6 +39,19 @@ struct IceTransportStats {
   // Initially 0 and 1 once the first candidate pair has been selected.
   // The counter is increase also when "unselecting" a connection.
   uint32_t selected_candidate_pair_changes = 0;
+
+  // Bytes/packets sent/received.
+  // note: Is not the same as sum(connection_infos.bytes_sent)
+  // as connections are created and destroyed while the ICE transport
+  // is alive.
+  uint64_t bytes_sent = 0;
+  uint64_t bytes_received = 0;
+  uint64_t packets_sent = 0;
+  uint64_t packets_received = 0;
+
+  IceRole ice_role = ICEROLE_UNKNOWN;
+  std::string ice_local_username_fragment;
+  webrtc::IceTransportState ice_state = webrtc::IceTransportState::kNew;
 };
 
 typedef std::vector<Candidate> Candidates;
@@ -136,12 +150,12 @@ struct IceConfig {
   // The interval in milliseconds at which ICE checks (STUN pings) will be sent
   // for a candidate pair when it is both writable and receiving (strong
   // connectivity). This parameter overrides the default value given by
-  // |STRONG_PING_INTERVAL| in p2ptransport.h if set.
+  // `STRONG_PING_INTERVAL` in p2ptransport.h if set.
   absl::optional<int> ice_check_interval_strong_connectivity;
   // The interval in milliseconds at which ICE checks (STUN pings) will be sent
   // for a candidate pair when it is either not writable or not receiving (weak
   // connectivity). This parameter overrides the default value given by
-  // |WEAK_PING_INTERVAL| in p2ptransport.h if set.
+  // `WEAK_PING_INTERVAL` in p2ptransport.h if set.
   absl::optional<int> ice_check_interval_weak_connectivity;
   // ICE checks (STUN pings) will not be sent at higher rate (lower interval)
   // than this, no matter what other settings there are.
@@ -153,19 +167,19 @@ struct IceConfig {
   absl::optional<int> ice_check_min_interval;
   // The min time period for which a candidate pair must wait for response to
   // connectivity checks before it becomes unwritable. This parameter
-  // overrides the default value given by |CONNECTION_WRITE_CONNECT_TIMEOUT|
+  // overrides the default value given by `CONNECTION_WRITE_CONNECT_TIMEOUT`
   // in port.h if set, when determining the writability of a candidate pair.
   absl::optional<int> ice_unwritable_timeout;
 
   // The min number of connectivity checks that a candidate pair must sent
   // without receiving response before it becomes unwritable. This parameter
-  // overrides the default value given by |CONNECTION_WRITE_CONNECT_FAILURES| in
+  // overrides the default value given by `CONNECTION_WRITE_CONNECT_FAILURES` in
   // port.h if set, when determining the writability of a candidate pair.
   absl::optional<int> ice_unwritable_min_checks;
 
   // The min time period for which a candidate pair must wait for response to
   // connectivity checks it becomes inactive. This parameter overrides the
-  // default value given by |CONNECTION_WRITE_TIMEOUT| in port.h if set, when
+  // default value given by `CONNECTION_WRITE_TIMEOUT` in port.h if set, when
   // determining the writability of a candidate pair.
   absl::optional<int> ice_inactive_timeout;
 
@@ -174,6 +188,8 @@ struct IceConfig {
   absl::optional<int> stun_keepalive_interval;
 
   absl::optional<rtc::AdapterType> network_preference;
+
+  webrtc::VpnPreference vpn_preference = webrtc::VpnPreference::kDefault;
 
   IceConfig();
   IceConfig(int receiving_timeout_ms,
@@ -244,13 +260,13 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
   // remoting/protocol/libjingle_transport_factory.cc
   virtual void SetIceProtocolType(IceProtocolType type) {}
 
-  virtual void SetIceCredentials(const std::string& ice_ufrag,
-                                 const std::string& ice_pwd);
+  virtual void SetIceCredentials(absl::string_view ice_ufrag,
+                                 absl::string_view ice_pwd);
 
-  virtual void SetRemoteIceCredentials(const std::string& ice_ufrag,
-                                       const std::string& ice_pwd);
+  virtual void SetRemoteIceCredentials(absl::string_view ice_ufrag,
+                                       absl::string_view ice_pwd);
 
-  // The ufrag and pwd in |ice_params| must be set
+  // The ufrag and pwd in `ice_params` must be set
   // before candidate gathering can start.
   virtual void SetIceParameters(const IceParameters& ice_params) = 0;
 

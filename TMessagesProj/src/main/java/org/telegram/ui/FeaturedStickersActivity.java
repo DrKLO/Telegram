@@ -180,7 +180,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        MediaDataController.getInstance(currentAccount).markFaturedStickersAsRead(true);
+        MediaDataController.getInstance(currentAccount).markFeaturedStickersAsRead(false, true);
     }
 
     @Override
@@ -247,7 +247,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                 case 1:
                 default:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));

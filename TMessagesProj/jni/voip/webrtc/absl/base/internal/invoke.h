@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// absl::base_internal::Invoke(f, args...) is an implementation of
+// absl::base_internal::invoke(f, args...) is an implementation of
 // INVOKE(f, args...) from section [func.require] of the C++ standard.
+// When compiled as C++17 and later versions, it is implemented as an alias of
+// std::invoke.
 //
 // [func.require]
 // Define INVOKE (f, t1, t2, ..., tN) as follows:
@@ -29,11 +31,31 @@
 //    is not one of the types described in the previous item;
 // 5. f(t1, t2, ..., tN) in all other cases.
 //
-// The implementation is SFINAE-friendly: substitution failure within Invoke()
+// The implementation is SFINAE-friendly: substitution failure within invoke()
 // isn't an error.
 
 #ifndef ABSL_BASE_INTERNAL_INVOKE_H_
 #define ABSL_BASE_INTERNAL_INVOKE_H_
+
+#include "absl/base/config.h"
+
+#if ABSL_INTERNAL_CPLUSPLUS_LANG >= 201703L
+
+#include <functional>
+
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace base_internal {
+
+using std::invoke;
+using std::invoke_result_t;
+using std::is_invocable_r;
+
+}  // namespace base_internal
+ABSL_NAMESPACE_END
+}  // namespace absl
+
+#else  // ABSL_INTERNAL_CPLUSPLUS_LANG >= 201703L
 
 #include <algorithm>
 #include <type_traits>
@@ -80,8 +102,18 @@ struct MemFunAndRef : StrippedAccept<MemFunAndRef> {
   static decltype((std::declval<Obj>().*
                    std::declval<MemFun>())(std::declval<Args>()...))
   Invoke(MemFun&& mem_fun, Obj&& obj, Args&&... args) {
+// Ignore bogus GCC warnings on this line.
+// See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101436 for similar example.
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(11, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     return (std::forward<Obj>(obj).*
             std::forward<MemFun>(mem_fun))(std::forward<Args>(args)...);
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(11, 0)
+#pragma GCC diagnostic pop
+#endif
   }
 };
 
@@ -170,18 +202,40 @@ struct Invoker {
 
 // The result type of Invoke<F, Args...>.
 template <typename F, typename... Args>
-using InvokeT = decltype(Invoker<F, Args...>::type::Invoke(
+using invoke_result_t = decltype(Invoker<F, Args...>::type::Invoke(
     std::declval<F>(), std::declval<Args>()...));
 
 // Invoke(f, args...) is an implementation of INVOKE(f, args...) from section
 // [func.require] of the C++ standard.
 template <typename F, typename... Args>
-InvokeT<F, Args...> Invoke(F&& f, Args&&... args) {
+invoke_result_t<F, Args...> invoke(F&& f, Args&&... args) {
   return Invoker<F, Args...>::type::Invoke(std::forward<F>(f),
                                            std::forward<Args>(args)...);
 }
+
+template <typename AlwaysVoid, typename, typename, typename...>
+struct IsInvocableRImpl : std::false_type {};
+
+template <typename R, typename F, typename... Args>
+struct IsInvocableRImpl<
+    absl::void_t<absl::base_internal::invoke_result_t<F, Args...> >, R, F,
+    Args...>
+    : std::integral_constant<
+          bool,
+          std::is_convertible<absl::base_internal::invoke_result_t<F, Args...>,
+                              R>::value ||
+              std::is_void<R>::value> {};
+
+// Type trait whose member `value` is true if invoking `F` with `Args` is valid,
+// and either the return type is convertible to `R`, or `R` is void.
+// C++11-compatible version of `std::is_invocable_r`.
+template <typename R, typename F, typename... Args>
+using is_invocable_r = IsInvocableRImpl<void, R, F, Args...>;
+
 }  // namespace base_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
+
+#endif  // ABSL_INTERNAL_CPLUSPLUS_LANG >= 201703L
 
 #endif  // ABSL_BASE_INTERNAL_INVOKE_H_

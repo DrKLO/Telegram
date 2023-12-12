@@ -18,10 +18,8 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "modules/remote_bitrate_estimator/remote_bitrate_estimator_abs_send_time.h"
-#include "modules/remote_bitrate_estimator/remote_bitrate_estimator_single_stream.h"
+#include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "test/rtp_file_reader.h"
-#include "test/rtp_header_parser.h"
 
 ABSL_FLAG(std::string,
           extension_type,
@@ -65,14 +63,11 @@ std::set<uint32_t> SsrcFilter() {
   return ssrcs;
 }
 
-std::unique_ptr<webrtc::RtpHeaderParser> ParseArgsAndSetupEstimator(
+bool ParseArgsAndSetupRtpReader(
     int argc,
     char** argv,
-    webrtc::Clock* clock,
-    webrtc::RemoteBitrateObserver* observer,
-    std::unique_ptr<webrtc::test::RtpFileReader>* rtp_reader,
-    std::unique_ptr<webrtc::RemoteBitrateEstimator>* estimator,
-    std::string* estimator_used) {
+    std::unique_ptr<webrtc::test::RtpFileReader>& rtp_reader,
+    webrtc::RtpHeaderExtensionMap& rtp_header_extensions) {
   absl::ParseCommandLine(argc, argv);
   std::string filename = InputFile();
 
@@ -84,16 +79,16 @@ std::unique_ptr<webrtc::RtpHeaderParser> ParseArgsAndSetupEstimator(
   fprintf(stderr, "\n");
   if (filename.substr(filename.find_last_of('.')) == ".pcap") {
     fprintf(stderr, "Opening as pcap\n");
-    rtp_reader->reset(webrtc::test::RtpFileReader::Create(
+    rtp_reader.reset(webrtc::test::RtpFileReader::Create(
         webrtc::test::RtpFileReader::kPcap, filename.c_str(), SsrcFilter()));
   } else {
     fprintf(stderr, "Opening as rtp\n");
-    rtp_reader->reset(webrtc::test::RtpFileReader::Create(
+    rtp_reader.reset(webrtc::test::RtpFileReader::Create(
         webrtc::test::RtpFileReader::kRtpDump, filename.c_str()));
   }
-  if (!*rtp_reader) {
+  if (!rtp_reader) {
     fprintf(stderr, "Cannot open input file %s\n", filename.c_str());
-    return nullptr;
+    return false;
   }
   fprintf(stderr, "Input file: %s\n\n", filename.c_str());
 
@@ -105,31 +100,10 @@ std::unique_ptr<webrtc::RtpHeaderParser> ParseArgsAndSetupEstimator(
     fprintf(stderr, "Extension: abs\n");
   } else {
     fprintf(stderr, "Unknown extension type\n");
-    return nullptr;
+    return false;
   }
 
-  // Setup the RTP header parser and the bitrate estimator.
-  auto parser = webrtc::RtpHeaderParser::CreateForTest();
-  parser->RegisterRtpHeaderExtension(extension, ExtensionId());
-  if (estimator) {
-    switch (extension) {
-      case webrtc::kRtpExtensionAbsoluteSendTime: {
-        estimator->reset(
-            new webrtc::RemoteBitrateEstimatorAbsSendTime(observer, clock));
-        *estimator_used = "AbsoluteSendTimeRemoteBitrateEstimator";
-        break;
-      }
-      case webrtc::kRtpExtensionTransmissionTimeOffset: {
-        estimator->reset(
-            new webrtc::RemoteBitrateEstimatorSingleStream(observer, clock));
-        *estimator_used = "RemoteBitrateEstimator";
-        break;
-      }
-      default:
-        assert(false);
-        return nullptr;
-    }
-  }
+  rtp_header_extensions.RegisterByType(ExtensionId(), extension);
 
-  return parser;
+  return true;
 }

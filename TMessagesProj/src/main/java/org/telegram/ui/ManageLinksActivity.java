@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -51,9 +52,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.CreationTextCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
 import org.telegram.ui.Cells.ManageChatUserCell;
@@ -68,9 +69,9 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.InviteLinkBottomSheet;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkActionView;
+import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TimerParticles;
-import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -547,19 +548,7 @@ public class ManageLinksActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
 
-        listView = new RecyclerListView(context) {
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                recyclerItemsEnterAnimator.dispatchDraw();
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                recyclerItemsEnterAnimator.onDetached();
-            }
-        };
+        listView = new RecyclerListView(context);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
@@ -673,7 +662,7 @@ public class ManageLinksActivity extends BaseFragment {
         info = chatFull;
         this.invite = (TLRPC.TL_chatInviteExported) invite;
 
-        isPublic = !TextUtils.isEmpty(currentChat.username);
+        isPublic = ChatObject.isPublic(currentChat);
         loadLinks(true);
     }
 
@@ -751,7 +740,7 @@ public class ManageLinksActivity extends BaseFragment {
                 case 0:
                 default:
                     view = new HintInnerCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundWhite));
+                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
                     view = new HeaderCell(mContext, 23);
@@ -776,7 +765,7 @@ public class ManageLinksActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
-                    view = new TextCell(mContext);
+                    view = new CreationTextCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
@@ -795,19 +784,19 @@ public class ManageLinksActivity extends BaseFragment {
                     break;
                 case 7:
                     view = new ShadowSectionCell(mContext);
-                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 8:
                     TextSettingsCell revokeAll = new TextSettingsCell(mContext);
                     revokeAll.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     revokeAll.setText(LocaleController.getString("DeleteAllRevokedLinks", R.string.DeleteAllRevokedLinks), false);
-                    revokeAll.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText5));
+                    revokeAll.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     view = revokeAll;
                     break;
                 case 9:
                     TextInfoPrivacyCell cell = new TextInfoPrivacyCell(mContext);
                     cell.setText(LocaleController.getString("CreateNewLinkHelp", R.string.CreateNewLinkHelp));
-                    cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    cell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     view = cell;
                     break;
                 case 10:
@@ -828,7 +817,7 @@ public class ManageLinksActivity extends BaseFragment {
                     linkActionView.setCanEdit(adminId == getAccountInstance().getUserConfig().clientUserId);
                     if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
                         if (info != null) {
-                            linkActionView.setLink("https://t.me/" + currentChat.username);
+                            linkActionView.setLink("https://t.me/" + ChatObject.getPublicUsername(currentChat));
                             linkActionView.setUsers(0, null);
                             linkActionView.hideRevokeOption(true);
                         }
@@ -863,7 +852,7 @@ public class ManageLinksActivity extends BaseFragment {
                     }
                     break;
                 case 3:
-                    TextCell textCell = (TextCell) holder.itemView;
+                    CreationTextCell textCell = (CreationTextCell) holder.itemView;
                     Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
                     Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
                     drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));
@@ -982,71 +971,6 @@ public class ManageLinksActivity extends BaseFragment {
             getConnectionsManager().bindRequestToGuid(reqId, classGuid);
         } else {
             revokeLink(invite);
-        }
-    }
-
-    public static class TextCell extends FrameLayout {
-
-        private SimpleTextView textView;
-        private ImageView imageView;
-        boolean divider;
-
-        public TextCell(Context context) {
-            super(context);
-
-            textView = new SimpleTextView(context);
-            textView.setTextSize(16);
-            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
-            textView.setTag(Theme.key_windowBackgroundWhiteBlueText2);
-            addView(textView);
-
-            imageView = new ImageView(context);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-            addView(imageView);
-            setWillNotDraw(false);
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            int width = MeasureSpec.getSize(widthMeasureSpec);
-            int height = AndroidUtilities.dp(48);
-
-            textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + 23), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
-            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
-            setMeasuredDimension(width, AndroidUtilities.dp(50));
-        }
-
-        @Override
-        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-            int height = bottom - top;
-            int width = right - left;
-
-            int viewLeft;
-            int viewTop = (height - textView.getTextHeight()) / 2;
-            if (LocaleController.isRTL) {
-                viewLeft = getMeasuredWidth() - textView.getMeasuredWidth() - AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 70 : 25);
-            } else {
-                viewLeft = AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 70 : 25);
-            }
-            textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
-
-            viewLeft = !LocaleController.isRTL ? (AndroidUtilities.dp(70) - imageView.getMeasuredWidth()) / 2 : width - imageView.getMeasuredWidth() - AndroidUtilities.dp(25);
-            imageView.layout(viewLeft, 0, viewLeft + imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (divider) {
-                canvas.drawLine(AndroidUtilities.dp(70), getMeasuredHeight() - 1, getMeasuredWidth() + AndroidUtilities.dp(23), getMeasuredHeight(), Theme.dividerPaint);
-            }
-        }
-
-        public void setTextAndIcon(String text, Drawable icon, boolean divider) {
-            textView.setText(text);
-            imageView.setImageDrawable(icon);
-            this.divider = divider;
         }
     }
 
@@ -1198,7 +1122,7 @@ public class ManageLinksActivity extends BaseFragment {
                 AlertDialog alert = builder.create();
                 builder.show();
                 if (redLastItem) {
-                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_text_RedBold), Theme.getColor(Theme.key_text_RedRegular));
                 }
             });
             optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
@@ -1705,7 +1629,7 @@ public class ManageLinksActivity extends BaseFragment {
             }
         };
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, TextCell.class, LinkActionView.class, LinkCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, CreationTextCell.class, LinkActionView.class, LinkCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundGray));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhite));
 
@@ -1741,9 +1665,9 @@ public class ManageLinksActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueButton));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText2));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_switchTrackChecked));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_checkboxCheck));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CreationTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText2));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{CreationTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_switchTrackChecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CreationTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_checkboxCheck));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LinkCell.class}, new String[]{"titleView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
@@ -1757,10 +1681,10 @@ public class ManageLinksActivity extends BaseFragment {
         return true;
     }
 
-    int animationIndex = -1;
+    AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             isOpened = true;
@@ -1768,12 +1692,12 @@ public class ManageLinksActivity extends BaseFragment {
                 inviteLinkBottomSheet.show();
             }
         }
-        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+        notificationsLocker.unlock();
     }
 
     @Override
-    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
-        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+        notificationsLocker.lock();
     }
 }

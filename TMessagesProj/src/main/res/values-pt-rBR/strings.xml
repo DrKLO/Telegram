@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">Banir usuário</string>
     <string name="DeleteReportSpam">Denunciar spam</string>
     <string name="DeleteAllFrom">Apagar tudo de %1$s</string>
-    <string name="ClearRecentEmoji">Limpar emojis recentes?</string>
+    <string name="ClearRecentEmojiTitle">Limpar emojis recentes</string>
     <string name="Emoji1">Carinhas e pessoas</string>
     <string name="Emoji2">Animais e natureza</string>
     <string name="Emoji3">Comidas e bebidas</string>
@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128467; Lembrete</string>
     <string name="OneResult">1 resultado</string>
     <string name="VideoQualityIsTooLow">A qualidade do vídeo é muito baixa para mudar a compressão.</string>
-    <string name="TextSelectionHit">Segure na **palavra** e depois mova o cursor para selecionar mais texto para copiar.</string>
     <string name="CardNumberCopied">Número do cartão copiado.</string>
     <string name="CopyCardNumber">Copiar</string>
     <string name="DiceInfo2">Envie o emoji do **:dado:** em qualquer chat para rolar um dado.</string>
@@ -2494,7 +2493,6 @@
     <string name="FilterChatRemovedFrom">**%1$s** removido de **%2$s**</string>
     <string name="FilterChatsRemovedFrom">**%1$s** removido de **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Limite atingido</string>
-    <string name="FilterRemoveFromAlertFullText">Desculpe, você não pode adicionar mais que 100 chats numa pasta.</string>
     <string name="FilterAddToAlertFullText">Desculpe, você não pode ignorar mais que 100 chats numa pasta.</string>
     <!--passcode view-->
     <string name="Passcode">Senha de Bloqueio</string>
@@ -3167,7 +3165,7 @@
     <string name="InvalidLastName">Desculpe, este sobrenome não pode ser usado</string>
     <string name="Loading">Carregando...</string>
     <string name="NoPlayerInstalled">Você não possui um reprodutor de vídeo, instale um para continuar</string>
-    <string name="NoMailInstalled">Por favor, envie um email descrevendo o problema para reports@stel.com.</string>
+    <string name="NoMailInstalled">Por favor, envie um email descrevendo o problema para sms@telegram.org.</string>
     <string name="NoHandleAppInstalled">Você não possui um aplicativo que suporte o tipo de arquivo \'%1$s\', por favor instale um para continuar</string>
     <string name="InviteUser">Esse usuário ainda não tem o Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Tem certeza?</string>

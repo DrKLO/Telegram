@@ -23,7 +23,7 @@ namespace {
 
 // Weights for each FFT coefficient for each Opus band (Nyquist frequency
 // excluded). The size of each band is specified in
-// |kOpusScaleNumBins24kHz20ms|.
+// `kOpusScaleNumBins24kHz20ms`.
 constexpr std::array<float, kFrameSize20ms24kHz / 2> kOpusBandWeights24kHz20ms =
     {{
         0.f,       0.25f,      0.5f,       0.75f,  // Band 0

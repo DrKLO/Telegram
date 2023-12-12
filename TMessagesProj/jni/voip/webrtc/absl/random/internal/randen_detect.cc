@@ -1,13 +1,13 @@
 // Copyright 2017 The Abseil Authors.
 //
-// Licensed under the Apache License, Version 2.0 (the"License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an"AS IS" BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -24,6 +24,11 @@
 
 #include "absl/random/internal/platform.h"
 
+#if !defined(__UCLIBC__) && defined(__GLIBC__) && \
+    (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 16))
+#define ABSL_HAVE_GETAUXVAL
+#endif
+
 #if defined(ABSL_ARCH_X86_64)
 #define ABSL_INTERNAL_USE_X86_CPUID
 #elif defined(ABSL_ARCH_PPC) || defined(ABSL_ARCH_ARM) || \
@@ -31,7 +36,7 @@
 #if defined(__ANDROID__)
 #define ABSL_INTERNAL_USE_ANDROID_GETAUXVAL
 #define ABSL_INTERNAL_USE_GETAUXVAL
-#elif defined(__linux__)
+#elif defined(__linux__) && defined(ABSL_HAVE_GETAUXVAL)
 #define ABSL_INTERNAL_USE_LINUX_GETAUXVAL
 #define ABSL_INTERNAL_USE_GETAUXVAL
 #endif
@@ -40,7 +45,6 @@
 #if defined(ABSL_INTERNAL_USE_X86_CPUID)
 #if defined(_WIN32) || defined(_WIN64)
 #include <intrin.h>  // NOLINT(build/include_order)
-#pragma intrinsic(__cpuid)
 #else
 // MSVC-equivalent __cpuid intrinsic function.
 static void __cpuid(int cpu_info[4], int info_type) {

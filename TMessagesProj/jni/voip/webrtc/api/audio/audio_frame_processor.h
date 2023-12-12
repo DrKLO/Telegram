@@ -28,12 +28,12 @@ class AudioFrameProcessor {
 
   // Processes the frame received from WebRTC, is called by WebRTC off the
   // realtime audio capturing path. AudioFrameProcessor must reply with
-  // processed frames by calling |sink_callback| if it was provided in SetSink()
-  // call. |sink_callback| can be called in the context of Process().
+  // processed frames by calling `sink_callback` if it was provided in SetSink()
+  // call. `sink_callback` can be called in the context of Process().
   virtual void Process(std::unique_ptr<AudioFrame> frame) = 0;
 
   // Atomically replaces the current sink with the new one. Before the
-  // first call to this function, or if the provided |sink_callback| is nullptr,
+  // first call to this function, or if the provided `sink_callback` is nullptr,
   // processed frames are simply discarded.
   virtual void SetSink(OnAudioFrameCallback sink_callback) = 0;
 };

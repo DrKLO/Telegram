@@ -42,7 +42,7 @@ class EchoControlMobileImpl {
     kLoudSpeakerphone
   };
 
-  // Sets echo control appropriate for the audio routing |mode| on the device.
+  // Sets echo control appropriate for the audio routing `mode` on the device.
   // It can and should be updated during a call if the audio routing changes.
   int set_routing_mode(RoutingMode mode);
   RoutingMode routing_mode() const;

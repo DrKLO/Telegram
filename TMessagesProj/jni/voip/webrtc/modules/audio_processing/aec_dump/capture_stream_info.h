@@ -13,13 +13,9 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
-#include "modules/audio_processing/aec_dump/write_to_file_task.h"
 #include "modules/audio_processing/include/aec_dump.h"
-#include "rtc_base/checks.h"
 #include "rtc_base/ignore_wundef.h"
-#include "rtc_base/logging.h"
 
 // Files generated at build-time by the protobuf compiler.
 RTC_PUSH_IGNORING_WUNDEF()
@@ -34,8 +30,11 @@ namespace webrtc {
 
 class CaptureStreamInfo {
  public:
-  explicit CaptureStreamInfo(std::unique_ptr<WriteToFileTask> task);
-  ~CaptureStreamInfo();
+  CaptureStreamInfo() { CreateNewEvent(); }
+  CaptureStreamInfo(const CaptureStreamInfo&) = delete;
+  CaptureStreamInfo& operator=(const CaptureStreamInfo&) = delete;
+  ~CaptureStreamInfo() = default;
+
   void AddInput(const AudioFrameView<const float>& src);
   void AddOutput(const AudioFrameView<const float>& src);
 
@@ -48,20 +47,18 @@ class CaptureStreamInfo {
 
   void AddAudioProcessingState(const AecDump::AudioProcessingState& state);
 
-  std::unique_ptr<WriteToFileTask> GetTask() {
-    RTC_DCHECK(task_);
-    return std::move(task_);
-  }
-
-  void SetTask(std::unique_ptr<WriteToFileTask> task) {
-    RTC_DCHECK(!task_);
-    RTC_DCHECK(task);
-    task_ = std::move(task);
-    task_->GetEvent()->set_type(audioproc::Event::STREAM);
+  std::unique_ptr<audioproc::Event> FetchEvent() {
+    std::unique_ptr<audioproc::Event> result = std::move(event_);
+    CreateNewEvent();
+    return result;
   }
 
  private:
-  std::unique_ptr<WriteToFileTask> task_;
+  void CreateNewEvent() {
+    event_ = std::make_unique<audioproc::Event>();
+    event_->set_type(audioproc::Event::STREAM);
+  }
+  std::unique_ptr<audioproc::Event> event_;
 };
 
 }  // namespace webrtc

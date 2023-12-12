@@ -11,12 +11,15 @@
 #include "rtc_base/net_helpers.h"
 
 #include <memory>
+#include <string>
+
+#include "absl/strings/string_view.h"
 
 #if defined(WEBRTC_WIN)
 #include <ws2spi.h>
 #include <ws2tcpip.h>
 
-#include "rtc_base/win32.h"
+#include "rtc_base/win/windows_version.h"
 #endif
 #if defined(WEBRTC_POSIX) && !defined(__native_client__)
 #include <arpa/inet.h>
@@ -37,11 +40,12 @@ const char* inet_ntop(int af, const void* src, char* dst, socklen_t size) {
 #endif
 }
 
-int inet_pton(int af, const char* src, void* dst) {
+int inet_pton(int af, absl::string_view src, void* dst) {
+  std::string src_str(src);
 #if defined(WEBRTC_WIN)
-  return win32_inet_pton(af, src, dst);
+  return win32_inet_pton(af, src_str.c_str(), dst);
 #else
-  return ::inet_pton(af, src, dst);
+  return ::inet_pton(af, src_str.c_str(), dst);
 #endif
 }
 
@@ -70,10 +74,10 @@ bool HasIPv6Enabled() {
   // WinUWP always has IPv6 capability.
   return true;
 #elif defined(WEBRTC_WIN)
-  if (IsWindowsVistaOrLater()) {
+  if (rtc::rtc_win::GetVersion() >= rtc::rtc_win::Version::VERSION_VISTA) {
     return true;
   }
-  if (!IsWindowsXpOrLater()) {
+  if (rtc::rtc_win::GetVersion() < rtc::rtc_win::Version::VERSION_XP) {
     return false;
   }
   DWORD protbuff_size = 4096;

@@ -13,10 +13,16 @@
 
 #include <string>
 
+#include "api/array_view.h"
 #include "api/rtp_headers.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
 #include "system_wrappers/include/clock.h"
 #include "system_wrappers/include/ntp_time.h"
 
@@ -24,19 +30,80 @@ namespace webrtc {
 class ReceiveStatisticsProvider;
 class Transport;
 
+// Interface to watch incoming rtcp packets related to the link in general.
+// All message handlers have default empty implementation. This way users only
+// need to implement the ones they are interested in.
+// All message handles pass `receive_time` parameter, which is receive time
+// of the rtcp packet that triggered the update.
+class NetworkLinkRtcpObserver {
+ public:
+  virtual ~NetworkLinkRtcpObserver() = default;
+
+  virtual void OnTransportFeedback(Timestamp receive_time,
+                                   const rtcp::TransportFeedback& feedback) {}
+  virtual void OnReceiverEstimatedMaxBitrate(Timestamp receive_time,
+                                             DataRate bitrate) {}
+  virtual void OnReportBlocks(
+      Timestamp receive_time,
+      rtc::ArrayView<const rtcp::ReportBlock> report_blocks) {}
+  virtual void OnRttUpdate(Timestamp receive_time, TimeDelta rtt) {}
+};
+
 // Interface to watch incoming rtcp packets by media (rtp) receiver.
+// All message handlers have default empty implementation. This way users only
+// need to implement the ones they are interested in.
 class MediaReceiverRtcpObserver {
  public:
   virtual ~MediaReceiverRtcpObserver() = default;
 
-  // All message handlers have default empty implementation. This way users only
-  // need to implement the ones they are interested in.
   virtual void OnSenderReport(uint32_t sender_ssrc,
                               NtpTime ntp_time,
                               uint32_t rtp_time) {}
   virtual void OnBye(uint32_t sender_ssrc) {}
   virtual void OnBitrateAllocation(uint32_t sender_ssrc,
                                    const VideoBitrateAllocation& allocation) {}
+};
+
+// Handles RTCP related messages for a single RTP stream (i.e. single SSRC)
+class RtpStreamRtcpHandler {
+ public:
+  virtual ~RtpStreamRtcpHandler() = default;
+
+  // Statistic about sent RTP packets to propagate to RTCP sender report.
+  class RtpStats {
+   public:
+    RtpStats() = default;
+    RtpStats(const RtpStats&) = default;
+    RtpStats& operator=(const RtpStats&) = default;
+    ~RtpStats() = default;
+
+    size_t num_sent_packets() const { return num_sent_packets_; }
+    size_t num_sent_bytes() const { return num_sent_bytes_; }
+    Timestamp last_capture_time() const { return last_capture_time_; }
+    uint32_t last_rtp_timestamp() const { return last_rtp_timestamp_; }
+    int last_clock_rate() const { return last_clock_rate_; }
+
+    void set_num_sent_packets(size_t v) { num_sent_packets_ = v; }
+    void set_num_sent_bytes(size_t v) { num_sent_bytes_ = v; }
+    void set_last_capture_time(Timestamp v) { last_capture_time_ = v; }
+    void set_last_rtp_timestamp(uint32_t v) { last_rtp_timestamp_ = v; }
+    void set_last_clock_rate(int v) { last_clock_rate_ = v; }
+
+   private:
+    size_t num_sent_packets_ = 0;
+    size_t num_sent_bytes_ = 0;
+    Timestamp last_capture_time_ = Timestamp::Zero();
+    uint32_t last_rtp_timestamp_ = 0;
+    int last_clock_rate_ = 90'000;
+  };
+  virtual RtpStats SentStats() = 0;
+
+  virtual void OnNack(uint32_t sender_ssrc,
+                      rtc::ArrayView<const uint16_t> sequence_numbers) {}
+  virtual void OnFir(uint32_t sender_ssrc) {}
+  virtual void OnPli(uint32_t sender_ssrc) {}
+  virtual void OnReportBlock(uint32_t sender_ssrc,
+                             const rtcp::ReportBlock& report_block) {}
 };
 
 struct RtcpTransceiverConfig {
@@ -74,9 +141,9 @@ struct RtcpTransceiverConfig {
   // Rtcp report block generator for outgoing receiver reports.
   ReceiveStatisticsProvider* receive_statistics = nullptr;
 
-  // Callback to pass result of rtt calculation. Should outlive RtcpTransceiver.
-  // Callbacks will be invoked on the task_queue.
-  RtcpRttStats* rtt_observer = nullptr;
+  // Should outlive RtcpTransceiver.
+  // Callbacks will be invoked on the `task_queue`.
+  NetworkLinkRtcpObserver* network_link_observer = nullptr;
 
   // Configures if sending should
   //  enforce compound packets: https://tools.ietf.org/html/rfc4585#section-3.1
@@ -86,13 +153,13 @@ struct RtcpTransceiverConfig {
   //
   // Tuning parameters.
   //
-  // Initial state if |outgoing_transport| ready to accept packets.
+  // Initial state if `outgoing_transport` ready to accept packets.
   bool initial_ready_to_send = true;
   // Delay before 1st periodic compound packet.
-  int initial_report_delay_ms = 500;
+  TimeDelta initial_report_delay = TimeDelta::Millis(500);
 
   // Period between periodic compound packets.
-  int report_period_ms = 1000;
+  TimeDelta report_period = TimeDelta::Seconds(1);
 
   //
   // Flags for features and experiments.
@@ -101,6 +168,15 @@ struct RtcpTransceiverConfig {
   // Estimate RTT as non-sender as described in
   // https://tools.ietf.org/html/rfc3611#section-4.4 and #section-4.5
   bool non_sender_rtt_measurement = false;
+
+  // Reply to incoming RRTR messages so that remote endpoint may estimate RTT as
+  // non-sender as described in https://tools.ietf.org/html/rfc3611#section-4.4
+  // and #section-4.5
+  bool reply_to_non_sender_rtt_measurement = true;
+
+  // Reply to incoming RRTR messages multiple times, one per sender SSRC, to
+  // support clients that calculate and process RTT per sender SSRC.
+  bool reply_to_non_sender_rtt_mesaurments_on_all_ssrcs = true;
 
   // Allows a REMB message to be sent immediately when SetRemb is called without
   // having to wait for the next compount message to be sent.

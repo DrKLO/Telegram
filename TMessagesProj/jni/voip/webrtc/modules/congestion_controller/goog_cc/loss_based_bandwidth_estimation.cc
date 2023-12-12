@@ -36,7 +36,7 @@ double GetIncreaseFactor(const LossBasedControlConfig& config, TimeDelta rtt) {
   }
   auto rtt_range = config.increase_high_rtt.Get() - config.increase_low_rtt;
   if (rtt_range <= TimeDelta::Zero()) {
-    RTC_DCHECK(false);  // Only on misconfiguration.
+    RTC_DCHECK_NOTREACHED();  // Only on misconfiguration.
     return config.min_increase_factor;
   }
   auto rtt_offset = rtt - config.increase_low_rtt;
@@ -57,7 +57,7 @@ DataRate BitrateFromLoss(double loss,
                          DataRate loss_bandwidth_balance,
                          double exponent) {
   if (exponent <= 0) {
-    RTC_DCHECK(false);
+    RTC_DCHECK_NOTREACHED();
     return DataRate::Infinity();
   }
   if (loss < 1e-5)
@@ -69,13 +69,13 @@ double ExponentialUpdate(TimeDelta window, TimeDelta interval) {
   // Use the convention that exponential window length (which is really
   // infinite) is the time it takes to dampen to 1/e.
   if (window <= TimeDelta::Zero()) {
-    RTC_DCHECK(false);
+    RTC_DCHECK_NOTREACHED();
     return 1.0f;
   }
   return 1.0f - exp(interval / window * -1.0);
 }
 
-bool IsEnabled(const webrtc::WebRtcKeyValueConfig& key_value_config,
+bool IsEnabled(const webrtc::FieldTrialsView& key_value_config,
                absl::string_view name) {
   return absl::StartsWith(key_value_config.Lookup(name), "Enabled");
 }
@@ -83,7 +83,7 @@ bool IsEnabled(const webrtc::WebRtcKeyValueConfig& key_value_config,
 }  // namespace
 
 LossBasedControlConfig::LossBasedControlConfig(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : enabled(IsEnabled(*key_value_config, kBweLossBasedControl)),
       min_increase_factor("min_incr", 1.02),
       max_increase_factor("max_incr", 1.08),
@@ -118,7 +118,7 @@ LossBasedControlConfig::LossBasedControlConfig(const LossBasedControlConfig&) =
 LossBasedControlConfig::~LossBasedControlConfig() = default;
 
 LossBasedBandwidthEstimation::LossBasedBandwidthEstimation(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : config_(key_value_config),
       average_loss_(0),
       average_loss_max_(0),
@@ -134,12 +134,12 @@ void LossBasedBandwidthEstimation::UpdateLossStatistics(
     const std::vector<PacketResult>& packet_results,
     Timestamp at_time) {
   if (packet_results.empty()) {
-    RTC_DCHECK(false);
+    RTC_DCHECK_NOTREACHED();
     return;
   }
   int loss_count = 0;
   for (const auto& pkt : packet_results) {
-    loss_count += pkt.receive_time.IsInfinite() ? 1 : 0;
+    loss_count += !pkt.IsReceived() ? 1 : 0;
   }
   last_loss_ratio_ = static_cast<double>(loss_count) / packet_results.size();
   const TimeDelta time_passed = last_loss_packet_report_.IsFinite()

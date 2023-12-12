@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_device/android/audio_manager.h"
 #include "modules/audio_device/fine_audio_buffer.h"
 #include "rtc_base/checks.h"
@@ -21,26 +22,22 @@
 
 namespace webrtc {
 
-enum AudioDeviceMessageType : uint32_t {
-  kMessageInputStreamDisconnected,
-};
-
 AAudioRecorder::AAudioRecorder(AudioManager* audio_manager)
-    : main_thread_(rtc::Thread::Current()),
+    : main_thread_(TaskQueueBase::Current()),
       aaudio_(audio_manager, AAUDIO_DIRECTION_INPUT, this) {
-  RTC_LOG(INFO) << "ctor";
+  RTC_LOG(LS_INFO) << "ctor";
   thread_checker_aaudio_.Detach();
 }
 
 AAudioRecorder::~AAudioRecorder() {
-  RTC_LOG(INFO) << "dtor";
+  RTC_LOG(LS_INFO) << "dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
   Terminate();
-  RTC_LOG(INFO) << "detected owerflows: " << overflow_count_;
+  RTC_LOG(LS_INFO) << "detected owerflows: " << overflow_count_;
 }
 
 int AAudioRecorder::Init() {
-  RTC_LOG(INFO) << "Init";
+  RTC_LOG(LS_INFO) << "Init";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (aaudio_.audio_parameters().channels() == 2) {
     RTC_DLOG(LS_WARNING) << "Stereo mode is enabled";
@@ -49,14 +46,14 @@ int AAudioRecorder::Init() {
 }
 
 int AAudioRecorder::Terminate() {
-  RTC_LOG(INFO) << "Terminate";
+  RTC_LOG(LS_INFO) << "Terminate";
   RTC_DCHECK(thread_checker_.IsCurrent());
   StopRecording();
   return 0;
 }
 
 int AAudioRecorder::InitRecording() {
-  RTC_LOG(INFO) << "InitRecording";
+  RTC_LOG(LS_INFO) << "InitRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!initialized_);
   RTC_DCHECK(!recording_);
@@ -68,7 +65,7 @@ int AAudioRecorder::InitRecording() {
 }
 
 int AAudioRecorder::StartRecording() {
-  RTC_LOG(INFO) << "StartRecording";
+  RTC_LOG(LS_INFO) << "StartRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(initialized_);
   RTC_DCHECK(!recording_);
@@ -85,7 +82,7 @@ int AAudioRecorder::StartRecording() {
 }
 
 int AAudioRecorder::StopRecording() {
-  RTC_LOG(INFO) << "StopRecording";
+  RTC_LOG(LS_INFO) << "StopRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (!initialized_ || !recording_) {
     return 0;
@@ -100,7 +97,7 @@ int AAudioRecorder::StopRecording() {
 }
 
 void AAudioRecorder::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
-  RTC_LOG(INFO) << "AttachAudioBuffer";
+  RTC_LOG(LS_INFO) << "AttachAudioBuffer";
   RTC_DCHECK(thread_checker_.IsCurrent());
   audio_device_buffer_ = audioBuffer;
   const AudioParameters audio_parameters = aaudio_.audio_parameters();
@@ -114,19 +111,19 @@ void AAudioRecorder::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
 }
 
 int AAudioRecorder::EnableBuiltInAEC(bool enable) {
-  RTC_LOG(INFO) << "EnableBuiltInAEC: " << enable;
+  RTC_LOG(LS_INFO) << "EnableBuiltInAEC: " << enable;
   RTC_LOG(LS_ERROR) << "Not implemented";
   return -1;
 }
 
 int AAudioRecorder::EnableBuiltInAGC(bool enable) {
-  RTC_LOG(INFO) << "EnableBuiltInAGC: " << enable;
+  RTC_LOG(LS_INFO) << "EnableBuiltInAGC: " << enable;
   RTC_LOG(LS_ERROR) << "Not implemented";
   return -1;
 }
 
 int AAudioRecorder::EnableBuiltInNS(bool enable) {
-  RTC_LOG(INFO) << "EnableBuiltInNS: " << enable;
+  RTC_LOG(LS_INFO) << "EnableBuiltInNS: " << enable;
   RTC_LOG(LS_ERROR) << "Not implemented";
   return -1;
 }
@@ -137,16 +134,16 @@ void AAudioRecorder::OnErrorCallback(aaudio_result_t error) {
   if (aaudio_.stream_state() == AAUDIO_STREAM_STATE_DISCONNECTED) {
     // The stream is disconnected and any attempt to use it will return
     // AAUDIO_ERROR_DISCONNECTED..
-    RTC_LOG(WARNING) << "Input stream disconnected => restart is required";
+    RTC_LOG(LS_WARNING) << "Input stream disconnected => restart is required";
     // AAudio documentation states: "You should not close or reopen the stream
     // from the callback, use another thread instead". A message is therefore
     // sent to the main thread to do the restart operation.
     RTC_DCHECK(main_thread_);
-    main_thread_->Post(RTC_FROM_HERE, this, kMessageInputStreamDisconnected);
+    main_thread_->PostTask([this] { HandleStreamDisconnected(); });
   }
 }
 
-// Read and process |num_frames| of data from the |audio_data| buffer.
+// Read and process `num_frames` of data from the `audio_data` buffer.
 // TODO(henrika): possibly add trace here to be included in systrace.
 // See https://developer.android.com/studio/profile/systrace-commandline.html.
 aaudio_data_callback_result_t AAudioRecorder::OnDataCallback(
@@ -154,14 +151,14 @@ aaudio_data_callback_result_t AAudioRecorder::OnDataCallback(
     int32_t num_frames) {
   // TODO(henrika): figure out why we sometimes hit this one.
   // RTC_DCHECK(thread_checker_aaudio_.IsCurrent());
-  // RTC_LOG(INFO) << "OnDataCallback: " << num_frames;
+  // RTC_LOG(LS_INFO) << "OnDataCallback: " << num_frames;
   // Drain the input buffer at first callback to ensure that it does not
   // contain any old data. Will also ensure that the lowest possible latency
   // is obtained.
   if (first_data_callback_) {
-    RTC_LOG(INFO) << "--- First input data callback: "
-                     "device id="
-                  << aaudio_.device_id();
+    RTC_LOG(LS_INFO) << "--- First input data callback: "
+                        "device id="
+                     << aaudio_.device_id();
     aaudio_.ClearInputStream(audio_data, num_frames);
     first_data_callback_ = false;
   }
@@ -177,10 +174,10 @@ aaudio_data_callback_result_t AAudioRecorder::OnDataCallback(
   latency_millis_ = aaudio_.EstimateLatencyMillis();
   // TODO(henrika): use for development only.
   if (aaudio_.frames_read() % (1000 * aaudio_.frames_per_burst()) == 0) {
-    RTC_DLOG(INFO) << "input latency: " << latency_millis_
-                   << ", num_frames: " << num_frames;
+    RTC_DLOG(LS_INFO) << "input latency: " << latency_millis_
+                      << ", num_frames: " << num_frames;
   }
-  // Copy recorded audio in |audio_data| to the WebRTC sink using the
+  // Copy recorded audio in `audio_data` to the WebRTC sink using the
   // FineAudioBuffer object.
   fine_audio_buffer_->DeliverRecordedData(
       rtc::MakeArrayView(static_cast<const int16_t*>(audio_data),
@@ -190,21 +187,9 @@ aaudio_data_callback_result_t AAudioRecorder::OnDataCallback(
   return AAUDIO_CALLBACK_RESULT_CONTINUE;
 }
 
-void AAudioRecorder::OnMessage(rtc::Message* msg) {
-  RTC_DCHECK_RUN_ON(&thread_checker_);
-  switch (msg->message_id) {
-    case kMessageInputStreamDisconnected:
-      HandleStreamDisconnected();
-      break;
-    default:
-      RTC_LOG(LS_ERROR) << "Invalid message id: " << msg->message_id;
-      break;
-  }
-}
-
 void AAudioRecorder::HandleStreamDisconnected() {
   RTC_DCHECK_RUN_ON(&thread_checker_);
-  RTC_LOG(INFO) << "HandleStreamDisconnected";
+  RTC_LOG(LS_INFO) << "HandleStreamDisconnected";
   if (!initialized_ || !recording_) {
     return;
   }

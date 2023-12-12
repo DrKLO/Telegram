@@ -12,7 +12,6 @@
 
 #include <stddef.h>
 
-#include "rtc_base/string_encode.h"
 #include "rtc_base/strings/audio_format_to_string.h"
 #include "rtc_base/strings/string_builder.h"
 
@@ -81,6 +80,8 @@ std::string AudioSendStream::Config::SendCodecSpec::ToString() const {
   rtc::SimpleStringBuilder ss(buf);
   ss << "{nack_enabled: " << (nack_enabled ? "true" : "false");
   ss << ", transport_cc_enabled: " << (transport_cc_enabled ? "true" : "false");
+  ss << ", enable_non_sender_rtt: "
+     << (enable_non_sender_rtt ? "true" : "false");
   ss << ", cng_payload_type: "
      << (cng_payload_type ? rtc::ToString(*cng_payload_type) : "<unset>");
   ss << ", red_payload_type: "
@@ -95,6 +96,7 @@ bool AudioSendStream::Config::SendCodecSpec::operator==(
     const AudioSendStream::Config::SendCodecSpec& rhs) const {
   if (nack_enabled == rhs.nack_enabled &&
       transport_cc_enabled == rhs.transport_cc_enabled &&
+      enable_non_sender_rtt == rhs.enable_non_sender_rtt &&
       cng_payload_type == rhs.cng_payload_type &&
       red_payload_type == rhs.red_payload_type &&
       payload_type == rhs.payload_type && format == rhs.format &&

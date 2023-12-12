@@ -24,7 +24,7 @@ class VoipNetwork {
   // The data received from the network including RTP header is passed here.
   // Returns following VoipResult;
   //  kOk - received RTP packet is processed.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult ReceivedRTPPacket(
       ChannelId channel_id,
       rtc::ArrayView<const uint8_t> rtp_packet) = 0;
@@ -32,7 +32,7 @@ class VoipNetwork {
   // The data received from the network including RTCP header is passed here.
   // Returns following VoipResult;
   //  kOk - received RTCP packet is processed.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult ReceivedRTCPPacket(
       ChannelId channel_id,
       rtc::ArrayView<const uint8_t> rtcp_packet) = 0;

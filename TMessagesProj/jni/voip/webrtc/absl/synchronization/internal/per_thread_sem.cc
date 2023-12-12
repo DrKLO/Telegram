@@ -47,10 +47,6 @@ void PerThreadSem::Init(base_internal::ThreadIdentity *identity) {
   identity->is_idle.store(false, std::memory_order_relaxed);
 }
 
-void PerThreadSem::Destroy(base_internal::ThreadIdentity *identity) {
-  Waiter::GetWaiter(identity)->~Waiter();
-}
-
 void PerThreadSem::Tick(base_internal::ThreadIdentity *identity) {
   const int ticker =
       identity->ticker.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -68,12 +64,12 @@ ABSL_NAMESPACE_END
 
 extern "C" {
 
-ABSL_ATTRIBUTE_WEAK void AbslInternalPerThreadSemPost(
+ABSL_ATTRIBUTE_WEAK void ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)(
     absl::base_internal::ThreadIdentity *identity) {
   absl::synchronization_internal::Waiter::GetWaiter(identity)->Post();
 }
 
-ABSL_ATTRIBUTE_WEAK bool AbslInternalPerThreadSemWait(
+ABSL_ATTRIBUTE_WEAK bool ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemWait)(
     absl::synchronization_internal::KernelTimeout t) {
   bool timeout = false;
   absl::base_internal::ThreadIdentity *identity;

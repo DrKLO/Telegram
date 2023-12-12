@@ -10,24 +10,27 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BaseController;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.EmuDetector;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.KeepAliveJob;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 
 import java.io.ByteArrayOutputStream;
@@ -38,6 +41,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -45,6 +49,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -53,6 +58,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.net.ssl.SSLException;
 
 public class ConnectionsManager extends BaseController {
 
@@ -75,6 +82,7 @@ public class ConnectionsManager extends BaseController {
     public final static int RequestFlagForceDownload = 32;
     public final static int RequestFlagInvokeAfter = 64;
     public final static int RequestFlagNeedQuickAck = 128;
+    public final static int RequestFlagDoNotWaitFloodWait = 1024;
 
     public final static int ConnectionStateConnecting = 1;
     public final static int ConnectionStateWaitingForNetwork = 2;
@@ -115,10 +123,31 @@ public class ConnectionsManager extends BaseController {
         }
     };
 
+    private boolean forceTryIpV6;
+
     static {
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
         threadPoolExecutor.allowCoreThreadTimeOut(true);
         DNS_THREAD_POOL_EXECUTOR = threadPoolExecutor;
+    }
+
+    public void setForceTryIpV6(boolean forceTryIpV6) {
+        if (this.forceTryIpV6 != forceTryIpV6) {
+            this.forceTryIpV6 = forceTryIpV6;
+            checkConnection();
+        }
+    }
+
+    public void discardConnection(int dcId, int connectionType) {
+        Utilities.stageQueue.postRunnable(() -> {
+            native_discardConnection(currentAccount, dcId, connectionType);
+        });
+    }
+
+    public void failNotRunningRequest(int requestToken) {
+        Utilities.stageQueue.postRunnable(() -> {
+            native_failNotRunningRequest(currentAccount, requestToken);
+        });
     }
 
     private static class ResolvedDomain {
@@ -140,7 +169,7 @@ public class ConnectionsManager extends BaseController {
 
     private static int lastClassGuid = 1;
     
-    private static volatile ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
     public static ConnectionsManager getInstance(int num) {
         ConnectionsManager localInstance = Instance[num];
         if (localInstance == null) {
@@ -205,17 +234,31 @@ public class ConnectionsManager extends BaseController {
         String fingerprint = AndroidUtilities.getCertificateSHA256Fingerprint();
 
         int timezoneOffset = (TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings()) / 1000;
-
-        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), enablePushConnection);
+        SharedPreferences mainPreferences;
+        if (currentAccount == 0) {
+            mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        } else {
+            mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
+        }
+        forceTryIpV6 = mainPreferences.getBoolean("forceTryIpV6", false);
+        boolean userPremium = false;
+        if (getUserConfig().getCurrentUser() != null) {
+            userPremium = getUserConfig().getCurrentUser().premium;
+        }
+        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), userPremium, enablePushConnection);
     }
 
     private String getRegId() {
         String pushString = SharedConfig.pushString;
+        if (!TextUtils.isEmpty(pushString) && SharedConfig.pushType == PushListenerController.PUSH_TYPE_HUAWEI) {
+            pushString = "huawei://" + pushString;
+        }
         if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(SharedConfig.pushStringStatus)) {
             pushString = SharedConfig.pushStringStatus;
         }
         if (TextUtils.isEmpty(pushString)) {
-            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getCurrentTime() + "__";
+            String tag = SharedConfig.pushType == PushListenerController.PUSH_TYPE_FIREBASE ? "FIREBASE" : "HUAWEI";
+            pushString = SharedConfig.pushStringStatus = "__" + tag + "_GENERATING_SINCE_" + getCurrentTime() + "__";
         }
         return pushString;
     }
@@ -269,64 +312,99 @@ public class ConnectionsManager extends BaseController {
         return sendRequest(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
     }
 
+    public int sendRequestSync(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
+        final int requestToken = lastRequestToken.getAndIncrement();
+        sendRequestInternal(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
+        return requestToken;
+    }
+
     public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
         Utilities.stageQueue.postRunnable(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("send request " + object + " with token = " + requestToken);
-            }
-            try {
-                NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
-                object.serializeToStream(buffer);
-                object.freeResources();
-
-                native_sendRequest(currentAccount, buffer.address, (response, errorCode, errorText, networkType, timestamp) -> {
-                    try {
-                        TLObject resp = null;
-                        TLRPC.TL_error error = null;
-                        if (response != 0) {
-                            NativeByteBuffer buff = NativeByteBuffer.wrap(response);
-                            buff.reused = true;
-                            resp = object.deserializeResponse(buff, buff.readInt32(true), true);
-                        } else if (errorText != null) {
-                            error = new TLRPC.TL_error();
-                            error.code = errorCode;
-                            error.text = errorText;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.e(object + " got error " + error.code + " " + error.text);
-                            }
-                        }
-                        if (resp != null) {
-                            resp.networkType = networkType;
-                        }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("java received " + resp + " error = " + error);
-                        }
-                        final TLObject finalResponse = resp;
-                        final TLRPC.TL_error finalError = error;
-                        Utilities.stageQueue.postRunnable(() -> {
-                            if (onComplete != null) {
-                                onComplete.run(finalResponse, finalError);
-                            } else if (onCompleteTimestamp != null) {
-                                onCompleteTimestamp.run(finalResponse, finalError, timestamp);
-                            }
-                            if (finalResponse != null) {
-                                finalResponse.freeResources();
-                            }
-                        });
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
         });
         return requestToken;
     }
 
+    private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connetionType, boolean immediate, int requestToken) {
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("send request " + object + " with token = " + requestToken);
+        }
+        try {
+            NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
+            object.serializeToStream(buffer);
+            object.freeResources();
+
+            long startRequestTime = 0;
+            if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
+                startRequestTime = System.currentTimeMillis();
+            }
+            long finalStartRequestTime = startRequestTime;
+            native_sendRequest(currentAccount, buffer.address, (response, errorCode, errorText, networkType, timestamp, requestMsgId) -> {
+                try {
+                    TLObject resp = null;
+                    TLRPC.TL_error error = null;
+
+                    if (response != 0) {
+                        NativeByteBuffer buff = NativeByteBuffer.wrap(response);
+                        buff.reused = true;
+                        try {
+                            resp = object.deserializeResponse(buff, buff.readInt32(true), true);
+                        } catch (Exception e2) {
+                            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                                throw e2;
+                            }
+                            FileLog.fatal(e2);
+                            return;
+                        }
+                    } else if (errorText != null) {
+                        error = new TLRPC.TL_error();
+                        error.code = errorCode;
+                        error.text = errorText;
+                        if (BuildVars.LOGS_ENABLED && error.code != -2000) {
+                            FileLog.e(object + " got error " + error.code + " " + error.text);
+                        }
+                    }
+                    if (BuildVars.DEBUG_PRIVATE_VERSION && !getUserConfig().isClientActivated() && error != null && error.code == 400 && Objects.equals(error.text, "CONNECTION_NOT_INITED")) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
+                        }
+                        cleanup(true);
+                        sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
+                        return;
+                    }
+                    if (resp != null) {
+                        resp.networkType = networkType;
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("java received " + resp + " error = " + error + " messageId = " + requestMsgId);
+                    }
+                    FileLog.dumpResponseAndRequest(object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
+                    final TLObject finalResponse = resp;
+                    final TLRPC.TL_error finalError = error;
+                    Utilities.stageQueue.postRunnable(() -> {
+                        if (onComplete != null) {
+                            onComplete.run(finalResponse, finalError);
+                        } else if (onCompleteTimestamp != null) {
+                            onCompleteTimestamp.run(finalResponse, finalError, timestamp);
+                        }
+                        if (finalResponse != null) {
+                            finalResponse.freeResources();
+                        }
+                    });
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public void cancelRequest(int token, boolean notifyServer) {
-        native_cancelRequest(currentAccount, token, notifyServer);
+        Utilities.stageQueue.postRunnable(() -> {
+            native_cancelRequest(currentAccount, token, notifyServer);
+        });
     }
 
     public void cleanup(boolean resetKeys) {
@@ -334,10 +412,15 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void cancelRequestsForGuid(int guid) {
-        native_cancelRequestsForGuid(currentAccount, guid);
+        Utilities.stageQueue.postRunnable(() -> {
+            native_cancelRequestsForGuid(currentAccount, guid);
+        });
     }
 
     public void bindRequestToGuid(int requestToken, int guid) {
+        if (guid == 0) {
+            return;
+        }
         native_bindRequestToGuid(currentAccount, requestToken, guid);
     }
 
@@ -357,7 +440,11 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
-        native_setIpStrategy(currentAccount, getIpStrategy());
+        byte selectedStrategy = getIpStrategy();
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("selected ip strategy " + selectedStrategy);
+        }
+        native_setIpStrategy(currentAccount, selectedStrategy);
         native_setNetworkAvailable(currentAccount, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), ApplicationLoader.isConnectionSlow());
     }
 
@@ -365,7 +452,7 @@ public class ConnectionsManager extends BaseController {
         native_setPushConnectionEnabled(currentAccount, value);
     }
 
-    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean enablePushConnection) {
+    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection) {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String proxyAddress = preferences.getString("proxy_ip", "");
         String proxyUsername = preferences.getString("proxy_user", "");
@@ -395,7 +482,7 @@ public class ConnectionsManager extends BaseController {
             packageId = "";
         }
 
-        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType());
+        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
         checkConnection();
     }
 
@@ -406,13 +493,17 @@ public class ConnectionsManager extends BaseController {
         }
     }
 
-    public static void setRegId(String regId, String status) {
+    public static void setRegId(String regId, @PushListenerController.PushType int type, String status) {
         String pushString = regId;
+        if (!TextUtils.isEmpty(pushString) && type == PushListenerController.PUSH_TYPE_HUAWEI) {
+            pushString = "huawei://" + pushString;
+        }
         if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(status)) {
             pushString = status;
         }
         if (TextUtils.isEmpty(pushString)) {
-            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
+            String tag = type == PushListenerController.PUSH_TYPE_FIREBASE ? "FIREBASE" : "HUAWEI";
+            pushString = SharedConfig.pushStringStatus = "__" + tag + "_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             native_setRegId(a, pushString);
@@ -505,12 +596,13 @@ public class ConnectionsManager extends BaseController {
         }
     }
 
-    public static void onUnparsedMessageReceived(long address, final int currentAccount) {
+    public static void onUnparsedMessageReceived(long address, final int currentAccount, long messageId) {
         try {
             NativeByteBuffer buff = NativeByteBuffer.wrap(address);
             buff.reused = true;
             int constructor = buff.readInt32(true);
             final TLObject message = TLClassStore.Instance().TLdeserialize(buff, constructor, true);
+            FileLog.dumpUnparsedMessage(message, messageId);
             if (message instanceof TLRPC.Updates) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("java received " + message);
@@ -714,7 +806,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_applyDatacenterAddress(int currentAccount, int datacenterId, String ipAddress, int port);
     public static native int native_getConnectionState(int currentAccount);
     public static native void native_setUserId(int currentAccount, long id);
-    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean enablePushConnection, boolean hasNetwork, int networkType);
+    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection, boolean hasNetwork, int networkType, int performanceClass);
     public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret);
     public static native void native_setLangCode(int currentAccount, String langCode);
     public static native void native_setRegId(int currentAccount, String regId);
@@ -725,6 +817,8 @@ public class ConnectionsManager extends BaseController {
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
     public static native void native_onHostNameResolved(String host, long address, String ip);
+    public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
+    public static native void native_failNotRunningRequest(int currentAccount, int token);
 
     public static int generateClassGuid() {
         return lastClassGuid++;
@@ -743,7 +837,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     @SuppressLint("NewApi")
-    protected static byte getIpStrategy() {
+    protected byte getIpStrategy() {
         if (Build.VERSION.SDK_INT < 19) {
             return USE_IPV4_ONLY;
         }
@@ -809,6 +903,9 @@ public class ConnectionsManager extends BaseController {
                 }
             }
             if (hasIpv6) {
+                if (forceTryIpV6) {
+                    return USE_IPV6_ONLY;
+                }
                 if (hasStrangeIpv4) {
                     return USE_IPV4_IPV6_RANDOM;
                 }
@@ -882,14 +979,14 @@ public class ConnectionsManager extends BaseController {
                 }
                 done = true;
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             } finally {
                 try {
                     if (httpConnectionStream != null) {
                         httpConnectionStream.close();
                     }
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
                 try {
                     if (outbuf != null) {
@@ -906,7 +1003,7 @@ public class ConnectionsManager extends BaseController {
                     addresses.add(address.getHostAddress());
                     return new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
             }
             return null;
@@ -1017,14 +1114,14 @@ public class ConnectionsManager extends BaseController {
                     buffer.writeBytes(bytes);
                     return buffer;
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 } finally {
                     try {
                         if (httpConnectionStream != null) {
                             httpConnectionStream.close();
                         }
                     } catch (Throwable e) {
-                        FileLog.e(e);
+                        FileLog.e(e, false);
                     }
                     try {
                         if (outbuf != null) {
@@ -1136,7 +1233,7 @@ public class ConnectionsManager extends BaseController {
                 buffer.writeBytes(bytes);
                 return buffer;
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, !(e instanceof SocketTimeoutException || e instanceof SSLException));
             } finally {
                 try {
                     if (httpConnectionStream != null) {
@@ -1255,7 +1352,7 @@ public class ConnectionsManager extends BaseController {
                 buffer.writeBytes(bytes);
                 return buffer;
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             } finally {
                 try {
                     if (httpConnectionStream != null) {
@@ -1351,7 +1448,7 @@ public class ConnectionsManager extends BaseController {
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
                 });
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
             return null;
         }

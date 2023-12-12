@@ -17,7 +17,6 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/openssl_certificate.h"
 #include "rtc_base/openssl_key_pair.h"
 #include "rtc_base/ssl_certificate.h"
@@ -30,18 +29,21 @@ namespace rtc {
 class OpenSSLIdentity final : public SSLIdentity {
  public:
   static std::unique_ptr<OpenSSLIdentity> CreateWithExpiration(
-      const std::string& common_name,
+      absl::string_view common_name,
       const KeyParams& key_params,
       time_t certificate_lifetime);
   static std::unique_ptr<OpenSSLIdentity> CreateForTest(
       const SSLIdentityParams& params);
   static std::unique_ptr<SSLIdentity> CreateFromPEMStrings(
-      const std::string& private_key,
-      const std::string& certificate);
+      absl::string_view private_key,
+      absl::string_view certificate);
   static std::unique_ptr<SSLIdentity> CreateFromPEMChainStrings(
-      const std::string& private_key,
-      const std::string& certificate_chain);
+      absl::string_view private_key,
+      absl::string_view certificate_chain);
   ~OpenSSLIdentity() override;
+
+  OpenSSLIdentity(const OpenSSLIdentity&) = delete;
+  OpenSSLIdentity& operator=(const OpenSSLIdentity&) = delete;
 
   const OpenSSLCertificate& certificate() const override;
   const SSLCertChain& cert_chain() const override;
@@ -66,8 +68,6 @@ class OpenSSLIdentity final : public SSLIdentity {
 
   std::unique_ptr<OpenSSLKeyPair> key_pair_;
   std::unique_ptr<SSLCertChain> cert_chain_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLIdentity);
 };
 
 }  // namespace rtc

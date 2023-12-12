@@ -32,6 +32,7 @@
 #include "logging/rtc_event_log/events/rtc_event_probe_cluster_created.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_failure.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
+#include "logging/rtc_event_log/events/rtc_event_remote_estimate.h"
 #include "logging/rtc_event_log/events/rtc_event_rtcp_packet_incoming.h"
 #include "logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.h"
 #include "logging/rtc_event_log/events/rtc_event_rtp_packet_incoming.h"
@@ -44,7 +45,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/app.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/bye.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/extended_jitter_report.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/extended_reports.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/psfb.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/receiver_report.h"
@@ -78,9 +78,9 @@ rtclog::DelayBasedBweUpdate::DetectorState ConvertDetectorState(
     case BandwidthUsage::kBwOverusing:
       return rtclog::DelayBasedBweUpdate::BWE_OVERUSING;
     case BandwidthUsage::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::DelayBasedBweUpdate::BWE_NORMAL;
 }
 
@@ -94,9 +94,9 @@ rtclog::BweProbeResult::ResultType ConvertProbeResultType(
     case ProbeFailureReason::kTimeout:
       return rtclog::BweProbeResult::TIMEOUT;
     case ProbeFailureReason::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::BweProbeResult::SUCCESS;
 }
 
@@ -107,9 +107,9 @@ rtclog::VideoReceiveConfig_RtcpMode ConvertRtcpMode(RtcpMode rtcp_mode) {
     case RtcpMode::kReducedSize:
       return rtclog::VideoReceiveConfig::RTCP_REDUCEDSIZE;
     case RtcpMode::kOff:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::VideoReceiveConfig::RTCP_COMPOUND;
 }
 
@@ -125,9 +125,9 @@ ConvertIceCandidatePairConfigType(IceCandidatePairConfigType type) {
     case IceCandidatePairConfigType::kSelected:
       return rtclog::IceCandidatePairConfig::SELECTED;
     case IceCandidatePairConfigType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::ADDED;
 }
 
@@ -145,9 +145,9 @@ rtclog::IceCandidatePairConfig::IceCandidateType ConvertIceCandidateType(
     case IceCandidateType::kRelay:
       return rtclog::IceCandidatePairConfig::RELAY;
     case IceCandidateType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
 }
 
@@ -165,9 +165,9 @@ rtclog::IceCandidatePairConfig::Protocol ConvertIceCandidatePairProtocol(
     case IceCandidatePairProtocol::kTls:
       return rtclog::IceCandidatePairConfig::TLS;
     case IceCandidatePairProtocol::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_PROTOCOL;
 }
 
@@ -182,9 +182,9 @@ ConvertIceCandidatePairAddressFamily(
     case IceCandidatePairAddressFamily::kIpv6:
       return rtclog::IceCandidatePairConfig::IPV6;
     case IceCandidatePairAddressFamily::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_ADDRESS_FAMILY;
 }
 
@@ -204,9 +204,9 @@ rtclog::IceCandidatePairConfig::NetworkType ConvertIceCandidateNetworkType(
     case IceCandidateNetworkType::kCellular:
       return rtclog::IceCandidatePairConfig::CELLULAR;
     case IceCandidateNetworkType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_NETWORK_TYPE;
 }
 
@@ -222,9 +222,9 @@ ConvertIceCandidatePairEventType(IceCandidatePairEventType type) {
     case IceCandidatePairEventType::kCheckResponseReceived:
       return rtclog::IceCandidatePairEvent::CHECK_RESPONSE_RECEIVED;
     case IceCandidatePairEventType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairEvent::CHECK_SENT;
 }
 
@@ -332,6 +332,11 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
       return EncodeProbeResultSuccess(rtc_event);
     }
 
+    case RtcEvent::Type::RemoteEstimateEvent: {
+      auto& rtc_event = static_cast<const RtcEventRemoteEstimate&>(event);
+      return EncodeRemoteEstimate(rtc_event);
+    }
+
     case RtcEvent::Type::RtcpPacketIncoming: {
       auto& rtc_event = static_cast<const RtcEventRtcpPacketIncoming&>(event);
       return EncodeRtcpPacketIncoming(rtc_event);
@@ -363,8 +368,13 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
           static_cast<const RtcEventVideoSendStreamConfig&>(event);
       return EncodeVideoSendStreamConfig(rtc_event);
     }
+    case RtcEvent::Type::BeginV3Log:
+    case RtcEvent::Type::EndV3Log:
+      // These special events are written as part of starting
+      // and stopping the log, and only as part of version 3 of the format.
+      RTC_DCHECK_NOTREACHED();
+      break;
     case RtcEvent::Type::RouteChangeEvent:
-    case RtcEvent::Type::RemoteEstimateEvent:
     case RtcEvent::Type::GenericPacketReceived:
     case RtcEvent::Type::GenericPacketSent:
     case RtcEvent::Type::GenericAckReceived:
@@ -374,7 +384,7 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
   }
 
   int event_type = static_cast<int>(event.GetType());
-  RTC_NOTREACHED() << "Unknown event type (" << event_type << ")";
+  RTC_DCHECK_NOTREACHED() << "Unknown event type (" << event_type << ")";
   return "";
 }
 
@@ -582,6 +592,23 @@ std::string RtcEventLogEncoderLegacy::EncodeProbeResultSuccess(
   return Serialize(&rtclog_event);
 }
 
+std::string RtcEventLogEncoderLegacy::EncodeRemoteEstimate(
+    const RtcEventRemoteEstimate& event) {
+  rtclog::Event rtclog_event;
+  rtclog_event.set_timestamp_us(event.timestamp_us());
+  rtclog_event.set_type(rtclog::Event::REMOTE_ESTIMATE);
+
+  auto* remote_estimate = rtclog_event.mutable_remote_estimate();
+  if (event.link_capacity_lower_.IsFinite())
+    remote_estimate->set_link_capacity_lower_kbps(
+        event.link_capacity_lower_.kbps<uint32_t>());
+  if (event.link_capacity_upper_.IsFinite())
+    remote_estimate->set_link_capacity_upper_kbps(
+        event.link_capacity_upper_.kbps<uint32_t>());
+
+  return Serialize(&rtclog_event);
+}
+
 std::string RtcEventLogEncoderLegacy::EncodeRtcpPacketIncoming(
     const RtcEventRtcpPacketIncoming& event) {
   return EncodeRtcpPacket(event.timestamp_us(), event.packet(), true);
@@ -674,7 +701,7 @@ std::string RtcEventLogEncoderLegacy::EncodeVideoSendStreamConfig(
     encoder->set_payload_type(codec.payload_type);
 
     if (event.config().codecs.size() > 1) {
-      RTC_LOG(WARNING)
+      RTC_LOG(LS_WARNING)
           << "LogVideoSendStreamConfig currently only supports one "
              "codec. Logging codec :"
           << codec.payload_name;
@@ -707,15 +734,13 @@ std::string RtcEventLogEncoderLegacy::EncodeRtcpPacket(
     uint32_t block_size = next_block - block_begin;
     switch (header.type()) {
       case rtcp::Bye::kPacketType:
-      case rtcp::ExtendedJitterReport::kPacketType:
       case rtcp::ExtendedReports::kPacketType:
       case rtcp::Psfb::kPacketType:
       case rtcp::ReceiverReport::kPacketType:
       case rtcp::Rtpfb::kPacketType:
       case rtcp::SenderReport::kPacketType:
-        // We log sender reports, receiver reports, bye messages
-        // inter-arrival jitter, third-party loss reports, payload-specific
-        // feedback and extended reports.
+        // We log sender reports, receiver reports, bye messages, third-party
+        // loss reports, payload-specific feedback and extended reports.
         memcpy(buffer.data() + buffer_length, block_begin, block_size);
         buffer_length += block_size;
         break;

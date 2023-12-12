@@ -34,8 +34,7 @@ constexpr double kDefaultTrendlineThresholdGain = 4.0;
 const char kBweWindowSizeInPacketsExperiment[] =
     "WebRTC-BweWindowSizeInPackets";
 
-size_t ReadTrendlineFilterWindowSize(
-    const WebRtcKeyValueConfig* key_value_config) {
+size_t ReadTrendlineFilterWindowSize(const FieldTrialsView* key_value_config) {
   std::string experiment_string =
       key_value_config->Lookup(kBweWindowSizeInPacketsExperiment);
   size_t window_size;
@@ -44,7 +43,7 @@ size_t ReadTrendlineFilterWindowSize(
   if (parsed_values == 1) {
     if (window_size > 1)
       return window_size;
-    RTC_LOG(WARNING) << "Window size must be greater than 1.";
+    RTC_LOG(LS_WARNING) << "Window size must be greater than 1.";
   }
   RTC_LOG(LS_WARNING) << "Failed to parse parameters for BweWindowSizeInPackets"
                          " experiment from field trial string. Using default.";
@@ -115,7 +114,7 @@ constexpr int kDeltaCounterMax = 1000;
 constexpr char TrendlineEstimatorSettings::kKey[];
 
 TrendlineEstimatorSettings::TrendlineEstimatorSettings(
-    const WebRtcKeyValueConfig* key_value_config) {
+    const FieldTrialsView* key_value_config) {
   if (absl::StartsWith(
           key_value_config->Lookup(kBweWindowSizeInPacketsExperiment),
           "Enabled")) {
@@ -160,7 +159,7 @@ std::unique_ptr<StructParametersParser> TrendlineEstimatorSettings::Parser() {
 }
 
 TrendlineEstimator::TrendlineEstimator(
-    const WebRtcKeyValueConfig* key_value_config,
+    const FieldTrialsView* key_value_config,
     NetworkStatePredictor* network_state_predictor)
     : settings_(key_value_config),
       smoothing_coef_(kDefaultTrendlineSmoothingCoeff),

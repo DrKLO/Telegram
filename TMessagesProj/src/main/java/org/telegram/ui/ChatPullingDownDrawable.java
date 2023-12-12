@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -71,7 +70,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     long lastHapticTime;
     float lastProgress;
     boolean emptyStub;
-    float progressToBottomPannel;
+    float progressToBottomPanel;
     private final View fragmentView;
     public long lastShowingReleaseTime;
 
@@ -80,7 +79,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     public long nextDialogId;
     View parentView;
 
-    CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(null, null);
+    CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(null, true, null);
     int params[] = new int[3];
     private final int currentAccount;
     private final int folderId;
@@ -127,7 +126,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 MessagesController.getInstance(currentAccount).getChat(dialog.id);
             }
             AvatarDrawable avatarDrawable = new AvatarDrawable();
-            avatarDrawable.setInfo(nextChat);
+            avatarDrawable.setInfo(currentAccount, nextChat);
             imageReceiver.setImage(ImageLocation.getForChat(nextChat, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, null, UserConfig.getInstance(0).getCurrentUser(), 0);
             MessagesController.getInstance(currentAccount).ensureMessagesLoaded(dialog.id, 0, null);
             counterDrawable.setCount(dialog.unread_count, false);
@@ -156,19 +155,19 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 str2 = LocaleController.getString("ReleaseToGoNextArchive", R.string.ReleaseToGoNextArchive);
             } else if (drawFolderBackground) {
                 str1 = LocaleController.getString("SwipeToGoNextFolder", R.string.SwipeToGoNextFolder);
-                str2 =  LocaleController.getString("ReleaseToGoNextFolder", R.string.ReleaseToGoNextFolder);
+                str2 = LocaleController.getString("ReleaseToGoNextFolder", R.string.ReleaseToGoNextFolder);
             } else {
                 str1 = LocaleController.getString("SwipeToGoNextChannel", R.string.SwipeToGoNextChannel);
-                str2 =  LocaleController.getString("ReleaseToGoNextChannel", R.string.ReleaseToGoNextChannel);
+                str2 = LocaleController.getString("ReleaseToGoNextChannel", R.string.ReleaseToGoNextChannel);
             }
             layout1Width = (int) textPaint2.measureText(str1);
             layout1Width = Math.min(layout1Width, lastWidth - AndroidUtilities.dp(60));
-            layout1 = new StaticLayout(str1, textPaint2, layout1Width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            layout1 = new StaticLayout(str1, textPaint2, layout1Width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
 
             layout2Width = (int) textPaint2.measureText(str2);
             layout2Width = Math.min(layout2Width, lastWidth - AndroidUtilities.dp(60));
-            layout2 = new StaticLayout(str2, textPaint2, layout2Width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            layout2 = new StaticLayout(str2, textPaint2, layout2Width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
 
             float cx = lastWidth / 2f;
@@ -489,7 +488,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (nextDialogId !=0 ) {
+        if (nextDialogId != 0) {
             TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(nextDialogId);
             if (dialog != null) {
                 counterDrawable.setCount(dialog.unread_count, true);
@@ -514,7 +513,11 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
         ArrayList<TLRPC.Dialog> dialogs;
         if (filterId != 0) {
-            dialogs = messagesController.dialogFiltersById.get(filterId).dialogs;
+            MessagesController.DialogFilter filter = messagesController.dialogFiltersById.get(filterId);
+            if (filter == null) {
+                return null;
+            }
+            dialogs = filter.dialogs;
         } else {
             dialogs = messagesController.getDialogs(folderId);
         }
@@ -570,32 +573,33 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     }
 
     public void drawBottomPanel(Canvas canvas, int top, int bottom, int width) {
-        if (showBottomPanel && progressToBottomPannel != 1f) {
-            progressToBottomPannel += 16f / 150f;
-            if (progressToBottomPannel > 1f) {
-                progressToBottomPannel = 1f;
+        if (showBottomPanel && progressToBottomPanel != 1f) {
+            progressToBottomPanel += 16f / 150f;
+            if (progressToBottomPanel > 1f) {
+                progressToBottomPanel = 1f;
             } else {
                 fragmentView.invalidate();
             }
-        } else if (!showBottomPanel && progressToBottomPannel != 0) {
-            progressToBottomPannel -= 16f / 150f;
-            if (progressToBottomPannel < 0) {
-                progressToBottomPannel = 0;
+        } else if (!showBottomPanel && progressToBottomPanel != 0) {
+            progressToBottomPanel -= 16f / 150f;
+            if (progressToBottomPanel < 0) {
+                progressToBottomPanel = 0;
             } else {
                 fragmentView.invalidate();
             }
         }
+
+        textPaint2.setColor(getThemedColor(Theme.key_chat_messagePanelHint));
         Paint composeBackgroundPaint = getThemedPaint(Theme.key_paint_chatComposeBackground);
         int oldAlpha = composeBackgroundPaint.getAlpha();
         int oldAlphaText = textPaint2.getAlpha();
 
-        composeBackgroundPaint.setAlpha((int) (oldAlpha * progressToBottomPannel));
+        composeBackgroundPaint.setAlpha((int) (oldAlpha * progressToBottomPanel));
         canvas.drawRect(0, top, width, bottom, composeBackgroundPaint);
 
-
         if (layout1 != null && swipeToReleaseProgress < 1f) {
-            textPaint2.setAlpha((int) (oldAlphaText * (1f - swipeToReleaseProgress) * progressToBottomPannel));
-            float y = top + AndroidUtilities.dp(18) - AndroidUtilities.dp(10) * swipeToReleaseProgress;
+            textPaint2.setAlpha((int) (oldAlphaText * (1f - swipeToReleaseProgress) * progressToBottomPanel));
+            float y = top + (bottom - top - layout1.getHeight()) / 2f - AndroidUtilities.dp(10) * swipeToReleaseProgress;
             canvas.save();
             canvas.translate((lastWidth - layout1Width) / 2f, y);
             layout1.draw(canvas);
@@ -603,15 +607,15 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
 
         if (layout2 != null && swipeToReleaseProgress > 0) {
-            textPaint2.setAlpha((int) (oldAlphaText * swipeToReleaseProgress * progressToBottomPannel));
-            float y = top + AndroidUtilities.dp(18) + AndroidUtilities.dp(10) * (1f - swipeToReleaseProgress);
+            textPaint2.setAlpha((int) (oldAlphaText * swipeToReleaseProgress * progressToBottomPanel));
+            float y = top + (bottom - top - layout2.getHeight()) / 2f + AndroidUtilities.dp(10) * (1f - swipeToReleaseProgress);
             canvas.save();
             canvas.translate((lastWidth - layout2Width) / 2f, y);
             layout2.draw(canvas);
             canvas.restore();
         }
 
-        textPaint2.setAlpha(oldAlpha);
+        textPaint2.setAlpha(oldAlphaText);
         composeBackgroundPaint.setAlpha(oldAlpha);
     }
 
@@ -623,7 +627,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     }
 
     public boolean needDrawBottomPanel() {
-        return (showBottomPanel || progressToBottomPannel > 0) && !emptyStub;
+        return (showBottomPanel || progressToBottomPanel > 0) && !emptyStub;
     }
 
     public boolean animationIsRunning() {
@@ -679,9 +683,8 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         animateCheck = false;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     private Paint getThemedPaint(String paintKey) {

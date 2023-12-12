@@ -27,6 +27,11 @@ constexpr uint16_t kNetworkCostUnknown = 50;
 constexpr uint16_t kNetworkCostLow = 10;
 constexpr uint16_t kNetworkCostMin = 0;
 
+// Add 1 to network cost of underlying network type
+// so that e.g a "plain" WIFI is prefered over a VPN over WIFI
+// everything else being equal.
+constexpr uint16_t kNetworkCostVpn = 1;
+
 // alias
 constexpr uint16_t kNetworkCostHigh = kNetworkCostCellular;
 
@@ -51,6 +56,16 @@ enum AdapterType {
 };
 
 std::string AdapterTypeToString(AdapterType type);
+
+// Useful for testing!
+constexpr AdapterType kAllAdapterTypes[] = {
+    ADAPTER_TYPE_UNKNOWN,     ADAPTER_TYPE_ETHERNET,
+    ADAPTER_TYPE_WIFI,        ADAPTER_TYPE_CELLULAR,
+    ADAPTER_TYPE_VPN,         ADAPTER_TYPE_LOOPBACK,
+    ADAPTER_TYPE_ANY,         ADAPTER_TYPE_CELLULAR_2G,
+    ADAPTER_TYPE_CELLULAR_3G, ADAPTER_TYPE_CELLULAR_4G,
+    ADAPTER_TYPE_CELLULAR_5G,
+};
 
 }  // namespace rtc
 

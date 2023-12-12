@@ -32,7 +32,7 @@ class CpuSpeedExperiment {
 
   // WebRTC-VP8-CpuSpeed-Arm/pixels:100|200|300,cpu_speed:-1|-2|-3/,
   // cpu_speed_le_cores:-4|-5|-6,cores:3/
-  // If |num_cores| > 3
+  // If `num_cores` > 3
   //   pixels <= 100 -> cpu speed: -1
   //   pixels <= 200 -> cpu speed: -2
   //   pixels <= 300 -> cpu speed: -3
@@ -43,20 +43,20 @@ class CpuSpeedExperiment {
 
   struct Config {
     int pixels = 0;     // The video frame size.
-    int cpu_speed = 0;  // The |cpu_speed| to be used if the frame size is less
-                        // than or equal to |pixels|.
+    int cpu_speed = 0;  // The `cpu_speed` to be used if the frame size is less
+                        // than or equal to `pixels`.
     // Optional.
-    int cpu_speed_le_cores = 0;  // Same as |cpu_speed| above but only used if
-                                 // |num_cores| <= |cores_|.
+    int cpu_speed_le_cores = 0;  // Same as `cpu_speed` above but only used if
+                                 // `num_cores` <= `cores_`.
   };
 
-  // Gets the cpu speed based on |pixels| and |num_cores|.
+  // Gets the cpu speed based on `pixels` and `num_cores`.
   absl::optional<int> GetValue(int pixels, int num_cores) const;
 
  private:
   std::vector<Config> configs_;
 
-  // Threshold for when to use |cpu_speed_le_cores|.
+  // Threshold for when to use `cpu_speed_le_cores`.
   FieldTrialOptional<int> cores_;
 };
 

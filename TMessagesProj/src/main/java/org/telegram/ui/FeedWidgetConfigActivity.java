@@ -27,17 +27,17 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
         if (creatingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 5);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
             args.putBoolean("allowSwitchAccount", true);
             args.putBoolean("checkCanWrite", false);
             DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate((fragment1, dids, message, param) -> {
+            fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                 AccountInstance.getInstance(fragment1.getCurrentAccount()).getMessagesStorage().putWidgetDialogs(creatingAppWidgetId, dids);
 
                 SharedPreferences preferences = FeedWidgetConfigActivity.this.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("account" + creatingAppWidgetId, fragment1.getCurrentAccount());
-                editor.putLong("dialogId" + creatingAppWidgetId, dids.get(0));
+                editor.putLong("dialogId" + creatingAppWidgetId, dids.get(0).dialogId);
                 editor.commit();
 
                 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(FeedWidgetConfigActivity.this);
@@ -47,14 +47,15 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
                 resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, creatingAppWidgetId);
                 setResult(RESULT_OK, resultValue);
                 finish();
+                return true;
             });
 
             if (AndroidUtilities.isTablet()) {
-                if (layersActionBarLayout.fragmentsStack.isEmpty()) {
+                if (layersActionBarLayout.getFragmentStack().isEmpty()) {
                     layersActionBarLayout.addFragmentToStack(fragment);
                 }
             } else {
-                if (actionBarLayout.fragmentsStack.isEmpty()) {
+                if (actionBarLayout.getFragmentStack().isEmpty()) {
                     actionBarLayout.addFragmentToStack(fragment);
                 }
             }

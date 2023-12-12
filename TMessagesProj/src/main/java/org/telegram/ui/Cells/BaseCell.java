@@ -33,8 +33,8 @@ public abstract class BaseCell extends ViewGroup {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (onLongPress()) {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                     onTouchEvent(event);
                     event.recycle();
@@ -52,6 +52,7 @@ public abstract class BaseCell extends ViewGroup {
         super(context);
         setWillNotDraw(false);
         setFocusable(true);
+        setHapticFeedbackEnabled(true);
     }
 
     public static void setDrawableBounds(Drawable drawable, int x, int y) {
@@ -60,6 +61,12 @@ public abstract class BaseCell extends ViewGroup {
 
     public static void setDrawableBounds(Drawable drawable, float x, float y) {
         setDrawableBounds(drawable, (int) x, (int) y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    public static float setDrawableBounds(Drawable drawable, float x, float y, float h) {
+        float w = drawable.getIntrinsicWidth() * h / drawable.getIntrinsicHeight();
+        setDrawableBounds(drawable, (int) x, (int) y, (int) w, (int) h);
+        return w;
     }
 
     public static void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {

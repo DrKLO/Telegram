@@ -138,16 +138,16 @@ bool bernoulli_distribution::Generate(double p,
     // 64 bits.
     //
     // Second, `c` is constructed by first casting explicitly to a signed
-    // integer and then converting implicitly to an unsigned integer of the same
+    // integer and then casting explicitly to an unsigned integer of the same
     // size.  This is done because the hardware conversion instructions produce
     // signed integers from double; if taken as a uint64_t the conversion would
     // be wrong for doubles greater than 2^63 (not relevant in this use-case).
     // If converted directly to an unsigned integer, the compiler would end up
     // emitting code to handle such large values that are not relevant due to
     // the known bounds on `c`.  To avoid these extra instructions this
-    // implementation converts first to the signed type and then use the
-    // implicit conversion to unsigned (which is a no-op).
-    const uint64_t c = static_cast<int64_t>(p * kP32);
+    // implementation converts first to the signed type and then convert to
+    // unsigned (which is a no-op).
+    const uint64_t c = static_cast<uint64_t>(static_cast<int64_t>(p * kP32));
     const uint32_t v = fast_u32(g);
     // FAST PATH: this path fails with probability 1/2^32.  Note that simply
     // returning v <= c would approximate P very well (up to an absolute error

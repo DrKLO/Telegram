@@ -15,10 +15,11 @@
 #define SDK_ANDROID_NATIVE_API_JNI_SCOPED_JAVA_REF_H_
 
 #include <jni.h>
+
 #include <utility>
 
-#include "rtc_base/constructor_magic.h"
 #include "sdk/android/native_api/jni/jvm.h"
+#include "tgnet/FileLog.h"
 
 namespace webrtc {
 
@@ -34,6 +35,9 @@ class JavaRef;
 template <>
 class JavaRef<jobject> {
  public:
+  JavaRef(const JavaRef&) = delete;
+  JavaRef& operator=(const JavaRef&) = delete;
+
   jobject obj() const { return obj_; }
   bool is_null() const {
     // This is not valid for weak references. For weak references you need to
@@ -49,22 +53,19 @@ class JavaRef<jobject> {
   constexpr JavaRef() : obj_(nullptr) {}
   explicit JavaRef(jobject obj) : obj_(obj) {}
   jobject obj_;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(JavaRef);
 };
 
 template <typename T>
 class JavaRef : public JavaRef<jobject> {
  public:
+  JavaRef(const JavaRef&) = delete;
+  JavaRef& operator=(const JavaRef&) = delete;
+
   T obj() const { return static_cast<T>(obj_); }
 
  protected:
   JavaRef() : JavaRef<jobject>(nullptr) {}
   explicit JavaRef(T obj) : JavaRef<jobject>(obj) {}
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(JavaRef);
 };
 
 // Holds a local reference to a JNI method parameter.
@@ -74,13 +75,13 @@ class JavaRef : public JavaRef<jobject> {
 template <typename T>
 class JavaParamRef : public JavaRef<T> {
  public:
-  // Assumes that |obj| is a parameter passed to a JNI method from Java.
+  // Assumes that `obj` is a parameter passed to a JNI method from Java.
   // Does not assume ownership as parameters should not be deleted.
   explicit JavaParamRef(T obj) : JavaRef<T>(obj) {}
   JavaParamRef(JNIEnv*, T obj) : JavaRef<T>(obj) {}
 
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(JavaParamRef);
+  JavaParamRef(const JavaParamRef&) = delete;
+  JavaParamRef& operator=(const JavaParamRef&) = delete;
 };
 
 // Holds a local reference to a Java object. The local reference is scoped
@@ -112,7 +113,7 @@ class ScopedJavaLocalRef : public JavaRef<T> {
     Reset(other.obj(), OwnershipPolicy::RETAIN);
   }
 
-  // Assumes that |obj| is a reference to a Java object and takes
+  // Assumes that `obj` is a reference to a Java object and takes
   // ownership  of this  reference. This should preferably not be used
   // outside of JNI helper functions.
   ScopedJavaLocalRef(JNIEnv* env, T obj) : JavaRef<T>(obj), env_(env) {}
@@ -182,20 +183,32 @@ class ScopedJavaGlobalRef : public JavaRef<T> {
       : JavaRef<T>(other.Release()) {}
 
   ~ScopedJavaGlobalRef() {
-    if (obj_ != nullptr)
+    if (obj_ != nullptr) {
+      DEBUG_DELREF("ScopedJavaGlobalRef");
       AttachCurrentThreadIfNeeded()->DeleteGlobalRef(obj_);
+    }
   }
+
+  ScopedJavaGlobalRef(const ScopedJavaGlobalRef&) = delete;
+  ScopedJavaGlobalRef& operator=(const ScopedJavaGlobalRef&) = delete;
 
   void operator=(const JavaRef<T>& other) {
     JNIEnv* env = AttachCurrentThreadIfNeeded();
     if (obj_ != nullptr) {
+      DEBUG_DELREF("webrtc 3 delete global ref");
       env->DeleteGlobalRef(obj_);
     }
-    obj_ = other.is_null() ? nullptr : env->NewGlobalRef(other.obj());
+    if (other.is_null()) {
+      obj_ = nullptr;
+    } else {
+      DEBUG_REF("webrtc 3 new global ref");
+      obj_ = env->NewGlobalRef(other.obj());
+    }
   }
 
   void operator=(std::nullptr_t) {
     if (obj_ != nullptr) {
+      DEBUG_DELREF("webrtc 3 delete global ref");
       AttachCurrentThreadIfNeeded()->DeleteGlobalRef(obj_);
     }
     obj_ = nullptr;
@@ -209,9 +222,6 @@ class ScopedJavaGlobalRef : public JavaRef<T> {
     obj_ = nullptr;
     return obj;
   }
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(ScopedJavaGlobalRef);
 };
 
 template <typename T>

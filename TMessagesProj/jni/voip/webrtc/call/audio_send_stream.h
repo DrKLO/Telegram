@@ -46,6 +46,8 @@ class AudioSendStream : public AudioSender {
     // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedbytessent
     uint64_t retransmitted_bytes_sent = 0;
     int32_t packets_sent = 0;
+    // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalpacketsenddelay
+    TimeDelta total_packet_send_delay = TimeDelta::Zero();
     // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedpacketssent
     uint64_t retransmitted_packets_sent = 0;
     int32_t packets_lost = -1;
@@ -59,7 +61,6 @@ class AudioSendStream : public AudioSender {
     // https://w3c.github.io/webrtc-stats/#dom-rtcmediastreamtrackstats-totalaudioenergy
     double total_input_energy = 0.0;
     double total_input_duration = 0.0;
-    bool typing_noise_detected = false;
 
     ANAStats ana_statistics;
     AudioProcessingStats apm_statistics;
@@ -70,6 +71,7 @@ class AudioSendStream : public AudioSender {
     // per-pair the ReportBlockData represents the latest Report Block that was
     // received for that pair.
     std::vector<ReportBlockData> report_block_datas;
+    uint32_t nacks_rcvd = 0;
   };
 
   struct Config {
@@ -139,6 +141,7 @@ class AudioSendStream : public AudioSender {
       SdpAudioFormat format;
       bool nack_enabled = false;
       bool transport_cc_enabled = false;
+      bool enable_non_sender_rtt = false;
       absl::optional<int> cng_payload_type;
       absl::optional<int> red_payload_type;
       // If unset, use the encoder's default target bitrate.

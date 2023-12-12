@@ -20,11 +20,27 @@ DtlsTransportInformation::DtlsTransportInformation(DtlsTransportState state)
 
 DtlsTransportInformation::DtlsTransportInformation(
     DtlsTransportState state,
+    absl::optional<DtlsTransportTlsRole> role,
     absl::optional<int> tls_version,
     absl::optional<int> ssl_cipher_suite,
     absl::optional<int> srtp_cipher_suite,
     std::unique_ptr<rtc::SSLCertChain> remote_ssl_certificates)
     : state_(state),
+      role_(role),
+      tls_version_(tls_version),
+      ssl_cipher_suite_(ssl_cipher_suite),
+      srtp_cipher_suite_(srtp_cipher_suite),
+      remote_ssl_certificates_(std::move(remote_ssl_certificates)) {}
+
+// Deprecated version
+DtlsTransportInformation::DtlsTransportInformation(
+    DtlsTransportState state,
+    absl::optional<int> tls_version,
+    absl::optional<int> ssl_cipher_suite,
+    absl::optional<int> srtp_cipher_suite,
+    std::unique_ptr<rtc::SSLCertChain> remote_ssl_certificates)
+    : state_(state),
+      role_(absl::nullopt),
       tls_version_(tls_version),
       ssl_cipher_suite_(ssl_cipher_suite),
       srtp_cipher_suite_(srtp_cipher_suite),
@@ -33,6 +49,7 @@ DtlsTransportInformation::DtlsTransportInformation(
 DtlsTransportInformation::DtlsTransportInformation(
     const DtlsTransportInformation& c)
     : state_(c.state()),
+      role_(c.role_),
       tls_version_(c.tls_version_),
       ssl_cipher_suite_(c.ssl_cipher_suite_),
       srtp_cipher_suite_(c.srtp_cipher_suite_),
@@ -43,6 +60,7 @@ DtlsTransportInformation::DtlsTransportInformation(
 DtlsTransportInformation& DtlsTransportInformation::operator=(
     const DtlsTransportInformation& c) {
   state_ = c.state();
+  role_ = c.role_;
   tls_version_ = c.tls_version_;
   ssl_cipher_suite_ = c.ssl_cipher_suite_;
   srtp_cipher_suite_ = c.srtp_cipher_suite_;

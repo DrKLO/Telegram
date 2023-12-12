@@ -12,7 +12,7 @@
 
 #include <limits>
 
-#include "modules/rtp_rtcp/source/absolute_capture_time_receiver.h"
+#include "modules/rtp_rtcp/source/absolute_capture_time_interpolator.h"
 #include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
@@ -26,7 +26,7 @@ constexpr TimeDelta AbsoluteCaptureTimeSender::kInterpolationMaxInterval;
 constexpr TimeDelta AbsoluteCaptureTimeSender::kInterpolationMaxError;
 
 static_assert(
-    AbsoluteCaptureTimeReceiver::kInterpolationMaxInterval >=
+    AbsoluteCaptureTimeInterpolator::kInterpolationMaxInterval >=
         AbsoluteCaptureTimeSender::kInterpolationMaxInterval,
     "Receivers should be as willing to interpolate timestamps as senders.");
 
@@ -36,7 +36,7 @@ AbsoluteCaptureTimeSender::AbsoluteCaptureTimeSender(Clock* clock)
 uint32_t AbsoluteCaptureTimeSender::GetSource(
     uint32_t ssrc,
     rtc::ArrayView<const uint32_t> csrcs) {
-  return AbsoluteCaptureTimeReceiver::GetSource(ssrc, csrcs);
+  return AbsoluteCaptureTimeInterpolator::GetSource(ssrc, csrcs);
 }
 
 absl::optional<AbsoluteCaptureTime> AbsoluteCaptureTimeSender::OnSendPacket(
@@ -108,7 +108,7 @@ bool AbsoluteCaptureTimeSender::ShouldSendExtension(
 
   // Should if interpolation would introduce too much error.
   const uint64_t interpolated_absolute_capture_timestamp =
-      AbsoluteCaptureTimeReceiver::InterpolateAbsoluteCaptureTimestamp(
+      AbsoluteCaptureTimeInterpolator::InterpolateAbsoluteCaptureTimestamp(
           rtp_timestamp, rtp_clock_frequency, last_rtp_timestamp_,
           last_absolute_capture_timestamp_);
   const int64_t interpolation_error_ms = UQ32x32ToInt64Ms(std::min(

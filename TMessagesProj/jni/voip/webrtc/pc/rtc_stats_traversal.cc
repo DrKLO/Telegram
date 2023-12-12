@@ -25,8 +25,8 @@ namespace {
 void TraverseAndTakeVisitedStats(RTCStatsReport* report,
                                  RTCStatsReport* visited_report,
                                  const std::string& current_id) {
-  // Mark current stats object as visited by moving it |report| to
-  // |visited_report|.
+  // Mark current stats object as visited by moving it `report` to
+  // `visited_report`.
   std::unique_ptr<const RTCStats> current = report->Take(current_id);
   if (!current) {
     // This node has already been visited (or it is an invalid id).
@@ -62,7 +62,7 @@ rtc::scoped_refptr<RTCStatsReport> TakeReferencedStats(
     rtc::scoped_refptr<RTCStatsReport> report,
     const std::vector<std::string>& ids) {
   rtc::scoped_refptr<RTCStatsReport> result =
-      RTCStatsReport::Create(report->timestamp_us());
+      RTCStatsReport::Create(report->timestamp());
   for (const auto& id : ids) {
     TraverseAndTakeVisitedStats(report.get(), result.get(), id);
   }
@@ -91,11 +91,13 @@ std::vector<const std::string*> GetStatsReferencedIds(const RTCStats& stats) {
     const auto& local_or_remote_candidate =
         static_cast<const RTCIceCandidateStats&>(stats);
     AddIdIfDefined(local_or_remote_candidate.transport_id, &neighbor_ids);
-  } else if (type == RTCMediaStreamStats::kType) {
-    const auto& stream = static_cast<const RTCMediaStreamStats&>(stats);
+  } else if (type == DEPRECATED_RTCMediaStreamStats::kType) {
+    const auto& stream =
+        static_cast<const DEPRECATED_RTCMediaStreamStats&>(stats);
     AddIdsIfDefined(stream.track_ids, &neighbor_ids);
-  } else if (type == RTCMediaStreamTrackStats::kType) {
-    const auto& track = static_cast<const RTCMediaStreamTrackStats&>(stats);
+  } else if (type == DEPRECATED_RTCMediaStreamTrackStats::kType) {
+    const auto& track =
+        static_cast<const DEPRECATED_RTCMediaStreamTrackStats&>(stats);
     AddIdIfDefined(track.media_source_id, &neighbor_ids);
   } else if (type == RTCPeerConnectionStats::kType) {
     // RTCPeerConnectionStats does not have any neighbor references.
@@ -140,7 +142,7 @@ std::vector<const std::string*> GetStatsReferencedIds(const RTCStats& stats) {
     AddIdIfDefined(transport.local_certificate_id, &neighbor_ids);
     AddIdIfDefined(transport.remote_certificate_id, &neighbor_ids);
   } else {
-    RTC_NOTREACHED() << "Unrecognized type: " << type;
+    RTC_DCHECK_NOTREACHED() << "Unrecognized type: " << type;
   }
   return neighbor_ids;
 }

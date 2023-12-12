@@ -16,8 +16,10 @@
 
 #include "rtc_base/third_party/base64/base64.h"
 
-#include <assert.h>
 #include <string.h>
+
+#include "absl/strings/string_view.h"
+#include "rtc_base/checks.h"
 
 using std::vector;
 
@@ -84,7 +86,7 @@ bool Base64::GetNextBase64Char(char ch, char* next_ch) {
   return true;
 }
 
-bool Base64::IsBase64Encoded(const std::string& str) {
+bool Base64::IsBase64Encoded(absl::string_view str) {
   for (size_t i = 0; i < str.size(); ++i) {
     if (!IsBase64Char(str.at(i)))
       return false;
@@ -95,7 +97,7 @@ bool Base64::IsBase64Encoded(const std::string& str) {
 void Base64::EncodeFromArray(const void* data,
                              size_t len,
                              std::string* result) {
-  assert(nullptr != result);
+  RTC_DCHECK(result);
   result->clear();
   result->resize(((len + 2) / 3) * 4);
   const unsigned char* byte_data = static_cast<const unsigned char*>(data);
@@ -223,15 +225,15 @@ bool Base64::DecodeFromArrayTemplate(const char* data,
                                      DecodeFlags flags,
                                      T* result,
                                      size_t* data_used) {
-  assert(nullptr != result);
-  assert(flags <= (DO_PARSE_MASK | DO_PAD_MASK | DO_TERM_MASK));
+  RTC_DCHECK(result);
+  RTC_DCHECK_LE(flags, (DO_PARSE_MASK | DO_PAD_MASK | DO_TERM_MASK));
 
   const DecodeFlags parse_flags = flags & DO_PARSE_MASK;
   const DecodeFlags pad_flags = flags & DO_PAD_MASK;
   const DecodeFlags term_flags = flags & DO_TERM_MASK;
-  assert(0 != parse_flags);
-  assert(0 != pad_flags);
-  assert(0 != term_flags);
+  RTC_DCHECK_NE(0, parse_flags);
+  RTC_DCHECK_NE(0, pad_flags);
+  RTC_DCHECK_NE(0, term_flags);
 
   result->clear();
   result->reserve(len);

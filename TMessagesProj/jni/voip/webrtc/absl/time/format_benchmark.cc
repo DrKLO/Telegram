@@ -26,7 +26,7 @@ const char* const kFormats[] = {
     absl::RFC1123_no_wday,  // 1
     absl::RFC3339_full,     // 2
     absl::RFC3339_sec,      // 3
-    "%Y-%m-%dT%H:%M:%S",    // 4
+    "%Y-%m-%d%ET%H:%M:%S",  // 4
     "%Y-%m-%d",             // 5
 };
 const int kNumFormats = sizeof(kFormats) / sizeof(kFormats[0]);

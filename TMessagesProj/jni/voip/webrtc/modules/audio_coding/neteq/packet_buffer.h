@@ -15,7 +15,6 @@
 #include "modules/audio_coding/neteq/decoder_database.h"
 #include "modules/audio_coding/neteq/packet.h"
 #include "modules/include/module_common_types_public.h"  // IsNewerTimestamp
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -45,11 +44,14 @@ class PacketBuffer {
   };
 
   // Constructor creates a buffer which can hold a maximum of
-  // |max_number_of_packets| packets.
+  // `max_number_of_packets` packets.
   PacketBuffer(size_t max_number_of_packets, const TickTimer* tick_timer);
 
   // Deletes all packets in the buffer before destroying the buffer.
   virtual ~PacketBuffer();
+
+  PacketBuffer(const PacketBuffer&) = delete;
+  PacketBuffer& operator=(const PacketBuffer&) = delete;
 
   // Flushes the buffer and deletes all packets in it.
   virtual void Flush(StatisticsCalculator* stats);
@@ -63,7 +65,7 @@ class PacketBuffer {
   // Returns true for an empty buffer.
   virtual bool Empty() const;
 
-  // Inserts |packet| into the buffer. The buffer will take over ownership of
+  // Inserts `packet` into the buffer. The buffer will take over ownership of
   // the packet object.
   // Returns PacketBuffer::kOK on success, PacketBuffer::kFlushed if the buffer
   // was flushed due to overfilling.
@@ -93,14 +95,14 @@ class PacketBuffer {
       int target_level_ms);
 
   // Gets the timestamp for the first packet in the buffer and writes it to the
-  // output variable |next_timestamp|.
+  // output variable `next_timestamp`.
   // Returns PacketBuffer::kBufferEmpty if the buffer is empty,
   // PacketBuffer::kOK otherwise.
   virtual int NextTimestamp(uint32_t* next_timestamp) const;
 
   // Gets the timestamp for the first packet in the buffer with a timestamp no
-  // lower than the input limit |timestamp|. The result is written to the output
-  // variable |next_timestamp|.
+  // lower than the input limit `timestamp`. The result is written to the output
+  // variable `next_timestamp`.
   // Returns PacketBuffer::kBufferEmpty if the buffer is empty,
   // PacketBuffer::kOK otherwise.
   virtual int NextHigherTimestamp(uint32_t timestamp,
@@ -154,11 +156,11 @@ class PacketBuffer {
   virtual bool ContainsDtxOrCngPacket(
       const DecoderDatabase* decoder_database) const;
 
-  // Static method returning true if |timestamp| is older than |timestamp_limit|
-  // but less than |horizon_samples| behind |timestamp_limit|. For instance,
+  // Static method returning true if `timestamp` is older than `timestamp_limit`
+  // but less than `horizon_samples` behind `timestamp_limit`. For instance,
   // with timestamp_limit = 100 and horizon_samples = 10, a timestamp in the
   // range (90, 100) is considered obsolete, and will yield true.
-  // Setting |horizon_samples| to 0 is the same as setting it to 2^31, i.e.,
+  // Setting `horizon_samples` to 0 is the same as setting it to 2^31, i.e.,
   // half the 32-bit timestamp range.
   static bool IsObsoleteTimestamp(uint32_t timestamp,
                                   uint32_t timestamp_limit,
@@ -173,7 +175,6 @@ class PacketBuffer {
   size_t max_number_of_packets_;
   PacketList buffer_;
   const TickTimer* tick_timer_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(PacketBuffer);
 };
 
 }  // namespace webrtc

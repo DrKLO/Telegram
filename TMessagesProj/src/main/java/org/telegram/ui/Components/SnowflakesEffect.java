@@ -8,12 +8,14 @@
 
 package org.telegram.ui.Components;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -23,7 +25,11 @@ public class SnowflakesEffect {
 
     private Paint particlePaint;
     private Paint particleThinPaint;
-    private String colorKey = Theme.key_actionBarDefaultTitle;
+    private Paint bitmapPaint = new Paint();
+    private int colorKey = Theme.key_actionBarDefaultTitle;
+    private int viewType;
+
+    Bitmap particleBitmap;
 
     private long lastAnimationTime;
 
@@ -50,31 +56,41 @@ public class SnowflakesEffect {
                 }
                 case 1:
                 default: {
-                    particleThinPaint.setAlpha((int) (255 * alpha));
-
                     float angle = (float) -Math.PI / 2;
 
-                    float px = AndroidUtilities.dpf2(2.0f) * 2 * scale;
-                    float px1 = -AndroidUtilities.dpf2(0.57f) * 2 * scale;
-                    float py1 = AndroidUtilities.dpf2(1.55f) * 2 * scale;
-                    for (int a = 0; a < 6; a++) {
-                        float x1 = (float) Math.cos(angle) * px;
-                        float y1 = (float) Math.sin(angle) * px;
-                        float cx = x1 * 0.66f;
-                        float cy = y1 * 0.66f;
-                        canvas.drawLine(x, y, x + x1, y + y1, particleThinPaint);
+                    if (particleBitmap == null) {
+                        particleThinPaint.setAlpha(255);
+                        particleBitmap = Bitmap.createBitmap(AndroidUtilities.dp(16), AndroidUtilities.dp(16), Bitmap.Config.ARGB_8888);
+                        Canvas bitmapCanvas = new Canvas(particleBitmap);
+                        float px = AndroidUtilities.dpf2(2.0f) * 2;
+                        float px1 = -AndroidUtilities.dpf2(0.57f) * 2;
+                        float py1 = AndroidUtilities.dpf2(1.55f) * 2;
+                        for (int a = 0; a < 6; a++) {
+                            float x = AndroidUtilities.dp(8);
+                            float y = AndroidUtilities.dp(8);
+                            float x1 = (float) Math.cos(angle) * px;
+                            float y1 = (float) Math.sin(angle) * px;
+                            float cx = x1 * 0.66f;
+                            float cy = y1 * 0.66f;
+                            bitmapCanvas.drawLine(x, y, x + x1, y + y1, particleThinPaint);
 
-                        float angle2 = (float) (angle - Math.PI / 2);
-                        x1 = (float) (Math.cos(angle2) * px1 - Math.sin(angle2) * py1);
-                        y1 = (float) (Math.sin(angle2) * px1 + Math.cos(angle2) * py1);
-                        canvas.drawLine(x + cx, y + cy, x + x1, y + y1, particleThinPaint);
+                            float angle2 = (float) (angle - Math.PI / 2);
+                            x1 = (float) (Math.cos(angle2) * px1 - Math.sin(angle2) * py1);
+                            y1 = (float) (Math.sin(angle2) * px1 + Math.cos(angle2) * py1);
+                            bitmapCanvas.drawLine(x + cx, y + cy, x + x1, y + y1, particleThinPaint);
 
-                        x1 = (float) (-Math.cos(angle2) * px1 - Math.sin(angle2) * py1);
-                        y1 = (float) (-Math.sin(angle2) * px1 + Math.cos(angle2) * py1);
-                        canvas.drawLine(x + cx, y + cy, x + x1, y + y1, particleThinPaint);
+                            x1 = (float) (-Math.cos(angle2) * px1 - Math.sin(angle2) * py1);
+                            y1 = (float) (-Math.sin(angle2) * px1 + Math.cos(angle2) * py1);
+                            bitmapCanvas.drawLine(x + cx, y + cy, x + x1, y + y1, particleThinPaint);
 
-                        angle += angleDiff;
+                            angle += angleDiff;
+                        }
                     }
+                    bitmapPaint.setAlpha((int) (255 * alpha));
+                    canvas.save();
+                    canvas.scale(scale, scale, x, y);
+                    canvas.drawBitmap(particleBitmap, x, y, bitmapPaint);
+                    canvas.restore();
                     break;
                 }
             }
@@ -87,7 +103,8 @@ public class SnowflakesEffect {
 
     private int color;
 
-    public SnowflakesEffect() {
+    public SnowflakesEffect(int viewType) {
+        this.viewType = viewType;
         particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         particlePaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
         particlePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -105,7 +122,7 @@ public class SnowflakesEffect {
         }
     }
 
-    public void setColorKey(String key) {
+    public void setColorKey(int key) {
         colorKey = key;
         updateColors();
     }
@@ -132,10 +149,18 @@ public class SnowflakesEffect {
                 count--;
                 continue;
             }
-            if (particle.currentTime < 200.0f) {
-                particle.alpha = AndroidUtilities.accelerateInterpolator.getInterpolation(particle.currentTime / 200.0f);
+            if (viewType == 0) {
+                if (particle.currentTime < 200.0f) {
+                    particle.alpha = AndroidUtilities.accelerateInterpolator.getInterpolation(particle.currentTime / 200.0f);
+                } else {
+                    particle.alpha = 1.0f - AndroidUtilities.decelerateInterpolator.getInterpolation((particle.currentTime - 200.0f) / (particle.lifeTime - 200.0f));
+                }
             } else {
-                particle.alpha = 1.0f - AndroidUtilities.decelerateInterpolator.getInterpolation((particle.currentTime - 200.0f) / (particle.lifeTime - 200.0f));
+                if (particle.currentTime < 200.0f) {
+                    particle.alpha = AndroidUtilities.accelerateInterpolator.getInterpolation(particle.currentTime / 200.0f);
+                } else if (particle.lifeTime - particle.currentTime < 2000) {
+                    particle.alpha = AndroidUtilities.decelerateInterpolator.getInterpolation((particle.lifeTime - particle.currentTime) / 2000);
+                }
             }
             particle.x += particle.vx * particle.velocity * dt / 500.0f;
             particle.y += particle.vy * particle.velocity * dt / 500.0f;
@@ -144,7 +169,7 @@ public class SnowflakesEffect {
     }
 
     public void onDraw(View parent, Canvas canvas) {
-        if (parent == null || canvas == null) {
+        if (parent == null || canvas == null || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
 
@@ -153,38 +178,47 @@ public class SnowflakesEffect {
             Particle particle = particles.get(a);
             particle.draw(canvas);
         }
+        int maxCount = viewType == 0 ? 100 : 300;
+        int createPerFrame = viewType == 0 ? 1 : 10;
+        if (particles.size() < maxCount) {
+            for (int i = 0; i < createPerFrame; i++) {
+                if (particles.size() < maxCount && Utilities.random.nextFloat() > 0.7f) {
+                    int statusBarHeight = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                    float cx = Utilities.random.nextFloat() * parent.getMeasuredWidth();
+                    float cy = statusBarHeight + Utilities.random.nextFloat() * (parent.getMeasuredHeight() - AndroidUtilities.dp(20) - statusBarHeight);
 
-        if (Utilities.random.nextFloat() > 0.7f && particles.size() < 100) {
-            int statusBarHeight = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-            float cx = Utilities.random.nextFloat() * parent.getMeasuredWidth();
-            float cy = statusBarHeight + Utilities.random.nextFloat() * (parent.getMeasuredHeight() - AndroidUtilities.dp(20) - statusBarHeight);
+                    int angle = Utilities.random.nextInt(40) - 20 + 90;
+                    float vx = (float) Math.cos(Math.PI / 180.0 * angle);
+                    float vy = (float) Math.sin(Math.PI / 180.0 * angle);
 
-            int angle = Utilities.random.nextInt(40) - 20 + 90;
-            float vx = (float) Math.cos(Math.PI / 180.0 * angle);
-            float vy = (float) Math.sin(Math.PI / 180.0 * angle);
+                    Particle newParticle;
+                    if (!freeParticles.isEmpty()) {
+                        newParticle = freeParticles.get(0);
+                        freeParticles.remove(0);
+                    } else {
+                        newParticle = new Particle();
+                    }
+                    newParticle.x = cx;
+                    newParticle.y = cy;
 
-            Particle newParticle;
-            if (!freeParticles.isEmpty()) {
-                newParticle = freeParticles.get(0);
-                freeParticles.remove(0);
-            } else {
-                newParticle = new Particle();
+                    newParticle.vx = vx;
+                    newParticle.vy = vy;
+
+                    newParticle.alpha = 0.0f;
+                    newParticle.currentTime = 0;
+
+                    newParticle.scale = Utilities.random.nextFloat() * 1.2f;
+                    newParticle.type = Utilities.random.nextInt(2);
+
+                    if (viewType == 0) {
+                        newParticle.lifeTime = 2000 + Utilities.random.nextInt(100);
+                    } else {
+                        newParticle.lifeTime = 3000 + Utilities.random.nextInt(2000);
+                    }
+                    newParticle.velocity = 20.0f + Utilities.random.nextFloat() * 4.0f;
+                    particles.add(newParticle);
+                }
             }
-            newParticle.x = cx;
-            newParticle.y = cy;
-
-            newParticle.vx = vx;
-            newParticle.vy = vy;
-
-            newParticle.alpha = 0.0f;
-            newParticle.currentTime = 0;
-
-            newParticle.scale = Utilities.random.nextFloat() * 1.2f;
-            newParticle.type = Utilities.random.nextInt(2);
-
-            newParticle.lifeTime = 2000 + Utilities.random.nextInt(100);
-            newParticle.velocity = 20.0f + Utilities.random.nextFloat() * 4.0f;
-            particles.add(newParticle);
         }
 
         long newTime = System.currentTimeMillis();

@@ -17,7 +17,7 @@ InternalAPMConfig::InternalAPMConfig(InternalAPMConfig&&) = default;
 InternalAPMConfig& InternalAPMConfig::operator=(const InternalAPMConfig&) =
     default;
 
-bool InternalAPMConfig::operator==(const InternalAPMConfig& other) {
+bool InternalAPMConfig::operator==(const InternalAPMConfig& other) const {
   return aec_enabled == other.aec_enabled &&
          aec_delay_agnostic_enabled == other.aec_delay_agnostic_enabled &&
          aec_drift_compensation_enabled ==

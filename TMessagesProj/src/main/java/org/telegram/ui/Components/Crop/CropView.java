@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.Build;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -44,7 +45,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     private static final int RESULT_SIDE = 1280;
     private static final float MAX_SCALE = 30.0f;
 
-    private CropAreaView areaView;
+    public CropAreaView areaView;
     private ImageView imageView;
     private Matrix overlayMatrix;
     private PaintingOverlay paintingOverlay;
@@ -75,19 +76,23 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
     private int bitmapRotation;
 
-    private class CropState {
-        private float width;
-        private float height;
+    public void setSubtitle(String subtitle) {
+        areaView.setSubtitle(subtitle);
+    }
 
-        private float x;
-        private float y;
-        private float scale;
-        private float minimumScale;
-        private float baseRotation;
-        private float orientation;
-        private float rotation;
-        private boolean mirrored;
-        private Matrix matrix;
+    public class CropState {
+        public float width;
+        public float height;
+
+        public float x;
+        public float y;
+        public float scale;
+        public float minimumScale;
+        public float baseRotation;
+        public float orientation;
+        public float rotation;
+        public boolean mirrored;
+        public Matrix matrix;
 
         private CropState(int w, int h, int bRotation) {
             width = w;
@@ -202,9 +207,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             y = 0.0f;
             rotation = 0.0f;
             orientation = orient;
+
             updateMinimumScale();
             scale = minimumScale;
+            matrix.postScale(scale, scale);
+        }
 
+        private void rotateToOrientation(float orientation) {
+            matrix.postScale(1f / scale, 1f / scale);
+            this.orientation = orientation;
+            float wasMinimumScale = minimumScale;
+            updateMinimumScale();
+            scale = scale / wasMinimumScale * minimumScale;
             matrix.postScale(scale, scale);
         }
 
@@ -231,7 +245,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         }
     }
 
-    private CropState state;
+    public CropState state;
 
     public interface CropViewListener {
         void onChange(boolean reset);
@@ -241,6 +255,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     private CropViewListener listener;
+
+    public float getStateOrientation() {
+        return state == null ? 0 : state.orientation;
+    }
+
+    public float getStateFullOrientation() {
+        return state == null ? 0 : state.baseRotation + state.orientation;
+    }
+
+    public boolean getStateMirror() {
+        return state != null && state.mirrored;
+    }
 
     public CropView(Context context) {
         super(context);
@@ -401,13 +427,17 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void reset() {
+        reset(false);
+    }
+
+    public void reset(boolean force) {
         areaView.resetAnimator();
         areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), state.getBaseRotation() % 180 != 0, freeform);
         areaView.setLockedAspectRatio(freeform ? 0.0f : 1.0f);
         state.reset(areaView, 0, freeform);
         state.mirrored = false;
         areaView.getCropRect(initialAreaRect);
-        updateMatrix();
+        updateMatrix(force);
 
         resetRotationStartScale();
 
@@ -418,6 +448,13 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void updateMatrix() {
+        updateMatrix(false);
+    }
+
+    public void updateMatrix(boolean force) {
+        if (state == null) {
+            return;
+        }
         overlayMatrix.reset();
         if (state.getBaseRotation() == 90 || state.getBaseRotation() == 270) {
             overlayMatrix.postTranslate(-state.getHeight() / 2, -state.getWidth() / 2);
@@ -427,7 +464,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         overlayMatrix.postRotate(state.getOrientationOnly());
         state.getConcatMatrix(overlayMatrix);
         overlayMatrix.postTranslate(areaView.getCropCenterX(), areaView.getCropCenterY());
-        if ((!freeform || isVisible)) {
+        if (!freeform || isVisible || force) {
             updateCropTransform();
             listener.onUpdate();
         }
@@ -685,6 +722,13 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         return bitmapRotation == 90 || bitmapRotation == 270 ? bitmap.getWidth() : bitmap.getHeight();
     }
 
+    public boolean isMirrored() {
+        if (state == null) {
+            return false;
+        }
+        return state.mirrored;
+    }
+
     public boolean mirror() {
         if (state == null) {
             return false;
@@ -698,7 +742,61 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         return state.mirrored;
     }
 
-    public boolean rotate90Degrees() {
+    public void maximize(boolean animated) {
+        if (state == null) {
+            return;
+        }
+        final float toScale = state.minimumScale;
+        areaView.resetAnimator();
+        float aspectRatio;
+        if (state.getOrientation() % 180 != 0) {
+            aspectRatio = getCurrentHeight() / (float) getCurrentWidth();
+        } else {
+            aspectRatio = getCurrentWidth() / (float) getCurrentHeight();
+        }
+        if (!freeform) {
+            aspectRatio = 1.0f;
+        }
+        areaView.calculateRect(initialAreaRect, aspectRatio);
+        areaView.setLockedAspectRatio(freeform ? 0.0f : 1.0f);
+        resetRotationStartScale();
+
+        if (animated) {
+            ValueAnimator animator = ValueAnimator.ofFloat(0.0f, 1.0f);
+            RectF fromActualRect = new RectF(), animatedRect = new RectF();
+            areaView.getCropRect(fromActualRect);
+            final float fromX = state.x;
+            final float fromY = state.y;
+            final float fromScale = state.scale;
+            final float fromRot = state.rotation;
+            animator.addUpdateListener(animation -> {
+                float t = (float) animation.getAnimatedValue();
+                AndroidUtilities.lerp(fromActualRect, initialAreaRect, t, animatedRect);
+                areaView.setActualRect(animatedRect);
+                float dx = state.x - fromX * (1f - t),
+                      dy = state.y - fromY * (1f - t),
+                      dr = state.rotation - fromRot * (1f - t),
+                      ds = AndroidUtilities.lerp(fromScale, toScale, t) / state.scale;
+                state.translate(-dx, -dy);
+                state.scale(ds, 0, 0);
+                state.rotate(-dr, 0, 0);
+                fitContentInBounds(true, false, false);
+            });
+            animator.setInterpolator(areaView.getInterpolator());
+            animator.setDuration(250);
+            animator.start();
+        } else {
+            areaView.setActualRect(initialAreaRect);
+            state.translate(-state.x, -state.y);
+            state.scale(state.minimumScale / state.scale, 0, 0);
+            state.rotate(-state.rotation, 0, 0);
+            updateMatrix();
+
+            resetRotationStartScale();
+        }
+    }
+
+    public boolean rotate(float angle) {
         if (state == null) {
             return false;
         }
@@ -706,7 +804,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
         resetRotationStartScale();
 
-        float orientation = (state.getOrientation() - state.getBaseRotation() - 90.0f) % 360;
+        float orientation = (state.getOrientation() - state.getBaseRotation() + angle) % 360;
 
         boolean fform = freeform;
         if (freeform && areaView.getLockAspectRatio() > 0) {
@@ -714,7 +812,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             areaView.setActualRect(areaView.getLockAspectRatio());
             fform = false;
         } else {
-            areaView.setBitmap(getCurrentWidth(), getCurrentHeight(),  (orientation + state.getBaseRotation()) % 180 != 0, freeform);
+            areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), (orientation + state.getBaseRotation()) % 180 != 0, freeform);
         }
 
         state.reset(areaView, orientation, fform);
@@ -896,53 +994,36 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
             if (entities != null && !entities.isEmpty()) {
                 float[] point = new float[4];
-                float newScale = 1.0f / sc * scale * stateScale;
-                float widthScale = b.getWidth() / (float) canvasBitmap.getWidth();
-                newScale *= widthScale;
-                TextPaintView textPaintView = null;
                 for (int a = 0, N = entities.size(); a < N; a++) {
                     VideoEditedInfo.MediaEntity entity = entities.get(a);
 
-                    point[0] = entity.x * b.getWidth() + entity.viewWidth * entity.scale / 2;
-                    point[1] = entity.y * b.getHeight() + entity.viewHeight * entity.scale / 2;
+                    point[0] = (entity.x + entity.width / 2) * b.getWidth();
+                    point[1] = (entity.y + entity.height / 2) * b.getHeight();
                     point[2] = entity.textViewX * b.getWidth();
                     point[3] = entity.textViewY * b.getHeight();
                     matrix.mapPoints(point);
 
-                    if (entity.type == 0) {
-                        entity.viewWidth = entity.viewHeight = canvasBitmap.getWidth() / 2;
-                    } else if (entity.type == 1) {
-                        entity.fontSize = canvasBitmap.getWidth() / 9;
-                        if (textPaintView == null) {
-                            textPaintView = new TextPaintView(context, new Point(0, 0), entity.fontSize, "", new Swatch(Color.BLACK, 0.85f, 0.1f), 0);
-                            textPaintView.setMaxWidth(canvasBitmap.getWidth() - 20);
-                        }
-                        int type;
-                        if ((entity.subType & 1) != 0) {
-                            type = 0;
-                        } else if ((entity.subType & 4) != 0) {
-                            type = 2;
-                        } else {
-                            type = 1;
-                        }
-                        textPaintView.setType(type);
-                        textPaintView.setText(entity.text);
-                        textPaintView.measure(MeasureSpec.makeMeasureSpec(canvasBitmap.getWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(canvasBitmap.getHeight(), MeasureSpec.AT_MOST));
-                        entity.viewWidth = textPaintView.getMeasuredWidth();
-                        entity.viewHeight = textPaintView.getMeasuredHeight();
+                    final int w = contentWidth, h = contentHeight;
+                    int bw = b.getWidth(), bh = b.getHeight();
+                    if (orientationOnly == 90 || orientationOnly == 270) {
+                        bw = b.getHeight();
+                        bh = b.getWidth();
                     }
-                    entity.scale *= newScale;
+                    if (entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT) {
+                        entity.width = entity.width * w / canvasBitmap.getWidth() * scale * stateScale;
+                        entity.height = entity.height * h / canvasBitmap.getHeight() * scale * stateScale;
+                    } else {
+                        entity.viewWidth = (int) (entity.viewWidth / (float) w * bw);
+                        entity.viewHeight = (int) (entity.viewHeight / (float) h * bh);
 
-                    entity.x = (point[0] - entity.viewWidth * entity.scale / 2) / canvasBitmap.getWidth();
-                    entity.y = (point[1] - entity.viewHeight * entity.scale / 2) / canvasBitmap.getHeight();
+                        entity.width = entity.width * w / bw * scale * stateScale;
+                        entity.height = entity.height * h / bh * scale * stateScale;
+                    }
+
+                    entity.x = point[0] / canvasBitmap.getWidth() - entity.width / 2;
+                    entity.y = point[1] / canvasBitmap.getHeight() - entity.height / 2;
                     entity.textViewX = point[2] / canvasBitmap.getWidth();
                     entity.textViewY = point[3] / canvasBitmap.getHeight();
-
-                    entity.width = entity.viewWidth * entity.scale / canvasBitmap.getWidth();
-                    entity.height = entity.viewHeight * entity.scale / canvasBitmap.getHeight();
-
-                    entity.textViewWidth = entity.viewWidth / (float) canvasBitmap.getWidth();
-                    entity.textViewHeight = entity.viewHeight / (float) canvasBitmap.getHeight();
 
                     entity.rotation -= (rotation + orientationOnly) * (Math.PI / 180);
                 }
@@ -1102,6 +1183,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         editState.cropState.lockedAspectRatio = areaView.getLockAspectRatio();
 
         editState.cropState.initied = true;
+        return;
     }
 
     private void setLockedAspectRatio(float aspectRatio) {

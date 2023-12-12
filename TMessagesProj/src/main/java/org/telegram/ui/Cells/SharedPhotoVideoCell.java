@@ -30,6 +30,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
@@ -128,7 +129,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
             checkBox = new CheckBox2(context, 21);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBox.setColor(-1, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(1);
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
@@ -188,7 +189,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 imageView.setImageResource(R.drawable.photo_placeholder_in);
             } else if (messageObject.isVideo()) {
                 videoInfoContainer.setVisibility(VISIBLE);
-                videoTextView.setText(AndroidUtilities.formatShortDuration(messageObject.getDuration()));
+                videoTextView.setText(AndroidUtilities.formatShortDuration((int) messageObject.getDuration()));
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
                 TLRPC.PhotoSize qualityThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
@@ -250,7 +251,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
             if (currentMessageObject.isVideo()) {
-                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(currentMessageObject.getDuration()));
+                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration((int) currentMessageObject.getDuration()));
             } else {
                 info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
             }

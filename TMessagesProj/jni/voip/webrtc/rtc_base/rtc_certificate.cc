@@ -21,7 +21,9 @@ namespace rtc {
 
 scoped_refptr<RTCCertificate> RTCCertificate::Create(
     std::unique_ptr<SSLIdentity> identity) {
-  return new RTCCertificate(identity.release());
+  // Explicit new to access proteced constructor.
+  return rtc::scoped_refptr<RTCCertificate>(
+      new RTCCertificate(identity.release()));
 }
 
 RTCCertificate::RTCCertificate(SSLIdentity* identity) : identity_(identity) {
@@ -46,11 +48,6 @@ const SSLCertificate& RTCCertificate::GetSSLCertificate() const {
   return identity_->certificate();
 }
 
-// Deprecated: TODO(benwright) - Remove once chromium is updated.
-const SSLCertificate& RTCCertificate::ssl_certificate() const {
-  return identity_->certificate();
-}
-
 const SSLCertChain& RTCCertificate::GetSSLCertificateChain() const {
   return identity_->cert_chain();
 }
@@ -66,7 +63,7 @@ scoped_refptr<RTCCertificate> RTCCertificate::FromPEM(
       SSLIdentity::CreateFromPEMStrings(pem.private_key(), pem.certificate()));
   if (!identity)
     return nullptr;
-  return new RTCCertificate(identity.release());
+  return RTCCertificate::Create(std::move(identity));
 }
 
 bool RTCCertificate::operator==(const RTCCertificate& certificate) const {

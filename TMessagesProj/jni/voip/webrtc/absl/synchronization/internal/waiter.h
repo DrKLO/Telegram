@@ -36,6 +36,7 @@
 #include <cstdint>
 
 #include "absl/base/internal/thread_identity.h"
+#include "absl/synchronization/internal/futex.h"
 #include "absl/synchronization/internal/kernel_timeout.h"
 
 // May be chosen at compile time via -DABSL_FORCE_WAITER_MODE=<index>
@@ -48,12 +49,7 @@
 #define ABSL_WAITER_MODE ABSL_FORCE_WAITER_MODE
 #elif defined(_WIN32) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
 #define ABSL_WAITER_MODE ABSL_WAITER_MODE_WIN32
-#elif defined(__BIONIC__)
-// Bionic supports all the futex operations we need even when some of the futex
-// definitions are missing.
-#define ABSL_WAITER_MODE ABSL_WAITER_MODE_FUTEX
-#elif defined(__linux__) && defined(FUTEX_CLOCK_REALTIME)
-// FUTEX_CLOCK_REALTIME requires Linux >= 2.6.28.
+#elif defined(ABSL_INTERNAL_HAVE_FUTEX)
 #define ABSL_WAITER_MODE ABSL_WAITER_MODE_FUTEX
 #elif defined(ABSL_HAVE_SEMAPHORE_H)
 #define ABSL_WAITER_MODE ABSL_WAITER_MODE_SEM
@@ -74,9 +70,6 @@ class Waiter {
   // Not copyable or movable
   Waiter(const Waiter&) = delete;
   Waiter& operator=(const Waiter&) = delete;
-
-  // Destroy any data to track waits.
-  ~Waiter();
 
   // Blocks the calling thread until a matching call to `Post()` or
   // `t` has passed. Returns `true` if woken (`Post()` called),
@@ -100,8 +93,8 @@ class Waiter {
   }
 
   // How many periods to remain idle before releasing resources
-#ifndef THREAD_SANITIZER
-  static const int kIdlePeriods = 60;
+#ifndef ABSL_HAVE_THREAD_SANITIZER
+  static constexpr int kIdlePeriods = 60;
 #else
   // Memory consumption under ThreadSanitizer is a serious concern,
   // so we release resources sooner. The value of 1 leads to 1 to 2 second
@@ -110,6 +103,12 @@ class Waiter {
 #endif
 
  private:
+  // The destructor must not be called since Mutex/CondVar
+  // can use PerThreadSem/Waiter after the thread exits.
+  // Waiter objects are embedded in ThreadIdentity objects,
+  // which are reused via a freelist and are never destroyed.
+  ~Waiter() = delete;
+
 #if ABSL_WAITER_MODE == ABSL_WAITER_MODE_FUTEX
   // Futexes are defined by specification to be 32-bits.
   // Thus std::atomic<int32_t> must be just an int32_t with lockfree methods.
@@ -140,8 +139,11 @@ class Waiter {
   // REQUIRES: WinHelper::GetLock(this) must be held.
   void InternalCondVarPoke();
 
-  // We can't include Windows.h in our headers, so we use aligned charachter
+  // We can't include Windows.h in our headers, so we use aligned character
   // buffers to define the storage of SRWLOCK and CONDITION_VARIABLE.
+  // SRW locks and condition variables do not need to be explicitly destroyed.
+  // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializesrwlock
+  // https://stackoverflow.com/questions/28975958/why-does-windows-have-no-deleteconditionvariable-function-to-go-together-with
   alignas(void*) unsigned char mu_storage_[sizeof(void*)];
   alignas(void*) unsigned char cv_storage_[sizeof(void*)];
   int waiter_count_;

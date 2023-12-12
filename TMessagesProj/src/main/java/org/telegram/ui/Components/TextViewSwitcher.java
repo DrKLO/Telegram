@@ -18,14 +18,20 @@ public class TextViewSwitcher extends ViewSwitcher {
     }
 
     public void setText(CharSequence text, boolean animated) {
-        if (!TextUtils.equals(text, getCurrentView().getText())) {
+        setText(text, animated, false);
+    }
+
+    public boolean setText(CharSequence text, boolean animated, boolean forceUpdate) {
+        if (forceUpdate || !TextUtils.equals(text, getCurrentView().getText())) {
             if (animated) {
                 getNextView().setText(text);
                 showNext();
+                return true;
             } else {
                 getCurrentView().setText(text);
             }
         }
+        return false;
     }
 
     @Override

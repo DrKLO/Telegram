@@ -34,7 +34,7 @@ Time2Spec WebRtcIsacfix_Time2Spec;
 MatrixProduct1 WebRtcIsacfix_MatrixProduct1;
 MatrixProduct2 WebRtcIsacfix_MatrixProduct2;
 
-/* This method assumes that |stream_size_bytes| is in valid range,
+/* This method assumes that `stream_size_bytes` is in valid range,
  * i.e. >= 0 && <=  STREAM_MAXW16_60MS
  */
 static void InitializeDecoderBitstream(size_t stream_size_bytes,
@@ -294,8 +294,8 @@ int16_t WebRtcIsacfix_EncoderInit(ISACFIX_MainStruct *ISAC_main_inst,
   return statusInit;
 }
 
-/* Read the given number of bytes of big-endian 16-bit integers from |src| and
-   write them to |dest| in host endian. If |nbytes| is odd, the number of
+/* Read the given number of bytes of big-endian 16-bit integers from `src` and
+   write them to `dest` in host endian. If `nbytes` is odd, the number of
    output elements is rounded up, and the least significant byte of the last
    element is set to 0. */
 static void read_be16(const uint8_t* src, size_t nbytes, uint16_t* dest) {
@@ -306,8 +306,8 @@ static void read_be16(const uint8_t* src, size_t nbytes, uint16_t* dest) {
     dest[nbytes / 2] = src[nbytes - 1] << 8;
 }
 
-/* Read the given number of bytes of host-endian 16-bit integers from |src| and
-   write them to |dest| in big endian. If |nbytes| is odd, the number of source
+/* Read the given number of bytes of host-endian 16-bit integers from `src` and
+   write them to `dest` in big endian. If `nbytes` is odd, the number of source
    elements is rounded up (but only the most significant byte of the last
    element is used), and the number of output bytes written will be
    nbytes + 1. */
@@ -381,7 +381,7 @@ int WebRtcIsacfix_Encode(ISACFIX_MainStruct *ISAC_main_inst,
 /****************************************************************************
  * WebRtcIsacfix_GetNewBitStream(...)
  *
- * This function returns encoded data, with the recieved bwe-index in the
+ * This function returns encoded data, with the received bwe-index in the
  * stream. It should always return a complete packet, i.e. only called once
  * even for 60 msec frames
  *

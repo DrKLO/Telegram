@@ -111,7 +111,7 @@ void TL_api_response::readParamsEx(NativeByteBuffer *stream, uint32_t bytes, boo
 TL_future_salt *TL_future_salt::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_future_salt::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_future_salt", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_future_salt", constructor);
         return nullptr;
     }
     TL_future_salt *result = new TL_future_salt();
@@ -128,7 +128,7 @@ void TL_future_salt::readParams(NativeByteBuffer *stream, int32_t instanceNum, b
 TL_msgs_state_info *TL_msgs_state_info::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msgs_state_info::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msgs_state_info", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msgs_state_info", constructor);
         return nullptr;
     }
     TL_msgs_state_info *result = new TL_msgs_state_info();
@@ -158,7 +158,7 @@ Server_DH_Params *Server_DH_Params::TLdeserialize(NativeByteBuffer *stream, uint
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in Server_DH_Params", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in Server_DH_Params", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -180,7 +180,7 @@ void TL_server_DH_params_ok::readParams(NativeByteBuffer *stream, int32_t instan
 TL_resPQ *TL_resPQ::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_resPQ::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_resPQ", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_resPQ", constructor);
         return nullptr;
     }
     TL_resPQ *result = new TL_resPQ();
@@ -195,7 +195,7 @@ void TL_resPQ::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &e
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_resPQ, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -297,7 +297,7 @@ void TL_auth_dropTempAuthKeys::serializeToStream(NativeByteBuffer *stream) {
 TL_pong *TL_pong::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_pong::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_pong", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_pong", constructor);
         return nullptr;
     }
     TL_pong *result = new TL_pong();
@@ -313,7 +313,7 @@ void TL_pong::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
 TL_future_salts *TL_future_salts::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_future_salts::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_future_salts", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_future_salts", constructor);
         return nullptr;
     }
     TL_future_salts *result = new TL_future_salts();
@@ -349,7 +349,7 @@ RpcDropAnswer *RpcDropAnswer::TLdeserialize(NativeByteBuffer *stream, uint32_t c
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in RpcDropAnswer", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in RpcDropAnswer", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -384,7 +384,7 @@ Set_client_DH_params_answer *Set_client_DH_params_answer::TLdeserialize(NativeBy
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in Set_client_DH_params_answer", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in Set_client_DH_params_answer", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -420,7 +420,7 @@ BadMsgNotification *BadMsgNotification::TLdeserialize(NativeByteBuffer *stream, 
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in BadMsgNotification", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in BadMsgNotification", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -443,7 +443,7 @@ void TL_bad_server_salt::readParams(NativeByteBuffer *stream, int32_t instanceNu
 TL_msgs_state_req *TL_msgs_state_req::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msgs_state_req::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msgs_state_req", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msgs_state_req", constructor);
         return nullptr;
     }
     TL_msgs_state_req *result = new TL_msgs_state_req();
@@ -455,7 +455,7 @@ void TL_msgs_state_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_state_req, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -489,7 +489,7 @@ MsgDetailedInfo *MsgDetailedInfo::TLdeserialize(NativeByteBuffer *stream, uint32
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in MsgDetailedInfo", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in MsgDetailedInfo", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -512,7 +512,7 @@ void TL_msg_detailed_info::readParams(NativeByteBuffer *stream, int32_t instance
 TL_msg_copy *TL_msg_copy::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msg_copy::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msg_copy", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msg_copy", constructor);
         return nullptr;
     }
     TL_msg_copy *result = new TL_msg_copy();
@@ -532,7 +532,7 @@ void TL_msg_copy::serializeToStream(NativeByteBuffer *stream) {
 TL_msgs_all_info *TL_msgs_all_info::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msgs_all_info::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msgs_all_info", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msgs_all_info", constructor);
         return nullptr;
     }
     TL_msgs_all_info *result = new TL_msgs_all_info();
@@ -544,7 +544,7 @@ void TL_msgs_all_info::readParams(NativeByteBuffer *stream, int32_t instanceNum,
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_all_info, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -586,7 +586,7 @@ DestroySessionRes *DestroySessionRes::TLdeserialize(NativeByteBuffer *stream, ui
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in DestroySessionRes", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in DestroySessionRes", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -604,7 +604,7 @@ void TL_destroy_session_none::readParams(NativeByteBuffer *stream, int32_t insta
 TL_msgs_ack *TL_msgs_ack::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msgs_ack::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msgs_ack", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msgs_ack", constructor);
         return nullptr;
     }
     TL_msgs_ack *result = new TL_msgs_ack();
@@ -616,7 +616,7 @@ void TL_msgs_ack::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_ack, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -642,7 +642,7 @@ void TL_msgs_ack::serializeToStream(NativeByteBuffer *stream) {
 TL_msg_container *TL_msg_container::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msg_container::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msg_container", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msg_container", constructor);
         return nullptr;
     }
     TL_msg_container *result = new TL_msg_container();
@@ -674,7 +674,7 @@ void TL_msg_container::serializeToStream(NativeByteBuffer *stream) {
 TL_message *TL_message::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_message::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_message", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_message", constructor);
         return nullptr;
     }
     TL_message *result = new TL_message();
@@ -709,7 +709,7 @@ void TL_message::serializeToStream(NativeByteBuffer *stream) {
 TL_msg_resend_req *TL_msg_resend_req::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_msg_resend_req::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_msg_resend_req", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_msg_resend_req", constructor);
         return nullptr;
     }
     TL_msg_resend_req *result = new TL_msg_resend_req();
@@ -721,7 +721,7 @@ void TL_msg_resend_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msg_resend_req, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -771,7 +771,7 @@ void TL_client_DH_inner_data::serializeToStream(NativeByteBuffer *stream) {
 TL_server_DH_inner_data *TL_server_DH_inner_data::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_server_DH_inner_data::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_server_DH_inner_data", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_server_DH_inner_data", constructor);
         return nullptr;
     }
     TL_server_DH_inner_data *result = new TL_server_DH_inner_data();
@@ -906,7 +906,7 @@ void TL_gzip_packed::serializeToStream(NativeByteBuffer *stream) {
 TL_error *TL_error::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_error::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_error", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_error", constructor);
         return nullptr;
     }
     TL_error *result = new TL_error();
@@ -971,7 +971,7 @@ JSONValue *JSONValue::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in JSONValue", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in JSONValue", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -981,7 +981,7 @@ JSONValue *JSONValue::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
 TL_jsonObjectValue *TL_jsonObjectValue::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_jsonObjectValue::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_jsonObjectValue", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_jsonObjectValue", constructor);
         return nullptr;
     }
     TL_jsonObjectValue *result = new TL_jsonObjectValue();
@@ -1028,7 +1028,7 @@ void TL_jsonArray::readParams(NativeByteBuffer *stream, int32_t instanceNum, boo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_jsonArray, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -1055,7 +1055,7 @@ void TL_jsonObject::readParams(NativeByteBuffer *stream, int32_t instanceNum, bo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_jsonObject, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -1117,7 +1117,7 @@ IpPort *IpPort::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, in
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in IpPort", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in IpPort", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -1155,7 +1155,7 @@ void TL_accessPointRule::readParams(NativeByteBuffer *stream, int32_t instanceNu
 TL_help_configSimple *TL_help_configSimple::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_help_configSimple::constructor != constructor) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_help_configSimple", constructor);
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_help_configSimple", constructor);
         return nullptr;
     }
     TL_help_configSimple *result = new TL_help_configSimple();

@@ -45,7 +45,7 @@ public final class DolbyVisionConfig {
     } else {
       return null;
     }
-    String codecs = codecsPrefix + ".0" + dvProfile + ".0" + dvLevel;
+    String codecs = codecsPrefix + ".0" + dvProfile + (dvLevel < 10 ? ".0" : ".") + dvLevel;
     return new DolbyVisionConfig(dvProfile, dvLevel, codecs);
   }
 

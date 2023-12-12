@@ -18,6 +18,7 @@
 #include "api/audio_codecs/audio_codec_pair_id.h"
 #include "api/audio_codecs/audio_decoder.h"
 #include "api/audio_codecs/audio_format.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -28,7 +29,9 @@ struct RTC_EXPORT AudioDecoderG711 {
   struct Config {
     enum class Type { kPcmU, kPcmA };
     bool IsOk() const {
-      return (type == Type::kPcmU || type == Type::kPcmA) && num_channels >= 1;
+      return (type == Type::kPcmU || type == Type::kPcmA) &&
+             num_channels >= 1 &&
+             num_channels <= AudioDecoder::kMaxNumberOfChannels;
     }
     Type type;
     int num_channels;
@@ -37,7 +40,8 @@ struct RTC_EXPORT AudioDecoderG711 {
   static void AppendSupportedDecoders(std::vector<AudioCodecSpec>* specs);
   static std::unique_ptr<AudioDecoder> MakeAudioDecoder(
       const Config& config,
-      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt);
+      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt,
+      const FieldTrialsView* field_trials = nullptr);
 };
 
 }  // namespace webrtc

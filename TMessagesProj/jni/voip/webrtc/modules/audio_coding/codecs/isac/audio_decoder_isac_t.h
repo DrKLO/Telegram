@@ -16,7 +16,6 @@
 #include "absl/types/optional.h"
 #include "api/audio_codecs/audio_decoder.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,6 +28,9 @@ class AudioDecoderIsacT final : public AudioDecoder {
   };
   explicit AudioDecoderIsacT(const Config& config);
   virtual ~AudioDecoderIsacT() override;
+
+  AudioDecoderIsacT(const AudioDecoderIsacT&) = delete;
+  AudioDecoderIsacT& operator=(const AudioDecoderIsacT&) = delete;
 
   bool HasDecodePlc() const override;
   size_t DecodePlc(size_t num_frames, int16_t* decoded) override;
@@ -45,8 +47,6 @@ class AudioDecoderIsacT final : public AudioDecoder {
  private:
   typename T::instance_type* isac_state_;
   int sample_rate_hz_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderIsacT);
 };
 
 }  // namespace webrtc

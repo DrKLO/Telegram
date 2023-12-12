@@ -44,12 +44,12 @@ public class SystemClock implements Clock {
   }
 
   @Override
-  public void sleep(long sleepTimeMs) {
-    android.os.SystemClock.sleep(sleepTimeMs);
+  public HandlerWrapper createHandler(Looper looper, @Nullable Callback callback) {
+    return new SystemHandlerWrapper(new Handler(looper, callback));
   }
 
   @Override
-  public HandlerWrapper createHandler(Looper looper, @Nullable Callback callback) {
-    return new SystemHandlerWrapper(new Handler(looper, callback));
+  public void onThreadBlocked() {
+    // Do nothing.
   }
 }

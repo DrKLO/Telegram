@@ -27,7 +27,7 @@
 #define DOWNLOAD_CONNECTIONS_COUNT 2
 #define UPLOAD_CONNECTIONS_COUNT 4
 #define CONNECTION_BACKGROUND_KEEP_TIME 10000
-#define MAX_ACCOUNT_COUNT 3
+#define MAX_ACCOUNT_COUNT 5
 #define USE_DELEGATE_HOST_RESOLVE
 
 #define USE_IPV4_ONLY 0
@@ -47,7 +47,7 @@ class NativeByteBuffer;
 class Handshake;
 class ConnectionSocket;
 
-typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime)> onCompleteFunc;
+typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
 typedef std::function<void()> onWriteToSocketFunc;
 typedef std::function<void(int64_t messageId)> fillParamsFunc;
@@ -169,7 +169,9 @@ enum RequestFlag {
     RequestFlagInvokeAfter = 64,
     RequestFlagNeedQuickAck = 128,
     RequestFlagUseUnboundKey = 256,
-    RequestFlagResendAfter = 512
+    RequestFlagResendAfter = 512,
+    RequestFlagIgnoreFloodWait = 1024,
+    RequestFlagIsCancel = 32768
 };
 
 inline std::string to_string_int32(int32_t value) {

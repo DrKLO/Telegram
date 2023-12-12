@@ -10,9 +10,9 @@
 
 #include "pc/sdp_serializer.h"
 
-#include <algorithm>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -101,33 +101,33 @@ rtc::StringBuilder& operator<<(rtc::StringBuilder& builder,
 // sc-id        = [sc-id-paused] rid-id
 // rid-id       = 1*(alpha-numeric / "-" / "_") ; see: I-D.ietf-mmusic-rid
 RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
-  std::vector<std::string> tokens;
-  rtc::tokenize_with_empty_tokens(str, kDelimiterSemicolonChar, &tokens);
+  std::vector<absl::string_view> tokens =
+      rtc::split(str, kDelimiterSemicolonChar);
   if (tokens.empty()) {
     return ParseError("Layer list cannot be empty.");
   }
 
   SimulcastLayerList result;
-  for (const std::string& token : tokens) {
+  for (const absl::string_view& token : tokens) {
     if (token.empty()) {
       return ParseError("Simulcast alternative layer list is empty.");
     }
 
-    std::vector<std::string> rid_tokens;
-    rtc::tokenize_with_empty_tokens(token, kDelimiterCommaChar, &rid_tokens);
+    std::vector<absl::string_view> rid_tokens =
+        rtc::split(token, kDelimiterCommaChar);
 
     if (rid_tokens.empty()) {
       return ParseError("Simulcast alternative layer list is malformed.");
     }
 
     std::vector<SimulcastLayer> layers;
-    for (const std::string& rid_token : rid_tokens) {
+    for (const absl::string_view& rid_token : rid_tokens) {
       if (rid_token.empty() || rid_token == kSimulcastPausedStream) {
         return ParseError("Rid must not be empty.");
       }
 
       bool paused = rid_token[0] == kSimulcastPausedStreamChar;
-      std::string rid = paused ? rid_token.substr(1) : rid_token;
+      absl::string_view rid = paused ? rid_token.substr(1) : rid_token;
       layers.push_back(SimulcastLayer(rid, paused));
     }
 
@@ -249,7 +249,7 @@ RTCErrorOr<SimulcastDescription> SdpSerializer::DeserializeSimulcastDescription(
 
   // Set the layers according to which pair is send and which is recv
   // At this point if the simulcast is unidirectional then
-  // either |list1| or |list2| will be in 'error' state indicating that
+  // either `list1` or `list2` will be in 'error' state indicating that
   // the value should not be used.
   SimulcastDescription simulcast;
   if (list1.ok()) {
@@ -362,8 +362,8 @@ RTCErrorOr<RidDescription> SdpSerializer::DeserializeRidDescription(
         return ParseError("Invalid format for restriction: " + restriction);
       }
 
-      // |parts| contains at least one value and it does not contain a space.
-      // Note: |parts| and other values might still contain tab, newline,
+      // `parts` contains at least one value and it does not contain a space.
+      // Note: `parts` and other values might still contain tab, newline,
       // unprintable characters, etc. which will not generate errors here but
       // will (most-likely) be ignored by components down stream.
       if (parts[0] == kPayloadType) {
@@ -376,7 +376,7 @@ RTCErrorOr<RidDescription> SdpSerializer::DeserializeRidDescription(
         continue;
       }
 
-      // Parse |parts| as a key=value pair which allows unspecified values.
+      // Parse `parts` as a key=value pair which allows unspecified values.
       if (rid_description.restrictions.find(parts[0]) !=
           rid_description.restrictions.end()) {
         return ParseError("Duplicate restriction specified: " + parts[0]);

@@ -35,7 +35,7 @@ void UnhandledPacketsBuffer::AddPacket(uint32_t ssrc,
   insert_pos_ = (insert_pos_ + 1) % kMaxStashedPackets;
 }
 
-// Backfill |consumer| with all stored packet related |ssrcs|.
+// Backfill `consumer` with all stored packet related `ssrcs`.
 void UnhandledPacketsBuffer::BackfillPackets(
     rtc::ArrayView<const uint32_t> ssrcs,
     std::function<void(uint32_t, int64_t, rtc::CopyOnWriteBuffer)> consumer) {
@@ -46,7 +46,6 @@ void UnhandledPacketsBuffer::BackfillPackets(
     start = insert_pos_;
   }
 
-  size_t count = 0;
   std::vector<PacketWithMetadata> remaining;
   remaining.reserve(kMaxStashedPackets);
   for (size_t i = 0; i < buffer_.size(); ++i) {
@@ -56,7 +55,6 @@ void UnhandledPacketsBuffer::BackfillPackets(
     // scheme.
     const uint32_t ssrc = buffer_[pos].ssrc;
     if (absl::c_linear_search(ssrcs, ssrc)) {
-      ++count;
       consumer(ssrc, buffer_[pos].packet_time_us, buffer_[pos].packet);
     } else {
       remaining.push_back(buffer_[pos]);

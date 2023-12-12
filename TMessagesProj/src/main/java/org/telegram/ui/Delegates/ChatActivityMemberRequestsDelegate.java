@@ -68,7 +68,9 @@ public class ChatActivityMemberRequestsDelegate {
 
             View pendingRequestsSelector = new View(fragment.getParentActivity());
             pendingRequestsSelector.setBackground(Theme.getSelectorDrawable(false));
-            pendingRequestsSelector.setOnClickListener((v) -> showBottomSheet());
+            pendingRequestsSelector.setOnClickListener((v) -> {
+                showBottomSheet();
+            });
             root.addView(pendingRequestsSelector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 2));
 
             LinearLayout requestsDataLayout = new LinearLayout(fragment.getParentActivity());
@@ -78,10 +80,11 @@ public class ChatActivityMemberRequestsDelegate {
             avatarsView = new AvatarsImageView(fragment.getParentActivity(), false) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    int width = count == 0 ? 0 : (20 * (count - 1) + 24);
+                    int width = avatarsDrawable.count == 0 ? 0 : (20 * (avatarsDrawable.count - 1) + 24);
                     super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(width), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };
+            avatarsView.setAvatarsTextSize(AndroidUtilities.dp(18));
             avatarsView.reset();
             requestsDataLayout.addView(avatarsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 8, 0, 10, 0));
 
@@ -223,6 +226,9 @@ public class ChatActivityMemberRequestsDelegate {
                     if (!appear) {
                         root.setVisibility(View.GONE);
                     }
+                    if (callback != null) {
+                        callback.onEnterOffsetChanged();
+                    }
                 }
             });
             pendingRequestsAnimator.setDuration(200);
@@ -243,7 +249,6 @@ public class ChatActivityMemberRequestsDelegate {
     }
 
     public interface Callback {
-
         void onEnterOffsetChanged();
     }
 }

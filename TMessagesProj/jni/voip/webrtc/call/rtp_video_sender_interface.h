@@ -22,7 +22,6 @@
 #include "call/rtp_config.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
-#include "modules/utility/include/process_thread.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 
 namespace webrtc {
@@ -32,15 +31,12 @@ struct FecProtectionParams;
 class RtpVideoSenderInterface : public EncodedImageCallback,
                                 public FecControllerOverride {
  public:
-  virtual void RegisterProcessThread(ProcessThread* module_process_thread) = 0;
-  virtual void DeRegisterProcessThread() = 0;
-
   // RtpVideoSender will only route packets if being active, all
   // packets will be dropped otherwise.
   virtual void SetActive(bool active) = 0;
   // Sets the sending status of the rtp modules and appropriately sets the
   // RtpVideoSender to active if any rtp modules are active.
-  virtual void SetActiveModules(const std::vector<bool> active_modules) = 0;
+  virtual void SetActiveModules(std::vector<bool> active_modules) = 0;
   virtual bool IsActive() = 0;
 
   virtual void OnNetworkAvailability(bool network_available) = 0;

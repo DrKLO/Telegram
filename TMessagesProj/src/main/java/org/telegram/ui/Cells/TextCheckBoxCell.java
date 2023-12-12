@@ -30,11 +30,16 @@ public class TextCheckBoxCell extends FrameLayout {
     private boolean needDivider;
 
     public TextCheckBoxCell(Context context) {
-        this(context, false);
+        this(context, false, false);
     }
 
-    public TextCheckBoxCell(Context context, boolean dialog) {
+    public TextCheckBoxCell(Context context, boolean dialog, boolean revereLayout) {
         super(context);
+
+        boolean isRtl = LocaleController.isRTL;
+        if (revereLayout) {
+            isRtl = !isRtl;
+        }
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
@@ -44,14 +49,15 @@ public class TextCheckBoxCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 66 : 21, 0, LocaleController.isRTL ? 21 : 66, 0));
+
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (isRtl ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, isRtl ? 66 : 21, 0, isRtl ? 21 : 66, 0));
 
         checkBox = new CheckBoxSquare(context, dialog);
         checkBox.setDuplicateParentStateEnabled(false);
         checkBox.setFocusable(false);
         checkBox.setFocusableInTouchMode(false);
         checkBox.setClickable(false);
-        addView(checkBox, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        addView(checkBox, LayoutHelper.createFrame(18, 18, (isRtl ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
     }
 
     @Override

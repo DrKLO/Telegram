@@ -23,7 +23,6 @@
 #include "api/test/simulated_network.h"
 #include "call/call.h"
 #include "call/simulated_packet_receiver.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -44,7 +43,7 @@ class NetworkPacket {
                 absl::optional<int64_t> packet_time_us,
                 Transport* transport);
 
-  // Disallow copy constructor and copy assignment (no deep copies of |data_|).
+  // Disallow copy constructor and copy assignment (no deep copies of `data_`).
   NetworkPacket(const NetworkPacket&) = delete;
   ~NetworkPacket();
   NetworkPacket& operator=(const NetworkPacket&) = delete;
@@ -91,7 +90,7 @@ class NetworkPacket {
 // SimulatedNetworkInterface to simulate network behavior.
 class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
  public:
-  // Will keep |network_behavior| alive while pipe is alive itself.
+  // Will keep `network_behavior` alive while pipe is alive itself.
   FakeNetworkPipe(Clock* clock,
                   std::unique_ptr<NetworkBehaviorInterface> network_behavior);
   FakeNetworkPipe(Clock* clock,
@@ -108,6 +107,9 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
                   Transport* transport);
 
   ~FakeNetworkPipe() override;
+
+  FakeNetworkPipe(const FakeNetworkPipe&) = delete;
+  FakeNetworkPipe& operator=(const FakeNetworkPipe&) = delete;
 
   void SetClockOffset(int64_t offset_ms);
 
@@ -130,7 +132,7 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   bool SendRtcp(const uint8_t* packet, size_t length);
 
   // Methods for use with Transport interface. When/if packets are delivered,
-  // they will be passed to the instance specified by the |transport| parameter.
+  // they will be passed to the instance specified by the `transport` parameter.
   // Note that that instance must be in the map of active transports.
   bool SendRtp(const uint8_t* packet,
                size_t length,
@@ -203,13 +205,13 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   bool HasReceiver() const;
 
   Clock* const clock_;
-  // |config_lock| guards the mostly constant things like the callbacks.
+  // `config_lock` guards the mostly constant things like the callbacks.
   mutable Mutex config_lock_;
   const std::unique_ptr<NetworkBehaviorInterface> network_behavior_;
   PacketReceiver* receiver_ RTC_GUARDED_BY(config_lock_);
   Transport* const global_transport_;
 
-  // |process_lock| guards the data structures involved in delay and loss
+  // `process_lock` guards the data structures involved in delay and loss
   // processes, such as the packet queues.
   Mutex process_lock_;
   // Packets  are added at the back of the deque, this makes the deque ordered
@@ -228,8 +230,6 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   int64_t last_log_time_us_;
 
   std::map<Transport*, size_t> active_transports_ RTC_GUARDED_BY(config_lock_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FakeNetworkPipe);
 };
 
 }  // namespace webrtc

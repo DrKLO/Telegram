@@ -66,7 +66,8 @@ AudioCodecInfo AudioEncoderMultiChannelOpus::QueryAudioEncoder(
 std::unique_ptr<AudioEncoder> AudioEncoderMultiChannelOpus::MakeAudioEncoder(
     const AudioEncoderMultiChannelOpusConfig& config,
     int payload_type,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
   return AudioEncoderMultiChannelOpusImpl::MakeAudioEncoder(config,
                                                             payload_type);
 }

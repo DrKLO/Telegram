@@ -38,6 +38,7 @@ public class SendLocationCell extends FrameLayout {
     private ImageView imageView;
     private long dialogId;
     private RectF rect;
+    private boolean live;
     private final Theme.ResourcesProvider resourcesProvider;
 
     private Runnable invalidateRunnable = new Runnable() {
@@ -52,8 +53,11 @@ public class SendLocationCell extends FrameLayout {
     public SendLocationCell(Context context, boolean live, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.live = live;
 
         imageView = new ImageView(context);
+
+        setBackground(Theme.AdaptiveRipple.rect());
 
         imageView.setTag(live ? Theme.key_location_sendLiveLocationBackground + Theme.key_location_sendLiveLocationIcon : Theme.key_location_sendLocationBackground + Theme.key_location_sendLocationIcon);
         Drawable circle = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(42), getThemedColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground), getThemedColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground));
@@ -67,7 +71,7 @@ public class SendLocationCell extends FrameLayout {
             AndroidUtilities.runOnUIThread(invalidateRunnable, 1000);
             setWillNotDraw(false);
         } else {
-            Drawable drawable = getResources().getDrawable(R.drawable.pin);
+            Drawable drawable = getResources().getDrawable(R.drawable.pin).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
@@ -102,7 +106,9 @@ public class SendLocationCell extends FrameLayout {
             accurateTextView.setAlpha(value ? 1.0f : 0.5f);
             imageView.setAlpha(value ? 1.0f : 0.5f);
         }
-        checkText();
+        if (live) {
+            checkText();
+        }
     }
 
     @Override
@@ -131,7 +137,9 @@ public class SendLocationCell extends FrameLayout {
 
     public void setDialogId(long did) {
         dialogId = did;
-        checkText();
+        if (live) {
+            checkText();
+        }
     }
 
     private void checkText() {
@@ -174,8 +182,7 @@ public class SendLocationCell extends FrameLayout {
         canvas.drawText(text, rect.centerX() - size / 2, AndroidUtilities.dp(37), Theme.chat_livePaint);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

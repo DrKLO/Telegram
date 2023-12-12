@@ -62,14 +62,15 @@ public class MP4Builder {
     private ByteBuffer sizeBuffer = null;
     private boolean splitMdat;
     private boolean wasFirstVideoFrame;
+    private boolean allowSyncFiles = true;
 
-    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split) throws Exception {
+    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split, boolean hevc) throws Exception {
         currentMp4Movie = mp4Movie;
 
         fos = new FileOutputStream(mp4Movie.getCacheFile());
         fc = fos.getChannel();
 
-        FileTypeBox fileTypeBox = createFileTypeBox();
+        FileTypeBox fileTypeBox = createFileTypeBox(hevc);
         fileTypeBox.getBox(fc);
         dataOffset += fileTypeBox.getSize();
         wroteSinceLastMdat += dataOffset;
@@ -90,7 +91,9 @@ public class MP4Builder {
         mdat.setDataOffset(0);
         mdat.setContentSize(0);
         fos.flush();
-        fos.getFD().sync();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
     }
 
     public long writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
@@ -163,7 +166,9 @@ public class MP4Builder {
 
         if (flush) {
             fos.flush();
-            fos.getFD().sync();
+            if (allowSyncFiles) {
+                fos.getFD().sync();
+            }
             return fc.position();
         }
         return 0;
@@ -194,19 +199,25 @@ public class MP4Builder {
         Box moov = createMovieBox(currentMp4Movie);
         moov.getBox(fc);
         fos.flush();
-        fos.getFD().sync();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
 
         fc.close();
         fos.close();
     }
 
-    protected FileTypeBox createFileTypeBox() {
+    protected FileTypeBox createFileTypeBox(boolean hevc) {
         LinkedList<String> minorBrands = new LinkedList<>();
         minorBrands.add("isom");
         minorBrands.add("iso2");
-        minorBrands.add("avc1");
+        minorBrands.add(hevc ? "hvc1" : "avc1");
         minorBrands.add("mp41");
         return new FileTypeBox("isom", 512, minorBrands);
+    }
+
+    public void setAllowSyncFiles(boolean allowSyncFiles) {
+        this.allowSyncFiles = allowSyncFiles;
     }
 
     private static class InterleaveChunkMdat implements Box {

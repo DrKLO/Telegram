@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/types/optional.h"
+#include "api/units/timestamp.h"
 #include "modules/video_coding/encoded_frame.h"
 
 namespace webrtc {
@@ -30,10 +32,18 @@ class EncodedFrame : public webrtc::VCMEncodedFrame {
   virtual ~EncodedFrame() {}
 
   // When this frame was received.
+  // TODO(bugs.webrtc.org/13756): Use Timestamp instead of int.
   virtual int64_t ReceivedTime() const = 0;
+  // Returns a Timestamp from `ReceivedTime`, or nullopt if there is no receive
+  // time.
+  absl::optional<webrtc::Timestamp> ReceivedTimestamp() const;
 
   // When this frame should be rendered.
+  // TODO(bugs.webrtc.org/13756): Use Timestamp instead of int.
   virtual int64_t RenderTime() const = 0;
+  // Returns a Timestamp from `RenderTime`, or nullopt if there is no
+  // render time.
+  absl::optional<webrtc::Timestamp> RenderTimestamp() const;
 
   // This information is currently needed by the timing calculation class.
   // TODO(philipel): Remove this function when a new timing class has
@@ -46,7 +56,7 @@ class EncodedFrame : public webrtc::VCMEncodedFrame {
   int64_t Id() const { return id_; }
 
   // TODO(philipel): Add simple modify/access functions to prevent adding too
-  // many |references|.
+  // many `references`.
   size_t num_references = 0;
   int64_t references[kMaxFrameReferences];
   // Is this subframe the last one in the superframe (In RTP stream that would

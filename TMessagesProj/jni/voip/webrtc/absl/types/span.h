@@ -17,32 +17,29 @@
 // span.h
 // -----------------------------------------------------------------------------
 //
-// This header file defines a `Span<T>` type for holding a view of an existing
-// array of data. The `Span` object, much like the `absl::string_view` object,
-// does not own such data itself. A span provides a lightweight way to pass
-// around view of such data.
+// This header file defines a `Span<T>` type for holding a reference to existing
+// array data. The `Span` object, much like the `absl::string_view` object,
+// does not own such data itself, and the data being referenced by the span must
+// outlive the span itself. Unlike `view` type references, a span can hold a
+// reference to mutable data (and can mutate it for underlying types of
+// non-const T.) A span provides a lightweight way to pass a reference to such
+// data.
 //
 // Additionally, this header file defines `MakeSpan()` and `MakeConstSpan()`
 // factory functions, for clearly creating spans of type `Span<T>` or read-only
 // `Span<const T>` when such types may be difficult to identify due to issues
 // with implicit conversion.
 //
-// The C++ standards committee currently has a proposal for a `std::span` type,
-// (http://wg21.link/p0122), which is not yet part of the standard (though may
-// become part of C++20). As of August 2017, the differences between
-// `absl::Span` and this proposal are:
-//    * `absl::Span` uses `size_t` for `size_type`
-//    * `absl::Span` has no `operator()`
-//    * `absl::Span` has no constructors for `std::unique_ptr` or
-//      `std::shared_ptr`
+// The C++20 draft standard includes a `std::span` type. As of June 2020, the
+// differences between `absl::Span` and `std::span` are:
+//    * `absl::Span` has `operator==` (which is likely a design bug,
+//       per https://abseil.io/blog/20180531-regular-types)
 //    * `absl::Span` has the factory functions `MakeSpan()` and
 //      `MakeConstSpan()`
-//    * `absl::Span` has `front()` and `back()` methods
 //    * bounds-checked access to `absl::Span` is accomplished with `at()`
 //    * `absl::Span` has compiler-provided move and copy constructors and
 //      assignment. This is due to them being specified as `constexpr`, but that
 //      implies const in C++11.
-//    * `absl::Span` has no `element_type` or `index_type` typedefs
 //    * A read-only `absl::Span<const T>` can be implicitly constructed from an
 //      initializer list.
 //    * `absl::Span` has no `bytes()`, `size_bytes()`, `as_bytes()`, or
@@ -63,6 +60,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/base/macros.h"
 #include "absl/base/optimization.h"
@@ -77,9 +75,9 @@ ABSL_NAMESPACE_BEGIN
 // Span
 //------------------------------------------------------------------------------
 //
-// A `Span` is an "array view" type for holding a view of a contiguous data
-// array; the `Span` object does not and cannot own such data itself. A span
-// provides an easy way to provide overloads for anything operating on
+// A `Span` is an "array reference" type for holding a reference of contiguous
+// array data; the `Span` object does not and cannot own such data itself. A
+// span provides an easy way to provide overloads for anything operating on
 // contiguous sequences without needing to manage pointers and array lengths
 // manually.
 
@@ -97,7 +95,8 @@ ABSL_NAMESPACE_BEGIN
 // constructors.
 //
 // A `Span<T>` is somewhat analogous to an `absl::string_view`, but for an array
-// of elements of type `T`. A user of `Span` must ensure that the data being
+// of elements of type `T`, and unlike an `absl::string_view`, a span can hold a
+// reference to mutable data. A user of `Span` must ensure that the data being
 // pointed to outlives the `Span` itself.
 //
 // You can construct a `Span<T>` in several ways:
@@ -127,7 +126,7 @@ ABSL_NAMESPACE_BEGIN
 // Note that `Span` objects, in addition to requiring that the memory they
 // point to remains alive, must also ensure that such memory does not get
 // reallocated. Therefore, to avoid undefined behavior, containers with
-// associated span views should not invoke operations that may reallocate memory
+// associated spans should not invoke operations that may reallocate memory
 // (such as resizing) or invalidate iterators into the container.
 //
 // One common use for a `Span` is when passing arguments to a routine that can
@@ -162,15 +161,16 @@ class Span {
 
   // Used to SFINAE-enable a function when the slice elements are const.
   template <typename U>
-  using EnableIfConstView =
+  using EnableIfValueIsConst =
       typename std::enable_if<std::is_const<T>::value, U>::type;
 
   // Used to SFINAE-enable a function when the slice elements are mutable.
   template <typename U>
-  using EnableIfMutableView =
+  using EnableIfValueIsMutable =
       typename std::enable_if<!std::is_const<T>::value, U>::type;
 
  public:
+  using element_type = T;
   using value_type = absl::remove_cv_t<T>;
   using pointer = T*;
   using const_pointer = const T*;
@@ -197,13 +197,34 @@ class Span {
   // Explicit reference constructor for a mutable `Span<T>` type. Can be
   // replaced with MakeSpan() to infer the type parameter.
   template <typename V, typename = EnableIfConvertibleFrom<V>,
-            typename = EnableIfMutableView<V>>
-  explicit Span(V& v) noexcept  // NOLINT(runtime/references)
+            typename = EnableIfValueIsMutable<V>,
+            typename = span_internal::EnableIfNotIsView<V>>
+  explicit Span(
+      V& v
+          ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/references)
       : Span(span_internal::GetData(v), v.size()) {}
 
   // Implicit reference constructor for a read-only `Span<const T>` type
   template <typename V, typename = EnableIfConvertibleFrom<V>,
-            typename = EnableIfConstView<V>>
+            typename = EnableIfValueIsConst<V>,
+            typename = span_internal::EnableIfNotIsView<V>>
+  constexpr Span(
+      const V& v
+          ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/explicit)
+      : Span(span_internal::GetData(v), v.size()) {}
+
+  // Overloads of the above two functions that are only enabled for view types.
+  // This is so we can drop the ABSL_ATTRIBUTE_LIFETIME_BOUND annotation. These
+  // overloads must be made unique by using a different template parameter list
+  // (hence the = 0 for the IsView enabler).
+  template <typename V, typename = EnableIfConvertibleFrom<V>,
+            typename = EnableIfValueIsMutable<V>,
+            span_internal::EnableIfIsView<V> = 0>
+  explicit Span(V& v) noexcept  // NOLINT(runtime/references)
+      : Span(span_internal::GetData(v), v.size()) {}
+  template <typename V, typename = EnableIfConvertibleFrom<V>,
+            typename = EnableIfValueIsConst<V>,
+            span_internal::EnableIfIsView<V> = 0>
   constexpr Span(const V& v) noexcept  // NOLINT(runtime/explicit)
       : Span(span_internal::GetData(v), v.size()) {}
 
@@ -243,9 +264,9 @@ class Span {
   //   Process(ints);
   //
   template <typename LazyT = T,
-            typename = EnableIfConstView<LazyT>>
-  Span(
-      std::initializer_list<value_type> v) noexcept  // NOLINT(runtime/explicit)
+            typename = EnableIfValueIsConst<LazyT>>
+  Span(std::initializer_list<value_type> v
+           ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/explicit)
       : Span(v.begin(), v.size()) {}
 
   // Accessors
@@ -399,7 +420,7 @@ class Span {
   //   absl::MakeSpan(vec).subspan(5);     // throws std::out_of_range
   constexpr Span subspan(size_type pos = 0, size_type len = npos) const {
     return (pos <= size())
-               ? Span(data() + pos, span_internal::Min(size() - pos, len))
+               ? Span(data() + pos, (std::min)(size() - pos, len))
                : (base_internal::ThrowStdOutOfRange("pos > size()"), Span());
   }
 
@@ -665,7 +686,8 @@ constexpr Span<T> MakeSpan(T* ptr, size_t size) noexcept {
 
 template <int&... ExplicitArgumentBarrier, typename T>
 Span<T> MakeSpan(T* begin, T* end) noexcept {
-  return ABSL_HARDENING_ASSERT(begin <= end), Span<T>(begin, end - begin);
+  return ABSL_HARDENING_ASSERT(begin <= end),
+         Span<T>(begin, static_cast<size_t>(end - begin));
 }
 
 template <int&... ExplicitArgumentBarrier, typename C>

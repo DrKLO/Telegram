@@ -1,0 +1,88 @@
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="vector"
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <group android:name="group">
+                <path
+                    android:name="path_1"
+                    android:pathData="M 22 16.88 C 22 11.357 17.523 6.88 12 6.88 C 6.477 6.88 2 11.357 2 16.88"
+                    android:fillColor="#000"
+                    android:fillAlpha="0"
+                    android:strokeColor="#000000"
+                    android:strokeWidth="1.67"
+                    android:trimPathStart="0.9"
+                    android:strokeLineCap="round"/>
+                <path
+                    android:name="path_2"
+                    android:pathData="M 22 16.88 C 22 11.357 17.523 6.88 12 6.88 C 6.477 6.88 2 11.357 2 16.88"
+                    android:fillAlpha="0"
+                    android:strokeColor="#000000"
+                    android:strokeWidth="1.67"
+                    android:trimPathEnd="0.7"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"/>
+            </group>
+            <group
+                android:name="group_2"
+                android:pivotX="12"
+                android:pivotY="12"
+                android:translateY="4"
+                android:rotation="-109">
+                <path
+                    android:name="rect"
+                    android:pathData="M 0 0 L 24 0 L 24 24 L 0 24 Z"
+                    android:fillColor="#000000"
+                    android:fillAlpha="0"
+                    android:strokeAlpha="0"
+                    android:strokeWidth="1"/>
+                <path
+                    android:name="arrow"
+                    android:pathData="M 14 12 C 14 13.105 13.104 14 12 14 C 10.895 14 10 13.105 10 12 C 10 10.896 10.895 10 12 10 C 13.104 10 14 10.896 14 12 Z M 22.146 3.091 C 22.383 2.935 22.699 2.984 22.878 3.204 C 23.056 3.425 23.038 3.744 22.836 3.943 L 16.041 10.627 C 15.729 9.656 15.056 8.847 14.18 8.358 L 22.146 3.091 Z"
+                    android:fillColor="#000000"
+                    android:strokeWidth="1"/>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="group_2">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="rotation"
+                android:startOffset="500"
+                android:duration="1000"
+                android:valueFrom="-109"
+                android:valueTo="0"
+                android:valueType="floatType"
+                android:interpolator="@android:anim/bounce_interpolator"/>
+        </aapt:attr>
+    </target>
+    <target android:name="path_1">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="trimPathStart"
+                android:startOffset="500"
+                android:duration="1000"
+                android:valueFrom="0.9"
+                android:valueTo="0.338"
+                android:valueType="floatType"
+                android:interpolator="@android:anim/bounce_interpolator"/>
+        </aapt:attr>
+    </target>
+    <target android:name="path_2">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="trimPathEnd"
+                android:startOffset="500"
+                android:duration="1000"
+                android:valueFrom="0.7"
+                android:valueTo="0.126"
+                android:valueType="floatType"
+                android:interpolator="@android:anim/bounce_interpolator"/>
+        </aapt:attr>
+    </target>
+</animated-vector>

@@ -5,13 +5,14 @@ set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,liblz4.a,libwebp.a,libflac.a,librlottie.a,libsqlite.a,
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libwebp.a,libflac.a,librlottie.a,libsqlite.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavresample.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavutil.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a,
+${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a,
 ${CMAKE_HOME_DIRECTORY}/boringssl/lib/libssl_${ANDROID_ABI}.a,
 ${CMAKE_HOME_DIRECTORY}/boringssl/lib/libcrypto_${ANDROID_ABI}.a")
 
@@ -44,6 +45,10 @@ set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY
 
 add_library(ssl STATIC IMPORTED)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/boringssl/lib/libssl_${ANDROID_ABI}.a)
+
+add_library(libvpx STATIC IMPORTED)
+set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a)
+
 
 #tgnet
 add_library(mozjpeg STATIC
@@ -376,16 +381,6 @@ target_compile_definitions(webp PUBLIC
 target_include_directories(webp PUBLIC
         libwebp/src)
 
-#lz4
-add_library(lz4 STATIC
-        lz4/lz4.c
-        lz4/lz4frame.c
-        lz4/xxhash.c)
-target_compile_options(lz4 PUBLIC
-        -w -O3)
-set_target_properties(lz4 PROPERTIES
-        ANDROID_ARM_MODE arm)
-
 #sqlite
 add_library(sqlite STATIC
         sqlite/sqlite3.c)
@@ -396,10 +391,41 @@ set_target_properties(sqlite PROPERTIES
 target_compile_definitions(sqlite PUBLIC
         NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE HAVE_STRCHRNUL=0 ANDROID_ARMV6_IDCT)
 
+#breakpad
+add_library(breakpad STATIC
+        third_party/breakpad/src/client/linux/crash_generation/crash_generation_client.cc
+        third_party/breakpad/src/client/linux/handler/exception_handler.cc
+        third_party/breakpad/src/client/linux/handler/minidump_descriptor.cc
+        third_party/breakpad/src/client/linux/log/log.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/thread_info.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/seccomp_unwinder.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
+        third_party/breakpad/src/client/linux/microdump_writer/microdump_writer.cc
+        third_party/breakpad/src/client/linux/minidump_writer/linux_dumper.cc
+        third_party/breakpad/src/client/linux/minidump_writer/linux_ptrace_dumper.cc
+        third_party/breakpad/src/client/linux/minidump_writer/minidump_writer.cc
+        third_party/breakpad/src/client/minidump_file_writer.cc
+        third_party/breakpad/src/common/android/breakpad_getcontext.S
+        third_party/breakpad/src/common/convert_UTF.c
+        third_party/breakpad/src/common/md5.cc
+        third_party/breakpad/src/common/string_conversion.cc
+        third_party/breakpad/src/common/linux/elfutils.cc
+        third_party/breakpad/src/common/linux/file_id.cc
+        third_party/breakpad/src/common/linux/guid_creator.cc
+        third_party/breakpad/src/common/linux/linux_libc_support.cc
+        third_party/breakpad/src/common/linux/memory_mapped_file.cc
+        third_party/breakpad/src/common/linux/safe_readlink.cc)
+set_target_properties(breakpad PROPERTIES ANDROID_ARM_MODE arm)
+set_property(SOURCE third_party/breakpad/src/common/android/breakpad_getcontext.S PROPERTY LANGUAGE C)
+target_include_directories(breakpad PUBLIC
+        third_party/breakpad/src/common/android/include
+        third_party/breakpad/src)
+
+
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
-set(NATIVE_LIB "tmessages.40")
+set(NATIVE_LIB "tmessages.47")
 
 #tmessages
 add_library(${NATIVE_LIB} SHARED
@@ -647,7 +673,12 @@ target_sources(${NATIVE_LIB} PRIVATE
         third_party/libyuv/source/scale_win.cc
         third_party/libyuv/source/scale.cc
         third_party/libyuv/source/video_common.cc
-        third_party/libyuv/source/scale_uv.cc)
+        third_party/libyuv/source/scale_uv.cc
+        third_party/libyuv/source/rotate_lsx.cc
+        third_party/libyuv/source/row_lasx.cc
+        third_party/libyuv/source/row_lsx.cc
+        third_party/libyuv/source/scale_lsx.cc
+        third_party/libyuv/source/scale_rgb.cc)
 
 target_include_directories(${NATIVE_LIB} PUBLIC
         opus/include
@@ -665,8 +696,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         intro
         rlottie/inc
         tgcalls/
-        webrtc/
-        lz4)
+        webrtc/)
 
 target_link_libraries(${NATIVE_LIB}
         -Wl,--whole-archive rnnoise openh264 voipandroid -Wl,--no-whole-archive
@@ -675,7 +705,6 @@ target_link_libraries(${NATIVE_LIB}
         tgcalls_tp
         mozjpeg
         tgnet
-        lz4
         webp
         flac
         rlottie
@@ -685,6 +714,7 @@ target_link_libraries(${NATIVE_LIB}
         avcodec
         avresample
         swresample
+        libvpx
         avutil
         ssl
         crypto
@@ -695,12 +725,8 @@ target_link_libraries(${NATIVE_LIB}
         EGL
         android
         OpenSLES
-        cpufeatures)
-
-if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-    target_link_libraries(${NATIVE_LIB}
-            -Wl,--whole-archive libvpx_yasm -Wl,--no-whole-archive)
-endif()
+        cpufeatures
+        breakpad)
 
 #if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
 #    target_link_libraries(${NATIVE_LIB}

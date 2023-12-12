@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/rtc_event_log/rtc_event_log.h"
@@ -54,10 +55,10 @@ class RtcEventLogImpl final : public RtcEventLog {
 
   void StopOutput() RTC_RUN_ON(task_queue_);
 
-  void WriteConfigsAndHistoryToOutput(const std::string& encoded_configs,
-                                      const std::string& encoded_history)
+  void WriteConfigsAndHistoryToOutput(absl::string_view encoded_configs,
+                                      absl::string_view encoded_history)
       RTC_RUN_ON(task_queue_);
-  void WriteToOutput(const std::string& output_string) RTC_RUN_ON(task_queue_);
+  void WriteToOutput(absl::string_view output_string) RTC_RUN_ON(task_queue_);
 
   void StopLoggingInternal() RTC_RUN_ON(task_queue_);
 
@@ -82,8 +83,8 @@ class RtcEventLogImpl final : public RtcEventLog {
   RTC_NO_UNIQUE_ADDRESS SequenceChecker logging_state_checker_;
   bool logging_state_started_ RTC_GUARDED_BY(logging_state_checker_);
 
-  // Since we are posting tasks bound to |this|,  it is critical that the event
-  // log and its members outlive |task_queue_|. Keep the |task_queue_|
+  // Since we are posting tasks bound to `this`,  it is critical that the event
+  // log and its members outlive `task_queue_`. Keep the `task_queue_`
   // last to ensure it destructs first, or else tasks living on the queue might
   // access other members after they've been torn down.
   std::unique_ptr<rtc::TaskQueue> task_queue_;

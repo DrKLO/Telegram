@@ -248,7 +248,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
         contentView.addView(buttonLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 64, Gravity.BOTTOM));
         buttonLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         buttonLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 12, 16, 12));
@@ -267,7 +267,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
             for (int i = 0; i < chats.size(); i++) {
                 TLRPC.Chat chat = chats.get(i);
                 getMessagesController().putChat(chat, false);
-                getMessagesController().deleteParticipantFromChat(chat.id, currentUser, null);
+                getMessagesController().deleteParticipantFromChat(chat.id, currentUser);
             }
             finishFragment();
         });
@@ -411,7 +411,6 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         int inactiveChatsEndRow;
         int endPaddingPosition;
 
-
         @Override
         public void notifyDataSetChanged() {
             updateRows();
@@ -465,7 +464,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                     break;
                 case 2:
                     view = new ShadowSectionCell(parent.getContext());
-                    Drawable drawable = Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                    Drawable drawable = Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackground(combinedDrawable);
@@ -604,7 +603,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                     TLRPC.Chat chat = inactiveChats.get(a);
                     boolean found = false;
                     for (int i = 0; i < 2; i++) {
-                        String name = i == 0 ? chat.title : chat.username;
+                        String name = i == 0 ? chat.title : ChatObject.getPublicUsername(chat);
                         if (name == null) {
                             continue;
                         }
@@ -671,7 +670,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                 }
             }
 
-            buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
             progressBar.setProgressColor(Theme.getColor(Theme.key_progressCircle));
         };
 
@@ -720,7 +719,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(buttonTextView, 0, null, null, null, cellDelegate, Theme.key_featuredStickers_addButton));
         themeDescriptions.add(new ThemeDescription(buttonTextView, 0, null, null, null, cellDelegate, Theme.key_featuredStickers_addButtonPressed));
         themeDescriptions.add(new ThemeDescription(progressBar, 0, null, null, null, cellDelegate, Theme.key_featuredStickers_addButtonPressed));
-        themeDescriptions.add(new ThemeDescription(hintCell, 0, new Class[]{TooManyCommunitiesHintCell.class}, new String[]{"imageLayout"}, null, null, null, Theme.key_dialogRedIcon));
+        themeDescriptions.add(new ThemeDescription(hintCell, 0, new Class[]{TooManyCommunitiesHintCell.class}, new String[]{"imageLayout"}, null, null, null, Theme.key_text_RedRegular));
 
         return themeDescriptions;
     }

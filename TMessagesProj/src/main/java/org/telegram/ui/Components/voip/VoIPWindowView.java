@@ -15,10 +15,12 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.VoIPFragment;
+import org.webrtc.OrientationHelper;
 
 public class VoIPWindowView extends FrameLayout {
 
@@ -26,7 +28,7 @@ public class VoIPWindowView extends FrameLayout {
     protected boolean lockOnScreen;
 
     private int orientationBefore;
-    private int animationIndex = -1;
+    private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     VelocityTracker velocityTracker;
 
@@ -38,6 +40,7 @@ public class VoIPWindowView extends FrameLayout {
 
         orientationBefore = activity.getRequestedOrientation();
         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        OrientationHelper.cameraRotationDisabled = true;
         if (!enterAnimation) {
             runEnterTransition = true;
         }
@@ -137,11 +140,11 @@ public class VoIPWindowView extends FrameLayout {
                 }
             } else {
                 int account = UserConfig.selectedAccount;
-                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
+                notificationsLocker.lock();
                 animate().translationX(getMeasuredWidth()).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
+                        notificationsLocker.unlock();
                         if (getParent() != null) {
                             activity.setRequestedOrientation(orientationBefore);
 
@@ -152,6 +155,8 @@ public class VoIPWindowView extends FrameLayout {
                             } catch (Exception ignore) {
 
                             }
+
+                            OrientationHelper.cameraRotationDisabled = false;
                         }
                     }
                 }).setDuration(animDuration).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
@@ -217,6 +222,8 @@ public class VoIPWindowView extends FrameLayout {
             WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
             setVisibility(View.GONE);
             wm.removeView(VoIPWindowView.this);
+
+            OrientationHelper.cameraRotationDisabled = false;
         }
     }
 }

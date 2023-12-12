@@ -21,14 +21,14 @@ namespace rnn_vad {
 // Linear predictive coding (LPC) inverse filter length.
 constexpr int kNumLpcCoefficients = 5;
 
-// Given a frame |x|, computes a post-processed version of LPC coefficients
+// Given a frame `x`, computes a post-processed version of LPC coefficients
 // tailored for pitch estimation.
 void ComputeAndPostProcessLpcCoefficients(
     rtc::ArrayView<const float> x,
     rtc::ArrayView<float, kNumLpcCoefficients> lpc_coeffs);
 
-// Computes the LP residual for the input frame |x| and the LPC coefficients
-// |lpc_coeffs|. |y| and |x| can point to the same array for in-place
+// Computes the LP residual for the input frame `x` and the LPC coefficients
+// `lpc_coeffs`. `y` and `x` can point to the same array for in-place
 // computation.
 void ComputeLpResidual(
     rtc::ArrayView<const float, kNumLpcCoefficients> lpc_coeffs,

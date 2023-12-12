@@ -190,7 +190,7 @@ inline bool factorizeValue(uint64_t what, uint32_t &p, uint32_t &q) {
         }
         return true;
     } else {
-        if (LOGS_ENABLED) DEBUG_E("factorization failed for %" PRIu64, what);
+        if (LOGS_ENABLED) DEBUG_FATAL("factorization failed for %" PRIu64, what);
         p = 0;
         q = 0;
         return false;
@@ -200,7 +200,7 @@ inline bool factorizeValue(uint64_t what, uint32_t &p, uint32_t &q) {
 inline bool check_prime(BIGNUM *p) {
     int result = 0;
     if (!BN_primality_test(&result, p, 64, bnContext, 0, NULL)) {
-        if (LOGS_ENABLED) DEBUG_E("OpenSSL error at BN_primality_test");
+        if (LOGS_ENABLED) DEBUG_FATAL("OpenSSL error at BN_primality_test");
         return false;
     }
     return result != 0;
@@ -215,20 +215,20 @@ inline bool isGoodPrime(BIGNUM *p, uint32_t g) {
     BIGNUM *dh_g = BN_new();
 
     if (!BN_set_word(dh_g, 4 * g)) {
-        if (LOGS_ENABLED) DEBUG_E("OpenSSL error at BN_set_word(dh_g, 4 * g)");
+        if (LOGS_ENABLED) DEBUG_FATAL("OpenSSL error at BN_set_word(dh_g, 4 * g)");
         BN_free(t);
         BN_free(dh_g);
         return false;
     }
     if (!BN_mod(t, p, dh_g, bnContext)) {
-        if (LOGS_ENABLED) DEBUG_E("OpenSSL error at BN_mod");
+        if (LOGS_ENABLED) DEBUG_FATAL("OpenSSL error at BN_mod");
         BN_free(t);
         BN_free(dh_g);
         return false;
     }
     uint64_t x = BN_get_word(t);
     if (x >= 4 * g) {
-        if (LOGS_ENABLED) DEBUG_E("OpenSSL error at BN_get_word");
+        if (LOGS_ENABLED) DEBUG_FATAL("OpenSSL error at BN_get_word");
         BN_free(t);
         BN_free(dh_g);
         return false;
@@ -314,6 +314,11 @@ inline bool isGoodGaAndGb(BIGNUM *g_a, BIGNUM *p) {
     }
     BN_free(dif);
     return true;
+}
+
+void Handshake::cleanupServerKeys() {
+    serverPublicKeys.clear();
+    serverPublicKeysFingerprints.clear();
 }
 
 void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
@@ -848,7 +853,7 @@ void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
                         request->encrypted_message = currentDatacenter->createRequestsData(array, nullptr, connection, true);
                     };
 
-                    authKeyPendingRequestId = ConnectionsManager::getInstance(currentDatacenter->instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+                    authKeyPendingRequestId = ConnectionsManager::getInstance(currentDatacenter->instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
                         authKeyPendingMessageId = 0;
                         authKeyPendingRequestId = 0;
                         if (response != nullptr && typeid(*response) == typeid(TL_boolTrue)) {
@@ -935,36 +940,37 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
     if (loadingCdnKeys) {
         return;
     }
-    if (cdnPublicKeysFingerprints.empty()) {
-        if (cdnConfig == nullptr) {
-            cdnConfig = new Config(datacenter->instanceNum, "cdnkeys.dat");
-        }
-        NativeByteBuffer *buffer = cdnConfig->readConfig();
-        if (buffer != nullptr) {
-            uint32_t version = buffer->readUint32(nullptr);
-            if (version >= 1) {
-                size_t count = buffer->readUint32(nullptr);
-                for (uint32_t a = 0; a < count; a++) {
-                    int dcId = buffer->readInt32(nullptr);
-                    cdnPublicKeys[dcId] = buffer->readString(nullptr);
-                    cdnPublicKeysFingerprints[dcId] = buffer->readUint64(nullptr);
-                }
-            }
-            buffer->reuse();
-            if (!cdnPublicKeysFingerprints.empty()) {
-                size_t count = cdnWaitingDatacenters.size();
-                for (uint32_t a = 0; a < count; a++) {
-                    cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
-                }
-                cdnWaitingDatacenters.clear();
-                return;
-            }
-        }
-    }
+    if (LOGS_ENABLED) DEBUG_D("account%u dc%u loadCdnConfig", datacenter->instanceNum, datacenter->datacenterId);
+//    if (cdnPublicKeysFingerprints.empty()) {
+//        if (cdnConfig == nullptr) {
+//            cdnConfig = new Config(datacenter->instanceNum, "cdnkeys.dat");
+//        }
+//        NativeByteBuffer *buffer = cdnConfig->readConfig();
+//        if (buffer != nullptr) {
+//            uint32_t version = buffer->readUint32(nullptr);
+//            if (version >= 1) {
+//                size_t count = buffer->readUint32(nullptr);
+//                for (uint32_t a = 0; a < count; a++) {
+//                    int dcId = buffer->readInt32(nullptr);
+//                    cdnPublicKeys[dcId] = buffer->readString(nullptr);
+//                    cdnPublicKeysFingerprints[dcId] = buffer->readUint64(nullptr);
+//                }
+//            }
+//            buffer->reuse();
+//            if (!cdnPublicKeysFingerprints.empty()) {
+//                size_t count = cdnWaitingDatacenters.size();
+//                for (uint32_t a = 0; a < count; a++) {
+//                    cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
+//                }
+//                cdnWaitingDatacenters.clear();
+//                return;
+//            }
+//        }
+//    }
     loadingCdnKeys = true;
     auto request = new TL_help_getCdnConfig();
 
-    ConnectionsManager::getInstance(datacenter->instanceNum).sendRequest(request, [&, datacenter](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    ConnectionsManager::getInstance(datacenter->instanceNum).sendRequest(request, [&, datacenter](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         if (response != nullptr) {
             auto config = (TL_cdnConfig *) response;
             size_t count = config->public_keys.size();
@@ -1003,6 +1009,7 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
             buffer->reuse();
             BIO_free(keyBio);
             count = cdnWaitingDatacenters.size();
+            if (LOGS_ENABLED) DEBUG_D("account%u dc%u cdnConfig loaded begin handshake", datacenter->instanceNum, datacenter->datacenterId);
             for (uint32_t a = 0; a < count; a++) {
                 cdnWaitingDatacenters[a]->beginHandshake(HandshakeTypeCurrent, false);
             }

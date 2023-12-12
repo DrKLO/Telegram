@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.upstream.crypto;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
@@ -30,8 +31,8 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * A flushing variant of a AES/CTR/NoPadding {@link Cipher}.
  *
- * Unlike a regular {@link Cipher}, the update methods of this class are guaranteed to process all
- * of the bytes input (and hence output the same number of bytes).
+ * <p>Unlike a regular {@link Cipher}, the update methods of this class are guaranteed to process
+ * all of the bytes input (and hence output the same number of bytes).
  */
 public final class AesFlushingCipher {
 
@@ -41,6 +42,10 @@ public final class AesFlushingCipher {
   private final byte[] flushedBlock;
 
   private int pendingXorBytes;
+
+  public AesFlushingCipher(int mode, byte[] secretKey, @Nullable String nonce, long offset) {
+    this(mode, secretKey, getFNV64Hash(nonce), offset);
+  }
 
   public AesFlushingCipher(int mode, byte[] secretKey, long nonce, long offset) {
     try {
@@ -57,7 +62,9 @@ public final class AesFlushingCipher {
       if (startPadding != 0) {
         updateInPlace(new byte[startPadding], 0, startPadding);
       }
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
         | InvalidAlgorithmParameterException e) {
       // Should never happen.
       throw new RuntimeException(e);
@@ -120,4 +127,22 @@ public final class AesFlushingCipher {
     return ByteBuffer.allocate(16).putLong(nonce).putLong(counter).array();
   }
 
+  /**
+   * Returns the hash value of the input as a long using the 64 bit FNV-1a hash function. The hash
+   * values produced by this function are less likely to collide than those produced by {@link
+   * #hashCode()}.
+   */
+  private static long getFNV64Hash(@Nullable String input) {
+    if (input == null) {
+      return 0;
+    }
+
+    long hash = 0;
+    for (int i = 0; i < input.length(); i++) {
+      hash ^= input.charAt(i);
+      // This is equivalent to hash *= 0x100000001b3 (the FNV magic prime number).
+      hash += (hash << 1) + (hash << 4) + (hash << 5) + (hash << 7) + (hash << 8) + (hash << 40);
+    }
+    return hash;
+  }
 }

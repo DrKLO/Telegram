@@ -10,9 +10,11 @@
 
 #ifndef API_VIDEO_CODECS_BITSTREAM_PARSER_H_
 #define API_VIDEO_CODECS_BITSTREAM_PARSER_H_
+
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/types/optional.h"
 #include "api/array_view.h"
 
 namespace webrtc {

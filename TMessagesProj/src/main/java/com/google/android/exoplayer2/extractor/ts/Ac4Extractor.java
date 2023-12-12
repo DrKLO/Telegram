@@ -68,12 +68,12 @@ public final class Ac4Extractor implements Extractor {
   // Extractor implementation.
 
   @Override
-  public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
+  public boolean sniff(ExtractorInput input) throws IOException {
     // Skip any ID3 headers.
     ParsableByteArray scratch = new ParsableByteArray(ID3_HEADER_LENGTH);
     int startPosition = 0;
     while (true) {
-      input.peekFully(scratch.data, /* offset= */ 0, ID3_HEADER_LENGTH);
+      input.peekFully(scratch.getData(), /* offset= */ 0, ID3_HEADER_LENGTH);
       scratch.setPosition(0);
       if (scratch.readUnsignedInt24() != ID3_TAG) {
         break;
@@ -89,7 +89,7 @@ public final class Ac4Extractor implements Extractor {
     int headerPosition = startPosition;
     int validFramesCount = 0;
     while (true) {
-      input.peekFully(scratch.data, /* offset= */ 0, /* length= */ FRAME_HEADER_SIZE);
+      input.peekFully(scratch.getData(), /* offset= */ 0, /* length= */ FRAME_HEADER_SIZE);
       scratch.setPosition(0);
       int syncBytes = scratch.readUnsignedShort();
       if (syncBytes != AC40_SYNCWORD && syncBytes != AC41_SYNCWORD) {
@@ -103,7 +103,7 @@ public final class Ac4Extractor implements Extractor {
         if (++validFramesCount >= 4) {
           return true;
         }
-        int frameSize = Ac4Util.parseAc4SyncframeSize(scratch.data, syncBytes);
+        int frameSize = Ac4Util.parseAc4SyncframeSize(scratch.getData(), syncBytes);
         if (frameSize == C.LENGTH_UNSET) {
           return false;
         }
@@ -132,9 +132,9 @@ public final class Ac4Extractor implements Extractor {
   }
 
   @Override
-  public int read(ExtractorInput input, PositionHolder seekPosition)
-      throws IOException, InterruptedException {
-    int bytesRead = input.read(sampleData.data, /* offset= */ 0, /* length= */ READ_BUFFER_SIZE);
+  public int read(ExtractorInput input, PositionHolder seekPosition) throws IOException {
+    int bytesRead =
+        input.read(sampleData.getData(), /* offset= */ 0, /* length= */ READ_BUFFER_SIZE);
     if (bytesRead == C.RESULT_END_OF_INPUT) {
       return RESULT_END_OF_INPUT;
     }

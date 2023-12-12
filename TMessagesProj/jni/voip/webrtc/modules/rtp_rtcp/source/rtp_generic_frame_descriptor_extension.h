@@ -13,7 +13,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
+#include "api/rtp_parameters.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_generic_frame_descriptor.h"
 
@@ -23,9 +25,9 @@ class RtpGenericFrameDescriptorExtension00 {
  public:
   using value_type = RtpGenericFrameDescriptor;
   static constexpr RTPExtensionType kId = kRtpExtensionGenericFrameDescriptor00;
-  static constexpr char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/"
-      "generic-frame-descriptor-00";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kGenericFrameDescriptorUri00;
+  }
   static constexpr int kMaxSizeBytes = 16;
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,

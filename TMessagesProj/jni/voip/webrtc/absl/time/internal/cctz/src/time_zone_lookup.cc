@@ -28,6 +28,13 @@
 #include <vector>
 #endif
 
+#if defined(__Fuchsia__)
+#include <fuchsia/intl/cpp/fidl.h>
+#include <lib/async-loop/cpp/loop.h>
+#include <lib/fdio/directory.h>
+#include <zircon/types.h>
+#endif
+
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -133,12 +140,55 @@ time_zone local_time_zone() {
   if (CFStringRef tz_name = CFTimeZoneGetName(tz_default)) {
     CFStringEncoding encoding = kCFStringEncodingUTF8;
     CFIndex length = CFStringGetLength(tz_name);
-    buffer.resize(CFStringGetMaximumSizeForEncoding(length, encoding) + 1);
-    if (CFStringGetCString(tz_name, &buffer[0], buffer.size(), encoding)) {
+    CFIndex max_size = CFStringGetMaximumSizeForEncoding(length, encoding) + 1;
+    buffer.resize(static_cast<size_t>(max_size));
+    if (CFStringGetCString(tz_name, &buffer[0], max_size, encoding)) {
       zone = &buffer[0];
     }
   }
   CFRelease(tz_default);
+#endif
+#if defined(__Fuchsia__)
+  std::string primary_tz;
+  [&]() {
+    // Note: We can't use the synchronous FIDL API here because it doesn't
+    // allow timeouts; if the FIDL call failed, local_time_zone() would never
+    // return.
+
+    const zx::duration kTimeout = zx::msec(500);
+
+    // Don't attach to the thread because otherwise the thread's dispatcher
+    // would be set to null when the loop is destroyed, causing any other FIDL
+    // code running on the same thread to crash.
+    async::Loop loop(&kAsyncLoopConfigNeverAttachToThread);
+
+    fuchsia::intl::PropertyProviderHandle handle;
+    zx_status_t status = fdio_service_connect_by_name(
+        fuchsia::intl::PropertyProvider::Name_,
+        handle.NewRequest().TakeChannel().release());
+    if (status != ZX_OK) {
+      return;
+    }
+
+    fuchsia::intl::PropertyProviderPtr intl_provider;
+    status = intl_provider.Bind(std::move(handle), loop.dispatcher());
+    if (status != ZX_OK) {
+      return;
+    }
+
+    intl_provider->GetProfile(
+        [&loop, &primary_tz](fuchsia::intl::Profile profile) {
+          if (!profile.time_zones().empty()) {
+            primary_tz = profile.time_zones()[0].id;
+          }
+          loop.Quit();
+        });
+    loop.Run(zx::deadline_after(kTimeout));
+  }();
+
+  if (!primary_tz.empty()) {
+    zone = primary_tz.c_str();
+  }
 #endif
 
   // Allow ${TZ} to override to default zone.

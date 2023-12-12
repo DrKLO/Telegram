@@ -66,7 +66,7 @@ struct Vp8EncoderConfig {
     // Number of active temporal layers. Set to 0 if not used.
     uint32_t ts_number_layers;
 
-    // Arrays of length |ts_number_layers|, indicating (cumulative) target
+    // Arrays of length `ts_number_layers`, indicating (cumulative) target
     // bitrate and rate decimator (e.g. 4 if every 4th frame is in the given
     // layer) for each active temporal layer, starting with temporal id 0.
     std::array<uint32_t, kMaxLayers> ts_target_bitrate;
@@ -75,7 +75,7 @@ struct Vp8EncoderConfig {
     // The periodicity of the temporal pattern. Set to 0 if not used.
     uint32_t ts_periodicity;
 
-    // Array of length |ts_periodicity| indicating the sequence of temporal id's
+    // Array of length `ts_periodicity` indicating the sequence of temporal id's
     // to assign to incoming frames.
     std::array<uint32_t, kMaxPeriodicity> ts_layer_id;
   };
@@ -106,7 +106,7 @@ class Vp8FrameBufferController {
   // The limits are suggestion-only; the controller is allowed to exceed them.
   virtual void SetQpLimits(size_t stream_index, int min_qp, int max_qp) = 0;
 
-  // Number of streamed controlled by |this|.
+  // Number of streamed controlled by `this`.
   virtual size_t StreamCount() const = 0;
 
   // If this method returns true, the encoder is free to drop frames for
@@ -121,7 +121,7 @@ class Vp8FrameBufferController {
   virtual bool SupportsEncoderFrameDropping(size_t stream_index) const = 0;
 
   // New target bitrate for a stream (each entry in
-  // |bitrates_bps| is for another temporal layer).
+  // `bitrates_bps` is for another temporal layer).
   virtual void OnRatesUpdated(size_t stream_index,
                               const std::vector<uint32_t>& bitrates_bps,
                               int framerate_fps) = 0;
@@ -129,8 +129,8 @@ class Vp8FrameBufferController {
   // Called by the encoder before encoding a frame. Returns a set of overrides
   // the controller wishes to enact in the encoder's configuration.
   // If a value is not overridden, previous overrides are still in effect.
-  // However, if |Vp8EncoderConfig::reset_previous_configuration_overrides|
-  // is set to |true|, all previous overrides are reset.
+  // However, if `Vp8EncoderConfig::reset_previous_configuration_overrides`
+  // is set to `true`, all previous overrides are reset.
   virtual Vp8EncoderConfig UpdateConfiguration(size_t stream_index) = 0;
 
   // Returns the recommended VP8 encode flags needed.
@@ -142,13 +142,13 @@ class Vp8FrameBufferController {
   virtual Vp8FrameConfig NextFrameConfig(size_t stream_index,
                                          uint32_t rtp_timestamp) = 0;
 
-  // Called after the encode step is done. |rtp_timestamp| must match the
+  // Called after the encode step is done. `rtp_timestamp` must match the
   // parameter use in the NextFrameConfig() call.
-  // |is_keyframe| must be true iff the encoder decided to encode this frame as
+  // `is_keyframe` must be true iff the encoder decided to encode this frame as
   // a keyframe.
-  // If |info| is not null, the encoder may update |info| with codec specific
-  // data such as temporal id. |qp| should indicate the frame-level QP this
-  // frame was encoded at. If the encoder does not support extracting this, |qp|
+  // If `info` is not null, the encoder may update `info` with codec specific
+  // data such as temporal id. `qp` should indicate the frame-level QP this
+  // frame was encoded at. If the encoder does not support extracting this, `qp`
   // should be set to 0.
   virtual void OnEncodeDone(size_t stream_index,
                             uint32_t rtp_timestamp,
@@ -161,7 +161,7 @@ class Vp8FrameBufferController {
   virtual void OnFrameDropped(size_t stream_index, uint32_t rtp_timestamp) = 0;
 
   // Called by the encoder when the packet loss rate changes.
-  // |packet_loss_rate| runs between 0.0 (no loss) and 1.0 (everything lost).
+  // `packet_loss_rate` runs between 0.0 (no loss) and 1.0 (everything lost).
   virtual void OnPacketLossRateUpdate(float packet_loss_rate) = 0;
 
   // Called by the encoder when the round trip time changes.

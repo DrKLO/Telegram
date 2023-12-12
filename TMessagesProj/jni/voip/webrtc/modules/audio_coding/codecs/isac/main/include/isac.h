@@ -453,7 +453,7 @@ int16_t WebRtcIsac_SetEncSampRate(ISACStruct* ISAC_main_inst,
 /******************************************************************************
  * WebRtcIsac_GetNewBitStream(...)
  *
- * This function returns encoded data, with the recieved bwe-index in the
+ * This function returns encoded data, with the received bwe-index in the
  * stream. If the rate is set to a value less than bottleneck of codec
  * the new bistream will be re-encoded with the given target rate.
  * It should always return a complete packet, i.e. only called once
@@ -606,7 +606,7 @@ int WebRtcIsac_DecodeRcu(ISACStruct* ISAC_main_inst,
                          int16_t* decoded,
                          int16_t* speechType);
 
-/* If |inst| is a decoder but not an encoder: tell it what sample rate the
+/* If `inst` is a decoder but not an encoder: tell it what sample rate the
    encoder is using, for bandwidth estimation purposes. */
 void WebRtcIsac_SetEncSampRateInDecoder(ISACStruct* inst, int sample_rate_hz);
 

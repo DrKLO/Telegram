@@ -72,21 +72,15 @@ ABSL_NAMESPACE_BEGIN
 // functions. You may provide your own Formatter to enable `absl::StrJoin()` to
 // work with arbitrary types.
 //
-// The following is an example of a custom Formatter that simply uses
-// `std::to_string()` to format an integer as a std::string.
+// The following is an example of a custom Formatter that uses
+// `absl::FormatDuration` to join a list of `absl::Duration`s.
 //
-//   struct MyFormatter {
-//     void operator()(std::string* out, int i) const {
-//       out->append(std::to_string(i));
-//     }
-//   };
-//
-// You would use the above formatter by passing an instance of it as the final
-// argument to `absl::StrJoin()`:
-//
-//   std::vector<int> v = {1, 2, 3, 4};
-//   std::string s = absl::StrJoin(v, "-", MyFormatter());
-//   EXPECT_EQ("1-2-3-4", s);
+//   std::vector<absl::Duration> v = {absl::Seconds(1), absl::Milliseconds(10)};
+//   std::string s =
+//       absl::StrJoin(v, ", ", [](std::string* out, absl::Duration dur) {
+//         absl::StrAppend(out, absl::FormatDuration(dur));
+//       });
+//   EXPECT_EQ("1s, 10ms", s);
 //
 // The following standard formatters are provided within this file:
 //
@@ -144,7 +138,7 @@ strings_internal::DereferenceFormatterImpl<Formatter> DereferenceFormatter(
       std::forward<Formatter>(f));
 }
 
-// Function overload of `DererefenceFormatter()` for using a default
+// Function overload of `DereferenceFormatter()` for using a default
 // `AlphaNumFormatter()`.
 inline strings_internal::DereferenceFormatterImpl<
     strings_internal::AlphaNumFormatterImpl>

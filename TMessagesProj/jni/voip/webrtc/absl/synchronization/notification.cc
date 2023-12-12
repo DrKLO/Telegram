@@ -16,7 +16,6 @@
 
 #include <atomic>
 
-#include "absl/base/attributes.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"

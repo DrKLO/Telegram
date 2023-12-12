@@ -47,6 +47,12 @@ class SubbandErleEstimator {
                                                      : erle_;
   }
 
+  // Returns the non-capped ERLE estimate.
+  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleUnbounded()
+      const {
+    return erle_unbounded_;
+  }
+
   // Returns the ERLE estimate at onsets (only used for testing).
   rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleDuringOnsets()
       const {
@@ -88,6 +94,7 @@ class SubbandErleEstimator {
   std::vector<std::array<float, kFftLengthBy2Plus1>> erle_;
   // ERLE lowered during render onsets.
   std::vector<std::array<float, kFftLengthBy2Plus1>> erle_onset_compensated_;
+  std::vector<std::array<float, kFftLengthBy2Plus1>> erle_unbounded_;
   // Estimation of ERLE during render onsets.
   std::vector<std::array<float, kFftLengthBy2Plus1>> erle_during_onsets_;
   std::vector<std::array<bool, kFftLengthBy2Plus1>> coming_onset_;

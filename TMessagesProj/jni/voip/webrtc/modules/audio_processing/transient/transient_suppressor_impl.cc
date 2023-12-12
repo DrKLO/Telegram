@@ -18,6 +18,7 @@
 #include <deque>
 #include <limits>
 #include <set>
+#include <string>
 
 #include "common_audio/include/audio_util.h"
 #include "common_audio/signal_processing/include/signal_processing_library.h"
@@ -32,7 +33,6 @@
 namespace webrtc {
 
 static const float kMeanIIRCoefficient = 0.5f;
-static const float kVoiceThreshold = 0.02f;
 
 // TODO(aluebs): Check if these values work also for 48kHz.
 static const size_t kMinVoiceBin = 3;
@@ -44,10 +44,27 @@ float ComplexMagnitude(float a, float b) {
   return std::abs(a) + std::abs(b);
 }
 
+std::string GetVadModeLabel(TransientSuppressor::VadMode vad_mode) {
+  switch (vad_mode) {
+    case TransientSuppressor::VadMode::kDefault:
+      return "default";
+    case TransientSuppressor::VadMode::kRnnVad:
+      return "RNN VAD";
+    case TransientSuppressor::VadMode::kNoVad:
+      return "no VAD";
+  }
+}
+
 }  // namespace
 
-TransientSuppressorImpl::TransientSuppressorImpl()
-    : data_length_(0),
+TransientSuppressorImpl::TransientSuppressorImpl(VadMode vad_mode,
+                                                 int sample_rate_hz,
+                                                 int detector_rate_hz,
+                                                 int num_channels)
+    : vad_mode_(vad_mode),
+      voice_probability_delay_unit_(/*delay_num_samples=*/0, sample_rate_hz),
+      analyzed_audio_is_silent_(false),
+      data_length_(0),
       detection_length_(0),
       analysis_length_(0),
       buffer_delay_(0),
@@ -62,13 +79,26 @@ TransientSuppressorImpl::TransientSuppressorImpl()
       use_hard_restoration_(false),
       chunks_since_voice_change_(0),
       seed_(182),
-      using_reference_(false) {}
+      using_reference_(false) {
+  RTC_LOG(LS_INFO) << "VAD mode: " << GetVadModeLabel(vad_mode_);
+  Initialize(sample_rate_hz, detector_rate_hz, num_channels);
+}
 
 TransientSuppressorImpl::~TransientSuppressorImpl() {}
 
-int TransientSuppressorImpl::Initialize(int sample_rate_hz,
-                                        int detection_rate_hz,
-                                        int num_channels) {
+void TransientSuppressorImpl::Initialize(int sample_rate_hz,
+                                         int detection_rate_hz,
+                                         int num_channels) {
+  RTC_DCHECK(sample_rate_hz == ts::kSampleRate8kHz ||
+             sample_rate_hz == ts::kSampleRate16kHz ||
+             sample_rate_hz == ts::kSampleRate32kHz ||
+             sample_rate_hz == ts::kSampleRate48kHz);
+  RTC_DCHECK(detection_rate_hz == ts::kSampleRate8kHz ||
+             detection_rate_hz == ts::kSampleRate16kHz ||
+             detection_rate_hz == ts::kSampleRate32kHz ||
+             detection_rate_hz == ts::kSampleRate48kHz);
+  RTC_DCHECK_GT(num_channels, 0);
+
   switch (sample_rate_hz) {
     case ts::kSampleRate8kHz:
       analysis_length_ = 128u;
@@ -87,25 +117,17 @@ int TransientSuppressorImpl::Initialize(int sample_rate_hz,
       window_ = kBlocks480w1024;
       break;
     default:
-      return -1;
-  }
-  if (detection_rate_hz != ts::kSampleRate8kHz &&
-      detection_rate_hz != ts::kSampleRate16kHz &&
-      detection_rate_hz != ts::kSampleRate32kHz &&
-      detection_rate_hz != ts::kSampleRate48kHz) {
-    return -1;
-  }
-  if (num_channels <= 0) {
-    return -1;
+      RTC_DCHECK_NOTREACHED();
+      return;
   }
 
   detector_.reset(new TransientDetector(detection_rate_hz));
   data_length_ = sample_rate_hz * ts::kChunkSizeMs / 1000;
-  if (data_length_ > analysis_length_) {
-    RTC_NOTREACHED();
-    return -1;
-  }
+  RTC_DCHECK_LE(data_length_, analysis_length_);
   buffer_delay_ = analysis_length_ - data_length_;
+
+  voice_probability_delay_unit_.Initialize(/*delay_num_samples=*/buffer_delay_,
+                                           sample_rate_hz);
 
   complex_analysis_length_ = analysis_length_ / 2 + 1;
   RTC_DCHECK_GE(complex_analysis_length_, kMaxVoiceBin);
@@ -155,28 +177,28 @@ int TransientSuppressorImpl::Initialize(int sample_rate_hz,
   chunks_since_voice_change_ = 0;
   seed_ = 182;
   using_reference_ = false;
-  return 0;
 }
 
-int TransientSuppressorImpl::Suppress(float* data,
-                                      size_t data_length,
-                                      int num_channels,
-                                      const float* detection_data,
-                                      size_t detection_length,
-                                      const float* reference_data,
-                                      size_t reference_length,
-                                      float voice_probability,
-                                      bool key_pressed) {
+float TransientSuppressorImpl::Suppress(float* data,
+                                        size_t data_length,
+                                        int num_channels,
+                                        const float* detection_data,
+                                        size_t detection_length,
+                                        const float* reference_data,
+                                        size_t reference_length,
+                                        float voice_probability,
+                                        bool key_pressed) {
   if (!data || data_length != data_length_ || num_channels != num_channels_ ||
       detection_length != detection_length_ || voice_probability < 0 ||
       voice_probability > 1) {
-    return -1;
+    // The audio is not modified, so the voice probability is returned as is
+    // (delay not applied).
+    return voice_probability;
   }
 
   UpdateKeypress(key_pressed);
   UpdateBuffers(data);
 
-  int result = 0;
   if (detection_enabled_) {
     UpdateRestoration(voice_probability);
 
@@ -189,12 +211,14 @@ int TransientSuppressorImpl::Suppress(float* data,
     float detector_result = detector_->Detect(detection_data, detection_length,
                                               reference_data, reference_length);
     if (detector_result < 0) {
-      return -1;
+      // The audio is not modified, so the voice probability is returned as is
+      // (delay not applied).
+      return voice_probability;
     }
 
     using_reference_ = detector_->using_reference();
 
-    // |detector_smoothed_| follows the |detector_result| when this last one is
+    // `detector_smoothed_` follows the `detector_result` when this last one is
     // increasing, but has an exponential decaying tail to be able to suppress
     // the ringing of keyclicks.
     float smooth_factor = using_reference_ ? 0.6 : 0.1;
@@ -219,11 +243,13 @@ int TransientSuppressorImpl::Suppress(float* data,
                                 : &in_buffer_[i * analysis_length_],
            data_length_ * sizeof(*data));
   }
-  return result;
+
+  // The audio has been modified, return the delayed voice probability.
+  return voice_probability_delay_unit_.Delay(voice_probability);
 }
 
 // This should only be called when detection is enabled. UpdateBuffers() must
-// have been called. At return, |out_buffer_| will be filled with the
+// have been called. At return, `out_buffer_` will be filled with the
 // processed output.
 void TransientSuppressorImpl::Suppress(float* in_ptr,
                                        float* spectral_mean,
@@ -304,15 +330,33 @@ void TransientSuppressorImpl::UpdateKeypress(bool key_pressed) {
 }
 
 void TransientSuppressorImpl::UpdateRestoration(float voice_probability) {
-  const int kHardRestorationOffsetDelay = 3;
-  const int kHardRestorationOnsetDelay = 80;
-
-  bool not_voiced = voice_probability < kVoiceThreshold;
+  bool not_voiced;
+  switch (vad_mode_) {
+    case TransientSuppressor::VadMode::kDefault: {
+      constexpr float kVoiceThreshold = 0.02f;
+      not_voiced = voice_probability < kVoiceThreshold;
+      break;
+    }
+    case TransientSuppressor::VadMode::kRnnVad: {
+      constexpr float kVoiceThreshold = 0.7f;
+      not_voiced = voice_probability < kVoiceThreshold;
+      break;
+    }
+    case TransientSuppressor::VadMode::kNoVad:
+      // Always assume that voice is detected.
+      not_voiced = false;
+      break;
+  }
 
   if (not_voiced == use_hard_restoration_) {
     chunks_since_voice_change_ = 0;
   } else {
     ++chunks_since_voice_change_;
+
+    // Number of 10 ms frames to wait to transition to and from hard
+    // restoration.
+    constexpr int kHardRestorationOffsetDelay = 3;
+    constexpr int kHardRestorationOnsetDelay = 80;
 
     if ((use_hard_restoration_ &&
          chunks_since_voice_change_ > kHardRestorationOffsetDelay) ||
@@ -325,7 +369,7 @@ void TransientSuppressorImpl::UpdateRestoration(float voice_probability) {
 }
 
 // Shift buffers to make way for new data. Must be called after
-// |detection_enabled_| is updated by UpdateKeypress().
+// `detection_enabled_` is updated by UpdateKeypress().
 void TransientSuppressorImpl::UpdateBuffers(float* data) {
   // TODO(aluebs): Change to ring buffer.
   memmove(in_buffer_.get(), &in_buffer_[data_length_],
@@ -350,9 +394,9 @@ void TransientSuppressorImpl::UpdateBuffers(float* data) {
 }
 
 // Restores the unvoiced signal if a click is present.
-// Attenuates by a certain factor every peak in the |fft_buffer_| that exceeds
-// the spectral mean. The attenuation depends on |detector_smoothed_|.
-// If a restoration takes place, the |magnitudes_| are updated to the new value.
+// Attenuates by a certain factor every peak in the `fft_buffer_` that exceeds
+// the spectral mean. The attenuation depends on `detector_smoothed_`.
+// If a restoration takes place, the `magnitudes_` are updated to the new value.
 void TransientSuppressorImpl::HardRestoration(float* spectral_mean) {
   const float detector_result =
       1.f - std::pow(1.f - detector_smoothed_, using_reference_ ? 200.f : 50.f);
@@ -376,10 +420,10 @@ void TransientSuppressorImpl::HardRestoration(float* spectral_mean) {
 }
 
 // Restores the voiced signal if a click is present.
-// Attenuates by a certain factor every peak in the |fft_buffer_| that exceeds
+// Attenuates by a certain factor every peak in the `fft_buffer_` that exceeds
 // the spectral mean and that is lower than some function of the current block
-// frequency mean. The attenuation depends on |detector_smoothed_|.
-// If a restoration takes place, the |magnitudes_| are updated to the new value.
+// frequency mean. The attenuation depends on `detector_smoothed_`.
+// If a restoration takes place, the `magnitudes_` are updated to the new value.
 void TransientSuppressorImpl::SoftRestoration(float* spectral_mean) {
   // Get the spectral magnitude mean of the current block.
   float block_frequency_mean = 0;

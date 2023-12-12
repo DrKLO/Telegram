@@ -30,7 +30,6 @@
 #include "media/base/video_common.h"
 #include "modules/video_coding/include/video_error_codes.h"
 #include "modules/video_coding/utility/simulcast_rate_allocator.h"
-#include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/logging.h"
@@ -108,14 +107,14 @@ int VerifyCodec(const webrtc::VideoCodec* inst) {
   return WEBRTC_VIDEO_CODEC_OK;
 }
 
-bool StreamQualityCompare(const webrtc::SpatialLayer& a,
-                          const webrtc::SpatialLayer& b) {
+bool StreamQualityCompare(const webrtc::SimulcastStream& a,
+                          const webrtc::SimulcastStream& b) {
   return std::tie(a.height, a.width, a.maxBitrate, a.maxFramerate) <
          std::tie(b.height, b.width, b.maxBitrate, b.maxFramerate);
 }
 
 void GetLowestAndHighestQualityStreamIndixes(
-    rtc::ArrayView<webrtc::SpatialLayer> streams,
+    rtc::ArrayView<webrtc::SimulcastStream> streams,
     int* lowest_quality_stream_idx,
     int* highest_quality_stream_idx) {
   const auto lowest_highest_quality_streams =
@@ -149,14 +148,18 @@ namespace webrtc {
 
 SimulcastEncoderAdapter::EncoderContext::EncoderContext(
     std::unique_ptr<VideoEncoder> encoder,
-    bool prefer_temporal_support)
+    bool prefer_temporal_support,
+    VideoEncoder::EncoderInfo primary_info,
+    VideoEncoder::EncoderInfo fallback_info)
     : encoder_(std::move(encoder)),
-      prefer_temporal_support_(prefer_temporal_support) {}
+      prefer_temporal_support_(prefer_temporal_support),
+      primary_info_(std::move(primary_info)),
+      fallback_info_(std::move(fallback_info)) {}
 
 void SimulcastEncoderAdapter::EncoderContext::Release() {
   if (encoder_) {
-    encoder_->RegisterEncodeCompleteCallback(nullptr);
     encoder_->Release();
+    encoder_->RegisterEncodeCompleteCallback(nullptr);
   }
 }
 
@@ -210,7 +213,7 @@ SimulcastEncoderAdapter::StreamContext::ReleaseEncoderContext() && {
 void SimulcastEncoderAdapter::StreamContext::OnKeyframe(Timestamp timestamp) {
   is_keyframe_needed_ = false;
   if (framerate_controller_) {
-    framerate_controller_->AddFrame(timestamp.ms());
+    framerate_controller_->KeepFrame(timestamp.us() * 1000);
   }
 }
 
@@ -219,12 +222,7 @@ bool SimulcastEncoderAdapter::StreamContext::ShouldDropFrame(
   if (!framerate_controller_) {
     return false;
   }
-
-  if (framerate_controller_->DropFrame(timestamp.ms())) {
-    return true;
-  }
-  framerate_controller_->AddFrame(timestamp.ms());
-  return false;
+  return framerate_controller_->ShouldDropFrame(timestamp.us() * 1000);
 }
 
 EncodedImageCallback::Result
@@ -283,7 +281,7 @@ int SimulcastEncoderAdapter::Release() {
   RTC_DCHECK_RUN_ON(&encoder_queue_);
 
   while (!stream_contexts_.empty()) {
-    // Move the encoder instances and put it on the |cached_encoder_contexts_|
+    // Move the encoder instances and put it on the `cached_encoder_contexts_`
     // where it may possibly be reused from (ordering does not matter).
     cached_encoder_contexts_.push_front(
         std::move(stream_contexts_.back()).ReleaseEncoderContext());
@@ -295,7 +293,7 @@ int SimulcastEncoderAdapter::Release() {
   // It's legal to move the encoder to another queue now.
   encoder_queue_.Detach();
 
-  rtc::AtomicOps::ReleaseStore(&inited_, 0);
+  inited_.store(0);
 
   return WEBRTC_VIDEO_CODEC_OK;
 }
@@ -329,8 +327,8 @@ int SimulcastEncoderAdapter::InitEncode(
   int highest_quality_stream_idx = 0;
   if (!is_legacy_singlecast) {
     GetLowestAndHighestQualityStreamIndixes(
-        rtc::ArrayView<SpatialLayer>(codec_.simulcastStream,
-                                     total_streams_count_),
+        rtc::ArrayView<SimulcastStream>(codec_.simulcastStream,
+                                        total_streams_count_),
         &lowest_quality_stream_idx, &highest_quality_stream_idx);
   }
 
@@ -344,20 +342,24 @@ int SimulcastEncoderAdapter::InitEncode(
 
   // Two distinct scenarios:
   // * Singlecast (total_streams_count == 1) or simulcast with simulcast-capable
-  //   underlaying encoder implementation. SEA operates in bypass mode: original
-  //   settings are passed to the underlaying encoder, frame encode complete
-  //   callback is not intercepted.
+  //   underlaying encoder implementation if active_streams_count > 1. SEA
+  //   operates in bypass mode: original settings are passed to the underlaying
+  //   encoder, frame encode complete callback is not intercepted.
   // * Multi-encoder simulcast or singlecast if layers are deactivated
-  //   (total_streams_count > 1 and active_streams_count >= 1). SEA creates
-  //   N=active_streams_count encoders and configures each to produce a single
-  //   stream.
+  //   (active_streams_count >= 1). SEA creates N=active_streams_count encoders
+  //   and configures each to produce a single stream.
 
+  int active_streams_count = CountActiveStreams(*inst);
+  // If we only have a single active layer it is better to create an encoder
+  // with only one configured layer than creating it with all-but-one disabled
+  // layers because that way we control scaling.
+  bool separate_encoders_needed =
+      !encoder_context->encoder().GetEncoderInfo().supports_simulcast ||
+      active_streams_count == 1;
   // Singlecast or simulcast with simulcast-capable underlaying encoder.
-  if (total_streams_count_ == 1 ||
-      encoder_context->encoder().GetEncoderInfo().supports_simulcast) {
+  if (total_streams_count_ == 1 || !separate_encoders_needed) {
     int ret = encoder_context->encoder().InitEncode(&codec_, settings);
     if (ret >= 0) {
-      int active_streams_count = CountActiveStreams(*inst);
       stream_contexts_.emplace_back(
           /*parent=*/nullptr, std::move(encoder_context),
           /*framerate_controller=*/nullptr, /*stream_idx=*/0, codec_.width,
@@ -365,7 +367,7 @@ int SimulcastEncoderAdapter::InitEncode(
       bypass_mode_ = true;
 
       DestroyStoredEncoders();
-      rtc::AtomicOps::ReleaseStore(&inited_, 1);
+      inited_.store(1);
       return WEBRTC_VIDEO_CODEC_OK;
     }
 
@@ -407,7 +409,7 @@ int SimulcastEncoderAdapter::InitEncode(
     }
 
     // Intercept frame encode complete callback only for upper streams, where
-    // we need to set a correct stream index. Set |parent| to nullptr for the
+    // we need to set a correct stream index. Set `parent` to nullptr for the
     // lowest stream to bypass the callback.
     SimulcastEncoderAdapter* parent = stream_idx > 0 ? this : nullptr;
 
@@ -421,7 +423,7 @@ int SimulcastEncoderAdapter::InitEncode(
   // To save memory, don't store encoders that we don't use.
   DestroyStoredEncoders();
 
-  rtc::AtomicOps::ReleaseStore(&inited_, 1);
+  inited_.store(1);
   return WEBRTC_VIDEO_CODEC_OK;
 }
 
@@ -675,7 +677,7 @@ void SimulcastEncoderAdapter::OnDroppedFrame(size_t stream_idx) {
 }
 
 bool SimulcastEncoderAdapter::Initialized() const {
-  return rtc::AtomicOps::AcquireLoad(&inited_) == 1;
+  return inited_.load() == 1;
 }
 
 void SimulcastEncoderAdapter::DestroyStoredEncoders() {
@@ -686,13 +688,13 @@ void SimulcastEncoderAdapter::DestroyStoredEncoders() {
 
 std::unique_ptr<SimulcastEncoderAdapter::EncoderContext>
 SimulcastEncoderAdapter::FetchOrCreateEncoderContext(
-    bool is_lowest_quality_stream) {
+    bool is_lowest_quality_stream) const {
   bool prefer_temporal_support = fallback_encoder_factory_ != nullptr &&
                                  is_lowest_quality_stream &&
                                  prefer_temporal_support_on_base_layer_;
 
-  // Toggling of |prefer_temporal_support| requires encoder recreation. Find
-  // and reuse encoder with desired |prefer_temporal_support|. Otherwise, if
+  // Toggling of `prefer_temporal_support` requires encoder recreation. Find
+  // and reuse encoder with desired `prefer_temporal_support`. Otherwise, if
   // there is no such encoder in the cache, create a new instance.
   auto encoder_context_iter =
       std::find_if(cached_encoder_contexts_.begin(),
@@ -706,16 +708,45 @@ SimulcastEncoderAdapter::FetchOrCreateEncoderContext(
     encoder_context = std::move(*encoder_context_iter);
     cached_encoder_contexts_.erase(encoder_context_iter);
   } else {
-    std::unique_ptr<VideoEncoder> encoder =
+    std::unique_ptr<VideoEncoder> primary_encoder =
         primary_encoder_factory_->CreateVideoEncoder(video_format_);
+
+    std::unique_ptr<VideoEncoder> fallback_encoder;
     if (fallback_encoder_factory_ != nullptr) {
-      encoder = CreateVideoEncoderSoftwareFallbackWrapper(
-          fallback_encoder_factory_->CreateVideoEncoder(video_format_),
-          std::move(encoder), prefer_temporal_support);
+      fallback_encoder =
+          fallback_encoder_factory_->CreateVideoEncoder(video_format_);
+    }
+
+    std::unique_ptr<VideoEncoder> encoder;
+    VideoEncoder::EncoderInfo primary_info;
+    VideoEncoder::EncoderInfo fallback_info;
+
+    if (primary_encoder != nullptr) {
+      primary_info = primary_encoder->GetEncoderInfo();
+      fallback_info = primary_info;
+
+      if (fallback_encoder == nullptr) {
+        encoder = std::move(primary_encoder);
+      } else {
+        encoder = CreateVideoEncoderSoftwareFallbackWrapper(
+            std::move(fallback_encoder), std::move(primary_encoder),
+            prefer_temporal_support);
+      }
+    } else if (fallback_encoder != nullptr) {
+      RTC_LOG(LS_WARNING) << "Failed to create primary " << video_format_.name
+                          << " encoder. Use fallback encoder.";
+      fallback_info = fallback_encoder->GetEncoderInfo();
+      primary_info = fallback_info;
+      encoder = std::move(fallback_encoder);
+    } else {
+      RTC_LOG(LS_ERROR) << "Failed to create primary and fallback "
+                        << video_format_.name << " encoders.";
+      return nullptr;
     }
 
     encoder_context = std::make_unique<SimulcastEncoderAdapter::EncoderContext>(
-        std::move(encoder), prefer_temporal_support);
+        std::move(encoder), prefer_temporal_support, primary_info,
+        fallback_info);
   }
 
   encoder_context->encoder().RegisterEncodeCompleteCallback(
@@ -730,7 +761,7 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
     bool is_lowest_quality_stream,
     bool is_highest_quality_stream) {
   webrtc::VideoCodec codec_params = codec;
-  const SpatialLayer& stream_params = codec.simulcastStream[stream_idx];
+  const SimulcastStream& stream_params = codec.simulcastStream[stream_idx];
 
   codec_params.numberOfSimulcastStreams = 0;
   codec_params.width = stream_params.width;
@@ -740,6 +771,7 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
   codec_params.maxFramerate = stream_params.maxFramerate;
   codec_params.qpMax = stream_params.qpMax;
   codec_params.active = stream_params.active;
+  codec_params.SetScalabilityMode(stream_params.GetScalabilityMode());
   // Settings that are based on stream/resolution.
   if (is_lowest_quality_stream) {
     // Settings for lowest spatial resolutions.
@@ -755,12 +787,12 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
     codec_params.VP8()->numberOfTemporalLayers =
         stream_params.numberOfTemporalLayers;
     if (!is_highest_quality_stream) {
-      // For resolutions below CIF, set the codec |complexity| parameter to
+      // For resolutions below CIF, set the codec `complexity` parameter to
       // kComplexityHigher, which maps to cpu_used = -4.
       int pixels_per_frame = codec_params.width * codec_params.height;
       if (pixels_per_frame < 352 * 288) {
-        codec_params.VP8()->complexity =
-            webrtc::VideoCodecComplexity::kComplexityHigher;
+        codec_params.SetVideoEncoderComplexity(
+            webrtc::VideoCodecComplexity::kComplexityHigher);
       }
       // Turn off denoising for all streams but the highest resolution.
       codec_params.VP8()->denoisingOn = false;
@@ -785,12 +817,16 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
 void SimulcastEncoderAdapter::OverrideFromFieldTrial(
     VideoEncoder::EncoderInfo* info) const {
   if (encoder_info_override_.requested_resolution_alignment()) {
-    info->requested_resolution_alignment =
-        *encoder_info_override_.requested_resolution_alignment();
+    info->requested_resolution_alignment = cricket::LeastCommonMultiple(
+        info->requested_resolution_alignment,
+        *encoder_info_override_.requested_resolution_alignment());
     info->apply_alignment_to_all_simulcast_layers =
+        info->apply_alignment_to_all_simulcast_layers ||
         encoder_info_override_.apply_alignment_to_all_simulcast_layers();
   }
-  if (!encoder_info_override_.resolution_bitrate_limits().empty()) {
+  // Override resolution bitrate limits unless they're set already.
+  if (info->resolution_bitrate_limits.empty() &&
+      !encoder_info_override_.resolution_bitrate_limits().empty()) {
     info->resolution_bitrate_limits =
         encoder_info_override_.resolution_bitrate_limits();
   }
@@ -811,7 +847,37 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
   encoder_info.apply_alignment_to_all_simulcast_layers = false;
   encoder_info.supports_native_handle = true;
   encoder_info.scaling_settings.thresholds = absl::nullopt;
+
   if (stream_contexts_.empty()) {
+    // GetEncoderInfo queried before InitEncode. Only alignment info is needed
+    // to be filled.
+    // Create one encoder and query it.
+
+    std::unique_ptr<SimulcastEncoderAdapter::EncoderContext> encoder_context =
+        FetchOrCreateEncoderContext(/*is_lowest_quality_stream=*/true);
+    if (encoder_context == nullptr) {
+      return encoder_info;
+    }
+
+    const VideoEncoder::EncoderInfo& primary_info =
+        encoder_context->PrimaryInfo();
+    const VideoEncoder::EncoderInfo& fallback_info =
+        encoder_context->FallbackInfo();
+
+    encoder_info.requested_resolution_alignment = cricket::LeastCommonMultiple(
+        primary_info.requested_resolution_alignment,
+        fallback_info.requested_resolution_alignment);
+
+    encoder_info.apply_alignment_to_all_simulcast_layers =
+        primary_info.apply_alignment_to_all_simulcast_layers ||
+        fallback_info.apply_alignment_to_all_simulcast_layers;
+
+    if (!primary_info.supports_simulcast || !fallback_info.supports_simulcast) {
+      encoder_info.apply_alignment_to_all_simulcast_layers = true;
+    }
+
+    cached_encoder_contexts_.emplace_back(std::move(encoder_context));
+
     OverrideFromFieldTrial(&encoder_info);
     return encoder_info;
   }
@@ -821,7 +887,6 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
   for (size_t i = 0; i < stream_contexts_.size(); ++i) {
     VideoEncoder::EncoderInfo encoder_impl_info =
         stream_contexts_[i].encoder().GetEncoderInfo();
-
     if (i == 0) {
       // Encoder name indicates names of all sub-encoders.
       encoder_info.implementation_name += " (";
@@ -833,7 +898,7 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
           encoder_impl_info.has_trusted_rate_controller;
       encoder_info.is_hardware_accelerated =
           encoder_impl_info.is_hardware_accelerated;
-      encoder_info.has_internal_source = encoder_impl_info.has_internal_source;
+      encoder_info.is_qp_trusted = encoder_impl_info.is_qp_trusted;
     } else {
       encoder_info.implementation_name += ", ";
       encoder_info.implementation_name += encoder_impl_info.implementation_name;
@@ -853,14 +918,22 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
       encoder_info.is_hardware_accelerated |=
           encoder_impl_info.is_hardware_accelerated;
 
-      // Has internal source only if all encoders have it.
-      encoder_info.has_internal_source &= encoder_impl_info.has_internal_source;
+      // Treat QP from frame/slice/tile header as average QP only if all
+      // encoders report it as average QP.
+      encoder_info.is_qp_trusted =
+          encoder_info.is_qp_trusted.value_or(true) &&
+          encoder_impl_info.is_qp_trusted.value_or(true);
     }
     encoder_info.fps_allocation[i] = encoder_impl_info.fps_allocation[0];
     encoder_info.requested_resolution_alignment = cricket::LeastCommonMultiple(
         encoder_info.requested_resolution_alignment,
         encoder_impl_info.requested_resolution_alignment);
-    if (encoder_impl_info.apply_alignment_to_all_simulcast_layers) {
+    // request alignment on all layers if any of the encoders may need it, or
+    // if any non-top layer encoder requests a non-trivial alignment.
+    if (encoder_impl_info.apply_alignment_to_all_simulcast_layers ||
+        (encoder_impl_info.requested_resolution_alignment > 1 &&
+         (codec_.simulcastStream[i].height < codec_.height ||
+          codec_.simulcastStream[i].width < codec_.width))) {
       encoder_info.apply_alignment_to_all_simulcast_layers = true;
     }
   }

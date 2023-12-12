@@ -14,8 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
@@ -34,6 +32,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.IntDef;
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -49,13 +50,15 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ShareLocationDrawable;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 @TargetApi(23)
@@ -74,12 +77,14 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
     private int[] colors;
 
+    @ActionType
     private int currentType;
     private boolean flickerButton;
 
     private String currentGroupCreateAddress;
     private String currentGroupCreateDisplayAddress;
     private Location currentGroupCreateLocation;
+    private boolean showingAsBottomSheet;
 
     private ActionIntroQRLoginDelegate qrLoginDelegate;
 
@@ -89,6 +94,19 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     public static final int ACTION_TYPE_CHANGE_PHONE_NUMBER = 3;
     public static final int ACTION_TYPE_NEARBY_LOCATION_ENABLED = 4;
     public static final int ACTION_TYPE_QR_LOGIN = 5;
+    public static final int ACTION_TYPE_SET_PASSCODE = 6;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+            ACTION_TYPE_CHANNEL_CREATE,
+            ACTION_TYPE_NEARBY_LOCATION_ACCESS,
+            ACTION_TYPE_NEARBY_GROUP_CREATE,
+            ACTION_TYPE_CHANGE_PHONE_NUMBER,
+            ACTION_TYPE_NEARBY_LOCATION_ENABLED,
+            ACTION_TYPE_QR_LOGIN,
+            ACTION_TYPE_SET_PASSCODE
+    })
+    public @interface ActionType {}
 
     public static final int CAMERA_PERMISSION_REQUEST_CODE = 34;
 
@@ -96,30 +114,30 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         void didFindQRCode(String code);
     }
 
-    public ActionIntroActivity(int type) {
+    public ActionIntroActivity(@ActionType int type) {
         super();
         currentType = type;
     }
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
-        actionBar.setCastShadows(false);
-        actionBar.setAddToContainer(false);
-        if (!AndroidUtilities.isTablet()) {
-            actionBar.showActionModeTop();
-        }
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
+        if (actionBar != null) {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
+            actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
+            actionBar.setCastShadows(false);
+            actionBar.setAddToContainer(false);
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
                 }
-            }
-        });
+            });
+        }
 
         fragmentView = new ViewGroup(context) {
 
@@ -128,25 +146,32 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 int width = MeasureSpec.getSize(widthMeasureSpec);
                 int height = MeasureSpec.getSize(heightMeasureSpec);
 
-                actionBar.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
-
+                if (actionBar != null) {
+                    actionBar.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
+                }
                 switch (currentType) {
                     case ACTION_TYPE_CHANNEL_CREATE: {
                         if (width > height) {
                             imageView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.45f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.68f), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
                         } else {
                             imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.399f), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(86), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(72), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
                         }
                         break;
                     }
                     case ACTION_TYPE_QR_LOGIN: {
-                        if (width > height) {
+                        if (showingAsBottomSheet) {
+                            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.32f), MeasureSpec.EXACTLY));
+                            titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                            descriptionLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            height = imageView.getMeasuredHeight() + titleTextView.getMeasuredHeight() + AndroidUtilities.dp(20) + titleTextView.getMeasuredHeight() + descriptionLayout.getMeasuredHeight() + buttonTextView.getMeasuredHeight();
+                        } else if (width > height) {
                             imageView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.45f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.68f), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionLayout.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
@@ -159,17 +184,26 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         }
                         break;
                     }
+                    case ACTION_TYPE_SET_PASSCODE:
                     case ACTION_TYPE_NEARBY_LOCATION_ACCESS:
                     case ACTION_TYPE_NEARBY_LOCATION_ENABLED: {
-                        imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.EXACTLY));
+                        if (currentType == ACTION_TYPE_SET_PASSCODE) {
+                            imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(140), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(140), MeasureSpec.EXACTLY));
+                        } else {
+                            imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.EXACTLY));
+                        }
                         if (width > height) {
                             titleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
                         } else {
                             titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            if (currentType == ACTION_TYPE_SET_PASSCODE) {
+                                buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(24 * 2), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
+                            } else {
+                                buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(72), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
+                            }
                         }
                         break;
                     }
@@ -192,18 +226,18 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         break;
                     }
                     case ACTION_TYPE_CHANGE_PHONE_NUMBER: {
+                        imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(150), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(150), MeasureSpec.EXACTLY));
+
                         if (width > height) {
-                            imageView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.45f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.78f), MeasureSpec.AT_MOST));
                             subtitleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.45f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
                         } else {
-                            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.44f), MeasureSpec.AT_MOST));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            subtitleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            subtitleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(24 * 2), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
                         }
                         break;
                     }
@@ -214,7 +248,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                actionBar.layout(0, 0, r, actionBar.getMeasuredHeight());
+                if (actionBar != null) {
+                    actionBar.layout(0, 0, r, actionBar.getMeasuredHeight());
+                }
 
                 int width = r - l;
                 int height = b - t;
@@ -247,7 +283,21 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         break;
                     }
                     case ACTION_TYPE_QR_LOGIN: {
-                        if (r > b) {
+                        if (showingAsBottomSheet) {
+                            int y;
+
+                            y = 0;
+                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            y = (int) (height * 0.403f);
+                            titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                            y = (int) (height * 0.631f);
+
+                            int x = (getMeasuredWidth() - descriptionLayout.getMeasuredWidth()) / 2;
+                            descriptionLayout.layout(x, y, x + descriptionLayout.getMeasuredWidth(), y + descriptionLayout.getMeasuredHeight());
+                            x = (width - buttonTextView.getMeasuredWidth()) / 2;
+                            y = (int) (height * 0.853f);
+                            buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+                        } else if (r > b) {
                             int y = (height - imageView.getMeasuredHeight()) / 2;
                             imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
                             int x = (int) (width * 0.4f);
@@ -282,6 +332,34 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         }
                         break;
                     }
+                    case ACTION_TYPE_SET_PASSCODE: {
+                        if (r > b) {
+                            int y = (height - imageView.getMeasuredHeight()) / 2;
+                            int x = (int) (width * 0.5f - imageView.getMeasuredWidth()) / 2;
+                            imageView.layout(x, y, x + imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            x = (int) (width * 0.4f);
+                            y = (int) (height * 0.14f);
+                            titleTextView.layout(x, y, x + titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                            x = (int) (width * 0.4f);
+                            y = (int) (height * 0.31f);
+                            descriptionText.layout(x, y, x + descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
+                            x = (int) (width * 0.4f + (width * 0.6f - buttonTextView.getMeasuredWidth()) / 2);
+                            y = (int) (height * 0.78f);
+                            buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+                        } else {
+                            int y = (int) (height * 0.3f);
+                            int x = (width - imageView.getMeasuredWidth()) / 2;
+                            imageView.layout(x, y, x + imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            y += imageView.getMeasuredHeight() + AndroidUtilities.dp(24);
+                            titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                            y += titleTextView.getTextSize() + AndroidUtilities.dp(16);
+                            descriptionText.layout(0, y, descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
+                            x = (width - buttonTextView.getMeasuredWidth()) / 2;
+                            y = height - buttonTextView.getMeasuredHeight() - AndroidUtilities.dp(48);
+                            buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+                        }
+                        break;
+                    }
                     case ACTION_TYPE_NEARBY_LOCATION_ACCESS:
                     case ACTION_TYPE_NEARBY_LOCATION_ENABLED: {
                         if (r > b) {
@@ -306,7 +384,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                             y = (int) (height * 0.493f);
                             descriptionText.layout(0, y, descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
                             x = (width - buttonTextView.getMeasuredWidth()) / 2;
-                            y = (int) (height * 0.71f);
+                            y = (int) (height * 0.853f);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
                         }
                         break;
@@ -349,10 +427,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     case ACTION_TYPE_CHANGE_PHONE_NUMBER: {
                         if (r > b) {
                             int y = (int) (height * 0.95f - imageView.getMeasuredHeight()) / 2;
-                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
-                            y += imageView.getMeasuredHeight() + AndroidUtilities.dp(10);
-                            subtitleTextView.layout(0, y, subtitleTextView.getMeasuredWidth(), y + subtitleTextView.getMeasuredHeight());
-                            int x = (int) (width * 0.4f);
+                            int x = (int) (getWidth() * 0.35f - imageView.getMeasuredWidth());
+                            imageView.layout(x, y, x + imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            x = (int) (width * 0.4f);
                             y = (int) (height * 0.12f);
                             titleTextView.layout(x, y, x + titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
                             x = (int) (width * 0.4f);
@@ -361,18 +438,25 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                             x = (int) (width * 0.4f + (width * 0.6f - buttonTextView.getMeasuredWidth()) / 2);
                             y = (int) (height * 0.8f);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+
+                            x = (int) (width * 0.4f + (width * 0.6f - subtitleTextView.getMeasuredWidth()) / 2);
+                            y -= subtitleTextView.getMeasuredHeight() + AndroidUtilities.dp(16);
+                            subtitleTextView.layout(x, y, x + subtitleTextView.getMeasuredWidth(), y + subtitleTextView.getMeasuredHeight());
                         } else {
-                            int y = (int) (height * 0.2229f);
-                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
-                            y = (int) (height * 0.352f);
+                            int y = (int) (height * 0.3f);
+                            int x = (width - imageView.getMeasuredWidth()) / 2;
+                            imageView.layout(x, y, x + imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            y += imageView.getMeasuredHeight() + AndroidUtilities.dp(24);
                             titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
-                            y = (int) (height * 0.409f);
-                            subtitleTextView.layout(0, y, subtitleTextView.getMeasuredWidth(), y + subtitleTextView.getMeasuredHeight());
-                            y = (int) (height * 0.468f);
+                            y += titleTextView.getTextSize() + AndroidUtilities.dp(16);
                             descriptionText.layout(0, y, descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
-                            int x = (width - buttonTextView.getMeasuredWidth()) / 2;
-                            y = (int) (height * 0.805f);
+                            x = (width - buttonTextView.getMeasuredWidth()) / 2;
+                            y = height - buttonTextView.getMeasuredHeight() - AndroidUtilities.dp(48);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+
+                            x = (width - subtitleTextView.getMeasuredWidth()) / 2;
+                            y -= subtitleTextView.getMeasuredHeight() + AndroidUtilities.dp(32);
+                            subtitleTextView.layout(x, y, x + subtitleTextView.getMeasuredWidth(), y + subtitleTextView.getMeasuredHeight());
                         }
                         break;
                     }
@@ -383,7 +467,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         ViewGroup viewGroup = (ViewGroup) fragmentView;
         viewGroup.setOnTouchListener((v, event) -> true);
 
-        viewGroup.addView(actionBar);
+        if (actionBar != null) {
+            viewGroup.addView(actionBar);
+        }
 
         imageView = new RLottieImageView(context);
         viewGroup.addView(imageView);
@@ -396,7 +482,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         viewGroup.addView(titleTextView);
 
         subtitleTextView = new TextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        subtitleTextView.setTextColor(Theme.getColor(currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteBlackText));
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         subtitleTextView.setSingleLine(true);
@@ -414,7 +500,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         descriptionText.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText.setLineSpacing(AndroidUtilities.dp(2), 1);
         descriptionText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        if (currentType == ACTION_TYPE_NEARBY_GROUP_CREATE) {
+        if (currentType == ACTION_TYPE_SET_PASSCODE || currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER) {
+            descriptionText.setPadding(AndroidUtilities.dp(48), 0, AndroidUtilities.dp(48), 0);
+        } else if (currentType == ACTION_TYPE_NEARBY_GROUP_CREATE) {
             descriptionText.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
         } else {
             descriptionText.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
@@ -503,7 +591,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     }
                     cellFlickerDrawable.setParentWidth(getMeasuredWidth());
                     AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                    cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
+                    cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4), null);
                     invalidate();
                 }
             }
@@ -514,7 +602,8 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        int buttonRadiusDp = currentType == ACTION_TYPE_SET_PASSCODE || currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER || currentType == ACTION_TYPE_CHANNEL_CREATE ? 6 : 4;
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, buttonRadiusDp));
         viewGroup.addView(buttonTextView);
         buttonTextView.setOnClickListener(v -> {
             if (getParentActivity() == null) {
@@ -538,8 +627,12 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     presentFragment(new ChannelCreateActivity(args), true);
                     break;
                 }
+                case ACTION_TYPE_SET_PASSCODE: {
+                    presentFragment(new PasscodeActivity(PasscodeActivity.TYPE_SETUP_CODE), true);
+                    break;
+                }
                 case ACTION_TYPE_NEARBY_LOCATION_ACCESS: {
-                    getParentActivity().requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+                    getParentActivity().requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, BasePermissionsActivity.REQUEST_CODE_GEOLOCATION);
                     break;
                 }
                 case ACTION_TYPE_NEARBY_LOCATION_ENABLED: {
@@ -567,7 +660,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("PhoneNumberChangeTitle", R.string.PhoneNumberChangeTitle));
                     builder.setMessage(LocaleController.getString("PhoneNumberAlert", R.string.PhoneNumberAlert));
-                    builder.setPositiveButton(LocaleController.getString("Change", R.string.Change), (dialogInterface, i) -> presentFragment(new ChangePhoneActivity(), true));
+                    builder.setPositiveButton(LocaleController.getString("Change", R.string.Change), (dialogInterface, i) -> presentFragment(new LoginActivity().changePhoneNumber(), true));
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
                     break;
@@ -586,6 +679,23 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 flickerButton = true;
                 break;
             }
+            case ACTION_TYPE_SET_PASSCODE: {
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                imageView.setAnimation(R.raw.utyan_passcode, 200, 200);
+                imageView.setFocusable(false);
+                imageView.setOnClickListener(v -> {
+                    if (!imageView.getAnimatedDrawable().isRunning()) {
+                        imageView.getAnimatedDrawable().setCurrentFrame(0, false);
+                        imageView.playAnimation();
+                    }
+                });
+                titleTextView.setText(LocaleController.getString("Passcode", R.string.Passcode));
+                descriptionText.setText(LocaleController.getString("ChangePasscodeInfoShort", R.string.ChangePasscodeInfoShort));
+                buttonTextView.setText(LocaleController.getString("EnablePasscode", R.string.EnablePasscode));
+                imageView.playAnimation();
+                flickerButton = true;
+                break;
+            }
             case ACTION_TYPE_NEARBY_LOCATION_ACCESS: {
                 imageView.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(100), Theme.getColor(Theme.key_chats_archiveBackground)));
                 imageView.setImageDrawable(new ShareLocationDrawable(context, 3));
@@ -593,6 +703,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 titleTextView.setText(LocaleController.getString("PeopleNearby", R.string.PeopleNearby));
                 descriptionText.setText(LocaleController.getString("PeopleNearbyAccessInfo", R.string.PeopleNearbyAccessInfo));
                 buttonTextView.setText(LocaleController.getString("PeopleNearbyAllowAccess", R.string.PeopleNearbyAllowAccess));
+                flickerButton = true;
                 break;
             }
             case ACTION_TYPE_NEARBY_LOCATION_ENABLED: {
@@ -628,23 +739,29 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
             }
             case ACTION_TYPE_CHANGE_PHONE_NUMBER: {
                 subtitleTextView.setVisibility(View.VISIBLE);
-                drawable1 = context.getResources().getDrawable(R.drawable.sim_old);
-                drawable2 = context.getResources().getDrawable(R.drawable.sim_new);
-                drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_changephoneinfo_image), PorterDuff.Mode.MULTIPLY));
-                drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_changephoneinfo_image2), PorterDuff.Mode.MULTIPLY));
-                imageView.setImageDrawable(new CombinedDrawable(drawable1, drawable2));
-                imageView.setScaleType(ImageView.ScaleType.CENTER);
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                imageView.setAnimation(R.raw.utyan_change_number, 200, 200);
+                imageView.setOnClickListener(v -> {
+                    if (!imageView.getAnimatedDrawable().isRunning()) {
+                        imageView.getAnimatedDrawable().setCurrentFrame(0, false);
+                        imageView.playAnimation();
+                    }
+                });
+
                 UserConfig userConfig = getUserConfig();
                 TLRPC.User user = getMessagesController().getUser(userConfig.clientUserId);
                 if (user == null) {
                     user = userConfig.getCurrentUser();
                 }
                 if (user != null) {
-                    subtitleTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+                    subtitleTextView.setText(LocaleController.formatString("PhoneNumberKeepButton", R.string.PhoneNumberKeepButton, PhoneFormat.getInstance().format("+" + user.phone)));
                 }
+                subtitleTextView.setOnClickListener(v -> getParentLayout().closeLastFragment(true));
                 titleTextView.setText(LocaleController.getString("PhoneNumberChange2", R.string.PhoneNumberChange2));
                 descriptionText.setText(AndroidUtilities.replaceTags(LocaleController.getString("PhoneNumberHelp", R.string.PhoneNumberHelp)));
                 buttonTextView.setText(LocaleController.getString("PhoneNumberChange2", R.string.PhoneNumberChange2));
+                imageView.playAnimation();
+                flickerButton = true;
                 break;
             }
         }
@@ -658,7 +775,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     }
 
     @Override
-    public void onLocationAddressAvailable(String address, String displayAddress, Location location) {
+    public void onLocationAddressAvailable(String address, String displayAddress,  TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location) {
         if (subtitleTextView == null) {
             return;
         }
@@ -688,29 +805,6 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 presentFragment(new PeopleNearbyActivity(), true);
             }
         }
-    }
-
-    private void showPermissionAlert(boolean byButton) {
-        if (getParentActivity() == null) {
-            return;
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        builder.setMessage(LocaleController.getString("PermissionNoLocationPosition", R.string.PermissionNoLocationPosition));
-        builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
-            if (getParentActivity() == null) {
-                return;
-            }
-            try {
-                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        showDialog(builder.create());
     }
 
     private void updateColors() {
@@ -745,26 +839,10 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         if (getParentActivity() == null) {
             return;
         }
-        if (requestCode == 2) {
+        if (requestCode == BasePermissionsActivity.REQUEST_CODE_GEOLOCATION) {
             if (grantResults != null && grantResults.length != 0) {
                 if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("PermissionNoLocationPosition", R.string.PermissionNoLocationPosition));
-                    builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        try {
-                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                            intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                            getParentActivity().startActivity(intent);
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    });
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    showDialog(builder.create());
+                    showDialog(AlertsCreator.createLocationRequiredDialog(getParentActivity(), false));
                 } else {
                     AndroidUtilities.runOnUIThread(() -> presentFragment(new PeopleNearbyActivity(), true));
                 }
@@ -773,20 +851,20 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 processOpenQrReader();
             } else {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setMessage(LocaleController.getString("QRCodePermissionNoCamera", R.string.QRCodePermissionNoCamera));
-                builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
-                    try {
-                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                        getParentActivity().startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                });
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                builder.show();
+                new AlertDialog.Builder(getParentActivity())
+                        .setMessage(AndroidUtilities.replaceTags(LocaleController.getString("QRCodePermissionNoCameraWithHint", R.string.QRCodePermissionNoCameraWithHint)))
+                        .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                                getParentActivity().startActivity(intent);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        })
+                        .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                        .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                        .show();
             }
         }
     }
@@ -796,7 +874,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     }
 
     private void processOpenQrReader() {
-        CameraScanActivity.showAsSheet(this, false, new CameraScanActivity.CameraScanActivityDelegate() {
+        CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
             @Override
             public void didFindQr(String text) {
                 finishFragment(false);
@@ -809,6 +887,10 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         return currentType;
     }
 
+    public void setShowingAsBottomSheet(boolean showingAsBottomSheet) {
+        this.showingAsBottomSheet = showingAsBottomSheet;
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -817,9 +899,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, delegate, Theme.key_windowBackgroundWhite));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarWhiteSelector));
+        if (actionBar != null) {
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarWhiteSelector));
+        }
 
         themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, delegate, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(subtitleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
@@ -836,9 +920,14 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         themeDescriptions.add(new ThemeDescription(desctiptionLines[4], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(desctiptionLines[5], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
 
-        themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_TEXTCOLOR, null, null, new Drawable[]{drawable1}, null, Theme.key_changephoneinfo_image));
         themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_TEXTCOLOR, null, null, new Drawable[]{drawable2}, null, Theme.key_changephoneinfo_image2));
 
         return themeDescriptions;
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

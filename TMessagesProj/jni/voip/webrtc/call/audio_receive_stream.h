@@ -20,17 +20,14 @@
 #include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/call/transport.h"
 #include "api/crypto/crypto_options.h"
-#include "api/crypto/frame_decryptor_interface.h"
-#include "api/frame_transformer_interface.h"
 #include "api/rtp_parameters.h"
-#include "api/scoped_refptr.h"
-#include "api/transport/rtp/rtp_source.h"
+#include "call/receive_stream.h"
 #include "call/rtp_config.h"
 
 namespace webrtc {
 class AudioSinkInterface;
 
-class AudioReceiveStream {
+class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
  public:
   struct Stats {
     Stats();
@@ -42,6 +39,8 @@ class AudioReceiveStream {
     uint64_t fec_packets_received = 0;
     uint64_t fec_packets_discarded = 0;
     uint32_t packets_lost = 0;
+    uint64_t packets_discarded = 0;
+    uint32_t nacks_sent = 0;
     std::string codec_name;
     absl::optional<int> codec_payload_type;
     uint32_t jitter_ms = 0;
@@ -60,6 +59,7 @@ class AudioReceiveStream {
     double jitter_buffer_delay_seconds = 0.0;
     uint64_t jitter_buffer_emitted_count = 0;
     double jitter_buffer_target_delay_seconds = 0.0;
+    double jitter_buffer_minimum_delay_seconds = 0.0;
     uint64_t inserted_samples_for_deceleration = 0;
     uint64_t removed_samples_for_acceleration = 0;
     // Stats below DO NOT correspond directly to anything in the WebRTC stats
@@ -97,6 +97,9 @@ class AudioReceiveStream {
     uint32_t sender_reports_packets_sent = 0;
     uint64_t sender_reports_bytes_sent = 0;
     uint64_t sender_reports_reports_count = 0;
+    absl::optional<TimeDelta> round_trip_time;
+    TimeDelta total_round_trip_time = TimeDelta::Zero();
+    int round_trip_time_measurements;
   };
 
   struct Config {
@@ -106,30 +109,18 @@ class AudioReceiveStream {
     std::string ToString() const;
 
     // Receive-stream specific RTP settings.
-    struct Rtp {
+    struct Rtp : public ReceiveStreamRtpConfig {
       Rtp();
       ~Rtp();
 
       std::string ToString() const;
 
-      // Synchronization source (stream identifier) to be received.
-      uint32_t remote_ssrc = 0;
-
-      // Sender SSRC used for sending RTCP (such as receiver reports).
-      uint32_t local_ssrc = 0;
-
-      // Enable feedback for send side bandwidth estimation.
-      // See
-      // https://tools.ietf.org/html/draft-holmer-rmcat-transport-wide-cc-extensions
-      // for details.
-      bool transport_cc = false;
-
       // See NackConfig for description.
       NackConfig nack;
-
-      // RTP header extensions used for the received stream.
-      std::vector<RtpExtension> extensions;
     } rtp;
+
+    // Receive-side RTT.
+    bool enable_non_sender_rtt = false;
 
     Transport* rtcp_send_transport = nullptr;
 
@@ -137,7 +128,6 @@ class AudioReceiveStream {
     size_t jitter_buffer_max_packets = 200;
     bool jitter_buffer_fast_accelerate = false;
     int jitter_buffer_min_delay_ms = 0;
-    bool jitter_buffer_enable_rtx_handling = false;
 
     // Identifier for an A/V synchronization group. Empty string to disable.
     // TODO(pbos): Synchronize streams in a sync group, not just one video
@@ -157,22 +147,23 @@ class AudioReceiveStream {
     // An optional custom frame decryptor that allows the entire frame to be
     // decrypted in whatever way the caller choses. This is not required by
     // default.
+    // TODO(tommi): Remove this member variable from the struct. It's not
+    // a part of the AudioReceiveStreamInterface state but rather a pass through
+    // variable.
     rtc::scoped_refptr<webrtc::FrameDecryptorInterface> frame_decryptor;
 
     // An optional frame transformer used by insertable streams to transform
     // encoded frames.
+    // TODO(tommi): Remove this member variable from the struct. It's not
+    // a part of the AudioReceiveStreamInterface state but rather a pass through
+    // variable.
     rtc::scoped_refptr<webrtc::FrameTransformerInterface> frame_transformer;
   };
 
-  // Reconfigure the stream according to the Configuration.
-  virtual void Reconfigure(const Config& config) = 0;
-
-  // Starts stream activity.
-  // When a stream is active, it can receive, process and deliver packets.
-  virtual void Start() = 0;
-  // Stops stream activity.
-  // When a stream is stopped, it can't receive, process or deliver packets.
-  virtual void Stop() = 0;
+  // Methods that support reconfiguring the stream post initialization.
+  virtual void SetDecoderMap(std::map<int, SdpAudioFormat> decoder_map) = 0;
+  virtual void SetNackHistory(int history_ms) = 0;
+  virtual void SetNonSenderRttMeasurement(bool enabled) = 0;
 
   // Returns true if the stream has been started.
   virtual bool IsRunning() const = 0;
@@ -202,11 +193,21 @@ class AudioReceiveStream {
   // Returns current value of base minimum delay in milliseconds.
   virtual int GetBaseMinimumPlayoutDelayMs() const = 0;
 
-  virtual std::vector<RtpSource> GetSources() const = 0;
+  // Synchronization source (stream identifier) to be received.
+  // This member will not change mid-stream and can be assumed to be const
+  // post initialization.
+  virtual uint32_t remote_ssrc() const = 0;
+
+  // Access the currently set rtp extensions. Must be called on the packet
+  // delivery thread.
+  // TODO(tommi): This is currently only called from
+  // `WebRtcAudioReceiveStream::GetRtpParameters()`. See if we can remove it.
+  virtual const std::vector<RtpExtension>& GetRtpExtensions() const = 0;
 
  protected:
-  virtual ~AudioReceiveStream() {}
+  virtual ~AudioReceiveStreamInterface() {}
 };
+
 }  // namespace webrtc
 
 #endif  // CALL_AUDIO_RECEIVE_STREAM_H_

@@ -12,6 +12,8 @@
 #define PC_RTC_STATS_COLLECTOR_H_
 
 #include <stdint.h>
+
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -40,6 +42,7 @@
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
+#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/time_utils.h"
@@ -52,7 +55,7 @@ class RtpReceiverInternal;
 // All public methods of the collector are to be called on the signaling thread.
 // Stats are gathered on the signaling, worker and network threads
 // asynchronously. The callback is invoked on the signaling thread. Resulting
-// reports are cached for |cache_lifetime_| ms.
+// reports are cached for `cache_lifetime_` ms.
 class RTCStatsCollector : public rtc::RefCountInterface,
                           public sigslot::has_slots<> {
  public:
@@ -62,25 +65,29 @@ class RTCStatsCollector : public rtc::RefCountInterface,
 
   // Gets a recent stats report. If there is a report cached that is still fresh
   // it is returned, otherwise new stats are gathered and returned. A report is
-  // considered fresh for |cache_lifetime_| ms. const RTCStatsReports are safe
+  // considered fresh for `cache_lifetime_` ms. const RTCStatsReports are safe
   // to use across multiple threads and may be destructed on any thread.
   // If the optional selector argument is used, stats are filtered according to
   // stats selection algorithm before delivery.
   // https://w3c.github.io/webrtc-pc/#dfn-stats-selection-algorithm
   void GetStatsReport(rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
-  // If |selector| is null the selection algorithm is still applied (interpreted
+  // If `selector` is null the selection algorithm is still applied (interpreted
   // as: no RTP streams are sent by selector). The result is empty.
   void GetStatsReport(rtc::scoped_refptr<RtpSenderInternal> selector,
                       rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
-  // If |selector| is null the selection algorithm is still applied (interpreted
+  // If `selector` is null the selection algorithm is still applied (interpreted
   // as: no RTP streams are received by selector). The result is empty.
   void GetStatsReport(rtc::scoped_refptr<RtpReceiverInternal> selector,
                       rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
   // Clears the cache's reference to the most recent stats report. Subsequently
-  // calling |GetStatsReport| guarantees fresh stats.
+  // calling `GetStatsReport` guarantees fresh stats. This method must be called
+  // any time the PeerConnection visibly changes as a result of an API call as
+  // per
+  // https://w3c.github.io/webrtc-stats/#guidelines-for-getstats-results-caching-throttling
+  // and it must be called any time negotiation happens.
   void ClearCachedStatsReport();
 
-  // If there is a |GetStatsReport| requests in-flight, waits until it has been
+  // If there is a `GetStatsReport` requests in-flight, waits until it has been
   // completed. Must be called on the signaling thread.
   void WaitForPendingRequest();
 
@@ -91,6 +98,8 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   struct CertificateStatsPair {
     std::unique_ptr<rtc::SSLCertificateStats> local;
     std::unique_ptr<rtc::SSLCertificateStats> remote;
+
+    CertificateStatsPair Copy() const;
   };
 
   // Stats gathering on a particular thread. Virtual for the sake of testing.
@@ -113,11 +122,11 @@ class RTCStatsCollector : public rtc::RefCountInterface,
     explicit RequestInfo(
         rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
     // Constructs with FilterMode::kSenderSelector. The selection algorithm is
-    // applied even if |selector| is null, resulting in an empty report.
+    // applied even if `selector` is null, resulting in an empty report.
     RequestInfo(rtc::scoped_refptr<RtpSenderInternal> selector,
                 rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
     // Constructs with FilterMode::kReceiverSelector. The selection algorithm is
-    // applied even if |selector| is null, resulting in an empty report.
+    // applied even if `selector` is null, resulting in an empty report.
     RequestInfo(rtc::scoped_refptr<RtpReceiverInternal> selector,
                 rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
 
@@ -154,55 +163,52 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   // Some fields are copied from the RtpTransceiver/BaseChannel object so that
   // they can be accessed safely on threads other than the signaling thread.
   // If a BaseChannel is not available (e.g., if signaling has not started),
-  // then |mid| and |transport_name| will be null.
+  // then `mid` and `transport_name` will be null.
   struct RtpTransceiverStatsInfo {
     rtc::scoped_refptr<RtpTransceiver> transceiver;
     cricket::MediaType media_type;
     absl::optional<std::string> mid;
     absl::optional<std::string> transport_name;
-    std::unique_ptr<TrackMediaInfoMap> track_media_info_map;
+    TrackMediaInfoMap track_media_info_map;
   };
 
   void DeliverCachedReport(
       rtc::scoped_refptr<const RTCStatsReport> cached_report,
       std::vector<RequestInfo> requests);
 
-  // Produces |RTCCertificateStats|.
+  // Produces `RTCCertificateStats`.
   void ProduceCertificateStats_n(
       int64_t timestamp_us,
       const std::map<std::string, CertificateStatsPair>& transport_cert_stats,
       RTCStatsReport* report) const;
-  // Produces |RTCCodecStats|.
-  void ProduceCodecStats_n(
-      int64_t timestamp_us,
-      const std::vector<RtpTransceiverStatsInfo>& transceiver_stats_infos,
-      RTCStatsReport* report) const;
-  // Produces |RTCDataChannelStats|.
+  // Produces `RTCDataChannelStats`.
   void ProduceDataChannelStats_s(int64_t timestamp_us,
                                  RTCStatsReport* report) const;
-  // Produces |RTCIceCandidatePairStats| and |RTCIceCandidateStats|.
+  // Produces `RTCIceCandidatePairStats` and `RTCIceCandidateStats`.
   void ProduceIceCandidateAndPairStats_n(
       int64_t timestamp_us,
       const std::map<std::string, cricket::TransportStats>&
           transport_stats_by_name,
       const Call::Stats& call_stats,
       RTCStatsReport* report) const;
-  // Produces |RTCMediaStreamStats|.
+  // Produces `RTCMediaStreamStats`.
   void ProduceMediaStreamStats_s(int64_t timestamp_us,
                                  RTCStatsReport* report) const;
-  // Produces |RTCMediaStreamTrackStats|.
+  // Produces `RTCMediaStreamTrackStats`.
   void ProduceMediaStreamTrackStats_s(int64_t timestamp_us,
                                       RTCStatsReport* report) const;
   // Produces RTCMediaSourceStats, including RTCAudioSourceStats and
   // RTCVideoSourceStats.
   void ProduceMediaSourceStats_s(int64_t timestamp_us,
                                  RTCStatsReport* report) const;
-  // Produces |RTCPeerConnectionStats|.
+  // Produces `RTCPeerConnectionStats`.
   void ProducePeerConnectionStats_s(int64_t timestamp_us,
                                     RTCStatsReport* report) const;
-  // Produces |RTCInboundRTPStreamStats| and |RTCOutboundRTPStreamStats|.
-  // This has to be invoked after codecs and transport stats have been created
-  // because some metrics are calculated through lookup of other metrics.
+  // Produces `RTCInboundRTPStreamStats`, `RTCOutboundRTPStreamStats`,
+  // `RTCRemoteInboundRtpStreamStats`, `RTCRemoteOutboundRtpStreamStats` and any
+  // referenced `RTCCodecStats`. This has to be invoked after transport stats
+  // have been created because some metrics are calculated through lookup of
+  // other metrics.
   void ProduceRTPStreamStats_n(
       int64_t timestamp_us,
       const std::vector<RtpTransceiverStatsInfo>& transceiver_stats_infos,
@@ -213,7 +219,7 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   void ProduceVideoRTPStreamStats_n(int64_t timestamp_us,
                                     const RtpTransceiverStatsInfo& stats,
                                     RTCStatsReport* report) const;
-  // Produces |RTCTransportStats|.
+  // Produces `RTCTransportStats`.
   void ProduceTransportStats_n(
       int64_t timestamp_us,
       const std::map<std::string, cricket::TransportStats>&
@@ -225,8 +231,8 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   std::map<std::string, CertificateStatsPair>
   PrepareTransportCertificateStats_n(
       const std::map<std::string, cricket::TransportStats>&
-          transport_stats_by_name) const;
-  // The results are stored in |transceiver_stats_infos_| and |call_stats_|.
+          transport_stats_by_name);
+  // The results are stored in `transceiver_stats_infos_` and `call_stats_`.
   void PrepareTransceiverStatsInfosAndCallStats_s_w_n();
 
   // Stats gathering on a particular thread.
@@ -234,13 +240,13 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   void ProducePartialResultsOnNetworkThread(
       int64_t timestamp_us,
       absl::optional<std::string> sctp_transport_name);
-  // Merges |network_report_| into |partial_report_| and completes the request.
-  // This is a NO-OP if |network_report_| is null.
+  // Merges `network_report_` into `partial_report_` and completes the request.
+  // This is a NO-OP if `network_report_` is null.
   void MergeNetworkReport_s();
 
-  // Slots for signals (sigslot) that are wired up to |pc_|.
+  // Slots for signals (sigslot) that are wired up to `pc_`.
   void OnSctpDataChannelCreated(SctpDataChannel* channel);
-  // Slots for signals (sigslot) that are wired up to |channel|.
+  // Slots for signals (sigslot) that are wired up to `channel`.
   void OnDataChannelOpened(DataChannelInterface* channel);
   void OnDataChannelClosed(DataChannelInterface* channel);
 
@@ -257,14 +263,14 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   rtc::scoped_refptr<RTCStatsReport> partial_report_;
   std::vector<RequestInfo> requests_;
   // Holds the result of ProducePartialResultsOnNetworkThread(). It is merged
-  // into |partial_report_| on the signaling thread and then nulled by
+  // into `partial_report_` on the signaling thread and then nulled by
   // MergeNetworkReport_s(). Thread-safety is ensured by using
-  // |network_report_event_|.
+  // `network_report_event_`.
   rtc::scoped_refptr<RTCStatsReport> network_report_;
-  // If set, it is safe to touch the |network_report_| on the signaling thread.
+  // If set, it is safe to touch the `network_report_` on the signaling thread.
   // This is reset before async-invoking ProducePartialResultsOnNetworkThread()
   // and set when ProducePartialResultsOnNetworkThread() is complete, after it
-  // has updated the value of |network_report_|.
+  // has updated the value of `network_report_`.
   rtc::Event network_report_event_;
 
   // Cleared and set in `PrepareTransceiverStatsInfosAndCallStats_s_w_n`,
@@ -277,6 +283,12 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   // now get rid of the variable and keep the data scoped within a stats
   // collection sequence.
   std::vector<RtpTransceiverStatsInfo> transceiver_stats_infos_;
+  // This cache avoids having to call rtc::SSLCertChain::GetStats(), which can
+  // relatively expensive. ClearCachedStatsReport() needs to be called on
+  // negotiation to ensure the cache is not obsolete.
+  Mutex cached_certificates_mutex_;
+  std::map<std::string, CertificateStatsPair> cached_certificates_by_transport_
+      RTC_GUARDED_BY(cached_certificates_mutex_);
 
   Call::Stats call_stats_;
 

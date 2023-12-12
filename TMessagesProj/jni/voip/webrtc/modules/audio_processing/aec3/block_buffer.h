@@ -15,6 +15,7 @@
 
 #include <vector>
 
+#include "modules/audio_processing/aec3/block.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -22,10 +23,7 @@ namespace webrtc {
 // Struct for bundling a circular buffer of two dimensional vector objects
 // together with the read and write indices.
 struct BlockBuffer {
-  BlockBuffer(size_t size,
-              size_t num_bands,
-              size_t num_channels,
-              size_t frame_length);
+  BlockBuffer(size_t size, size_t num_bands, size_t num_channels);
   ~BlockBuffer();
 
   int IncIndex(int index) const {
@@ -52,7 +50,7 @@ struct BlockBuffer {
   void DecReadIndex() { read = DecIndex(read); }
 
   const int size;
-  std::vector<std::vector<std::vector<std::vector<float>>>> buffer;
+  std::vector<Block> buffer;
   int write = 0;
   int read = 0;
 };

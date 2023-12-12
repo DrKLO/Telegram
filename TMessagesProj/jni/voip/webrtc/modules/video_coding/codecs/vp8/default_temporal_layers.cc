@@ -78,10 +78,10 @@ std::vector<unsigned int> GetTemporalIds(size_t num_layers) {
       // 0               0               ...
       return {0, 3, 2, 3, 1, 3, 2, 3};
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return {0};
 }
 
@@ -236,10 +236,10 @@ DefaultTemporalLayers::GetDependencyInfo(size_t num_layers) {
               {"----", {kReference, kReference, kReferenceAndUpdate}},
               {"----", {kReference, kReference, kReference, kFreezeEntropy}}};
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return {{"", {kNone, kNone, kNone}}};
 }
 
@@ -265,7 +265,8 @@ DefaultTemporalLayers::DefaultTemporalLayers(int number_of_temporal_layers)
       temporal_ids_(GetTemporalIds(num_layers_)),
       temporal_pattern_(GetDependencyInfo(num_layers_)),
       is_static_buffer_(DetermineStaticBuffers(temporal_pattern_)),
-      pattern_idx_(kUninitializedPatternIndex) {
+      pattern_idx_(kUninitializedPatternIndex),
+      new_bitrates_bps_(std::vector<uint32_t>(num_layers_, 0u)) {
   RTC_CHECK_GE(kMaxTemporalStreams, number_of_temporal_layers);
   RTC_CHECK_GE(number_of_temporal_layers, 0);
   RTC_CHECK_LE(number_of_temporal_layers, 4);
@@ -309,7 +310,7 @@ void DefaultTemporalLayers::OnRatesUpdated(
   RTC_DCHECK_LT(stream_index, StreamCount());
   RTC_DCHECK_GT(bitrates_bps.size(), 0);
   RTC_DCHECK_LE(bitrates_bps.size(), num_layers_);
-  // |bitrates_bps| uses individual rate per layer, but Vp8EncoderConfig wants
+  // `bitrates_bps` uses individual rate per layer, but Vp8EncoderConfig wants
   // the accumulated rate, so sum them up.
   new_bitrates_bps_ = bitrates_bps;
   new_bitrates_bps_->resize(num_layers_);
@@ -418,11 +419,11 @@ Vp8FrameConfig DefaultTemporalLayers::NextFrameConfig(size_t stream_index,
     // base-layer references).
     tl_config.layer_sync = IsSyncFrame(tl_config);
 
-    // Increment frame age, this needs to be in sync with |pattern_idx_|,
+    // Increment frame age, this needs to be in sync with `pattern_idx_`,
     // so must update it here. Resetting age to 0 must be done when encoding is
     // complete though, and so in the case of pipelining encoder it might lag.
     // To prevent this data spill over into the next iteration,
-    // the |pedning_frames_| map is reset in loops. If delay is constant,
+    // the `pedning_frames_` map is reset in loops. If delay is constant,
     // the relative age should still be OK for the search order.
     for (size_t& n : frames_since_buffer_refresh_) {
       ++n;
@@ -443,7 +444,7 @@ Vp8FrameConfig DefaultTemporalLayers::NextFrameConfig(size_t stream_index,
 
 void DefaultTemporalLayers::ValidateReferences(BufferFlags* flags,
                                                Vp8BufferReference ref) const {
-  // Check if the buffer specified by |ref| is actually referenced, and if so
+  // Check if the buffer specified by `ref` is actually referenced, and if so
   // if it also a dynamically updating one (buffers always just containing
   // keyframes are always safe to reference).
   if ((*flags & BufferFlags::kReference) &&
@@ -551,7 +552,7 @@ void DefaultTemporalLayers::OnEncodeDone(size_t stream_index,
       for (Vp8BufferReference buffer : kAllBuffers) {
         if (is_static_buffer_[BufferToIndex(buffer)]) {
           // Update frame count of all kf-only buffers, regardless of state of
-          // |pending_frames_|.
+          // `pending_frames_`.
           ResetNumFramesSinceBufferRefresh(buffer);
         } else {
           // Key-frames update all buffers, this should be reflected when
@@ -693,7 +694,7 @@ FrameDependencyStructure DefaultTemporalLayers::GetTemplateStructure(
       return template_structure;
     }
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       // To make the compiler happy!
       return template_structure;
   }
@@ -724,7 +725,7 @@ std::vector<std::set<uint8_t>> GetTemporalDependencies(
               {0},    {4, 6, 8},   {4, 6, 8},   {4, 8, 10},
               {4, 8}, {8, 10, 12}, {8, 10, 12}, {8, 12, 14}};
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return {};
   }
 }

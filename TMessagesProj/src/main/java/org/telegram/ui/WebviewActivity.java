@@ -136,6 +136,7 @@ public class WebviewActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        AndroidUtilities.checkAndroidTheme(getContext(), false);
         AndroidUtilities.cancelRunOnUIThread(typingRunnable);
         webView.setLayerType(View.LAYER_TYPE_NONE, null);
         typingRunnable = null;
@@ -190,7 +191,7 @@ public class WebviewActivity extends BaseFragment {
             progressView.setScaleY(0.1f);
             progressView.setVisibility(View.INVISIBLE);
         } else if (type == TYPE_STAT) {
-            actionBar.setBackgroundColor(Theme.getColor(Theme.key_player_actionBar));
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
             actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), false);
             actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
             actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
@@ -207,6 +208,7 @@ public class WebviewActivity extends BaseFragment {
             progressItem.setEnabled(false);
         }
 
+        AndroidUtilities.checkAndroidTheme(context, true);
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
@@ -215,6 +217,10 @@ public class WebviewActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         if (Build.VERSION.SDK_INT >= 19) {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
+
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         }
 
         if (Build.VERSION.SDK_INT >= 21) {
@@ -321,7 +327,7 @@ public class WebviewActivity extends BaseFragment {
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen && !backward && webView != null) {
             webView.loadUrl(currentUrl);
         }
@@ -423,7 +429,7 @@ public class WebviewActivity extends BaseFragment {
         } else {
             themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
-            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_actionBar));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_player_actionBarItems));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));

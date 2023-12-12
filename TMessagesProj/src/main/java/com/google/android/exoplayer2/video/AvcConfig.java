@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.video;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
@@ -24,23 +25,15 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * AVC configuration data.
- */
+/** AVC configuration data. */
 public final class AvcConfig {
-
-  public final List<byte[]> initializationData;
-  public final int nalUnitLengthFieldLength;
-  public final int width;
-  public final int height;
-  public final float pixelWidthAspectRatio;
 
   /**
    * Parses AVC configuration data.
    *
    * @param data A {@link ParsableByteArray}, whose position is set to the start of the AVC
    *     configuration data to parse.
-   * @return A parsed representation of the HEVC configuration data.
+   * @return A parsed representation of the AVC configuration data.
    * @throws ParserException If an error occurred parsing the data.
    */
   public static AvcConfig parse(ParsableByteArray data) throws ParserException {
@@ -62,36 +55,78 @@ public final class AvcConfig {
 
       int width = Format.NO_VALUE;
       int height = Format.NO_VALUE;
-      float pixelWidthAspectRatio = 1;
+      float pixelWidthHeightRatio = 1;
+      @Nullable String codecs = null;
       if (numSequenceParameterSets > 0) {
         byte[] sps = initializationData.get(0);
-        SpsData spsData = NalUnitUtil.parseSpsNalUnit(initializationData.get(0),
-            nalUnitLengthFieldLength, sps.length);
+        SpsData spsData =
+            NalUnitUtil.parseSpsNalUnit(
+                initializationData.get(0), nalUnitLengthFieldLength, sps.length);
         width = spsData.width;
         height = spsData.height;
-        pixelWidthAspectRatio = spsData.pixelWidthAspectRatio;
+        pixelWidthHeightRatio = spsData.pixelWidthHeightRatio;
+        codecs =
+            CodecSpecificDataUtil.buildAvcCodecString(
+                spsData.profileIdc, spsData.constraintsFlagsAndReservedZero2Bits, spsData.levelIdc);
       }
-      return new AvcConfig(initializationData, nalUnitLengthFieldLength, width, height,
-          pixelWidthAspectRatio);
+
+      return new AvcConfig(
+          initializationData,
+          nalUnitLengthFieldLength,
+          width,
+          height,
+          pixelWidthHeightRatio,
+          codecs);
     } catch (ArrayIndexOutOfBoundsException e) {
-      throw new ParserException("Error parsing AVC config", e);
+      throw ParserException.createForMalformedContainer("Error parsing AVC config", e);
     }
   }
 
-  private AvcConfig(List<byte[]> initializationData, int nalUnitLengthFieldLength,
-      int width, int height, float pixelWidthAspectRatio) {
+  /**
+   * List of buffers containing the codec-specific data to be provided to the decoder.
+   *
+   * <p>See {@link Format#initializationData}.
+   */
+  public final List<byte[]> initializationData;
+
+  /** The length of the NAL unit length field in the bitstream's container, in bytes. */
+  public final int nalUnitLengthFieldLength;
+
+  /** The width of each decoded frame, or {@link Format#NO_VALUE} if unknown. */
+  public final int width;
+
+  /** The height of each decoded frame, or {@link Format#NO_VALUE} if unknown. */
+  public final int height;
+
+  /** The pixel width to height ratio. */
+  public final float pixelWidthHeightRatio;
+
+  /**
+   * An RFC 6381 codecs string representing the video format, or {@code null} if not known.
+   *
+   * <p>See {@link Format#codecs}.
+   */
+  @Nullable public final String codecs;
+
+  private AvcConfig(
+      List<byte[]> initializationData,
+      int nalUnitLengthFieldLength,
+      int width,
+      int height,
+      float pixelWidthHeightRatio,
+      @Nullable String codecs) {
     this.initializationData = initializationData;
     this.nalUnitLengthFieldLength = nalUnitLengthFieldLength;
     this.width = width;
     this.height = height;
-    this.pixelWidthAspectRatio = pixelWidthAspectRatio;
+    this.pixelWidthHeightRatio = pixelWidthHeightRatio;
+    this.codecs = codecs;
   }
 
   private static byte[] buildNalUnitForChild(ParsableByteArray data) {
     int length = data.readUnsignedShort();
     int offset = data.getPosition();
     data.skipBytes(length);
-    return CodecSpecificDataUtil.buildNalUnit(data.data, offset, length);
+    return CodecSpecificDataUtil.buildNalUnit(data.getData(), offset, length);
   }
-
 }

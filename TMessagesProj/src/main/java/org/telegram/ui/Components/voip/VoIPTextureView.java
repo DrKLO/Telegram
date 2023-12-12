@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -112,6 +113,11 @@ public class VoIPTextureView extends FrameLayout {
             public void onFirstFrameRendered() {
                 super.onFirstFrameRendered();
                 VoIPTextureView.this.onFirstFrameRendered();
+            }
+
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
             }
         };
         renderer.setFpsReduction(30);
@@ -358,6 +364,7 @@ public class VoIPTextureView extends FrameLayout {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         updateRendererSize();
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        renderer.updateRotation();
     }
 
     protected void updateRendererSize() {
@@ -373,6 +380,10 @@ public class VoIPTextureView extends FrameLayout {
 
         if (blurRenderer != null) {
             scaleTextureToFillBlur = Math.max(getMeasuredHeight() / (float) blurRenderer.getMeasuredHeight(), getMeasuredWidth() / (float) blurRenderer.getMeasuredWidth());
+        }
+
+        if (!applyRotation) {
+            renderer.updateRotation();
         }
 
         if (scaleType == SCALE_TYPE_NONE) {
@@ -582,6 +593,34 @@ public class VoIPTextureView extends FrameLayout {
         this.thumb = thumb;
     }
 
+    public void detachBackgroundRenderer() {
+        if (blurRenderer == null) return;
+        ObjectAnimator animator = ObjectAnimator.ofFloat(blurRenderer, View.ALPHA, 0f).setDuration(150);
+        animator.addListener(new AnimatorListenerAdapter() {
+            private boolean isCanceled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                isCanceled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!isCanceled) {
+                    renderer.setBackgroundRenderer(null);
+                }
+            }
+        });
+        animator.start();
+    }
+
+    public void reattachBackgroundRenderer() {
+        if (blurRenderer != null) {
+            renderer.setBackgroundRenderer(blurRenderer);
+            ObjectAnimator.ofFloat(blurRenderer, View.ALPHA, 1f).setDuration(150).start();
+        }
+    }
+
     public void attachBackgroundRenderer() {
         if (blurRenderer != null) {
             renderer.setBackgroundRenderer(blurRenderer);
@@ -598,7 +637,7 @@ public class VoIPTextureView extends FrameLayout {
     public void updateRotation() {
         if (!applyRotation) {
             Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-            renderer.setScreenRotation(display.getRotation());
+//            renderer.setScreenRotation(display.getRotation());
         }
     }
 }

@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">사용자 차단</string>
     <string name="DeleteReportSpam">스팸 신고</string>
     <string name="DeleteAllFrom">%1$s 님의 메시지 모두 삭제</string>
-    <string name="ClearRecentEmoji">최근에 사용한 이모지를 비울까요?</string>
+    <string name="ClearRecentEmojiTitle">최근에 사용한 이모지를 비울까요</string>
     <string name="Emoji1">스마일리와 사람</string>
     <string name="Emoji2">동물과 자연</string>
     <string name="Emoji3">음식과 음료</string>
@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; 알림</string>
     <string name="OneResult">1건의 결과</string>
     <string name="VideoQualityIsTooLow">압축 설정을 바꾸기엔 동영상 품질이 너무 낮습니다.</string>
-    <string name="TextSelectionHit">**낱말**을 꾹 잡고선, 커서를 움직여 복사할 글을 조정하세요.</string>
     <string name="CardNumberCopied">카드 번호가 클립보드에 복사되었습니다</string>
     <string name="CopyCardNumber">복사</string>
     <string name="DiceInfo2">대화방에 **:dice:**를 보내어 주사위를 굴리세요.</string>
@@ -2494,7 +2493,6 @@
     <string name="FilterChatRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterChatsRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterAddToAlertFullTitle">한계 도달</string>
-    <string name="FilterRemoveFromAlertFullText">죄송합니다, 폴더에 100 개 이상의 대화를 추가 할 수 없습니다.</string>
     <string name="FilterAddToAlertFullText">죄송합니다, 폴더에서 100개 이상의 대화를 제외할 수 없습니다.</string>
     <!--passcode view-->
     <string name="Passcode">암호 잠금</string>
@@ -3167,7 +3165,7 @@
     <string name="InvalidLastName">죄송합니다. 본 성을 사용하실 수 없습니다</string>
     <string name="Loading">불러오는 중...</string>
     <string name="NoPlayerInstalled">동영상 재생기가 없습니다. 계속하려면 앱을 설치하세요.</string>
-    <string name="NoMailInstalled">발생한 문제를 자세히 적어 reports@stel.com으로 이메일을 보내 주세요.</string>
+    <string name="NoMailInstalled">발생한 문제를 자세히 적어 sms@telegram.org으로 이메일을 보내 주세요.</string>
     <string name="NoHandleAppInstalled">\'%1$s\' 파일 유형을 처리할 수 있는 응용 프로그램이 없습니다. 계속하려면 프로그램을 설치해 주세요</string>
     <string name="InviteUser">지인분이 아직 텔레그램을 설치하지 않았습니다. 초대장을 보낼까요?</string>
     <string name="AreYouSure">확실하십니까?</string>

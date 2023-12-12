@@ -176,7 +176,7 @@ int ForwardErrorCorrection::EncodeFec(const PacketList& media_packets,
   }
   packet_mask_size_ = internal::PacketMaskSize(num_mask_bits);
 
-  // Write FEC packets to |generated_fec_packets_|.
+  // Write FEC packets to `generated_fec_packets_`.
   GenerateFecPayloads(media_packets, num_fec_packets);
   // TODO(brandtr): Generalize this when multistream protection support is
   // added.
@@ -218,13 +218,11 @@ void ForwardErrorCorrection::GenerateFecPayloads(
         ParseSequenceNumber((*media_packets_it)->data.data());
     while (media_packets_it != media_packets.end()) {
       Packet* const media_packet = media_packets_it->get();
-      const uint8_t* media_packet_data = media_packet->data.cdata();
-      // Should |media_packet| be protected by |fec_packet|?
+      // Should `media_packet` be protected by `fec_packet`?
       if (packet_masks_[pkt_mask_idx] & (1 << (7 - media_pkt_idx))) {
         size_t media_payload_length =
             media_packet->data.size() - kRtpHeaderSize;
 
-        bool first_protected_packet = (fec_packet->data.size() == 0);
         size_t fec_packet_length = fec_header_size + media_payload_length;
         if (fec_packet_length > fec_packet->data.size()) {
           // Recall that XORing with zero (which the FEC packets are prefilled
@@ -232,26 +230,9 @@ void ForwardErrorCorrection::GenerateFecPayloads(
           // still correct even though we expand the packet length here.
           fec_packet->data.SetSize(fec_packet_length);
         }
-        if (first_protected_packet) {
-          uint8_t* data = fec_packet->data.MutableData();
-          // Write P, X, CC, M, and PT recovery fields.
-          // Note that bits 0, 1, and 16 are overwritten in FinalizeFecHeaders.
-          memcpy(&data[0], &media_packet_data[0], 2);
-          // Write length recovery field. (This is a temporary location for
-          // ULPFEC.)
-          ByteWriter<uint16_t>::WriteBigEndian(&data[2], media_payload_length);
-          // Write timestamp recovery field.
-          memcpy(&data[4], &media_packet_data[4], 4);
-          // Write payload.
-          if (media_payload_length > 0) {
-            memcpy(&data[fec_header_size], &media_packet_data[kRtpHeaderSize],
-                   media_payload_length);
-          }
-        } else {
-          XorHeaders(*media_packet, fec_packet);
-          XorPayloads(*media_packet, media_payload_length, fec_header_size,
-                      fec_packet);
-        }
+        XorHeaders(*media_packet, fec_packet);
+        XorPayloads(*media_packet, media_payload_length, fec_header_size,
+                    fec_packet);
       }
       media_packets_it++;
       if (media_packets_it != media_packets.end()) {
@@ -391,12 +372,12 @@ void ForwardErrorCorrection::InsertMediaPacket(
 void ForwardErrorCorrection::UpdateCoveringFecPackets(
     const RecoveredPacket& packet) {
   for (auto& fec_packet : received_fec_packets_) {
-    // Is this FEC packet protecting the media packet |packet|?
+    // Is this FEC packet protecting the media packet `packet`?
     auto protected_it = absl::c_lower_bound(
         fec_packet->protected_packets, &packet, SortablePacket::LessThan());
     if (protected_it != fec_packet->protected_packets.end() &&
         (*protected_it)->seq_num == packet.seq_num) {
-      // Found an FEC packet which is protecting |packet|.
+      // Found an FEC packet which is protecting `packet`.
       (*protected_it)->pkt = packet.pkt;
     }
   }
@@ -481,8 +462,8 @@ void ForwardErrorCorrection::AssignRecoveredPackets(
   ProtectedPacketList* protected_packets = &fec_packet->protected_packets;
   std::vector<RecoveredPacket*> recovered_protected_packets;
 
-  // Find intersection between the (sorted) containers |protected_packets|
-  // and |recovered_packets|, i.e. all protected packets that have already
+  // Find intersection between the (sorted) containers `protected_packets`
+  // and `recovered_packets`, i.e. all protected packets that have already
   // been recovered. Update the corresponding protected packets to point to
   // the recovered packets.
   auto it_p = protected_packets->cbegin();
@@ -506,16 +487,16 @@ void ForwardErrorCorrection::InsertPacket(
     const ReceivedPacket& received_packet,
     RecoveredPacketList* recovered_packets) {
   // Discard old FEC packets such that the sequence numbers in
-  // |received_fec_packets_| span at most 1/2 of the sequence number space.
-  // This is important for keeping |received_fec_packets_| sorted, and may
+  // `received_fec_packets_` span at most 1/2 of the sequence number space.
+  // This is important for keeping `received_fec_packets_` sorted, and may
   // also reduce the possibility of incorrect decoding due to sequence number
   // wrap-around.
   if (!received_fec_packets_.empty() &&
       received_packet.ssrc == received_fec_packets_.front()->ssrc) {
-    // It only makes sense to detect wrap-around when |received_packet|
-    // and |front_received_fec_packet| belong to the same sequence number
-    // space, i.e., the same SSRC. This happens when |received_packet|
-    // is a FEC packet, or if |received_packet| is a media packet and
+    // It only makes sense to detect wrap-around when `received_packet`
+    // and `front_received_fec_packet` belong to the same sequence number
+    // space, i.e., the same SSRC. This happens when `received_packet`
+    // is a FEC packet, or if `received_packet` is a media packet and
     // RED+ULPFEC is used.
     auto it = received_fec_packets_.begin();
     while (it != received_fec_packets_.end()) {
@@ -523,7 +504,7 @@ void ForwardErrorCorrection::InsertPacket(
       if (seq_num_diff > kOldSequenceThreshold) {
         it = received_fec_packets_.erase(it);
       } else {
-        // No need to keep iterating, since |received_fec_packets_| is sorted.
+        // No need to keep iterating, since `received_fec_packets_` is sorted.
         break;
       }
     }
@@ -651,10 +632,10 @@ bool ForwardErrorCorrection::RecoverPacket(const ReceivedFecPacket& fec_packet,
       // This is the packet we're recovering.
       recovered_packet->seq_num = protected_packet->seq_num;
     } else {
-      XorHeaders(*protected_packet->pkt, recovered_packet->pkt);
+      XorHeaders(*protected_packet->pkt, recovered_packet->pkt.get());
       XorPayloads(*protected_packet->pkt,
                   protected_packet->pkt->data.size() - kRtpHeaderSize,
-                  kRtpHeaderSize, recovered_packet->pkt);
+                  kRtpHeaderSize, recovered_packet->pkt.get());
     }
   }
   if (!FinishPacketRecovery(fec_packet, recovered_packet)) {

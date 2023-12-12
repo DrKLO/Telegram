@@ -26,7 +26,7 @@ class NullSmoothingFilter final : public SmoothingFilter {
   absl::optional<float> GetAverage() override { return last_sample_; }
 
   bool SetTimeConstantMs(int time_constant_ms) override {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return false;
   }
 

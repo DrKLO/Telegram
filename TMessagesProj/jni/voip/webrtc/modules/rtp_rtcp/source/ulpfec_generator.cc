@@ -20,7 +20,6 @@
 #include "modules/rtp_rtcp/source/byte_io.h"
 #include "modules/rtp_rtcp/source/forward_error_correction.h"
 #include "modules/rtp_rtcp/source/forward_error_correction_internal.h"
-#include "modules/rtp_rtcp/source/rtp_utility.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/synchronization/mutex.h"
 
@@ -31,27 +30,27 @@ namespace {
 constexpr size_t kRedForFecHeaderLength = 1;
 
 // This controls the maximum amount of excess overhead (actual - target)
-// allowed in order to trigger EncodeFec(), before |params_.max_fec_frames|
+// allowed in order to trigger EncodeFec(), before `params_.max_fec_frames`
 // is reached. Overhead here is defined as relative to number of media packets.
 constexpr int kMaxExcessOverhead = 50;  // Q8.
 
 // This is the minimum number of media packets required (above some protection
-// level) in order to trigger EncodeFec(), before |params_.max_fec_frames| is
+// level) in order to trigger EncodeFec(), before `params_.max_fec_frames` is
 // reached.
 constexpr size_t kMinMediaPackets = 4;
 
 // Threshold on the received FEC protection level, above which we enforce at
-// least |kMinMediaPackets| packets for the FEC code. Below this
-// threshold |kMinMediaPackets| is set to default value of 1.
+// least `kMinMediaPackets` packets for the FEC code. Below this
+// threshold `kMinMediaPackets` is set to default value of 1.
 //
 // The range is between 0 and 255, where 255 corresponds to 100% overhead
 // (relative to the number of protected media packets).
 constexpr uint8_t kHighProtectionThreshold = 80;
 
-// This threshold is used to adapt the |kMinMediaPackets| threshold, based
+// This threshold is used to adapt the `kMinMediaPackets` threshold, based
 // on the average number of packets per frame seen so far. When there are few
 // packets per frame (as given by this threshold), at least
-// |kMinMediaPackets| + 1 packets are sent to the FEC code.
+// `kMinMediaPackets` + 1 packets are sent to the FEC code.
 constexpr float kMinMediaPacketsAdaptationThreshold = 2.0f;
 
 // At construction time, we don't know the SSRC that is used for the generated
@@ -130,7 +129,7 @@ void UlpfecGenerator::AddPacketAndGenerateFec(const RtpPacketToSend& packet) {
   }
   const bool complete_frame = packet.Marker();
   if (media_packets_.size() < kUlpfecMaxMediaPackets) {
-    // Our packet masks can only protect up to |kUlpfecMaxMediaPackets| packets.
+    // Our packet masks can only protect up to `kUlpfecMaxMediaPackets` packets.
     auto fec_packet = std::make_unique<ForwardErrorCorrection::Packet>();
     fec_packet->data = packet.Buffer();
     media_packets_.push_back(std::move(fec_packet));
@@ -147,10 +146,10 @@ void UlpfecGenerator::AddPacketAndGenerateFec(const RtpPacketToSend& packet) {
 
   auto params = CurrentParams();
 
-  // Produce FEC over at most |params_.max_fec_frames| frames, or as soon as:
+  // Produce FEC over at most `params_.max_fec_frames` frames, or as soon as:
   // (1) the excess overhead (actual overhead - requested/target overhead) is
-  // less than |kMaxExcessOverhead|, and
-  // (2) at least |min_num_media_packets_| media packets is reached.
+  // less than `kMaxExcessOverhead`, and
+  // (2) at least `min_num_media_packets_` media packets is reached.
   if (complete_frame &&
       (num_protected_frames_ >= params.max_fec_frames ||
        (ExcessOverheadBelowMax() && MinimumMediaPacketsReached()))) {
@@ -204,7 +203,7 @@ std::vector<std::unique_ptr<RtpPacketToSend>> UlpfecGenerator::GetFecPackets() {
   }
 
   // Wrap FEC packet (including FEC headers) in a RED packet. Since the
-  // FEC packets in |generated_fec_packets_| don't have RTP headers, we
+  // FEC packets in `generated_fec_packets_` don't have RTP headers, we
   // reuse the header from the last media packet.
   RTC_CHECK(last_media_packet_.has_value());
   last_media_packet_->SetPayloadSize(0);

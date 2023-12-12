@@ -22,21 +22,19 @@ namespace webrtc {
 // This class is not thread safe, the caller must provide that.
 class PacketSequencer {
  public:
-  // If |require_marker_before_media_padding_| is true, padding packets on the
+  // If `require_marker_before_media_padding_` is true, padding packets on the
   // media ssrc is not allowed unless the last sequenced media packet had the
   // marker bit set (i.e. don't insert padding packets between the first and
   // last packets of a video frame).
+  // Packets with unknown SSRCs will be ignored.
   PacketSequencer(uint32_t media_ssrc,
-                  uint32_t rtx_ssrc,
+                  absl::optional<uint32_t> rtx_ssrc,
                   bool require_marker_before_media_padding,
                   Clock* clock);
 
   // Assigns sequence number, and in the case of non-RTX padding also timestamps
   // and payload type.
-  // Returns false if sequencing failed, which it can do for instance if the
-  // packet to squence is padding on the media ssrc, but the media is mid frame
-  // (the last marker bit is false).
-  bool Sequence(RtpPacketToSend& packet);
+  void Sequence(RtpPacketToSend& packet);
 
   void set_media_sequence_number(uint16_t sequence_number) {
     media_sequence_number_ = sequence_number;
@@ -46,17 +44,21 @@ class PacketSequencer {
   }
 
   void SetRtpState(const RtpState& state);
-  void PupulateRtpState(RtpState& state) const;
+  void PopulateRtpState(RtpState& state) const;
 
   uint16_t media_sequence_number() const { return media_sequence_number_; }
   uint16_t rtx_sequence_number() const { return rtx_sequence_number_; }
 
+  // Checks whether it is allowed to send padding on the media SSRC at this
+  // time, e.g. that we don't send padding in the middle of a video frame.
+  bool CanSendPaddingOnMediaSsrc() const;
+
  private:
   void UpdateLastPacketState(const RtpPacketToSend& packet);
-  bool PopulatePaddingFields(RtpPacketToSend& packet);
+  void PopulatePaddingFields(RtpPacketToSend& packet);
 
   const uint32_t media_ssrc_;
-  const uint32_t rtx_ssrc_;
+  const absl::optional<uint32_t> rtx_ssrc_;
   const bool require_marker_before_media_padding_;
   Clock* const clock_;
 

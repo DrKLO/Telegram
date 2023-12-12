@@ -15,38 +15,46 @@
  */
 package com.google.android.exoplayer2.upstream;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+import static java.lang.Math.min;
+
 import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.PlaybackException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
-import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 /** A UDP {@link DataSource}. */
 public final class UdpDataSource extends BaseDataSource {
 
-  /**
-   * Thrown when an error is encountered when trying to read from a {@link UdpDataSource}.
-   */
-  public static final class UdpDataSourceException extends IOException {
+  /** Thrown when an error is encountered when trying to read from a {@link UdpDataSource}. */
+  public static final class UdpDataSourceException extends DataSourceException {
 
-    public UdpDataSourceException(IOException cause) {
-      super(cause);
+    /**
+     * Creates a {@code UdpDataSourceException}.
+     *
+     * @param cause The error cause.
+     * @param errorCode Reason of the error, should be one of the {@code ERROR_CODE_IO_*} in {@link
+     *     PlaybackException.ErrorCode}.
+     */
+    public UdpDataSourceException(Throwable cause, @PlaybackException.ErrorCode int errorCode) {
+      super(cause, errorCode);
     }
-
   }
 
-  /**
-   * The default maximum datagram packet size, in bytes.
-   */
+  /** The default maximum datagram packet size, in bytes. */
   public static final int DEFAULT_MAX_PACKET_SIZE = 2000;
 
   /** The default socket timeout, in milliseconds. */
   public static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 8 * 1000;
+
+  public static final int UDP_PORT_UNSET = -1;
 
   private final int socketTimeoutMillis;
   private final byte[] packetBuffer;
@@ -56,7 +64,6 @@ public final class UdpDataSource extends BaseDataSource {
   @Nullable private DatagramSocket socket;
   @Nullable private MulticastSocket multicastSocket;
   @Nullable private InetAddress address;
-  @Nullable private InetSocketAddress socketAddress;
   private boolean opened;
 
   private int packetRemaining;
@@ -91,12 +98,12 @@ public final class UdpDataSource extends BaseDataSource {
   @Override
   public long open(DataSpec dataSpec) throws UdpDataSourceException {
     uri = dataSpec.uri;
-    String host = uri.getHost();
+    String host = checkNotNull(uri.getHost());
     int port = uri.getPort();
     transferInitializing(dataSpec);
     try {
       address = InetAddress.getByName(host);
-      socketAddress = new InetSocketAddress(address, port);
+      InetSocketAddress socketAddress = new InetSocketAddress(address, port);
       if (address.isMulticastAddress()) {
         multicastSocket = new MulticastSocket(socketAddress);
         multicastSocket.joinGroup(address);
@@ -104,14 +111,12 @@ public final class UdpDataSource extends BaseDataSource {
       } else {
         socket = new DatagramSocket(socketAddress);
       }
-    } catch (IOException e) {
-      throw new UdpDataSourceException(e);
-    }
-
-    try {
       socket.setSoTimeout(socketTimeoutMillis);
-    } catch (SocketException e) {
-      throw new UdpDataSourceException(e);
+    } catch (SecurityException e) {
+      throw new UdpDataSourceException(e, PlaybackException.ERROR_CODE_IO_NO_PERMISSION);
+    } catch (IOException e) {
+      throw new UdpDataSourceException(
+          e, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED);
     }
 
     opened = true;
@@ -120,24 +125,28 @@ public final class UdpDataSource extends BaseDataSource {
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws UdpDataSourceException {
-    if (readLength == 0) {
+  public int read(byte[] buffer, int offset, int length) throws UdpDataSourceException {
+    if (length == 0) {
       return 0;
     }
 
     if (packetRemaining == 0) {
       // We've read all of the data from the current packet. Get another.
       try {
-        socket.receive(packet);
+        checkNotNull(socket).receive(packet);
+      } catch (SocketTimeoutException e) {
+        throw new UdpDataSourceException(
+            e, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT);
       } catch (IOException e) {
-        throw new UdpDataSourceException(e);
+        throw new UdpDataSourceException(
+            e, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED);
       }
       packetRemaining = packet.getLength();
       bytesTransferred(packetRemaining);
     }
 
     int packetOffset = packet.getLength() - packetRemaining;
-    int bytesToRead = Math.min(packetRemaining, readLength);
+    int bytesToRead = min(packetRemaining, length);
     System.arraycopy(packetBuffer, packetOffset, buffer, offset, bytesToRead);
     packetRemaining -= bytesToRead;
     return bytesToRead;
@@ -154,7 +163,7 @@ public final class UdpDataSource extends BaseDataSource {
     uri = null;
     if (multicastSocket != null) {
       try {
-        multicastSocket.leaveGroup(address);
+        multicastSocket.leaveGroup(checkNotNull(address));
       } catch (IOException e) {
         // Do nothing.
       }
@@ -165,7 +174,6 @@ public final class UdpDataSource extends BaseDataSource {
       socket = null;
     }
     address = null;
-    socketAddress = null;
     packetRemaining = 0;
     if (opened) {
       opened = false;
@@ -173,4 +181,14 @@ public final class UdpDataSource extends BaseDataSource {
     }
   }
 
+  /**
+   * Returns the local port number opened for the UDP connection, or {@link #UDP_PORT_UNSET} if no
+   * connection is open
+   */
+  public int getLocalPort() {
+    if (socket == null) {
+      return UDP_PORT_UNSET;
+    }
+    return socket.getLocalPort();
+  }
 }

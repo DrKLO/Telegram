@@ -15,6 +15,7 @@
 #include <list>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/forward_error_correction.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
@@ -47,13 +48,13 @@ RtpHeaderExtensionMap RegisterSupportedExtensions(
     const std::vector<RtpExtension>& rtp_header_extensions) {
   RtpHeaderExtensionMap map;
   for (const auto& extension : rtp_header_extensions) {
-    if (extension.uri == TransportSequenceNumber::kUri) {
+    if (extension.uri == TransportSequenceNumber::Uri()) {
       map.Register<TransportSequenceNumber>(extension.id);
-    } else if (extension.uri == AbsoluteSendTime::kUri) {
+    } else if (extension.uri == AbsoluteSendTime::Uri()) {
       map.Register<AbsoluteSendTime>(extension.id);
-    } else if (extension.uri == TransmissionOffset::kUri) {
+    } else if (extension.uri == TransmissionOffset::Uri()) {
       map.Register<TransmissionOffset>(extension.id);
-    } else if (extension.uri == RtpMid::kUri) {
+    } else if (extension.uri == RtpMid::Uri()) {
       map.Register<RtpMid>(extension.id);
     } else {
       RTC_LOG(LS_INFO)
@@ -71,7 +72,7 @@ FlexfecSender::FlexfecSender(
     int payload_type,
     uint32_t ssrc,
     uint32_t protected_media_ssrc,
-    const std::string& mid,
+    absl::string_view mid,
     const std::vector<RtpExtension>& rtp_header_extensions,
     rtc::ArrayView<const RtpExtensionSize> extension_sizes,
     const RtpState* rtp_state,
@@ -142,7 +143,7 @@ std::vector<std::unique_ptr<RtpPacketToSend>> FlexfecSender::GetFecPackets() {
                               clock_->TimeInMilliseconds()));
     // Set "capture time" so that the TransmissionOffset header extension
     // can be set by the RTPSender.
-    fec_packet_to_send->set_capture_time_ms(clock_->TimeInMilliseconds());
+    fec_packet_to_send->set_capture_time(clock_->CurrentTime());
     fec_packet_to_send->SetSsrc(ssrc_);
     // Reserve extensions, if registered. These will be set by the RTPSender.
     fec_packet_to_send->ReserveExtension<AbsoluteSendTime>();

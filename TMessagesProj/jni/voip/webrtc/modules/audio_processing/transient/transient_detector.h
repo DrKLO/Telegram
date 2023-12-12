@@ -37,8 +37,8 @@ class TransientDetector {
 
   ~TransientDetector();
 
-  // Calculates the log-likelihood of the existence of a transient in |data|.
-  // |data_length| has to be equal to |samples_per_chunk_|.
+  // Calculates the log-likelihood of the existence of a transient in `data`.
+  // `data_length` has to be equal to `samples_per_chunk_`.
   // Returns a value between 0 and 1, as a non linear representation of this
   // likelihood.
   // Returns a negative value on error.
@@ -71,7 +71,7 @@ class TransientDetector {
   float last_second_moment_[kLeaves];
 
   // We keep track of the previous results from the previous chunks, so it can
-  // be used to effectively give results according to the |transient_length|.
+  // be used to effectively give results according to the `transient_length`.
   std::deque<float> previous_results_;
 
   // Number of chunks that are going to return only zeros at the beginning of

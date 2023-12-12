@@ -39,7 +39,7 @@ public class LoadingStickerDrawable extends Drawable {
         placeholderMatrix = new Matrix();
     }
 
-    public void setColors(String key1, String key2) {
+    public void setColors(int key1, int key2) {
         int color0 = Theme.getColor(key1);
         int color1 = Theme.getColor(key2);
         if (currentColor0 != color0 || currentColor1 != color1) {

@@ -37,6 +37,10 @@ AudioEncoderIsacFloat::SdpToConfig(const SdpAudioFormat& format) {
         }
       }
     }
+    if (!config.IsOk()) {
+      RTC_DCHECK_NOTREACHED();
+      return absl::nullopt;
+    }
     return config;
   } else {
     return absl::nullopt;
@@ -64,13 +68,17 @@ AudioCodecInfo AudioEncoderIsacFloat::QueryAudioEncoder(
 std::unique_ptr<AudioEncoder> AudioEncoderIsacFloat::MakeAudioEncoder(
     const AudioEncoderIsacFloat::Config& config,
     int payload_type,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
   AudioEncoderIsacFloatImpl::Config c;
   c.payload_type = payload_type;
   c.sample_rate_hz = config.sample_rate_hz;
   c.frame_size_ms = config.frame_size_ms;
   c.bit_rate = config.bit_rate;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioEncoderIsacFloatImpl>(c);
 }
 

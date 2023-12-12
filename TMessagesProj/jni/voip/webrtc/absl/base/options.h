@@ -67,12 +67,6 @@
 #ifndef ABSL_BASE_OPTIONS_H_
 #define ABSL_BASE_OPTIONS_H_
 
-// Include a standard library header to allow configuration based on the
-// standard library in use.
-#ifdef __cplusplus
-#include <ciso646>
-#endif
-
 // -----------------------------------------------------------------------------
 // Type Compatibility Options
 // -----------------------------------------------------------------------------

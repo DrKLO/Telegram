@@ -52,7 +52,7 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
 
   // Set the encoder format and payload type for AudioCodingModule.
   // It's possible to change the encoder type during its active usage.
-  // |payload_type| must be the type that is negotiated with peer through
+  // `payload_type` must be the type that is negotiated with peer through
   // offer/answer.
   void SetEncoder(int payload_type,
                   const SdpAudioFormat& encoder_format,
@@ -84,7 +84,7 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
 
   // Send DTMF named event as specified by
   // https://tools.ietf.org/html/rfc4733#section-3.2
-  // |duration_ms| specifies the duration of DTMF packets that will be emitted
+  // `duration_ms` specifies the duration of DTMF packets that will be emitted
   // in place of real RTP packets instead.
   // This will return true when requested dtmf event is successfully scheduled
   // otherwise false when the dtmf queue reached maximum of 20 events.
@@ -139,7 +139,7 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
     // newly received audio frame from AudioTransport.
     uint32_t frame_rtp_timestamp_ = 0;
 
-    // Flag to track mute state from caller. |previously_muted_| is used to
+    // Flag to track mute state from caller. `previously_muted_` is used to
     // track previous state as part of input to AudioFrameOperations::Mute
     // to implement fading effect when (un)mute is invoked.
     bool mute_ = false;

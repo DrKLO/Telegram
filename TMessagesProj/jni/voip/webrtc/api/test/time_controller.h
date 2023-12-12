@@ -17,7 +17,6 @@
 #include "api/task_queue/task_queue_factory.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/synchronization/yield_policy.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/clock.h"
@@ -41,10 +40,7 @@ class TimeController {
   // is destroyed.
   std::unique_ptr<TaskQueueFactory> CreateTaskQueueFactory();
 
-  // Creates a process thread.
-  virtual std::unique_ptr<ProcessThread> CreateProcessThread(
-      const char* thread_name) = 0;
-  // Creates an rtc::Thread instance. If |socket_server| is nullptr, a default
+  // Creates an rtc::Thread instance. If `socket_server` is nullptr, a default
   // noop socket server is created.
   // Returned thread is not null and started.
   virtual std::unique_ptr<rtc::Thread> CreateThread(
@@ -55,12 +51,12 @@ class TimeController {
   // thread.
   virtual rtc::Thread* GetMainThread() = 0;
   // Allow task queues and process threads created by this instance to execute
-  // for the given |duration|.
+  // for the given `duration`.
   virtual void AdvanceTime(TimeDelta duration) = 0;
 
   // Waits until condition() == true, polling condition() in small time
   // intervals.
-  // Returns true if condition() was evaluated to true before |max_duration|
+  // Returns true if condition() was evaluated to true before `max_duration`
   // elapsed and false otherwise.
   bool Wait(const std::function<bool()>& condition,
             TimeDelta max_duration = TimeDelta::Seconds(5));
@@ -75,17 +71,17 @@ class ControlledAlarmClock {
   // Gets a clock that tells the alarm clock's notion of time.
   virtual Clock* GetClock() = 0;
 
-  // Schedules the alarm to fire at |deadline|.
-  // An alarm clock only supports one deadline. Calls to |ScheduleAlarmAt| with
+  // Schedules the alarm to fire at `deadline`.
+  // An alarm clock only supports one deadline. Calls to `ScheduleAlarmAt` with
   // an earlier deadline will reset the alarm to fire earlier.Calls to
-  // |ScheduleAlarmAt| with a later deadline are ignored. Returns true if the
+  // `ScheduleAlarmAt` with a later deadline are ignored. Returns true if the
   // deadline changed, false otherwise.
   virtual bool ScheduleAlarmAt(Timestamp deadline) = 0;
 
   // Sets the callback that should be run when the alarm fires.
   virtual void SetCallback(std::function<void()> callback) = 0;
 
-  // Waits for |duration| to pass, according to the alarm clock.
+  // Waits for `duration` to pass, according to the alarm clock.
   virtual void Sleep(TimeDelta duration) = 0;
 };
 

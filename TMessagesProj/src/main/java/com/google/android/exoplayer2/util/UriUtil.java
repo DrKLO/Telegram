@@ -19,44 +19,40 @@ import android.net.Uri;
 import android.text.TextUtils;
 import androidx.annotation.Nullable;
 
-/**
- * Utility methods for manipulating URIs.
- */
+/** Utility methods for manipulating URIs. */
 public final class UriUtil {
 
-  /**
-   * The length of arrays returned by {@link #getUriIndices(String)}.
-   */
+  /** The length of arrays returned by {@link #getUriIndices(String)}. */
   private static final int INDEX_COUNT = 4;
   /**
    * An index into an array returned by {@link #getUriIndices(String)}.
-   * <p>
-   * The value at this position in the array is the index of the ':' after the scheme. Equals -1 if
-   * the URI is a relative reference (no scheme). The hier-part starts at (schemeColon + 1),
+   *
+   * <p>The value at this position in the array is the index of the ':' after the scheme. Equals -1
+   * if the URI is a relative reference (no scheme). The hier-part starts at (schemeColon + 1),
    * including when the URI has no scheme.
    */
   private static final int SCHEME_COLON = 0;
   /**
    * An index into an array returned by {@link #getUriIndices(String)}.
-   * <p>
-   * The value at this position in the array is the index of the path part. Equals (schemeColon + 1)
-   * if no authority part, (schemeColon + 3) if the authority part consists of just "//", and
+   *
+   * <p>The value at this position in the array is the index of the path part. Equals (schemeColon +
+   * 1) if no authority part, (schemeColon + 3) if the authority part consists of just "//", and
    * (query) if no path part. The characters starting at this index can be "//" only if the
    * authority part is non-empty (in this case the double-slash means the first segment is empty).
    */
   private static final int PATH = 1;
   /**
    * An index into an array returned by {@link #getUriIndices(String)}.
-   * <p>
-   * The value at this position in the array is the index of the query part, including the '?'
+   *
+   * <p>The value at this position in the array is the index of the query part, including the '?'
    * before the query. Equals fragment if no query part, and (fragment - 1) if the query part is a
    * single '?' with no data.
    */
   private static final int QUERY = 2;
   /**
    * An index into an array returned by {@link #getUriIndices(String)}.
-   * <p>
-   * The value at this position in the array is the index of the fragment part, including the '#'
+   *
+   * <p>The value at this position in the array is the index of the fragment part, including the '#'
    * before the fragment. Equal to the length of the URI if no fragment part, and (length - 1) if
    * the fragment part is a single '#' with no data.
    */
@@ -144,12 +140,17 @@ public final class UriUtil {
     }
   }
 
+  /** Returns true if the URI is starting with a scheme component, false otherwise. */
+  public static boolean isAbsolute(@Nullable String uri) {
+    return uri != null && getUriIndices(uri)[SCHEME_COLON] != -1;
+  }
+
   /**
-   * Removes query parameter from an Uri, if present.
+   * Removes query parameter from a URI, if present.
    *
-   * @param uri The uri.
+   * @param uri The URI.
    * @param queryParameterName The name of the query parameter.
-   * @return The uri without the query parameter.
+   * @return The URI without the query parameter.
    */
   public static Uri removeQueryParameter(Uri uri, String queryParameterName) {
     Uri.Builder builder = uri.buildUpon();
@@ -200,7 +201,8 @@ public final class UriUtil {
         uri.delete(segmentStart, nextSegmentStart);
         limit -= nextSegmentStart - segmentStart;
         i = segmentStart;
-      } else if (i == segmentStart + 2 && uri.charAt(segmentStart) == '.'
+      } else if (i == segmentStart + 2
+          && uri.charAt(segmentStart) == '.'
           && uri.charAt(segmentStart + 1) == '.') {
         // Given "abc/def/../ghi", remove "def/../" to get "abc/ghi".
         int prevSegmentStart = uri.lastIndexOf("/", segmentStart - 2) + 1;
@@ -256,9 +258,10 @@ public final class UriUtil {
 
     // Determine hier-part structure: hier-part = "//" authority path / path
     // This block can also cope with schemeIndex == -1.
-    boolean hasAuthority = schemeIndex + 2 < queryIndex
-        && uriString.charAt(schemeIndex + 1) == '/'
-        && uriString.charAt(schemeIndex + 2) == '/';
+    boolean hasAuthority =
+        schemeIndex + 2 < queryIndex
+            && uriString.charAt(schemeIndex + 1) == '/'
+            && uriString.charAt(schemeIndex + 2) == '/';
     int pathIndex;
     if (hasAuthority) {
       pathIndex = uriString.indexOf('/', schemeIndex + 3); // find first '/' after "://"
@@ -275,5 +278,4 @@ public final class UriUtil {
     indices[FRAGMENT] = fragmentIndex;
     return indices;
   }
-
 }

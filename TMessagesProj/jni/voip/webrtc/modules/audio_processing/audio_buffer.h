@@ -40,12 +40,6 @@ class AudioBuffer {
               size_t output_rate,
               size_t output_num_channels);
 
-  // The constructor below will be deprecated.
-  AudioBuffer(size_t input_num_frames,
-              size_t input_num_channels,
-              size_t buffer_num_frames,
-              size_t buffer_num_channels,
-              size_t output_num_frames);
   virtual ~AudioBuffer();
 
   AudioBuffer(const AudioBuffer&) = delete;
@@ -71,8 +65,8 @@ class AudioBuffer {
   // Usage:
   // channels()[channel][sample].
   // Where:
-  // 0 <= channel < |buffer_num_channels_|
-  // 0 <= sample < |buffer_num_frames_|
+  // 0 <= channel < `buffer_num_channels_`
+  // 0 <= sample < `buffer_num_frames_`
   float* const* channels() { return data_->channels(); }
   const float* const* channels_const() const { return data_->channels(); }
 
@@ -80,9 +74,9 @@ class AudioBuffer {
   // Usage:
   // split_bands(channel)[band][sample].
   // Where:
-  // 0 <= channel < |buffer_num_channels_|
-  // 0 <= band < |num_bands_|
-  // 0 <= sample < |num_split_frames_|
+  // 0 <= channel < `buffer_num_channels_`
+  // 0 <= band < `num_bands_`
+  // 0 <= sample < `num_split_frames_`
   const float* const* split_bands_const(size_t channel) const {
     return split_data_.get() ? split_data_->bands(channel)
                              : data_->bands(channel);
@@ -96,9 +90,9 @@ class AudioBuffer {
   // Usage:
   // split_channels(band)[channel][sample].
   // Where:
-  // 0 <= band < |num_bands_|
-  // 0 <= channel < |buffer_num_channels_|
-  // 0 <= sample < |num_split_frames_|
+  // 0 <= band < `num_bands_`
+  // 0 <= channel < `buffer_num_channels_`
+  // 0 <= sample < `num_split_frames_`
   const float* const* split_channels_const(Band band) const {
     if (split_data_.get()) {
       return split_data_->channels(band);

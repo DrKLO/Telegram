@@ -275,7 +275,7 @@ class RtpHelper : public Base {
   }
   void OnPacketSent(const rtc::SentPacket& sent_packet) override {}
   void OnReadyToSend(bool ready) override { ready_to_send_ = ready; }
-  void OnNetworkRouteChanged(const std::string& transport_name,
+  void OnNetworkRouteChanged(absl::string_view transport_name,
                              const rtc::NetworkRoute& network_route) override {
     last_network_route_ = network_route;
     ++num_network_route_changes_;
@@ -462,7 +462,8 @@ class FakeVideoMediaChannel : public RtpHelper<VideoMediaChannel> {
       std::function<void(const webrtc::RecordableEncodedFrame&)> callback)
       override;
   void ClearRecordableEncodedFrameCallback(uint32_t ssrc) override;
-  void GenerateKeyFrame(uint32_t ssrc) override;
+  void RequestRecvKeyFrame(uint32_t ssrc) override;
+  void GenerateSendKeyFrame(uint32_t ssrc) override;
 
  private:
   bool SetRecvCodecs(const std::vector<VideoCodec>& codecs);
@@ -532,8 +533,14 @@ class FakeVideoEngine : public VideoEngineInterface {
       override;
   FakeVideoMediaChannel* GetChannel(size_t index);
   void UnregisterChannel(VideoMediaChannel* channel);
-  std::vector<VideoCodec> send_codecs() const override;
-  std::vector<VideoCodec> recv_codecs() const override;
+  std::vector<VideoCodec> send_codecs() const override {
+    return send_codecs(true);
+  }
+  std::vector<VideoCodec> recv_codecs() const override {
+    return recv_codecs(true);
+  }
+  std::vector<VideoCodec> send_codecs(bool include_rtx) const override;
+  std::vector<VideoCodec> recv_codecs(bool include_rtx) const override;
   void SetSendCodecs(const std::vector<VideoCodec>& codecs);
   void SetRecvCodecs(const std::vector<VideoCodec>& codecs);
   bool SetCapture(bool capture);

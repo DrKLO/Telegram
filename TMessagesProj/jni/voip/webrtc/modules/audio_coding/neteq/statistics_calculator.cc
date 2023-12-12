@@ -10,11 +10,11 @@
 
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 
-#include <assert.h>
 #include <string.h>  // memset
 
 #include <algorithm>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_coding/neteq/delay_manager.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
@@ -39,7 +39,7 @@ constexpr int kInterruptionLenMs = 150;
 const size_t StatisticsCalculator::kLenWaitingTimes;
 
 StatisticsCalculator::PeriodicUmaLogger::PeriodicUmaLogger(
-    const std::string& uma_name,
+    absl::string_view uma_name,
     int report_interval_ms,
     int max_value)
     : uma_name_(uma_name),
@@ -65,7 +65,7 @@ void StatisticsCalculator::PeriodicUmaLogger::LogToUma(int value) const {
 }
 
 StatisticsCalculator::PeriodicUmaCount::PeriodicUmaCount(
-    const std::string& uma_name,
+    absl::string_view uma_name,
     int report_interval_ms,
     int max_value)
     : PeriodicUmaLogger(uma_name, report_interval_ms, max_value) {}
@@ -88,7 +88,7 @@ void StatisticsCalculator::PeriodicUmaCount::Reset() {
 }
 
 StatisticsCalculator::PeriodicUmaAverage::PeriodicUmaAverage(
-    const std::string& uma_name,
+    absl::string_view uma_name,
     int report_interval_ms,
     int max_value)
     : PeriodicUmaLogger(uma_name, report_interval_ms, max_value) {}
@@ -231,8 +231,12 @@ void StatisticsCalculator::AcceleratedSamples(size_t num_samples) {
   lifetime_stats_.removed_samples_for_acceleration += num_samples;
 }
 
+void StatisticsCalculator::GeneratedNoiseSamples(size_t num_samples) {
+  lifetime_stats_.generated_noise_samples += num_samples;
+}
+
 void StatisticsCalculator::PacketsDiscarded(size_t num_packets) {
-  operations_and_state_.discarded_primary_packets += num_packets;
+  lifetime_stats_.packets_discarded += num_packets;
 }
 
 void StatisticsCalculator::SecondaryPacketsDiscarded(size_t num_packets) {
@@ -258,12 +262,16 @@ void StatisticsCalculator::IncreaseCounter(size_t num_samples, int fs_hz) {
   lifetime_stats_.total_samples_received += num_samples;
 }
 
-void StatisticsCalculator::JitterBufferDelay(size_t num_samples,
-                                             uint64_t waiting_time_ms,
-                                             uint64_t target_delay_ms) {
+void StatisticsCalculator::JitterBufferDelay(
+    size_t num_samples,
+    uint64_t waiting_time_ms,
+    uint64_t target_delay_ms,
+    uint64_t unlimited_target_delay_ms) {
   lifetime_stats_.jitter_buffer_delay_ms += waiting_time_ms * num_samples;
   lifetime_stats_.jitter_buffer_target_delay_ms +=
       target_delay_ms * num_samples;
+  lifetime_stats_.jitter_buffer_minimum_delay_ms +=
+      unlimited_target_delay_ms * num_samples;
   lifetime_stats_.jitter_buffer_emitted_count += num_samples;
 }
 
@@ -340,7 +348,7 @@ void StatisticsCalculator::GetNetworkStatistics(size_t samples_per_packet,
   } else {
     std::sort(waiting_times_.begin(), waiting_times_.end());
     // Find mid-point elements. If the size is odd, the two values
-    // |middle_left| and |middle_right| will both be the one middle element; if
+    // `middle_left` and `middle_right` will both be the one middle element; if
     // the size is even, they will be the the two neighboring elements at the
     // middle of the list.
     const int middle_left = waiting_times_[(waiting_times_.size() - 1) / 2];
@@ -375,7 +383,7 @@ uint16_t StatisticsCalculator::CalculateQ14Ratio(size_t numerator,
     return 0;
   } else if (numerator < denominator) {
     // Ratio must be smaller than 1 in Q14.
-    assert((numerator << 14) / denominator < (1 << 14));
+    RTC_DCHECK_LT((numerator << 14) / denominator, (1 << 14));
     return static_cast<uint16_t>((numerator << 14) / denominator);
   } else {
     // Will not produce a ratio larger than 1, since this is probably an error.

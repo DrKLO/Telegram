@@ -12,6 +12,7 @@
 
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "p2p/base/p2p_constants.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/logging.h"
@@ -108,18 +109,18 @@ RTCError IceParameters::Validate() const {
   return RTCError::OK();
 }
 
-bool StringToConnectionRole(const std::string& role_str, ConnectionRole* role) {
+absl::optional<ConnectionRole> StringToConnectionRole(
+    absl::string_view role_str) {
   const char* const roles[] = {
       CONNECTIONROLE_ACTIVE_STR, CONNECTIONROLE_PASSIVE_STR,
       CONNECTIONROLE_ACTPASS_STR, CONNECTIONROLE_HOLDCONN_STR};
 
   for (size_t i = 0; i < arraysize(roles); ++i) {
     if (absl::EqualsIgnoreCase(roles[i], role_str)) {
-      *role = static_cast<ConnectionRole>(CONNECTIONROLE_ACTIVE + i);
-      return true;
+      return static_cast<ConnectionRole>(CONNECTIONROLE_ACTIVE + i);
     }
   }
-  return false;
+  return absl::nullopt;
 }
 
 bool ConnectionRoleToString(const ConnectionRole& role, std::string* role_str) {
@@ -147,8 +148,8 @@ TransportDescription::TransportDescription()
 
 TransportDescription::TransportDescription(
     const std::vector<std::string>& transport_options,
-    const std::string& ice_ufrag,
-    const std::string& ice_pwd,
+    absl::string_view ice_ufrag,
+    absl::string_view ice_pwd,
     IceMode ice_mode,
     ConnectionRole role,
     const rtc::SSLFingerprint* identity_fingerprint)
@@ -159,8 +160,8 @@ TransportDescription::TransportDescription(
       connection_role(role),
       identity_fingerprint(CopyFingerprint(identity_fingerprint)) {}
 
-TransportDescription::TransportDescription(const std::string& ice_ufrag,
-                                           const std::string& ice_pwd)
+TransportDescription::TransportDescription(absl::string_view ice_ufrag,
+                                           absl::string_view ice_pwd)
     : ice_ufrag(ice_ufrag),
       ice_pwd(ice_pwd),
       ice_mode(ICEMODE_FULL),

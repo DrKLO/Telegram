@@ -92,11 +92,11 @@ int32_t WebRtcIsac_InitBandwidthEstimator(
  * estimated by other side */
 /* returns 0 if everything went fine, -1 otherwise */
 int16_t WebRtcIsac_UpdateBandwidthEstimator(BwEstimatorstr* bwest_str,
-                                            const uint16_t rtp_number,
-                                            const int32_t frame_length,
-                                            const uint32_t send_ts,
-                                            const uint32_t arr_ts,
-                                            const size_t pksize);
+                                            uint16_t rtp_number,
+                                            int32_t frame_length,
+                                            uint32_t send_ts,
+                                            uint32_t arr_ts,
+                                            size_t pksize);
 
 /* Update receiving estimates. Used when we only receive BWE index, no iSAC data
  * packet. */
@@ -131,10 +131,10 @@ int32_t WebRtcIsac_GetUplinkMaxDelay(const BwEstimatorstr* bwest_str);
  */
 int WebRtcIsac_GetMinBytes(
     RateModel* State,
-    int StreamSize,            /* bytes in bitstream */
-    const int FrameLen,        /* ms per frame */
-    const double BottleNeck,   /* bottle neck rate; excl headers (bps) */
-    const double DelayBuildUp, /* max delay from bottleneck buffering (ms) */
+    int StreamSize,      /* bytes in bitstream */
+    int FrameLen,        /* ms per frame */
+    double BottleNeck,   /* bottle neck rate; excl headers (bps) */
+    double DelayBuildUp, /* max delay from bottleneck buffering (ms) */
     enum ISACBandwidth bandwidth
     /*,int16_t        frequentLargePackets*/);
 
@@ -143,9 +143,9 @@ int WebRtcIsac_GetMinBytes(
  */
 void WebRtcIsac_UpdateRateModel(
     RateModel* State,
-    int StreamSize,           /* bytes in bitstream */
-    const int FrameSamples,   /* samples per frame */
-    const double BottleNeck); /* bottle neck rate; excl headers (bps) */
+    int StreamSize,     /* bytes in bitstream */
+    int FrameSamples,   /* samples per frame */
+    double BottleNeck); /* bottle neck rate; excl headers (bps) */
 
 void WebRtcIsac_InitRateModel(RateModel* State);
 

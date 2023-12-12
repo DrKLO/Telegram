@@ -11,8 +11,6 @@
 #include "api/audio/audio_frame.h"
 
 #include <string.h>
-#include <algorithm>
-#include <utility>
 
 #include "rtc_base/checks.h"
 #include "rtc_base/time_utils.h"
@@ -24,35 +22,13 @@ AudioFrame::AudioFrame() {
   static_assert(sizeof(data_) == kMaxDataSizeBytes, "kMaxDataSizeBytes");
 }
 
-void swap(AudioFrame& a, AudioFrame& b) {
-  using std::swap;
-  swap(a.timestamp_, b.timestamp_);
-  swap(a.elapsed_time_ms_, b.elapsed_time_ms_);
-  swap(a.ntp_time_ms_, b.ntp_time_ms_);
-  swap(a.samples_per_channel_, b.samples_per_channel_);
-  swap(a.sample_rate_hz_, b.sample_rate_hz_);
-  swap(a.num_channels_, b.num_channels_);
-  swap(a.channel_layout_, b.channel_layout_);
-  swap(a.speech_type_, b.speech_type_);
-  swap(a.vad_activity_, b.vad_activity_);
-  swap(a.profile_timestamp_ms_, b.profile_timestamp_ms_);
-  swap(a.packet_infos_, b.packet_infos_);
-  const size_t length_a = a.samples_per_channel_ * a.num_channels_;
-  const size_t length_b = b.samples_per_channel_ * b.num_channels_;
-  RTC_DCHECK_LE(length_a, AudioFrame::kMaxDataSizeSamples);
-  RTC_DCHECK_LE(length_b, AudioFrame::kMaxDataSizeSamples);
-  std::swap_ranges(a.data_, a.data_ + std::max(length_a, length_b), b.data_);
-  swap(a.muted_, b.muted_);
-  swap(a.absolute_capture_timestamp_ms_, b.absolute_capture_timestamp_ms_);
-}
-
 void AudioFrame::Reset() {
   ResetWithoutMuting();
   muted_ = true;
 }
 
 void AudioFrame::ResetWithoutMuting() {
-  // TODO(wu): Zero is a valid value for |timestamp_|. We should initialize
+  // TODO(wu): Zero is a valid value for `timestamp_`. We should initialize
   // to an invalid value, or add a new member to indicate invalidity.
   timestamp_ = 0;
   elapsed_time_ms_ = -1;
