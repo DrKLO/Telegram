@@ -509,7 +509,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
                 muteButton.setColorFilter(new PorterDuffColorFilter(newColor, PorterDuff.Mode.MULTIPLY));
                 textPaint.setColor(lastColor);
                 selectionPaint.setColor(newWavesColor);
-                avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(newWavesColor, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+                avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(newWavesColor, BlobDrawable.ALPHA_2));
                 invalidate();
             } else {
                 int colorFrom = lastColor;
@@ -521,7 +521,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
                     muteButton.setColorFilter(new PorterDuffColorFilter(lastColor, PorterDuff.Mode.MULTIPLY));
                     textPaint.setColor(lastColor);
                     selectionPaint.setColor(lastWavesColor);
-                    avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(lastWavesColor, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+                    avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(lastWavesColor, BlobDrawable.ALPHA_2));
                     invalidate();
                 });
                 colorAnimator.addListener(new AnimatorListenerAdapter() {
@@ -532,7 +532,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
                         muteButton.setColorFilter(new PorterDuffColorFilter(lastColor, PorterDuff.Mode.MULTIPLY));
                         textPaint.setColor(lastColor);
                         selectionPaint.setColor(lastWavesColor);
-                        avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(lastWavesColor, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+                        avatarWavesDrawable.setColor(ColorUtils.setAlphaComponent(lastWavesColor, BlobDrawable.ALPHA_2));
                     }
                 });
                 colorAnimator.start();

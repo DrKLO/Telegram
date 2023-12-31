@@ -34,6 +34,13 @@ public class BlobDrawable {
 
     public static float LIGHT_GRADIENT_SIZE = 0.5f;
 
+    public static int MAX_AMPLITUDE = 1800;
+
+    public static float ANIMATION_SPEED = 0.55f;
+
+    public static int ALPHA_1 = 76;
+    public static int ALPHA_2 = 38;
+
     public float minRadius;
     public float maxRadius;
 
