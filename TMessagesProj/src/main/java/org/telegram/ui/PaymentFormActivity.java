@@ -253,6 +253,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private boolean loadingPasswordInfo;
     private PaymentFormActivity passwordFragment;
 
+    private String overrideSmartGlocalConnectionUrl;
     private boolean need_card_country;
     private boolean need_card_postcode;
     private boolean need_card_name;
@@ -1764,7 +1765,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 });
                 if (a == FIELD_SAVEDPASSWORD) {
                     bottomCell[0] = new TextInfoPrivacyCell(context, resourcesProvider);
-                    bottomCell[0].setText(LocaleController.formatString("PaymentConfirmationMessage", R.string.PaymentConfirmationMessage, savedCredentialsCard.title));
+                    bottomCell[0].setText(LocaleController.formatString("PaymentConfirmationMessage", R.string.PaymentConfirmationMessage, savedCredentialsCard == null ? "" : savedCredentialsCard.title));
                     bottomCell[0].setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     linearLayout2.addView(bottomCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -3775,8 +3776,23 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             cardObject.put("security_code", "" + card.getCVC());
                             jsonObject.put("card", cardObject);
 
+                            String overrideSmartGlocalConnectionUrl = null;
+                            if (paymentForm.native_params != null) {
+                                try {
+                                    JSONObject jsonObject2 = new JSONObject(paymentForm.native_params.data);
+                                    overrideSmartGlocalConnectionUrl = jsonObject2.getString("tokenize_url");
+                                    if (overrideSmartGlocalConnectionUrl != null && (
+                                        !overrideSmartGlocalConnectionUrl.startsWith("https://") ||
+                                        overrideSmartGlocalConnectionUrl.endsWith(".smart-glocal.com/cds/v1/tokenize/card")
+                                    )) {
+                                        overrideSmartGlocalConnectionUrl = null;
+                                    }
+                                } catch (Exception e) {}
+                            }
                             URL connectionUrl;
-                            if (paymentForm.invoice.test) {
+                            if (overrideSmartGlocalConnectionUrl != null) {
+                                connectionUrl = new URL(overrideSmartGlocalConnectionUrl);
+                            } else if (paymentForm.invoice.test) {
                                 connectionUrl = new URL("https://tgb-playground.smart-glocal.com/cds/v1/tokenize/card");
                             } else {
                                 connectionUrl = new URL("https://tgb.smart-glocal.com/cds/v1/tokenize/card");

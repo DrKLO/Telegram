@@ -147,30 +147,35 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         canvas.drawCircle(cx, cy, radius, circlePaint);
 
         canvas.save();
-
         float scale = radius / toRadius;
         canvas.scale(scale, scale, cx, cy);
-        canvas.translate(cx - messageView.getRadialProgress().getProgressRect().centerX(), cy - messageView.getRadialProgress().getProgressRect().centerY());
-
+        float tx = cx - messageView.getRadialProgress().getProgressRect().centerX();
+        float ty = cy - messageView.getRadialProgress().getProgressRect().centerY();
+        canvas.translate(tx, ty);
         messageView.getRadialProgress().setOverrideAlpha(progress);
         messageView.getRadialProgress().setDrawBackground(false);
-        messageView.getRadialProgress().draw(canvas);
+        messageView.drawVoiceOnce(canvas, progress, () -> {
+            messageView.getRadialProgress().draw(canvas);
+            canvas.translate(-tx, -ty);
+            canvas.scale(1f / scale, 1f / scale, cx, cy);
+            if (recordCircle != null) {
+                recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
+            }
+            canvas.scale(scale, scale, cx, cy);
+            canvas.translate(tx, ty);
+        });
         messageView.getRadialProgress().setDrawBackground(true);
         messageView.getRadialProgress().setOverrideAlpha(1f);
         canvas.restore();
 
-        if (container.getMeasuredHeight() > 0) {
-            gradientMatrix.setTranslate(0, clipBottom);
-            gradientShader.setLocalMatrix(gradientMatrix);
+//        if (container.getMeasuredHeight() > 0) {
+//            gradientMatrix.setTranslate(0, clipBottom);
+//            gradientShader.setLocalMatrix(gradientMatrix);
 //            canvas.drawRect(0, clipBottom, container.getMeasuredWidth(), container.getMeasuredHeight(), gradientPaint);
-        }
+//        }
 
         //restore clipRect
 //        canvas.restore();
-
-        if (recordCircle != null) {
-            recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
-        }
     }
 
     private int getThemedColor(int key) {

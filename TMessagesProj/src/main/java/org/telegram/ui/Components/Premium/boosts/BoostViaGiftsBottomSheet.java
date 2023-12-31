@@ -5,16 +5,16 @@ import android.graphics.Canvas;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -33,6 +33,7 @@ import org.telegram.ui.Components.Premium.boosts.cells.DateEndCell;
 import org.telegram.ui.Components.Premium.boosts.cells.ParticipantsTypeCell;
 import org.telegram.ui.Components.Premium.boosts.cells.BoostTypeCell;
 import org.telegram.ui.Components.Premium.boosts.cells.DurationCell;
+import org.telegram.ui.Components.Premium.boosts.cells.SwitcherCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Premium.boosts.adapters.BoostAdapter.Item;
 
@@ -70,6 +71,10 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     private int top;
     private Runnable onCloseClick;
     private final TL_stories.TL_prepaidGiveaway prepaidGiveaway;
+    private String additionalPrize = "";
+    private boolean isAdditionalPrizeSelected;
+    private boolean isShowWinnersSelected = true;
+    private final Runnable hideKeyboardRunnable = () -> AndroidUtilities.hideKeyboard(recyclerListView);
 
     public BoostViaGiftsBottomSheet(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, long dialogId, TL_stories.TL_prepaidGiveaway prepaidGiveaway) {
         super(fragment, needFocus, hasFixedSize);
@@ -90,7 +95,36 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
 
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, AndroidUtilities.dp(BOTTOM_HEIGHT_DP));
         recyclerListView.setItemAnimator(itemAnimator);
+        recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    AndroidUtilities.hideKeyboard(recyclerView);
+                }
+            }
+        });
         recyclerListView.setOnItemClickListener((view, position) -> {
+            if (view instanceof SwitcherCell) {
+                SwitcherCell cell = ((SwitcherCell) view);
+                int type = cell.getType();
+                boolean isChecked = !cell.isChecked();
+                cell.setChecked(isChecked);
+                if (type == SwitcherCell.TYPE_WINNERS) {
+                    isShowWinnersSelected = isChecked;
+                    updateRows(false, false);
+                } else if (type == SwitcherCell.TYPE_ADDITION_PRIZE) {
+                    cell.setDivider(isChecked);
+                    isAdditionalPrizeSelected = isChecked;
+                    updateRows(false, false);
+                    adapter.notifyAdditionalPrizeItem(isChecked);
+                    adapter.notifyAllVisibleTextDividers();
+                    if (!isAdditionalPrizeSelected) {
+                        AndroidUtilities.runOnUIThread(hideKeyboardRunnable, 250);
+                    } else {
+                        AndroidUtilities.cancelRunOnUIThread(hideKeyboardRunnable);
+                    }
+                }
+            }
             if (view instanceof BaseCell) {
                 if (view instanceof BoostTypeCell) {
                     int boostType = ((BoostTypeCell) view).getSelectedType();
@@ -121,6 +155,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             } else if (view instanceof DurationCell) {
                 selectedMonths = ((TLRPC.TL_premiumGiftCodeOption) ((DurationCell) view).getGifCode()).months;
                 updateRows(false, false);
+                adapter.notifyAllVisibleTextDividers();
             } else if (view instanceof DateEndCell) {
                 BoostDialogs.showDatePicker(fragment.getContext(), selectedEndDate, (notify, timeSec) -> {
                     selectedEndDate = timeSec * 1000L;
@@ -140,6 +175,10 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             adapter.updateBoostCounter(getSelectedSliderValueWithBoosts());
         }, deletedChat -> {
             selectedChats.remove(deletedChat);
+            updateRows(true, true);
+        }, text -> {
+            additionalPrize = text;
+            updateRows(false, false);
             updateRows(true, true);
         });
         updateRows(false, false);
@@ -175,7 +214,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                         int dateInt = BoostRepository.prepareServerDate(selectedEndDate);
                         boolean onlyNewSubscribers = selectedParticipantsType == ParticipantsTypeCell.TYPE_NEW;
                         actionBtn.updateLoading(true);
-                        BoostRepository.launchPreparedGiveaway(prepaidGiveaway, selectedChats, selectedCountries, currentChat, dateInt, onlyNewSubscribers,
+                        BoostRepository.launchPreparedGiveaway(prepaidGiveaway, selectedChats, selectedCountries, currentChat, dateInt, onlyNewSubscribers, isShowWinnersSelected, isAdditionalPrizeSelected, additionalPrize,
                                 result -> {
                                     dismiss();
                                     AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, true, prepaidGiveaway), 220);
@@ -198,7 +237,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                             boolean onlyNewSubscribers = selectedParticipantsType == ParticipantsTypeCell.TYPE_NEW;
                             int dateInt = BoostRepository.prepareServerDate(selectedEndDate);
                             actionBtn.updateLoading(true);
-                            BoostRepository.payGiveAway(selectedChats, selectedCountries, option, currentChat, dateInt, onlyNewSubscribers, fragment, result -> {
+                            BoostRepository.payGiveAway(selectedChats, selectedCountries, option, currentChat, dateInt, onlyNewSubscribers, fragment, isShowWinnersSelected, isAdditionalPrizeSelected, additionalPrize, result -> {
                                 dismiss();
                                 AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, true), 220);
                             }, error -> {
@@ -321,11 +360,6 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             items.add(Item.asParticipants(ParticipantsTypeCell.TYPE_ALL, selectedParticipantsType, true, selectedCountries));
             items.add(Item.asParticipants(ParticipantsTypeCell.TYPE_NEW, selectedParticipantsType, false, selectedCountries));
             items.add(Item.asDivider(LocaleController.getString("BoostingChooseLimitGiveaway", R.string.BoostingChooseLimitGiveaway), false));
-            items.add(Item.asSubTitle(LocaleController.getString("BoostingDateWhenGiveawayEnds", R.string.BoostingDateWhenGiveawayEnds)));
-            items.add(Item.asDateEnd(selectedEndDate));
-            if (!isPreparedGiveaway()) {
-                items.add(Item.asDivider(LocaleController.formatPluralString("BoostingChooseRandom", getSelectedSliderValue()), false));
-            }
         }
 
         if (!isPreparedGiveaway()) {
@@ -336,17 +370,56 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 items.add(Item.asDuration(option, option.months, isGiveaway() ? getSelectedSliderValue() : selectedUsers.size(), option.amount, selectedMonths, option.currency, i != options.size() - 1));
             }
         }
-        String textDivider = !isPreparedGiveaway() ? LocaleController.getString("BoostingStoriesFeaturesAndTerms", R.string.BoostingStoriesFeaturesAndTerms)
-                : LocaleController.formatPluralString("BoostingChooseRandom", prepaidGiveaway.quantity) + "\n\n" + LocaleController.getString("BoostingStoriesFeaturesAndTerms", R.string.BoostingStoriesFeaturesAndTerms);
-        items.add(Item.asDivider(AndroidUtilities.replaceSingleTag(
-                textDivider,
-                Theme.key_chat_messageLinkIn, 0, () -> {
-                    PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, resourcesProvider);
-                    previewBottomSheet.setOnDismissListener(dialog -> adapter.setPausedStars(false));
-                    previewBottomSheet.setOnShowListener(dialog -> adapter.setPausedStars(true));
-                    previewBottomSheet.show();
-                },
-                resourcesProvider), true));
+
+        if (!isPreparedGiveaway()) {
+            items.add(Item.asDivider(AndroidUtilities.replaceSingleTag(
+                    LocaleController.getString("BoostingStoriesFeaturesAndTerms", R.string.BoostingStoriesFeaturesAndTerms),
+                    Theme.key_chat_messageLinkIn, 0, () -> {
+                        PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, resourcesProvider);
+                        previewBottomSheet.setOnDismissListener(dialog -> adapter.setPausedStars(false));
+                        previewBottomSheet.setOnShowListener(dialog -> adapter.setPausedStars(true));
+                        previewBottomSheet.show();
+                    },
+                    resourcesProvider), true));
+        }
+
+        if (selectedBoostType == BoostTypeCell.TYPE_GIVEAWAY) {
+            items.add(Item.asSwitcher(LocaleController.getString("BoostingGiveawayAdditionalPrizes", R.string.BoostingGiveawayAdditionalPrizes), isAdditionalPrizeSelected, isAdditionalPrizeSelected, SwitcherCell.TYPE_ADDITION_PRIZE));
+
+            if (isAdditionalPrizeSelected) {
+                int quantity = isPreparedGiveaway() ? prepaidGiveaway.quantity : getSelectedSliderValue();
+                items.add(Item.asEnterPrize(quantity));
+                String months = LocaleController.formatPluralString("BoldMonths", selectedMonths);
+                if (additionalPrize.isEmpty()) {
+                    items.add(Item.asDivider(AndroidUtilities.replaceTags(LocaleController.formatPluralString("BoostingGiveawayAdditionPrizeCountHint", quantity, months)), false));
+                } else {
+                    items.add(Item.asDivider(AndroidUtilities.replaceTags(LocaleController.formatPluralString("BoostingGiveawayAdditionPrizeCountNameHint", quantity, additionalPrize, months)), false));
+                }
+            } else {
+                items.add(Item.asDivider(LocaleController.getString("BoostingGiveawayAdditionPrizeHint", R.string.BoostingGiveawayAdditionPrizeHint), false));
+            }
+
+            items.add(Item.asSwitcher(LocaleController.getString("BoostingGiveawayShowWinners", R.string.BoostingGiveawayShowWinners), isShowWinnersSelected, false, SwitcherCell.TYPE_WINNERS));
+            items.add(Item.asDivider(LocaleController.getString("BoostingGiveawayShowWinnersHint", R.string.BoostingGiveawayShowWinnersHint), false));
+
+            items.add(Item.asSubTitle(LocaleController.getString("BoostingDateWhenGiveawayEnds", R.string.BoostingDateWhenGiveawayEnds)));
+            items.add(Item.asDateEnd(selectedEndDate));
+
+            if (!isPreparedGiveaway()) {
+                items.add(Item.asDivider(LocaleController.formatPluralString("BoostingChooseRandom", getSelectedSliderValue()), false));
+            } else {
+                items.add(Item.asDivider(AndroidUtilities.replaceSingleTag(
+                        LocaleController.formatPluralString("BoostingChooseRandom", prepaidGiveaway.quantity) + "\n\n" + LocaleController.getString("BoostingStoriesFeaturesAndTerms", R.string.BoostingStoriesFeaturesAndTerms),
+                        Theme.key_chat_messageLinkIn, 0, () -> {
+                            PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, resourcesProvider);
+                            previewBottomSheet.setOnDismissListener(dialog -> adapter.setPausedStars(false));
+                            previewBottomSheet.setOnShowListener(dialog -> adapter.setPausedStars(true));
+                            previewBottomSheet.show();
+                        },
+                        resourcesProvider), true));
+            }
+        }
+
         if (adapter == null) {
             return;
         }

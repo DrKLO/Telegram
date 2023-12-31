@@ -214,7 +214,7 @@ public class ChatThemeController extends BaseController {
             if (wallPaper.uploadingImage != null) {
                 return TextUtils.equals(oldWallpaper.uploadingImage, wallPaper.uploadingImage);
             }
-            return wallPaper.id == oldWallpaper.id && TextUtils.equals(ChatBackgroundDrawable.hash(wallPaper.settings), ChatBackgroundDrawable.hash(oldWallpaper.settings));
+            return wallPaper.id == oldWallpaper.id && TextUtils.equals(ChatBackgroundDrawable.hash(wallPaper.settings), ChatBackgroundDrawable.hash(oldWallpaper.settings)) && TextUtils.equals(ChatThemeController.getWallpaperEmoticon(wallPaper), ChatThemeController.getWallpaperEmoticon(oldWallpaper));
         }
         return false;
     }
@@ -263,6 +263,10 @@ public class ChatThemeController extends BaseController {
             emoticon = getEmojiSharedPreferences().getString("chatTheme_" + currentAccount + "_" + dialogId, null);
             dialogEmoticonsMap.put(dialogId, emoticon);
         }
+        return getTheme(emoticon);
+    }
+
+    public EmojiThemes getTheme(String emoticon) {
         if (emoticon != null) {
             for (EmojiThemes theme : allChatThemes) {
                 if (emoticon.equals(theme.getEmoticon())) {
@@ -274,10 +278,10 @@ public class ChatThemeController extends BaseController {
     }
 
     public void saveChatWallpaper(long dialogId, TLRPC.WallPaper wallPaper) {
-        if (dialogId < 0) {
-            return;
-        }
         if (wallPaper != null) {
+            if (wallPaper.document == null) {
+                return;
+            }
             SerializedData data = new SerializedData(wallPaper.getObjectSize());
             wallPaper.serializeToStream(data);
             String wallpaperString = Utilities.bytesToHex(data.toByteArray());
@@ -293,12 +297,16 @@ public class ChatThemeController extends BaseController {
     }
 
     public TLRPC.WallPaper getDialogWallpaper(long dialogId) {
-        if (dialogId < 0) {
-            return null;
-        }
-        TLRPC.UserFull userFull = getMessagesController().getUserFull(dialogId);
-        if (userFull != null) {
-            return userFull.wallpaper;
+        if (dialogId >= 0) {
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(dialogId);
+            if (userFull != null) {
+                return userFull.wallpaper;
+            }
+        } else {
+            TLRPC.ChatFull chatFull = getMessagesController().getChatFull(-dialogId);
+            if (chatFull != null) {
+                return chatFull.wallpaper;
+            }
         }
         String wallpaperString = getEmojiSharedPreferences().getString("chatWallpaper_" + currentAccount + "_" + dialogId, null);
         if (wallpaperString != null) {
@@ -411,28 +419,73 @@ public class ChatThemeController extends BaseController {
                     return;
                 }
                 final long dialogId = userFull.id;
-                userFull.wallpaper_overridden = update.wallpaper_overridden;
-                userFull.wallpaper = update.wallpaper;
-                userFull.flags |= 16777216;
+                if ((update.flags & 1) != 0) {
+                    userFull.wallpaper_overridden = update.wallpaper_overridden;
+                    userFull.wallpaper = update.wallpaper;
+                    userFull.flags |= 16777216;
+                } else {
+                    userFull.wallpaper_overridden = false;
+                    userFull.wallpaper = null;
+                    userFull.flags &=~ 16777216;
+                }
                 getMessagesStorage().updateUserInfo(userFull, false);
-                saveChatWallpaper(dialogId, null);
+                saveChatWallpaper(dialogId, userFull.wallpaper);
                 AndroidUtilities.runOnUIThread(() -> {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, dialogId, userFull);
                 });
             }
         } else {
-            // todo
+            TLRPC.ChatFull chatFull = getMessagesController().getChatFull(-DialogObject.getPeerDialogId(update.peer));
+            if (chatFull != null) {
+                if (wallpaperEquals(chatFull.wallpaper, update.wallpaper)) {
+                    return;
+                }
+                final long dialogId = -chatFull.id;
+                if ((update.flags & 1) != 0) {
+                    chatFull.wallpaper = update.wallpaper;
+                    chatFull.flags2 |= 128;
+                } else {
+                    chatFull.wallpaper = null;
+                    chatFull.flags2 &=~ 128;
+                }
+                getMessagesStorage().updateChatInfo(chatFull, false);
+                saveChatWallpaper(dialogId, chatFull.wallpaper);
+                AndroidUtilities.runOnUIThread(() -> {
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, chatFull, 0, false, false);
+                });
+            }
         }
     }
 
     public static boolean wallpaperEquals(TLRPC.WallPaper a, TLRPC.WallPaper b) {
-        if ((a == null || a instanceof TLRPC.TL_wallPaperNoFile) && (b == null || b instanceof TLRPC.TL_wallPaperNoFile)) {
+        if (a == null && b == null) {
             return true;
         }
         if (a instanceof TLRPC.TL_wallPaper && b instanceof TLRPC.TL_wallPaper) {
             return a.id == b.id;
         }
+        if (a instanceof TLRPC.TL_wallPaperNoFile && b instanceof TLRPC.TL_wallPaperNoFile) {
+            if (a.settings != null && b.settings != null) {
+                return TextUtils.equals(getWallpaperEmoticon(a), getWallpaperEmoticon(b));
+            }
+            return a.id == b.id;
+        }
         return false;
+    }
+
+    public static String getWallpaperEmoticon(TLRPC.WallPaper a) {
+        if (a != null) {
+            if (a.settings != null && !TextUtils.isEmpty(a.settings.emoticon)) {
+                return a.settings.emoticon;
+            }
+            return "";
+        }
+        return null;
+    }
+
+    public static boolean isNotEmoticonWallpaper(TLRPC.WallPaper a) {
+        String emoticon = getWallpaperEmoticon(a);
+        return emoticon != null && emoticon.length() == 0;
     }
 
     public void clearWallpaper(long dialogId, boolean notify) {
@@ -460,6 +513,16 @@ public class ChatThemeController extends BaseController {
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             req.peer = MessagesController.getInputPeer(chat);
+            TLRPC.ChatFull chatFull = getMessagesController().getChatFull(-dialogId);
+            if (chatFull != null) {
+                chatFull.wallpaper = null;
+                chatFull.flags2 &= ~128;
+                getMessagesStorage().updateChatInfo(chatFull, false);
+            }
+            saveChatWallpaper(dialogId, null);
+            if (notify) {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, chatFull, 0, false, false);
+            }
         }
 
         getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -467,13 +530,12 @@ public class ChatThemeController extends BaseController {
         });
     }
 
-    public int setWallpaperToUser(long dialogId, String wallpaperLocalPath, Theme.OverrideWallpaperInfo wallpaperInfo, MessageObject serverWallpaper, Runnable callback) {
+    public int setWallpaperToPeer(long dialogId, String wallpaperLocalPath, Theme.OverrideWallpaperInfo wallpaperInfo, MessageObject serverWallpaper, Runnable callback) {
         TLRPC.TL_messages_setChatWallPaper req = new TLRPC.TL_messages_setChatWallPaper();
-        if (dialogId > 0) {
+        if (dialogId >= 0) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
             req.peer = MessagesController.getInputPeer(user);
         } else {
-            //chat not supported yet
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             req.peer = MessagesController.getInputPeer(chat);
         }
@@ -484,52 +546,71 @@ public class ChatThemeController extends BaseController {
             req.flags |= 2;
             req.id = serverWallpaper.getId();
 
-            TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+            TLRPC.UserFull userFull = null;
+            TLRPC.ChatFull chatFull = null;
+            if (dialogId >= 0) {
+                userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+            } else {
+                chatFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
+            }
+
+            TLRPC.TL_messageActionSetChatWallPaper action = (TLRPC.TL_messageActionSetChatWallPaper) serverWallpaper.messageOwner.action;
+            TLRPC.WallPaper wallPaper = new TLRPC.TL_wallPaper();
+            wallPaper.id = action.wallpaper.id;
+            wallPaper.document = action.wallpaper.document;
+            wallPaper.settings = new TLRPC.TL_wallPaperSettings();
+            wallPaper.settings.intensity = (int) (wallpaperInfo.intensity * 100);
+            wallPaper.settings.motion = wallpaperInfo.isMotion;
+            wallPaper.settings.blur = wallpaperInfo.isBlurred;
+            wallPaper.settings.background_color = wallpaperInfo.color;
+            wallPaper.settings.second_background_color = wallpaperInfo.gradientColor1;
+            wallPaper.settings.third_background_color = wallpaperInfo.gradientColor2;
+            wallPaper.settings.fourth_background_color = wallpaperInfo.gradientColor3;
+            wallPaper.settings.rotation = wallpaperInfo.rotation;
+            wallPaper.uploadingImage = wallpaperLocalPath;
+            TLRPC.WallPaper pastWallpaper = null;
             if (userFull != null) {
-                TLRPC.TL_messageActionSetChatWallPaper action = (TLRPC.TL_messageActionSetChatWallPaper) serverWallpaper.messageOwner.action;
-                TLRPC.WallPaper wallPaper = new TLRPC.TL_wallPaper();
-                wallPaper.id = action.wallpaper.id;
-                wallPaper.document = action.wallpaper.document;
-                wallPaper.settings = new TLRPC.TL_wallPaperSettings();
-                wallPaper.settings.intensity = (int) (wallpaperInfo.intensity * 100);
-                wallPaper.settings.motion = wallpaperInfo.isMotion;
-                wallPaper.settings.blur = wallpaperInfo.isBlurred;
-                wallPaper.settings.background_color = wallpaperInfo.color;
-                wallPaper.settings.second_background_color = wallpaperInfo.gradientColor1;
-                wallPaper.settings.third_background_color = wallpaperInfo.gradientColor2;
-                wallPaper.settings.fourth_background_color = wallpaperInfo.gradientColor3;
-                wallPaper.settings.rotation = wallpaperInfo.rotation;
-                wallPaper.uploadingImage = wallpaperLocalPath;
-                if (userFull.wallpaper != null && userFull.wallpaper.uploadingImage != null && userFull.wallpaper.uploadingImage.equals(wallPaper.uploadingImage)) {
-                    wallPaper.stripedThumb = userFull.wallpaper.stripedThumb;
-                }
+                pastWallpaper = userFull.wallpaper;
+            } else if (chatFull != null) {
+                pastWallpaper = chatFull.wallpaper;
+            }
+            if (pastWallpaper != null && pastWallpaper.uploadingImage != null && pastWallpaper.uploadingImage.equals(wallPaper.uploadingImage)) {
+                wallPaper.stripedThumb = pastWallpaper.stripedThumb;
+            }
 
-                wallPaper.settings.flags |= 1;
-                wallPaper.settings.flags |= 8;
-                wallPaper.settings.flags |= 16;
-                wallPaper.settings.flags |= 32;
-                wallPaper.settings.flags |= 64;
+            wallPaper.settings.flags |= 1;
+            wallPaper.settings.flags |= 8;
+            wallPaper.settings.flags |= 16;
+            wallPaper.settings.flags |= 32;
+            wallPaper.settings.flags |= 64;
 
-                userFull.wallpaper = new TLRPC.TL_wallPaper();
-                userFull.wallpaper.pattern = action.wallpaper.pattern;
-                userFull.wallpaper.id = action.wallpaper.id;
-                userFull.wallpaper.document = action.wallpaper.document;
-                userFull.wallpaper.flags = action.wallpaper.flags;
-                userFull.wallpaper.creator = action.wallpaper.creator;
-                userFull.wallpaper.dark = action.wallpaper.dark;
-                userFull.wallpaper.isDefault = action.wallpaper.isDefault;
-                userFull.wallpaper.slug = action.wallpaper.slug;
-                userFull.wallpaper.access_hash = action.wallpaper.access_hash;
-                userFull.wallpaper.stripedThumb = action.wallpaper.stripedThumb;
-                userFull.wallpaper.settings = wallPaper.settings;
-                userFull.wallpaper.flags |= 4;
+            TLRPC.TL_wallPaper wallpaper = new TLRPC.TL_wallPaper();
+            wallpaper.pattern = action.wallpaper.pattern;
+            wallpaper.id = action.wallpaper.id;
+            wallpaper.document = action.wallpaper.document;
+            wallpaper.flags = action.wallpaper.flags;
+            wallpaper.creator = action.wallpaper.creator;
+            wallpaper.dark = action.wallpaper.dark;
+            wallpaper.isDefault = action.wallpaper.isDefault;
+            wallpaper.slug = action.wallpaper.slug;
+            wallpaper.access_hash = action.wallpaper.access_hash;
+            wallpaper.stripedThumb = action.wallpaper.stripedThumb;
+            wallpaper.settings = wallPaper.settings;
+            wallpaper.flags |= 4;
+            if (userFull != null) {
+                userFull.wallpaper = wallpaper;
                 userFull.flags |= 16777216;
-
                 getMessagesStorage().updateUserInfo(userFull, false);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, dialogId, userFull);
-                if (callback != null) {
-                    callback.run();
-                }
+            } else if (chatFull != null) {
+                chatFull.wallpaper = wallpaper;
+                chatFull.flags2 |= 128;
+                getMessagesStorage().updateChatInfo(chatFull, false);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, chatFull, 0, false, false);
+            }
+
+            if (callback != null) {
+                callback.run();
             }
         } else {
             req.flags |= 1;
@@ -543,27 +624,44 @@ public class ChatThemeController extends BaseController {
         return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response instanceof TLRPC.Updates) {
                 TLRPC.Updates res = (TLRPC.Updates) response;
-                TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+                TLRPC.UserFull userFull = null;
+                TLRPC.ChatFull chatFull = null;
+                if (dialogId >= 0) {
+                    userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+                } else {
+                    chatFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
+                }
+                TLRPC.WallPaper pastWallpaper = null;
                 if (userFull != null) {
-                    for (int i = 0; i < res.updates.size(); i++) {
-                        if (res.updates.get(i) instanceof TLRPC.TL_updateNewMessage) {
-                            TLRPC.Message message = ((TLRPC.TL_updateNewMessage) res.updates.get(i)).message;
-                            if (message.action instanceof TLRPC.TL_messageActionSetChatWallPaper) {
-                                if (finalApplyOnRequest) {
-                                    TLRPC.TL_messageActionSetChatWallPaper actionSetChatWallPaper = (TLRPC.TL_messageActionSetChatWallPaper) message.action;
-                                    actionSetChatWallPaper.wallpaper.uploadingImage = wallpaperLocalPath;
-                                    if (userFull.wallpaper != null && userFull.wallpaper.uploadingImage != null && userFull.wallpaper.uploadingImage.equals(actionSetChatWallPaper.wallpaper.uploadingImage)) {
-                                        actionSetChatWallPaper.wallpaper.stripedThumb = userFull.wallpaper.stripedThumb;
-                                    }
+                    pastWallpaper = userFull.wallpaper;
+                } else if (chatFull != null) {
+                    pastWallpaper = chatFull.wallpaper;
+                }
+                for (int i = 0; i < res.updates.size(); i++) {
+                    if (res.updates.get(i) instanceof TLRPC.TL_updateNewMessage) {
+                        TLRPC.Message message = ((TLRPC.TL_updateNewMessage) res.updates.get(i)).message;
+                        if (message.action instanceof TLRPC.TL_messageActionSetChatWallPaper) {
+                            if (finalApplyOnRequest) {
+                                TLRPC.TL_messageActionSetChatWallPaper actionSetChatWallPaper = (TLRPC.TL_messageActionSetChatWallPaper) message.action;
+                                actionSetChatWallPaper.wallpaper.uploadingImage = wallpaperLocalPath;
+                                if (pastWallpaper != null && pastWallpaper.uploadingImage != null && pastWallpaper.uploadingImage.equals(actionSetChatWallPaper.wallpaper.uploadingImage)) {
+                                    actionSetChatWallPaper.wallpaper.stripedThumb = pastWallpaper.stripedThumb;
+                                }
+                                if (userFull != null) {
                                     userFull.wallpaper = actionSetChatWallPaper.wallpaper;
                                     userFull.flags |= 16777216;
-
                                     saveChatWallpaper(dialogId, userFull.wallpaper);
                                     getMessagesStorage().updateUserInfo(userFull, false);
                                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, dialogId, userFull);
+                                } else if (chatFull != null) {
+                                    chatFull.wallpaper = actionSetChatWallPaper.wallpaper;
+                                    chatFull.flags2 |= 128;
+                                    saveChatWallpaper(dialogId, chatFull.wallpaper);
+                                    getMessagesStorage().updateChatInfo(chatFull, false);
+                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, chatFull, 0, false, false);
                                 }
-                                break;
                             }
+                            break;
                         }
                     }
                 }

@@ -59,6 +59,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatActionCell;
+import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -1256,6 +1258,7 @@ public class RecyclerListView extends RecyclerView {
         for (int a = 0; a < 2; a++) {
             for (int i = count - 1; i >= 0; i--) {
                 final View child = getChildAt(i);
+                if ((child instanceof ChatMessageCell || child instanceof ChatActionCell) && child.getVisibility() == View.INVISIBLE) continue;
                 final float translationX = a == 0 ? child.getTranslationX() : 0;
                 final float translationY = a == 0 ? child.getTranslationY() : 0;
                 if (x >= child.getLeft() + translationX

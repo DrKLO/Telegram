@@ -206,17 +206,31 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
             } else if (child instanceof ReactedUserHolderView) {
                 ReactedUserHolderView cell = (ReactedUserHolderView) child;
                 if (cell.dialogId == dialogId) {
-                    holder.view = cell.avatarView;
-                    holder.params = cell.params;
-                    holder.avatarImage = cell.avatarView.getImageReceiver();
-                    holder.clipParent = (View) cell.getParent();
-                    holder.alpha = cell.getAlpha() * cell.getAlphaInternal();
-                    if (holder.alpha < 1) {
-                        holder.bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                        holder.bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground, cell.getResourcesProvider()));
+                    final boolean hasStoryPreview = cell.storyPreviewView != null && cell.storyPreviewView.getImageReceiver() != null && cell.storyPreviewView.getImageReceiver().getImageDrawable() != null;
+                    if (cell.storyId == storyId && hasStoryPreview) {
+                        holder.view = cell.storyPreviewView;
+                        holder.storyImage = cell.storyPreviewView.getImageReceiver();
+                        holder.clipParent = (View) cell.getParent();
+                        holder.alpha = cell.getAlpha() * cell.getAlphaInternal();
+                        if (holder.alpha < 1) {
+                            holder.bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                            holder.bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground, cell.getResourcesProvider()));
+                        }
+                        updateClip(holder);
+                        return true;
+                    } else if (!hasStoryPreview) {
+                        holder.view = cell.avatarView;
+                        holder.params = cell.params;
+                        holder.avatarImage = cell.avatarView.getImageReceiver();
+                        holder.clipParent = (View) cell.getParent();
+                        holder.alpha = cell.getAlpha() * cell.getAlphaInternal();
+                        if (holder.alpha < 1) {
+                            holder.bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                            holder.bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground, cell.getResourcesProvider()));
+                        }
+                        updateClip(holder);
+                        return true;
                     }
-                    updateClip(holder);
-                    return true;
                 }
             } else if (child instanceof ProfileSearchCell) {
                 ProfileSearchCell cell = (ProfileSearchCell) child;

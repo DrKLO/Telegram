@@ -368,6 +368,7 @@ public interface INavigationLayout {
         public final boolean instant;
         public boolean onlyTopFragment;
         public boolean applyTheme = true;
+        public boolean applyTrulyTheme = true;
         public Runnable afterStartDescriptionsAddedRunnable;
         public Runnable beforeAnimationRunnable;
         public Runnable afterAnimationRunnable;

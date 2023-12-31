@@ -958,7 +958,7 @@ public class Theme {
                 }
                 if (currentType == TYPE_MEDIA) {
                     if (customPaint || drawFullBottom) {
-                        int radToUse = isBottomNear ? nearRad : rad;
+                        int radToUse = isBottomNear || botButtonsBottom ? nearRad : rad;
 
                         path.lineTo(bounds.left + padding, bounds.bottom - padding - radToUse);
                         rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
@@ -1749,7 +1749,6 @@ public class Theme {
                 Math.max(0, Color.blue(submenuBackground) - 10)
             ));
 
-            currentColors.put(key_chat_inCodeBackground, codeBackground(inBubble, isDarkTheme));
             if (isDarkTheme && currentColors.get(key_chat_outBubbleGradient1) != 0) {
                 int outBubbleAverage = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
                 Color.colorToHSV(outBubbleAverage, tempHSV);
@@ -4126,7 +4125,6 @@ public class Theme {
     public static final int key_stories_circle_closeFriends1 = colorsCount++;
     public static final int key_stories_circle_closeFriends2 = colorsCount++;
 
-    public static final int key_code_background = colorsCount++;
     public static final int key_chat_inCodeBackground = colorsCount++;
     public static final int key_chat_outCodeBackground = colorsCount++;
     public static final int key_code_keyword = colorsCount++;
@@ -4411,6 +4409,7 @@ public class Theme {
         themeAccentExclusionKeys.add(key_statisticChartLine_lightgreen);
         themeAccentExclusionKeys.add(key_statisticChartLine_orange);
         themeAccentExclusionKeys.add(key_statisticChartLine_indigo);
+        themeAccentExclusionKeys.add(key_chat_inCodeBackground);
 
         themeAccentExclusionKeys.add(key_voipgroup_checkMenu);
         themeAccentExclusionKeys.add(key_voipgroup_muteButton);
@@ -5757,7 +5756,7 @@ public class Theme {
                     ripple = new ShapeDrawable(new RectShape());
                     ((ShapeDrawable) ripple).getPaint().setColor(rippleColor);
                 }
-                Drawable pressed = new LayerDrawable(new Drawable[] { background, ripple });
+                Drawable pressed = background == null ? ripple : new LayerDrawable(new Drawable[] { background, ripple });
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressed);
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, pressed);
                 stateListDrawable.addState(StateSet.WILD_CARD, background);
@@ -5791,7 +5790,7 @@ public class Theme {
             } else {
                 StateListDrawable stateListDrawable = new StateListDrawable();
                 Drawable ripple = new CircleDrawable(radius, rippleColor);
-                Drawable pressed = new LayerDrawable(new Drawable[] { background, ripple });
+                Drawable pressed = background == null ? ripple : new LayerDrawable(new Drawable[] { background, ripple });
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressed);
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, pressed);
                 stateListDrawable.addState(StateSet.WILD_CARD, background);
@@ -9868,9 +9867,13 @@ public class Theme {
                     MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
                     Bitmap patternBitmap = null;
 
-                    if (wallpaperFile != null && wallpaperDocument != null) {
-                        File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
-                        patternBitmap = SvgHelper.getBitmap(f, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);
+                    if (wallpaperFile != null && !isCustomTheme()) {
+                        if (wallpaperDocument != null) {
+                            File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
+                            patternBitmap = SvgHelper.getBitmap(f, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);
+                        } else {
+                            patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, AndroidUtilities.dp(360), AndroidUtilities.dp(640), Color.WHITE);
+                        }
                         if (patternBitmap != null) {
                             FileOutputStream stream = null;
                             try {

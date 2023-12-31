@@ -81,6 +81,13 @@ public class StoriesStorage {
                             if (storyItem.fwd_from != null && storyItem.fwd_from.from != null) {
                                 MessagesStorage.addLoadPeerInfo(storyItem.fwd_from.from, usersToLoad, chatsToLoad);
                             }
+                            for (int j = 0; j < storyItem.media_areas.size(); ++j) {
+                                if (storyItem.media_areas.get(j) instanceof TL_stories.TL_mediaAreaChannelPost) {
+                                    long channel_id = ((TL_stories.TL_mediaAreaChannelPost) storyItem.media_areas.get(j)).channel_id;
+                                    if (!chatsToLoad.contains(channel_id))
+                                        chatsToLoad.add(channel_id);
+                                }
+                            }
                             StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                             storyItems.add(storyItem);
                             data.reuse();

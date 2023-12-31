@@ -2377,7 +2377,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public boolean needPlayMessage(MessageObject messageObject, boolean muted) {
+                    public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
                         if (messageObject.isVoice() || messageObject.isRoundVideo()) {
                             boolean result = MediaController.getInstance().playMessage(messageObject, muted);
                             MediaController.getInstance().setVoiceMessagesPlaylist(null, false);
@@ -2674,6 +2674,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     @Override
                     public void didClickImage(ChatActionCell cell) {
                         MessageObject message = cell.getMessageObject();
+                        if (message.type == MessageObject.TYPE_ACTION_WALLPAPER) {
+                            presentFragment(new ChannelColorActivity(getDialogId()).setOnApplied(ChannelAdminLogActivity.this));
+                            return;
+                        }
                         PhotoViewer.getInstance().setParentActivity(ChannelAdminLogActivity.this);
                         TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 640);
                         if (photoSize != null) {

@@ -163,4 +163,26 @@ public class DialogObject {
         }
         return null;
     }
+
+    public static long getEmojiStatusDocumentId(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
+            return ((TLRPC.TL_emojiStatus) emojiStatus).document_id;
+        } else if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {
+            return ((TLRPC.TL_emojiStatusUntil) emojiStatus).document_id;
+        } else {
+            return 0;
+        }
+    }
+
+    public static int getEmojiStatusUntil(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {
+            return ((TLRPC.TL_emojiStatusUntil) emojiStatus).until;
+        }
+        return 0;
+    }
+
+    public static boolean emojiStatusesEqual(TLRPC.EmojiStatus a, TLRPC.EmojiStatus b) {
+        return getEmojiStatusDocumentId(a) == getEmojiStatusDocumentId(b) && getEmojiStatusUntil(a) == getEmojiStatusUntil(b);
+    }
+
 }

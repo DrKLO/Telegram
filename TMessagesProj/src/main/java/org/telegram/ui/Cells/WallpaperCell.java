@@ -354,7 +354,7 @@ public class WallpaperCell extends FrameLayout {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int availableWidth = width - AndroidUtilities.dp(14 * 2 + 6 * (spanCount - 1));
         int itemWidth = availableWidth / spanCount;
-        int height = currentType == WallpapersListActivity.TYPE_ALL ? AndroidUtilities.dp(180) : itemWidth;
+        int height = currentType == WallpapersListActivity.TYPE_ALL || currentType == WallpapersListActivity.TYPE_CHANNEL_PATTERNS || currentType == WallpapersListActivity.TYPE_CHANNEL_CUSTOM ? AndroidUtilities.dp(180) : itemWidth;
         setMeasuredDimension(width, height + (isTop ? AndroidUtilities.dp(14) : 0) + (AndroidUtilities.dp(isBottom ? 14 : 6)));
 
         for (int a = 0; a < spanCount; a++) {

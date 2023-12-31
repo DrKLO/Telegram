@@ -708,12 +708,14 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             emojiKeyboardVisible = false;
             editText.clearFocus();
             updateScrollViewMarginBottom(0);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             bottomDialogLayout.animate().setListener(null).cancel();
             bottomDialogLayout.animate().translationY(bottomDialogLayout.getMeasuredHeight()).setDuration(350).withLayer().setInterpolator(CubicBezierInterpolator.DEFAULT).setUpdateListener(animation -> {
                 actionButton.setTranslationY(-(1f - (float) animation.getAnimatedValue()) * bottomDialogLayout.getMeasuredHeight());
             }).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     bottomDialogLayout.setVisibility(View.INVISIBLE);
                 }
             }).start();

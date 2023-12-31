@@ -984,7 +984,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        if (getMessagesController().premiumLocked) {
+        if (getMessagesController().premiumFeaturesBlocked()) {
             return false;
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.billingProductDetailsUpdated);

@@ -279,7 +279,7 @@ public class CaptionContainerView extends FrameLayout {
                 limitTextView.cancelAnimation();
                 limitTextView.setText(limitText);
                 limitTextView.setTextColor(codePointCount >= limit ? 0xffEC7777 : 0xffffffff);
-                if (codePointCount > limit && !UserConfig.getInstance(currentAccount).isPremium() && codePointCount < getCaptionPremiumLimit() && codePointCount > lastLength && (captionLimitToast() || MessagesController.getInstance(currentAccount).premiumLocked)) {
+                if (codePointCount > limit && !UserConfig.getInstance(currentAccount).isPremium() && codePointCount < getCaptionPremiumLimit() && codePointCount > lastLength && (captionLimitToast() || MessagesController.getInstance(currentAccount).premiumFeaturesBlocked())) {
                     AndroidUtilities.shakeViewSpring(limitTextView, shiftDp = -shiftDp);
                     BotWebViewVibrationEffect.APP_ERROR.vibrate();
                 }
@@ -369,13 +369,13 @@ public class CaptionContainerView extends FrameLayout {
 
     public boolean ignoreTouches;
 
-    protected boolean ignoreTouches() {
+    protected boolean ignoreTouches(float x, float y) {
         return false;
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ignoreTouches || ignoreTouches() || !bounds.contains(ev.getX(), ev.getY()) && !keyboardShown) {
+        if (ignoreTouches || ev.getAction() == MotionEvent.ACTION_DOWN && ignoreTouches(ev.getX(), ev.getY()) || !bounds.contains(ev.getX(), ev.getY()) && !keyboardShown) {
             return false;
         }
         if (ev.getAction() == MotionEvent.ACTION_DOWN && !keyboardShown) {
@@ -1236,9 +1236,15 @@ public class CaptionContainerView extends FrameLayout {
 
     public static class PeriodDrawable extends Drawable {
 
-        private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        public final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         public final AnimatedTextView.AnimatedTextDrawable textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, false, false) {
+            @Override
+            public void invalidateSelf() {
+                PeriodDrawable.this.invalidateSelf();
+            }
+        };
+        public final AnimatedTextView.AnimatedTextDrawable activeTextDrawable = new AnimatedTextView.AnimatedTextDrawable(true, false, false) {
             @Override
             public void invalidateSelf() {
                 PeriodDrawable.this.invalidateSelf();
@@ -1247,8 +1253,17 @@ public class CaptionContainerView extends FrameLayout {
 
         private boolean filled = false;
         private final AnimatedFloat fillT = new AnimatedFloat(this::invalidateSelf, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final Path activePath = new Path();
+        private final int dashes;
+        public float diameterDp = 21;
 
         public PeriodDrawable() {
+            this(5);
+        }
+
+        public PeriodDrawable(int dashes) {
+            this.dashes = dashes;
+
             strokePaint.setStyle(Paint.Style.STROKE);
             strokePaint.setStrokeWidth(dpf2(1.66f));
             strokePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -1258,33 +1273,74 @@ public class CaptionContainerView extends FrameLayout {
             textDrawable.setTextSize(dpf2(12));
             textDrawable.setGravity(Gravity.CENTER);
 
-            updateColors(0xffffffff, 0xff1A9CFF);
+            activeTextDrawable.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
+            activeTextDrawable.setTypeface(AndroidUtilities.getTypeface("fonts/num.otf"));
+            activeTextDrawable.setTextSize(dpf2(12));
+            activeTextDrawable.setGravity(Gravity.CENTER);
+
+            updateColors(0xffffffff, 0xff1A9CFF, 0xffffffff);
         }
 
-        public void updateColors(int strokeColor, int fillColor) {
+        public void setTextSize(float dp) {
+            activeTextDrawable.setTextSize(dpf2(dp));
+            textDrawable.setTextSize(dpf2(dp));
+        }
+
+        public float textOffsetX, textOffsetY;
+
+        public void updateColors(int strokeColor, int fillColor, int activeTextColor) {
             strokePaint.setColor(strokeColor);
             textDrawable.setTextColor(strokeColor);
+            activeTextDrawable.setTextColor(activeTextColor);
             fillPaint.setColor(fillColor);
+        }
+
+        private boolean clear;
+        public void setClear(boolean clear) {
+            if (this.clear != clear) {
+                this.clear = clear;
+                strokePaint.setXfermode(clear ? new PorterDuffXfermode(PorterDuff.Mode.CLEAR) : null);
+                textDrawable.getPaint().setXfermode(clear ? new PorterDuffXfermode(PorterDuff.Mode.CLEAR) : null);
+            }
+        }
+
+        private float cx, cy;
+        public void setCenterXY(float x, float y) {
+            this.cx = x;
+            this.cy = y;
+        }
+
+        @Override
+        public void setBounds(@NonNull Rect bounds) {
+            super.setBounds(bounds);
+            this.cx = getBounds().centerX();
+            this.cy = getBounds().centerY();
+        }
+
+        @Override
+        public void setBounds(int left, int top, int right, int bottom) {
+            super.setBounds(left, top, right, bottom);
+            this.cx = getBounds().centerX();
+            this.cy = getBounds().centerY();
         }
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            final float cx = getBounds().centerY();
-            final float cy = getBounds().centerY();
-
-            final float r = dpf2(21) / 2f;
+            draw(canvas, 1f);
+        }
+        public void draw(@NonNull Canvas canvas, float alpha) {
+            final float r = dpf2(diameterDp) / 2f;
             final float fillT = this.fillT.set(filled);
 
             if (fillT > 0) {
-                fillPaint.setAlpha((int) (0xFF * fillT));
+                fillPaint.setAlpha((int) (0xFF * alpha * fillT));
                 canvas.drawCircle(cx, cy, dpf2(11.33f) * fillT, fillPaint);
             }
 
-            strokePaint.setAlpha((int) (0xFF * (1f - fillT)));
+            strokePaint.setAlpha((int) (0xFF * alpha * (1f - fillT)));
             AndroidUtilities.rectTmp.set(cx - r, cy - r, cx + r, cy + r);
             canvas.drawArc(AndroidUtilities.rectTmp, 90, 180, false, strokePaint);
 
-            final int dashes = 5;
             final int gaps = dashes + 1;
             final float dashWeight = 1f, gapWeight = 1.5f;
             final float dashSweep = dashWeight / (dashes * dashWeight + gaps * gapWeight) * 180;
@@ -1296,7 +1352,7 @@ public class CaptionContainerView extends FrameLayout {
             }
 
             canvas.save();
-            canvas.translate(0, -1);
+            canvas.translate(textOffsetX + 0, textOffsetY);
             AndroidUtilities.rectTmp2.set(
                 (int) (cx - dp(20)),
                 (int) (cy - dp(20)),
@@ -1304,12 +1360,22 @@ public class CaptionContainerView extends FrameLayout {
                 (int) (cy + dp(20))
             );
             textDrawable.setBounds(AndroidUtilities.rectTmp2);
+            textDrawable.setAlpha((int) (0xFF * alpha));
             textDrawable.draw(canvas);
+            if (fillT > 0) {
+                activePath.rewind();
+                activePath.addCircle(cx, cy + dp(1), dpf2(11.33f) * fillT, Path.Direction.CW);
+                canvas.clipPath(activePath);
+                activeTextDrawable.setBounds(AndroidUtilities.rectTmp2);
+                activeTextDrawable.setAlpha((int) (0xFF * alpha));
+                activeTextDrawable.draw(canvas);
+            }
             canvas.restore();
         }
 
         public void setValue(int num, boolean fill, boolean animated) {
             textDrawable.setText("" + num, animated);
+            activeTextDrawable.setText("" + num, animated);
             filled = fill;
             if (!animated) {
                 fillT.set(filled, true);

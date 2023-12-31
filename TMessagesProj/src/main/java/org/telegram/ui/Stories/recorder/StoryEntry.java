@@ -8,16 +8,22 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.SpannableString;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -47,7 +53,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StoryEntry extends IStoryPart {
+public class StoryEntry {
 
     public final int currentAccount = UserConfig.selectedAccount;
 
@@ -70,6 +76,9 @@ public class StoryEntry extends IStoryPart {
     public String repostCaption;
     public TLRPC.MessageMedia repostMedia;
 
+    public boolean isRepostMessage;
+    public ArrayList<MessageObject> messageObjects;
+
     public boolean isError;
     public TLRPC.TL_error error;
 
@@ -90,12 +99,10 @@ public class StoryEntry extends IStoryPart {
     public String thumbPath;
     public Bitmap thumbPathBitmap;
     public float videoVolume = 1f;
+    public int orientation, invert;
 
     public boolean muted;
     public float left, right = 1;
-
-    public int orientation;
-    public int invert;
 
 //    public int width, height;
     public long duration;
@@ -103,8 +110,9 @@ public class StoryEntry extends IStoryPart {
     public int resultWidth = 720;
     public int resultHeight = 1280;
 
-    public int partsMaxId = 1;
-    public final ArrayList<Part> parts = new ArrayList<>();
+    public int width, height;
+    // matrix describes transformations from width x height to resultWidth x resultHeight
+    public final Matrix matrix = new Matrix();
 
     public File round;
     public String roundThumb;
@@ -115,42 +123,10 @@ public class StoryEntry extends IStoryPart {
 
     public TLRPC.InputPeer peer;
 
-    public static class Part extends IStoryPart {
-        public File file;
-        public boolean fileDeletable;
-        public int orientantion, invert;
-
-        public void readParams(AbstractSerializedData stream, boolean exception) {
-            width = stream.readInt32(exception);
-            height = stream.readInt32(exception);
-            file = new File(stream.readString(exception));
-            fileDeletable = stream.readBool(exception);
-            orientantion = stream.readInt32(exception);
-            invert = stream.readInt32(exception);
-            float[] values = new float[9];
-            for (int i = 0; i < 9; ++i) {
-                values[i] = stream.readFloat(exception);
-            }
-            matrix.setValues(values);
-        }
-
-        public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(width);
-            stream.writeInt32(height);
-            stream.writeString(file == null ? "" : file.getAbsolutePath());
-            stream.writeBool(fileDeletable);
-            stream.writeInt32(orientantion);
-            stream.writeInt32(invert);
-            float[] values = new float[9];
-            matrix.getValues(values);
-            for (int i = 0; i < 9; ++i) {
-                stream.writeFloat(values[i]);
-            }
-        }
-    }
-
-    // matrix describes transformations from width x height to resultWidth x resultHeight
-//    public final Matrix matrix = new Matrix();
+    public Drawable backgroundDrawable;
+    public boolean isDark = Theme.isCurrentThemeDark();
+    public long backgroundWallpaperPeerId = Long.MIN_VALUE; // Long.MIN_VALUE = no wallpaper
+    public String backgroundWallpaperEmoticon;
     public int gradientTopColor, gradientBottomColor;
 
     public CharSequence caption;
@@ -180,6 +156,9 @@ public class StoryEntry extends IStoryPart {
     public ArrayList<VideoEditedInfo.MediaEntity> mediaEntities;
     public List<TLRPC.InputDocument> stickers;
     public List<TLRPC.InputDocument> editStickers;
+    public File messageFile;
+    public File messageVideoMaskFile;
+    public File backgroundFile;
 
     // filter
     public File filterFile;
@@ -189,6 +168,10 @@ public class StoryEntry extends IStoryPart {
     private boolean fromCamera;
 
     public boolean wouldBeVideo() {
+        return wouldBeVideo(mediaEntities);
+    }
+
+    public boolean wouldBeVideo(ArrayList<VideoEditedInfo.MediaEntity> mediaEntities) {
         if (isVideo) {
             return true;
         }
@@ -225,6 +208,23 @@ public class StoryEntry extends IStoryPart {
         );
     }
 
+    public static void drawBackgroundDrawable(Canvas canvas, Drawable drawable, int w, int h) {
+        if (drawable == null) {
+            return;
+        }
+        if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bd = (BitmapDrawable) drawable;
+            int bw = bd.getBitmap().getWidth();
+            int bh = bd.getBitmap().getHeight();
+            final float scale = Math.max(w / (float) bw, h / (float) bh);
+            drawable.setBounds(0, 0, (int) (bw * scale), (int) (bh * scale));
+            drawable.draw(canvas);
+        } else {
+            drawable.setBounds(0, 0, w, h);
+            drawable.draw(canvas);
+        }
+    }
+
     public Bitmap buildBitmap(float scale, Bitmap mainFileBitmap) {
         Matrix tempMatrix = new Matrix();
 
@@ -233,9 +233,36 @@ public class StoryEntry extends IStoryPart {
         Bitmap finalBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(finalBitmap);
 
-        Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        gradientPaint.setShader(new LinearGradient(0, 0, 0, canvas.getHeight(), new int[] { gradientTopColor, gradientBottomColor }, new float[] {0, 1}, Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), gradientPaint);
+        if (backgroundFile != null) {
+            try {
+                Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(backgroundFile.getPath(), opts), w, h, false);
+                canvas.save();
+                float s = resultWidth / (float) paintBitmap.getWidth();
+                canvas.scale(s, s);
+                tempMatrix.postScale(scale, scale);
+                canvas.drawBitmap(paintBitmap, 0, 0, bitmapPaint);
+                canvas.restore();
+                paintBitmap.recycle();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        } else if (backgroundWallpaperEmoticon != null) {
+            Drawable drawable = backgroundDrawable;
+            if (drawable == null) {
+                drawable = PreviewView.getBackgroundDrawableFromTheme(currentAccount, backgroundWallpaperEmoticon, isDark);
+            }
+            drawBackgroundDrawable(canvas, drawable, canvas.getWidth(), canvas.getHeight());
+        } else if (backgroundWallpaperPeerId != Long.MIN_VALUE) {
+            Drawable drawable = backgroundDrawable;
+            if (drawable == null) {
+                drawable = PreviewView.getBackgroundDrawable(null, currentAccount, backgroundWallpaperPeerId, isDark);
+            }
+            drawBackgroundDrawable(canvas, drawable, canvas.getWidth(), canvas.getHeight());
+        } else {
+            Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            gradientPaint.setShader(new LinearGradient(0, 0, 0, canvas.getHeight(), new int[]{gradientTopColor, gradientBottomColor}, new float[]{0, 1}, Shader.TileMode.CLAMP));
+            canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), gradientPaint);
+        }
 
         tempMatrix.set(matrix);
         if (mainFileBitmap != null) {
@@ -258,24 +285,24 @@ public class StoryEntry extends IStoryPart {
                 }
             }
 
-            for (int i = 0; i < parts.size(); ++i) {
+            if (paintFile != null) {
                 try {
-                    final Part part = parts.get(i);
-                    Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(part.file.getPath(), opts), w, h, false);
-                    final float s = (float) part.width / fileBitmap.getWidth();
-                    tempMatrix.set(part.matrix);
-                    tempMatrix.preScale(s, s);
+                    Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(paintFile.getPath(), opts), w, h, false);
+                    canvas.save();
+                    float s = resultWidth / (float) paintBitmap.getWidth();
+                    canvas.scale(s, s);
                     tempMatrix.postScale(scale, scale);
-                    canvas.drawBitmap(fileBitmap, tempMatrix, bitmapPaint);
-                    fileBitmap.recycle();
+                    canvas.drawBitmap(paintBitmap, 0, 0, bitmapPaint);
+                    canvas.restore();
+                    paintBitmap.recycle();
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
 
-            if (paintFile != null) {
+            if (messageFile != null) {
                 try {
-                    Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(paintFile.getPath(), opts), w, h, false);
+                    Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(messageFile.getPath(), opts), w, h, false);
                     canvas.save();
                     float s = resultWidth / (float) paintBitmap.getWidth();
                     canvas.scale(s, s);
@@ -483,6 +510,18 @@ public class StoryEntry extends IStoryPart {
             paintFile.delete();
             paintFile = null;
         }
+        if (backgroundFile != null) {
+            backgroundFile.delete();
+            backgroundFile = null;
+        }
+        if (messageFile != null) {
+            messageFile.delete();
+            messageFile = null;
+        }
+        if (messageVideoMaskFile != null) {
+            messageVideoMaskFile.delete();
+            messageVideoMaskFile = null;
+        }
         if (paintEntitiesFile != null) {
             paintEntitiesFile.delete();
             paintEntitiesFile = null;
@@ -513,11 +552,17 @@ public class StoryEntry extends IStoryPart {
                 }
                 thumbPath = null;
             }
-            for (Part part : parts) {
-                if (part.fileDeletable) {
-                    part.file.delete();
+            if (mediaEntities != null) {
+                for (VideoEditedInfo.MediaEntity entity : mediaEntities) {
+                    if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO && !TextUtils.isEmpty(entity.segmentedPath)) {
+                        try {
+                            new File(entity.segmentedPath).delete();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        entity.segmentedPath = "";
+                    }
                 }
-                part.file = null;
             }
             if (round != null && (!isEdit || editedMedia)) {
                 round.delete();
@@ -587,6 +632,115 @@ public class StoryEntry extends IStoryPart {
         }
         entry.setupMatrix();
         entry.checkStickers(storyItem);
+        return entry;
+    }
+
+    public static boolean canRepostMessage(MessageObject messageObject) {
+        if (messageObject == null || messageObject.isSponsored()) {
+            return false;
+        }
+        if (messageObject.messageOwner != null && messageObject.messageOwner.noforwards) {
+            return false;
+        }
+        if (messageObject.type == MessageObject.TYPE_POLL || messageObject.type == MessageObject.TYPE_CONTACT) {
+            return false;
+        }
+        long dialogId = messageObject.getDialogId();
+        TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+        if (chat != null && chat.noforwards) {
+            return false;
+        }
+        if (dialogId >= 0 || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+            if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null && (messageObject.messageOwner.fwd_from.flags & 4) != 0) {
+                dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+                chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+                if (dialogId >= 0 || chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat) || !ChatObject.isPublic(chat)) {
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public static Boolean useForwardForRepost(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) return null;
+        TLRPC.Peer peer = messageObject.messageOwner.peer_id;
+        long dialogId = DialogObject.getPeerDialogId(peer);
+        TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+        if (chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+            if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null && (messageObject.messageOwner.fwd_from.flags & 4) != 0) {
+                dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+                chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+                if (dialogId >= 0 || chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+                    return null; // no repost
+                } else {
+                    return true; // repost of forward
+                }
+            }
+            return null; // no repost
+        }
+        return false; // repost
+    }
+
+    public static long getRepostDialogId(MessageObject messageObject) {
+        Boolean useForward = useForwardForRepost(messageObject);
+        if (useForward == null) return 0;
+        if (useForward) {
+            return DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+        } else {
+            return messageObject.getDialogId();
+        }
+    }
+
+    public static int getRepostMessageId(MessageObject messageObject) {
+        Boolean useForward = useForwardForRepost(messageObject);
+        if (useForward == null) return 0;
+        if (useForward) {
+            return messageObject.messageOwner.fwd_from.channel_post;
+        } else {
+            return messageObject.getId();
+        }
+    }
+
+    public static StoryEntry repostMessage(ArrayList<MessageObject> messageObjects) {
+        StoryEntry entry = new StoryEntry();
+        entry.isRepostMessage = true;
+        entry.messageObjects = messageObjects;
+        entry.resultWidth = 1080;
+        entry.resultHeight = 1920;
+        MessageObject msg = messageObjects.get(0);
+        entry.backgroundWallpaperPeerId = getRepostDialogId(msg);
+
+        VideoEditedInfo.MediaEntity entity = new VideoEditedInfo.MediaEntity();
+        entity.type = VideoEditedInfo.MediaEntity.TYPE_MESSAGE;
+        entity.x = 0.5f;
+        entity.y = 0.5f;
+        entry.mediaEntities = new ArrayList<>();
+        entry.mediaEntities.add(entity);
+
+        if (messageObjects.size() == 1) {
+            MessageObject messageObject = messageObjects.get(0);
+            if (messageObject != null && (messageObject.type == MessageObject.TYPE_GIF || messageObject.type == MessageObject.TYPE_VIDEO || messageObject.type == MessageObject.TYPE_ROUND_VIDEO)) {
+                if (messageObject.messageOwner != null && messageObject.messageOwner.attachPath != null) {
+                    entry.file = new File(messageObject.messageOwner.attachPath);
+                }
+                if (entry.file == null || !entry.file.exists()) {
+                    entry.file = FileLoader.getInstance(entry.currentAccount).getPathToMessage(messageObject.messageOwner);
+                }
+                if (entry.file != null && entry.file.exists()) {
+                    entry.isVideo = true;
+                    entry.fileDeletable = false;
+                    entry.duration = (long) (messageObject.getDuration() * 1000);
+                    entry.left = 0;
+                    entry.right = Math.min(1, 59_500f / entry.duration);
+                } else {
+                    entry.file = null;
+                }
+            }
+        }
+
         return entry;
     }
 
@@ -842,114 +996,124 @@ public class StoryEntry extends IStoryPart {
             resultWidth = 720;
             resultHeight = 1280;
         }
-        final String videoPath = file.getAbsolutePath();
-        Utilities.globalQueue.postRunnable(() -> {
-            final int[] params = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
-            AnimatedFileDrawable.getVideoInfo(videoPath, params);
-            AndroidUtilities.runOnUIThread(() -> {
-                VideoEditedInfo info = new VideoEditedInfo();
+        final String videoPath = file == null ? null : file.getAbsolutePath();
+        final int[] params = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
+        Runnable fill = () -> {
+            VideoEditedInfo info = new VideoEditedInfo();
 
-                info.isStory = true;
-                info.fromCamera = fromCamera;
-                info.originalWidth = width;
-                info.originalHeight = height;
-                info.resultWidth = resultWidth;
-                info.resultHeight = resultHeight;
-                info.paintPath = paintFile == null ? null : paintFile.getPath();
+            info.isStory = true;
+            info.fromCamera = fromCamera;
+            info.originalWidth = width;
+            info.originalHeight = height;
+            info.resultWidth = resultWidth;
+            info.resultHeight = resultHeight;
+            info.paintPath = paintFile == null ? null : paintFile.getPath();
+            info.messagePath = messageFile == null ? null : messageFile.getPath();
+            info.messageVideoMaskPath = messageVideoMaskFile == null ? null : messageVideoMaskFile.getPath();
+            info.backgroundPath = backgroundFile == null ? null : backgroundFile.getPath();
 
-                final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
-                if (isVideo) {
-                    info.originalPath = videoPath;
-                    info.isPhoto = false;
-                    info.framerate = Math.min(59, params[AnimatedFileDrawable.PARAM_NUM_FRAMERATE]);
-                    int videoBitrate = MediaController.getVideoBitrate(videoPath);
-                    info.originalBitrate = videoBitrate == -1 ? params[AnimatedFileDrawable.PARAM_NUM_BITRATE] : videoBitrate;
-                    if (info.originalBitrate < 1_000_000 && (mediaEntities != null && !mediaEntities.isEmpty())) {
-                        info.bitrate = 2_000_000;
-                        info.originalBitrate = -1;
-                    } else if (info.originalBitrate < 500_000) {
-                        info.bitrate = 2_500_000;
-                        info.originalBitrate = -1;
-                    } else {
-                        info.bitrate = Utilities.clamp(info.originalBitrate, 3_000_000, 500_000);
-                    }
-                    FileLog.d("story bitrate, original = " + info.originalBitrate + " => " + info.bitrate);
-                    info.originalDuration = (duration = params[AnimatedFileDrawable.PARAM_NUM_DURATION]) * 1000L;
-                    info.startTime = (long) (left * duration) * 1000L;
-                    info.endTime = (long) (right * duration) * 1000L;
-                    info.estimatedDuration = info.endTime - info.startTime;
-                    info.muted = muted;
-                    info.estimatedSize = (long) (params[AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE] + params[AnimatedFileDrawable.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
-                    info.estimatedSize = Math.max(file.length(), info.estimatedSize);
-                    info.filterState = filterState;
-                    info.blurPath = paintBlurFile == null ? null : paintBlurFile.getPath();
-                } else {
-                    if (filterFile != null) {
-                        info.originalPath = filterFile.getAbsolutePath();
-                    } else {
-                        info.originalPath = videoPath;
-                    }
-                    info.isPhoto = true;
-                    if (round != null) {
-                        info.estimatedDuration = info.originalDuration = duration = (long) ((roundRight - roundLeft) * roundDuration);
-                    } else if (audioPath != null) {
-                        info.estimatedDuration = info.originalDuration = duration = (long) ((audioRight - audioLeft) * audioDuration);
-                    } else {
-                        info.estimatedDuration = info.originalDuration = duration = averageDuration;
-                    }
-                    info.startTime = -1;
-                    info.endTime = -1;
-                    info.muted = true;
+            final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            if (isVideo && videoPath != null) {
+                info.originalPath = videoPath;
+                info.isPhoto = false;
+                info.framerate = Math.min(59, params[AnimatedFileDrawable.PARAM_NUM_FRAMERATE]);
+                int videoBitrate = MediaController.getVideoBitrate(videoPath);
+                info.originalBitrate = videoBitrate == -1 ? params[AnimatedFileDrawable.PARAM_NUM_BITRATE] : videoBitrate;
+                if (info.originalBitrate < 1_000_000 && (mediaEntities != null && !mediaEntities.isEmpty())) {
+                    info.bitrate = 2_000_000;
                     info.originalBitrate = -1;
-                    info.bitrate = -1;
-                    info.framerate = 30;
-                    info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
-                    info.filterState = null;
+                } else if (info.originalBitrate < 500_000) {
+                    info.bitrate = 2_500_000;
+                    info.originalBitrate = -1;
+                } else {
+                    info.bitrate = Utilities.clamp(info.originalBitrate, 3_000_000, 500_000);
                 }
-                info.avatarStartTime = -1;
-
-                info.cropState = new MediaController.CropState();
-                info.cropState.useMatrix = new Matrix();
-                info.cropState.useMatrix.set(matrix);
-
-                info.mediaEntities = mediaEntities;
-
-                info.gradientTopColor = gradientTopColor;
-                info.gradientBottomColor = gradientBottomColor;
-                info.forceFragmenting = true;
-
-                info.hdrInfo = hdrInfo;
-                info.parts = parts;
-
-                info.mixedSoundInfos.clear();
+                FileLog.d("story bitrate, original = " + info.originalBitrate + " => " + info.bitrate);
+                info.originalDuration = (duration = params[AnimatedFileDrawable.PARAM_NUM_DURATION]) * 1000L;
+                info.startTime = (long) (left * duration) * 1000L;
+                info.endTime = (long) (right * duration) * 1000L;
+                info.estimatedDuration = info.endTime - info.startTime;
+                info.muted = muted;
+                info.estimatedSize = (long) (params[AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE] + params[AnimatedFileDrawable.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
+                info.estimatedSize = Math.max(file.length(), info.estimatedSize);
+                info.filterState = filterState;
+                info.blurPath = paintBlurFile == null ? null : paintBlurFile.getPath();
+            } else {
+                if (filterFile != null) {
+                    info.originalPath = filterFile.getAbsolutePath();
+                } else {
+                    info.originalPath = videoPath;
+                }
+                info.isPhoto = true;
                 if (round != null) {
-                    final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(round.getAbsolutePath());
-                    soundInfo.volume = roundVolume;
-                    soundInfo.audioOffset = (long) (roundLeft * roundDuration) * 1000L;
-                    if (isVideo) {
-                        soundInfo.startTime = (long) (roundOffset - left * duration) * 1000L;
-                    } else {
-                        soundInfo.startTime = 0;
-                    }
-                    soundInfo.duration = (long) ((roundRight - roundLeft) * roundDuration) * 1000L;
-                    info.mixedSoundInfos.add(soundInfo);
+                    info.estimatedDuration = info.originalDuration = duration = (long) ((roundRight - roundLeft) * roundDuration);
+                } else if (audioPath != null) {
+                    info.estimatedDuration = info.originalDuration = duration = (long) ((audioRight - audioLeft) * audioDuration);
+                } else {
+                    info.estimatedDuration = info.originalDuration = duration = averageDuration;
                 }
-                if (audioPath != null) {
-                    final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(audioPath);
-                    soundInfo.volume = audioVolume;
-                    soundInfo.audioOffset = (long) (audioLeft * audioDuration) * 1000L;
-                    if (isVideo) {
-                        soundInfo.startTime = (long) (audioOffset - left * duration) * 1000L;
-                    } else {
-                        soundInfo.startTime = 0;
-                    }
-                    soundInfo.duration = (long) ((audioRight - audioLeft) * audioDuration) * 1000L;
-                    info.mixedSoundInfos.add(soundInfo);
-                }
+                info.startTime = -1;
+                info.endTime = -1;
+                info.muted = true;
+                info.originalBitrate = -1;
+                info.bitrate = -1;
+                info.framerate = 30;
+                info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
+                info.filterState = null;
+            }
+            info.account = currentAccount;
+            info.wallpaperPeerId = backgroundWallpaperPeerId;
+            info.isDark = isDark;
+            info.avatarStartTime = -1;
 
-                whenDone.run(info);
+            info.cropState = new MediaController.CropState();
+            info.cropState.useMatrix = new Matrix();
+            info.cropState.useMatrix.set(matrix);
+
+            info.mediaEntities = mediaEntities;
+
+            info.gradientTopColor = gradientTopColor;
+            info.gradientBottomColor = gradientBottomColor;
+            info.forceFragmenting = true;
+
+            info.hdrInfo = hdrInfo;
+
+            info.mixedSoundInfos.clear();
+            if (round != null) {
+                final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(round.getAbsolutePath());
+                soundInfo.volume = roundVolume;
+                soundInfo.audioOffset = (long) (roundLeft * roundDuration) * 1000L;
+                if (isVideo) {
+                    soundInfo.startTime = (long) (roundOffset - left * duration) * 1000L;
+                } else {
+                    soundInfo.startTime = 0;
+                }
+                soundInfo.duration = (long) ((roundRight - roundLeft) * roundDuration) * 1000L;
+                info.mixedSoundInfos.add(soundInfo);
+            }
+            if (audioPath != null) {
+                final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(audioPath);
+                soundInfo.volume = audioVolume;
+                soundInfo.audioOffset = (long) (audioLeft * audioDuration) * 1000L;
+                if (isVideo) {
+                    soundInfo.startTime = (long) (audioOffset - left * duration) * 1000L;
+                } else {
+                    soundInfo.startTime = 0;
+                }
+                soundInfo.duration = (long) ((audioRight - audioLeft) * audioDuration) * 1000L;
+                info.mixedSoundInfos.add(soundInfo);
+            }
+
+            whenDone.run(info);
+        };
+        if (file == null) {
+            fill.run();
+        } else {
+            Utilities.globalQueue.postRunnable(() -> {
+                AnimatedFileDrawable.getVideoInfo(videoPath, params);
+                AndroidUtilities.runOnUIThread(fill);
             });
-        });
+        }
     }
 
     public static File makeCacheFile(final int account, boolean video) {
@@ -1166,9 +1330,6 @@ public class StoryEntry extends IStoryPart {
         newEntry.height = height;
         newEntry.resultWidth = resultWidth;
         newEntry.resultHeight = resultHeight;
-        newEntry.partsMaxId = partsMaxId;
-        newEntry.parts.clear();
-        newEntry.parts.addAll(parts);
         newEntry.peer = peer;
         newEntry.invert = invert;
         newEntry.matrix.set(matrix);
@@ -1189,6 +1350,8 @@ public class StoryEntry extends IStoryPart {
         newEntry.uploadThumbFile = uploadThumbFile;
         newEntry.draftThumbFile = draftThumbFile;
         newEntry.paintFile = paintFile;
+        newEntry.messageFile = messageFile;
+        newEntry.backgroundFile = backgroundFile;
         newEntry.paintBlurFile = paintBlurFile;
         newEntry.paintEntitiesFile = paintEntitiesFile;
         newEntry.averageDuration = averageDuration;

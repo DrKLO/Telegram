@@ -40,26 +40,26 @@ public class BlobDrawable {
     private Path path = new Path();
     public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private float[] radius;
-    private float[] angle;
-    private float[] radiusNext;
-    private float[] angleNext;
-    private float[] progress;
-    private float[] speed;
+    protected float[] radius;
+    protected float[] angle;
+    protected float[] radiusNext;
+    protected float[] angleNext;
+    protected float[] progress;
+    protected float[] speed;
 
 
     private float[] pointStart = new float[4];
     private float[] pointEnd = new float[4];
 
-    final Random random = new Random();
+    protected final Random random = new Random();
 
-    private final float N;
+    protected final float N;
     private final float L;
     public float cubicBezierK = 1f;
 
     private final Matrix m = new Matrix();
 
-    private final int liteFlag;
+    protected final int liteFlag;
 
     public BlobDrawable(int n) {
         this(n, LiteMode.FLAG_CALLS_ANIMATIONS);
@@ -85,7 +85,7 @@ public class BlobDrawable {
         this.liteFlag = liteFlag;
     }
 
-    private void generateBlob(float[] radius, float[] angle, int i) {
+    protected void generateBlob(float[] radius, float[] angle, int i) {
         float angleDif = 360f / N * 0.05f;
         float radDif = maxRadius - minRadius;
         radius[i] = minRadius + Math.abs(((random.nextInt() % 100f) / 100f)) * radDif;

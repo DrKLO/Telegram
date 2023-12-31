@@ -1069,7 +1069,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.storiesUpdated) {
-            listViewAdapter.setStories(getMessagesController().getStoriesController().getHiddenList(), true);
+            if (listViewAdapter != null) {
+                listViewAdapter.setStories(getMessagesController().getStoriesController().getHiddenList(), true);
+            }
             MessagesController.getInstance(currentAccount).getStoriesController().loadHiddenStories();
         } else if (id == NotificationCenter.contactsDidLoad) {
             if (listViewAdapter != null) {

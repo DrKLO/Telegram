@@ -89,6 +89,7 @@ public class TimelineView extends View {
     private long scroll;
 
     private boolean hasVideo;
+    private boolean isMainVideoRound;
     private String videoPath;
     private long videoDuration;
     private float videoLeft;
@@ -313,7 +314,7 @@ public class TimelineView extends View {
         this.delegate = delegate;
     }
 
-    public void setVideo(String videoPath, long videoDuration, float videoVolume) {
+    public void setVideo(boolean isRound, String videoPath, long videoDuration, float videoVolume) {
         if (TextUtils.equals(this.videoPath, videoPath)) {
             return;
         }
@@ -321,6 +322,7 @@ public class TimelineView extends View {
             thumbs.destroy();
             thumbs = null;
         }
+        isMainVideoRound = isRound;
         if (videoPath != null) {
             scroll = 0;
             this.videoPath = videoPath;
@@ -402,7 +404,7 @@ public class TimelineView extends View {
         if (getMeasuredWidth() <= 0 || this.thumbs != null) {
             return;
         }
-        this.thumbs = new VideoThumbsLoader(videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null);
+        this.thumbs = new VideoThumbsLoader(isMainVideoRound, videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null);
         if (this.thumbs.getDuration() > 0) {
             videoDuration = this.thumbs.getDuration();
         }
@@ -413,7 +415,7 @@ public class TimelineView extends View {
         if (getMeasuredWidth() <= 0 || this.roundThumbs != null || hasVideo && videoDuration < 1) {
             return;
         }
-        this.roundThumbs = new VideoThumbsLoader(roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION);
+        this.roundThumbs = new VideoThumbsLoader(false, roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION);
         if (this.roundThumbs.getDuration() > 0) {
             roundDuration = this.roundThumbs.getDuration();
         }
@@ -1403,7 +1405,7 @@ public class TimelineView extends View {
                 final int y = (int) videoBounds.top;
 
                 boolean allLoaded = thumbs.frames.size() >= toFrame;
-                boolean fullyCovered = allLoaded;
+                boolean fullyCovered = allLoaded && !isMainVideoRound;
                 if (fullyCovered) {
                     for (int i = fromFrame; i < Math.min(thumbs.frames.size(), toFrame); ++i) {
                         VideoThumbsLoader.BitmapFrame frame = thumbs.frames.get(i);
@@ -1856,14 +1858,16 @@ public class TimelineView extends View {
 
         private final int frameWidth;
         private final int frameHeight;
+        private final boolean isRound;
 
         private boolean destroyed;
 
-        public VideoThumbsLoader(String path, int uiWidth, int uiHeight, Long overrideDuration) {
-            this(path, uiWidth, uiHeight, overrideDuration, MAX_SCROLL_DURATION);
+        public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration) {
+            this(isRound, path, uiWidth, uiHeight, overrideDuration, MAX_SCROLL_DURATION);
         }
 
-        public VideoThumbsLoader(String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration) {
+        public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration) {
+            this.isRound = isRound;
             metadataRetriever = new MediaMetadataRetriever();
             long duration = MAX_SCROLL_DURATION;
             int width = 0;
@@ -1952,6 +1956,7 @@ public class TimelineView extends View {
 
         private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
+        private Path clipPath;
         private void retrieveFrame() {
             if (metadataRetriever == null) {
                 return;
@@ -1971,6 +1976,14 @@ public class TimelineView extends View {
                         (int) ((scaledBitmap.getWidth() +  bitmap.getWidth()  * scale) / 2f),
                         (int) ((scaledBitmap.getHeight() + bitmap.getHeight() * scale) / 2f)
                     );
+                    if (isRound) {
+                        if (clipPath == null) {
+                            clipPath = new Path();
+                        }
+                        clipPath.rewind();
+                        clipPath.addCircle(frameWidth / 2f, frameHeight / 2f, Math.min(frameWidth, frameHeight) / 2f, Path.Direction.CW);
+                        canvas.clipPath(clipPath);
+                    }
                     canvas.drawBitmap(bitmap, src, dest, bitmapPaint);
                     bitmap.recycle();
                     bitmap = scaledBitmap;

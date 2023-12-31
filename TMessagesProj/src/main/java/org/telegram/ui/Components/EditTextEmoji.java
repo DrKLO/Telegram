@@ -231,7 +231,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
             editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             editText.setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
-            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
+            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(11));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 11 : 0, 1, LocaleController.isRTL ? 0 : 11, 0));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -276,7 +276,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (style == STYLE_FRAGMENT) {
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.smiles_tab_smiles, false);
-            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 7));
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 5));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(0x8cffffff, PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
@@ -367,10 +367,11 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     public void setEnabled(boolean enabled) {
         editText.setEnabled(enabled);
         emojiButton.setVisibility(enabled ? VISIBLE : GONE);
+        int bottomPadding = AndroidUtilities.dp(currentStyle == STYLE_FRAGMENT ? 11 : 8);
         if (enabled) {
-            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
+            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), bottomPadding);
         } else {
-            editText.setPadding(0, 0, 0, AndroidUtilities.dp(8));
+            editText.setPadding(0, 0, 0, bottomPadding);
         }
     }
 

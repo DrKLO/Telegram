@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -487,6 +488,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         titleTextLargerCopyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextLargerCopyView.setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
         titleTextLargerCopyView.setRightDrawable(titleTextView.getRightDrawable());
+        titleTextLargerCopyView.setRightDrawable2(titleTextView.getRightDrawable2());
         titleTextLargerCopyView.setRightDrawableOutside(titleTextView.getRightDrawableOutside());
         titleTextLargerCopyView.setLeftDrawable(titleTextView.getLeftDrawable());
         titleTextLargerCopyView.setText(titleTextView.getText());
@@ -618,16 +620,17 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     private boolean rightDrawableIsScamOrVerified = false;
     private String rightDrawableContentDescription = null;
+    private String rightDrawable2ContentDescription = null;
 
     public void setTitleIcons(Drawable leftIcon, Drawable mutedIcon) {
         titleTextView.setLeftDrawable(leftIcon);
         if (!rightDrawableIsScamOrVerified) {
             if (mutedIcon != null) {
-                rightDrawableContentDescription = LocaleController.getString("NotificationsMuted", R.string.NotificationsMuted);
+                rightDrawable2ContentDescription = LocaleController.getString("NotificationsMuted", R.string.NotificationsMuted);
             } else {
-                rightDrawableContentDescription = null;
+                rightDrawable2ContentDescription = null;
             }
-            titleTextView.setRightDrawable(mutedIcon);
+            titleTextView.setRightDrawable2(mutedIcon);
         }
     }
 
@@ -644,9 +647,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (!(titleTextView.getRightDrawable() instanceof ScamDrawable)) {
                 ScamDrawable drawable = new ScamDrawable(11, scam ? 0 : 1);
                 drawable.setColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
-                titleTextView.setRightDrawable(drawable);
+                titleTextView.setRightDrawable2(drawable);
 //                titleTextView.setRightPadding(0);
-                rightDrawableContentDescription = LocaleController.getString("ScamMessage", R.string.ScamMessage);
+                rightDrawable2ContentDescription = LocaleController.getString("ScamMessage", R.string.ScamMessage);
                 rightDrawableIsScamOrVerified = true;
             }
         } else if (verified) {
@@ -655,37 +658,34 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             Drawable verifiedCheck = getResources().getDrawable(R.drawable.verified_check).mutate();
             verifiedCheck.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedCheck), PorterDuff.Mode.MULTIPLY));
             Drawable verifiedDrawable = new CombinedDrawable(verifiedBackground, verifiedCheck);
-            titleTextView.setRightDrawable(verifiedDrawable);
-//            titleTextView.setRightPadding(titleTextView.getPaddingRight());
+            titleTextView.setRightDrawable2(verifiedDrawable);
             rightDrawableIsScamOrVerified = true;
-            rightDrawableContentDescription = LocaleController.getString("AccDescrVerified", R.string.AccDescrVerified);
-        } else if (premium) {
-            boolean isStatus = emojiStatus instanceof TLRPC.TL_emojiStatus || emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000);
-//            if (premiumIconHiddable) {
-//                titleTextView.setCanHideRightDrawable(!isStatus);
-//            }
+            rightDrawable2ContentDescription = LocaleController.getString("AccDescrVerified", R.string.AccDescrVerified);
+        } else if (titleTextView.getRightDrawable() instanceof ScamDrawable) {
+            titleTextView.setRightDrawable2(null);
+            rightDrawableIsScamOrVerified = false;
+            rightDrawable2ContentDescription = null;
+        }
+        if (premium || DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
             if (titleTextView.getRightDrawable() instanceof AnimatedEmojiDrawable.WrapSizeDrawable &&
                 ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable() instanceof AnimatedEmojiDrawable) {
                 ((AnimatedEmojiDrawable) ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable()).removeView(titleTextView);
             }
-            if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
-                emojiStatusDrawable.set(((TLRPC.TL_emojiStatus) emojiStatus).document_id, animated);
-            } else if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {
-                emojiStatusDrawable.set(((TLRPC.TL_emojiStatusUntil) emojiStatus).document_id, animated);
-            } else {
+            if (DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
+                emojiStatusDrawable.set(DialogObject.getEmojiStatusDocumentId(emojiStatus), animated);
+            } else if (premium) {
                 Drawable drawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
                 drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
                 emojiStatusDrawable.set(drawable, animated);
+            } else {
+                emojiStatusDrawable.set((Drawable) null, animated);
             }
             emojiStatusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
             titleTextView.setRightDrawable(emojiStatusDrawable);
-//            titleTextView.setRightPadding(titleTextView.getPaddingRight());
-            rightDrawableIsScamOrVerified = true;
-            rightDrawableContentDescription = LocaleController.getString("AccDescrPremium", R.string.AccDescrPremium);
-        } else if (titleTextView.getRightDrawable() instanceof ScamDrawable) {
-            titleTextView.setRightDrawable(null);
-//            titleTextView.setRightPadding(0);
             rightDrawableIsScamOrVerified = false;
+            rightDrawableContentDescription = LocaleController.getString("AccDescrPremium", R.string.AccDescrPremium);
+        } else {
+            titleTextView.setRightDrawable(null);
             rightDrawableContentDescription = null;
         }
     }
@@ -1145,6 +1145,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (rightDrawableContentDescription != null) {
             sb.append(", ");
             sb.append(rightDrawableContentDescription);
+        }
+        if (rightDrawable2ContentDescription != null) {
+            sb.append(", ");
+            sb.append(rightDrawable2ContentDescription);
         }
         sb.append("\n");
         sb.append(subtitleTextView.getText());

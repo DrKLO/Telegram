@@ -83,14 +83,19 @@ public class BoostCounterView extends View {
             animateCount();
         }
         lastCount = count;
+        int oldLength = countText.getText().length();
         countText.setText("x" + count, animated);
+        int newLength = countText.getText().length();
         invalidate();
+        if (oldLength != newLength) {
+            requestLayout();
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
-                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(26), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec((int) (dp(8 + 3 + 4) + countText.getWidth()), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(26), MeasureSpec.EXACTLY)
         );
     }
@@ -100,7 +105,7 @@ public class BoostCounterView extends View {
         super.onDraw(canvas);
         canvas.save();
         canvas.translate(AndroidUtilities.dp(3), AndroidUtilities.dp(3));
-        AndroidUtilities.rectTmp2.set(0, 0, AndroidUtilities.dp(20), AndroidUtilities.dp(20));
+        AndroidUtilities.rectTmp2.set(0, 0, dp(8) + (int) countText.getCurrentWidth(), AndroidUtilities.dp(20));
         AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
 
         if (countScale != 1) {
@@ -109,7 +114,7 @@ public class BoostCounterView extends View {
         }
 
         canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(10), dp(10), bgPaint);
-        AndroidUtilities.rectTmp2.set(0, 0, AndroidUtilities.dp(20), AndroidUtilities.dp(19));
+        AndroidUtilities.rectTmp2.set(0, 0, (int) AndroidUtilities.rectTmp.width(), AndroidUtilities.dp(19));
         countText.setBounds(AndroidUtilities.rectTmp2);
         countText.draw(canvas);
         if (countScale != 1) {

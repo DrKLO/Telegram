@@ -1200,7 +1200,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
 
         swipeContainer.stickTo(swipeContainer.getHeight() + frameLayout.measureKeyboardHeight(), ()->{
-            super.dismiss();
+            try {
+                super.dismiss();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             if (callback != null) {
                 callback.run();
             }

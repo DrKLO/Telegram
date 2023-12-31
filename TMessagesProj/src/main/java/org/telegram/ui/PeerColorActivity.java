@@ -2,7 +2,6 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_COLOR;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -29,8 +28,11 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.ReplacementSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -48,11 +50,15 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.common.io.CharSource;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ChatThemeController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -88,9 +94,11 @@ import org.telegram.ui.Components.FilledTabsView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
+import org.telegram.ui.Components.SpannableStringLight;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.StoriesUtilities;
@@ -221,21 +229,24 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                             view = cell;
                             break;
                         case VIEW_TYPE_COLOR_PICKER:
-                            PeerColorGrid colorPicker = peerColorPicker = new PeerColorGrid(getContext(), type, currentAccount);
+                            PeerColorGrid colorPicker = peerColorPicker = new PeerColorGrid(getContext(), type, currentAccount, resourceProvider);
                             colorPicker.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                            colorPicker.setSelected(selectedColor);
+                            colorPicker.setSelected(selectedColor, false);
                             colorPicker.setOnColorClick(colorId -> {
                                 selectedColor = colorId;
-                                colorPicker.setSelected(colorId);
+                                colorPicker.setSelected(colorId, true);
                                 updateMessages();
                                 if (setReplyIconCell != null) {
                                     setReplyIconCell.invalidate();
                                 }
                                 if (type == PAGE_PROFILE && colorBar != null) {
-                                    colorBar.setColor(selectedColor, true);
+                                    colorBar.setColor(currentAccount, selectedColor, true);
                                 }
                                 if (profilePreview != null) {
                                     profilePreview.setColor(selectedColor, true);
+                                }
+                                if (profilePage != null && profilePage.profilePreview != null && namePage != null) {
+                                    profilePage.profilePreview.overrideAvatarColor(namePage.selectedColor);
                                 }
                                 checkResetColorButton();
                             });
@@ -341,7 +352,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     selectedColor = -1;
                     selectedEmoji = 0;
                     if (peerColorPicker != null) {
-                        peerColorPicker.setSelected(selectedColor);
+                        peerColorPicker.setSelected(selectedColor, true);
                     }
                     updateMessages();
                     if (type == PAGE_PROFILE) {
@@ -351,11 +362,14 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                         setReplyIconCell.update(true);
                     }
                     if (type == PAGE_PROFILE && colorBar != null) {
-                        colorBar.setColor(selectedColor, true);
+                        colorBar.setColor(currentAccount, selectedColor, true);
                     }
                     if (profilePreview != null) {
                         profilePreview.setColor(selectedColor, true);
                         profilePreview.setEmoji(selectedEmoji, true);
+                    }
+                    if (profilePage != null && profilePage.profilePreview != null && namePage != null) {
+                        profilePage.profilePreview.overrideAvatarColor(namePage.selectedColor);
                     }
                     checkResetColorButton();
                 }
@@ -392,7 +406,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             listView.setItemAnimator(itemAnimator);
 
             if (type == PAGE_PROFILE) {
-                profilePreview = new ProfilePreview(getContext());
+                profilePreview = new ProfilePreview(getContext(), currentAccount, dialogId, resourceProvider);
                 profilePreview.setColor(selectedColor, false);
                 profilePreview.setEmoji(selectedEmoji, false);
                 addView(profilePreview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
@@ -490,7 +504,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 } else {
                     textView.setText(LocaleController.getString(isChannel ? R.string.ChannelProfileIcon : R.string.UserProfileIcon));
                 }
-                addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 20, 0, 48, 0));
+                addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 20, 0, 20, 0));
 
                 imageDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, false, dp(24), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
             }
@@ -513,10 +527,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             public void updateImageBounds() {
                 imageDrawable.setBounds(
-                        getWidth() - imageDrawable.getIntrinsicWidth() - dp(21),
-                        (getHeight() - imageDrawable.getIntrinsicHeight()) / 2,
-                        getWidth() - dp(21),
-                        (getHeight() + imageDrawable.getIntrinsicHeight()) / 2
+                    LocaleController.isRTL ? dp(21) : getWidth() - imageDrawable.getIntrinsicWidth() - dp(21),
+                    (getHeight() - imageDrawable.getIntrinsicHeight()) / 2,
+                    LocaleController.isRTL ? dp(21) + imageDrawable.getIntrinsicWidth() : getWidth() - dp(21),
+                    (getHeight() + imageDrawable.getIntrinsicHeight()) / 2
                 );
             }
 
@@ -636,7 +650,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     selectAnimatedEmojiDialog = null;
                 }
             };
-            popup[0].showAsDropDown(cell, 0, yoff, Gravity.TOP | Gravity.RIGHT);
+            popup[0].showAsDropDown(cell, 0, yoff, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
             popup[0].dimBehind();
         }
 
@@ -681,11 +695,6 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                             if (peerColorPicker != null) {
                                 msg.overrideLinkColor = peerColorPicker.getColorId();
                             }
-                            if (profilePage != null && profilePage.selectedColor >= 0 && getMessagesController().profilePeerColors != null) {
-                                msg.overrideProfilePeerColor = getMessagesController().profilePeerColors.getColor(profilePage.selectedColor);
-                            } else {
-                                msg.overrideProfilePeerColor = null;
-                            }
                             msg.overrideLinkEmoji = selectedEmoji;
                             cells[i].setAvatar(msg);
                             cells[i].invalidate();
@@ -698,7 +707,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         public void updateColors() {
             listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
             if (type == PAGE_PROFILE && colorBar != null) {
-                colorBar.setColor(selectedColor, true);
+                colorBar.setColor(currentAccount, selectedColor, true);
             }
             if (button != null) {
                 button.updateColors();
@@ -774,19 +783,17 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 currentColors.put(i, defaultColors[i]);
             }
         }
-        if (themeColors != null) {
-            for (int i = 0; i < themeColors.size(); ++i) {
-                currentColors.put(themeColors.keyAt(i), themeColors.valueAt(i));
-            }
+        for (int i = 0; i < themeColors.size(); ++i) {
+            currentColors.put(themeColors.keyAt(i), themeColors.valueAt(i));
+        }
+        Theme.ThemeAccent accent = themeInfo.getAccent(false);
+        if (accent != null) {
+            accent.fillAccentColors(themeColors, currentColors);
         }
 
         if (namePage != null && namePage.messagesCellPreview != null) {
-            if (Theme.isCurrentThemeDark() == isDark) {
-                namePage.messagesCellPreview.setOverrideBackground(null);
-            } else {
-                Theme.BackgroundDrawableSettings bg = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink[0], 0, true);
-                namePage.messagesCellPreview.setOverrideBackground(bg.themedWallpaper != null ? bg.themedWallpaper : bg.wallpaper);
-            }
+            Theme.BackgroundDrawableSettings bg = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink[0], 0, true);
+            namePage.messagesCellPreview.setOverrideBackground(bg.themedWallpaper != null ? bg.themedWallpaper : bg.wallpaper);
         }
     }
 
@@ -906,9 +913,33 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         };
         frameLayout.setFitsSystemWindows(true);
 
-        colorBar = new ColoredActionBar(context);
+        colorBar = new ColoredActionBar(context, resourceProvider) {
+            @Override
+            protected void onUpdateColor() {
+                updateLightStatusBar();
+                updateActionBarButtonsColor();
+                if (tabsView != null) {
+                    tabsView.setBackgroundColor(getTabsViewBackgroundColor());
+                }
+            }
+
+            private int lastBtnColor = 0;
+            public void updateActionBarButtonsColor() {
+                final int btnColor = getActionBarButtonColor();
+                if (lastBtnColor != btnColor) {
+                    if (backButton != null) {
+                        lastBtnColor = btnColor;
+                        backButton.setColorFilter(new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN));
+                    }
+                    if (dayNightItem != null) {
+                        lastBtnColor = btnColor;
+                        dayNightItem.setColorFilter(new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN));
+                    }
+                }
+            }
+        };
         if (profilePage != null) {
-            colorBar.setColor(profilePage.selectedColor, false);
+            colorBar.setColor(currentAccount, profilePage.selectedColor, false);
         }
         frameLayout.addView(colorBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
@@ -922,7 +953,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         viewPager.setAdapter(new ViewPagerFixed.Adapter() {
             @Override
             public int getItemCount() {
-                return isChannel ? 1 : 2;
+                return 2;
             }
 
             @Override
@@ -961,20 +992,22 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             actionBarContainer.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.CENTER));
         } else {
             titleView = new SimpleTextView(context);
-            titleView.setText(LocaleController.getString(R.string.ChannelColorTitle));
+            titleView.setText(LocaleController.getString(R.string.ChannelColorTitle2));
             titleView.setEllipsizeByGradient(true);
             titleView.setTextSize(20);
             titleView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
             titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             actionBarContainer.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 72, 0, 72, 0));
         }
-        if (startAtProfile && !isChannel) {
+
+        if (startAtProfile) {
             viewPager.setPosition(1);
             if (tabsView != null) {
                 tabsView.setSelected(1);
             }
             if (colorBar != null) {
                 colorBar.setProgressToGradient(1f);
+                updateLightStatusBar();
             }
         }
 
@@ -1031,39 +1064,13 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         return namePage.hasUnsavedChanged() || profilePage.hasUnsavedChanged();
     }
 
-    private void showBoostLimit(boolean error) {
-        getMessagesController().getBoostsController().getBoostsStats(dialogId, boostsStatus -> {
-            if (error || boostsStatus.level < getMessagesController().channelColorLevelMin) {
-                getMessagesController().getBoostsController().userCanBoostChannel(dialogId, boostsStatus, canApplyBoost -> {
-                    if (getContext() == null) {
-                        return;
-                    }
-                    LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, getContext(), TYPE_BOOSTS_FOR_COLOR, currentAccount, getResourceProvider());
-                    limitReachedBottomSheet.setCanApplyBoost(canApplyBoost);
-
-                    limitReachedBottomSheet.setBoostsStats(boostsStatus, true);
-                    limitReachedBottomSheet.setDialogId(dialogId);
-                    limitReachedBottomSheet.showStatisticButtonInLink(() -> {
-                        TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-                        Bundle args = new Bundle();
-                        args.putLong("chat_id", -dialogId);
-                        args.putBoolean("is_megagroup", chat.megagroup);
-                        args.putBoolean("start_from_boosts", true);
-                        TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(-dialogId);
-                        if (chatInfo == null || !chatInfo.can_view_stats) {
-                            args.putBoolean("only_boosts", true);
-                        };
-                        StatisticActivity fragment = new StatisticActivity(args);
-                        presentFragment(fragment);
-                    });
-                    showDialog(limitReachedBottomSheet);
-                    loading = false;
-                    AndroidUtilities.runOnUIThread(() -> getCurrentPage().button.setLoading(false), 300);
-                });
-            } else {
-                apply();
-            }
-        });
+    private void setLoading(boolean loading) {
+        if (namePage != null && namePage.button != null) {
+            namePage.button.setLoading(loading);
+        }
+        if (profilePage != null && profilePage.button != null) {
+            profilePage.button.setLoading(loading);
+        }
     }
 
     @Override
@@ -1106,15 +1113,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             return;
         }
         if (isChannel) {
-            final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-            if (namePage != null && chat != null && namePage.selectedColor == ChatObject.getColorId(chat) && namePage.selectedEmoji == ChatObject.getEmojiId(chat)) {
-                finishFragment();
-                return;
-            }
-            loading = true;
-            getCurrentPage().button.setLoading(true);
-            showBoostLimit(false);
-            return;
+            finishFragment();
         } else {
             if (!getUserConfig().isPremium()) {
                 showDialog(new PremiumFeatureBottomSheet(PeerColorActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_NAME_COLOR, true));
@@ -1135,46 +1134,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         if (isChannel) {
-            final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-            if (chat == null) {
-                return;
-            }
-            if (namePage.selectedColor == ChatObject.getColorId(chat) && namePage.selectedEmoji == ChatObject.getEmojiId(chat)) {
-                getCurrentPage().button.setLoading(loading = false);
-                finishFragment();
-                return;
-            }
-            TLRPC.TL_channels_updateColor req = new TLRPC.TL_channels_updateColor();
-            req.channel = getMessagesController().getInputChannel(-dialogId);
-            if (req.channel == null) {
-                return;
-            }
-            chat.flags2 |= 64;
-            if (chat.color == null) {
-                chat.color = new TLRPC.TL_peerColor();
-            }
-            chat.flags2 |= 128;
-            req.color = chat.color.color = namePage.selectedColor;
-            if (namePage.selectedEmoji != 0) {
-                chat.color.background_emoji_id = namePage.selectedEmoji;
-
-                req.flags |= 1;
-                req.background_emoji_id = namePage.selectedEmoji;
-            } else {
-                chat.color.background_emoji_id = 0;
-            }
-            getCurrentPage().button.setLoading(loading = true);
-            getMessagesController().putChat(chat, false);
-            getUserConfig().saveConfig(true);
-            getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                applying = false;
-                if (err != null && "BOOSTS_REQUIRED".equals(err.text)) {
-                    showBoostLimit(true);
-                } else {
-                    finishFragment();
-                    showBulletin();
-                }
-            }));
+            finishFragment();
         } else {
             final TLRPC.User me = getUserConfig().getCurrentUser();
             if (me.color == null) {
@@ -1225,6 +1185,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             getMessagesController().putUser(me, false);
             getUserConfig().saveConfig(true);
+            finishFragment();
+            showBulletin();
         }
         applying = true;
         getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_EMOJI_STATUS);
@@ -1320,6 +1282,67 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
     }
 
+    public static class LevelLock extends Drawable {
+
+        private final Theme.ResourcesProvider resourcesProvider;
+        private final Text text;
+        private final float lockScale = .875f;
+        private final Drawable lock;
+        private final PremiumGradient.PremiumGradientTools gradientTools;
+
+        public LevelLock(Context context, int lvl, Theme.ResourcesProvider resourcesProvider) {
+            this(context, false, lvl, resourcesProvider);
+        }
+
+        public LevelLock(Context context, boolean plus, int lvl, Theme.ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
+            text = new Text(LocaleController.formatPluralString(plus ? "BoostLevelPlus" : "BoostLevel", lvl), 12, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            lock = context.getResources().getDrawable(R.drawable.mini_switch_lock).mutate();
+            lock.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            int left = getBounds().left;
+            int cy = getBounds().centerY();
+
+            AndroidUtilities.rectTmp.set(left, cy - getIntrinsicHeight() / 2f, left + getIntrinsicWidth(), cy + getIntrinsicHeight() / 2f);
+            gradientTools.gradientMatrix(AndroidUtilities.rectTmp);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(10), dp(10), gradientTools.paint);
+
+            lock.setBounds(
+                left + dp(3.33f),
+                (int) (cy - lock.getIntrinsicHeight() * lockScale / 2f),
+                (int) (left + dp(3.33f) + lock.getIntrinsicWidth() * lockScale),
+                (int) (cy + lock.getIntrinsicHeight() * lockScale / 2f)
+            );
+            lock.draw(canvas);
+
+            text.draw(canvas, left + dp(3.66f) + lock.getIntrinsicWidth() * lockScale, cy, Color.WHITE, 1f);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {}
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return (int) (dp(3.66f + 6) + lock.getIntrinsicWidth() * lockScale + text.getWidth());
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return dp(18.33f);
+        }
+    }
+
     public static class ChangeNameColorCell extends View {
         private final int currentAccount;
         private final boolean isChannel;
@@ -1327,6 +1350,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         private final Drawable drawable;
         private final Text buttonText;
+        private LevelLock lock;
 
         private final Paint userTextBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Text userText;
@@ -1336,16 +1360,51 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private PeerColorDrawable color1Drawable;
         private PeerColorDrawable color2Drawable;
 
-        public ChangeNameColorCell(int currentAccount, boolean isChannel, Context context, Theme.ResourcesProvider resourcesProvider) {
+        public ChangeNameColorCell(int currentAccount, long dialogId, Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
             this.currentAccount = currentAccount;
-            this.isChannel = isChannel;
+            this.isChannel = dialogId < 0;
             this.resourcesProvider = resourcesProvider;
 
             drawable = context.getResources().getDrawable(R.drawable.msg_palette).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            buttonText = new Text(LocaleController.getString(isChannel ? R.string.ChangeChannelNameColor : R.string.ChangeUserNameColor), 16);
+            CharSequence button = LocaleController.getString(isChannel ? R.string.ChangeChannelNameColor2 : R.string.ChangeUserNameColor);
+            if (isChannel && MessagesController.getInstance(currentAccount).getMainSettings().getInt("boostingappearance", 0) < 3) {
+                MessagesController mc = MessagesController.getInstance(currentAccount);
+                int minlvl = Integer.MAX_VALUE, maxlvl = 0;
+                if (mc.peerColors != null) {
+                    minlvl = Math.min(minlvl, mc.peerColors.maxLevel());
+                    maxlvl = Math.max(maxlvl, mc.peerColors.maxLevel());
+                    minlvl = Math.min(minlvl, mc.peerColors.minLevel());
+                    maxlvl = Math.max(maxlvl, mc.peerColors.minLevel());
+                }
+                minlvl = Math.min(minlvl, mc.channelBgIconLevelMin);
+                maxlvl = Math.min(maxlvl, mc.channelBgIconLevelMin);
+                if (mc.profilePeerColors != null) {
+                    minlvl = Math.min(minlvl, mc.profilePeerColors.maxLevel());
+                    maxlvl = Math.max(maxlvl, mc.profilePeerColors.maxLevel());
+                    minlvl = Math.min(minlvl, mc.profilePeerColors.minLevel());
+                    maxlvl = Math.max(maxlvl, mc.profilePeerColors.minLevel());
+                }
+                minlvl = Math.min(minlvl, mc.channelProfileIconLevelMin);
+                maxlvl = Math.max(maxlvl, mc.channelProfileIconLevelMin);
+                minlvl = Math.min(minlvl, mc.channelEmojiStatusLevelMin);
+                maxlvl = Math.max(maxlvl, mc.channelEmojiStatusLevelMin);
+                minlvl = Math.min(minlvl, mc.channelWallpaperLevelMin);
+                maxlvl = Math.max(maxlvl, mc.channelWallpaperLevelMin);
+                minlvl = Math.min(minlvl, mc.channelCustomWallpaperLevelMin);
+                maxlvl = Math.max(maxlvl, mc.channelCustomWallpaperLevelMin);
+                TLRPC.Chat chat = mc.getChat(-dialogId);
+                int currentLevel = chat == null ? 0 : chat.level;
+                if (currentLevel < maxlvl) {
+                    lock = new LevelLock(context, true, Math.max(currentLevel, minlvl), resourcesProvider);
+                }
+            }
+            if (isChannel && lock == null) {
+                button = TextCell.applyNewSpan(button);
+            }
+            buttonText = new Text(button, 16);
             updateColors();
         }
 
@@ -1385,7 +1444,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             userText.setColor(color);
             userTextBackgroundPaint.setColor(Theme.multAlpha(color, .10f));
 
-            color1Drawable = color2Drawable = null;
+            color1Drawable = PeerColorDrawable.from(currentAccount, colorId).setRadius(dp(11));
+            color2Drawable = ChatObject.getProfileColorId(chat) >= 0 ? PeerColorDrawable.fromProfile(currentAccount, ChatObject.getProfileColorId(chat)).setRadius(dp(11)) : null;
         }
 
         public void set(TLRPC.User user) {
@@ -1442,13 +1502,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 getMeasuredHeight() / 2 + drawable.getIntrinsicHeight() / 2
             );
             drawable.draw(canvas);
-            buttonText
-                    .ellipsize(getMeasuredWidth() - dp(64 + 7 + 100))
-                    .draw(canvas, LocaleController.isRTL ? getMeasuredWidth() - buttonText.getWidth() - dp(64 + 7) : dp(64 + 7), getMeasuredHeight() / 2f);
+            buttonText.ellipsize(getMeasuredWidth() - dp(64 + 7 + 100) - (lock != null ? lock.getIntrinsicWidth() + dp(8) : 0));
+            float textX = LocaleController.isRTL ? getMeasuredWidth() - buttonText.getWidth() - dp(64 + 7) : dp(64 + 7);
+            buttonText.draw(canvas, textX, getMeasuredHeight() / 2f);
+            if (lock != null) {
+                int x = (int) (textX + buttonText.getWidth() + dp(6));
+                lock.setBounds(x, 0, x, getHeight());
+                lock.draw(canvas);
+            }
 
             if (color1Drawable != null && color2Drawable != null) {
 
-                int x = getMeasuredWidth() - dp(16);
+                int x = LocaleController.isRTL ? dp(24 + 16 + 18) : getMeasuredWidth() - dp(24);
                 color2Drawable.setBounds(x - dp(11), (getMeasuredHeight() - dp(11)) / 2, x, (getMeasuredHeight() + dp(11)) / 2);
                 color2Drawable.stroke(dpf2(3), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                 color2Drawable.draw(canvas);
@@ -1459,7 +1524,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 color1Drawable.draw(canvas);
 
             } else if (userText != null) {
-                final int maxWidth = (int) (getMeasuredWidth() - dp(64 + 7 + 15 + 9 + 9 + 12) - Math.min(buttonText.getWidth(), getMeasuredWidth() - dp(64 + 100)));
+                final int maxWidth = (int) (getMeasuredWidth() - dp(64 + 7 + 15 + 9 + 9 + 12) - Math.min(buttonText.getWidth() + (lock == null ? 0 : lock.getIntrinsicWidth() + dp(6 + 6)), getMeasuredWidth() - dp(64 + 100)));
                 final int w = (int) Math.min(userText.getWidth(), maxWidth);
 
                 AndroidUtilities.rectTmp.set(
@@ -1485,7 +1550,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
     }
 
-    public class PeerColorGrid extends View {
+    public static class PeerColorGrid extends View {
+        private final Theme.ResourcesProvider resourcesProvider;
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         { backgroundPaint.setStyle(Paint.Style.STROKE); }
 
@@ -1517,21 +1583,21 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 if (color == null) {
                     return;
                 }
-                final boolean dark = isDark;
+                final boolean dark = resourcesProvider == null ? Theme.isCurrentThemeDark() : resourcesProvider.isDark();
                 if (type == PAGE_NAME) {
                     if (dark && color.hasColor2() && !color.hasColor3()) {
-                        paint1.setColor(color.getColor2(dark));
-                        paint2.setColor(color.getColor1(dark));
+                        paint1.setColor(color.getColor(1, resourcesProvider));
+                        paint2.setColor(color.getColor(0, resourcesProvider));
                     } else {
-                        paint1.setColor(color.getColor1(dark));
-                        paint2.setColor(color.getColor2(dark));
+                        paint1.setColor(color.getColor(0, resourcesProvider));
+                        paint2.setColor(color.getColor(1, resourcesProvider));
                     }
-                    paint3.setColor(color.getColor3(dark));
+                    paint3.setColor(color.getColor(2, resourcesProvider));
                     hasColor2 = color.hasColor2(dark);
                     hasColor3 = color.hasColor3(dark);
                 } else {
-                    paint1.setColor(color.getColor1(dark));
-                    paint2.setColor(color.hasColor6(dark) ? color.getColor2(dark) : color.getColor1(dark));
+                    paint1.setColor(color.getColor(0, resourcesProvider));
+                    paint2.setColor(color.hasColor6(dark) ? color.getColor(1, resourcesProvider) : color.getColor(0, resourcesProvider));
                     hasColor2 = color.hasColor6(dark);
                     hasColor3 = false;
                 }
@@ -1595,7 +1661,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
                 if (selectT > 0) {
                     backgroundPaint.setStrokeWidth(dpf2(2));
-                    backgroundPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                     canvas.drawCircle(
                         bounds.centerX(), bounds.centerY(),
                         Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * AndroidUtilities.lerp(.5f, -2f, selectT),
@@ -1621,10 +1687,11 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         private ColorButton[] buttons;
 
-        public PeerColorGrid(Context context, int type, int currentAccount) {
+        public PeerColorGrid(Context context, int type, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             this.type = type;
             this.currentAccount = currentAccount;
+            this.resourcesProvider = resourcesProvider;
         }
 
         public void updateColors() {
@@ -1634,9 +1701,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             for (int i = 0; i < buttons.length; ++i) {
                 if (i < 7 && type == PAGE_NAME) {
                     buttons[i].id = order[i];
-                    buttons[i].set(Theme.getColor(Theme.keys_avatar_nameInMessage[order[i]], resourceProvider));
+                    buttons[i].set(Theme.getColor(Theme.keys_avatar_nameInMessage[order[i]], resourcesProvider));
                 } else {
-                    final int id = i - (type == PAGE_NAME ? 7 : 0);
+                    final int id = i;
                     if (peerColors != null && id >= 0 && id < peerColors.colors.size()) {
                         buttons[i].id = peerColors.colors.get(id).id;
                         buttons[i].set(peerColors.colors.get(id));
@@ -1653,7 +1720,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             final MessagesController mc = MessagesController.getInstance(currentAccount);
             final MessagesController.PeerColors peerColors = type == PAGE_NAME ? mc.peerColors : mc.profilePeerColors;
-            final int colorsCount = 7 + (peerColors == null ? 0 : peerColors.colors.size());
+            final int colorsCount = peerColors == null ? 0 : peerColors.colors.size();
             final int columns = type == PAGE_NAME ? 7 : 8;
 
             final float iconSize = Math.min(dp(38 + 16), width / (columns + (columns + 1) * .28947f));
@@ -1669,15 +1736,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 buttons = new ColorButton[colorsCount];
                 for (int i = 0; i < colorsCount; ++i) {
                     buttons[i] = new ColorButton();
-                    if (i < 7 && type == PAGE_NAME) {
-                        buttons[i].id = order[i];
-                        buttons[i].set(Theme.getColor(Theme.keys_avatar_nameInMessage[order[i]]));
-                    } else {
-                        final int id = i - (type == PAGE_NAME ? 7 : 0);
-                        if (peerColors != null && id >= 0 && id < peerColors.colors.size()) {
-                            buttons[i].id = peerColors.colors.get(id).id;
-                            buttons[i].set(peerColors.colors.get(id));
-                        }
+                    if (peerColors != null && i >= 0 && i < peerColors.colors.size()) {
+                        buttons[i].id = peerColors.colors.get(i).id;
+                        buttons[i].set(peerColors.colors.get(i));
                     }
                 }
             }
@@ -1703,6 +1764,11 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private boolean needDivider = true;
+        public void setDivider(boolean needDivider) {
+            this.needDivider = needDivider;
+            invalidate();
+        }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
@@ -1711,16 +1777,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     buttons[i].draw(canvas);
                 }
             }
-            dividerPaint.setColor(getThemedColor(Theme.key_divider));
-            canvas.drawRect(dp(21), getMeasuredHeight() - 1, getMeasuredWidth() - dp(21), getMeasuredHeight(), dividerPaint);
+            if (needDivider) {
+                dividerPaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+                canvas.drawRect(dp(21), getMeasuredHeight() - 1, getMeasuredWidth() - dp(21), getMeasuredHeight(), dividerPaint);
+            }
         }
 
         private int selectedColorId = 0;
-        public void setSelected(int colorId) {
+        public void setSelected(int colorId, boolean animated) {
             selectedColorId = colorId;
             if (buttons != null) {
                 for (int i = 0; i < buttons.length; ++i) {
-                    buttons[i].setSelected(buttons[i].id == colorId, true);
+                    buttons[i].setSelected(buttons[i].id == colorId, animated);
                 }
             }
         }
@@ -1782,6 +1850,37 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 pressedButton = null;
             }
             return true;
+        }
+    }
+
+    public static class PeerColorSpan extends ReplacementSpan {
+        private int size = dp(21);
+        public PeerColorDrawable drawable;
+
+        public PeerColorSpan(boolean profile, int currentAccount, int colorId) {
+            drawable = profile ? PeerColorDrawable.fromProfile(currentAccount, colorId) : PeerColorDrawable.from(currentAccount, colorId);
+        }
+
+        public PeerColorSpan setSize(int sz) {
+            if (drawable != null) {
+                drawable.setRadius(sz / 2f);
+                size = sz;
+            }
+            return this;
+        }
+
+        @Override
+        public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+            return dp(3) + size + dp(3);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+            if (drawable != null) {
+                int cy = (top + bottom) / 2;
+                drawable.setBounds((int) (x + dp(3)), cy - size, (int) (x + dp(5) + size), cy + size);
+                drawable.draw(canvas);
+            }
         }
     }
 
@@ -1894,37 +1993,39 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
     }
 
-    private class ColoredActionBar extends View {
+    public static class ColoredActionBar extends View {
 
         private int defaultColor;
-        public ColoredActionBar(Context context) {
+        private final Theme.ResourcesProvider resourcesProvider;
+
+        public ColoredActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
-            defaultColor = getThemedColor(Theme.key_actionBarDefault);
-            setColor(-1, false);
+            this.resourcesProvider = resourcesProvider;
+            defaultColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            setColor(-1, -1, false);
         }
 
-        public void setColor(int colorId, boolean animated) {
+        public void setColor(int currentAccount, int colorId, boolean animated) {
             isDefault = false;
-            if (colorId < 0) {
+            if (colorId < 0 || currentAccount < 0) {
                 isDefault = true;
-                color1 = color2 = getThemedColor(Theme.key_actionBarDefault);
+                color1 = color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
             } else {
                 MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
                 MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(colorId);
                 if (peerColor != null) {
+                    final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
                     color1 = peerColor.getBgColor1(isDark);
                     color2 = peerColor.getBgColor2(isDark);
                 } else {
                     isDefault = true;
-                    color1 = color2 = getThemedColor(Theme.key_actionBarDefault);
+                    color1 = color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
                 }
             }
             if (!animated) {
                 color1Animated.set(color1, true);
                 color2Animated.set(color2, true);
             }
-            updateLightStatusBar();
-            updateActionBarButtonsColor();
             invalidate();
         }
 
@@ -1932,9 +2033,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         public void setProgressToGradient(float progress) {
             if (Math.abs(progressToGradient - progress) > 0.001f) {
                 progressToGradient = progress;
-                updateTabsViewBackground();
-                updateActionBarButtonsColor();
-                updateLightStatusBar();
+                onUpdateColor();
                 invalidate();
             }
         }
@@ -1948,6 +2047,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private LinearGradient backgroundGradient;
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+        protected void onUpdateColor() {
+
+        }
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             final int color1 = color1Animated.set(this.color1);
@@ -1955,8 +2058,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             if (backgroundGradient == null || backgroundGradientColor1 != color1 || backgroundGradientColor2 != color2 || backgroundGradientHeight != getHeight()) {
                 backgroundGradient = new LinearGradient(0, 0, 0, backgroundGradientHeight = getHeight(), new int[] { backgroundGradientColor2 = color2, backgroundGradientColor1 = color1 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
                 backgroundPaint.setShader(backgroundGradient);
-                updateTabsViewBackground();
-                updateLightStatusBar();
+                onUpdateColor();
             }
             if (progressToGradient < 1) {
                 canvas.drawColor(defaultColor);
@@ -1967,47 +2069,35 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
         }
 
+        protected boolean ignoreMeasure;
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.statusBarHeight + dp(144), MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, ignoreMeasure ? heightMeasureSpec : MeasureSpec.makeMeasureSpec(AndroidUtilities.statusBarHeight + dp(144), MeasureSpec.EXACTLY));
         }
 
         public void updateColors() {
-            defaultColor = getThemedColor(Theme.key_actionBarDefault);
-            updateTabsViewBackground();
-            updateActionBarButtonsColor();
-            updateLightStatusBar();
+            defaultColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            onUpdateColor();
             invalidate();
-        }
-        
-        private int lastBtnColor = 0;
-        public void updateActionBarButtonsColor() {
-            final int btnColor = ColorUtils.blendARGB(getThemedColor(Theme.key_actionBarDefaultIcon), isDefault ? getThemedColor(Theme.key_actionBarDefaultIcon) : Color.WHITE, progressToGradient);
-            if (lastBtnColor != btnColor) {
-                if (backButton != null) {
-                    lastBtnColor = btnColor;
-                    backButton.setColorFilter(new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN));
-                }
-                if (dayNightItem != null) {
-                    lastBtnColor = btnColor;
-                    dayNightItem.setColorFilter(new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN));
-                }
-            }
         }
 
         public int getColor() {
-            return ColorUtils.blendARGB(getThemedColor(Theme.key_actionBarDefault), ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f), progressToGradient);
+            return ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider), ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f), progressToGradient);
         }
 
-        private void updateTabsViewBackground() {
-            if (tabsView == null) return;
-            tabsView.setBackgroundColor(
+        public int getActionBarButtonColor() {
+            return ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), isDefault ? Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider) : Color.WHITE, progressToGradient);
+        }
+
+        public int getTabsViewBackgroundColor() {
+            return (
                 ColorUtils.blendARGB(
-                    AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) > .721f ?
-                        getThemedColor(Theme.key_actionBarDefaultIcon) :
-                        Theme.adaptHSV(getThemedColor(Theme.key_actionBarDefault), +.08f, -.08f),
+                    AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider)) > .721f ?
+                        Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider) :
+                        Theme.adaptHSV(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider), +.08f, -.08f),
                     AndroidUtilities.computePerceivedBrightness(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f)) > .721f ?
-                        getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon) :
+                        Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider) :
                         Theme.adaptHSV(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f), +.08f, -.08f),
                     progressToGradient
                 )
@@ -2015,20 +2105,47 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
     }
 
-    private class ProfilePreview extends FrameLayout {
+    public static class ProfilePreview extends FrameLayout {
+
+        private final Theme.ResourcesProvider resourcesProvider;
+        private final int currentAccount;
+        private final long dialogId;
+        private final boolean isChannel;
 
         private final ImageReceiver imageReceiver = new ImageReceiver(this);
         private final AvatarDrawable avatarDrawable = new AvatarDrawable();
         private final SimpleTextView titleView, subtitleView;
 
+        private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusEmoji;
+
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
 
         private final StoriesUtilities.StoryGradientTools storyGradient = new StoriesUtilities.StoryGradientTools(this, false);
 
-        public ProfilePreview(Context context) {
+        public ProfilePreview(Context context, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
-            titleView = new SimpleTextView(context);
+            this.currentAccount = currentAccount;
+            this.dialogId = dialogId;
+            this.resourcesProvider = resourcesProvider;
+            this.isChannel = dialogId < 0;
+
+            titleView = new SimpleTextView(context) {
+                @Override
+                protected void onAttachedToWindow() {
+                    super.onAttachedToWindow();
+                    statusEmoji.attach();
+                }
+
+                @Override
+                protected void onDetachedFromWindow() {
+                    super.onDetachedFromWindow();
+                    statusEmoji.detach();
+                }
+            };
+            statusEmoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleView, true, dp(24));
+            titleView.setDrawablePadding(dp(8));
+            titleView.setRightDrawable(statusEmoji);
             titleView.setTextColor(0xFFFFFFFF);
             titleView.setTextSize(20);
             titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
@@ -2092,18 +2209,26 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             setWillNotDraw(false);
         }
 
-        public void updateAvatarDrawable(MessagesController.PeerColor profilePeerColor) {
-            if (isChannel) {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                if (chat != null) {
-                    avatarDrawable.setInfo(chat.id, chat.title, null, null, ChatObject.getColorId(chat), profilePeerColor);
+        public void overrideAvatarColor(int colorId) {
+            final int color1, color2;
+            if (colorId >= 14) {
+                MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
+                MessagesController.PeerColors peerColors = messagesController != null ? messagesController.peerColors : null;
+                MessagesController.PeerColor peerColor = peerColors != null ? peerColors.getColor(colorId) : null;
+                if (peerColor != null) {
+                    final int peerColorValue = peerColor.getColor1();
+                    color1 = getThemedColor(Theme.keys_avatar_background[AvatarDrawable.getPeerColorIndex(peerColorValue)]);
+                    color2 = getThemedColor(Theme.keys_avatar_background2[AvatarDrawable.getPeerColorIndex(peerColorValue)]);
+                } else {
+                    color1 = getThemedColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(colorId)]);
+                    color2 = getThemedColor(Theme.keys_avatar_background2[AvatarDrawable.getColorIndex(colorId)]);
                 }
             } else {
-                TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
-                if (user != null) {
-                    avatarDrawable.setInfo(user.id, user.first_name, user.last_name, null, UserObject.getColorId(user), profilePeerColor);
-                }
+                color1 = getThemedColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(colorId)]);
+                color2 = getThemedColor(Theme.keys_avatar_background2[AvatarDrawable.getColorIndex(colorId)]);
             }
+            avatarDrawable.setColor(color1, color2);
+            invalidate();
         }
 
         @Override
@@ -2120,12 +2245,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             imageReceiver.onDetachedFromWindow();
         }
 
+        private int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
+        }
+
         private int lastColorId = -1;
         public void setColor(int colorId, boolean animated) {
             MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
             MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(lastColorId = colorId);
+            final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
             if (peerColor != null) {
                 emoji.setColor(adaptProfileEmojiColor(peerColor.getBgColor1(isDark)));
+                statusEmoji.setColor(ColorUtils.blendARGB(peerColor.getColor(1, resourcesProvider), peerColor.hasColor6(isDark) ? peerColor.getColor(4, resourcesProvider) : peerColor.getColor(2, resourcesProvider), .5f));
                 final int accentColor = ColorUtils.blendARGB(peerColor.getStoryColor1(isDark), peerColor.getStoryColor2(isDark), .5f);
                 if (!Theme.hasHue(getThemedColor(Theme.key_actionBarDefault))) {
                     subtitleView.setTextColor(accentColor);
@@ -2134,17 +2265,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 }
                 titleView.setTextColor(Color.WHITE);
             } else {
+                final int emojiColor;
                 if (AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) > .8f) {
-                    emoji.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourceProvider));
+                    emoji.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
                 } else if (AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) < .2f) {
-                    emoji.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultTitle, resourceProvider), .5f));
+                    emoji.setColor(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultTitle), .5f));
                 } else {
-                    emoji.setColor(adaptProfileEmojiColor(Theme.getColor(Theme.key_actionBarDefault, resourceProvider)));
+                    emoji.setColor(adaptProfileEmojiColor(getThemedColor(Theme.key_actionBarDefault)));
                 }
-                subtitleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle, resourceProvider));
-                titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle, resourceProvider));
+                statusEmoji.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
+                subtitleView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
+                titleView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
             }
-            updateAvatarDrawable(peerColor);
 
             storyGradient.setColorId(colorId, animated);
             invalidate();
@@ -2158,14 +2290,32 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
             MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(lastColorId);
+            final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
             if (peerColor != null) {
                 emoji.setColor(adaptProfileEmojiColor(peerColor.getBgColor1(isDark)));
             } else if (AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) > .8f) {
-                emoji.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourceProvider));
+                emoji.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
             } else if (AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) < .2f) {
-                emoji.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultTitle, resourceProvider), .5f));
+                emoji.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultTitle), .5f));
             } else {
-                emoji.setColor(adaptProfileEmojiColor(Theme.getColor(Theme.key_actionBarDefault, resourceProvider)));
+                emoji.setColor(adaptProfileEmojiColor(Theme.getColor(Theme.key_actionBarDefault)));
+            }
+            if (peerColor != null) {
+                statusEmoji.setColor(ColorUtils.blendARGB(peerColor.getColor(1, resourcesProvider), peerColor.hasColor6(isDark) ? peerColor.getColor(4, resourcesProvider) : peerColor.getColor(2, resourcesProvider), .5f));
+            } else {
+                statusEmoji.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
+            }
+        }
+
+        public void setStatusEmoji(long docId, boolean animated) {
+            statusEmoji.set(docId, animated);
+            MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
+            MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(lastColorId);
+            final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+            if (peerColor != null) {
+                statusEmoji.setColor(ColorUtils.blendARGB(peerColor.getColor2(isDark), peerColor.hasColor6(isDark) ? peerColor.getColor5(isDark) : peerColor.getColor3(isDark), .5f));
+            } else {
+                statusEmoji.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
             }
         }
 

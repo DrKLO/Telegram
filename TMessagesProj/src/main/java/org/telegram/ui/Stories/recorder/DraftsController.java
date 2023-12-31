@@ -54,6 +54,7 @@ public class DraftsController {
                 if (database == null) {
                     return;
                 }
+                ArrayList<Long> todelete = new ArrayList<>();
                 cursor = database.queryFinalized("SELECT id, data, type FROM story_drafts WHERE type = " + (failed ? "2" : "0 OR type = 1") + " ORDER BY date DESC");
                 while (cursor.next()) {
                     long id = cursor.longValue(0);
@@ -65,8 +66,17 @@ public class DraftsController {
                             loadedDrafts.add(draft);
                         } catch (Exception e) {
                             FileLog.e(e);
+                            todelete.add(id);
                         }
                         buffer.reuse();
+                    }
+                }
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+                if (todelete.size() > 0) {
+                    for (int i = 0; i < todelete.size(); ++i) {
+                        database.executeFast("DELETE FROM story_drafts WHERE id = " + todelete.get(i)).stepThis().dispose();
                     }
                 }
             } catch (Exception e) {
@@ -253,7 +263,7 @@ public class DraftsController {
     }
 
     public void append(StoryEntry entry) {
-        if (entry == null) {
+        if (entry == null || entry.isRepostMessage) {
             return;
         }
         prepare(entry);
@@ -330,7 +340,7 @@ public class DraftsController {
     }
 
     public void saveForEdit(StoryEntry entry, long dialogId, TL_stories.StoryItem storyItem) {
-        if (entry == null || storyItem == null || storyItem.media == null) {
+        if (entry == null || entry.isRepostMessage || storyItem == null || storyItem.media == null) {
             return;
         }
 
@@ -477,8 +487,6 @@ public class DraftsController {
 
         private int period;
 
-        private final ArrayList<StoryEntry.Part> parts = new ArrayList<>();
-
         public boolean isEdit;
         public int editStoryId;
         public long editStoryPeerId;
@@ -541,8 +549,6 @@ public class DraftsController {
             this.filterFilePath = entry.filterFile == null ? "" : entry.filterFile.toString();
             this.filterState = entry.filterState;
             this.period = entry.period;
-            this.parts.clear();
-            this.parts.addAll(entry.parts);
             this.isError = entry.isError;
             this.error = entry.error;
 
@@ -629,12 +635,6 @@ public class DraftsController {
             }
             entry.filterState = filterState;
             entry.period = period;
-            entry.parts.clear();
-            entry.parts.addAll(parts);
-            entry.partsMaxId = 0;
-            for (int i = 0; i < parts.size(); ++i) {
-                entry.partsMaxId = Math.max(entry.partsMaxId, parts.get(i).id);
-            }
             entry.isEdit = isEdit;
             entry.editStoryId = editStoryId;
             entry.editStoryPeerId = editStoryPeerId;
@@ -732,10 +732,7 @@ public class DraftsController {
             }
             stream.writeInt32(period);
             stream.writeInt32(0x1cb5c415);
-            stream.writeInt32(parts.size());
-            for (int i = 0; i < parts.size(); ++i) {
-                parts.get(i).serializeToStream(stream);
-            }
+            stream.writeInt32(0);
             stream.writeBool(isEdit);
             stream.writeInt32(editStoryId);
             stream.writeInt64(editStoryPeerId);
@@ -881,7 +878,7 @@ public class DraftsController {
                 if (mediaEntities == null) {
                     mediaEntities = new ArrayList<>();
                 }
-                mediaEntities.add(new VideoEditedInfo.MediaEntity(stream, true));
+                mediaEntities.add(new VideoEditedInfo.MediaEntity(stream, true, exception));
             }
             magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
@@ -918,12 +915,6 @@ public class DraftsController {
                     return;
                 }
                 count = stream.readInt32(exception);
-                parts.clear();
-                for (int i = 0; i < count; ++i) {
-                    StoryEntry.Part part = new StoryEntry.Part();
-                    part.readParams(stream, exception);
-                    parts.add(part);
-                }
             }
             if (stream.remaining() > 0) {
                 isEdit = stream.readBool(exception);

@@ -152,7 +152,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             return child != aspectRatioFrameLayout && super.drawChild(canvas, child, drawingTime);
         }
 
-
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -1387,9 +1386,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         secretHint.setInnerPadding(12, 7, 11, 7);
         secretHint.setIconMargin(2);
         secretHint.setIconTranslate(0, 0);
-        RLottieDrawable icon = new RLottieDrawable(R.raw.fire_on, "" + R.raw.fire_on, dp(34), dp(34));
-        icon.start();
-        secretHint.setIcon(icon);
+        secretHint.setIcon(R.raw.fire_on);
         secretHint.show();
         MessagesController.getGlobalMainSettings().edit().putInt("viewoncehint", MessagesController.getGlobalMainSettings().getInt("viewoncehint", 0) + 1).commit();
     }

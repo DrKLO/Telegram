@@ -89,7 +89,6 @@ public class MediaCodecVideoConvertor {
         boolean muted = convertVideoParams.muted;
         boolean isStory = convertVideoParams.isStory;
         StoryEntry.HDRInfo hdrInfo = convertVideoParams.hdrInfo;
-        ArrayList<StoryEntry.Part> parts = convertVideoParams.parts;
 
         FileLog.d("convertVideoInternal original=" + originalWidth + "x" + originalHeight + "  result=" + resultWidth + "x" + resultHeight + " " + avatarStartTime);
         long time = System.currentTimeMillis();
@@ -178,7 +177,7 @@ public class MediaCodecVideoConvertor {
                     inputSurface.makeCurrent();
                     encoder.start();
 
-                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, parts);
+                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, convertVideoParams);
 
                     ByteBuffer[] encoderOutputBuffers = null;
                     ByteBuffer[] encoderInputBuffers = null;
@@ -493,7 +492,7 @@ public class MediaCodecVideoConvertor {
                             inputSurface.makeCurrent();
                             encoder.start();
 
-                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, parts);
+                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
                             if (hdrInfo == null && outputSurface.supportsEXTYUV() && hasHDR) {
                                 hdrInfo = new StoryEntry.HDRInfo();
                                 hdrInfo.colorTransfer = colorTransfer;
@@ -1333,6 +1332,9 @@ public class MediaCodecVideoConvertor {
         MediaController.SavedFilterState savedFilterState;
         String paintPath;
         String blurPath;
+        String messagePath;
+        String messageVideoMaskPath;
+        String backgroundPath;
         ArrayList<VideoEditedInfo.MediaEntity> mediaEntities;
         boolean isPhoto;
         MediaController.CropState cropState;
@@ -1343,8 +1345,10 @@ public class MediaCodecVideoConvertor {
         boolean muted;
         boolean isStory;
         StoryEntry.HDRInfo hdrInfo;
-        ArrayList<StoryEntry.Part> parts;
         public ArrayList<MixedSoundInfo> soundInfos = new ArrayList<MixedSoundInfo>();
+        int account;
+        boolean isDark;
+        long wallpaperPeerId;
 
         private ConvertVideoParams() {
 
@@ -1357,16 +1361,8 @@ public class MediaCodecVideoConvertor {
                                             int framerate, int bitrate, int originalBitrate,
                                             long startTime, long endTime, long avatarStartTime,
                                             boolean needCompress, long duration,
-                                            MediaController.SavedFilterState savedFilterState,
-                                            String paintPath, String blurPath,
-                                            ArrayList<VideoEditedInfo.MediaEntity> mediaEntities,
-                                            boolean isPhoto,
-                                            MediaController.CropState cropState,
-                                            boolean isRound,
                                             MediaController.VideoConvertorListener callback,
-                                            Integer gradientTopColor, Integer gradientBottomColor,
-                                            boolean muted, boolean isStory, StoryEntry.HDRInfo hdrInfo,
-                                            ArrayList<StoryEntry.Part> parts) {
+                                            VideoEditedInfo info) {
             ConvertVideoParams params = new ConvertVideoParams();
             params.videoPath = videoPath;
             params.cacheFile = cacheFile;
@@ -1384,21 +1380,25 @@ public class MediaCodecVideoConvertor {
             params.avatarStartTime = avatarStartTime;
             params.needCompress = needCompress;
             params.duration = duration;
-            params.savedFilterState = savedFilterState;
-            params.paintPath = paintPath;
-            params.blurPath = blurPath;
-            params.mediaEntities = mediaEntities;
-            params.isPhoto = isPhoto;
-            params.cropState = cropState;
-            params.isRound = isRound;
+            params.savedFilterState = info.filterState;
+            params.paintPath = info.paintPath;
+            params.blurPath = info.blurPath;
+            params.mediaEntities = info.mediaEntities;
+            params.isPhoto = info.isPhoto;
+            params.cropState = info.cropState;
+            params.isRound = info.roundVideo;
             params.callback = callback;
-            params.gradientTopColor = gradientTopColor;
-            params.gradientBottomColor = gradientBottomColor;
-            params.muted = muted;
-            params.isStory = isStory;
-            params.hdrInfo = hdrInfo;
-            params.parts = parts;
-
+            params.gradientTopColor = info.gradientTopColor;
+            params.gradientBottomColor = info.gradientBottomColor;
+            params.muted = info.muted;
+            params.isStory = info.isStory;
+            params.hdrInfo = info.hdrInfo;
+            params.isDark = info.isDark;
+            params.wallpaperPeerId = info.wallpaperPeerId;
+            params.account = info.account;
+            params.messagePath = info.messagePath;
+            params.messageVideoMaskPath = info.messageVideoMaskPath;
+            params.backgroundPath = info.backgroundPath;
             return params;
         }
     }

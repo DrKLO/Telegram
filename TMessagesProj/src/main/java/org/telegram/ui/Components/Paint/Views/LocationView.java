@@ -145,7 +145,7 @@ public class LocationView extends EntityView {
     }
 
     @Override
-    protected Rect getSelectionBounds() {
+    public Rect getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
             return new Rect();

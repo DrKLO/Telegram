@@ -52,7 +52,7 @@ public class ReplyMessageLine {
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji;
 
     private long emojiDocumentId;
-    private int backgroundColor, nameColor, color1, color2, color3;
+    public int backgroundColor, nameColor, color1, color2, color3;
     private final View parentView;
     public final AnimatedColor backgroundColorAnimated;
     public final AnimatedColor color1Animated, color2Animated, color3Animated;
@@ -129,9 +129,9 @@ public class ReplyMessageLine {
             hasColor2 = hasColor3 = false;
             return;
         }
-        color1 = peerColor.getColor1(dark);
-        color2 = peerColor.getColor2(dark);
-        color3 = peerColor.getColor3(dark);
+        color1 = peerColor.getColor(0, resourcesProvider);
+        color2 = peerColor.getColor(1, resourcesProvider);
+        color3 = peerColor.getColor(2, resourcesProvider);
         hasColor2 = color2 != color1;
         hasColor3 = color3 != color1;
         if (hasColor3) {
@@ -170,8 +170,14 @@ public class ReplyMessageLine {
                 colorId = messageObject.overrideLinkColor;
             } else if (messageObject.isSponsored() && messageObject.sponsoredChatInvite instanceof TLRPC.TL_chatInvite) {
                 colorId = messageObject.sponsoredChatInvite.color;
+                if (type == TYPE_LINK && messageObject.sponsoredChatInvite.chat != null) {
+                    emojiDocumentId = ChatObject.getEmojiId(messageObject.sponsoredChatInvite.chat);
+                }
             } else if (messageObject.isSponsored() && messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null) {
                 colorId = ChatObject.getColorId(messageObject.sponsoredChatInvite.chat);
+                if (type == TYPE_LINK) {
+                    emojiDocumentId = ChatObject.getEmojiId(messageObject.sponsoredChatInvite.chat);
+                }
             } else if (messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
                 long dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
                 if (dialogId < 0) {
@@ -179,20 +185,35 @@ public class ReplyMessageLine {
                     if (chat != null) {
                         colorId = ChatObject.getColorId(chat);
                     }
+                    if (type == TYPE_LINK) {
+                        emojiDocumentId = ChatObject.getEmojiId(chat);
+                    }
                 } else {
                     TLRPC.User user = MessagesController.getInstance(messageObject.currentAccount).getUser(dialogId);
                     if (user != null) {
                         colorId = UserObject.getColorId(user);
+                    }
+                    if (type == TYPE_LINK) {
+                        emojiDocumentId = UserObject.getEmojiId(user);
                     }
                 }
             } else if (DialogObject.isEncryptedDialog(messageObject.getDialogId()) && currentUser != null) {
                 TLRPC.User user = messageObject.isOutOwner() ? UserConfig.getInstance(messageObject.currentAccount).getCurrentUser() : currentUser;
                 if (user == null) user = currentUser;
                 colorId = UserObject.getColorId(user);
+                if (type == TYPE_LINK) {
+                    emojiDocumentId = UserObject.getEmojiId(user);
+                }
             } else if (messageObject.isFromUser() && currentUser != null) {
                 colorId = UserObject.getColorId(currentUser);
+                if (type == TYPE_LINK) {
+                    emojiDocumentId = UserObject.getEmojiId(currentUser);
+                }
             } else if (messageObject.isFromChannel() && currentChat != null) {
                 colorId = ChatObject.getColorId(currentChat);
+                if (type == TYPE_LINK) {
+                    emojiDocumentId = ChatObject.getEmojiId(currentChat);
+                }
             } else {
                 colorId = 0;
             }
@@ -256,8 +277,12 @@ public class ReplyMessageLine {
             color1 = color2 = color3 = Color.WHITE;
             backgroundColor = Color.TRANSPARENT;
             nameColor = Theme.getColor(Theme.key_chat_stickerReplyNameText, resourcesProvider);
-        } else if (messageObject.isOutOwner()) {
-            color1 = color2 = color3 = Theme.getColor(hasColor2 || hasColor3 ? Theme.key_chat_outReplyLine2 : Theme.key_chat_outReplyLine, resourcesProvider);
+        } else if (messageObject.isOutOwner() || type == TYPE_CODE) {
+            if (type == TYPE_CODE && !messageObject.isOutOwner()) {
+                color1 = color2 = color3 = Theme.getColor(Theme.key_chat_inCodeBackground, resourcesProvider);
+            } else {
+                color1 = color2 = color3 = Theme.getColor(hasColor2 || hasColor3 ? Theme.key_chat_outReplyLine2 : Theme.key_chat_outReplyLine, resourcesProvider);
+            }
             if (hasColor3) {
                 reversedOut = true;
                 color1 = Theme.multAlpha(color1, .20f);
@@ -269,7 +294,7 @@ public class ReplyMessageLine {
             backgroundColor = Theme.multAlpha(color3, dark ? 0.12f : 0.10f);
             nameColor = Theme.getColor(Theme.key_chat_outReplyNameText, resourcesProvider);
         }
-        if (type == TYPE_REPLY && messageObject != null && messageObject.overrideLinkEmoji != -1) {
+        if ((type == TYPE_REPLY || type == TYPE_LINK) && messageObject != null && messageObject.overrideLinkEmoji != -1) {
             emojiDocumentId = messageObject.overrideLinkEmoji;
         }
         if (emojiDocumentId != 0 && emoji == null) {
@@ -445,6 +470,13 @@ public class ReplyMessageLine {
         drawBackground(canvas, rect, alpha, false, false);
     }
 
+    private float emojiOffsetX, emojiOffsetY;
+    public ReplyMessageLine offsetEmoji(float ox, float oy) {
+        this.emojiOffsetX = ox;
+        this.emojiOffsetY = oy;
+        return this;
+    }
+
     public void drawBackground(Canvas canvas, RectF rect, float alpha, boolean hasQuote, boolean emojiOnly) {
         if (!emojiOnly) {
             backgroundPath.rewind();
@@ -465,18 +497,19 @@ public class ReplyMessageLine {
                         new IconCoords(30, 3, .78f, .9f),
                         new IconCoords(46, -17, .6f, .6f),
                         new IconCoords(69.66f, -0.666f, .87f, .7f),
-                        new IconCoords(107, -12.6f, 1.03f, .3f),
+                        new IconCoords(98, -12.6f, 1.03f, .3f),
                         new IconCoords(51, 24, 1f, .5f),
                         new IconCoords(6.33f, 20, .77f, .7f),
                         new IconCoords(-19, 12, .8f, .6f, true),
-                        new IconCoords(26, 42, .78f, .9f),
+//                        new IconCoords(26, 42, .78f, .9f),
                         new IconCoords(-22, 36, .7f, .5f, true),
-                        new IconCoords(-1, 48, 1f, .4f),
+//                        new IconCoords(-1, 48, 1f, .4f),
                     };
                 }
 
                 canvas.save();
                 canvas.clipRect(rect);
+                canvas.translate(emojiOffsetX, emojiOffsetY);
 
                 float x0 = Math.max(rect.right - dp(15), rect.centerX());
                 if (hasQuote) {

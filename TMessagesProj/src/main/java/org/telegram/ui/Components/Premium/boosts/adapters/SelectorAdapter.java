@@ -17,6 +17,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorCountryCell;
@@ -35,12 +36,16 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
     public static final int VIEW_TYPE_NO_USERS = 5;
     public static final int VIEW_TYPE_COUNTRY = 6;
     public static final int VIEW_TYPE_LETTER = 7;
+    public static final int VIEW_TYPE_TOP_SECTION = 8;
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final Context context;
     private RecyclerListView listView;
     private List<Item> items;
     private HashMap<Long, Integer> chatsParticipantsCount = new HashMap<>();
+    private View.OnClickListener topSectionClickListener;
+    private boolean isGreenSelector;
+    private GraySectionCell topSectionCell;
 
     public SelectorAdapter(Context context, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
@@ -56,6 +61,21 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         this.listView = listView;
     }
 
+    public void setTopSectionClickListener(View.OnClickListener topSectionClickListener) {
+        this.topSectionClickListener = topSectionClickListener;
+        if (topSectionCell != null) {
+            if (topSectionClickListener == null) {
+                topSectionCell.setRightText(null);
+            } else {
+                topSectionCell.setRightText(LocaleController.getString(R.string.UsersDeselectAll), true, topSectionClickListener);
+            }
+        }
+    }
+
+    public void setGreenSelector(boolean isGreenSelector) {
+        this.isGreenSelector = isGreenSelector;
+    }
+
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         return (holder.getItemViewType() == VIEW_TYPE_USER || holder.getItemViewType() == VIEW_TYPE_COUNTRY);
@@ -68,7 +88,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         if (viewType == VIEW_TYPE_PAD) {
             view = new View(context);
         } else if (viewType == VIEW_TYPE_USER) {
-            view = new SelectorUserCell(context, resourcesProvider, false);
+            view = new SelectorUserCell(context, resourcesProvider, isGreenSelector);
         } else if (viewType == VIEW_TYPE_NO_USERS) {
             StickerEmptyView searchEmptyView = new StickerEmptyView(context, null, StickerEmptyView.STICKER_TYPE_SEARCH, resourcesProvider);
             searchEmptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
@@ -79,6 +99,8 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             view = new SelectorLetterCell(context, resourcesProvider);
         } else if (viewType == VIEW_TYPE_COUNTRY) {
             view = new SelectorCountryCell(context, resourcesProvider);
+        } else if (viewType == VIEW_TYPE_TOP_SECTION) {
+            view = new GraySectionCell(context, resourcesProvider);
         } else {
             view = new View(context);
         }
@@ -128,9 +150,12 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             userCell.setChecked(item.checked, false);
             userCell.setCheckboxAlpha(1f, false);
             userCell.setDivider(position < items.size() - 2);
+            if ((position + 1 < items.size()) && items.get(position + 1).viewType == VIEW_TYPE_LETTER) {
+                userCell.setDivider(false);
+            }
         } else if (viewType == VIEW_TYPE_COUNTRY) {
             SelectorCountryCell cell = (SelectorCountryCell) holder.itemView;
-            boolean needDivider = (position < items.size() - 2) && (position + 1 < items.size() - 2) && (items.get(position + 1).viewType != VIEW_TYPE_LETTER);
+            boolean needDivider = (position < items.size() - 1) && (position + 1 < items.size() - 1) && (items.get(position + 1).viewType != VIEW_TYPE_LETTER);
             cell.setCountry(item.country, needDivider);
             cell.setChecked(item.checked, false);
         } else if (viewType == VIEW_TYPE_PAD) {
@@ -149,6 +174,15 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
                 ((StickerEmptyView) holder.itemView).stickerView.getImageReceiver().startAnimation();
             } catch (Exception ignore) {
             }
+        } else if (viewType == VIEW_TYPE_TOP_SECTION) {
+            GraySectionCell cell = (GraySectionCell) holder.itemView;
+            cell.setText(item.text);
+            if (topSectionClickListener == null) {
+                cell.setRightText(null, null);
+            } else {
+                cell.setRightText(LocaleController.getString(R.string.UsersDeselectAll), topSectionClickListener);
+            }
+            topSectionCell = cell;
         }
     }
 
@@ -262,6 +296,12 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             return item;
         }
 
+        public static Item asTopSection(String text) {
+            Item item = new Item(VIEW_TYPE_TOP_SECTION, false);
+            item.text = text;
+            return item;
+        }
+
         public static Item asCountry(TLRPC.TL_help_country tlHelpCountry, boolean checked) {
             Item item = new Item(VIEW_TYPE_COUNTRY, true);
             item.country = tlHelpCountry;
@@ -306,6 +346,8 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             } else if (viewType == VIEW_TYPE_COUNTRY && (country != i.country || checked != i.checked)) {
                 return false;
             } else if (viewType == VIEW_TYPE_LETTER && (!TextUtils.equals(text, i.text))) {
+                return false;
+            } else if (viewType == VIEW_TYPE_TOP_SECTION && (!TextUtils.equals(text, i.text) || checked != i.checked)) {
                 return false;
             }
             return true;

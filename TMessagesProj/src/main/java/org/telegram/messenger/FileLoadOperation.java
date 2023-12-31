@@ -2102,7 +2102,7 @@ public class FileLoadOperation {
         requestingReference = true;
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
-            if (messageObject.getId() < 0 && messageObject.messageOwner.media.webpage != null) {
+            if (messageObject.getId() < 0 && messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.webpage != null) {
                 parentObject = messageObject.messageOwner.media.webpage;
             }
         }

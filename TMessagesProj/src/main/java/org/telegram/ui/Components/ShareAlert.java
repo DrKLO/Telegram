@@ -148,6 +148,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private int containerViewTop = -1;
     private boolean fullyShown = false;
     private boolean includeStory;
+    public boolean includeStoryFromMessage;
 
     private ChatActivity parentFragment;
     private Activity parentActivity;
@@ -1569,11 +1570,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         AndroidUtilities.updateViewVisibilityAnimated(searchGridView, false, 1f, false);
     }
 
+    protected void onShareStory(View cell) {
+
+    }
+
     private void selectDialog(View cell, TLRPC.Dialog dialog) {
         if (dialog instanceof ShareDialogsAdapter.MyStoryDialog) {
-            LongSparseArray<TLRPC.Dialog> dids = new LongSparseArray<>();
-            dids.put(Long.MAX_VALUE, dialog);
-            onSend(dids, 1, null);
+            onShareStory(cell);
             return;
         }
         if (topicsGridView.getVisibility() != View.GONE || parentActivity == null) {
@@ -2480,7 +2483,15 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             View view;
             switch (viewType) {
                 case 0: {
-                    view = new ShareDialogCell(context, darkTheme ? ShareDialogCell.TYPE_CALL : ShareDialogCell.TYPE_SHARE, resourcesProvider);
+                    view = new ShareDialogCell(context, darkTheme ? ShareDialogCell.TYPE_CALL : ShareDialogCell.TYPE_SHARE, resourcesProvider) {
+                        @Override
+                        protected String repostToCustomName() {
+                            if (includeStoryFromMessage) {
+                                return LocaleController.getString(R.string.RepostToStory);
+                            }
+                            return super.repostToCustomName();
+                        }
+                    };
                     view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(100)));
                     break;
                 }
@@ -2499,6 +2510,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             if (holder.getItemViewType() == 0) {
                 ShareDialogCell cell = (ShareDialogCell) holder.itemView;
                 TLRPC.Dialog dialog = getItem(position);
+                if (dialog == null) return;
                 cell.setTopic(selectedDialogTopics.get(dialog), false);
                 cell.setDialog(dialog.id, selectedDialogs.indexOfKey(dialog.id) >= 0, null);
             }
@@ -3163,7 +3175,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         ((ProfileSearchCell) holder.itemView).setData(object, ec, name, null, false, false);
                         ((ProfileSearchCell) holder.itemView).useSeparator = position < getItemCount() - 2;
                     } else if (holder.itemView instanceof ShareDialogCell) {
-                        ((ShareDialogCell) holder.itemView).setDialog((int) id, selectedDialogs.indexOfKey(id) >= 0, name);
+                        ((ShareDialogCell) holder.itemView).setDialog(id, selectedDialogs.indexOfKey(id) >= 0, name);
                     }
                     return;
                 }

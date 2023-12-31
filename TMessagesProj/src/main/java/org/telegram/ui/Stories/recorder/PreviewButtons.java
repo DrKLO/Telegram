@@ -55,7 +55,7 @@ public class PreviewButtons extends FrameLayout {
 
     private View shadowView;
 
-    private ArrayList<View> buttons = new ArrayList<>();
+    private ArrayList<ButtonView> buttons = new ArrayList<>();
     public ShareButtonView shareButton;
 
     private String shareText;
@@ -77,6 +77,25 @@ public class PreviewButtons extends FrameLayout {
         addView(shareButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         updateAppearT();
+    }
+
+    public void setFiltersVisible(boolean visible) {
+        for (int i = 0; i < buttons.size(); ++i) {
+            ButtonView button = buttons.get(i);
+            if (button.id == BUTTON_ADJUST) {
+                button.setVisibility(visible ? View.VISIBLE : View.GONE);
+            }
+        }
+    }
+
+    private boolean isFiltersVisible() {
+        for (int i = 0; i < buttons.size(); ++i) {
+            ButtonView button = buttons.get(i);
+            if (button.id == BUTTON_ADJUST) {
+                return button.getVisibility() == View.VISIBLE;
+            }
+        }
+        return false;
     }
 
     public void setShareText(String text) {
@@ -106,11 +125,19 @@ public class PreviewButtons extends FrameLayout {
         shareButton.layout(w - shareButton.getMeasuredWidth(), (h - shareButton.getMeasuredHeight()) / 2, w, (h + shareButton.getMeasuredHeight()) / 2);
 
         int W = w - dp(10 + 10 + 12.33f) - shareButton.getMeasuredWidth();
-        int maxPossibleMargin = buttons.size() < 2 ? 0 : (W - buttons.size() * dp(40)) / (buttons.size() - 1);
-        int margin = Math.min(dp(20), maxPossibleMargin);
+        int visibleButtons = 0;
+        for (int i = 0; i < buttons.size(); ++i) {
+            ButtonView button = buttons.get(i);
+            if (button.getVisibility() == View.VISIBLE) {
+                visibleButtons++;
+            }
+        }
+        int maxPossibleMargin = visibleButtons < 2 ? 0 : (W - visibleButtons * dp(40)) / (visibleButtons - 1);
+        int margin = Math.min(dp(isFiltersVisible() ? 20 : 30), maxPossibleMargin);
 
         int t = (h - dp(40)) / 2, b = (h + dp(40)) / 2;
-        for (int i = 0, x = dp(12.33f); i < buttons.size(); ++i) {
+        for (int i = 0, x = dp(12.33f) + (!isFiltersVisible() ? (W - visibleButtons * dp(40) - (visibleButtons - 1) * margin) / 2 : 0); i < buttons.size(); ++i) {
+            if (buttons.get(i).getVisibility() != View.VISIBLE) continue;
             buttons.get(i).layout(x, t, x + dp(40), b);
             x += dp(40) + margin;
         }
@@ -319,8 +346,10 @@ public class PreviewButtons extends FrameLayout {
     }
 
     private class ButtonView extends ImageView {
+        public final int id;
         public ButtonView(Context context, int id, int resId) {
             super(context);
+            this.id = id;
 
             setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
             setScaleType(ScaleType.CENTER);

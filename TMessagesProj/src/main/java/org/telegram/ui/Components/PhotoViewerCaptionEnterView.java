@@ -363,7 +363,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     sendButtonColorAnimator.setDuration(150).start();
                 }
 
-                if (photoViewer.getParentAlert() != null && !photoViewer.getParentAlert().captionLimitBulletinShown && !MessagesController.getInstance(currentAccount).premiumLocked && !UserConfig.getInstance(currentAccount).isPremium() && codePointCount > MessagesController.getInstance(currentAccount).captionLengthLimitDefault && codePointCount < MessagesController.getInstance(currentAccount).captionLengthLimitPremium) {
+                if (photoViewer.getParentAlert() != null && !photoViewer.getParentAlert().captionLimitBulletinShown && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !UserConfig.getInstance(currentAccount).isPremium() && codePointCount > MessagesController.getInstance(currentAccount).captionLengthLimitDefault && codePointCount < MessagesController.getInstance(currentAccount).captionLengthLimitPremium) {
                     photoViewer.getParentAlert().captionLimitBulletinShown = true;
                     if (heightShouldBeChanged) {
                         AndroidUtilities.runOnUIThread(()->photoViewer.showCaptionLimitBulletin(parent), 300);
@@ -390,7 +390,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     captionLimitView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 } catch (Exception ignored) {}
 
-                if (!MessagesController.getInstance(currentAccount).premiumLocked && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > codePointCount) {
+                if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > codePointCount) {
                     photoViewer.showCaptionLimitBulletin(parent);
                 }
                 return;

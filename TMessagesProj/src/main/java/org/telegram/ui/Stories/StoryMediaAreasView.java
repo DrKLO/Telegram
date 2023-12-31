@@ -3,17 +3,22 @@ package org.telegram.ui.Stories;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -28,8 +33,10 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.EmojiAnimationsOverlay;
@@ -41,6 +48,7 @@ import java.util.ArrayList;
 
 public class StoryMediaAreasView extends FrameLayout implements View.OnClickListener {
 
+    private AreaView lastSelectedArea = null;
     private AreaView selectedArea = null;
     private HintView2 hintView = null;
 
@@ -50,11 +58,15 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
     Matrix matrix = new Matrix();
     float[] point = new float[2];
 
+    private View parentView;
     private Theme.ResourcesProvider resourcesProvider;
 
-    public StoryMediaAreasView(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public StoryMediaAreasView(Context context, View parentView, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.parentView = parentView;
         this.resourcesProvider = resourcesProvider;
+        parentHighlightAlpha = new AnimatedFloat(parentView, 0, 120, new LinearInterpolator());
+        parentHighlightScaleAlpha = new AnimatedFloat(parentView, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
         setClipChildren(false);
         addView(hintsContainer = new FrameLayout(context));
     }
@@ -105,6 +117,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
             }
         }
         selectedArea = null;
+        parentHighlightScaleAlpha.set(0, true);
         invalidate();
         onHintVisible(false);
         malicious = false;
@@ -131,7 +144,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                     }
                     ScaleStateListAnimator.apply(areaView);
                 } else {
-                    areaView = new AreaView(getContext(), this, mediaArea);
+                    areaView = new AreaView(getContext(), parentView, mediaArea);
                 }
                 areaView.setOnClickListener(this);
                 addView(areaView);
@@ -139,7 +152,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 totalArea += (mediaArea.coordinates.w / 100f * W) * (mediaArea.coordinates.h / 100f * H);
             }
         }
-        malicious = totalArea > W * H * .33f;
+        malicious = false; // totalArea > W * H * .33f;
 
         hintsContainer.bringToFront();
     }
@@ -185,6 +198,17 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 onHintVisible(false);
             }, 200);
 
+            if (selectedArea.mediaArea instanceof TL_stories.TL_mediaAreaChannelPost) {
+                Bundle args = new Bundle();
+                args.putLong("chat_id", ((TL_stories.TL_mediaAreaChannelPost) selectedArea.mediaArea).channel_id);
+                args.putInt("message_id", ((TL_stories.TL_mediaAreaChannelPost) selectedArea.mediaArea).msg_id);
+                presentFragment(new ChatActivity(args));
+
+                selectedArea = null;
+                invalidate();
+                return;
+            }
+
             LocationActivity fragment = new LocationActivity(3) {
                 @Override
                 protected boolean disablePermissionCheck() {
@@ -227,7 +251,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
             return;
         }
 
-        selectedArea = (AreaView) v;
+        selectedArea = lastSelectedArea = (AreaView) v;
         invalidate();
         if (hintView != null) {
             hintView.hide();
@@ -236,7 +260,12 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
         boolean top = selectedArea.getTranslationY() < AndroidUtilities.dp(100);
 
-        SpannableStringBuilder text = new SpannableStringBuilder(LocaleController.getString("StoryViewLocation", R.string.StoryViewLocation));
+        SpannableStringBuilder text = new SpannableStringBuilder();
+        if (selectedArea.mediaArea instanceof TL_stories.TL_mediaAreaChannelPost) {
+            text.append(LocaleController.getString(R.string.StoryViewMessage));
+        } else {
+            text.append(LocaleController.getString(R.string.StoryViewLocation));
+        }
         SpannableString arrowRight = new SpannableString(">");
         ColoredImageSpan imageSpan = new ColoredImageSpan(R.drawable.photos_arrow);
         imageSpan.translate(dp(2), dp(1));
@@ -261,7 +290,13 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 onHintVisible(false);
             }
         });
-        if (top) {
+        if (selectedArea.mediaArea instanceof TL_stories.TL_mediaAreaChannelPost && (
+            top ?
+                selectedArea.getTranslationY() + selectedArea.getMeasuredHeight() / 2f > getMeasuredHeight() - dp(120) :
+                selectedArea.getTranslationY() - selectedArea.getMeasuredHeight() / 2f - dp(50) < dp(120)
+        )) {
+            hintView.setTranslationY(selectedArea.getTranslationY() - selectedArea.getMeasuredHeight() / 3f);
+        } else if (top) {
             hintView.setTranslationY(selectedArea.getTranslationY() + selectedArea.getMeasuredHeight() / 2f);
         } else {
             hintView.setTranslationY(selectedArea.getTranslationY() - selectedArea.getMeasuredHeight() / 2f - dp(50));
@@ -336,13 +371,15 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
     }
 
 
+    private final Rect rect = new Rect();
     private final RectF rectF = new RectF();
     private final Paint cutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     {
         cutPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         cutPaint.setColor(0xffffffff);
     }
-    public final AnimatedFloat parentHighlightAlpha = new AnimatedFloat(this, 0, 120, new LinearInterpolator());
+    public final AnimatedFloat parentHighlightAlpha;
+    public final AnimatedFloat parentHighlightScaleAlpha;
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -352,8 +389,13 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         return super.drawChild(canvas, child, drawingTime);
     }
 
+    private final Path clipPath = new Path();
+    private final float[] radii = new float[8];
+
     private void drawHighlight(Canvas canvas) {
-        float parentAlpha = parentHighlightAlpha.set(selectedArea != null);
+        float parentAlpha = parentHighlightAlpha.set(selectedArea != null && selectedArea.supportsBounds && !selectedArea.scaleOnTap);
+        boolean scale = selectedArea != null && selectedArea.scaleOnTap;
+        float parentScale = parentHighlightScaleAlpha.set(scale);
         if (parentAlpha > 0) {
             canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
             canvas.drawColor(Theme.multAlpha(0x18000000, parentAlpha));
@@ -361,7 +403,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 View child2 = getChildAt(i);
                 if (child2 != hintsContainer) {
                     AreaView areaView = (AreaView) child2;
-                    float alpha = areaView.highlightAlpha.set(child2 == selectedArea);
+                    float alpha = areaView.highlightAlpha.set(child2 == selectedArea && selectedArea.supportsBounds);
                     if (alpha > 0) {
                         canvas.save();
                         rectF.set(child2.getX(), child2.getY(), child2.getX() + child2.getMeasuredWidth(), child2.getY() + child2.getMeasuredHeight());
@@ -373,6 +415,49 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 }
             }
             canvas.restore();
+        }
+        if ((scale || parentScale > 0) && lastSelectedArea != null) {
+            if (parentBitmap == null) {
+                parentBitmap = getPlayingBitmap();
+            }
+            if (parentBitmap != null) {
+                canvas.drawColor(Theme.multAlpha(0x30000000, parentScale));
+                canvas.save();
+                clipPath.rewind();
+                rectF.set(lastSelectedArea.getX(), lastSelectedArea.getY(), lastSelectedArea.getX() + lastSelectedArea.getMeasuredWidth(), lastSelectedArea.getY() + lastSelectedArea.getMeasuredHeight());
+                final float s = AndroidUtilities.lerp(1.0f, 1.05f, parentScale);
+                canvas.scale(s, s, rectF.centerX(), rectF.centerY());
+                canvas.rotate(lastSelectedArea.getRotation(), rectF.centerX(), rectF.centerY());
+                radii[0] = radii[1] = dp(16);
+                radii[2] = radii[3] = dp(16);
+                radii[4] = radii[5] = dp(16);
+                radii[6] = radii[7] = dp(8);
+                clipPath.addRoundRect(rectF, radii, Path.Direction.CW);
+                canvas.clipPath(clipPath);
+                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                rect.set(0, 0, parentBitmap.getWidth(), parentBitmap.getHeight());
+                canvas.rotate(-lastSelectedArea.getRotation(), rectF.centerX(), rectF.centerY());
+                canvas.drawBitmap(parentBitmap, rect, AndroidUtilities.rectTmp, null);
+                canvas.restore();
+            }
+        } else if (parentBitmap != null) {
+            parentBitmap.recycle();
+            parentBitmap = null;
+        }
+        invalidate();
+    }
+
+    private Bitmap parentBitmap;
+    protected Bitmap getPlayingBitmap() {
+        return null;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (parentBitmap != null) {
+            parentBitmap.recycle();
+            parentBitmap = null;
         }
     }
 
@@ -392,6 +477,10 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
     public boolean hasSelected() {
         return selectedArea != null;
+    }
+
+    public boolean hasSelectedForScale() {
+        return selectedArea != null && (selectedArea.scaleOnTap || selectedArea.supportsBounds);
     }
 
     // returns true when widget that is drawn above the story (f.ex. reaction) is at these coordinates
@@ -468,6 +557,9 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         public AreaView(Context context, View parent, TL_stories.MediaArea mediaArea) {
             super(context);
             this.mediaArea = mediaArea;
+            supportsBounds = mediaArea instanceof TL_stories.TL_mediaAreaGeoPoint || mediaArea instanceof TL_stories.TL_mediaAreaVenue; // || mediaArea instanceof TL_stories.TL_mediaAreaChannelPost;
+            supportsShining = mediaArea instanceof TL_stories.TL_mediaAreaGeoPoint || mediaArea instanceof TL_stories.TL_mediaAreaVenue;
+            scaleOnTap = false; // mediaArea instanceof TL_stories.TL_mediaAreaChannelPost;
             highlightAlpha = new AnimatedFloat(parent, 0, 120, new LinearInterpolator());
             strokeGradientPaint.setStyle(Paint.Style.STROKE);
         }
@@ -477,6 +569,9 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         private LinearGradient gradient, strokeGradient;
         private final Matrix gradientMatrix = new Matrix();
 
+        private boolean supportsBounds = false;
+        private boolean supportsShining = false;
+        private boolean scaleOnTap;
         private boolean shining = false;
         private long startTime;
 
@@ -484,7 +579,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
-            if (shining && gradient != null) {
+            if (supportsShining && shining && gradient != null) {
                 float w = getMeasuredWidth() * .7f;
                 float t = (System.currentTimeMillis() - startTime) / 600f;
                 float tx = t * (getMeasuredWidth() + w) - w;
@@ -516,11 +611,17 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         private final Runnable shineRunnable = this::shineInternal;
 
         public void shine() {
+            if (!supportsShining) {
+                return;
+            }
             AndroidUtilities.cancelRunOnUIThread(shineRunnable);
             AndroidUtilities.runOnUIThread(shineRunnable, 400L);
         }
 
         private void shineInternal() {
+            if (!supportsShining) {
+                return;
+            }
             shining = true;
             startTime = System.currentTimeMillis();
             gradient = new LinearGradient(0, 0, 40, 0, new int[] { 0x00ffffff, 0x2dffffff, 0x2dffffff, 0x00ffffff }, new float[] { 0, .4f, .6f, 1f }, Shader.TileMode.CLAMP );

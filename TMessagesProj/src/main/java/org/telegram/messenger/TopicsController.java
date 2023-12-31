@@ -662,7 +662,11 @@ public class TopicsController extends BaseController {
         TLRPC.TL_channels_toggleViewForumAsMessages request = new TLRPC.TL_channels_toggleViewForumAsMessages();
         request.channel_id = getMessagesController().getInputChannel(channelId);
         request.enabled = enabled;
-        getConnectionsManager().sendRequest(request, null);
+        getConnectionsManager().sendRequest(request, (res, err) -> {
+            if (res != null) {
+                getMessagesController().processUpdates((TLRPC.Updates) res, false);
+            }
+        });
     }
 
     public void pinTopic(long chatId, int topicId, boolean pin, BaseFragment fragment) {

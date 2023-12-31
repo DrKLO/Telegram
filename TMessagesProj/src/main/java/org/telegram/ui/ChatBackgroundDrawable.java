@@ -154,7 +154,7 @@ public class ChatBackgroundDrawable extends Drawable {
                 }
             }
         } else {
-            if (wallPaper.settings.intensity < 0) {
+            if (wallPaper.settings == null || wallPaper.settings.intensity < 0) {
                 thumb = bitmapDrawableOf(new ColorDrawable(Color.BLACK));
             } else {
                 if (wallPaper.settings.second_background_color == 0) { //one color

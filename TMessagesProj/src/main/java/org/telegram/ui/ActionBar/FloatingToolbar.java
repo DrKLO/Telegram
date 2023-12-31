@@ -1007,7 +1007,7 @@ public final class FloatingToolbar {
                 });
             }
             final int size = menuItems.size();
-            final boolean premiumLocked = MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked;
+            final boolean premiumLocked = MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked();
             for (int i = 0; i < size; i++) {
                 final MenuItem menuItem = menuItems.get(i);
                 final boolean show;

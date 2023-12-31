@@ -9,6 +9,7 @@ import android.text.SpannableStringBuilder;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -48,16 +49,18 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
     private BaseFragment baseFragment;
     private TLRPC.TL_payments_checkedGiftCode giftCode;
     private String slug;
+    private FrameLayout container;
 
     public GiftInfoAdapter(Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
     }
 
-    public void init(BaseFragment baseFragment, TLRPC.TL_payments_checkedGiftCode giftCode, String slug) {
+    public void init(BaseFragment baseFragment, TLRPC.TL_payments_checkedGiftCode giftCode, String slug, FrameLayout container) {
         this.isUnused = giftCode.used_date == 0;
         this.baseFragment = baseFragment;
         this.giftCode = giftCode;
         this.slug = slug;
+        this.container = container;
     }
 
     @Override
@@ -111,7 +114,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                 break;
             case HOLDER_TYPE_BUTTON:
                 view = new ActionBtnCell(context, resourcesProvider);
-                view.setPadding(0,0,0, AndroidUtilities.dp(14));
+                view.setPadding(0, 0, 0, AndroidUtilities.dp(14));
                 break;
             case HOLDER_TYPE_EMPTY:
                 view = new View(context);
@@ -181,25 +184,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                                     LocaleController.getString("BoostingSendLinkToAnyone", R.string.BoostingSendLinkToAnyone)
                                     : LocaleController.getString("BoostingSendLinkToFriends", R.string.BoostingSendLinkToFriends),
                             Theme.key_chat_messageLinkIn, 0,
-                            () -> {
-                                final String slugLink = "https://t.me/giftcode/" + slug;
-                                Bundle args = new Bundle();
-                                args.putBoolean("onlySelect", true);
-                                args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
-                                DialogsActivity dialogFragment = new DialogsActivity(args);
-                                dialogFragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
-                                    long did = 0;
-                                    for (int a = 0; a < dids.size(); a++) {
-                                        did = dids.get(a).dialogId;
-                                        baseFragment.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(slugLink, did, null, null, null, true, null, null, null, true, 0, null, false));
-                                    }
-                                    fragment1.finishFragment();
-                                    BoostDialogs.showGiftLinkForwardedBulletin(did);
-                                    return true;
-                                });
-                                baseFragment.presentFragment(dialogFragment);
-                                dismiss();
-                            },
+                            this::share,
                             resourcesProvider
                     );
                     cell.setText(text);
@@ -227,7 +212,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                             dismiss();
                         }, error -> {
                             cell.updateLoading(false);
-                            BoostDialogs.showToastError(baseFragment.getContext(), error);
+                            BoostDialogs.processApplyGiftCodeError(error, container, resourcesProvider, this::share);
                         });
                     } else {
                         dismiss();
@@ -243,6 +228,26 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
 
             }
         }
+    }
+
+    private void share() {
+        final String slugLink = "https://t.me/giftcode/" + slug;
+        Bundle args = new Bundle();
+        args.putBoolean("onlySelect", true);
+        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
+        DialogsActivity dialogFragment = new DialogsActivity(args);
+        dialogFragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
+            long did = 0;
+            for (int a = 0; a < dids.size(); a++) {
+                did = dids.get(a).dialogId;
+                baseFragment.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(slugLink, did, null, null, null, true, null, null, null, true, 0, null, false));
+            }
+            fragment1.finishFragment();
+            BoostDialogs.showGiftLinkForwardedBulletin(did);
+            return true;
+        });
+        baseFragment.presentFragment(dialogFragment);
+        dismiss();
     }
 
     @Override

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.cells.selector;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -81,7 +83,11 @@ public class SelectorHeaderCell extends FrameLayout {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(getHeaderHeight(), MeasureSpec.EXACTLY)
         );
+    }
+
+    protected int getHeaderHeight() {
+        return dp(56);
     }
 }

@@ -64,6 +64,9 @@ public class EntityView extends FrameLayout {
         default void onEntityDragEnd(boolean delete) {}
         default void onEntityDragTrash(boolean enter) {}
         default void onEntityHandleTouched() {}
+        default boolean isEntityDeletable() {
+            return true;
+        }
     }
 
     private float previousLocationX,  previousLocationY;
@@ -223,7 +226,11 @@ public class EntityView extends FrameLayout {
                 delegate.onEntityDraggedBottom(position.y + getHeight() / 2f * scale > ((View) getParent()).getHeight() - dp(64 + 50));
             }
 
-            updateTrash(!multitouch && MathUtils.distance(x, y,  ((View) getParent()).getWidth() / 2f, ((View) getParent()).getHeight() - dp(76)) < dp(32));
+            updateTrash(
+                (delegate == null || delegate.isEntityDeletable()) &&
+                    !multitouch &&
+                    MathUtils.distance(x, y,  ((View) getParent()).getWidth() / 2f, ((View) getParent()).getHeight() - dp(76)) < dp(32)
+            );
 
             bounce.setPressed(false);
 
@@ -709,7 +716,7 @@ public class EntityView extends FrameLayout {
         updateSelectionView();
     }
 
-    protected Rect getSelectionBounds() {
+    public Rect getSelectionBounds() {
         return new Rect(0, 0, 0, 0);
     }
 
@@ -1006,9 +1013,13 @@ public class EntityView extends FrameLayout {
         return false;
     }
 
+    protected float getBounceScale() {
+        return .04f;
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        final float scale = bounce.getScale(.05f);
+        final float scale = bounce.getScale(getBounceScale());
         canvas.save();
         canvas.scale(scale, scale, getWidth() / 2f, getHeight() / 2f);
         if (getParent() instanceof View) {

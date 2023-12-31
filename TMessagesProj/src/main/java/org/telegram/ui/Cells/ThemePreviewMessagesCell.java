@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -30,7 +31,9 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedColor;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -38,6 +41,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 public class ThemePreviewMessagesCell extends LinearLayout {
 
@@ -340,10 +344,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                     if (getMessageObject() != null && getMessageObject().overrideLinkColor >= 0) {
                         final int colorId = getMessageObject().overrideLinkColor;
                         final int color1, color2;
-                        if (getMessageObject().overrideProfilePeerColor != null) {
-                            color1 = getMessageObject().overrideProfilePeerColor.getAvatarColor1();
-                            color2 = getMessageObject().overrideProfilePeerColor.getAvatarColor2();
-                        } else if (colorId >= 14) {
+                        if (colorId >= 14) {
                             MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
                             MessagesController.PeerColors peerColors = messagesController != null ? messagesController.peerColors : null;
                             MessagesController.PeerColor peerColor = peerColors != null ? peerColors.getColor(colorId) : null;
@@ -443,9 +444,32 @@ public class ThemePreviewMessagesCell extends LinearLayout {
     private Drawable overrideDrawable;
     public void setOverrideBackground(Drawable drawable) {
         overrideDrawable = drawable;
+        if (overrideDrawable != null) {
+            overrideDrawable.setCallback(this);
+        }
+        if (overrideDrawable instanceof ChatBackgroundDrawable) {
+            if (isAttachedToWindow()) {
+                ((ChatBackgroundDrawable) overrideDrawable).onAttachedToWindow(this);
+            }
+        }
         invalidate();
     }
 
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (overrideDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) overrideDrawable).onAttachedToWindow(this);
+        }
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == overrideDrawable || who == oldBackgroundDrawable || super.verifyDrawable(who);
+    }
+
+    public boolean customAnimation;
+    private final AnimatedFloat overrideDrawableUpdate = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -454,7 +478,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             invalidate();
         }
         if (newDrawable != backgroundDrawable && newDrawable != null) {
-            if (Theme.isAnimatingColor()) {
+            if (Theme.isAnimatingColor() || customAnimation) {
                 oldBackgroundDrawable = backgroundDrawable;
                 oldBackgroundGradientDisposable = backgroundGradientDisposable;
             } else if (backgroundGradientDisposable != null) {
@@ -462,15 +486,16 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 backgroundGradientDisposable = null;
             }
             backgroundDrawable = newDrawable;
+            overrideDrawableUpdate.set(0, true);
         }
-        float themeAnimationValue = parentLayout.getThemeAnimationValue();
+        float themeAnimationValue = customAnimation ? overrideDrawableUpdate.set(1) : parentLayout.getThemeAnimationValue();
         for (int a = 0; a < 2; a++) {
             Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
             if (drawable == null) {
                 continue;
             }
             int alpha;
-            if (a == 1 && oldBackgroundDrawable != null && parentLayout != null) {
+            if (a == 1 && oldBackgroundDrawable != null && (parentLayout != null || customAnimation)) {
                 alpha = (int) (255 * themeAnimationValue);
             } else {
                 alpha = 255;
@@ -510,6 +535,8 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 }
                 drawable.draw(canvas);
                 canvas.restore();
+            } else {
+                StoryEntry.drawBackgroundDrawable(canvas, drawable, getWidth(), getHeight());
             }
             if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
                 if (oldBackgroundGradientDisposable != null) {
@@ -538,6 +565,9 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         if (oldBackgroundGradientDisposable != null) {
             oldBackgroundGradientDisposable.dispose();
             oldBackgroundGradientDisposable = null;
+        }
+        if (overrideDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) overrideDrawable).onDetachedFromWindow(this);
         }
     }
 

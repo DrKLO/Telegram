@@ -263,6 +263,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
+                    if (doneButtonDrawable != null && doneButtonDrawable.getProgress() > 0) {
+                        return;
+                    }
                     processDone();
                 }
             }
@@ -683,10 +686,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
     private void processDone() {
         AndroidUtilities.runOnUIThread(enableDoneLoading, 200);
-        if (currentChat.noforwards != isSaveRestricted) {
-            getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
-        }
-        if (trySetUsername() && tryUpdateJoinSettings()) {
+        if (trySetUsername() && trySetRestrict() && tryUpdateJoinSettings()) {
             finishFragment();
         }
     }
@@ -1117,6 +1117,26 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }
     }
 
+    private boolean trySetRestrict() {
+        if (currentChat.noforwards != isSaveRestricted) {
+            if (!ChatObject.isChannel(currentChat)) {
+                updateDoneProgress(true);
+                getMessagesController().convertToMegaGroup(getParentActivity(), chatId, this, param -> {
+                    if (param != 0) {
+                        chatId = param;
+                        currentChat = getMessagesController().getChat(param);
+                        getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
+                        processDone();
+                    }
+                });
+                return false;
+            } else {
+                getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
+            }
+        }
+        return true;
+    }
+
     private boolean trySetUsername() {
         if (getParentActivity() == null) {
             return false;
@@ -1165,7 +1185,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
     private boolean deactivatingLinks = false;
     private boolean tryDeactivateAllLinks() {
-        if (!isPrivate || currentChat.usernames == null) {
+        if (!isPrivate || currentChat.usernames == null || currentChat.usernames.isEmpty()) {
             return true;
         }
         if (deactivatingLinks) {
@@ -1182,7 +1202,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         if (hasActive) {
             TLRPC.TL_channels_deactivateAllUsernames req = new TLRPC.TL_channels_deactivateAllUsernames();
             req.channel = MessagesController.getInputChannel(currentChat);
-            getConnectionsManager().sendRequest(req, (res, err) -> {
+            getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                 if (res instanceof TLRPC.TL_boolTrue) {
                     for (int i = 0; i < currentChat.usernames.size(); ++i) {
                         final TLRPC.TL_username username = currentChat.usernames.get(i);
@@ -1193,7 +1213,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 }
                 deactivatingLinks = false;
                 AndroidUtilities.runOnUIThread(this::processDone);
-            });
+            }));
+        } else {
+            deactivatingLinks = false;
         }
         return !hasActive;
     }

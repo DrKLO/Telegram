@@ -5768,28 +5768,32 @@ public class AlertsCreator {
             }
         }
 
-        boolean isGiveawayAndOwner = false;
+        boolean isActiveGiveawayAndOwner = false;
         String giveawayEndDate = null;
         if (selectedMessage != null) {
-            isGiveawayAndOwner = selectedMessage.isGiveaway() && !selectedMessage.isForwarded();
-            if (isGiveawayAndOwner) {
+            isActiveGiveawayAndOwner = selectedMessage.isGiveaway() && !selectedMessage.isForwarded();
+            if (isActiveGiveawayAndOwner) {
                 TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) selectedMessage.messageOwner.media;
-                giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveaway.until_date * 1000L));
+                long untilDate = giveaway.until_date * 1000L;
+                giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
+                isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
             }
         } else if (count == 1) {
             for (int a = 1; a >= 0; a--) {
                 for (int b = 0; b < selectedMessages[a].size(); b++) {
                     MessageObject msg = selectedMessages[a].valueAt(b);
-                    isGiveawayAndOwner = msg.isGiveaway() && !msg.isForwarded();
-                    if (isGiveawayAndOwner) {
+                    isActiveGiveawayAndOwner = msg.isGiveaway() && !msg.isForwarded();
+                    if (isActiveGiveawayAndOwner) {
                         TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) msg.messageOwner.media;
-                        giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveaway.until_date * 1000L));
+                        long untilDate = giveaway.until_date * 1000L;
+                        giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
+                        isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
                     }
                 }
             }
         }
 
-        if (isGiveawayAndOwner) {
+        if (isActiveGiveawayAndOwner) {
             builder.setTitle(LocaleController.getString("BoostingGiveawayDeleteMsgTitle", R.string.BoostingGiveawayDeleteMsgTitle));
             builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGiveawayDeleteMsgText", R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
             builder.setNeutralButton(LocaleController.getString("Delete", R.string.Delete), deleteAction);

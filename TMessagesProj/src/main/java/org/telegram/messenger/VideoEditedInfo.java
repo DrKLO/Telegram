@@ -55,15 +55,17 @@ public class VideoEditedInfo {
     public byte[] key;
     public byte[] iv;
     public MediaController.SavedFilterState filterState;
-    public String paintPath, blurPath;
+    public String paintPath, blurPath, messagePath, messageVideoMaskPath, backgroundPath;
     public ArrayList<MediaEntity> mediaEntities;
     public MediaController.CropState cropState;
     public boolean isPhoto;
     public boolean isStory;
     public StoryEntry.HDRInfo hdrInfo;
-    public ArrayList<StoryEntry.Part> parts;
 
     public Integer gradientTopColor, gradientBottomColor;
+    public int account;
+    public boolean isDark;
+    public long wallpaperPeerId = Long.MIN_VALUE;
     public boolean forceFragmenting;
 
     public boolean alreadyScheduledConverting;
@@ -115,6 +117,7 @@ public class VideoEditedInfo {
         public static final byte TYPE_LOCATION = 3;
         public static final byte TYPE_REACTION = 4;
         public static final byte TYPE_ROUND = 5;
+        public static final byte TYPE_MESSAGE = 6;
 
         public byte type;
         public byte subType;
@@ -135,7 +138,9 @@ public class VideoEditedInfo {
         public int viewHeight;
         public float roundRadius;
 
-        public float scale;
+        public String segmentedPath = "";
+
+        public float scale = 1.0f;
         public float textViewWidth;
         public float textViewHeight;
         public float textViewX;
@@ -172,50 +177,53 @@ public class VideoEditedInfo {
         public MediaEntity() {
 
         }
-
         public MediaEntity(AbstractSerializedData data, boolean full) {
-            type = data.readByte(false);
-            subType = data.readByte(false);
-            x = data.readFloat(false);
-            y = data.readFloat(false);
-            rotation = data.readFloat(false);
-            width = data.readFloat(false);
-            height = data.readFloat(false);
-            text = data.readString(false);
-            int count = data.readInt32(false);
+            this(data, full, false);
+        }
+
+        public MediaEntity(AbstractSerializedData data, boolean full, boolean exception) {
+            type = data.readByte(exception);
+            subType = data.readByte(exception);
+            x = data.readFloat(exception);
+            y = data.readFloat(exception);
+            rotation = data.readFloat(exception);
+            width = data.readFloat(exception);
+            height = data.readFloat(exception);
+            text = data.readString(exception);
+            int count = data.readInt32(exception);
             for (int i = 0; i < count; ++i) {
                 EmojiEntity entity = new EmojiEntity();
-                data.readInt32(false);
-                entity.readParams(data, false);
+                data.readInt32(exception);
+                entity.readParams(data, exception);
                 entities.add(entity);
             }
-            color = data.readInt32(false);
-            fontSize = data.readInt32(false);
-            viewWidth = data.readInt32(false);
-            viewHeight = data.readInt32(false);
-            textAlign = data.readInt32(false);
-            textTypeface = PaintTypeface.find(textTypefaceKey = data.readString(false));
-            scale = data.readFloat(false);
-            textViewWidth = data.readFloat(false);
-            textViewHeight = data.readFloat(false);
-            textViewX = data.readFloat(false);
-            textViewY = data.readFloat(false);
+            color = data.readInt32(exception);
+            fontSize = data.readInt32(exception);
+            viewWidth = data.readInt32(exception);
+            viewHeight = data.readInt32(exception);
+            textAlign = data.readInt32(exception);
+            textTypeface = PaintTypeface.find(textTypefaceKey = data.readString(exception));
+            scale = data.readFloat(exception);
+            textViewWidth = data.readFloat(exception);
+            textViewHeight = data.readFloat(exception);
+            textViewX = data.readFloat(exception);
+            textViewY = data.readFloat(exception);
             if (full) {
-                int magic = data.readInt32(false);
+                int magic = data.readInt32(exception);
                 if (magic == TLRPC.TL_null.constructor) {
                     document = null;
                 } else {
-                    document = TLRPC.Document.TLdeserialize(data, magic, false);
+                    document = TLRPC.Document.TLdeserialize(data, magic, exception);
                 }
             }
             if (type == TYPE_LOCATION) {
-                density = data.readFloat(false);
-                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(false), false);
-                mediaGeo = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(false), false);
+                density = data.readFloat(exception);
+                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(exception), exception);
+                mediaGeo = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(exception), exception);
                 if (data.remaining() > 0) {
-                    int magic = data.readInt32(false);
+                    int magic = data.readInt32(exception);
                     if (magic == 0xdeadbeef) {
-                        String emoji = data.readString(false);
+                        String emoji = data.readString(exception);
                         if (mediaGeo instanceof TLRPC.TL_messageMediaVenue) {
                             ((TLRPC.TL_messageMediaVenue) mediaGeo).emoji = emoji;
                         }
@@ -223,13 +231,16 @@ public class VideoEditedInfo {
                 }
             }
             if (type == TYPE_REACTION) {
-                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(false), false);
+                mediaArea = TL_stories.MediaArea.TLdeserialize(data, data.readInt32(exception), exception);
             }
             if (type == TYPE_ROUND) {
-                roundOffset = data.readInt64(false);
-                roundLeft = data.readInt64(false);
-                roundRight = data.readInt64(false);
-                roundDuration = data.readInt64(false);
+                roundOffset = data.readInt64(exception);
+                roundLeft = data.readInt64(exception);
+                roundRight = data.readInt64(exception);
+                roundDuration = data.readInt64(exception);
+            }
+            if (type == TYPE_PHOTO) {
+                segmentedPath = data.readString(exception);
             }
         }
 
@@ -292,6 +303,9 @@ public class VideoEditedInfo {
                 data.writeInt64(roundLeft);
                 data.writeInt64(roundRight);
                 data.writeInt64(roundDuration);
+            }
+            if (type == TYPE_PHOTO) {
+                data.writeString(segmentedPath);
             }
         }
 
@@ -452,14 +466,7 @@ public class VideoEditedInfo {
             } else {
                 serializedData.writeByte(0);
             }
-            if (parts != null && !parts.isEmpty()) {
-                serializedData.writeInt32(parts.size());
-                for (StoryEntry.Part part : parts) {
-                    part.serializeToStream(serializedData);
-                }
-            } else {
-                serializedData.writeInt32(0);
-            }
+            serializedData.writeInt32(0);
             serializedData.writeBool(isStory);
             serializedData.writeBool(fromCamera);
             if (blurPathBytes != null) {
@@ -582,11 +589,7 @@ public class VideoEditedInfo {
                             }
                         }
                         if (version >= 6) {
-                            int count = serializedData.readInt32(false);
-                            for (int i = 0; i < count; ++i) {
-                                StoryEntry.Part part = new StoryEntry.Part();
-                                part.readParams(serializedData, false);
-                            }
+                            serializedData.readInt32(false);
                         }
                         if (version >= 7) {
                             isStory = serializedData.readBool(false);

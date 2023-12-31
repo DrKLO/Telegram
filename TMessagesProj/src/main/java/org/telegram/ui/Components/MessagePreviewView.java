@@ -910,7 +910,7 @@ public class MessagePreviewView extends FrameLayout {
                     menu.addView(btn1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
 
-                if (!messagePreviewParams.noforwards) {
+                if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     FrameLayout btn2 = new FrameLayout(context);
                     replyAnotherChatButton = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
                     replyAnotherChatButton.setTextAndIcon(LocaleController.getString(R.string.ReplyToAnotherChat), R.drawable.msg_forward_replace);
@@ -923,7 +923,7 @@ public class MessagePreviewView extends FrameLayout {
                     menu.addView(btn2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
 
-                if (!messagePreviewParams.isSecret) {
+                if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     ActionBarPopupWindow.GapView gap2 = new ActionBarPopupWindow.GapView(context, resourcesProvider);
                     gap2.setTag(R.id.fit_width_tag, 1);
                     menu.addView(gap2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));

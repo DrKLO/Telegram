@@ -144,9 +144,9 @@ public class UserObject {
     }
 
     public static MessagesController.PeerColor getPeerColorForAvatar(int currentAccount, TLRPC.User user) {
-        if (user != null && user.profile_color != null && user.profile_color.color >= 0 && MessagesController.getInstance(currentAccount).profilePeerColors != null) {
-            return MessagesController.getInstance(currentAccount).profilePeerColors.getColor(user.profile_color.color);
-        }
+//        if (user != null && user.profile_color != null && user.profile_color.color >= 0 && MessagesController.getInstance(currentAccount).profilePeerColors != null) {
+//            return MessagesController.getInstance(currentAccount).profilePeerColors.getColor(user.profile_color.color);
+//        }
         return null;
     }
 

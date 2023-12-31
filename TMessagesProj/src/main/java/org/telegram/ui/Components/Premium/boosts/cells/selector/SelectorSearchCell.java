@@ -140,6 +140,10 @@ public class SelectorSearchCell extends ScrollView {
         });
     }
 
+    public void setHintText(String text, boolean animated) {
+        editText.setHintText(text, animated);
+    }
+
     private final AnimatedFloat topGradientAlpha = new AnimatedFloat(this, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final LinearGradient topGradient = new LinearGradient(0, 0, 0, dp(8), new int[]{0xff000000, 0x00000000}, new float[]{0, 1}, Shader.TileMode.CLAMP);
     private final Paint topGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

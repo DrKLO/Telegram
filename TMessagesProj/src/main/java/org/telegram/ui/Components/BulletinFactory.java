@@ -41,6 +41,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -187,6 +188,20 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createImageBulletin(int iconRawId, CharSequence title) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setBackground(Theme.getColor(Theme.key_undo_background, resourcesProvider), 12);
+        layout.imageView.setImageResource(iconRawId);
+        layout.textView.setText(title);
+        layout.textView.setSingleLine(false);
+        layout.textView.setLines(2);
+        layout.textView.setMaxLines(4);
+        layout.textView.setMaxWidth(HintView2.cutInFancyHalf(layout.textView.getText(), layout.textView.getPaint()));
+        ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = AndroidUtilities.dp(12);
+        layout.setWrapWidth();
+        return create(layout, Bulletin.DURATION_PROLONG);
     }
 
     public Bulletin createSimpleLargeBulletin(int iconRawId, CharSequence title, CharSequence subtitle) {

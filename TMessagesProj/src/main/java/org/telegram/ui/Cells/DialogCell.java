@@ -1169,6 +1169,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         } else if (chat.fake) {
                             drawScam = 2;
                             Theme.dialogs_fakeDrawable.checkText();
+                        } else if (DialogObject.getEmojiStatusDocumentId(chat.emoji_status) != 0) {
+                            drawPremium = true;
+                            nameLayoutEllipsizeByGradient = true;
+                            emojiStatus.center = LocaleController.isRTL;
+                            emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), false);
                         } else {
                             drawVerified = !forbidVerified && chat.verified;
                         }
@@ -1472,7 +1477,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
                                     messageString = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
                                 } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaDocument && (message.messageOwner.media.document instanceof TLRPC.TL_documentEmpty || message.messageOwner.media.document == null) && message.messageOwner.media.ttl_seconds != 0) {
-                                    messageString = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+                                    if (message.messageOwner.media.voice) {
+                                        messageString = LocaleController.getString(R.string.AttachVoiceExpired);
+                                    } else if (message.messageOwner.media.round) {
+                                        messageString = LocaleController.getString(R.string.AttachRoundExpired);
+                                    } else {
+                                        messageString = LocaleController.getString(R.string.AttachVideoExpired);
+                                    }
                                 } else if (getCaptionMessage() != null) {
                                     MessageObject message = getCaptionMessage();
                                     String emoji;
@@ -1522,8 +1533,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                                 } else {
                                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGiveaway) {
-                                        TLRPC.TL_messageMediaGiveaway mediaPoll = (TLRPC.TL_messageMediaGiveaway) message.messageOwner.media;
                                         messageString = LocaleController.getString("BoostingGiveawayChannelStarted", R.string.BoostingGiveawayChannelStarted);
+                                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGiveawayResults) {
+                                        messageString = LocaleController.getString("BoostingGiveawayResults", R.string.BoostingGiveawayResults);
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                                         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
                                         messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
@@ -2722,17 +2734,29 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         invalidate = true;
                     }
                 }
-                if (user != null && (mask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
-                    user = MessagesController.getInstance(currentAccount).getUser(user.id);
-                    Long emojiStatusId = UserObject.getEmojiStatusDocumentId(user);
-                    if (emojiStatusId != null) {
-                        nameLayoutEllipsizeByGradient = true;
-                        emojiStatus.set(emojiStatusId, animated);
-                    } else {
-                        nameLayoutEllipsizeByGradient = true;
-                        emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
+                if ((mask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
+                    if (user != null) {
+                        user = MessagesController.getInstance(currentAccount).getUser(user.id);
+                        if (user != null && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0) {
+                            nameLayoutEllipsizeByGradient = true;
+                            emojiStatus.set(DialogObject.getEmojiStatusDocumentId(user.emoji_status), animated);
+                        } else {
+                            nameLayoutEllipsizeByGradient = true;
+                            emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
+                        }
+                        invalidate = true;
                     }
-                    invalidate = true;
+                    if (chat != null) {
+                        chat = MessagesController.getInstance(currentAccount).getChat(chat.id);
+                        if (chat != null && DialogObject.getEmojiStatusDocumentId(chat.emoji_status) != 0)  {
+                            nameLayoutEllipsizeByGradient = true;
+                            emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), animated);
+                        } else {
+                            nameLayoutEllipsizeByGradient = true;
+                            emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
+                        }
+                        invalidate = true;
+                    }
                 }
                 if (isDialogCell || isTopic) {
                     if ((mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {

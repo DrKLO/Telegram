@@ -212,7 +212,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     }
                     final boolean currentFullValue = getContextValue() || getChatValue();
                     if (currentFullValue != prevFullValue) {
-                        int start = 1 + (!getMessagesController().premiumLocked ? 1 : 0);
+                        int start = 1 + (!getMessagesController().premiumFeaturesBlocked() ? 1 : 0);
                         TextCheckCell last = null;
                         for (int i = 0; i < listView.getChildCount(); ++i) {
                             View child = listView.getChildAt(i);
@@ -239,7 +239,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search) {
-                    position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumLocked ? 1 : 0));
+                    position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
                 }
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {
@@ -304,7 +304,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search) {
-                    position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumLocked ? 1 : 0));
+                    position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
                 }
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {
@@ -541,7 +541,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 if (!unofficialLanguages.isEmpty()) {
                     count += unofficialLanguages.size() + 1;
                 }
-                return 4 + (getMessagesController().premiumLocked ? 0 : 1) + (getChatValue() || getContextValue() ? 1 : 0) + 1 + count;
+                return 4 + (getMessagesController().premiumFeaturesBlocked() ? 0 : 1) + (getChatValue() || getContextValue() ? 1 : 0) + 1 + count;
             }
         }
 
@@ -594,7 +594,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             switch (holder.getItemViewType()) {
                 case VIEW_TYPE_LANGUAGE: {
                     if (!search) {
-                        position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumLocked ? 1 : 0));
+                        position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
                     }
                     TextRadioCell textSettingsCell = (TextRadioCell) holder.itemView;
                     textSettingsCell.updateRTL();
@@ -692,7 +692,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_INFO: {
                     TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
                     infoCell.updateRTL();
-                    if (position == (!getMessagesController().premiumLocked && (getContextValue() || getChatValue()) ? 4 : 3)) {
+                    if (position == (!getMessagesController().premiumFeaturesBlocked() && (getContextValue() || getChatValue()) ? 4 : 3)) {
                         infoCell.setText(LocaleController.getString("TranslateMessagesInfo1", R.string.TranslateMessagesInfo1));
                         infoCell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                         infoCell.setTopPadding(11);
@@ -720,7 +720,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             } else {
                 if (i-- == 0) return VIEW_TYPE_HEADER;
                 if (i-- == 0) return VIEW_TYPE_SWITCH;
-                if (!getMessagesController().premiumLocked) {
+                if (!getMessagesController().premiumFeaturesBlocked()) {
                     if (i-- == 0) return VIEW_TYPE_SWITCH;
                 }
                 if (getChatValue() || getContextValue()) {

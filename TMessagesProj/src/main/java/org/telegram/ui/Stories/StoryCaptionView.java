@@ -77,6 +77,7 @@ import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -579,6 +580,9 @@ public class StoryCaptionView extends NestedScrollView {
         public Long peerId;
         public Integer storyId;
 
+        public Integer messageId;
+        public boolean isRepostMessage;
+
         private boolean small = true;
         private final AnimatedFloat animatedSmall = new AnimatedFloat(0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         public final ButtonBounce bounce = new ButtonBounce(null);
@@ -625,40 +629,84 @@ public class StoryCaptionView extends NestedScrollView {
         }
 
         public static Reply from(int currentAccount, TL_stories.StoryItem storyItem) {
-            if (storyItem == null || storyItem.fwd_from == null) {
+            if (storyItem == null) {
                 return null;
             }
-            Reply reply = new Reply();
-            reply.currentAccount = currentAccount;
-            if (storyItem.fwd_from.from != null) {
-                long did = reply.peerId = DialogObject.getPeerDialogId(storyItem.fwd_from.from);
-                if (did >= 0) {
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
-                    reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(UserObject.getUserName(user));
-                } else {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-                    reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat != null ? chat.title : "");
+            if (storyItem.fwd_from != null) {
+                Reply reply = new Reply();
+                reply.currentAccount = currentAccount;
+                if (storyItem.fwd_from.from != null) {
+                    long did = reply.peerId = DialogObject.getPeerDialogId(storyItem.fwd_from.from);
+                    if (did >= 0) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
+                        reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(UserObject.getUserName(user));
+                    } else {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat != null ? chat.title : "");
+                    }
+                } else if (storyItem.fwd_from.from_name != null) {
+                    reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(storyItem.fwd_from.from_name);
                 }
-            } else if (storyItem.fwd_from.from_name != null) {
-                reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(storyItem.fwd_from.from_name);
+                reply.small = true;
+                if ((storyItem.fwd_from.flags & 4) != 0) {
+                    reply.storyId = storyItem.fwd_from.story_id;
+                }
+                reply.load();
+                return reply;
             }
-            reply.small = true;
-            if ((storyItem.fwd_from.flags & 4) != 0) {
-                reply.storyId = storyItem.fwd_from.story_id;
+            if (storyItem.media_areas != null) {
+                TL_stories.TL_mediaAreaChannelPost postArea = null;
+                for (int i = 0; i < storyItem.media_areas.size(); ++i) {
+                    if (storyItem.media_areas.get(i) instanceof TL_stories.TL_mediaAreaChannelPost) {
+                        postArea = (TL_stories.TL_mediaAreaChannelPost) storyItem.media_areas.get(i);
+                    }
+                }
+                if (postArea != null) {
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(postArea.channel_id);
+                    if (chat != null) {
+                        Reply reply = new Reply();
+                        reply.peerId = -chat.id;
+                        reply.isRepostMessage = true;
+                        reply.currentAccount = currentAccount;
+                        reply.small = true;
+                        reply.messageId = postArea.msg_id;
+                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
+                        return reply;
+                    }
+                }
             }
-            reply.load();
-            return reply;
+            return null;
         }
 
         public static Reply from(StoriesController.UploadingStory uploadingStory) {
-            if (uploadingStory == null || uploadingStory.entry == null || !uploadingStory.entry.isRepost) {
+            if (uploadingStory == null || uploadingStory.entry == null) {
                 return null;
             }
-            Reply reply = new Reply();
-            reply.title = uploadingStory.entry.repostPeerName;
-            reply.text = uploadingStory.entry.repostCaption;
-            reply.small = TextUtils.isEmpty(reply.text);
-            return reply;
+            if (uploadingStory.entry.isRepost) {
+                Reply reply = new Reply();
+                reply.title = uploadingStory.entry.repostPeerName;
+                reply.text = uploadingStory.entry.repostCaption;
+                reply.small = TextUtils.isEmpty(reply.text);
+                return reply;
+            }
+            if (uploadingStory.entry.isRepostMessage && uploadingStory.entry.messageObjects != null && uploadingStory.entry.messageObjects.size() > 0) {
+                MessageObject messageObject = uploadingStory.entry.messageObjects.get(0);
+                final long dialogId = StoryEntry.getRepostDialogId(messageObject);
+                if (dialogId < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+                    if (chat != null) {
+                        Reply reply = new Reply();
+                        reply.peerId = dialogId;
+                        reply.isRepostMessage = true;
+                        reply.currentAccount = messageObject.currentAccount;
+                        reply.small = true;
+                        reply.messageId = StoryEntry.getRepostMessageId(messageObject);
+                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
+                        return reply;
+                    }
+                }
+            }
+            return null;
         }
 
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

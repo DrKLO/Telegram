@@ -1216,12 +1216,12 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         }
     }
 
-    public void showPremiumBulletin(String str, int resId) {
+    public void showPremiumBulletin(String text) {
         container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(
-                ContextCompat.getDrawable(getContext(), R.drawable.msg_premium_normal),
-                LocaleController.getString("IncreaseLimit", R.string.IncreaseLimit),
-                premiumText(LocaleController.getString(str, resId))
+                R.raw.star_premium_2,
+                LocaleController.getString(R.string.IncreaseLimit),
+                premiumText(text)
         ).show(true);
     }
 

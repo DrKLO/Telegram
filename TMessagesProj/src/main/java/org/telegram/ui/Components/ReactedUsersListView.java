@@ -134,7 +134,7 @@ public class ReactedUsersListView extends FrameLayout {
 
             @Override
             public int getItemCount() {
-                return userReactions.size() + (!customReactionsEmoji.isEmpty() && !MessagesController.getInstance(currentAccount).premiumLocked ? 1 : 0);
+                return userReactions.size() + (!customReactionsEmoji.isEmpty() && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() ? 1 : 0);
             }
 
             @Override
@@ -180,7 +180,7 @@ public class ReactedUsersListView extends FrameLayout {
         loadingView.setIsSingleCell(true);
         loadingView.setItemsCount(predictiveCount);
         addView(loadingView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        if (!addPadding && filter != null && filter instanceof TLRPC.TL_reactionCustomEmoji && !MessagesController.getInstance(currentAccount).premiumLocked) {
+        if (!addPadding && filter != null && filter instanceof TLRPC.TL_reactionCustomEmoji && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
             customReactionsEmoji.clear();
             customReactionsEmoji.add(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(filter));
             updateCustomReactionsButton();
@@ -346,7 +346,7 @@ public class ReactedUsersListView extends FrameLayout {
                 setIds.add(stickerSet.id);
             }
         }
-        if (MessagesController.getInstance(currentAccount).premiumLocked) {
+        if (MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
             return;
         }
         customEmojiStickerSets.addAll(sets);

@@ -674,7 +674,11 @@ public class Bulletin {
         }
 
         protected void setBackground(int color) {
-            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(10), color);
+            setBackground(color, 10);
+        }
+
+        public void setBackground(int color, int rounding) {
+            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(rounding), color);
         }
 
         public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {
@@ -1085,9 +1089,17 @@ public class Bulletin {
             this.resourcesProvider = resourcesProvider;
         }
 
+        private boolean wrapWidth;
+        public void setWrapWidth() {
+            wrapWidth = true;
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             childrenMeasuredWidth = 0;
+            if (wrapWidth) {
+                widthMeasureSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.AT_MOST);
+            }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             if (button != null && MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
                 setMeasuredDimension(childrenMeasuredWidth + button.getMeasuredWidth(), getMeasuredHeight());

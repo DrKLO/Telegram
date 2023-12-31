@@ -12,10 +12,13 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -79,11 +82,15 @@ public class ShareDialogCell extends FrameLayout {
     private boolean topicWasVisible;
 
     private final int currentAccount = UserConfig.selectedAccount;
-    private final Theme.ResourcesProvider resourcesProvider;
+    public final Theme.ResourcesProvider resourcesProvider;
 
     public static final int TYPE_SHARE = 0;
     public static final int TYPE_CALL = 1;
     public static final int TYPE_CREATE = 2;
+
+    public BackupImageView getImageView() {
+        return imageView;
+    }
 
     public ShareDialogCell(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -144,11 +151,15 @@ public class ShareDialogCell extends FrameLayout {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(currentType == TYPE_CREATE ? 95 : 103), MeasureSpec.EXACTLY));
     }
 
+    protected String repostToCustomName() {
+        return LocaleController.getString(R.string.FwdMyStory);
+    }
+
     public void setDialog(long uid, boolean checked, CharSequence name) {
         if (uid == Long.MAX_VALUE) {
-            nameTextView.setText(LocaleController.getString(R.string.FwdMyStory));
+            nameTextView.setText(repostToCustomName());
             if (repostStoryDrawable == null) {
-                repostStoryDrawable = new RepostStoryDrawable(imageView, resourcesProvider);
+                repostStoryDrawable = new RepostStoryDrawable(getContext(), imageView, true, resourcesProvider);
             }
             imageView.setImage(null, null, repostStoryDrawable, null);
         } else if (DialogObject.isUserDialog(uid)) {
@@ -321,41 +332,62 @@ public class ShareDialogCell extends FrameLayout {
         }
     }
 
-    private static class RepostStoryDrawable extends Drawable {
+    public static class RepostStoryDrawable extends Drawable {
 
         private final LinearGradient gradient;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private final RLottieDrawable lottieDrawable;
+        private final Drawable drawable;
 
-        public RepostStoryDrawable(View view, Theme.ResourcesProvider resourcesProvider) {
+        public RepostStoryDrawable(Context context, View parentView, boolean animate, Theme.ResourcesProvider resourcesProvider) {
             gradient = new LinearGradient(0, 0, dp(56), dp(56), new int[] {
                 Theme.getColor(Theme.key_stories_circle1, resourcesProvider),
                 Theme.getColor(Theme.key_stories_circle2, resourcesProvider)
             }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
             paint.setShader(gradient);
 
-            lottieDrawable = new RLottieDrawable(R.raw.story_repost, "story_repost", dp(42), dp(42), true, null);
-            lottieDrawable.setMasterParent(view);
-            AndroidUtilities.runOnUIThread(lottieDrawable::start, 450);
+            if (animate) {
+                lottieDrawable = new RLottieDrawable(R.raw.story_repost, "story_repost", dp(42), dp(42), true, null);
+                lottieDrawable.setMasterParent(parentView);
+                AndroidUtilities.runOnUIThread(lottieDrawable::start, 450);
+                drawable = null;
+            } else {
+                lottieDrawable = null;
+                drawable = context.getResources().getDrawable(R.drawable.large_repost_story).mutate();
+                drawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            }
         }
 
+        int alpha = 0xFF;
         @Override
         public void draw(@NonNull Canvas canvas) {
             canvas.save();
             canvas.translate(getBounds().left, getBounds().top);
-            canvas.drawCircle(getBounds().width() / 2f, getBounds().height() / 2f, getBounds().width() / 2f, paint);
+            AndroidUtilities.rectTmp.set(0, 0, getBounds().width(), getBounds().height());
+            paint.setAlpha(alpha);
+            float r2 = Math.min(getBounds().width(), getBounds().height()) / 2f * ((float) alpha / 0xFF);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, r2, r2, paint);
             canvas.restore();
 
-            AndroidUtilities.rectTmp2.set(getBounds());
-            AndroidUtilities.rectTmp2.inset(dp(8), dp(8));
-            lottieDrawable.setBounds(AndroidUtilities.rectTmp2);
-            lottieDrawable.draw(canvas);
+            final int r = dp(lottieDrawable != null ? 20 : 15);
+            AndroidUtilities.rectTmp2.set(
+                getBounds().centerX() - r,
+                getBounds().centerY() - r,
+                getBounds().centerX() + r,
+                getBounds().centerY() + r
+            );
+            Drawable drawable = lottieDrawable == null ? this.drawable : lottieDrawable;
+            if (drawable != null) {
+                drawable.setBounds(AndroidUtilities.rectTmp2);
+                drawable.setAlpha(alpha);
+                drawable.draw(canvas);
+            }
         }
 
         @Override
         public void setAlpha(int alpha) {
-
+            this.alpha = alpha;
         }
 
         @Override

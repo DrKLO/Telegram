@@ -567,11 +567,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     public boolean showCustomEmojiReaction() {
-        return (!MessagesController.getInstance(currentAccount).premiumLocked && allReactionsAvailable) || showExpandableReactions;
+        return allReactionsAvailable || showExpandableReactions;
     }
 
     private boolean showUnlockPremiumButton() {
-        return !premiumLockedReactions.isEmpty() && !MessagesController.getInstance(currentAccount).premiumLocked;
+        return !premiumLockedReactions.isEmpty() && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
     }
 
     private void showUnlockPremium(float x, float y) {
@@ -1085,7 +1085,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             fillRecentReactionsList(visibleReactions);
         }
         filterReactions(visibleReactions);
-        showExpandableReactions = !allReactionsAvailable && visibleReactions.size() > 16;
+        showExpandableReactions = !allReactionsAvailable && visibleReactions.size() > 16 || allReactionsAvailable && !UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
         setVisibleReactionsList(visibleReactions);
 
         if (message != null && message.messageOwner.reactions != null && message.messageOwner.reactions.results != null) {

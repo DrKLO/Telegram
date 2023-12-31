@@ -26,7 +26,7 @@ import java.util.Locale;
 
 public class RadialProgress2 {
 
-    private RectF progressRect = new RectF();
+    public RectF progressRect = new RectF();
     private View parent;
 
     private boolean previousCheckDrawable;
@@ -36,21 +36,21 @@ public class RadialProgress2 {
     private Paint miniProgressBackgroundPaint;
 
     private Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint circleMiniPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private MediaActionDrawable mediaActionDrawable;
+    public MediaActionDrawable mediaActionDrawable;
     private MediaActionDrawable miniMediaActionDrawable;
     private float miniIconScale = 1.0f;
     private int circleColor;
     private int circlePressedColor;
-    private int iconColor;
+    public int iconColor;
     private int iconPressedColor;
     private int circleColorKey = -1;
     private int circleCrossfadeColorKey = -1;
     private float circleCrossfadeColorProgress;
     private float circleCheckProgress = 1.0f;
     private int circlePressedColorKey = -1;
-    private int iconColorKey = -1;
+    public int iconColorKey = -1;
     private int iconPressedColorKey = -1;
     private ImageReceiver overlayImageView;
     private int circleRadius;
@@ -69,6 +69,8 @@ public class RadialProgress2 {
     private Theme.ResourcesProvider resourcesProvider;
     private int maxIconSize;
     private float overlayImageAlpha = 1f;
+
+    public float iconScale = 1f;
 
     public RadialProgress2(View parentView) {
         this(parentView, null);
@@ -452,6 +454,10 @@ public class RadialProgress2 {
         if (maxIconSize > 0 && iconSize > maxIconSize) {
             iconSize = maxIconSize;
         }
+        if (iconScale != 1f) {
+            canvas.save();
+            canvas.scale(iconScale, iconScale, centerX, centerY);
+        }
         mediaActionDrawable.setBounds(centerX - iconSize, centerY - iconSize, centerX + iconSize, centerY + iconSize);
         mediaActionDrawable.setHasOverlayImage(overlayImageView.hasBitmapImage());
         if ((drawMiniIcon || circleCrossfadeColorKey >= 0)) {
@@ -521,6 +527,9 @@ public class RadialProgress2 {
             if (restore != Integer.MIN_VALUE) {
                 canvas.restoreToCount(restore);
             }
+        }
+        if (iconScale != 1f) {
+            canvas.restore();
         }
     }
 

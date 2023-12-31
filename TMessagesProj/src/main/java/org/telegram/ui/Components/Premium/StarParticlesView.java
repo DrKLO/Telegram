@@ -49,6 +49,10 @@ public class StarParticlesView extends View {
         }
 
         drawable = new Drawable(particlesCount);
+        configure();
+    }
+
+    protected void configure() {
         drawable.type = 100;
         drawable.roundEffect = true;
         drawable.useRotate = true;

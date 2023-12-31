@@ -76,6 +76,8 @@ public class VoIPToggleButton extends FrameLayout {
 
     private float radius;
     private ValueAnimator checkAnimator;
+    private ValueAnimator pressedScaleAnimator;
+    private float pressedScale = 1.0f;
 
     private RLottieImageView lottieImageView;
 
@@ -96,7 +98,7 @@ public class VoIPToggleButton extends FrameLayout {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             textView.setTextColor(Color.WHITE);
             textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            textLayoutContainer.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, radius + 4, 0, 0));
+            textLayoutContainer.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, radius + 6, 0, 0));
             this.textView[i] = textView;
         }
         textView[1].setVisibility(View.GONE);
@@ -122,9 +124,25 @@ public class VoIPToggleButton extends FrameLayout {
         drawBackground = value;
     }
 
+    public void setPressedBtn(boolean pressed) {
+        if (pressedScaleAnimator != null) {
+            pressedScaleAnimator.cancel();
+        }
+        pressedScaleAnimator = ValueAnimator.ofFloat(pressedScale, pressed ? 0.8f : 1f);
+        pressedScaleAnimator.addUpdateListener(animation -> {
+            pressedScale = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        pressedScaleAnimator.setDuration(150);
+        pressedScaleAnimator.start();
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
+        canvas.save();
+        canvas.scale(pressedScale, pressedScale, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
+
         if (animateBackground && replaceProgress != 0) {
             circlePaint.setColor(ColorUtils.blendARGB(backgroundColor, animateToBackgroundColor, replaceProgress));
         } else {
@@ -229,6 +247,7 @@ public class VoIPToggleButton extends FrameLayout {
                 }
             }
         }
+        canvas.restore();
     }
 
     public void setBackgroundColor(int backgroundColor, int backgroundColorChecked) {

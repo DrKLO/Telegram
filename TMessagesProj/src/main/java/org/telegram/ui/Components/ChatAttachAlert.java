@@ -2557,7 +2557,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     sendButtonColorAnimator.setDuration(150).start();
                 }
 
-//                if (!captionLimitBulletinShown && !MessagesController.getInstance(currentAccount).premiumLocked && !UserConfig.getInstance(currentAccount).isPremium() && codepointCount > MessagesController.getInstance(currentAccount).captionLengthLimitDefault && codepointCount < MessagesController.getInstance(currentAccount).captionLengthLimitPremium) {
+//                if (!captionLimitBulletinShown && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !UserConfig.getInstance(currentAccount).isPremium() && codepointCount > MessagesController.getInstance(currentAccount).captionLengthLimitDefault && codepointCount < MessagesController.getInstance(currentAccount).captionLengthLimitPremium) {
 //                    captionLimitBulletinShown = true;
 //                    showCaptionLimitBulletin(parentFragment);
 //                }
@@ -2623,7 +2623,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 } catch (Exception ignored) {
                 }
 
-                if (!MessagesController.getInstance(currentAccount).premiumLocked && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > codepointCount) {
+                if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > codepointCount) {
                     showCaptionLimitBulletin(parentFragment);
                 }
                 return;

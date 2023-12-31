@@ -308,7 +308,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 nameLeft = AndroidUtilities.dp(11);
             }
             nameLockTop = AndroidUtilities.dp(22.0f);
-            updateStatus(false, null, false);
+            updateStatus(false, null, null, false);
         } else if (chat != null) {
             dialog_id = -chat.id;
             drawCheck = chat.verified;
@@ -317,7 +317,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             } else {
                 nameLeft = AndroidUtilities.dp(11);
             }
-            updateStatus(drawCheck, null, false);
+            updateStatus(drawCheck, null, chat, false);
         } else if (user != null) {
             dialog_id = user.id;
             if (!LocaleController.isRTL) {
@@ -328,7 +328,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             nameLockTop = AndroidUtilities.dp(21);
             drawCheck = user.verified;
             drawPremium = !savedMessages && MessagesController.getInstance(currentAccount).isPremiumUser(user);
-            updateStatus(drawCheck, user, false);
+            updateStatus(drawCheck, user, null, false);
         } else if (contact != null) {
             dialog_id = 0;
             if (!LocaleController.isRTL) {
@@ -587,16 +587,16 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         nameLockLeft += getPaddingLeft();
     }
 
-    public void updateStatus(boolean verified, TLRPC.User user, boolean animated) {
+    public void updateStatus(boolean verified, TLRPC.User user, TLRPC.Chat chat, boolean animated) {
         statusDrawable.center = LocaleController.isRTL;
         if (verified) {
             statusDrawable.set(new CombinedDrawable(Theme.dialogs_verifiedDrawable, Theme.dialogs_verifiedCheckDrawable, 0, 0), animated);
             statusDrawable.setColor(null);
-        } else if (user != null && !savedMessages && user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
-            statusDrawable.set(((TLRPC.TL_emojiStatusUntil) user.emoji_status).document_id, animated);
+        } else if (user != null && !savedMessages && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0) {
+            statusDrawable.set(DialogObject.getEmojiStatusDocumentId(user.emoji_status), animated);
             statusDrawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-        } else if (user != null && !savedMessages && user.emoji_status instanceof TLRPC.TL_emojiStatus) {
-            statusDrawable.set(((TLRPC.TL_emojiStatus) user.emoji_status).document_id, animated);
+        } else if (chat != null && !savedMessages && DialogObject.getEmojiStatusDocumentId(chat.emoji_status) != 0) {
+            statusDrawable.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), animated);
             statusDrawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
         } else if (user != null && !savedMessages && MessagesController.getInstance(currentAccount).isPremiumUser(user)) {
             statusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
@@ -662,8 +662,8 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0 && user != null) {
-                updateStatus(user.verified, user, true);
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0 && (user != null || chat != null)) {
+                updateStatus(user != null ? user.verified : chat.verified, user, chat, true);
             }
             if (!continueUpdate && ((mask & MessagesController.UPDATE_MASK_NAME) != 0 && user != null) || (mask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 && chat != null) {
                 String newName;

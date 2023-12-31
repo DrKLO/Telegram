@@ -145,10 +145,14 @@ public class ButtonWithCounterView extends FrameLayout {
     }
 
     public void setText(CharSequence newText, boolean animated) {
+        setText(newText, animated, true);
+    }
+
+    public void setText(CharSequence newText, boolean animated, boolean moveDown) {
         if (animated) {
             text.cancelAnimation();
         }
-        text.setText(newText, animated);
+        text.setText(newText, animated, moveDown);
         setContentDescription(newText);
         invalidate();
     }
@@ -343,6 +347,10 @@ public class ButtonWithCounterView extends FrameLayout {
     private int globalAlpha = 255;
     private final int subTextAlpha = 200;
 
+    protected float calculateCounterWidth(float width, float percent) {
+        return width * percent;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         rippleView.draw(canvas);
@@ -370,7 +378,7 @@ public class ButtonWithCounterView extends FrameLayout {
             float countAlpha = countAlphaAnimated.set(this.countAlpha);
 
             float lightningWidth = withCounterIcon ? AndroidUtilities.dp(12) : 0;
-            float width = textWidth + lightningWidth + (dp(5.66f + 5 + 5) + countText.getCurrentWidth()) * countAlpha;
+            float width = textWidth + lightningWidth + calculateCounterWidth((dp(5.66f + 5 + 5) + countText.getCurrentWidth()), countAlpha);
             AndroidUtilities.rectTmp2.set(
                     (int) ((getMeasuredWidth() - width - getWidth()) / 2f),
                     (int) ((getMeasuredHeight() - text.getHeight()) / 2f - dp(1)),
@@ -419,7 +427,8 @@ public class ButtonWithCounterView extends FrameLayout {
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
             }
 
-            AndroidUtilities.rectTmp2.offset(-dp(.3f), -dp(.4f));
+            int countLength = countText.getText() != null ? countText.getText().length() : 0;
+            AndroidUtilities.rectTmp2.offset(-dp(countLength > 1 ? .3f : 0), -dp(.4f));
             countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
             countText.setBounds(AndroidUtilities.rectTmp2);
             canvas.save();

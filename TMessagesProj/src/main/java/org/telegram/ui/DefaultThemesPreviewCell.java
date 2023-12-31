@@ -44,6 +44,9 @@ import java.util.ArrayList;
 @SuppressLint("ViewConstructor")
 public class DefaultThemesPreviewCell extends LinearLayout {
 
+    public final static int TYPE_CUSTOM_LIST = -1;
+    public final static int TYPE_CUSTOM_GRID = -2; // not implemented
+
     private final RecyclerListView recyclerView;
     private LinearLayoutManager layoutManager = null;
     private final FlickerLoadingView progressView;
@@ -70,8 +73,13 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
 
-        adapter = new ChatThemeBottomSheet.Adapter(parentFragment.getCurrentAccount(), null, currentType == ThemeActivity.THEME_TYPE_BASIC ? ThemeSmallPreviewView.TYPE_DEFAULT : ThemeSmallPreviewView.TYPE_GRID);
-        recyclerView = new RecyclerListView(getContext());
+        adapter = new ChatThemeBottomSheet.Adapter(parentFragment.getCurrentAccount(), null, currentType == ThemeActivity.THEME_TYPE_BASIC || currentType == TYPE_CUSTOM_LIST ? ThemeSmallPreviewView.TYPE_DEFAULT : ThemeSmallPreviewView.TYPE_GRID);
+        recyclerView = new RecyclerListView(getContext()) {
+            @Override
+            public Integer getSelectorColor(int position) {
+                return 0;
+            }
+        };
         recyclerView.setAdapter(adapter);
         recyclerView.setSelectorDrawableColor(0);
         recyclerView.setClipChildren(false);
@@ -136,7 +144,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         progressView.setViewType(FlickerLoadingView.CHAT_THEMES_TYPE);
         progressView.setVisibility(View.VISIBLE);
 
-        if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
+        if (currentType == ThemeActivity.THEME_TYPE_BASIC || currentType == TYPE_CUSTOM_LIST) {
             frameLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.START, 0, 8, 0, 8));
             frameLayout.addView(recyclerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.START, 0, 8, 0, 8));
         } else {
@@ -312,7 +320,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         if (wasPortrait != null && wasPortrait == isPortrait) {
             return;
         }
-        if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
+        if (currentType == ThemeActivity.THEME_TYPE_BASIC || currentType == TYPE_CUSTOM_LIST) {
             if (layoutManager == null) {
                 recyclerView.setLayoutManager(layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
             }
@@ -342,7 +350,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
     }
 
     public void updateDayNightMode() {
-        if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
+        if (currentType == ThemeActivity.THEME_TYPE_BASIC || currentType == TYPE_CUSTOM_LIST) {
             themeIndex = !Theme.isCurrentThemeDay() ? 2 : 0;
         } else {
             if (Theme.getActiveTheme().getKey().equals("Blue")) {
@@ -440,13 +448,18 @@ public class DefaultThemesPreviewCell extends LinearLayout {
     }
 
     public void updateColors() {
-        if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
-            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), PorterDuff.Mode.SRC_IN));
-
-            Theme.setSelectorDrawableColor(dayNightCell.getBackground(), Theme.getColor(Theme.key_listSelector), true);
-            browseThemesCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
-            dayNightCell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
-            browseThemesCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
+        if (currentType == ThemeActivity.THEME_TYPE_BASIC || currentType == TYPE_CUSTOM_LIST) {
+            if (darkThemeDrawable != null) {
+                darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), PorterDuff.Mode.SRC_IN));
+            }
+            if (dayNightCell != null) {
+                Theme.setSelectorDrawableColor(dayNightCell.getBackground(), Theme.getColor(Theme.key_listSelector), true);
+                dayNightCell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
+            }
+            if (browseThemesCell != null) {
+                browseThemesCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+                browseThemesCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
+            }
         }
     }
 

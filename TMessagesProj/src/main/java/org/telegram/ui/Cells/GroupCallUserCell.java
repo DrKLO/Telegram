@@ -29,6 +29,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -474,10 +475,8 @@ public class GroupCallUserCell extends FrameLayout {
             nameTextView.setText(UserObject.getUserName(currentUser));
             if (currentUser != null && currentUser.verified) {
                 rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
-            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
-                rightDrawable.set(((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id, animated);
-            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
-                rightDrawable.set(((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id, animated);
+            } else if (currentUser != null && DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status) != 0) {
+                rightDrawable.set(DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status), animated);
             } else if (currentUser != null && currentUser.premium) {
                 if (premiumDrawable == null) {
                     premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
@@ -515,6 +514,8 @@ public class GroupCallUserCell extends FrameLayout {
                 nameTextView.setText(currentChat.title);
                 if (currentChat.verified) {
                     rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
+                } else if (currentChat != null && DialogObject.getEmojiStatusDocumentId(currentChat.emoji_status) != 0) {
+                    rightDrawable.set(DialogObject.getEmojiStatusDocumentId(currentChat.emoji_status), animated);
                 } else {
                     rightDrawable.set((Drawable) null, animated);
                 }

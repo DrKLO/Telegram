@@ -781,13 +781,6 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             }
                         }
                         canvas.restore();
-//
-//                        if (transitionViewHolder.avatarImage != null) {
-//                            transitionViewHolder.avatarImage.setVisible(false, true);
-//                        }
-//                        if (transitionViewHolder.storyImage != null) {
-//                            transitionViewHolder.storyImage.setVisible(false, true);
-//                        }
                     }
 
                     if (runOpenAnimationAfterLayout) {
@@ -2200,6 +2193,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
         AndroidUtilities.hideKeyboard(windowView);
         isClosed = true;
+        fullyVisible = false;
+        progressToOpen = 0;
+        progressToDismiss = 0;
         updatePlayingMode();
         fromX = fromY = 0;
         if (transitionViewHolder.avatarImage != null) {

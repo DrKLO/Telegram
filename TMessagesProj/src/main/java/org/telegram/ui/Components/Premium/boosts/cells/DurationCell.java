@@ -13,7 +13,7 @@ import org.telegram.ui.Components.LayoutHelper;
 @SuppressLint("ViewConstructor")
 public class DurationCell extends BaseCell {
 
-    private final SimpleTextView totalTextView;
+    protected final SimpleTextView totalTextView;
     private Object code;
 
     public DurationCell(Context context, Theme.ResourcesProvider resourcesProvider) {

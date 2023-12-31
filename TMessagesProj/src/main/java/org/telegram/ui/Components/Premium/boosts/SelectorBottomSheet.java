@@ -615,7 +615,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
 
                 if (!countryItems.isEmpty()) {
                     h += dp(32);
-                    items.add(Item.asLetter(countriesLetter));
+                    items.add(Item.asLetter(countriesLetter.toUpperCase()));
                     items.addAll(countryItems);
                 }
             }

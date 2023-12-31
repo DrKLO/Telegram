@@ -35,7 +35,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -319,7 +318,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     private AnimatedFloat linesAlpha = new AnimatedFloat(this);
     private float prevToHideProgress;
     public long videoDuration;
-    private boolean allowShare, allowShareLink;
+    private boolean allowShare, allowRepost, allowShareLink;
     public boolean forceUpdateOffsets;
     private HintView mediaBanTooltip;
 
@@ -421,7 +420,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         this.resourcesProvider = resourcesProvider;
         setClipChildren(false);
 
-        storyAreasView = new StoryMediaAreasView(context, resourcesProvider) {
+        storyAreasView = new StoryMediaAreasView(context, storyContainer, resourcesProvider) {
             @Override
             protected void onHintVisible(boolean hintVisible) {
                 if (delegate != null) {
@@ -449,15 +448,20 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 v.playAnimation();
                 emojiAnimationsOverlay.showAnimationForWidget(v);
             }
+
+            @Override
+            protected Bitmap getPlayingBitmap() {
+                return PeerStoriesView.this.getPlayingBitmap();
+            }
         };
 
         storyContainer = new HwFrameLayout(context) {
 
-            AnimatedFloat progressToAudio = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
-            AnimatedFloat progressToFullBlackoutA = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
-            CellFlickerDrawable loadingDrawable = new CellFlickerDrawable(32, 102, 240);
-            AnimatedFloat loadingDrawableAlpha2 = new AnimatedFloat(this);
-            AnimatedFloat loadingDrawableAlpha = new AnimatedFloat(this);
+            final AnimatedFloat progressToAudio = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
+            final AnimatedFloat progressToFullBlackoutA = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
+            final CellFlickerDrawable loadingDrawable = new CellFlickerDrawable(32, 102, 240);
+            final AnimatedFloat loadingDrawableAlpha2 = new AnimatedFloat(this);
+            final AnimatedFloat loadingDrawableAlpha = new AnimatedFloat(this);
             {
                 loadingDrawableAlpha2.setDuration(500);
                 loadingDrawableAlpha.setDuration(100);
@@ -472,7 +476,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     headerView.backupImageView.getImageReceiver().setVisible(true, true);
                 }
                 if (!unsupported) {
-                    if (playerSharedScope.renderView != null) {
+                    if (playerSharedScope.renderView != null || storyAreasView != null && (storyAreasView.hasSelectedForScale() || storyAreasView.parentHighlightScaleAlpha.isInProgress())) {
                         invalidate();
                     }
                     canvas.save();
@@ -896,6 +900,17 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             @Override
             public void onReplyClick(Reply reply) {
                 if (reply == null) return;
+                if (reply.isRepostMessage && reply.peerId != null && reply.messageId != null) {
+                    Bundle args = new Bundle();
+                    if (reply.peerId >= 0) {
+                        args.putLong("user_id", reply.peerId);
+                    } else {
+                        args.putLong("chat_id", -reply.peerId);
+                    }
+                    args.putInt("message_id", reply.messageId);
+                    storyViewer.presentFragment(new ChatActivity(args));
+                    return;
+                }
                 if (reply.peerId == null || reply.storyId == null) {
                     BulletinFactory.of(storyContainer, resourcesProvider)
                         .createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.StoryHidAccount))
@@ -1222,7 +1237,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                         time = playerSharedScope.player.currentPosition;
                                     }
                                     StoryEntry entry = MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().getForEdit(currentStory.storyItem.dialogId, currentStory.storyItem);
-                                    if (entry == null || entry.file == null || !entry.file.exists()) {
+                                    if (entry == null || entry.isRepostMessage || entry.file == null || !entry.file.exists()) {
                                         entry = StoryEntry.fromStoryItem(currentStory.getPath(), currentStory.storyItem);
                                         entry.editStoryPeerId = dialogId;
                                     }
@@ -1326,7 +1341,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             });
                         }
 
-                        if (!MessagesController.getInstance(currentAccount).premiumLocked && !isChannel) {
+                        if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !isChannel) {
                             createStealthModeItem(popupLayout);
                         }
 
@@ -1445,7 +1460,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                         popupMenu.dismiss();
                                     }
                                 });
-                            } else if (!MessagesController.getInstance(currentAccount).premiumLocked) {
+                            } else if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
                                 Drawable lockIcon = ContextCompat.getDrawable(context, R.drawable.msg_gallery_locked2);
                                 lockIcon.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Color.WHITE, Color.BLACK, 0.5f), PorterDuff.Mode.MULTIPLY));
                                 CombinedDrawable combinedDrawable = new CombinedDrawable(
@@ -1474,7 +1489,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             }
                         }
 
-                        if (!MessagesController.getInstance(currentAccount).premiumLocked && !isChannel) {
+                        if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !isChannel) {
                             createStealthModeItem(popupLayout);
                         }
                         if (allowShareLink) {
@@ -2208,13 +2223,13 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
 
             @Override
-            public void needStartRecordVideo(int state, boolean notify, int scheduleDate) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl) {
                 checkInstantCameraView();
                 if (instantCameraView != null) {
                     if (state == 0) {
                         instantCameraView.showCamera();
                     } else if (state == 1 || state == 3 || state == 4) {
-                        instantCameraView.send(state, notify, scheduleDate);
+                        instantCameraView.send(state, notify, scheduleDate, ttl);
                     } else if (state == 2 || state == 5) {
                         instantCameraView.cancel(state == 2);
                     }
@@ -2613,15 +2628,18 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     }
 
                     @Override
+                    protected void onShareStory(View cell) {
+                        tryToOpenRepostStory();
+                    }
+
+                    @Override
                     protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
                         super.onSend(dids, count, topic);
                         BulletinFactory bulletinFactory = BulletinFactory.of(storyContainer, resourcesProvider);
                         if (bulletinFactory != null) {
                             if (dids.size() == 1) {
                                 long did = dids.keyAt(0);
-                                if (did == Long.MAX_VALUE) {
-                                    tryToOpenRepostStory();
-                                } else if (did == UserConfig.getInstance(currentAccount).clientUserId) {
+                                if (did == UserConfig.getInstance(currentAccount).clientUserId) {
                                     bulletinFactory.createSimpleBulletin(R.raw.saved_messages, AndroidUtilities.replaceTags(LocaleController.formatString("StorySharedToSavedMessages", R.string.StorySharedToSavedMessages)), Bulletin.DURATION_PROLONG).hideAfterBottomSheet(false).show();
                                 } else if (did < 0) {
                                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
@@ -2837,10 +2855,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             isSelf = false;
             isChannel = true;
 
-            //TODO uncomment if server support views for channels
-//            if (storiesController.canEditStories(dialogId)) {
-//                userCanSeeViews = true;
-//            }
+            if (storiesController.canEditStories(dialogId) || BuildVars.DEBUG_PRIVATE_VERSION) {
+                userCanSeeViews = true;
+            }
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             avatarDrawable.setInfo(currentAccount, chat);
             headerView.backupImageView.getImageReceiver().setForUserOrChat(chat, avatarDrawable);
@@ -3480,7 +3497,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
             currentStory.set(uploadingStory);
             storyAreasView.set(null, StoryMediaAreasView.getMediaAreasFor(uploadingStory.entry), emojiAnimationsOverlay);
-            allowShare = allowShareLink = false;
+            allowShare = allowRepost = allowShareLink = false;
         } else {
             isUploading = false;
             isEditing = false;
@@ -3503,9 +3520,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 currentStory.set(editingStory);
                 storyAreasView.set(null, StoryMediaAreasView.getMediaAreasFor(editingStory.entry), emojiAnimationsOverlay);
                 currentStory.editingSourceItem = storyItem;
-                allowShare = allowShareLink = false;
+                allowShare = allowRepost = allowShareLink = false;
             } else {
-                boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.document);
+                boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.getDocument());
                 Drawable thumbDrawable = null;
                 storyItem.dialogId = dialogId;
                 imageReceiver.setCrossfadeWithOldImage(wasEditing);
@@ -3518,7 +3535,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     }
                     if (isVideo) {
                         if (storyItem.media != null) {
-                            thumbDrawable = ImageLoader.createStripedBitmap(storyItem.media.document.thumbs);
+                            thumbDrawable = ImageLoader.createStripedBitmap(storyItem.media.getDocument().thumbs);
                         }
                         if (storyItem.firstFramePath != null && ImageLoader.getInstance().isInMemCache(ImageLocation.getForPath(storyItem.firstFramePath).getKey(null, null, false) + "@" + filter, false)) {
                             imageReceiver.setImage(null, null, ImageLocation.getForPath(storyItem.firstFramePath), filter, null, null, thumbDrawable, 0, null, null, 0);
@@ -3542,11 +3559,11 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     }
                     storyItem.dialogId = dialogId;
                     if (isVideo) {
-                        TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, 1000);
+                        TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.getDocument().thumbs, 1000);
                         if (thumbDrawable == null) {
-                            thumbDrawable = ImageLoader.createStripedBitmap(storyItem.media.document.thumbs);
+                            thumbDrawable = ImageLoader.createStripedBitmap(storyItem.media.getDocument().thumbs);
                         }
-                        imageReceiver.setImage(null, null, ImageLocation.getForDocument(storyItem.media.document), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.document), filter, thumbDrawable, 0, null, storyItem, 0);
+                        imageReceiver.setImage(null, null, ImageLocation.getForDocument(storyItem.media.getDocument()), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.getDocument()), filter, thumbDrawable, 0, null, storyItem, 0);
                     } else {
                         TLRPC.Photo photo = storyItem.media != null ? storyItem.media.photo : null;
                         if (photo != null && photo.sizes != null) {
@@ -3571,6 +3588,11 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 allowShare = allowShareLink = !unsupported && currentStory.storyItem != null && !(currentStory.storyItem instanceof TL_stories.TL_storyItemDeleted) && !(currentStory.storyItem instanceof TL_stories.TL_storyItemSkipped);
                 if (allowShare) {
                     allowShare = currentStory.allowScreenshots() && currentStory.storyItem.isPublic;
+                }
+                allowRepost = allowShare;
+                if (allowRepost && isChannel) {
+                    final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                    allowRepost = chat != null && ChatObject.isPublic(chat);
                 }
                 if (allowShareLink) {
                     if (isChannel) {
@@ -3640,23 +3662,24 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             } else if (currentStory.storyItem != null) {
                 if (currentStory.storyItem.date == -1) {
                     headerView.setSubtitle(LocaleController.getString("CachedStory", R.string.CachedStory));
-                } else if (currentStory.storyItem.fwd_from != null) {
+                } else if (currentStory.getReply() != null) {
+                    StoryCaptionView.Reply reply = currentStory.getReply();
+
                     SpannableStringBuilder ssb = new SpannableStringBuilder();
                     SpannableString repostIcon = new SpannableString("r");
                     repostIcon.setSpan(new ColoredImageSpan(R.drawable.mini_repost_story), 0, repostIcon.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     ssb.append(repostIcon).append(" ");
-                    if (currentStory.storyItem.fwd_from.from != null) {
+                    if (reply.peerId != null) {
                         AvatarSpan avatar = new AvatarSpan(headerView.subtitleView[0], currentAccount, 15);
                         SpannableString avatarStr = new SpannableString("a");
                         avatarStr.setSpan(avatar, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         ssb.append(avatarStr).append(" ");
-                        long did = DialogObject.getPeerDialogId(currentStory.storyItem.fwd_from.from);
-                        if (did > 0) {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
+                        if (reply.peerId > 0) {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(reply.peerId);
                             avatar.setUser(user);
                             ssb.append(UserObject.getUserName(user));
                         } else {
-                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-reply.peerId);
                             avatar.setChat(chat);
                             if (chat != null) {
                                 ssb.append(chat.title);
@@ -3666,15 +3689,19 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         ssb.append(currentStory.storyItem.fwd_from.from_name);
                     }
                     headerView.setOnSubtitleClick(v -> {
-                        if (currentStory.storyItem.fwd_from.from != null) {
-                            long did = DialogObject.getPeerDialogId(currentStory.storyItem.fwd_from.from);
+                        if (reply.peerId != null) {
                             Bundle args = new Bundle();
-                            if (did >= 0) {
-                                args.putLong("user_id", did);
+                            if (reply.peerId >= 0) {
+                                args.putLong("user_id", reply.peerId);
                             } else {
-                                args.putLong("chat_id", -did);
+                                args.putLong("chat_id", -reply.peerId);
                             }
-                            storyViewer.presentFragment(new ProfileActivity(args));
+                            if (reply.isRepostMessage && reply.messageId != null) {
+                                args.putInt("message_id", reply.messageId);
+                                storyViewer.presentFragment(new ChatActivity(args));
+                            } else {
+                                storyViewer.presentFragment(new ProfileActivity(args));
+                            }
                         } else {
                             BulletinFactory.of(storyContainer, resourcesProvider)
                                 .createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.StoryHidAccount))
@@ -3730,7 +3757,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             createReplyDisabledView();
             unsupportedContainer.setVisibility(View.VISIBLE);
             replyDisabledTextView.setVisibility(View.VISIBLE);
-            allowShare = allowShareLink = false;
+            allowShare = allowRepost = allowShareLink = false;
             if (chatActivityEnterView != null) {
                 chatActivityEnterView.setVisibility(View.GONE);
             }
@@ -3774,7 +3801,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         if (isChannel) {
             shareButton.setVisibility(allowShare ? View.VISIBLE : View.INVISIBLE);
             if (repostButtonContainer != null) {
-                repostButtonContainer.setVisibility(allowShare ? View.VISIBLE : View.INVISIBLE);
+                repostButtonContainer.setVisibility(allowRepost ? View.VISIBLE : View.GONE);
             }
             likeButtonContainer.setVisibility(isFailed ? View.GONE : View.VISIBLE);
         } else {
@@ -3982,9 +4009,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 storyItem.dialogId = dialogId;
                 setStoryImage(storyItem, imageReceiver, filter);
 
-                boolean isVideo = storyItem.media != null && storyItem.media.document != null && MessageObject.isVideoDocument(storyItem.media.document);
+                boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.getDocument());
                 if (isVideo) {
-                    TLRPC.Document document = storyItem.media.document;
+                    TLRPC.Document document = storyItem.media.getDocument();
                     if (storyItem.fileReference == 0) {
                         storyItem.fileReference = FileLoader.getInstance(currentAccount).getFileReference(storyItem);
                     }
@@ -4032,7 +4059,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             setStoryImage(editingStory, imageReceiver, filter);
             return;
         }
-        boolean isVideo = storyItem.media != null && storyItem.media.document != null && MessageObject.isVideoDocument(storyItem.media.document);
+        boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.getDocument());
 
         if (storyItem.attachPath != null) {
             if (storyItem.media == null) {
@@ -4045,8 +4072,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
         } else {
             if (isVideo) {
-                TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, 1000);
-                imageReceiver.setImage(ImageLocation.getForDocument(storyItem.media.document), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.document), filter, null, null, null, 0, null, storyItem, 0);
+                TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.getDocument().thumbs, 1000);
+                imageReceiver.setImage(ImageLocation.getForDocument(storyItem.media.getDocument()), filter + "_pframe", ImageLocation.getForDocument(size, storyItem.media.getDocument()), filter, null, null, null, 0, null, storyItem, 0);
             } else {
                 TLRPC.Photo photo = storyItem.media != null ? storyItem.media.photo : null;
                 if (photo != null && photo.sizes != null) {
@@ -4214,7 +4241,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 } else if (currentStory.storyItem != null) {
                     currentStory.storyItem.dialogId = dialogId;
                     try {
-                        document = currentStory.storyItem.media.document;
+                        document = currentStory.storyItem.media.getDocument();
                         if (currentStory.storyItem.fileReference == 0) {
                             currentStory.storyItem.fileReference = FileLoader.getInstance(currentAccount).getFileReference(currentStory.storyItem);
                         }
@@ -4275,9 +4302,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         this.delegate = delegate;
     }
 
-    public void createBlurredBitmap(Canvas canvas, Bitmap bitmap) {
+    public void drawPlayingBitmap(int w, int h, Canvas canvas) {
         if (playerSharedScope.renderView != null && playerSharedScope.surfaceView != null) {
-            Bitmap surfaceBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            Bitmap surfaceBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 AndroidUtilities.getBitmapFromSurface(playerSharedScope.surfaceView, surfaceBitmap);
             }
@@ -4285,16 +4312,26 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 canvas.drawBitmap(surfaceBitmap, 0, 0, null);
             }
         } else if (playerSharedScope.renderView != null && playerSharedScope.textureView != null) {
-            Bitmap textureBitmap = playerSharedScope.textureView.getBitmap(bitmap.getWidth(), bitmap.getHeight());
+            Bitmap textureBitmap = playerSharedScope.textureView.getBitmap(w, h);
             if (textureBitmap != null) {
                 canvas.drawBitmap(textureBitmap, 0, 0, null);
             }
         } else {
             canvas.save();
-            canvas.scale(bitmap.getWidth() / (float) storyContainer.getMeasuredWidth(), bitmap.getHeight() / (float) storyContainer.getMeasuredHeight());
+            canvas.scale(w / (float) storyContainer.getMeasuredWidth(), h / (float) storyContainer.getMeasuredHeight());
             imageReceiver.draw(canvas);
             canvas.restore();
         }
+    }
+
+    public Bitmap getPlayingBitmap() {
+        Bitmap bitmap = Bitmap.createBitmap(storyContainer.getWidth(), storyContainer.getHeight(), Bitmap.Config.ARGB_8888);
+        drawPlayingBitmap(bitmap.getWidth(), bitmap.getHeight(), new Canvas(bitmap));
+        return bitmap;
+    }
+
+    public void createBlurredBitmap(Canvas canvas, Bitmap bitmap) {
+        drawPlayingBitmap(bitmap.getWidth(), bitmap.getHeight(), canvas);
         int color = AndroidUtilities.getDominantColor(bitmap);
         float brightness = AndroidUtilities.computePerceivedBrightness(color);
         if (brightness < 0.15f) {
@@ -5093,8 +5130,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (uploadingStory != null) {
                 return uploadingStory.isVideo;
             }
-            if (storyItem != null && storyItem.media != null && storyItem.media.document != null) {
-                return storyItem.media.document != null && MessageObject.isVideoDocument(storyItem.media.document);
+            if (storyItem != null && storyItem.media != null && storyItem.media.getDocument() != null) {
+                return MessageObject.isVideoDocument(storyItem.media.getDocument());
             }
             if (storyItem != null && storyItem.media == null && storyItem.attachPath != null) {
                 return storyItem.attachPath.toLowerCase().endsWith(".mp4");
@@ -5168,9 +5205,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (!isVideo) {
                 return false;
             }
-            if (storyItem != null && storyItem.media != null && storyItem.media.document != null) {
-                for (int i = 0; i < storyItem.media.document.attributes.size(); i++) {
-                    TLRPC.DocumentAttribute attribute = storyItem.media.document.attributes.get(i);
+            TLRPC.Document document;
+            if (storyItem != null && storyItem.media != null && (document = storyItem.media.getDocument()) != null) {
+                for (int i = 0; i < document.attributes.size(); i++) {
+                    TLRPC.DocumentAttribute attribute = document.attributes.get(i);
                     if (attribute instanceof TLRPC.TL_documentAttributeVideo && attribute.nosound) {
                         return false;
                     }
@@ -5206,8 +5244,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 return new File(getLocalPath());
             }
             if (storyItem != null) {
-                if (storyItem.media != null && storyItem.media.document != null) {
-                    return FileLoader.getInstance(currentAccount).getPathToAttach(storyItem.media.document);
+                if (storyItem.media != null && storyItem.media.getDocument() != null) {
+                    return FileLoader.getInstance(currentAccount).getPathToAttach(storyItem.media.getDocument());
                 } else if (storyItem.media != null && storyItem.media.photo != null) {
                     TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.photo.sizes, Integer.MAX_VALUE);
                     File file = FileLoader.getInstance(currentAccount).getPathToAttach(size, true);
@@ -5520,7 +5558,18 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         } else {
             inputBackgroundPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (140 * hideInterfaceAlpha * (1f - outT))));
         }
-        if (forceUpdateOffsets || progressToReply != storyViewer.swipeToReplyProgress || progressToHideInterface.get() != prevToHideProgress || lastAnimatingKeyboardHeight != animatingKeyboardHeight || progressToKeyboardLocal != progressToKeyboard || progressToDismissLocal != progressToDismiss || progressToRecord != progressToRecording.get() || popupVisible || progressToStickerExpandedLocal != progressToStickerExpanded.get() || progressToText != progressToTextA.get()) {
+        if (
+            forceUpdateOffsets ||
+            progressToReply != storyViewer.swipeToReplyProgress ||
+            progressToHideInterface.get() != prevToHideProgress ||
+            lastAnimatingKeyboardHeight != animatingKeyboardHeight ||
+            progressToKeyboardLocal != progressToKeyboard ||
+            progressToDismissLocal != progressToDismiss ||
+            progressToRecord != progressToRecording.get() ||
+            popupVisible ||
+            progressToStickerExpandedLocal != progressToStickerExpanded.get() ||
+            progressToText != progressToTextA.get()
+        ) {
             forceUpdateOffsets = false;
             lastAnimatingKeyboardHeight = animatingKeyboardHeight;
             if (progressToHideInterface.get() != prevToHideProgress) {

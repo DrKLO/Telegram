@@ -103,6 +103,10 @@ import java.util.zip.GZIPInputStream;
  */
 public class ImageLoader {
 
+    public static final int CACHE_TYPE_NONE = 0;
+    public static final int CACHE_TYPE_CACHE = 1;
+    public static final int CACHE_TYPE_ENCRYPTED = 2;
+
     private static final boolean DEBUG_MODE = false;
 
     private HashMap<String, Integer> bitmapUseCounts = new HashMap<>();
@@ -4225,7 +4229,7 @@ public class ImageLoader {
             } else {
                 File file = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(photoSize, true);
                 boolean isEncrypted = false;
-                if (MessageObject.shouldEncryptPhotoOrVideo(message)) {
+                if (MessageObject.shouldEncryptPhotoOrVideo(UserConfig.selectedAccount, message)) {
                     file = new File(file.getAbsolutePath() + ".enc");
                     isEncrypted = true;
                 }

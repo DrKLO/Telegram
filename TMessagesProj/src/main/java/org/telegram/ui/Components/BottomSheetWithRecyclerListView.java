@@ -251,6 +251,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             headerShadowDrawable.setBounds(backgroundPaddingLeft, actionBar.getBottom(), parentView.getMeasuredWidth() - backgroundPaddingLeft, actionBar.getBottom() + headerShadowDrawable.getIntrinsicHeight());
             headerShadowDrawable.setAlpha((int) (255 * actionBar.getAlpha() * shadowAlpha));
             headerShadowDrawable.draw(canvas);
+            if (headerShadowDrawable.getAlpha() < 255) {
+                parentView.invalidate();
+            }
         }
         wasDrawn = true;
     }

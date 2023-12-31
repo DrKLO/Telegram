@@ -254,15 +254,21 @@ public class EmojiThemes {
             } else {
                 baseTheme = Theme.getTheme("Blue");
             }
-            themeInfo = new Theme.ThemeInfo(baseTheme);
-            accent = themeInfo.createNewAccent(tlTheme, currentAccount, true, settingsIndex);
-            if (accent != null) {
-                themeInfo.setCurrentAccentId(accent.id);
+            if (baseTheme != null) {
+                themeInfo = new Theme.ThemeInfo(baseTheme);
+                accent = themeInfo.createNewAccent(tlTheme, currentAccount, true, settingsIndex);
+                if (accent != null) {
+                    themeInfo.setCurrentAccentId(accent.id);
+                }
             }
         } else {
             if (themeInfo.themeAccentsMap != null) {
                 accent = themeInfo.themeAccentsMap.get(items.get(index).accentId);
             }
+        }
+
+        if (themeInfo == null) {
+            return currentColors;
         }
 
         SparseIntArray currentColorsNoAccent;

@@ -39,8 +39,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private boolean mFrameAvailable;
     private TextureRenderer mTextureRender;
 
-    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, String blurPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo, Integer gradientTopColor, Integer gradientBottomColor, StoryEntry.HDRInfo hdrInfo, ArrayList<StoryEntry.Part> parts) {
-        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, blurPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo, gradientTopColor, gradientBottomColor, hdrInfo, parts);
+    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, String blurPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo, Integer gradientTopColor, Integer gradientBottomColor, StoryEntry.HDRInfo hdrInfo, MediaCodecVideoConvertor.ConvertVideoParams params) {
+        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, blurPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo, gradientTopColor, gradientBottomColor, hdrInfo, params);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);

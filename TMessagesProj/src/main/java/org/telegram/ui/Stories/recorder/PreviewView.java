@@ -1,16 +1,26 @@
 package org.telegram.ui.Stories.recorder;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -18,25 +28,39 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
 
 import com.google.android.exoplayer2.C;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.EmojiThemes;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.Paint.Texture;
 import org.telegram.ui.Components.Paint.Views.RoundView;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.VideoEditTextureView;
@@ -75,20 +99,19 @@ public class PreviewView extends FrameLayout {
     public static final long MAX_DURATION = 59_500L;
     public static final long MIN_DURATION = 1_000L;
 
-    private final HashMap<Integer, Bitmap> partsBitmap = new HashMap<>();
-    private final HashMap<Integer, ButtonBounce> partsBounce = new HashMap<>();
-
     private final BlurringShader.BlurManager blurManager;
+    private final TextureViewHolder textureViewHolder;
 
-    public PreviewView(Context context, BlurringShader.BlurManager blurManager) {
+    public PreviewView(Context context, BlurringShader.BlurManager blurManager, TextureViewHolder textureViewHolder) {
         super(context);
 
         this.blurManager = blurManager;
+        this.textureViewHolder = textureViewHolder;
 
-        snapPaint.setStrokeWidth(AndroidUtilities.dp(1));
+        snapPaint.setStrokeWidth(dp(1));
         snapPaint.setStyle(Paint.Style.STROKE);
         snapPaint.setColor(0xffffffff);
-        snapPaint.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(1), 0x40000000);
+        snapPaint.setShadowLayer(dp(3), 0, dp(1), 0x40000000);
     }
 
     protected void onTimeDrag(boolean dragStart, long time, boolean dragEnd) {}
@@ -112,7 +135,7 @@ public class PreviewView extends FrameLayout {
         if (entry == null) {
             setupVideoPlayer(null, whenReady, seekTo);
             setupImage(null);
-            setupParts(null);
+            setupWallpaper(null, false);
             gradientPaint.setShader(null);
             setupAudio((StoryEntry) null, false);
             setupRound(null, null, false);
@@ -131,8 +154,36 @@ public class PreviewView extends FrameLayout {
             setupImage(entry);
             setupGradient();
         }
-        setupParts(entry);
         applyMatrix();
+        setupWallpaper(entry, false);
+        setupAudio(entry, false);
+        setupRound(entry, null, false);
+    }
+
+    // set without video for faster transition
+    public void preset(StoryEntry entry) {
+        this.entry = entry;
+        if (entry == null) {
+            setupImage(null);
+            setupWallpaper(null, false);
+            gradientPaint.setShader(null);
+            setupAudio((StoryEntry) null, false);
+            setupRound(null, null, false);
+            return;
+        }
+        if (entry.isVideo) {
+            setupImage(entry);
+            if (entry.gradientTopColor != 0 || entry.gradientBottomColor != 0) {
+                setupGradient();
+            } else {
+                entry.setupGradient(this::setupGradient);
+            }
+        } else {
+            setupImage(entry);
+            setupGradient();
+        }
+        applyMatrix();
+        setupWallpaper(entry, false);
         setupAudio(entry, false);
         setupRound(entry, null, false);
     }
@@ -178,7 +229,7 @@ public class PreviewView extends FrameLayout {
 
                 @Override
                 public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
+                    invalidateTextureViewHolder();
                 }
 
                 @Override
@@ -548,14 +599,16 @@ public class PreviewView extends FrameLayout {
         invalidate();
     }
 
-    private void setupVideoPlayer(StoryEntry entry, Runnable whenReady, long seekTo) {
+    public void setupVideoPlayer(StoryEntry entry, Runnable whenReady, long seekTo) {
         if (entry == null) {
             if (videoPlayer != null) {
                 videoPlayer.pause();
                 videoPlayer.releasePlayer(true);
                 videoPlayer = null;
             }
-            if (textureView != null) {
+            if (textureViewHolder != null && textureViewHolder.active) {
+                textureViewHolder.setTextureView(null);
+            } else if (textureView != null) {
                 textureView.clearAnimation();
                 textureView.animate().alpha(0).withEndAction(() -> {
                     if (textureView != null) {
@@ -566,7 +619,7 @@ public class PreviewView extends FrameLayout {
                 }).start();
             }
             if (timelineView != null) {
-                timelineView.setVideo(null, 1, 0);
+                timelineView.setVideo(false, null, 1, 0);
             }
             AndroidUtilities.cancelRunOnUIThread(updateProgressRunnable);
             if (whenReady != null) {
@@ -626,6 +679,9 @@ public class PreviewView extends FrameLayout {
 
                 @Override
                 public void onRenderedFirstFrame() {
+                    if (textureViewHolder != null && textureViewHolder.active) {
+                        textureViewHolder.activateTextureView(videoWidth, videoHeight);
+                    }
                     if (whenReadyFinal[0] != null) {
                         post(whenReadyFinal[0]);
                         whenReadyFinal[0] = null;
@@ -637,7 +693,7 @@ public class PreviewView extends FrameLayout {
                             bitmap = null;
                             invalidate();
                         }
-                    } else if (textureView != null) {
+                    } else if (textureView != null && !(textureViewHolder != null && textureViewHolder.active)) {
                         textureView.animate().alpha(1f).setDuration(180).withEndAction(() -> {
                             if (bitmap != null) {
                                 bitmap.recycle();
@@ -652,7 +708,9 @@ public class PreviewView extends FrameLayout {
                 }
 
                 @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {}
+                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+                    invalidateTextureViewHolder();
+                }
 
                 @Override
                 public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
@@ -669,11 +727,15 @@ public class PreviewView extends FrameLayout {
 
             textureView = new VideoEditTextureView(getContext(), videoPlayer);
             blurManager.resetBitmap();
-            textureView.updateUiBlurManager(blurManager);
-            textureView.setAlpha(whenReady == null ? 0f : 1f);
+            textureView.updateUiBlurManager(entry.isRepostMessage ? null : blurManager);
             textureView.setOpaque(false);
             applyMatrix();
-            addView(textureView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
+            if (textureViewHolder != null && textureViewHolder.active) {
+                textureViewHolder.setTextureView(textureView);
+            } else {
+                textureView.setAlpha(whenReady == null ? 0f : 1f);
+                addView(textureView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
+            }
 
             entry.detectHDR((hdrInfo) -> {
                 if (textureView != null) {
@@ -694,13 +756,68 @@ public class PreviewView extends FrameLayout {
             checkVolumes();
             updateAudioPlayer(true);
 
-            timelineView.setVideo(entry.getOriginalFile().getAbsolutePath(), getDuration(), entry.videoVolume);
+            final boolean isRound = entry.isRepostMessage && entry.messageObjects != null && entry.messageObjects.size() == 1 && entry.messageObjects.get(0).type == MessageObject.TYPE_ROUND_VIDEO;
+            timelineView.setVideo(isRound, entry.getOriginalFile().getAbsolutePath(), getDuration(), entry.videoVolume);
             timelineView.setVideoLeft(entry.left);
             timelineView.setVideoRight(entry.right);
             if (timelineView != null && seekTo > 0) {
                 timelineView.setProgress(seekTo);
             }
         }
+    }
+
+    public static class TextureViewHolder {
+        private TextureView textureView;
+        private Utilities.Callback<TextureView> whenTextureViewReceived;
+        private Utilities.Callback2<Integer, Integer> whenTextureViewActive;
+        public boolean textureViewActive;
+        public int videoWidth, videoHeight;
+
+        public boolean active;
+
+        public void setTextureView(TextureView textureView) {
+            if (this.textureView == textureView) return;
+            if (this.textureView != null) {
+                ViewParent parent = this.textureView.getParent();
+                if (parent instanceof ViewGroup) {
+                    ((ViewGroup) parent).removeView(this.textureView);
+                }
+                this.textureView = null;
+            }
+            textureViewActive = false;
+            this.textureView = textureView;
+            if (whenTextureViewReceived != null) {
+                whenTextureViewReceived.run(this.textureView);
+            }
+        }
+
+        public void activateTextureView(int w, int h) {
+            textureViewActive = true;
+            videoWidth = w;
+            videoHeight = h;
+            if (whenTextureViewActive != null) {
+                whenTextureViewActive.run(videoWidth, videoHeight);
+            }
+        }
+
+        public void takeTextureView(Utilities.Callback<TextureView> whenReceived, Utilities.Callback2<Integer, Integer> whenActive) {
+            whenTextureViewReceived = whenReceived;
+            whenTextureViewActive = whenActive;
+            if (textureView != null && whenTextureViewReceived != null) {
+                whenTextureViewReceived.run(textureView);
+            }
+            if (textureViewActive && whenTextureViewActive != null) {
+                whenTextureViewActive.run(videoWidth, videoHeight);
+            }
+        }
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (child == textureView && entry != null && entry.isRepostMessage) {
+            return false;
+        }
+        return super.drawChild(canvas, child, drawingTime);
     }
 
     public void setupRound(StoryEntry entry, RoundView roundView, boolean animated) {
@@ -800,53 +917,6 @@ public class PreviewView extends FrameLayout {
             videoPlayer = null;
         }
         return t;
-    }
-
-    public void setupParts(StoryEntry entry) {
-        if (entry == null) {
-            for (Bitmap bitmap : partsBitmap.values()) {
-                if (bitmap != null) {
-                    bitmap.recycle();
-                }
-            }
-            partsBitmap.clear();
-            partsBounce.clear();
-            return;
-        }
-        final int rw = getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : getMeasuredWidth();
-        final int rh = (int) (rw * 16 / 9f);
-        for (int i = 0; i < entry.parts.size(); ++i) {
-            StoryEntry.Part part = entry.parts.get(i);
-            if (part == null) {
-                continue;
-            }
-            Bitmap bitmap = partsBitmap.get(part.id);
-            if (bitmap != null) {
-                continue;
-            }
-            String path = part.file.getPath();
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(path, options);
-            options.inJustDecodeBounds = false;
-            options.inSampleSize = StoryEntry.calculateInSampleSize(options, rw, rh);
-            bitmap = BitmapFactory.decodeFile(path, options);
-            partsBitmap.put(part.id, bitmap);
-        }
-        for (Iterator<Map.Entry<Integer, Bitmap>> i = partsBitmap.entrySet().iterator(); i.hasNext(); ) {
-            Map.Entry<Integer, Bitmap> e = i.next();
-            boolean found = false;
-            for (int j = 0; j < entry.parts.size(); ++j) {
-                if (entry.parts.get(j).id == e.getKey()) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                i.remove();
-                partsBounce.remove(e.getKey());
-            }
-        }
     }
 
     public void setFilterTextureView(TextureView view, PhotoFilterView photoFilterView) {
@@ -1026,7 +1096,10 @@ public class PreviewView extends FrameLayout {
         }
     }
 
+    private AnimatedFloat wallpaperDrawableCrossfade = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
+    private Drawable lastWallpaperDrawable;
+    private Drawable wallpaperDrawable;
     private final Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int gradientTop, gradientBottom;
 
@@ -1065,10 +1138,35 @@ public class PreviewView extends FrameLayout {
     }
 
     private final AnimatedFloat thumbAlpha = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT);
+    public boolean drawForThemeToggle = false;
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        canvas.drawRect(0, 0, getWidth(), getHeight(), gradientPaint);
+        if (wallpaperDrawable != null) {
+            if (drawForThemeToggle) {
+                Path path = new Path();
+                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                path.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(path);
+            }
+            boolean drawableReady = true;
+            if (wallpaperDrawable instanceof MotionBackgroundDrawable) {
+                drawableReady = ((MotionBackgroundDrawable) wallpaperDrawable).getPatternBitmap() != null;
+            }
+            float crossfadeAlpha = !drawableReady ? 0f : wallpaperDrawableCrossfade.set(1f);
+            if (lastWallpaperDrawable != null && crossfadeAlpha < 1) {
+                lastWallpaperDrawable.setAlpha((int) (0xFF * (1f - crossfadeAlpha)));
+                StoryEntry.drawBackgroundDrawable(canvas, lastWallpaperDrawable, getWidth(), getHeight());
+            }
+            wallpaperDrawable.setAlpha((int) (0xFF * crossfadeAlpha));
+            StoryEntry.drawBackgroundDrawable(canvas, wallpaperDrawable, getWidth(), getHeight());
+            if (drawForThemeToggle) {
+                canvas.restore();
+            }
+        } else {
+            canvas.drawRect(0, 0, getWidth(), getHeight(), gradientPaint);
+        }
         if (draw && entry != null) {
             float alpha = this.thumbAlpha.set(bitmap != null);
             if (thumbBitmap != null && (1f - alpha) > 0) {
@@ -1087,44 +1185,14 @@ public class PreviewView extends FrameLayout {
             }
         }
         super.dispatchDraw(canvas);
-        if (draw && entry != null) {
-            float trash = trashT.set(!inTrash);
-            for (int i = 0; i < entry.parts.size(); ++i) {
-                StoryEntry.Part part = entry.parts.get(i);
-                if (part == null) {
-                    continue;
-                }
-                Bitmap bitmap = partsBitmap.get(part.id);
-                if (bitmap == null) {
-                    continue;
-                }
-                float scale = 1f;
-                ButtonBounce bounce = partsBounce.get(part.id);
-                if (bounce != null) {
-                    scale = bounce.getScale(.05f);
-                }
-                matrix.set(part.matrix);
-                canvas.save();
-                if (scale != 1) {
-                    tempVertices[0] = part.width / 2f;
-                    tempVertices[1] = part.height / 2f;
-                    matrix.mapPoints(tempVertices);
-                    canvas.scale(scale, scale, tempVertices[0] / entry.resultWidth * getWidth(), tempVertices[1] / entry.resultHeight * getHeight());
-                }
-                if (trashPartIndex == part.id) {
-                    float trashScale = AndroidUtilities.lerp(.2f, 1f, trash);
-                    canvas.scale(trashScale, trashScale, trashCx, trashCy);
-                }
-                matrix.preScale((float) part.width / bitmap.getWidth(), (float) part.height / bitmap.getHeight());
-                matrix.postScale((float) getWidth() / entry.resultWidth, (float) getHeight() / entry.resultHeight);
-                canvas.drawBitmap(bitmap, matrix, bitmapPaint);
-                canvas.restore();
-            }
-        }
     }
 
     public VideoEditTextureView getTextureView() {
         return textureView;
+    }
+
+    protected void invalidateTextureViewHolder() {
+
     }
 
     public Pair<Integer, Integer> getPaintSize() {
@@ -1151,7 +1219,7 @@ public class PreviewView extends FrameLayout {
     }
 
     public void applyMatrix() {
-        if (entry == null) {
+        if (entry == null || entry.isRepostMessage) {
             return;
         }
         if (textureView != null) {
@@ -1185,16 +1253,7 @@ public class PreviewView extends FrameLayout {
     private float rotationDiff;
     private boolean snappedToCenterAndScaled, snappedRotation;
     private boolean doNotSpanRotation;
-    private float[] tempPoint = new float[4];
-    private IStoryPart activePart;
-    private boolean isPart;
-    private float Tx, Ty;
-    private boolean activePartPressed;
-
-    private int trashPartIndex;
-    private boolean inTrash;
-    private AnimatedFloat trashT = new AnimatedFloat(this, 0, 280, CubicBezierInterpolator.EASE_OUT_QUINT);
-    private float trashCx, trashCy;
+    private boolean moving;
 
     public boolean additionalTouchEvent(MotionEvent ev) {
         return false;
@@ -1229,33 +1288,15 @@ public class PreviewView extends FrameLayout {
 
         final float scale = (entry.resultWidth / (float) getWidth());
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
-            Tx = Ty = 0;
             rotationDiff = 0;
             snappedRotation = false;
             snappedToCenterAndScaled = false;
             doNotSpanRotation = false;
-            activePart = findPartAt(touch.x, touch.y);
-            if (isPart = (activePart instanceof StoryEntry.Part)) {
-                entry.parts.remove(activePart);
-                entry.parts.add((StoryEntry.Part) activePart);
-                trashPartIndex = activePart.id;
-                invalidate();
-                allowWithSingleTouch = true;
-                ButtonBounce bounce = partsBounce.get(activePart.id);
-                if (bounce == null) {
-                    partsBounce.put(activePart.id, bounce = new ButtonBounce(this));
-                }
-                bounce.setPressed(true);
-                activePartPressed = true;
-                onEntityDragStart();
-                onEntityDraggedTop(false);
-                onEntityDraggedBottom(false);
-            } else {
-                trashPartIndex = -1;
-            }
-            touchMatrix.set(activePart.matrix);
+            invalidate();
+            moving = true;
+            touchMatrix.set(entry.matrix);
         }
-        if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && activePart != null) {
+        if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && moving && entry != null) {
             float tx = touch.x * scale, ty = touch.y * scale;
             float ltx = lastTouch.x * scale, lty = lastTouch.y * scale;
             if (ev.getPointerCount() > 1) {
@@ -1285,15 +1326,6 @@ public class PreviewView extends FrameLayout {
             }
             if (ev.getPointerCount() > 1 || allowWithSingleTouch) {
                 touchMatrix.postTranslate(tx - ltx, ty - lty);
-                Tx += (tx - ltx);
-                Ty += (ty - lty);
-            }
-            if (activePartPressed && MathUtils.distance(0, 0, Tx, Ty) > AndroidUtilities.touchSlop) {
-                ButtonBounce bounce = partsBounce.get(activePart.id);
-                if (bounce != null) {
-                    bounce.setPressed(false);
-                }
-                activePartPressed = false;
             }
             finalMatrix.set(touchMatrix);
             matrix.set(touchMatrix);
@@ -1312,41 +1344,19 @@ public class PreviewView extends FrameLayout {
                     snappedRotation = false;
                 }
             }
-            boolean trash = isPart && MathUtils.distance(touch.x, touch.y, getWidth() / 2f, getHeight() - AndroidUtilities.dp(76)) < AndroidUtilities.dp(35);
-            if (trash != inTrash) {
-                onEntityDragTrash(trash);
-                inTrash = trash;
-            }
-            if (trash) {
-                trashCx = touch.x;
-                trashCy = touch.y;
-            }
-            if (isPart) {
-                onEntityDraggedTop(cy - h / 2f < AndroidUtilities.dp(66) / (float) getHeight() * entry.resultHeight);
-                onEntityDraggedBottom(cy + h / 2f > entry.resultHeight - AndroidUtilities.dp(64 + 50) / (float) getHeight() * entry.resultHeight);
-            }
 
-            activePart.matrix.set(finalMatrix);
+            entry.matrix.set(finalMatrix);
             entry.editedMedia = true;
             applyMatrix();
             invalidate();
         }
         if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
-            Tx = Ty = 0;
-            if (!(activePart instanceof StoryEntry.Part) || ev.getPointerCount() <= 1) {
-                ButtonBounce bounce = partsBounce.get(activePart.id);
-                if (bounce != null) {
-                    bounce.setPressed(false);
-                }
-                activePartPressed = false;
+            if (ev.getPointerCount() <= 1) {
                 allowWithSingleTouch = false;
-                onEntityDragEnd(inTrash && ev.getAction() == MotionEvent.ACTION_UP);
-                activePart = null;
-                inTrash = false;
                 onEntityDraggedTop(false);
                 onEntityDraggedBottom(false);
             }
-            isPart = false;
+            moving = false;
             allowRotation = false;
             rotationDiff = 0;
 
@@ -1361,39 +1371,10 @@ public class PreviewView extends FrameLayout {
         return true;
     }
 
-    public void deleteCurrentPart() {
-        if (activePart != null) {
-            entry.parts.remove(activePart);
-            setupParts(entry);
-        }
-    }
-
-    private Matrix tempMatrix;
-    private float[] tempVertices = new float[2];
-    private IStoryPart findPartAt(float x, float y) {
-        for (int i = entry.parts.size() - 1; i >= 0; --i) {
-            IStoryPart part = entry.parts.get(i);
-            tempVertices[0] = x / getWidth() * entry.resultWidth;
-            tempVertices[1] = y / getHeight() * entry.resultHeight;
-            if (tempMatrix == null) {
-                tempMatrix = new Matrix();
-            }
-            part.matrix.invert(tempMatrix);
-            tempMatrix.mapPoints(tempVertices);
-            if (tempVertices[0] >= 0 && tempVertices[0] <= part.width && tempVertices[1] >= 0 && tempVertices[1] <= part.height) {
-                return part;
-            }
-        }
-        return entry;
-    }
-
     private long tapTime;
-    private float tapX, tapY;
     private boolean tapTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             tapTime = System.currentTimeMillis();
-            tapX = ev.getX();
-            tapY = ev.getY();
             return true;
         } else if (ev.getAction() == MotionEvent.ACTION_UP) {
             if (System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && onTap != null) {
@@ -1424,10 +1405,8 @@ public class PreviewView extends FrameLayout {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         boolean result = touchEvent(ev);
-        if (!(activePart instanceof StoryEntry.Part)) {
-            result = additionalTouchEvent(ev) || result;
-            tapTouchEvent(ev);
-        }
+        result = additionalTouchEvent(ev) || result;
+        tapTouchEvent(ev);
         if (result) {
             if (ev.getPointerCount() <= 1) {
                 return super.dispatchTouchEvent(ev) || true;
@@ -1478,5 +1457,203 @@ public class PreviewView extends FrameLayout {
     }
     public void play(boolean play) {
         updatePauseReason(-9982, !play);
+    }
+
+    public static Drawable getBackgroundDrawable(Drawable prevDrawable, int currentAccount, long dialogId, boolean isDark) {
+        if (dialogId == Long.MIN_VALUE) {
+            return null;
+        }
+        TLRPC.WallPaper wallpaper = null;
+        if (dialogId >= 0) {
+            TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+            if (userFull != null) {
+                wallpaper = userFull.wallpaper;
+            }
+        } else {
+            TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
+            if (chatFull != null) {
+                wallpaper = chatFull.wallpaper;
+            }
+        }
+        return getBackgroundDrawable(prevDrawable, currentAccount, wallpaper, isDark);
+    }
+
+    public static Drawable getBackgroundDrawable(Drawable prevDrawable, int currentAccount, TLRPC.WallPaper wallpaper, boolean isDark) {
+        if (wallpaper != null && TextUtils.isEmpty(ChatThemeController.getWallpaperEmoticon(wallpaper))) {
+            return ChatBackgroundDrawable.getOrCreate(prevDrawable, wallpaper, isDark);
+        }
+
+        EmojiThemes theme = null;
+        if (wallpaper != null && wallpaper.settings != null) {
+            theme = ChatThemeController.getInstance(currentAccount).getTheme(wallpaper.settings.emoticon);
+        }
+        if (theme != null) {
+            return getBackgroundDrawableFromTheme(currentAccount, theme, 0, isDark);
+        }
+
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+        String dayThemeName = preferences.getString("lastDayTheme", "Blue");
+        if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
+            dayThemeName = "Blue";
+        }
+        String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
+        if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
+            nightThemeName = "Dark Blue";
+        }
+        Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
+        if (dayThemeName.equals(nightThemeName)) {
+            if (themeInfo.isDark() || dayThemeName.equals("Dark Blue") || dayThemeName.equals("Night")) {
+                dayThemeName = "Blue";
+            } else {
+                nightThemeName = "Dark Blue";
+            }
+        }
+        if (isDark) {
+            themeInfo = Theme.getTheme(nightThemeName);
+        } else {
+            themeInfo = Theme.getTheme(dayThemeName);
+        }
+        SparseIntArray currentColors = new SparseIntArray();
+        final String[] wallpaperLink = new String[1];
+        final SparseIntArray themeColors;
+        if (themeInfo.assetName != null) {
+            themeColors = Theme.getThemeFileValues(null, themeInfo.assetName, wallpaperLink);
+        } else {
+            themeColors = Theme.getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
+        }
+        int[] defaultColors = Theme.getDefaultColors();
+        if (defaultColors != null) {
+            for (int i = 0; i < defaultColors.length; ++i) {
+                currentColors.put(i, defaultColors[i]);
+            }
+        }
+        Theme.ThemeAccent accent = themeInfo.getAccent(false);
+        if (accent != null) {
+            accent.fillAccentColors(themeColors, currentColors);
+        } else if (themeColors != null) {
+            for (int i = 0; i < themeColors.size(); ++i) {
+                currentColors.put(themeColors.keyAt(i), themeColors.valueAt(i));
+            }
+        }
+        Theme.BackgroundDrawableSettings bg = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink[0], 0, true);
+        return bg.themedWallpaper != null ? bg.themedWallpaper : bg.wallpaper;
+    }
+
+    public void setupWallpaper(StoryEntry entry, boolean animated) {
+        lastWallpaperDrawable = wallpaperDrawable;
+        if (wallpaperDrawable != null) {
+            wallpaperDrawable.setCallback(null);
+        }
+        if (entry == null) {
+            wallpaperDrawable = null;
+            return;
+        }
+        long dialogId = entry.backgroundWallpaperPeerId;
+        if (entry.backgroundWallpaperEmoticon != null) {
+            wallpaperDrawable = entry.backgroundDrawable = getBackgroundDrawableFromTheme(entry.currentAccount, entry.backgroundWallpaperEmoticon, entry.isDark);
+        } else if (dialogId != Long.MIN_VALUE) {
+            wallpaperDrawable = entry.backgroundDrawable = getBackgroundDrawable(wallpaperDrawable, entry.currentAccount, dialogId, entry.isDark);
+        } else {
+            wallpaperDrawable = null;
+            return;
+        }
+        if (lastWallpaperDrawable != wallpaperDrawable) {
+            if (animated) {
+                wallpaperDrawableCrossfade.set(0, true);
+            } else {
+                lastWallpaperDrawable = null;
+            }
+        }
+        if (wallpaperDrawable != null) {
+            wallpaperDrawable.setCallback(this);
+        }
+        if (blurManager != null) {
+            if (wallpaperDrawable != null) {
+                if (wallpaperDrawable instanceof BitmapDrawable) {
+                    blurManager.setFallbackBlur(((BitmapDrawable) wallpaperDrawable).getBitmap(), 0);
+                } else {
+                    int w = wallpaperDrawable.getIntrinsicWidth();
+                    int h = wallpaperDrawable.getIntrinsicHeight();
+                    if (w <= 0 || h <= 0) {
+                        w = 1080;
+                        h = 1920;
+                    }
+                    float scale = Math.max(100f / w, 100f / h);
+                    if (scale > 1) {
+                        w *= scale;
+                        h *= scale;
+                    }
+                    Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                    wallpaperDrawable.setBounds(0, 0, w, h);
+                    wallpaperDrawable.draw(new Canvas(bitmap));
+                    blurManager.setFallbackBlur(bitmap, 0, true);
+                }
+            } else {
+                blurManager.setFallbackBlur(null, 0);
+            }
+        }
+        invalidate();
+    }
+
+    public static Drawable getBackgroundDrawableFromTheme(int currentAccount, String emoticon, boolean isDark) {
+        return getBackgroundDrawableFromTheme(currentAccount, emoticon, isDark, false);
+    }
+
+    public static Drawable getBackgroundDrawableFromTheme(int currentAccount, String emoticon, boolean isDark, boolean preview) {
+        EmojiThemes theme = ChatThemeController.getInstance(currentAccount).getTheme(emoticon);
+        if (theme == null) {
+            return Theme.getCachedWallpaper();
+        }
+        return getBackgroundDrawableFromTheme(currentAccount, theme, 0, isDark, preview);
+    }
+
+    public static Drawable getBackgroundDrawableFromTheme(int currentAccount, EmojiThemes chatTheme, int prevPhase, boolean isDark) {
+        return getBackgroundDrawableFromTheme(currentAccount, chatTheme, prevPhase, isDark, false);
+    }
+
+    public static Drawable getBackgroundDrawableFromTheme(int currentAccount, EmojiThemes chatTheme, int prevPhase, boolean isDark, boolean preview) {
+        Drawable drawable;
+        if (chatTheme.showAsDefaultStub) {
+            Theme.ThemeInfo themeInfo = EmojiThemes.getDefaultThemeInfo(isDark);
+            SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
+            String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
+            Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
+            drawable = settings.wallpaper;
+            drawable = new ColorDrawable(Color.BLACK);
+        } else {
+            SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
+            int backgroundColor = currentColors.get(Theme.key_chat_wallpaper, Theme.getColor(Theme.key_chat_wallpaper));
+            int gradientColor1 = currentColors.get(Theme.key_chat_wallpaper_gradient_to1, Theme.getColor(Theme.key_chat_wallpaper_gradient_to1));
+            int gradientColor2 = currentColors.get(Theme.key_chat_wallpaper_gradient_to2, Theme.getColor(Theme.key_chat_wallpaper_gradient_to2));
+            int gradientColor3 = currentColors.get(Theme.key_chat_wallpaper_gradient_to3, Theme.getColor(Theme.key_chat_wallpaper_gradient_to3));
+
+            MotionBackgroundDrawable motionDrawable = new MotionBackgroundDrawable();
+            motionDrawable.isPreview = preview;
+            motionDrawable.setPatternBitmap(chatTheme.getWallpaper(isDark ? 1 : 0).settings.intensity);
+            motionDrawable.setColors(backgroundColor, gradientColor1, gradientColor2, gradientColor3, 0,true);
+            motionDrawable.setPhase(prevPhase);
+            int patternColor = motionDrawable.getPatternColor();
+            final boolean isDarkTheme = isDark;
+            chatTheme.loadWallpaper(isDark ? 1 : 0, pair -> {
+                if (pair == null) {
+                    return;
+                }
+                long themeId = pair.first;
+                Bitmap bitmap = pair.second;
+                if (themeId == chatTheme.getTlTheme(isDark ? 1 : 0).id && bitmap != null) {
+                    int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
+                    motionDrawable.setPatternBitmap(intensity, bitmap);
+                    motionDrawable.setPatternColorFilter(patternColor);
+                    motionDrawable.setPatternAlpha(1f);
+                }
+            });
+            drawable = motionDrawable;
+        }
+        return drawable;
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return wallpaperDrawable == who || super.verifyDrawable(who);
     }
 }

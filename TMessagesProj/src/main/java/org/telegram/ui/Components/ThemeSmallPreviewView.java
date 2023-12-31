@@ -52,6 +52,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
     public final static int TYPE_DEFAULT = 0;
     public final static int TYPE_GRID = 1;
     public final static int TYPE_QR = 2;
+    public final static int TYPE_CHANNEL = 3;
+    public final static int TYPE_GRID_CHANNEL = 4;
 
     private final float STROKE_RADIUS = AndroidUtilities.dp(8);
     private final float INNER_RADIUS = AndroidUtilities.dp(6);
@@ -94,7 +96,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         backupImageView.getImageReceiver().setCrossfadeWithOldImage(true);
         backupImageView.getImageReceiver().setAllowStartLottieAnimation(false);
         backupImageView.getImageReceiver().setAutoRepeat(0);
-        if (currentType == TYPE_DEFAULT || currentType == TYPE_QR) {
+        if (currentType == TYPE_DEFAULT || currentType == TYPE_CHANNEL || currentType == TYPE_QR) {
             addView(backupImageView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 12));
         } else {
             addView(backupImageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 12));
@@ -107,12 +109,12 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (currentType == TYPE_GRID) {
+        if (currentType == TYPE_GRID || currentType == TYPE_GRID_CHANNEL) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
             int height = (int) (width * 1.2f);
             super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         } else {
-            int width = AndroidUtilities.dp(77);
+            int width = AndroidUtilities.dp(currentType == TYPE_DEFAULT ? 77 : 83);
             int height = MeasureSpec.getSize(heightMeasureSpec);
             if (height == 0) {
                 height = (int) (width * 1.35f);
@@ -173,6 +175,18 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         super.dispatchDraw(canvas);
     }
 
+    public TLRPC.WallPaper fallbackWallpaper;
+    public void setFallbackWallpaper(TLRPC.WallPaper wallPaper) {
+        if (fallbackWallpaper != wallPaper) {
+            this.fallbackWallpaper = wallPaper;
+            if (chatThemeItem != null && (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.wallpaper == null)) {
+                ChatThemeBottomSheet.ChatThemeItem item = chatThemeItem;
+                chatThemeItem = null;
+                setItem(item, false);
+            }
+        }
+    }
+
     public int lastThemeIndex;
     public void setItem(ChatThemeBottomSheet.ChatThemeItem item, boolean animated) {
         boolean itemChanged = chatThemeItem != item;
@@ -203,11 +217,15 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 thumb = Emoji.getEmojiDrawable(item.chatTheme.getEmoticon());
             }
             backupImageView.setImage(ImageLocation.getForDocument(document), "50_50", thumb, null);
-            if (item.chatTheme.wallpaper != null) {
+            TLRPC.WallPaper wallPaper = item.chatTheme.wallpaper;
+            if (wallPaper == null) {
+                wallPaper = fallbackWallpaper;
+            }
+            if (wallPaper != null) {
                 if (attached && chatBackgroundDrawable != null) {
                     chatBackgroundDrawable.onDetachedFromWindow(ThemeSmallPreviewView.this);
                 }
-                chatBackgroundDrawable = new ChatBackgroundDrawable(item.chatTheme.wallpaper, false, true);
+                chatBackgroundDrawable = new ChatBackgroundDrawable(wallPaper, false, true);
                 chatBackgroundDrawable.setParent(this);
                 if (attached) {
                     chatBackgroundDrawable.onAttachedToWindow(ThemeSmallPreviewView.this);
@@ -219,6 +237,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 chatBackgroundDrawable = null;
             }
         }
+        backupImageView.setVisibility(item.chatTheme.showAsDefaultStub && fallbackWallpaper != null ? View.GONE : View.VISIBLE);
 
         if (itemChanged || darkModeChanged) {
             if (animated) {
@@ -314,7 +333,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         }
 
         if (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.showAsDefaultStub) {
-            setContentDescription(LocaleController.getString("ChatNoTheme", R.string.ChatNoTheme));
+            setContentDescription(LocaleController.getString(R.string.ChatNoTheme));
         } else {
             setContentDescription(chatThemeItem.chatTheme.getEmoticon());
         }
@@ -494,7 +513,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                     bitmapDrawable.setFilterBitmap(true);
                     drawable = bitmapDrawable;
                 }
-            } else {
+            } else if (!(chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.showAsDefaultStub)) {
                 drawable = new MotionBackgroundDrawable(0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884, true);
             }
         }
@@ -510,17 +529,31 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         }
         noThemeTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG + TextPaint.SUBPIXEL_TEXT_FLAG);
         noThemeTextPaint.setColor(getThemedColor(Theme.key_chat_emojiPanelTrendingDescription));
-        noThemeTextPaint.setTextSize(AndroidUtilities.dp(14));
-        noThemeTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        noThemeTextPaint.setTextSize(AndroidUtilities.dp(noThemeStringTextSize()));
+        noThemeTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        int width = AndroidUtilities.dp(52);
+        if (currentType == TYPE_CHANNEL || currentType == TYPE_GRID_CHANNEL) {
+            width = AndroidUtilities.dp(77);
+        }
         textLayout = StaticLayoutEx.createStaticLayout2(
-                LocaleController.getString("ChatNoTheme", R.string.ChatNoTheme),
+                noThemeString(),
                 noThemeTextPaint,
-                AndroidUtilities.dp(52),
+                width,
                 Layout.Alignment.ALIGN_CENTER,
                 1f, 0f, true,
-                TextUtils.TruncateAt.END, AndroidUtilities.dp(52), 3
+                TextUtils.TruncateAt.END,
+                width,
+                3
         );
         return textLayout;
+    }
+
+    protected int noThemeStringTextSize() {
+        return 14;
+    }
+
+    protected String noThemeString() {
+        return LocaleController.getString(R.string.ChatNoTheme);
     }
 
     private int getThemedColor(int key) {
@@ -594,7 +627,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                     outlineBackgroundPaint.setAlpha(wasAlpha);
                 }
                 canvas.restore();
-            } else {
+            } else if (!(chatThemeItem != null && chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.showAsDefaultStub && chatBackgroundDrawable != null)) {
                 canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
             }
         }
@@ -616,13 +649,15 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             rectF.set(INNER_RECT_SPACE, INNER_RECT_SPACE, getWidth() - INNER_RECT_SPACE, getHeight() - INNER_RECT_SPACE);
 
             if (chatThemeItem.chatTheme == null || (chatThemeItem.chatTheme.showAsDefaultStub && chatThemeItem.chatTheme.wallpaper == null)) {
-                canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
-                canvas.save();
-                StaticLayout textLayout = getNoThemeStaticLayout();
-                canvas.translate((getWidth() - textLayout.getWidth()) * 0.5f, AndroidUtilities.dp(18));
-                textLayout.draw(canvas);
-                canvas.restore();
-            } else {
+                if (fallbackWallpaper == null) {
+                    canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
+                    canvas.save();
+                    StaticLayout textLayout = getNoThemeStaticLayout();
+                    canvas.translate((getWidth() - textLayout.getWidth()) * 0.5f, AndroidUtilities.dp(18));
+                    textLayout.draw(canvas);
+                    canvas.restore();
+                }
+            } else if (currentType != TYPE_GRID_CHANNEL) {
                 if (currentType == TYPE_QR) {
                     if (chatThemeItem.icon != null) {
                         float left = (getWidth() - chatThemeItem.icon.getWidth()) * 0.5f;
@@ -630,9 +665,9 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                     }
                 } else {
                     float bubbleTop = INNER_RECT_SPACE + AndroidUtilities.dp(8);
-                    float bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(22);
-                    if (currentType == TYPE_DEFAULT) {
-                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                    float bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(currentType == TYPE_CHANNEL ? 5 : 22);
+                    if (currentType == TYPE_DEFAULT || currentType == TYPE_CHANNEL) {
+                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH * (currentType == TYPE_CHANNEL ? 1.2f : 1f), bubbleTop + BUBBLE_HEIGHT);
                     } else {
                         bubbleTop = getMeasuredHeight() * 0.12f;
                         bubbleLeft = getMeasuredWidth() - getMeasuredWidth() * 0.65f;
@@ -641,8 +676,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
                     }
 
-                    Paint paint = outBubblePaintSecond;
-                    if (currentType == TYPE_DEFAULT) {
+                    Paint paint = currentType == TYPE_CHANNEL ? inBubblePaint : outBubblePaintSecond;
+                    if (currentType == TYPE_DEFAULT || currentType == TYPE_CHANNEL) {
                         canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, paint);
                     } else {
                         messageDrawableOut.setBounds((int) rectF.left, (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right + AndroidUtilities.dp(4), (int) rectF.bottom + AndroidUtilities.dp(2));
@@ -650,10 +685,10 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         messageDrawableOut.draw(canvas, paint);
                     }
 
-                    if (currentType == TYPE_DEFAULT) {
+                    if (currentType == TYPE_DEFAULT || currentType == TYPE_CHANNEL) {
                         bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(5);
                         bubbleTop += BUBBLE_HEIGHT + AndroidUtilities.dp(4);
-                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH * (currentType == TYPE_CHANNEL ? 0.8f : 1f), bubbleTop + BUBBLE_HEIGHT);
                     } else {
                         bubbleTop = getMeasuredHeight() * 0.35f;
                         bubbleLeft = getMeasuredWidth() * 0.1f;
@@ -662,7 +697,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
                     }
 
-                    if (currentType == TYPE_DEFAULT) {
+                    if (currentType == TYPE_DEFAULT || currentType == TYPE_CHANNEL) {
                         canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, inBubblePaint);
                     } else {
                         messageDrawableIn.setBounds((int) rectF.left - AndroidUtilities.dp(4), (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right, (int) rectF.bottom + AndroidUtilities.dp(2));

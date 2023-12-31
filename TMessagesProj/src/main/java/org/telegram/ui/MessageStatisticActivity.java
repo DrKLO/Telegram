@@ -123,7 +123,6 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
     private RLottieImageView imageView;
     private LinearLayout progressLayout;
 
-    private int nextRate;
     private int publicChats;
     private boolean endReached;
 
@@ -659,31 +658,38 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             req.msg_id = messageObject.getId();
             req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
         }
-        if (!messages.isEmpty()) {
-            TLRPC.Message message = messages.get(messages.size() - 1).messageOwner;
-            req.offset_id = message.id;
-            req.offset_peer = getMessagesController().getInputPeer(MessageObject.getDialogId(message));
-            req.offset_rate = nextRate;
-        } else {
-            req.offset_peer = new TLRPC.TL_inputPeerEmpty();
-        }
+        req.offset = nextOffset == null ? "" : nextOffset;
         int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
-                TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                TLRPC.TL_stats_publicForwards res = (TLRPC.TL_stats_publicForwards) response;
                 if ((res.flags & 1) != 0) {
-                    nextRate = res.next_rate;
+                    nextOffset = res.next_offset;
+                } else {
+                    nextOffset = null;
                 }
                 if (res.count != 0) {
                     publicChats = res.count;
                 } else if (publicChats == 0) {
-                    publicChats = res.messages.size();
+                    publicChats = res.forwards.size();
                 }
-                endReached = !(res instanceof TLRPC.TL_messages_messagesSlice);
+                endReached = nextOffset == null;
                 getMessagesController().putChats(res.chats, false);
                 getMessagesController().putUsers(res.users, false);
-                for (int i = 0; i < res.messages.size(); i++) {
-                    messages.add(new MessageObject(currentAccount, res.messages.get(i), false, true));
+
+                for (TLRPC.PublicForward forward : res.forwards) {
+                    if (forward instanceof TL_stories.TL_publicForwardStory) {
+                        TL_stories.TL_publicForwardStory forwardStory = (TL_stories.TL_publicForwardStory) forward;
+                        forwardStory.story.dialogId = DialogObject.getPeerDialogId(forwardStory.peer);
+                        forwardStory.story.messageId = forwardStory.story.id;
+                        MessageObject msg = new MessageObject(currentAccount, forwardStory.story);
+                        msg.generateThumbs(false);
+                        messages.add(msg);
+                    } else if (forward instanceof TLRPC.TL_publicForwardMessage) {
+                        TLRPC.TL_publicForwardMessage forwardMessage = (TLRPC.TL_publicForwardMessage) forward;
+                        messages.add(new MessageObject(currentAccount, forwardMessage.message, false, true));
+                    }
                 }
+
                 if (emptyView != null) {
                     emptyView.showTextView();
                 }

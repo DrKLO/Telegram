@@ -282,7 +282,6 @@ public class TableCell extends FrameLayout {
 
         if (blueColor) {
             textView = new LinkSpanDrawable.LinksTextView(getContext(), resourcesProvider);
-            textView.setMovementMethod(LinkMovementMethod.getInstance());
             textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
         } else {
             textView = new TextView(getContext());
@@ -290,7 +289,9 @@ public class TableCell extends FrameLayout {
 
         textView.setTextColor(Theme.getColor(blueColor ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        if (!blueColor) {
+            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        }
         if (text != null) {
             textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             textView.setText(text);

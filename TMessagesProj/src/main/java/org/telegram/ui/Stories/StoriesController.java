@@ -118,7 +118,7 @@ public class StoriesController {
     private final DraftsController draftsController;
 
 
-    public SparseArray<SelfStoryViewsPage.ViewsModel> selfViewsModel = new SparseArray<>();
+    public LongSparseArray<SparseArray<SelfStoryViewsPage.ViewsModel>> selfViewsModel = new LongSparseArray<>();
     private String stateHidden;
     private boolean hasMoreHidden = true;
     private boolean firstLoad = true;
@@ -558,12 +558,12 @@ public class StoriesController {
         if (!canPreloadStories) {
             return;
         }
-        boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.document);
+        boolean isVideo = storyItem.media != null && MessageObject.isVideoDocument(storyItem.media.getDocument());
         storyItem.dialogId = dialogId;
         if (isVideo) {
-            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, 1000);
-            FileLoader.getInstance(currentAccount).loadFile(storyItem.media.document, storyItem, FileLoader.PRIORITY_LOW, 1);
-            FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(size, storyItem.media.document), storyItem, "jpg", FileLoader.PRIORITY_LOW, 1);
+            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.getDocument().thumbs, 1000);
+            FileLoader.getInstance(currentAccount).loadFile(storyItem.media.getDocument(), storyItem, FileLoader.PRIORITY_LOW, 1);
+            FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(size, storyItem.media.getDocument()), storyItem, "jpg", FileLoader.PRIORITY_LOW, 1);
         } else {
             TLRPC.Photo photo = storyItem.media == null ? null : storyItem.media.photo;
             if (photo != null && photo.sizes != null) {
@@ -2458,6 +2458,12 @@ public class StoriesController {
                                     loadChatIds.add(-did);
                                 }
                             }
+                            for (int j = 0; j < storyItem.media_areas.size(); ++j) {
+                                if (storyItem.media_areas.get(j) instanceof TL_stories.TL_mediaAreaChannelPost) {
+                                    long channel_id = ((TL_stories.TL_mediaAreaChannelPost) storyItem.media_areas.get(j)).channel_id;
+                                    loadChatIds.add(channel_id);
+                                }
+                            }
                             msg.generateThumbs(false);
                             cacheResult.add(msg);
                             data.reuse();
@@ -2734,6 +2740,8 @@ public class StoriesController {
                         FileLog.d("StoriesList " + type + "{"+ dialogId +"} loaded {" + storyItemMessageIds(newMessageObjects) + "}");
 
                         MessagesController.getInstance(currentAccount).putUsers(stories.users, false);
+                        MessagesController.getInstance(currentAccount).putChats(stories.chats, false);
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(stories.users, stories.chats, true, true);
                         loading = false;
 
                         totalCount = stories.count;
@@ -3120,7 +3128,7 @@ public class StoriesController {
         }));
     }
 
-    public boolean isBlocked(TL_stories.TL_storyView storyView) {
+    public boolean isBlocked(TL_stories.StoryView storyView) {
         if (storyView == null) {
             return false;
         }
@@ -3143,12 +3151,12 @@ public class StoriesController {
         return blocklist.contains(did);
     }
 
-    public void applyStoryViewsBlocked(TL_stories.TL_stories_storyViewsList res) {
+    public void applyStoryViewsBlocked(TL_stories.StoryViewsList res) {
         if (res == null || res.views == null) {
             return;
         }
         for (int i = 0; i < res.views.size(); ++i) {
-            TL_stories.TL_storyView view = res.views.get(i);
+            TL_stories.StoryView view = res.views.get(i);
             if (blockedOverride.containsKey(view.user_id)) {
                 blockedOverride.put(view.user_id, view.blocked_my_stories_from);
             }

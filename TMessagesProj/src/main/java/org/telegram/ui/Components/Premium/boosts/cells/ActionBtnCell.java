@@ -63,6 +63,13 @@ public class ActionBtnCell extends FrameLayout {
         backgroundView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
     }
 
+    public void setActivateForFreeStyle() {
+        drawDivider = true;
+        button.setEnabled(true);
+        button.setText(LocaleController.formatString("GiftPremiumActivateForFree", R.string.GiftPremiumActivateForFree), false);
+        backgroundView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
@@ -98,5 +105,10 @@ public class ActionBtnCell extends FrameLayout {
         button.setShowZero(false);
         button.setEnabled(true);
         button.setText(LocaleController.formatString("Close", R.string.Close), false);
+    }
+
+    public void setCloseStyle(boolean needDivider){
+        setCloseStyle();
+        drawDivider = needDivider;
     }
 }

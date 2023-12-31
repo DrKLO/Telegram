@@ -14160,6 +14160,14 @@ public class MessagesStorage extends BaseController {
                     }
                 }
             }
+            if (message.media instanceof TLRPC.TL_messageMediaGiveawayResults) {
+                TLRPC.TL_messageMediaGiveawayResults giveaway = (TLRPC.TL_messageMediaGiveawayResults) message.media;
+                for (Long uid : giveaway.winners) {
+                    if (!usersToLoad.contains(uid)) {
+                        usersToLoad.add(uid);
+                    }
+                }
+            }
             if (message.media instanceof TLRPC.TL_messageMediaPoll) {
                 TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) message.media;
                 if (!messageMediaPoll.results.recent_voters.isEmpty()) {
@@ -14168,8 +14176,19 @@ public class MessagesStorage extends BaseController {
                     }
                 }
             }
-            if (message.media instanceof TLRPC.TL_messageMediaStory && message.media.storyItem != null && message.media.storyItem.fwd_from != null) {
-                addLoadPeerInfo(message.media.storyItem.fwd_from.from, usersToLoad, chatsToLoad);
+            if (message.media instanceof TLRPC.TL_messageMediaStory && message.media.storyItem != null) {
+                if (message.media.storyItem.fwd_from != null) {
+                    addLoadPeerInfo(message.media.storyItem.fwd_from.from, usersToLoad, chatsToLoad);
+                }
+                if (message.media.storyItem != null && message.media.storyItem.media_areas != null) {
+                    for (int j = 0; j < message.media.storyItem.media_areas.size(); ++j) {
+                        if (message.media.storyItem.media_areas.get(j) instanceof TL_stories.TL_mediaAreaChannelPost) {
+                            long channelId = ((TL_stories.TL_mediaAreaChannelPost) message.media.storyItem.media_areas.get(j)).channel_id;
+                            if (!chatsToLoad.contains(channelId))
+                                chatsToLoad.add(channelId);
+                        }
+                    }
+                }
             }
             if (message.media instanceof TLRPC.TL_messageMediaWebPage && message.media.webpage != null && message.media.webpage.attributes != null) {
                 for (int i = 0; i < message.media.webpage.attributes.size(); ++i) {
@@ -14177,6 +14196,15 @@ public class MessagesStorage extends BaseController {
                         TLRPC.TL_webPageAttributeStory attr = (TLRPC.TL_webPageAttributeStory) message.media.webpage.attributes.get(i);
                         if (attr.storyItem != null && attr.storyItem.fwd_from != null) {
                             addLoadPeerInfo(attr.storyItem.fwd_from.from, usersToLoad, chatsToLoad);
+                        }
+                        if (attr.storyItem != null && attr.storyItem.media_areas != null) {
+                            for (int j = 0; j < attr.storyItem.media_areas.size(); ++j) {
+                                if (attr.storyItem.media_areas.get(j) instanceof TL_stories.TL_mediaAreaChannelPost) {
+                                    long channelId = ((TL_stories.TL_mediaAreaChannelPost) attr.storyItem.media_areas.get(j)).channel_id;
+                                    if (!chatsToLoad.contains(channelId))
+                                        chatsToLoad.add(channelId);
+                                }
+                            }
                         }
                     }
                 }

@@ -30,7 +30,7 @@ public class MenuToItemOptions implements Menu {
 
     @Override
     public MenuItem add(int groupId, int itemId, int order, CharSequence title) {
-        if (premiumLock != null && FloatingToolbar.premiumOptions.contains(itemId) && MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+        if (premiumLock != null && FloatingToolbar.premiumOptions.contains(itemId) && MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
             return null;
         }
         itemOptions.add(title, () -> onMenuClicked.run(itemId));

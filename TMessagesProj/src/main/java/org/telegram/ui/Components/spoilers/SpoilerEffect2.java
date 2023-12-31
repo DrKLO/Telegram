@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.opengl.EGL14;
@@ -87,12 +89,12 @@ public class SpoilerEffect2 {
     private static int getSize() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
-                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 1.0f));
+                return Math.min(1280, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * 1.0f));
             case SharedConfig.PERFORMANCE_CLASS_AVERAGE:
-                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .8f));
+                return Math.min(900, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * .8f));
             default:
             case SharedConfig.PERFORMANCE_CLASS_LOW:
-                return Math.min(720, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .7f));
+                return Math.min(720, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * .7f));
         }
     }
 
@@ -170,6 +172,10 @@ public class SpoilerEffect2 {
     }
 
     public void draw(Canvas canvas, View view, int w, int h, float alpha) {
+        draw(canvas, view, w, h, alpha, false);
+    }
+
+    public void draw(Canvas canvas, View view, int w, int h, float alpha, boolean toBitmap) {
         if (canvas == null || view == null) {
             return;
         }
@@ -192,8 +198,18 @@ public class SpoilerEffect2 {
         if ((index % 4) == 3) {
             canvas.scale(1, -1, ow / 2f, oh / 2f);
         }
-        textureView.setAlpha(alpha);
-        textureView.draw(canvas);
+        if (toBitmap) {
+            Bitmap bitmap = textureView.getBitmap();
+            if (bitmap != null) {
+                Paint paint = new Paint(Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+                paint.setColor(Color.WHITE);
+                canvas.drawBitmap(bitmap, 0, 0, paint);
+                bitmap.recycle();
+            }
+        } else {
+            textureView.setAlpha(alpha);
+            textureView.draw(canvas);
+        }
         canvas.restore();
     }
 

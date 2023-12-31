@@ -14,7 +14,7 @@ public class DotDividerSpan extends ReplacementSpan {
     Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
     int color;
     int topPadding;
-    private int size = 3;
+    private float size = 3;
 
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
@@ -35,7 +35,7 @@ public class DotDividerSpan extends ReplacementSpan {
         this.topPadding = topPadding;
     }
 
-    public void setSize(int size) {
+    public void setSize(float size) {
         this.size = size;
     }
 }

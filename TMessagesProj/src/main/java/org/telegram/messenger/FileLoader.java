@@ -887,7 +887,7 @@ public class FileLoader extends BaseController {
             } else {
                 storeDir = getDirectory(type);
             }
-        } else if (cacheType == 2) {
+        } else if (cacheType == ImageLoader.CACHE_TYPE_ENCRYPTED) {
             operation.setEncryptFile(true);
         }
         operation.setPaths(currentAccount, fileName, loaderQueue, storeDir, tempDir, storeFileName);

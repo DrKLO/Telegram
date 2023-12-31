@@ -67,7 +67,6 @@ public class CaptionStory extends CaptionContainerView {
     private boolean periodVisible = true;
 
     public static final int[] periods = new int[] { 6 * 3600, 12 * 3600, 86400, 2 * 86400 };
-    public static final int[] periodDrawables = new int[] { R.drawable.msg_story_6h, R.drawable.msg_story_12h, R.drawable.msg_story_24h, R.drawable.msg_story_48h };
     private int periodIndex = 0;
 
     private Drawable flipButton;

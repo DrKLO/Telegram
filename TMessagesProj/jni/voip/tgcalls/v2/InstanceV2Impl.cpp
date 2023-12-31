@@ -253,6 +253,54 @@ private:
     bool _isMuted = true;
 };
 
+namespace {
+class AudioSinkImpl: public webrtc::AudioSinkInterface {
+public:
+    AudioSinkImpl(std::function<void(float, float)> update) :
+    _update(update) {
+    }
+    
+    virtual ~AudioSinkImpl() {
+    }
+    
+    virtual void OnData(const Data& audio) override {
+        if (_update && audio.channels == 1) {
+            const int16_t *samples = (const int16_t *)audio.data;
+            int numberOfSamplesInFrame = (int)audio.samples_per_channel;
+            
+            int16_t currentPeak = 0;
+            for (int i = 0; i < numberOfSamplesInFrame; i++) {
+                int16_t sample = samples[i];
+                if (sample < 0) {
+                    sample = -sample;
+                }
+                if (_peak < sample) {
+                    _peak = sample;
+                }
+                if (currentPeak < sample) {
+                    currentPeak = sample;
+                }
+                _peakCount += 1;
+            }
+            
+            if (_peakCount >= 4400) {
+                float level = ((float)(_peak)) / 8000.0f;
+                _peak = 0;
+                _peakCount = 0;
+                _update(0, level);
+            }
+        }
+    }
+    
+private:
+    std::function<void(float, float)> _update;
+    
+    int _peakCount = 0;
+    uint16_t _peak = 0;
+};
+
+}
+
 class IncomingV2AudioChannel : public sigslot::has_slots<> {
 public:
     IncomingV2AudioChannel(
@@ -261,6 +309,7 @@ public:
         webrtc::RtpTransport *rtpTransport,
         rtc::UniqueRandomIdGenerator *randomIdGenerator,
         signaling::MediaContent const &mediaContent,
+        std::function<void(float, float)> &&onAudioLevelUpdated,
         std::shared_ptr<Threads> threads) :
     _threads(threads),
     _ssrc(mediaContent.ssrc),
@@ -278,9 +327,7 @@ public:
         _threads->getNetworkThread()->BlockingCall([&]() {
             _audioChannel->SetRtpTransport(rtpTransport);
         });
-
-
-
+        
         std::vector<cricket::AudioCodec> codecs;
         for (const auto &payloadType : mediaContent.payloadTypes) {
             cricket::AudioCodec codec(payloadType.id, payloadType.name, payloadType.clockrate, 0, payloadType.channels);
@@ -317,11 +364,14 @@ public:
         streamParams.set_stream_ids({ streamId });
         incomingAudioDescription->AddStream(streamParams);
 
-        threads->getWorkerThread()->BlockingCall([&]() {
+        threads->getWorkerThread()->BlockingCall([this, &outgoingAudioDescription, &incomingAudioDescription, onAudioLevelUpdated = std::move(onAudioLevelUpdated), ssrc = mediaContent.ssrc]() {
             _audioChannel->SetPayloadTypeDemuxingEnabled(false);
             std::string errorDesc;
             _audioChannel->SetLocalContent(outgoingAudioDescription.get(), webrtc::SdpType::kOffer, errorDesc);
             _audioChannel->SetRemoteContent(incomingAudioDescription.get(), webrtc::SdpType::kAnswer, errorDesc);
+            
+            std::unique_ptr<AudioSinkImpl> audioLevelSink(new AudioSinkImpl(std::move(onAudioLevelUpdated)));
+            _audioChannel->media_channel()->SetRawAudioSink(ssrc, std::move(audioLevelSink));
         });
 
         outgoingAudioDescription.reset();
@@ -1101,7 +1151,7 @@ public:
 
         mediaDeps.adm = _audioDeviceModule;
 
-        webrtc:: AudioProcessingBuilder builder;
+        webrtc::AudioProcessingBuilder builder;
         mediaDeps.audio_processing = builder.Create();
 
         _availableVideoFormats = mediaDeps.video_encoder_factory->GetSupportedFormats();
@@ -1468,6 +1518,9 @@ public:
                             _rtpTransport,
                             _uniqueRandomIdGenerator.get(),
                             content,
+                            [audioLevelUpdated = _audioLevelUpdated](float myLvl, float level) {
+                                audioLevelUpdated(myLvl, level);
+                            },
                             _threads
                         ));
                     }

@@ -189,7 +189,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 subtitleTextView.setVisibility(ViewPagerFixed.GONE);
                 break;
             case TYPE_REPLACED_TO_FAVORITES:
-                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && !MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && !MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
                     titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteStickers", R.string.LimitReachedFavoriteStickers, MessagesController.getInstance(UserConfig.selectedAccount).stickersFavedLimitDefault));
                     CharSequence str = AndroidUtilities.premiumText(LocaleController.formatString("LimitReachedFavoriteStickersSubtitle", R.string.LimitReachedFavoriteStickersSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).stickersFavedLimitPremium), () -> {
                         Activity activity = AndroidUtilities.findActivity(context);
@@ -204,7 +204,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 }
                 break;
             case TYPE_REPLACED_TO_FAVORITES_GIFS:
-                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && !MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+                if (!MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
                     titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifs", R.string.LimitReachedFavoriteGifs, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
                     CharSequence str = AndroidUtilities.premiumText(LocaleController.formatString("LimitReachedFavoriteGifsSubtitle", R.string.LimitReachedFavoriteGifsSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium), () -> {
                         Activity activity = AndroidUtilities.findActivity(context);

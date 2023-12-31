@@ -39,9 +39,16 @@ public class SeekBar {
         default void onSeekBarContinuousDrag(float progress) {
 
         }
-
         default void onSeekBarPressed() {}
         default void onSeekBarReleased() {}
+
+        default boolean isSeekBarDragAllowed() {
+            return true;
+        }
+
+        default boolean reverseWaveform() {
+            return false;
+        }
     }
 
     private static Paint paint;

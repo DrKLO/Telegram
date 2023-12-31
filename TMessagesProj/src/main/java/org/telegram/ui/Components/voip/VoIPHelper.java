@@ -394,6 +394,23 @@ public class VoIPHelper {
 		return false;
 	}
 
+	public static void sendCallRating(final long callID, final long accessHash, final int account, int rating) {
+		final int currentAccount = UserConfig.selectedAccount;
+		final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+		req.rating = rating;
+		req.comment = "";
+		req.peer = new TLRPC.TL_inputPhoneCall();
+		req.peer.access_hash = accessHash;
+		req.peer.id = callID;
+		req.user_initiative = false;
+		ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+			if (response instanceof TLRPC.TL_updates) {
+				TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+				MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+			}
+		});
+	}
+
 	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call) {
 		SharedPreferences prefs = MessagesController.getNotificationsSettings(UserConfig.selectedAccount); // always called from chat UI
 		Set<String> hashes = prefs.getStringSet("calls_access_hashes", (Set<String>) Collections.EMPTY_SET);

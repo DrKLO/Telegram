@@ -192,7 +192,7 @@ public class RoundView extends EntityView {
     }
 
     @Override
-    protected org.telegram.ui.Components.Rect getSelectionBounds() {
+    public org.telegram.ui.Components.Rect getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
             return new org.telegram.ui.Components.Rect();
