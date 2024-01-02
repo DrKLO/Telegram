@@ -49,6 +49,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
@@ -91,6 +92,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -118,6 +120,7 @@ import java.net.IDN;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -234,7 +237,7 @@ public class AlertsCreator {
     }
 
     public static Dialog processError(int currentAccount, TLRPC.TL_error error, BaseFragment fragment, TLObject request, Object... args) {
-        if (error.code == 406 || error.text == null) {
+        if (error == null || error.code == 406 || error.text == null) {
             return null;
         }
         if (request instanceof TLRPC.TL_messages_initHistoryImport || request instanceof TLRPC.TL_messages_checkHistoryImportPeer || request instanceof TLRPC.TL_messages_checkHistoryImport || request instanceof TLRPC.TL_messages_startHistoryImport) {
@@ -475,7 +478,7 @@ public class AlertsCreator {
             } else if (error.text.startsWith("FLOOD_WAIT")) {
                 showSimpleAlert(fragment, LocaleController.getString("FloodWait", R.string.FloodWait));
             } else if (error.text.contains("FRESH_CHANGE_PHONE_FORBIDDEN")) {
-                showSimpleAlert(fragment, LocaleController.getString("FreshChangePhoneForbidden", R.string.FreshChangePhoneForbidden));
+                showSimpleAlert(fragment, LocaleController.getString(R.string.FreshChangePhoneForbiddenTitle), LocaleController.getString("FreshChangePhoneForbidden", R.string.FreshChangePhoneForbidden));
             } else {
                 showSimpleAlert(fragment, error.text);
             }
@@ -688,7 +691,7 @@ public class AlertsCreator {
                     }
                 }
                 if (few) {
-                    createSimpleAlert(context, chat.title, LocaleController.getString("SlowmodeSendError", R.string.SlowmodeSendError)).show();
+                    createSimpleAlert(context, chat.title, LocaleController.getString(R.string.SlowmodeSendError)).show();
                     return true;
                 }
             }
@@ -1377,11 +1380,11 @@ public class AlertsCreator {
                 imageView.setImage(null, null, avatarDrawable, user);
             } else {
                 avatarDrawable.setScaleSize(1f);
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(account, user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
-            avatarDrawable.setInfo(chat);
+            avatarDrawable.setInfo(account, chat);
             imageView.setForUserOrChat(chat, avatarDrawable);
         }
 
@@ -1458,7 +1461,7 @@ public class AlertsCreator {
                 imageView.setImage(null, null, avatarDrawable, user);
             } else {
                 avatarDrawable.setScaleSize(1f);
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(fragment.getCurrentAccount(), user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
         }
@@ -1476,7 +1479,10 @@ public class AlertsCreator {
         });
     }
 
-    public static void createBotLaunchAlert(BaseFragment fragment, TLRPC.TL_messages_botApp botApp, TLRPC.User user, AtomicBoolean allowWrite, Runnable loadBotSheet) {
+    public static void createBotLaunchAlert(BaseFragment fragment, AtomicBoolean allowWrite, TLRPC.User user, Runnable loadBotSheet) {
+        if (fragment == null) {
+            return;
+        }
         Context context = fragment.getContext();
         CheckBoxCell[] cell = new CheckBoxCell[1];
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -1552,7 +1558,7 @@ public class AlertsCreator {
         frameLayout.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 76), 28, (LocaleController.isRTL ? 76 : 21), 0));
         frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 57, 24, 1));
 
-        if (botApp.request_write_access) {
+        if (allowWrite != null) {
             allowWrite.set(true);
 
             cell[0] = new CheckBoxCell(context, 1, fragment.getResourceProvider());
@@ -1576,7 +1582,7 @@ public class AlertsCreator {
                 imageView.setImage(null, null, avatarDrawable, user);
             } else {
                 avatarDrawable.setScaleSize(1f);
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(fragment.getCurrentAccount(), user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
         }
@@ -1751,11 +1757,11 @@ public class AlertsCreator {
                 imageView.setImage(null, null, avatarDrawable, user);
             } else {
                 avatarDrawable.setScaleSize(1f);
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(fragment.getCurrentAccount(), user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
-            avatarDrawable.setInfo(chat);
+            avatarDrawable.setInfo(fragment.getCurrentAccount(), chat);
             imageView.setForUserOrChat(chat, avatarDrawable);
         }
 
@@ -2040,7 +2046,7 @@ public class AlertsCreator {
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setTextSize(AndroidUtilities.dp(12));
         avatarDrawable.setScaleSize(1f);
-        avatarDrawable.setInfo(user);
+        avatarDrawable.setInfo(fragment.getCurrentAccount(), user);
 
         BackupImageView imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(20));
@@ -2380,7 +2386,7 @@ public class AlertsCreator {
         buttonTextView.setText(LocaleController.getString("IUnderstand", R.string.IUnderstand));
 
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
 
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 16, 12, 16, 8));
 
@@ -2483,9 +2489,9 @@ public class AlertsCreator {
             AndroidUtilities.runOnUIThread(() -> {
                 BaseFragment lastFragment = LaunchActivity.getLastFragment();
                 if (lastFragment != null && lastFragment.getParentActivity() != null) {
-                    LimitReachedBottomSheet restricterdUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, null);
-                    restricterdUsersBottomSheet.setRestrictedUsers(currentChat, finalArrayList);
-                    restricterdUsersBottomSheet.show();
+                    LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, null);
+                    restrictedUsersBottomSheet.setRestrictedUsers(currentChat, finalArrayList);
+                    restrictedUsersBottomSheet.show();
                 }
             }, 200);
         }
@@ -2760,7 +2766,7 @@ public class AlertsCreator {
             this(null);
         }
 
-        private ScheduleDatePickerColors(Theme.ResourcesProvider rp) {
+        public ScheduleDatePickerColors(Theme.ResourcesProvider rp) {
             this(rp != null ? rp.getColorOrDefault(Theme.key_dialogTextBlack) : Theme.getColor(Theme.key_dialogTextBlack),
                     rp != null ? rp.getColorOrDefault(Theme.key_dialogBackground) : Theme.getColor(Theme.key_dialogBackground),
                     rp != null ? rp.getColorOrDefault(Theme.key_sheet_other) : Theme.getColor(Theme.key_sheet_other),
@@ -3202,7 +3208,7 @@ public class AlertsCreator {
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
         buttonTextView.setText(LocaleController.getString("SetTimeLimit", R.string.SetTimeLimit));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -3390,7 +3396,7 @@ public class AlertsCreator {
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
         buttonTextView.setText(LocaleController.getString("SetEmojiStatusUntilButton", R.string.SetEmojiStatusUntilButton));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -3535,7 +3541,7 @@ public class AlertsCreator {
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(AndroidUtilities.dp(14));
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setText(LocaleController.getString("DisableAutoDeleteTimer", R.string.DisableAutoDeleteTimer));
 
@@ -3679,7 +3685,7 @@ public class AlertsCreator {
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
         buttonTextView.setText(LocaleController.getString("AutoDeleteConfirm", R.string.AutoDeleteConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
 
@@ -3849,7 +3855,7 @@ public class AlertsCreator {
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
         buttonTextView.setText(LocaleController.getString("AutoDeleteConfirm", R.string.AutoDeleteConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -4069,8 +4075,8 @@ public class AlertsCreator {
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setText(LocaleController.getString("JumpToDate", R.string.JumpToDate));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
+        buttonTextView.setText(LocaleController.getString(R.string.JumpToDate));
+        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
             checkCalendarDate(minDate, dayPicker, monthPicker, yearPicker);
@@ -4182,7 +4188,7 @@ public class AlertsCreator {
             return;
         }
         if (storyId != 0) {
-            TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
+            TL_stories.TL_stories_report request = new TL_stories.TL_stories_report();
             request.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(peer.user_id);
             request.id.add(storyId);
             request.message = message;
@@ -4339,7 +4345,7 @@ public class AlertsCreator {
             TLObject req;
             TLRPC.InputPeer peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialog_id);
             if (storyId != 0) {
-                TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
+                TL_stories.TL_stories_report request = new TL_stories.TL_stories_report();
                 request.id.add(storyId);
                 request.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialog_id);
                 request.message = "";
@@ -5655,7 +5661,8 @@ public class AlertsCreator {
         }
         final TLRPC.User userFinal = actionUser;
         final TLRPC.Chat chatFinal = actionChat;
-        builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+
+        DialogInterface.OnClickListener deleteAction = (dialogInterface, i) -> {
             ArrayList<Integer> ids = null;
             if (selectedMessage != null) {
                 ids = new ArrayList<>();
@@ -5723,7 +5730,7 @@ public class AlertsCreator {
             if (onDelete != null) {
                 onDelete.run();
             }
-        });
+        };
 
         if (count == 1) {
             builder.setTitle(LocaleController.getString("DeleteSingleMessagesTitle", R.string.DeleteSingleMessagesTitle));
@@ -5761,6 +5768,38 @@ public class AlertsCreator {
             }
         }
 
+        boolean isActiveGiveawayAndOwner = false;
+        String giveawayEndDate = null;
+        if (selectedMessage != null) {
+            isActiveGiveawayAndOwner = selectedMessage.isGiveaway() && !selectedMessage.isForwarded();
+            if (isActiveGiveawayAndOwner) {
+                TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) selectedMessage.messageOwner.media;
+                long untilDate = giveaway.until_date * 1000L;
+                giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
+                isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
+            }
+        } else if (count == 1) {
+            for (int a = 1; a >= 0; a--) {
+                for (int b = 0; b < selectedMessages[a].size(); b++) {
+                    MessageObject msg = selectedMessages[a].valueAt(b);
+                    isActiveGiveawayAndOwner = msg.isGiveaway() && !msg.isForwarded();
+                    if (isActiveGiveawayAndOwner) {
+                        TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) msg.messageOwner.media;
+                        long untilDate = giveaway.until_date * 1000L;
+                        giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
+                        isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
+                    }
+                }
+            }
+        }
+
+        if (isActiveGiveawayAndOwner) {
+            builder.setTitle(LocaleController.getString("BoostingGiveawayDeleteMsgTitle", R.string.BoostingGiveawayDeleteMsgTitle));
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGiveawayDeleteMsgText", R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
+            builder.setNeutralButton(LocaleController.getString("Delete", R.string.Delete), deleteAction);
+        } else {
+            builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), deleteAction);
+        }
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         builder.setOnPreDismissListener(di -> {
             if (hideDim != null) {
@@ -5769,9 +5808,15 @@ public class AlertsCreator {
         });
         AlertDialog dialog = builder.create();
         fragment.showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        TextView positiveButton = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (positiveButton != null) {
+            positiveButton.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        }
+        TextView neutralButton = (TextView) dialog.getButton(DialogInterface.BUTTON_NEUTRAL);
+        if (neutralButton != null) {
+            dialog.getButtonsLayout().setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(0), AndroidUtilities.dp(8), AndroidUtilities.dp(12));
+            ((ViewGroup.MarginLayoutParams) dialog.getButtonsLayout().getLayoutParams()).topMargin = AndroidUtilities.dp(-8);
+            neutralButton.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

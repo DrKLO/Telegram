@@ -10,6 +10,7 @@ public class OrientationHelper {
     private OrientationEventListener orientationEventListener;
     private int rotation;
 
+    public static volatile boolean cameraRotationDisabled;
     public static volatile int cameraRotation;
     public static volatile int cameraOrientation;
 
@@ -64,6 +65,9 @@ public class OrientationHelper {
     }
 
     public int getOrientation() {
+        if (cameraRotationDisabled) {
+            return 0;
+        }
         return rotation;
     }
 }

@@ -2090,6 +2090,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             } else if (view instanceof ChatActionCell) {
                 ChatActionCell cell = (ChatActionCell) view;
                 cell.setVisiblePart(view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
+                if (cell.hasGradientService()) {
+                    cell.invalidate();
+                }
             }
             if (view.getBottom() <= chatListView.getPaddingTop()) {
                 continue;
@@ -2374,7 +2377,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public boolean needPlayMessage(MessageObject messageObject, boolean muted) {
+                    public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
                         if (messageObject.isVoice() || messageObject.isRoundVideo()) {
                             boolean result = MediaController.getInstance().playMessage(messageObject, muted);
                             MediaController.getInstance().setVoiceMessagesPlaylist(null, false);
@@ -2671,6 +2674,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     @Override
                     public void didClickImage(ChatActionCell cell) {
                         MessageObject message = cell.getMessageObject();
+                        if (message.type == MessageObject.TYPE_ACTION_WALLPAPER) {
+                            presentFragment(new ChannelColorActivity(getDialogId()).setOnApplied(ChannelAdminLogActivity.this));
+                            return;
+                        }
                         PhotoViewer.getInstance().setParentActivity(ChannelAdminLogActivity.this);
                         TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 640);
                         if (photoSize != null) {
@@ -3143,6 +3150,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_stickerViaBotNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inReplyLine));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outReplyLine));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outReplyLine2));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_stickerReplyLine));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inReplyNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outReplyNameText));
@@ -3213,8 +3221,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inVenueInfoSelectedText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outVenueInfoSelectedText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_mediaInfoText));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, Theme.chat_urlPaint, null, null, Theme.key_chat_linkSelectBackground));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, Theme.chat_textSearchSelectionPaint, null, null, Theme.key_chat_textSelectBackground));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, Theme.chat_urlPaint, null, null, Theme.key_chat_inReplyLine));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, Theme.chat_textSearchSelectionPaint, null, null, Theme.key_chat_outReplyLine));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outLoader));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outMediaIcon));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outLoaderSelected));

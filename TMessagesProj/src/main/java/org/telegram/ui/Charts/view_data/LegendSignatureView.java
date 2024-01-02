@@ -56,6 +56,7 @@ public class LegendSignatureView extends FrameLayout {
 
     Drawable shadowDrawable;
     Drawable backgroundDrawable;
+    private Theme.ResourcesProvider resourcesProvider;
 
     Runnable showProgressRunnable = new Runnable() {
         @Override
@@ -72,7 +73,12 @@ public class LegendSignatureView extends FrameLayout {
     };
 
     public LegendSignatureView(Context context) {
+        this(context, null);
+    }
+
+    public LegendSignatureView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         content = new LinearLayout(getContext());
         content.setOrientation(LinearLayout.VERTICAL);
@@ -102,13 +108,13 @@ public class LegendSignatureView extends FrameLayout {
     }
 
     public void recolor() {
-        time.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        hourTime.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        chevron.setColorFilter(Theme.getColor(Theme.key_statisticChartChevronColor));
-        progressView.setProgressColor(Theme.getColor(Theme.key_statisticChartChevronColor));
+        time.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        hourTime.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        chevron.setColorFilter(Theme.getColor(Theme.key_statisticChartChevronColor, resourcesProvider));
+        progressView.setProgressColor(Theme.getColor(Theme.key_statisticChartChevronColor, resourcesProvider));
 
         shadowDrawable = getContext().getResources().getDrawable(R.drawable.stats_tooltip).mutate();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_dialogBackground), Theme.getColor(Theme.key_listSelector), 0xff000000);
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Theme.getColor(Theme.key_listSelector, resourcesProvider), 0xff000000);
         CombinedDrawable drawable = new CombinedDrawable(shadowDrawable, backgroundDrawable, AndroidUtilities.dp(3), AndroidUtilities.dp(3));
         drawable.setFullsize(true);
         setBackground(drawable);
@@ -169,15 +175,15 @@ public class LegendSignatureView extends FrameLayout {
                 h.value.setText(formatWholeNumber(l.y[index]));
                 h.signature.setText(l.name);
                 if (l.colorKey >= 0 && Theme.hasThemeKey(l.colorKey)) {
-                    h.value.setTextColor(Theme.getColor(l.colorKey));
+                    h.value.setTextColor(Theme.getColor(l.colorKey, resourcesProvider));
                 } else {
                     h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.colorDark : l.color);
                 }
-                h.signature.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                h.signature.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
 
                 if (showPercentage && h.percentage != null) {
                     h.percentage.setVisibility(VISIBLE);
-                    h.percentage.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    h.percentage.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
                     float v = lines.get(i).line.y[index] / (float) sum;
                     if (v < 0.1f && v != 0f) {
                         h.percentage.setText(String.format(Locale.ENGLISH, "%.1f%s", (100f * v), "%"));

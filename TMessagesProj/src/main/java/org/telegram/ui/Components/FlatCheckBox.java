@@ -30,11 +30,11 @@ public class FlatCheckBox extends View {
 
     int colorTextActive;
 
-    int HEIGHT = AndroidUtilities.dp(36);
+    int HEIGHT = AndroidUtilities.dp(37);
     int INNER_PADDING = AndroidUtilities.dp(22);
     int TRANSLETE_TEXT = AndroidUtilities.dp(8);
 
-    int P = AndroidUtilities.dp(2);
+    int P = AndroidUtilities.dp(2.5f);
 
     RectF rectF = new RectF();
 
@@ -113,7 +113,7 @@ public class FlatCheckBox extends View {
 
         if (getMeasuredWidth() != lastW) {
             rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-            rectF.inset(P + outLinePaint.getStrokeWidth() / 2, P + outLinePaint.getStrokeWidth() / 2 + AndroidUtilities.dp(2));
+            rectF.inset(P + outLinePaint.getStrokeWidth() / 2, P + outLinePaint.getStrokeWidth() / 2);
         }
     }
 

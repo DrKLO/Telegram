@@ -40,6 +40,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -160,7 +161,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                         if (view instanceof SharedPhotoVideoCell2) {
                             boolean isStory = ((MediaAdapter) adapter).isStories;
                             if (isStory) {
-                                TLRPC.StoryItem storyItem = new TLRPC.TL_storyItem();
+                                TL_stories.StoryItem storyItem = new TL_stories.TL_storyItem();
                                 storyItem.dialogId = itemInner.file.dialogId;
                                 storyItem.id = Objects.hash(itemInner.file.file.getAbsolutePath());
                                 storyItem.attachPath = itemInner.file.file.getAbsolutePath();

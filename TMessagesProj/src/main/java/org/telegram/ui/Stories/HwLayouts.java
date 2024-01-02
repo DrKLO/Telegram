@@ -5,6 +5,7 @@ import static org.telegram.messenger.SharedConfig.getDevicePerformanceClass;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;

@@ -8,11 +8,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -34,6 +36,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.RLottieDrawable;
 
 public class AcceptDeclineView extends View {
 
@@ -76,15 +79,23 @@ public class AcceptDeclineView extends View {
 
     boolean retryMod;
     Drawable rippleDrawable;
-    private boolean screenWasWakeup;
     Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    Drawable arrowDrawable;
-
-    float arrowProgress;
+    private RLottieDrawable callAcceptDrawable;
+    private final ImageWithWavesView.AvatarWavesDrawable avatarWavesDrawable;
+    private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public AcceptDeclineView(@NonNull Context context) {
         super(context);
+        avatarWavesDrawable = new ImageWithWavesView.AvatarWavesDrawable(AndroidUtilities.dp(45), AndroidUtilities.dp(50), AndroidUtilities.dp(8), 4);
+        avatarWavesDrawable.muteToStatic = true;
+        avatarWavesDrawable.muteToStaticProgress = 0f;
+        avatarWavesDrawable.wavesEnter = 0;
+        avatarWavesDrawable.setAmplitude(0);
+
+        maskPaint.setColor(Color.BLACK);
+        maskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         buttonWidth = AndroidUtilities.dp(60);
         acceptDrawable = new FabBackgroundDrawable();
@@ -112,14 +123,15 @@ public class AcceptDeclineView extends View {
         callDrawable = ContextCompat.getDrawable(context, R.drawable.calls_decline).mutate();
         cancelDrawable = ContextCompat.getDrawable(context, R.drawable.ic_close_white).mutate();
         cancelDrawable.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.MULTIPLY));
-
-        acceptCirclePaint.setColor(0x3f45bc4d);
+        callAcceptDrawable = new RLottieDrawable(R.raw.call_accept, "" + R.raw.call_accept, AndroidUtilities.dp(48), AndroidUtilities.dp(48), true, null);
+        callAcceptDrawable.setAutoRepeat(1);
+        callAcceptDrawable.setCustomEndFrame(90);
+        callAcceptDrawable.setMasterParent(this);
+        acceptCirclePaint.setColor(Color.WHITE);
+        acceptCirclePaint.setAlpha(20);
         rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f)));
         rippleDrawable.setCallback(this);
-
-        arrowDrawable = ContextCompat.getDrawable(context, R.drawable.call_arrow_right);
     }
-
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -144,10 +156,11 @@ public class AcceptDeclineView extends View {
                 startX = event.getX();
                 startY = event.getY();
                 if (leftAnimator == null && declineRect.contains((int) event.getX(), (int) event.getY())) {
-                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, 0xFFFF3846);
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, retryMod ? Color.WHITE : 0xFFFF3846);
                     captured = true;
                     leftDrag = true;
                     setPressed(true);
+                    invalidate();
                     return true;
                 }
                 if (rightAnimator == null && acceptRect.contains((int) event.getX(), (int) event.getY())) {
@@ -158,43 +171,12 @@ public class AcceptDeclineView extends View {
                     if (rightAnimator != null) {
                         rightAnimator.cancel();
                     }
+                    invalidate();
                     return true;
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (captured) {
-                    float dx = event.getX() - startX;
-                    if (!startDrag && Math.abs(dx) > touchSlop) {
-                        if (!retryMod) {
-                            startX = event.getX();
-                            dx = 0;
-                            startDrag = true;
-                            setPressed(false);
-                            getParent().requestDisallowInterceptTouchEvent(true);
-                        } else {
-                            setPressed(false);
-                            captured = false;
-                        }
-                    }
-                    if (startDrag) {
-                        if (leftDrag) {
-                            leftOffsetX = dx;
-                            if (leftOffsetX < 0) {
-                                leftOffsetX = 0;
-                            } else if (leftOffsetX > maxOffset) {
-                                leftOffsetX = maxOffset;
-                                dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, 0, 0, 0));
-                            }
-                        } else {
-                            rigthOffsetX = dx;
-                            if (rigthOffsetX > 0) {
-                                rigthOffsetX = 0;
-                            } else if (rigthOffsetX < -maxOffset) {
-                                rigthOffsetX = -maxOffset;
-                                dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, 0, 0, 0));
-                            }
-                        }
-                    }
                     return true;
                 }
                 break;
@@ -212,7 +194,7 @@ public class AcceptDeclineView extends View {
                         animator.start();
                         leftAnimator = animator;
                         if (listener != null) {
-                            if ((!startDrag && Math.abs(dy) < touchSlop && !screenWasWakeup) || leftOffsetX > maxOffset * 0.8f) {
+                            if ((!startDrag && Math.abs(dy) < touchSlop) || leftOffsetX > maxOffset * 0.8f) {
                                 listener.onDecline();
                             }
                         }
@@ -226,7 +208,7 @@ public class AcceptDeclineView extends View {
                         animator.start();
                         rightAnimator = animator;
                         if (listener != null) {
-                            if ((!startDrag && Math.abs(dy) < touchSlop && !screenWasWakeup) || -rigthOffsetX > maxOffset * 0.8f) {
+                            if ((!startDrag && Math.abs(dy) < touchSlop) || -rigthOffsetX > maxOffset * 0.8f) {
                                 listener.onAccept();
                             }
                         }
@@ -238,7 +220,6 @@ public class AcceptDeclineView extends View {
                 setPressed(false);
                 break;
         }
-
         return false;
     }
 
@@ -275,67 +256,32 @@ public class AcceptDeclineView extends View {
             invalidate();
         }
 
-
-        float k = 0.6f;
-        if (screenWasWakeup && !retryMod) {
-
-            arrowProgress += 16 / 1500f;
-            if (arrowProgress > 1) {
-                arrowProgress = 0;
-            }
-
-            int cY = (int) (AndroidUtilities.dp(40) + buttonWidth / 2f);
-            float startX = AndroidUtilities.dp(46) + buttonWidth + AndroidUtilities.dp(8);
-            float endX = getMeasuredWidth() / 2f - AndroidUtilities.dp(8);
-
-            float lineLength = AndroidUtilities.dp(10);
-
-            float stepProgress = (1f - k) / 3f;
-            for (int i = 0; i < 3; i++) {
-                int x = (int) (startX + (endX - startX - lineLength) / 3 * i);
-
-                float alpha = 0.5f;
-                float startAlphaFrom = i * stepProgress;
-                if (arrowProgress > startAlphaFrom && arrowProgress < startAlphaFrom + k) {
-                    float p = (arrowProgress - startAlphaFrom) / k;
-                    if (p > 0.5) p = 1f - p;
-                    alpha = 0.5f + p;
-                }
-                canvas.save();
-                canvas.clipRect(leftOffsetX + AndroidUtilities.dp(46) + buttonWidth / 2,0,getMeasuredHeight(),getMeasuredWidth() >> 1);
-                arrowDrawable.setAlpha((int) (255 * alpha));
-                arrowDrawable.setBounds(x, cY - arrowDrawable.getIntrinsicHeight() / 2, x + arrowDrawable.getIntrinsicWidth(), cY + arrowDrawable.getIntrinsicHeight() / 2);
-                arrowDrawable.draw(canvas);
-                canvas.restore();
-
-                x = (int) (getMeasuredWidth() - (startX + (endX - startX - lineLength) / 3 * i));
-                canvas.save();
-                canvas.clipRect(getMeasuredWidth() >> 1, 0, rigthOffsetX + getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth / 2, getMeasuredHeight());
-                canvas.rotate(180, x - arrowDrawable.getIntrinsicWidth() / 2f, cY);
-                arrowDrawable.setBounds(x - arrowDrawable.getIntrinsicWidth(), cY - arrowDrawable.getIntrinsicHeight() / 2, x, cY + arrowDrawable.getIntrinsicHeight() / 2);
-                arrowDrawable.draw(canvas);
-                canvas.restore();
-            }
-            invalidate();
-        }
         bigRadius += AndroidUtilities.dp(8) * 0.005f;
         canvas.save();
         canvas.translate(0, AndroidUtilities.dp(40));
         canvas.save();
-        canvas.translate(leftOffsetX + AndroidUtilities.dp(46), 0);
-        declineDrawable.draw(canvas);
-
-        canvas.save();
-        canvas.translate(buttonWidth / 2f - declineLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(8));
-        declineLayout.draw(canvas);
-        declineRect.set(AndroidUtilities.dp(46), AndroidUtilities.dp(40), AndroidUtilities.dp(46) + buttonWidth, AndroidUtilities.dp(40) + buttonWidth);
-        canvas.restore();
+        canvas.translate(rigthOffsetX + getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth, 0);
 
         if (retryMod) {
-            cancelDrawable.draw(canvas);
+            canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), linePaint, Canvas.ALL_SAVE_FLAG);
+            declineDrawable.draw(canvas);
+            if (cancelDrawable instanceof BitmapDrawable) {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) cancelDrawable;
+                if (bitmapDrawable.getBitmap() != null) {
+                    canvas.drawBitmap(bitmapDrawable.getBitmap(), null, bitmapDrawable.getBounds(), maskPaint);
+                }
+            }
+            canvas.restore();
         } else {
+            declineDrawable.draw(canvas);
             callDrawable.draw(canvas);
         }
+
+        canvas.save();
+        canvas.translate(buttonWidth / 2f - declineLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(4));
+        declineLayout.draw(canvas);
+        declineRect.set(getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth, AndroidUtilities.dp(40), getMeasuredWidth() - AndroidUtilities.dp(46), AndroidUtilities.dp(40) + buttonWidth);
+        canvas.restore();
 
         if (leftDrag) {
             rippleDrawable.setBounds(AndroidUtilities.dp(4), AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4));
@@ -345,30 +291,30 @@ public class AcceptDeclineView extends View {
         canvas.restore();
 
         canvas.save();
-        canvas.translate(rigthOffsetX + getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth, 0);
+        canvas.translate(leftOffsetX + AndroidUtilities.dp(46), 0);
         if (!retryMod) {
-            canvas.drawCircle(buttonWidth / 2f, buttonWidth / 2f, buttonWidth / 2f - AndroidUtilities.dp(4) + bigRadius, acceptCirclePaint);
-            canvas.drawCircle(buttonWidth / 2f, buttonWidth / 2f, buttonWidth / 2f - AndroidUtilities.dp(4) + smallRadius, acceptCirclePaint);
+            avatarWavesDrawable.update();
+            int cx = (int) (buttonWidth / 2f);
+            avatarWavesDrawable.draw(canvas, cx, cx, this);
         }
         acceptDrawable.draw(canvas);
-        acceptRect.set(getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth, AndroidUtilities.dp(40), getMeasuredWidth() - AndroidUtilities.dp(46), AndroidUtilities.dp(40) + buttonWidth);
+        acceptRect.set(AndroidUtilities.dp(46), AndroidUtilities.dp(40), AndroidUtilities.dp(46) + buttonWidth, AndroidUtilities.dp(40) + buttonWidth);
 
         if (retryMod) {
             canvas.save();
-            canvas.translate(buttonWidth / 2f - retryLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(8));
+            canvas.translate(buttonWidth / 2f - retryLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(4));
             retryLayout.draw(canvas);
             canvas.restore();
         } else {
             canvas.save();
-            canvas.translate(buttonWidth / 2f - acceptLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(8));
+            canvas.translate(buttonWidth / 2f - acceptLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(4));
             acceptLayout.draw(canvas);
             canvas.restore();
         }
 
         canvas.save();
-        canvas.translate(-AndroidUtilities.dp(1), AndroidUtilities.dp(1));
-        canvas.rotate(-135, callDrawable.getBounds().centerX(), callDrawable.getBounds().centerY());
-        callDrawable.draw(canvas);
+        canvas.translate(AndroidUtilities.dp(6), AndroidUtilities.dp(6));
+        callAcceptDrawable.draw(canvas);
         canvas.restore();
 
         if (!leftDrag) {
@@ -378,6 +324,10 @@ public class AcceptDeclineView extends View {
 
         canvas.restore();
         canvas.restore();
+
+        if (captured) {
+            invalidate();
+        }
     }
 
     public void setListener(Listener listener) {
@@ -390,14 +340,41 @@ public class AcceptDeclineView extends View {
         void onDecline();
     }
 
+    private ValueAnimator callAnimator;
+
     public void setRetryMod(boolean retryMod) {
         this.retryMod = retryMod;
         if (retryMod) {
             declineDrawable.setColor(Color.WHITE);
-            screenWasWakeup = false;
         } else {
-            declineDrawable.setColor(0xFFe61e44);
+            callAcceptDrawable.start();
+            avatarWavesDrawable.setShowWaves(true, this);
+            declineDrawable.setColor(0xFFF01D2C);
+
+            callAnimator = ValueAnimator.ofInt(0, 60, 0, 0, 60, 0, 0, 0, 0);
+            callAnimator.addUpdateListener(a -> {
+                avatarWavesDrawable.setAmplitude((int) a.getAnimatedValue());
+            });
+
+            callAnimator.setDuration(1500);
+            callAnimator.setRepeatMode(ValueAnimator.RESTART);
+            callAnimator.setRepeatCount(ValueAnimator.INFINITE);
+            callAnimator.start();
         }
+    }
+
+    public void stopAnimations() {
+        if (callAnimator != null) {
+            callAnimator.cancel();
+            callAnimator = null;
+            callAcceptDrawable.stop();
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        stopAnimations();
     }
 
     @Override
@@ -407,7 +384,7 @@ public class AcceptDeclineView extends View {
     }
 
     @Override
-    public boolean verifyDrawable(Drawable drawable) {
+    public boolean verifyDrawable(@NonNull Drawable drawable) {
         return rippleDrawable == drawable || super.verifyDrawable(drawable);
     }
 
@@ -488,10 +465,6 @@ public class AcceptDeclineView extends View {
             };
         }
         return accessibilityNodeProvider;
-    }
-
-    public void setScreenWasWakeup(boolean screenWasWakeup) {
-        this.screenWasWakeup = screenWasWakeup;
     }
 
     public static abstract class AcceptDeclineAccessibilityNodeProvider extends AccessibilityNodeProvider {

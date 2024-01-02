@@ -1100,7 +1100,7 @@ public class DataUsage2Activity extends BaseFragment {
 
     @Override
     public boolean isSwipeBackEnabled(MotionEvent event) {
-        if (event.getY() <= ActionBar.getCurrentActionBarHeight() + AndroidUtilities.dp(48)) {
+        if (event != null && event.getY() <= ActionBar.getCurrentActionBarHeight() + AndroidUtilities.dp(48)) {
             return true;
         }
         return pager.getCurrentPosition() == 0;

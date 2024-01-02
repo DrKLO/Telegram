@@ -22,6 +22,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -53,6 +54,7 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
@@ -80,7 +82,7 @@ public abstract class BaseFragment {
     protected boolean fragmentBeginToShow;
     private boolean removingFromStack;
     private PreviewDelegate previewDelegate;
-    private Theme.ResourcesProvider resourceProvider;
+    protected Theme.ResourcesProvider resourceProvider;
     public StoryViewer storyViewer;
     public StoryViewer overlayStoryViewer;
 
@@ -816,16 +818,19 @@ public abstract class BaseFragment {
         }
         BottomSheet[] bottomSheet = new BottomSheet[1];
         INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(getParentActivity(), () -> bottomSheet[0])};
+        actionBarLayout[0].setIsSheet(true);
         LaunchActivity.instance.sheetFragmentsStack.add(actionBarLayout[0]);
+        fragment.onTransitionAnimationStart(true, false);
         bottomSheet[0] = new BottomSheet(getParentActivity(), true, fragment.getResourceProvider()) {
             {
-                drawNavigationBar = true;
+                occupyNavigationBar = params != null && params.occupyNavigationBar;
+                drawNavigationBar = !occupyNavigationBar;
                 actionBarLayout[0].setFragmentStack(new ArrayList<>());
                 actionBarLayout[0].addFragmentToStack(fragment);
-                actionBarLayout[0].setIsSheet(true);
                 actionBarLayout[0].showLastFragment();
                 actionBarLayout[0].getView().setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
-                containerView = actionBarLayout[0].getView();
+                ViewGroup view = actionBarLayout[0].getView();
+                containerView = view;
                 setApplyBottomPadding(false);
                 setOnDismissListener(dialog -> {
                     fragment.onPause();
@@ -839,12 +844,32 @@ public abstract class BaseFragment {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
+                actionBarLayout[0].setWindow(bottomSheet[0].getWindow());
+                if (params == null || !params.occupyNavigationBar) {
+                    fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
+                } else {
+                    AndroidUtilities.setLightNavigationBar(bottomSheet[0].getWindow(), true);
+                }
                 AndroidUtilities.setLightStatusBar(getWindow(), fragment.isLightStatusBar());
+                fragment.onBottomSheetCreated();
             }
 
             @Override
             protected boolean canDismissWithSwipe() {
+                return false;
+            }
+
+            @Override
+            protected boolean canSwipeToBack(MotionEvent event) {
+                if (params != null && params.transitionFromLeft && actionBarLayout[0] != null && actionBarLayout[0].getFragmentStack().size() <= 1) {
+                    if (actionBarLayout[0].getFragmentStack().size() == 1) {
+                        BaseFragment lastFragment = actionBarLayout[0].getFragmentStack().get(0);
+                        if (!lastFragment.isSwipeBackEnabled(event)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
                 return false;
             }
 
@@ -871,8 +896,20 @@ public abstract class BaseFragment {
 
             @Override
             public void onOpenAnimationEnd() {
+                fragment.onTransitionAnimationEnd(true, false);
                 if (params != null && params.onOpenAnimationFinished != null) {
                     params.onOpenAnimationFinished.run();
+                }
+            }
+
+            @Override
+            protected void onInsetsChanged() {
+                if (actionBarLayout[0] != null) {
+                    for (BaseFragment baseFragment : actionBarLayout[0].getFragmentStack()) {
+                        if (baseFragment.getFragmentView() != null) {
+                            baseFragment.getFragmentView().requestLayout();
+                        }
+                    }
                 }
             }
         };
@@ -881,6 +918,7 @@ public abstract class BaseFragment {
             bottomSheet[0].transitionFromRight(params.transitionFromLeft);
         }
         fragment.setParentDialog(bottomSheet[0]);
+        bottomSheet[0].setOpenNoDelay(true);
         bottomSheet[0].show();
 
         return actionBarLayout;
@@ -907,7 +945,7 @@ public abstract class BaseFragment {
     }
 
     public int getNavigationBarColor() {
-        int color = Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider);
+        int color = Theme.getColor(Theme.key_windowBackgroundGray, getResourceProvider());
         if (storyViewer != null && storyViewer.attachedToParent()) {
             return storyViewer.getNavigationBarColor(color);
         }
@@ -1058,7 +1096,7 @@ public abstract class BaseFragment {
     public StoryViewer getOrCreateStoryViewer() {
         if (storyViewer == null) {
             storyViewer = new StoryViewer(this);
-            if (parentLayout.isSheet()) {
+            if (parentLayout != null && parentLayout.isSheet()) {
                 storyViewer.fromBottomSheet = true;
             }
         }
@@ -1072,12 +1110,17 @@ public abstract class BaseFragment {
         return overlayStoryViewer;
     }
 
+    public void onBottomSheetCreated() {
+
+    }
+
     public static class BottomSheetParams {
         public boolean transitionFromLeft;
         public boolean allowNestedScroll;
         public Runnable onDismiss;
         public Runnable onOpenAnimationFinished;
         public Runnable onPreFinished;
+        public boolean occupyNavigationBar;
     }
 
 }

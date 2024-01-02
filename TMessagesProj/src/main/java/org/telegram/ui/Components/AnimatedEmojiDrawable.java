@@ -70,6 +70,8 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC = 13;
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW = 14;
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 = 15;
+    public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB = 16;
+    public static final int CACHE_TYPE_EMOJI_CALL = 17;
 
     public int rawDrawIndex;
 
@@ -462,7 +464,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[2].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[2].descent())) * 1.15f / AndroidUtilities.density);
         } else if (this.cacheType == STANDARD_LOTTIE_FRAME) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[0].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[0].descent())) * 1.15f / AndroidUtilities.density);
-        } else if (cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2) {
+        } else if (cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 || cacheType == CACHE_TYPE_EMOJI_CALL) {
             sizedp = 100;
         } else {
             sizedp = 34;
@@ -520,17 +522,17 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         imageReceiver.setVideoThumbIsSame(true);
         boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !liteModeKeyboard || cacheType == CACHE_TYPE_ALERT_PREVIEW && !liteModeReactions;
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC) {
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB) {
             onlyStaticPreview = true;
         }
         String filter = sizedp + "_" + sizedp;
         if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_d_nostream";
         }
-        if (cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
+        if (cacheType != CACHE_TYPE_EMOJI_CALL && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_pcache";
         }
-        if (cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2) {
+        if (cacheType != CACHE_TYPE_EMOJI_CALL && cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2) {
             filter += "_compress";
         }
         if (cacheType == STANDARD_LOTTIE_FRAME) {
@@ -572,21 +574,29 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
         } else {
             if (onlyStaticPreview || (!liteModeKeyboard && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW)) {
+                ImageLocation thumbLocation = null;
+                if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB) {
+                    thumbLocation = ImageLocation.getForDocument(thumb, document);
+                }
                 if ("video/webm".equals(document.mime_type)) {
-                    imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 } else if (MessageObject.isAnimatedStickerDocument(document, true)) {
-                    imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 } else {
-                    imageReceiver.setImage(ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, thumbLocation, null, thumbDrawable, document.size, null, document, 1);
                 }
             } else {
-                imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                ImageLocation thumbLocation = null;
+                if (cacheType == CACHE_TYPE_EMOJI_CALL) {
+                    thumbLocation = ImageLocation.getForDocument(thumb, document);
+                }
+                imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, thumbLocation, null, thumbDrawable, document.size, null, document, 1);
             }
         }
 
         updateAutoRepeat(imageReceiver);
 
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
             imageReceiver.setLayerNum(7);
         }
         if (cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
@@ -617,6 +627,8 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setAutoRepeatCount(2);
         } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
             imageReceiver.setAutoRepeatCount(1);
+        } else if (cacheType == CACHE_TYPE_EMOJI_CALL){
+            imageReceiver.setAutoRepeatCount(0);
         }
     }
 
@@ -961,6 +973,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         private Integer lastColor;
+        private int colorFilterLastColor;
         private ColorFilter colorFilter;
 
         public void setColor(Integer color) {
@@ -968,7 +981,9 @@ public class AnimatedEmojiDrawable extends Drawable {
                 return;
             }
             lastColor = color;
-            colorFilter = color != null ? new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) : null;
+            if (color == null || colorFilterLastColor != color) {
+                colorFilter = color != null ? new PorterDuffColorFilter(colorFilterLastColor = color, PorterDuff.Mode.SRC_IN) : null;
+            }
         }
 
         public Integer getColor() {
@@ -1048,13 +1063,17 @@ public class AnimatedEmojiDrawable extends Drawable {
             return drawables[0];
         }
 
-        public void set(long documentId, boolean animated) {
-            set(documentId, cacheType, animated);
+        public boolean set(long documentId, boolean animated) {
+            return set(documentId, cacheType, animated);
         }
 
-        public void set(long documentId, int cacheType, boolean animated) {
+        public void resetAnimation() {
+            changeProgress.set(1, true);
+        }
+
+        public boolean set(long documentId, int cacheType, boolean animated) {
             if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
-                return;
+                return false;
             }
             if (animated) {
                 changeProgress.set(0, true);
@@ -1082,8 +1101,10 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
+            return true;
         }
 
         public void set(TLRPC.Document document, boolean animated) {
@@ -1128,6 +1149,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
         }
@@ -1159,6 +1181,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             lastColor = null;
             colorFilter = null;
+            colorFilterLastColor = 0;
             play();
             invalidate();
         }

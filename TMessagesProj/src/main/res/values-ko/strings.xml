@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; 알림</string>
     <string name="OneResult">1건의 결과</string>
     <string name="VideoQualityIsTooLow">압축 설정을 바꾸기엔 동영상 품질이 너무 낮습니다.</string>
-    <string name="TextSelectionHit">**낱말**을 꾹 잡고선, 커서를 움직여 복사할 글을 조정하세요.</string>
     <string name="CardNumberCopied">카드 번호가 클립보드에 복사되었습니다</string>
     <string name="CopyCardNumber">복사</string>
     <string name="DiceInfo2">대화방에 **:dice:**를 보내어 주사위를 굴리세요.</string>

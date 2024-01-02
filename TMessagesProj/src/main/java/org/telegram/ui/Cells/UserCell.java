@@ -53,8 +53,8 @@ import org.telegram.ui.Stories.StoriesUtilities;
 public class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public BackupImageView avatarImageView;
-    private SimpleTextView nameTextView;
-    private SimpleTextView statusTextView;
+    protected SimpleTextView nameTextView;
+    protected SimpleTextView statusTextView;
     private ImageView imageView;
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
@@ -62,9 +62,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     private TextView addButton;
     private Drawable premiumDrawable;
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
-    private Theme.ResourcesProvider resourcesProvider;
+    protected Theme.ResourcesProvider resourcesProvider;
 
-    private AvatarDrawable avatarDrawable;
+    protected AvatarDrawable avatarDrawable;
     private boolean storiable;
     private Object currentObject;
     private TLRPC.EncryptedChat encryptedChat;
@@ -505,14 +505,14 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                     ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
                     return;
                 }
-                avatarDrawable.setInfo(currentUser);
+                avatarDrawable.setInfo(currentAccount, currentUser);
                 if (currentUser.status != null) {
                     lastStatus = currentUser.status.expires;
                 } else {
                     lastStatus = 0;
                 }
             } else if (currentChat != null) {
-                avatarDrawable.setInfo(currentChat);
+                avatarDrawable.setInfo(currentAccount, currentChat);
             } else if (currentName != null) {
                 avatarDrawable.setInfo(currentId, currentName.toString(), null);
             } else {

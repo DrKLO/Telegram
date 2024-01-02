@@ -39,6 +39,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 
 
 @SuppressWarnings("FieldCanBeLocal")
+@Deprecated // use HintView2 instead
 public class HintView extends FrameLayout {
 
     public static final int TYPE_NOSOUND = 0;

@@ -17,6 +17,7 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.style.RelativeSizeSpan;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -34,7 +35,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -77,7 +78,7 @@ public class LimitPreviewView extends LinearLayout {
     private int animateIncreaseWidth;
     float limitIconRotation;
     public boolean isStatistic;
-
+    public boolean invalidationEnabled = true;
 
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, Theme.ResourcesProvider resourcesProvider) {
         this(context, icon, currentValue, premiumLimit, .5f, resourcesProvider);
@@ -100,7 +101,7 @@ public class LimitPreviewView extends LinearLayout {
 
             setIconValue(currentValue, false);
 
-            limitIcon.setPadding(dp(24), dp(6), dp(24), dp(14));
+            limitIcon.setPadding(dp(19), dp(6), dp(19), dp(14));
             addView(limitIcon, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.LEFT));
         }
 
@@ -194,7 +195,7 @@ public class LimitPreviewView extends LinearLayout {
                 }
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), paint);
                 canvas.restore();
-                if (staticGradient == null) {
+                if (staticGradient == null && invalidationEnabled) {
                     invalidate();
                 }
                 super.dispatchDraw(canvas);
@@ -269,7 +270,8 @@ public class LimitPreviewView extends LinearLayout {
 
     public void setIconValue(int currentValue, boolean animated) {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-        spannableStringBuilder.append("d ").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+        spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+        spannableStringBuilder.append(" ").setSpan(new RelativeSizeSpan(0.8f), 1, 2, 0);
         spannableStringBuilder.append(Integer.toString(currentValue));
         limitIcon.setText(spannableStringBuilder, animated);
         limitIcon.requestLayout();
@@ -451,7 +453,7 @@ public class LimitPreviewView extends LinearLayout {
         premiumLocked = true;
     }
 
-    public void setBoosts(TLRPC.TL_stories_boostsStatus boosts, boolean boosted) {
+    public void setBoosts(TL_stories.TL_premium_boostsStatus boosts, boolean boosted) {
         int k = boosts.current_level_boosts;
         boolean isZeroLevelBoosts = boosts.current_level_boosts == boosts.boosts;
         if ((isZeroLevelBoosts && boosted) || boosts.next_level_boosts == 0) {
@@ -471,18 +473,16 @@ public class LimitPreviewView extends LinearLayout {
         premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         defaultText.setTextColor(Color.WHITE);
 
-
         setIconValue(boosts.boosts, false);
         isBoostsStyle = true;
     }
 
-    public void increaseCurrentValue(int value, int maxValue) {
+    public void increaseCurrentValue(int boosts, int value, int maxValue) {
         currentValue++;
         percent = MathUtils.clamp(value / (float) maxValue, 0f, 1f);
         animateIncrease = true;
         animateIncreaseWidth = width1;
-
-        setIconValue(currentValue, true);
+        setIconValue(boosts, true);
         limitsContainer.requestLayout();
         requestLayout();
     }
@@ -559,7 +559,9 @@ public class LimitPreviewView extends LinearLayout {
                 PremiumGradient.getInstance().getMainGradientPaint().setPathEffect(pathEffect);
                 canvas.drawPath(path, PremiumGradient.getInstance().getMainGradientPaint());
                 PremiumGradient.getInstance().getMainGradientPaint().setPathEffect(null);
-                invalidate();
+                if (invalidationEnabled) {
+                    invalidate();
+                }
             }
 
             float x = (getMeasuredWidth() - textLayout.getWidth()) / 2f;
@@ -679,6 +681,9 @@ public class LimitPreviewView extends LinearLayout {
 
 
         void createAnimationLayoutsDiff(CharSequence oldText) {
+            if (textLayout == null) {
+                return;
+            }
             animatedLayouts.clear();
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
             int directionCount = 0;

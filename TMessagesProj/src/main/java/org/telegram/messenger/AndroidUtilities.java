@@ -209,6 +209,7 @@ public class AndroidUtilities {
 
     public final static int REPLACING_TAG_TYPE_LINK = 0;
     public final static int REPLACING_TAG_TYPE_BOLD = 1;
+    public final static int REPLACING_TAG_TYPE_LINKBOLD = 2;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
@@ -453,7 +454,11 @@ public class AndroidUtilities {
         return null;
     }
 
-    public static CharSequence replaceSingleTag(String str, Runnable runnable) {
+    public static SpannableStringBuilder premiumText(String str, Runnable runnable) {
+        return replaceSingleTag(str, -1, REPLACING_TAG_TYPE_LINKBOLD, runnable);
+    }
+
+    public static SpannableStringBuilder replaceSingleTag(String str, Runnable runnable) {
         return replaceSingleTag(str, -1, 0, runnable);
     }
 
@@ -473,7 +478,7 @@ public class AndroidUtilities {
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         if (index >= 0) {
-            if (type == REPLACING_TAG_TYPE_LINK) {
+            if (type == REPLACING_TAG_TYPE_LINK || type == REPLACING_TAG_TYPE_LINKBOLD) {
                 spannableStringBuilder.setSpan(new ClickableSpan() {
 
                     @Override
@@ -482,6 +487,9 @@ public class AndroidUtilities {
                         ds.setUnderlineText(false);
                         if (colorKey >= 0) {
                             ds.setColor(Theme.getColor(colorKey, resourcesProvider));
+                        }
+                        if (type == REPLACING_TAG_TYPE_LINKBOLD) {
+                            ds.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                         }
                     }
 
@@ -503,6 +511,41 @@ public class AndroidUtilities {
                     }
                 }, index, index + len, 0);
             }
+        }
+        return spannableStringBuilder;
+    }
+
+    public static SpannableStringBuilder replaceSingleLink(String str, int color) {
+        return replaceSingleLink(str, color, null);
+    }
+
+    public static SpannableStringBuilder replaceSingleLink(String str, int color, Runnable onClick) {
+        int startIndex = str.indexOf("**");
+        int endIndex = str.indexOf("**", startIndex + 1);
+        str = str.replace("**", "");
+        int index = -1;
+        int len = 0;
+        if (startIndex >= 0 && endIndex >= 0 && endIndex - startIndex > 2) {
+            len = endIndex - startIndex - 2;
+            index = startIndex;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        if (index >= 0) {
+            spannableStringBuilder.setSpan(new ClickableSpan() {
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                    ds.setColor(color);
+                }
+
+                @Override
+                public void onClick(@NonNull View view) {
+                    if (onClick != null) {
+                        onClick.run();
+                    }
+                }
+            }, index, index + len, 0);
         }
         return spannableStringBuilder;
     }
@@ -593,8 +636,11 @@ public class AndroidUtilities {
             if (child.getVisibility() != View.VISIBLE || child instanceof PeerStoriesView && child != onlyThisView) {
                 continue;
             }
-            if (child instanceof StoryMediaAreasView.AreaView && !((StoryMediaAreasView) container).hasSelected() && (x < dp(60) || x > container.getWidth() - dp(60))) {
-                continue;
+            if (child instanceof StoryMediaAreasView.AreaView) {
+                StoryMediaAreasView areasView = (StoryMediaAreasView) container;
+                if (!(areasView.hasSelected() && (x < dp(60) || x > container.getWidth() - dp(60))) && !areasView.hasAreaAboveAt(x, y)) {
+                    continue;
+                }
             }
             child.getHitRect(AndroidUtilities.rectTmp2);
             if (AndroidUtilities.rectTmp2.contains((int) x, (int) y) && child.isClickable()) {
@@ -1021,7 +1067,7 @@ public class AndroidUtilities {
     public static int[] calcDrawableColor(Drawable drawable) {
         if (drawable instanceof ChatBackgroundDrawable) {
             ChatBackgroundDrawable chatBackgroundDrawable = (ChatBackgroundDrawable) drawable;
-            return calcDrawableColor(chatBackgroundDrawable.getDrawable());
+            return calcDrawableColor(chatBackgroundDrawable.getDrawable(true));
         }
         int bitmapColor = 0xff000000;
         int[] result = new int[4];
@@ -2930,6 +2976,9 @@ public class AndroidUtilities {
     }
 
     public static void shakeViewSpring(View view, float shiftDp, Runnable endCallback) {
+        if (view == null) {
+            return;
+        }
         int shift = dp(shiftDp);
         if (view.getTag(R.id.spring_tag) != null) {
             ((SpringAnimation) view.getTag(R.id.spring_tag)).cancel();
@@ -3454,7 +3503,7 @@ public class AndroidUtilities {
         return stringBuilder.toString();
     }
 
-    public static final String[] numbersSignatureArray = {"", "K", "M", "G", "T", "P"};
+    public static final String[] numbersSignatureArray = {"", "K", "M", "B", "T", "P"};
 
     public static String formatWholeNumber(int v, int dif) {
         if (v == 0) {
@@ -4632,6 +4681,20 @@ public class AndroidUtilities {
         }
     }
 
+    public static void setLightStatusBar(View view, boolean enable) {
+        if (view != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int flags = view.getSystemUiVisibility();
+            if (((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) > 0) != enable) {
+                if (enable) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                } else {
+                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                }
+                view.setSystemUiVisibility(flags);
+            }
+        }
+    }
+
     public static void setLightNavigationBar(Window window, boolean enable) {
         if (window != null) {
             setLightNavigationBar(window.getDecorView(), enable);
@@ -4830,6 +4893,10 @@ public class AndroidUtilities {
     }
 
     public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, boolean animated) {
+        updateViewVisibilityAnimated(view, show, scaleFactor, goneOnHide, 1f, animated);
+    }
+
+    public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, float maxAlpha, boolean animated) {
         if (view == null) {
             return;
         }
@@ -4841,7 +4908,7 @@ public class AndroidUtilities {
             view.animate().setListener(null).cancel();
             view.setVisibility(show ? View.VISIBLE : (goneOnHide ? View.GONE : View.INVISIBLE));
             view.setTag(show ? 1 : null);
-            view.setAlpha(1f);
+            view.setAlpha(maxAlpha);
             view.setScaleX(1f);
             view.setScaleY(1f);
         } else if (show && view.getTag() == null) {
@@ -4852,7 +4919,7 @@ public class AndroidUtilities {
                 view.setScaleX(scaleFactor);
                 view.setScaleY(scaleFactor);
             }
-            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.animate().alpha(maxAlpha).scaleY(1f).scaleX(1f).setDuration(150).start();
             view.setTag(1);
         } else if (!show && view.getTag() != null) {
             view.animate().setListener(null).cancel();
@@ -5049,7 +5116,7 @@ public class AndroidUtilities {
         );
     }
 
-    public static CharSequence replaceCharSequence(String what, CharSequence from, CharSequence obj) {
+    public static SpannableStringBuilder replaceCharSequence(String what, CharSequence from, CharSequence obj) {
         SpannableStringBuilder spannableStringBuilder;
         if (from instanceof SpannableStringBuilder) {
             spannableStringBuilder = (SpannableStringBuilder) from;
@@ -5178,14 +5245,14 @@ public class AndroidUtilities {
                 canvas.restore();
             }
             Utilities.stackBlurBitmap(bitmap, Math.max((int) amount, Math.max(w, h) / 180));
-            AndroidUtilities.runOnUIThread(() -> {
+//            AndroidUtilities.runOnUIThread(() -> {
                 onBitmapDone.run(bitmap);
-            });
+//            });
         } catch (Exception e) {
             FileLog.e(e);
-            AndroidUtilities.runOnUIThread(() -> {
+//            AndroidUtilities.runOnUIThread(() -> {
                 onBitmapDone.run(null);
-            });
+//            });
         }
         //   });
     }
@@ -5280,6 +5347,10 @@ public class AndroidUtilities {
 
     public static boolean intersect1d(int x1, int x2, int y1, int y2) {
         return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
+    }
+
+    public static boolean intersect1dInclusive(int x1, int x2, int y1, int y2) {
+        return Math.max(x1, x2) >= Math.min(y1, y2) && Math.max(y1, y2) >= Math.min(x1, x2);
     }
 
     public static String getSysInfoString(String path) {
@@ -5400,6 +5471,9 @@ public class AndroidUtilities {
     }
 
     public static void forEachViews(RecyclerView recyclerView, Consumer<View> consumer) {
+        if (recyclerView == null) {
+            return;
+        }
         for (int i = 0; i < recyclerView.getChildCount(); i++) {
             consumer.accept(recyclerView.getChildAt(i));
         }
@@ -5487,5 +5561,19 @@ public class AndroidUtilities {
             return;
         }
         context.setTheme(Theme.isCurrentThemeDark() && open ? R.style.Theme_TMessages_Dark : R.style.Theme_TMessages);
+    }
+
+    private static Boolean isHonor;
+    public static boolean isHonor() {
+        if (isHonor == null) {
+            try {
+                final String brand = Build.BRAND.toLowerCase();
+                isHonor = brand.contains("huawei") || brand.contains("honor");
+            } catch (Exception e) {
+                FileLog.e(e);
+                isHonor = false;
+            }
+        }
+        return isHonor;
     }
 }

@@ -29,12 +29,13 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.VoIPService;
@@ -469,15 +470,13 @@ public class GroupCallUserCell extends FrameLayout {
         if (id > 0) {
             currentUser = accountInstance.getMessagesController().getUser(id);
             currentChat = null;
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(accountInstance.getCurrentAccount(), currentUser);
 
             nameTextView.setText(UserObject.getUserName(currentUser));
             if (currentUser != null && currentUser.verified) {
                 rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
-            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
-                rightDrawable.set(((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id, animated);
-            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
-                rightDrawable.set(((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id, animated);
+            } else if (currentUser != null && DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status) != 0) {
+                rightDrawable.set(DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status), animated);
             } else if (currentUser != null && currentUser.premium) {
                 if (premiumDrawable == null) {
                     premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
@@ -509,12 +508,14 @@ public class GroupCallUserCell extends FrameLayout {
         } else {
             currentChat = accountInstance.getMessagesController().getChat(-id);
             currentUser = null;
-            avatarDrawable.setInfo(currentChat);
+            avatarDrawable.setInfo(accountInstance.getCurrentAccount(), currentChat);
 
             if (currentChat != null) {
                 nameTextView.setText(currentChat.title);
                 if (currentChat.verified) {
                     rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
+                } else if (currentChat != null && DialogObject.getEmojiStatusDocumentId(currentChat.emoji_status) != 0) {
+                    rightDrawable.set(DialogObject.getEmojiStatusDocumentId(currentChat.emoji_status), animated);
                 } else {
                     rightDrawable.set((Drawable) null, animated);
                 }

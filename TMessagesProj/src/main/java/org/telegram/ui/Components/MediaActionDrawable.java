@@ -39,9 +39,9 @@ public class MediaActionDrawable extends Drawable {
     public static final int ICON_UPDATE = 15;
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public Paint paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paint3 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF rect = new RectF();
     private ColorFilter colorFilter;
@@ -274,7 +274,7 @@ public class MediaActionDrawable extends Drawable {
         }
     }
 
-    private void applyShaderMatrix(boolean path) {
+    public void applyShaderMatrix(boolean path) {
         if (messageDrawable != null && messageDrawable.hasGradient() && !hasOverlayImage) {
             android.graphics.Rect bounds = getBounds();
             Shader shader = messageDrawable.getGradientShader();

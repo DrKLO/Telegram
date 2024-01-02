@@ -1,19 +1,11 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,13 +31,11 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
@@ -412,7 +401,7 @@ public class MessageSeenView extends FrameLayout {
             updateStatus(false);
 
             if (object != null) {
-                avatarDrawable.setInfo(object);
+                avatarDrawable.setInfo(currentAccount, object);
                 ImageLocation imageLocation = ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL);
                 avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, object);
                 nameView.setText(ContactsController.formatName(object));

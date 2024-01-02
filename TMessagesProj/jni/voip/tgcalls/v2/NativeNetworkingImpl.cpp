@@ -186,8 +186,8 @@ private:
 
 }
 
-NativeNetworkingImpl::ConnectionDescription::CandidateDescription NativeNetworkingImpl::connectionDescriptionFromCandidate(cricket::Candidate const &candidate) {
-    NativeNetworkingImpl::ConnectionDescription::CandidateDescription result;
+InstanceNetworking::ConnectionDescription::CandidateDescription InstanceNetworking::connectionDescriptionFromCandidate(cricket::Candidate const &candidate) {
+    InstanceNetworking::ConnectionDescription::CandidateDescription result;
     
     result.type = candidate.type();
     result.protocol = candidate.protocol();
@@ -569,8 +569,8 @@ void NativeNetworkingImpl::transportRouteChanged(absl::optional<rtc::NetworkRout
 void NativeNetworkingImpl::candidatePairChanged(cricket::CandidatePairChangeEvent const &event) {
     ConnectionDescription connectionDescription;
     
-    connectionDescription.local = connectionDescriptionFromCandidate(event.selected_candidate_pair.local);
-    connectionDescription.remote = connectionDescriptionFromCandidate(event.selected_candidate_pair.remote);
+    connectionDescription.local = InstanceNetworking::connectionDescriptionFromCandidate(event.selected_candidate_pair.local);
+    connectionDescription.remote = InstanceNetworking::connectionDescriptionFromCandidate(event.selected_candidate_pair.remote);
     
     if (!_currentConnectionDescription || _currentConnectionDescription.value() != connectionDescription) {
         _currentConnectionDescription = std::move(connectionDescription);

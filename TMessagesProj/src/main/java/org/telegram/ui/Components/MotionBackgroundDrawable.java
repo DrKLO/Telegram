@@ -58,7 +58,7 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private int translationY;
 
-    private boolean isPreview;
+    public boolean isPreview;
 
     public float posAnimationProgress = 1.0f;
     private int phase;
@@ -115,6 +115,8 @@ public class MotionBackgroundDrawable extends Drawable {
     private float indeterminateSpeedScale = 1f;
     private boolean isIndeterminateAnimation;
     private Paint overrideBitmapPaint;
+    private int bitmapWidth = 60;
+    private int bitmapHeight = 80;
 
     public MotionBackgroundDrawable() {
         super();
@@ -122,11 +124,19 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, boolean preview) {
-        this(c1, c2, c3 ,c4, 0, preview);
+        this(c1, c2, c3, c4, 0, preview);
     }
 
     public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, int rotation, boolean preview) {
+        this(c1, c2, c3, c4, rotation, preview, false);
+    }
+
+    public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, int rotation, boolean preview, boolean square) {
         super();
+        if (square) {
+            bitmapWidth = 80;
+            bitmapHeight = 80;
+        }
         isPreview = preview;
         setColors(c1, c2, c3, c4, rotation, false);
         init();
@@ -134,13 +144,13 @@ public class MotionBackgroundDrawable extends Drawable {
 
     @SuppressLint("NewApi")
     private void init() {
-        currentBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+        currentBitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
         for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
-            gradientToBitmap[i] = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+            gradientToBitmap[i] = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
         }
         gradientCanvas = new Canvas(currentBitmap);
 
-        gradientFromBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+        gradientFromBitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
         gradientFromCanvas = new Canvas(gradientFromBitmap);
 
         Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);

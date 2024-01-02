@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.opengl.EGL14;
@@ -87,12 +89,12 @@ public class SpoilerEffect2 {
     private static int getSize() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
-                return Math.min(900, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .9f));
+                return Math.min(1280, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * 1.0f));
             case SharedConfig.PERFORMANCE_CLASS_AVERAGE:
-                return Math.min(512, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .6f));
+                return Math.min(900, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * .8f));
             default:
             case SharedConfig.PERFORMANCE_CLASS_LOW:
-                return Math.min(400, (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .5f));
+                return Math.min(720, (int) ((AndroidUtilities.displaySize.x + AndroidUtilities.displaySize.y) / 2f * .7f));
         }
     }
 
@@ -170,6 +172,10 @@ public class SpoilerEffect2 {
     }
 
     public void draw(Canvas canvas, View view, int w, int h, float alpha) {
+        draw(canvas, view, w, h, alpha, false);
+    }
+
+    public void draw(Canvas canvas, View view, int w, int h, float alpha, boolean toBitmap) {
         if (canvas == null || view == null) {
             return;
         }
@@ -192,8 +198,18 @@ public class SpoilerEffect2 {
         if ((index % 4) == 3) {
             canvas.scale(1, -1, ow / 2f, oh / 2f);
         }
-        textureView.setAlpha(alpha);
-        textureView.draw(canvas);
+        if (toBitmap) {
+            Bitmap bitmap = textureView.getBitmap();
+            if (bitmap != null) {
+                Paint paint = new Paint(Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+                paint.setColor(Color.WHITE);
+                canvas.drawBitmap(bitmap, 0, 0, paint);
+                bitmap.recycle();
+            }
+        } else {
+            textureView.setAlpha(alpha);
+            textureView.draw(canvas);
+        }
         canvas.restore();
     }
 
@@ -541,19 +557,19 @@ public class SpoilerEffect2 {
 
         private void die() {
             if (particlesData != null) {
-                GLES31.glDeleteBuffers(2, particlesData, 0);
+                try { GLES31.glDeleteBuffers(2, particlesData, 0); } catch (Exception e) { FileLog.e(e); };
                 particlesData = null;
             }
             if (drawProgram != 0) {
-                GLES31.glDeleteProgram(drawProgram);
+                try { GLES31.glDeleteProgram(drawProgram); } catch (Exception e) { FileLog.e(e); };
                 drawProgram = 0;
             }
             if (egl != null) {
-                egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
-                egl.eglDestroySurface(eglDisplay, eglSurface);
-                egl.eglDestroyContext(eglDisplay, eglContext);
+                try { egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT); } catch (Exception e) { FileLog.e(e); };
+                try { egl.eglDestroySurface(eglDisplay, eglSurface); } catch (Exception e) { FileLog.e(e); };
+                try { egl.eglDestroyContext(eglDisplay, eglContext); } catch (Exception e) { FileLog.e(e); };
             }
-            surfaceTexture.release();
+            try { surfaceTexture.release(); } catch (Exception e) { FileLog.e(e); };
 
             checkGlErrors();
         }

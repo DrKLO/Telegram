@@ -35,7 +35,14 @@ public class LineViewData {
 
     public float alpha = 1f;
 
+    private Theme.ResourcesProvider resourcesProvider;
+
     public LineViewData(ChartData.Line line) {
+        this(line, null);
+    }
+
+    public LineViewData(ChartData.Line line, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         this.line = line;
 
         paint.setStrokeWidth(AndroidUtilities.dpf2(2));
@@ -61,9 +68,9 @@ public class LineViewData {
 
     public void updateColors() {
         if (line.colorKey >= 0 && Theme.hasThemeKey(line.colorKey)) {
-            lineColor = Theme.getColor(line.colorKey);
+            lineColor = Theme.getColor(line.colorKey, resourcesProvider);
         } else {
-            int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+            int color = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
             boolean darkBackground = ColorUtils.calculateLuminance(color) < 0.5f;
             lineColor = darkBackground ? line.colorDark : line.color;
         }

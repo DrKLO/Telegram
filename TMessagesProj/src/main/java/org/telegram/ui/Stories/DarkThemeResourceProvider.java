@@ -10,11 +10,7 @@ import android.util.SparseIntArray;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
-import org.checkerframework.checker.units.qual.C;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeColors;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -29,7 +25,13 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
     ColorFilter animatedEmojiColorFilter;
 
     public DarkThemeResourceProvider() {
-
+        sparseIntArray.put(Theme.key_statisticChartSignature, -1214008894);
+        sparseIntArray.put(Theme.key_statisticChartSignatureAlpha, -1946157057);
+        sparseIntArray.put(Theme.key_statisticChartHintLine, 452984831);
+        sparseIntArray.put(Theme.key_statisticChartActiveLine, -665229191);
+        sparseIntArray.put(Theme.key_statisticChartInactivePickerChart, -667862461);
+        sparseIntArray.put(Theme.key_statisticChartActivePickerChart, -665229191);
+        sparseIntArray.put(Theme.key_player_actionBarTitle, Color.WHITE);
         sparseIntArray.put(Theme.key_dialogIcon, Color.WHITE);
         sparseIntArray.put(Theme.key_text_RedBold, 0xFFDB4646);
         sparseIntArray.put(Theme.key_dialogButton, -10177041);
@@ -79,7 +81,6 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_messageLinkOut, -5316609);
         sparseIntArray.put(Theme.key_chat_messagePanelText, -1);
         sparseIntArray.put(Theme.key_chat_messagePanelIcons, Color.WHITE);
-        sparseIntArray.put(Theme.key_chat_messagePanelIcons, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_messagePanelBackground, ColorUtils.setAlphaComponent(Color.BLACK, 122));
         sparseIntArray.put(Theme.key_dialogBackground, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_dialogBackgroundGray, 0xff000000);
@@ -97,7 +98,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_emojiPanelShadowLine, ColorUtils.setAlphaComponent(Color.BLACK, 30));
         sparseIntArray.put(Theme.key_chat_emojiPanelBackspace, ColorUtils.setAlphaComponent(Color.WHITE, 125));
         sparseIntArray.put(Theme.key_divider, 0xFF000000);
-        sparseIntArray.put(Theme.key_dialogFloatingButton, -15033089);
+        sparseIntArray.put(Theme.key_chat_editMediaButton, -15033089);
         sparseIntArray.put(Theme.key_dialogFloatingIcon, 0xffffffff);
         sparseIntArray.put(Theme.key_graySection, 0xFF292929);
         sparseIntArray.put(Theme.key_graySectionText, -8158332);
@@ -111,12 +112,19 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_actionBarDefaultSubmenuSeparator, 0xF2151515);
         sparseIntArray.put(Theme.key_chat_emojiPanelStickerSetNameHighlight, Color.WHITE);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText4, 0xFF808080);
+        sparseIntArray.put(Theme.key_voipgroup_nameText, 0xffffffff);
+        sparseIntArray.put(Theme.key_voipgroup_inviteMembersBackground, 0xff222A33);
+        sparseIntArray.put(Theme.key_chats_secretName, -9316522);
+        sparseIntArray.put(Theme.key_chats_name, -1446156);
+        sparseIntArray.put(Theme.key_chat_serviceBackground, -2110438831);
 
         sparseIntArray.put(Theme.key_switchTrack, 0xFF636363);
         sparseIntArray.put(Theme.key_switchTrackChecked, 0xFF1A9CFF);
-        sparseIntArray.put(Theme.key_dialogRoundCheckBox, -10177041);
+        sparseIntArray.put(Theme.key_dialogRoundCheckBox, 0xFF1A9CFF);
+        sparseIntArray.put(Theme.key_dialogRadioBackgroundChecked, 0xFF1A9CFF);
         sparseIntArray.put(Theme.key_dialogTextBlue2, 0xFF1A9CFF);
         sparseIntArray.put(Theme.key_color_red, -832444);
+        sparseIntArray.put(Theme.key_checkbox, -12692893);
         sparseIntArray.put(Theme.key_checkboxDisabled, 0xff626262);
         sparseIntArray.put(Theme.key_dialogRoundCheckBoxCheck, 0xffffffff);
         sparseIntArray.put(Theme.key_dialogButtonSelector, 436207615);

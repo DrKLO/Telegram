@@ -9,6 +9,8 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -133,7 +135,7 @@ public class PremiumGradient {
     }
 
     public Paint getMainGradientPaint() {
-        if (MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+        if (MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
             if (lockedPremiumPaint == null) {
                 lockedPremiumPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             }
@@ -180,6 +182,14 @@ public class PremiumGradient {
             this.colorKey3 = colorKey3;
             this.colorKey4 = colorKey4;
             this.colorKey5 = colorKey5;
+        }
+
+        public void gradientMatrix(Rect rect) {
+            gradientMatrix(rect.left, rect.top, rect.right, rect.bottom, 0, 0);
+        }
+
+        public void gradientMatrix(RectF rect) {
+            gradientMatrix((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom, 0, 0);
         }
 
         public void gradientMatrix(int x, int y, int x1, int y1, float xOffset, float yOffset) {

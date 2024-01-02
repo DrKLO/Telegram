@@ -488,7 +488,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         if (o instanceof MediaController.PhotoEntry) {
                             MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
                             if (a == 0) {
-                                photoEntry1.caption = PhotoViewer.getInstance().captionForAllMedia;
+                                CharSequence[] caption = new CharSequence[] { PhotoViewer.getInstance().captionForAllMedia };
+                                photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(caption, false);
+                                photoEntry1.caption = caption[0];
                                 if (parentAlert.checkCaption(photoEntry1.caption)) {
                                     return;
                                 }
@@ -504,6 +506,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             cameraPhotos.clear();
             selectedPhotosOrder.clear();
             selectedPhotos.clear();
+        }
+
+        @Override
+        public boolean allowCaption() {
+            return !parentAlert.isPhotoPicker;
         }
     };
 
@@ -775,6 +782,20 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (position < 0 || position >= arrayList.size()) {
                     return;
                 }
+                if (parentAlert.delegate != null && parentAlert.delegate.selectItemOnClicking() && arrayList.get(position) instanceof MediaController.PhotoEntry) {
+                    MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(position);
+                    selectedPhotos.clear();
+                    if (photoEntry != null) {
+                        addToSelectedPhotos(photoEntry, -1);
+                    }
+                    parentAlert.applyCaption();
+                    parentAlert.delegate.didPressedButton(7, true, true, 0, false);
+                    selectedPhotos.clear();
+                    cameraPhotos.clear();
+                    selectedPhotosOrder.clear();
+                    selectedPhotos.clear();
+                    return;
+                }
                 PhotoViewer.getInstance().setParentActivity(fragment, resourcesProvider);
                 PhotoViewer.getInstance().setParentAlert(parentAlert);
                 PhotoViewer.getInstance().setMaxSelectedPhotos(parentAlert.maxSelectedPhotos, parentAlert.allowOrder);
@@ -829,7 +850,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
                 int finalPosition = position;
                 BaseFragment finalFragment = fragment;
-                AndroidUtilities.runOnUIThread(()-> {
+                AndroidUtilities.runOnUIThread(() -> {
                     int avatarType = type;
                     if (parentAlert.isPhotoPicker) {
                         PhotoViewer.getInstance().setParentActivity(finalFragment);
@@ -1149,7 +1170,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     photoEntry.canDeleteAfter = true;
                     openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
                 });
-                cameraView.startTakePictureAnimation();
+                cameraView.startTakePictureAnimation(true);
             }
 
 
@@ -1439,6 +1460,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     boolean isAnimatedSticker = MessageObject.isAnimatedStickerDocument(document, true);
                     mediaEntity.subType |= isAnimatedSticker ? 1 : 4;
                 }
+                if (MessageObject.isTextColorEmoji(document)) {
+                    mediaEntity.color = 0xFFFFFFFF;
+                    mediaEntity.subType |= 8;
+                }
 
                 photoEntry.editedInfo.mediaEntities = new ArrayList<>();
                 photoEntry.editedInfo.mediaEntities.add(mediaEntity);
@@ -1448,6 +1473,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             selectedPhotos.put(-1, photoEntry);
             selectedPhotosOrder.add(-1);
             parentAlert.delegate.didPressedButton(7, true, false, 0, false);
+            if (!avatarConstructorFragment.finishOnDone) {
+                if (parentAlert.baseFragment != null) {
+                    parentAlert.baseFragment.removeSelfFromStack();
+                }
+                avatarConstructorFragment.finishFragment();
+            }
         });
     }
 
@@ -1890,6 +1921,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             @Override
             public boolean canCaptureMorePhotos() {
                 return parentAlert.maxSelectedPhotos != 1;
+            }
+
+            @Override
+            public boolean allowCaption() {
+                return !parentAlert.isPhotoPicker;
             }
         }, chatActivity);
         PhotoViewer.getInstance().setAvatarFor(parentAlert.getAvatarFor());
@@ -3146,16 +3182,24 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     void applyCaption(CharSequence text) {
         for (int a = 0; a < selectedPhotosOrder.size(); a++) {
             if (a == 0) {
-                Object o = selectedPhotos.get(selectedPhotosOrder.get(a));
+                final Object key = selectedPhotosOrder.get(a);
+                Object o = selectedPhotos.get(key);
                 if (o instanceof MediaController.PhotoEntry) {
                     MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
-                    photoEntry1.caption = text;
-                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[]{text}, false);
+                    photoEntry1 = photoEntry1.clone();
+                    CharSequence[] caption = new CharSequence[] { text };
+                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(caption, false);
+                    photoEntry1.caption = caption[0];
+                    o = photoEntry1;
                 } else if (o instanceof MediaController.SearchImage) {
                     MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
-                    photoEntry1.caption = text;
-                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[]{text}, false);
+                    photoEntry1 = photoEntry1.clone();
+                    CharSequence[] caption = new CharSequence[] { text };
+                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(caption, false);
+                    photoEntry1.caption = caption[0];
+                    o = photoEntry1;
                 }
+                selectedPhotos.put(key, o);
             }
         }
     }

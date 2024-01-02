@@ -452,7 +452,7 @@ public class TopicsController extends BaseController {
         if (topicId != 0) {
             TLRPC.TL_forumTopic topic = findTopic(chat.id, topicId);
             if (topic != null) {
-                return ForumUtilities.getTopicSpannedName(topic, paint, drawableToSet);
+                return ForumUtilities.getTopicSpannedName(topic, paint, drawableToSet, false);
             }
         }
         return null;
@@ -654,6 +654,17 @@ public class TopicsController extends BaseController {
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             if (err != null) {
 
+            }
+        });
+    }
+
+    public void toggleViewForumAsMessages(long channelId, boolean enabled) {
+        TLRPC.TL_channels_toggleViewForumAsMessages request = new TLRPC.TL_channels_toggleViewForumAsMessages();
+        request.channel_id = getMessagesController().getInputChannel(channelId);
+        request.enabled = enabled;
+        getConnectionsManager().sendRequest(request, (res, err) -> {
+            if (res != null) {
+                getMessagesController().processUpdates((TLRPC.Updates) res, false);
             }
         });
     }

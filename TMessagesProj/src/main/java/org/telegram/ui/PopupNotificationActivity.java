@@ -328,7 +328,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void onTextChanged(CharSequence text, boolean big) {
+            public void onTextChanged(CharSequence text, boolean big, boolean fromDraft) {
 
             }
 
@@ -395,7 +395,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void needStartRecordVideo(int state, boolean notify, int scheduleDate) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl) {
 
             }
 

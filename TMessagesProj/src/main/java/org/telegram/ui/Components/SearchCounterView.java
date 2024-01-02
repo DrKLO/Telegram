@@ -154,9 +154,9 @@ public class SearchCounterView extends View {
                 int cutIndexNew = 0;
                 int cutIndexOld = 0;
                 if (countStartIndex > 0) {
-                    oldSpannableStr.setSpan(new EmptyStubSpan(), 0, countStartIndex, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    newSpannableStr.setSpan(new EmptyStubSpan(), 0, countStartIndex, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    stableStr.setSpan(new EmptyStubSpan(), 0, countStartIndex, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    oldSpannableStr.setSpan(new EmptyStubSpan(), 0, Math.min(oldSpannableStr.length(), countStartIndex), SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    newSpannableStr.setSpan(new EmptyStubSpan(), 0, Math.min(newSpannableStr.length(), countStartIndex), SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stableStr.setSpan(new EmptyStubSpan(), 0, Math.min(stableStr.length(), countStartIndex), SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 for (int i = countStartIndex; i < n; i++) {
                     if (!newEndReached && !oldEndReached) {

@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.Manifest;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
@@ -20,6 +22,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
@@ -50,6 +54,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -58,8 +63,10 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -86,6 +93,7 @@ import org.telegram.ui.Cells.ThemePreviewMessagesCell;
 import org.telegram.ui.Cells.ThemeTypeCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -94,6 +102,7 @@ import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.ThemeEditorView;
 
 import java.io.File;
@@ -146,6 +155,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int bluetoothScoRow;
     private int enableAnimationsRow;
     private int settings2Row;
+    private int changeUserColor;
 
     private int contactsReimportRow;
     private int contactsSortRow;
@@ -271,7 +281,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             setWillNotDraw(false);
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(16));
+            textPaint.setTextSize(dp(16));
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
@@ -309,7 +319,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         protected void onDraw(Canvas canvas) {
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
-            canvas.drawText("" + SharedConfig.fontSize, getMeasuredWidth() - AndroidUtilities.dp(39), AndroidUtilities.dp(28), textPaint);
+            canvas.drawText("" + SharedConfig.fontSize, getMeasuredWidth() - dp(39), dp(28), textPaint);
         }
 
         @Override
@@ -355,7 +365,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             setWillNotDraw(false);
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(16));
+            textPaint.setTextSize(dp(16));
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
@@ -387,7 +397,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         protected void onDraw(Canvas canvas) {
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
-            canvas.drawText("" + SharedConfig.bubbleRadius, getMeasuredWidth() - AndroidUtilities.dp(39), AndroidUtilities.dp(28), textPaint);
+            canvas.drawText("" + SharedConfig.bubbleRadius, getMeasuredWidth() - dp(39), dp(28), textPaint);
         }
 
         @Override
@@ -539,6 +549,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         textSizeRow = -1;
         backgroundRow = -1;
+        changeUserColor = -1;
         settingsRow = -1;
         customTabsRow = -1;
         directShareRow = -1;
@@ -613,6 +624,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             textSizeHeaderRow = rowCount++;
             textSizeRow = rowCount++;
             backgroundRow = rowCount++;
+            changeUserColor = rowCount++;
             newThemeInfoRow = rowCount++;
             themeHeaderRow = rowCount++;
 
@@ -884,7 +896,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         if (currentType == THEME_TYPE_THEMES_BROWSER) {
             actionBar.setTitle(LocaleController.getString("BrowseThemes", R.string.BrowseThemes));
             ActionBarMenu menu = actionBar.createMenu();
-            sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, dp(28), dp(28), true, null);
             if (lastIsDarkTheme) {
                 sunDrawable.setCurrentFrame(sunDrawable.getFramesCount() - 1);
             } else {
@@ -1039,6 +1051,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
             } else if (position == backgroundRow) {
                 presentFragment(new WallpapersListActivity(WallpapersListActivity.TYPE_ALL));
+            } else if (position == changeUserColor) {
+                presentFragment(new PeerColorActivity(0).setOnApplied(this));
             } else if (position == sendByEnterRow) {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 boolean send = preferences.getBoolean("send_by_enter", false);
@@ -1100,7 +1114,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 for (int i = 0; i < items.length; ++i) {
                     final int index = i;
                     RadioColorCell cell = new RadioColorCell(getParentActivity());
-                    cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                    cell.setPadding(dp(4), 0, dp(4), 0);
                     cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                     cell.setTextAndValue(items[index], index == SharedConfig.distanceSystemType);
                     cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
@@ -1133,7 +1147,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
 
                 RadioColorCell cell = new RadioColorCell(getParentActivity());
-                cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                cell.setPadding(dp(4), 0, dp(4), 0);
                 cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                 cell.setTextAndValue(LocaleController.getString(R.string.MicrophoneForVoiceMessagesBuiltIn), !SharedConfig.recordViaSco);
                 cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
@@ -1151,7 +1165,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 });
 
                 cell = new RadioColorCell(getParentActivity());
-                cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                cell.setPadding(dp(4), 0, dp(4), 0);
                 cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                 cell.setTextAndText2AndValue(LocaleController.getString(R.string.MicrophoneForVoiceMessagesScoIfConnected), LocaleController.getString(R.string.MicrophoneForVoiceMessagesScoHint), SharedConfig.recordViaSco);
                 cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
@@ -1214,7 +1228,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     ((TextCheckCell) view).setChecked(SharedConfig.chatBlurEnabled());
                 }
             } else if (position == nightThemeRow) {
-                if (LocaleController.isRTL && x <= AndroidUtilities.dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - AndroidUtilities.dp(76)) {
+                if (LocaleController.isRTL && x <= dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - dp(76)) {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
                     if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_NONE) {
                         Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_AUTOMATIC;
@@ -1578,37 +1592,37 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(62), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(62), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(dp(62), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(62), MeasureSpec.EXACTLY));
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
-            float radius = AndroidUtilities.dp(20);
+            float radius = dp(20);
 
             float cx = 0.5f * getMeasuredWidth();
             float cy = 0.5f * getMeasuredHeight();
 
             paint.setColor(currentAccent.accentColor);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(AndroidUtilities.dp(3));
+            paint.setStrokeWidth(dp(3));
             paint.setAlpha(Math.round(255f * checkedState));
             canvas.drawCircle(cx, cy, radius - 0.5f * paint.getStrokeWidth(), paint);
 
             paint.setAlpha(255);
             paint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(cx, cy, radius - AndroidUtilities.dp(5) * checkedState, paint);
+            canvas.drawCircle(cx, cy, radius - dp(5) * checkedState, paint);
 
             if (checkedState != 0) {
                 paint.setColor(0xffffffff);
                 paint.setAlpha(Math.round(255f * checkedState));
-                canvas.drawCircle(cx, cy, AndroidUtilities.dp(2), paint);
-                canvas.drawCircle(cx - AndroidUtilities.dp(7) * checkedState, cy, AndroidUtilities.dp(2), paint);
-                canvas.drawCircle(cx + AndroidUtilities.dp(7) * checkedState, cy, AndroidUtilities.dp(2), paint);
+                canvas.drawCircle(cx, cy, dp(2), paint);
+                canvas.drawCircle(cx - dp(7) * checkedState, cy, dp(2), paint);
+                canvas.drawCircle(cx + dp(7) * checkedState, cy, dp(2), paint);
             }
 
             if (currentAccent.myMessagesAccentColor != 0 && checkedState != 1) {
                 paint.setColor(currentAccent.myMessagesAccentColor);
-                canvas.drawCircle(cx, cy, AndroidUtilities.dp(8) * (1.0f - checkedState), paint);
+                canvas.drawCircle(cx, cy, dp(8) * (1.0f - checkedState), paint);
             }
         }
 
@@ -1642,8 +1656,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
-                    MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(62), MeasureSpec.EXACTLY),
-                    MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(62), MeasureSpec.EXACTLY)
+                    MeasureSpec.makeMeasureSpec(dp(62), MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(dp(62), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1652,8 +1666,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             float centerX = 0.5f * getMeasuredWidth();
             float centerY = 0.5f * getMeasuredHeight();
 
-            float radSmall = AndroidUtilities.dp(5);
-            float radRing = AndroidUtilities.dp(20) - radSmall;
+            float radSmall = dp(5);
+            float radRing = dp(20) - radSmall;
 
             paint.setStyle(Paint.Style.FILL);
 
@@ -1768,6 +1782,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private final static int TYPE_DEFAULT_THEMES_PREVIEW = 17;
         private final static int TYPE_SAVE_TO_GALLERY = 19;
         private final static int TYPE_APP_ICON = 20;
+        private final static int TYPE_CHOOSE_COLOR = 21;
 
         private Context mContext;
         private boolean first = true;
@@ -1786,7 +1801,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             int type = holder.getItemViewType();
             return type == 0 || type == TYPE_TEXT_SETTING || type == TYPE_THEME_TYPE || type == TYPE_TEXT_CHECK ||
                     type == TYPE_NIGHT_THEME || type == TYPE_THEME_LIST || type == TYPE_THEME_ACCENT_LIST ||
-                    type == TYPE_TEXT_PREFERENCE || type == 18 || type == TYPE_APP_ICON;
+                    type == TYPE_TEXT_PREFERENCE || type == 18 || type == TYPE_APP_ICON || type == TYPE_CHOOSE_COLOR;
         }
 
         private void showOptionsForTheme(Theme.ThemeInfo themeInfo) {
@@ -2008,7 +2023,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     themesHorizontalListCell.setDrawDivider(hasThemeAccents);
                     themesHorizontalListCell.setFocusable(false);
                     view = themesHorizontalListCell;
-                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(148)));
+                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(148)));
                     break;
                 case TYPE_THEME_ACCENT_LIST: {
                     RecyclerListView accentsListView = new TintRecyclerListView(mContext) {
@@ -2024,7 +2039,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     accentsListView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     accentsListView.setItemAnimator(null);
                     accentsListView.setLayoutAnimation(null);
-                    accentsListView.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(11), 0);
+                    accentsListView.setPadding(dp(11), 0, dp(11), 0);
                     accentsListView.setClipToPadding(false);
                     LinearLayoutManager accentsLayoutManager = new LinearLayoutManager(mContext);
                     accentsLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
@@ -2053,7 +2068,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                         int left = view1.getLeft();
                         int right = view1.getRight();
-                        int extra = AndroidUtilities.dp(52);
+                        int extra = dp(52);
                         if (left - extra < 0) {
                             accentsListView.smoothScrollBy(left - extra, 0);
                         } else if (right + extra > accentsListView.getMeasuredWidth()) {
@@ -2134,7 +2149,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     });
 
                     view = accentsListView;
-                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(62)));
+                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(62)));
                     break;
                 }
                 case TYPE_BUBBLE_RADIUS:
@@ -2150,7 +2165,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view = new SwipeGestureSettingsView(mContext, currentAccount);
                     break;
                 case TYPE_THEME_PREVIEW:
-                    ThemePreviewMessagesCell messagesCell = new ThemePreviewMessagesCell(mContext, parentLayout, 0);
+                    ThemePreviewMessagesCell messagesCell = new ThemePreviewMessagesCell(mContext, parentLayout, 0) {
+                        @Override
+                        public boolean onInterceptTouchEvent(MotionEvent e) {
+                            if (getParent() != null && getParent().getParent() != null) {
+                                getParent().getParent().requestDisallowInterceptTouchEvent(canScrollHorizontally(-1));
+                            }
+                            return super.onInterceptTouchEvent(e);
+                        }
+                    };
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                         messagesCell.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
                     }
@@ -2167,6 +2190,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     break;
                 case TYPE_APP_ICON:
                     view = new AppIconsSelectorCell(mContext, ThemeActivity.this, currentAccount);
+                    break;
+                case TYPE_CHOOSE_COLOR:
+                    view = new PeerColorActivity.ChangeNameColorCell(currentAccount, 0, mContext, getResourceProvider());
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2367,7 +2393,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         pos = adapter.getItemCount() - 1;
                     }
                     if (pos != -1) {
-                        ((LinearLayoutManager) accentsList.getLayoutManager()).scrollToPositionWithOffset(pos, listView.getMeasuredWidth() / 2 - AndroidUtilities.dp(42));
+                        ((LinearLayoutManager) accentsList.getLayoutManager()).scrollToPositionWithOffset(pos, listView.getMeasuredWidth() / 2 - dp(42));
                     }
                     break;
                 }
@@ -2377,7 +2403,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     if (position == backgroundRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        cell.setTextAndIcon(LocaleController.getString("ChangeChatBackground", R.string.ChangeChatBackground), R.drawable.msg_background, false);
+                        cell.setTextAndIcon(LocaleController.getString(R.string.ChangeChatBackground), R.drawable.msg_background, changeUserColor >= 0);
                     } else if (position == editThemeRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
@@ -2417,6 +2443,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     }
 
                     break;
+                }
+                case TYPE_CHOOSE_COLOR: {
+                    PeerColorActivity.ChangeNameColorCell cell = (PeerColorActivity.ChangeNameColorCell) holder.itemView;
+                    cell.set(getUserConfig().getCurrentUser());
                 }
             }
         }
@@ -2485,6 +2515,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return TYPE_SAVE_TO_GALLERY;
             } else if (position == appIconSelectorRow) {
                 return TYPE_APP_ICON;
+            } else if (position == changeUserColor) {
+                return TYPE_CHOOSE_COLOR;
             }
             return TYPE_TEXT_SETTING;
         }
@@ -2500,7 +2532,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, TextSizeCell.class, BubbleRadiusCell.class, ChatListCell.class, NotificationsCheckCell.class, ThemesHorizontalListCell.class, TintRecyclerListView.class, TextCell.class, SwipeGestureSettingsView.class, DefaultThemesPreviewCell.class, AppIconsSelectorCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, TextSizeCell.class, BubbleRadiusCell.class, ChatListCell.class, NotificationsCheckCell.class, ThemesHorizontalListCell.class, TintRecyclerListView.class, TextCell.class, PeerColorActivity.ChangeNameColorCell.class, SwipeGestureSettingsView.class, DefaultThemesPreviewCell.class, AppIconsSelectorCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
@@ -2594,24 +2626,32 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 View ch = listView.getChildAt(i);
                 if (ch instanceof AppIconsSelectorCell) {
                     ((AppIconsSelectorCell) ch).getAdapter().notifyDataSetChanged();
+                } else if (ch instanceof PeerColorActivity.ChangeNameColorCell) {
+                    ((PeerColorActivity.ChangeNameColorCell) ch).updateColors();
                 }
             }
             for (int i = 0; i < listView.getCachedChildCount(); i++) {
                 View ch = listView.getCachedChildAt(i);
                 if (ch instanceof AppIconsSelectorCell) {
                     ((AppIconsSelectorCell) ch).getAdapter().notifyDataSetChanged();
+                } else if (ch instanceof PeerColorActivity.ChangeNameColorCell) {
+                    ((PeerColorActivity.ChangeNameColorCell) ch).updateColors();
                 }
             }
             for (int i = 0; i < listView.getHiddenChildCount(); i++) {
                 View ch = listView.getHiddenChildAt(i);
                 if (ch instanceof AppIconsSelectorCell) {
                     ((AppIconsSelectorCell) ch).getAdapter().notifyDataSetChanged();
+                } else if (ch instanceof PeerColorActivity.ChangeNameColorCell) {
+                    ((PeerColorActivity.ChangeNameColorCell) ch).updateColors();
                 }
             }
             for (int i = 0; i < listView.getAttachedScrapChildCount(); i++) {
                 View ch = listView.getAttachedScrapChildAt(i);
                 if (ch instanceof AppIconsSelectorCell) {
                     ((AppIconsSelectorCell) ch).getAdapter().notifyDataSetChanged();
+                } else if (ch instanceof PeerColorActivity.ChangeNameColorCell) {
+                    ((PeerColorActivity.ChangeNameColorCell) ch).updateColors();
                 }
             }
         }, Theme.key_windowBackgroundWhiteHintText, Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteValueText));

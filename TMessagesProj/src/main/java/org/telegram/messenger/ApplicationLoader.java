@@ -17,6 +17,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -27,6 +29,7 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
@@ -38,6 +41,8 @@ import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.ForegroundDetector;
+import org.telegram.ui.Components.Premium.boosts.BoostRepository;
+import org.telegram.ui.IUpdateLayout;
 import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
@@ -123,7 +128,15 @@ public class ApplicationLoader extends Application {
         return applicationLoaderInstance.isHuaweiBuild();
     }
 
+    public static boolean isStandaloneBuild() {
+        return applicationLoaderInstance.isStandalone();
+    }
+
     protected boolean isHuaweiBuild() {
+        return false;
+    }
+
+    protected boolean isStandalone() {
         return false;
     }
 
@@ -249,7 +262,11 @@ public class ApplicationLoader extends Application {
 
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("app start time = " + (startTime = SystemClock.elapsedRealtime()));
-            FileLog.d("buildVersion = " + BuildVars.BUILD_VERSION);
+            try {
+                FileLog.d("buildVersion = " + ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0).versionCode);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
         if (applicationContext == null) {
             applicationContext = getApplicationContext();
@@ -339,6 +356,13 @@ public class ApplicationLoader extends Application {
         return true;
     }
 
+    private static long lastNetworkCheck = -1;
+    private static void ensureCurrentNetworkGet() {
+        final long now = System.currentTimeMillis();
+        ensureCurrentNetworkGet(now - lastNetworkCheck > 5000);
+        lastNetworkCheck = now;
+    }
+
     private static void ensureCurrentNetworkGet(boolean force) {
         if (force || currentNetworkInfo == null) {
             try {
@@ -403,6 +427,11 @@ public class ApplicationLoader extends Application {
             FileLog.e(e);
         }
         return false;
+    }
+
+    public static boolean useLessData() {
+        ensureCurrentNetworkGet();
+        return BuildVars.DEBUG_PRIVATE_VERSION && (SharedConfig.forceLessData || isConnectionSlow());
     }
 
     public static boolean isConnectionSlow() {
@@ -562,4 +591,13 @@ public class ApplicationLoader extends Application {
     public boolean openApkInstall(Activity activity, TLRPC.Document document) {
         return false;
     }
+
+    public boolean showUpdateAppPopup(Context context, TLRPC.TL_help_appUpdate update, int account) {
+        return false;
+    }
+
+    public IUpdateLayout takeUpdateLayout(Activity activity, ViewGroup sideMenu, ViewGroup sideMenuContainer) {
+        return null;
+    }
+
 }

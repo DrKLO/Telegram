@@ -8,10 +8,12 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.SystemClock;
+import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -591,7 +593,7 @@ public class FlickerLoadingView extends View {
             int radius = AndroidUtilities.dp(23);
             int rectRadius = AndroidUtilities.dp(4);
             while (h <= getMeasuredHeight()) {
-                canvas.drawCircle(checkRtl(paddingLeft + AndroidUtilities.dp(12)) + radius, h + AndroidUtilities.dp(8) + radius, radius, paint);
+                canvas.drawCircle(checkRtl(paddingLeft + AndroidUtilities.dp(12) + radius), h + AndroidUtilities.dp(8) + radius, radius, paint);
 
                 rectF.set(paddingLeft + AndroidUtilities.dp(74), h + AndroidUtilities.dp(12), paddingLeft + AndroidUtilities.dp(260), h + AndroidUtilities.dp(20));
                 checkRtl(rectF);
@@ -600,6 +602,12 @@ public class FlickerLoadingView extends View {
                 rectF.set(paddingLeft + AndroidUtilities.dp(74), h + AndroidUtilities.dp(36), paddingLeft + AndroidUtilities.dp(140), h + AndroidUtilities.dp(42));
                 checkRtl(rectF);
                 canvas.drawRoundRect(rectF, rectRadius, rectRadius, paint);
+
+                if (memberRequestButtonWidth > 0) {
+                    rectF.set(paddingLeft + AndroidUtilities.dp(73), h + AndroidUtilities.dp(62), paddingLeft + AndroidUtilities.dp(73) + memberRequestButtonWidth, h + AndroidUtilities.dp(62 + 32));
+                    checkRtl(rectF);
+                    canvas.drawRoundRect(rectF, rectRadius, rectRadius, paint);
+                }
 
                 h += getCellHeight(getMeasuredWidth());
                 count++;
@@ -911,5 +919,13 @@ public class FlickerLoadingView extends View {
 
     public void setIgnoreHeightCheck(boolean ignore) {
         this.ignoreHeightCheck = ignore;
+    }
+
+    private float memberRequestButtonWidth;
+    public void setMemberRequestButton(boolean isChannel) {
+        TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        paint.setTextSize(AndroidUtilities.dp(14));
+        memberRequestButtonWidth = AndroidUtilities.dp(17 + 17) + paint.measureText(isChannel ? LocaleController.getString("AddToChannel", R.string.AddToChannel) : LocaleController.getString("AddToGroup", R.string.AddToGroup));
     }
 }

@@ -45,6 +45,10 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
         currentResId = resId;
     }
 
+    public Drawable getIcon() {
+        return currentDrawable;
+    }
+
     public void setIcon(Drawable drawable, boolean animated) {
         if (drawable == null) {
             currentDrawable = null;

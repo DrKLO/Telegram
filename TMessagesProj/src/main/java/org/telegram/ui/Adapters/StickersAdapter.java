@@ -20,6 +20,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -101,7 +102,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
                 notifyDataSetChanged();
                 delegate.needChangePanelVisibility(visible = !param.isEmpty());
             }
-        }, true);
+        }, SharedConfig.suggestAnimatedEmoji && UserConfig.getInstance(currentAccount).isPremium());
         if (keywordResults == null || keywordResults.isEmpty()) {
             AndroidUtilities.runOnUIThread(searchRunnable, 1000);
         } else {

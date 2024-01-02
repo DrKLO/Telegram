@@ -8,15 +8,19 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.os.Build;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.widget.EditText;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
 
@@ -29,6 +33,7 @@ public class EditTextEffects extends EditText {
 
     private List<SpoilerEffect> spoilers = new ArrayList<>();
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
+    private ArrayList<QuoteSpan.Block> quoteBlocks = new ArrayList<>();
     private boolean isSpoilersRevealed;
     private boolean shouldRevealSpoilersByTouch = true;
     private SpoilersClickDetector clickDetector;
@@ -37,6 +42,8 @@ public class EditTextEffects extends EditText {
     private int selStart, selEnd;
     private float lastRippleX, lastRippleY;
     private boolean postedSpoilerTimeout;
+    public int quoteColor;
+
     private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiDrawables;
     private ColorFilter animatedEmojiColorFilter;
     public boolean drawAnimatedEmojiDrawables = true;
@@ -143,7 +150,8 @@ public class EditTextEffects extends EditText {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        updateAnimatedEmoji(false);
+        updateAnimatedEmoji(true);
+        invalidateQuotes(false);
     }
 
     @Override
@@ -180,6 +188,7 @@ public class EditTextEffects extends EditText {
             }
         }
         updateAnimatedEmoji(true);
+        invalidateQuotes(true);
         invalidate();
     }
 
@@ -202,7 +211,7 @@ public class EditTextEffects extends EditText {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        updateAnimatedEmoji(false);
+        invalidateQuotes(false);
     }
 
     /**
@@ -251,11 +260,41 @@ public class EditTextEffects extends EditText {
         }
     }
 
+    protected float offsetY;
+
+    public void setOffsetY(float offset) {
+        this.offsetY = offset;
+        invalidate();
+    }
+
+    public float getOffsetY() {
+        return offsetY;
+    }
+
+    private static Boolean allowHackingTextCanvasCache;
+    public static boolean allowHackingTextCanvas() {
+        if (allowHackingTextCanvasCache == null) {
+            allowHackingTextCanvasCache = Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH && (
+                Build.MANUFACTURER == null ||
+                !Build.MANUFACTURER.toLowerCase().contains("honor") &&
+                !Build.MANUFACTURER.toLowerCase().contains("huawei") &&
+                !Build.MANUFACTURER.toLowerCase().contains("alps")
+            ) && (
+                Build.MODEL == null ||
+                !Build.MODEL.toLowerCase().contains("mediapad")
+            );
+        }
+        return allowHackingTextCanvasCache;
+    }
+
+    public boolean wrapCanvasToFixClipping = allowHackingTextCanvas();
+    private NoClipCanvas wrappedCanvas;
+
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
         if (clipToPadding && getScrollY() != 0) {
-            canvas.clipRect(0, getScrollY(), getMeasuredWidth(), getMeasuredHeight() + getScrollY());
+            canvas.clipRect(-AndroidUtilities.dp(3), getScrollY() - super.getExtendedPaddingTop() - offsetY, getMeasuredWidth(), getMeasuredHeight() + getScrollY() + super.getExtendedPaddingBottom() - offsetY);
         }
         path.rewind();
         for (SpoilerEffect eff : spoilers) {
@@ -263,8 +302,20 @@ public class EditTextEffects extends EditText {
             path.addRect(bounds.left, bounds.top, bounds.right, bounds.bottom, Path.Direction.CW);
         }
         canvas.clipPath(path, Region.Op.DIFFERENCE);
+        invalidateQuotes(false);
+        for (int i = 0; i < quoteBlocks.size(); ++i) {
+            quoteBlocks.get(i).draw(canvas, 0, getWidth(), quoteColor, 1f);
+        }
         updateAnimatedEmoji(false);
-        super.onDraw(canvas);
+        if (wrapCanvasToFixClipping) {
+            if (wrappedCanvas == null) {
+                wrappedCanvas = new NoClipCanvas();
+            }
+            wrappedCanvas.canvas = canvas;
+            super.onDraw(wrappedCanvas);
+        } else {
+            super.onDraw(canvas);
+        }
         if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
             canvas.save();
             canvas.translate(getPaddingLeft(), 0);
@@ -280,16 +331,24 @@ public class EditTextEffects extends EditText {
             spoilers.get(0).getRipplePath(path);
         canvas.clipPath(path);
         canvas.translate(0, -getPaddingTop());
-        super.onDraw(canvas);
+        if (wrapCanvasToFixClipping) {
+            if (wrappedCanvas == null) {
+                wrappedCanvas = new NoClipCanvas();
+            }
+            wrappedCanvas.canvas = canvas;
+            super.onDraw(wrappedCanvas);
+        } else {
+            super.onDraw(canvas);
+        }
         canvas.restore();
 
-        rect.set(0, getScrollY(), getWidth(), getScrollY() + getHeight() - getPaddingBottom());
+        rect.set(0, (int) (getScrollY() - super.getExtendedPaddingTop() - offsetY), getWidth(), (int) (getMeasuredHeight() + getScrollY() + super.getExtendedPaddingBottom() - offsetY));
         canvas.save();
         canvas.clipRect(rect);
         for (SpoilerEffect eff : spoilers) {
             Rect b = eff.getBounds();
             if (rect.top <= b.bottom && rect.bottom >= b.top || b.top <= rect.bottom && b.bottom >= rect.top) {
-                eff.setColor(getPaint().getColor());
+                eff.setColor(eff.insideQuote ? quoteColor : getPaint().getColor());
                 eff.draw(canvas);
             }
         }
@@ -306,6 +365,36 @@ public class EditTextEffects extends EditText {
             lastLayout = getLayout();
             lastTextLength = newTextLength;
         }
+    }
+
+    private int lastText2Length;
+    private int quoteUpdatesTries;
+    private boolean[] quoteUpdateLayout;
+
+    public void invalidateQuotes(boolean force) {
+        int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
+        if (force || lastText2Length != newTextLength) {
+            quoteUpdatesTries = 2;
+            lastText2Length = newTextLength;
+        }
+        if (quoteUpdatesTries > 0) {
+            if (quoteUpdateLayout == null) {
+                quoteUpdateLayout = new boolean[1];
+            }
+            quoteUpdateLayout[0] = false;
+            quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
+            if (quoteUpdateLayout[0]) {
+                resetFontMetricsCache();
+            }
+            quoteUpdatesTries--;
+        }
+    }
+
+    // really dirty workaround to reset fontmetrics cache (lineheightspan.chooseheight works only when text is inserted into the respected line)
+    protected void resetFontMetricsCache() {
+        float originalTextSize = getTextSize();
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize + 1);
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize);
     }
 
     public void invalidateEffects() {
@@ -335,7 +424,7 @@ public class EditTextEffects extends EditText {
             if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
                 animatedEmojiDrawables.recordPositions(false);
             }
-            SpoilerEffect.addSpoilers(this, spoilersPool, spoilers);
+            SpoilerEffect.addSpoilers(this, spoilersPool, spoilers, quoteBlocks);
             if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
                 animatedEmojiDrawables.recordPositions(true);
             }

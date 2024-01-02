@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.SegmentTree;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.data.StackBarChartData;
 import org.telegram.ui.Charts.view_data.LineViewData;
@@ -18,14 +19,18 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
     private int[] yMaxPoints;
 
     public StackBarChartView(Context context) {
-        super(context);
+        this(context, null);
+    }
+
+    public StackBarChartView(Context context, Theme.ResourcesProvider resourcesProvider) {
+        super(context, resourcesProvider);
         superDraw = true;
         useAlphaSignature = true;
     }
 
     @Override
     public StackBarViewData createLineViewData(ChartData.Line line) {
-        return new StackBarViewData(line);
+        return new StackBarViewData(line, resourcesProvider);
     }
 
     @Override

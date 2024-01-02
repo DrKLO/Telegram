@@ -555,7 +555,10 @@ public class BlurringShader {
 
         private int i = 0;
         public void setFallbackBlur(Bitmap bitmap, int orientation) {
-            fallbackBitmap = thumbBlurer.getBitmap(bitmap, "" + i++, orientation, 0);
+            setFallbackBlur(bitmap, orientation, false);
+        }
+        public void setFallbackBlur(Bitmap bitmap, int orientation, boolean recycleAfter) {
+            fallbackBitmap = thumbBlurer.getBitmap(bitmap, "" + i++, orientation, 0, recycleAfter);
         }
 
         public void resetBitmap() {
@@ -603,7 +606,7 @@ public class BlurringShader {
             thumbBitmap = null;
         }
 
-        public Bitmap getBitmap(Bitmap bitmap, String key, int orientation, int invert) {
+        public Bitmap getBitmap(Bitmap bitmap, String key, int orientation, int invert, boolean recycleAfter) {
             if (bitmap == null) {
                 return null;
             }
@@ -666,6 +669,10 @@ public class BlurringShader {
                     } else {
                         resultBitmap.recycle();
                     }
+
+                    if (recycleAfter) {
+                        bitmap.recycle();
+                    }
                 });
             });
             return thumbBitmap;
@@ -675,14 +682,14 @@ public class BlurringShader {
             if (imageReceiver == null) {
                 return null;
             }
-            return getBitmap(imageReceiver.getBitmap(), imageReceiver.getImageKey(), imageReceiver.getOrientation(), imageReceiver.getInvert());
+            return getBitmap(imageReceiver.getBitmap(), imageReceiver.getImageKey(), imageReceiver.getOrientation(), imageReceiver.getInvert(), false);
         }
 
         public Bitmap getBitmap(ImageReceiver.BitmapHolder bitmapHolder) {
             if (bitmapHolder == null) {
                 return null;
             }
-            return getBitmap(bitmapHolder.bitmap, bitmapHolder.getKey(), bitmapHolder.orientation, 0);
+            return getBitmap(bitmapHolder.bitmap, bitmapHolder.getKey(), bitmapHolder.orientation, 0, false);
         }
     }
 
@@ -696,6 +703,9 @@ public class BlurringShader {
         public static final int BLUR_TYPE_MENU_BACKGROUND = 5;
         public static final int BLUR_TYPE_SHADOW = 6;
         public static final int BLUR_TYPE_EMOJI_VIEW = 7;
+        public static final int BLUR_TYPE_REPLY_BACKGROUND = 8;
+        public static final int BLUR_TYPE_REPLY_TEXT_XFER = 9;
+        public static final int BLUR_TYPE_ACTION_BACKGROUND = 10;
 
         private final BlurManager manager;
         private final View view;
@@ -728,10 +738,9 @@ public class BlurringShader {
             } else if (type == BLUR_TYPE_CAPTION_XFER) {
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.8f);
-                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.45f);
-                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 2.5f);
-                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.8f);
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.3f);
+//                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
             } else if (type == BLUR_TYPE_CAPTION) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.35f);
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.7f);
@@ -747,7 +756,20 @@ public class BlurringShader {
                 AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 0.35f);
             } else if (type == BLUR_TYPE_EMOJI_VIEW) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.5f);
-                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .85f);
+                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .95f);
+            } else if (type == BLUR_TYPE_REPLY_BACKGROUND) {
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, -.15f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.47f);
+            } else if (type == BLUR_TYPE_REPLY_TEXT_XFER) {
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.45f);
+//                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
+            } else if (type == BLUR_TYPE_ACTION_BACKGROUND) {
+                colorMatrix.setSaturation(1.6f);
+                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, wasDark ? .97f : .92f);
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, wasDark ? +.12f : -.06f);
             }
             paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             oldPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
@@ -817,6 +839,22 @@ public class BlurringShader {
             }
             this.bounds.set(bounds);
             updateBounds();
+        }
+
+        private boolean wasDark = false;
+        public StoryBlurDrawer adapt(boolean isDark) {
+            if (wasDark != isDark) {
+                wasDark = isDark;
+                if (type == BLUR_TYPE_ACTION_BACKGROUND) {
+                    final ColorMatrix colorMatrix = new ColorMatrix();
+                    colorMatrix.setSaturation(1.6f);
+                    AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, wasDark ? .97f : .92f);
+                    AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, wasDark ? +.12f : -.06f);
+                    paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+                    oldPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+                }
+            }
+            return this;
         }
 
         @Nullable
@@ -903,6 +941,7 @@ public class BlurringShader {
                 View view = this.view;
                 do {
                     matrix.preScale(1f / view.getScaleX(), 1f / view.getScaleY(), view.getPivotX(), view.getPivotY());
+                    matrix.preRotate(-view.getRotation(), view.getPivotX(), view.getPivotY());
                     matrix.preTranslate(-view.getX(), -view.getY());
                     if (view.getParent() instanceof View) {
                         view = (View) view.getParent();
@@ -920,6 +959,7 @@ public class BlurringShader {
                         }
                         matrix.postTranslate(child.getX(), child.getY());
                         matrix.postScale(1f / child.getScaleX(), 1f / child.getScaleY(), child.getPivotX(), child.getPivotY());
+                        matrix.postRotate(child.getRotation(), child.getPivotX(), child.getPivotY());
                         index++;
                     }
                 }

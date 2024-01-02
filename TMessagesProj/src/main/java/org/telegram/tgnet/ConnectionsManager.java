@@ -30,6 +30,7 @@ import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 
 import java.io.ByteArrayOutputStream;
@@ -240,7 +241,11 @@ public class ConnectionsManager extends BaseController {
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
         }
         forceTryIpV6 = mainPreferences.getBoolean("forceTryIpV6", false);
-        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), enablePushConnection);
+        boolean userPremium = false;
+        if (getUserConfig().getCurrentUser() != null) {
+            userPremium = getUserConfig().getCurrentUser().premium;
+        }
+        init(SharedConfig.buildVersion(), TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), userPremium, enablePushConnection);
     }
 
     private String getRegId() {
@@ -372,7 +377,7 @@ public class ConnectionsManager extends BaseController {
                         resp.networkType = networkType;
                     }
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("java received " + resp + " error = " + error);
+                        FileLog.d("java received " + resp + " error = " + error + " messageId = " + requestMsgId);
                     }
                     FileLog.dumpResponseAndRequest(object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     final TLObject finalResponse = resp;
@@ -447,7 +452,7 @@ public class ConnectionsManager extends BaseController {
         native_setPushConnectionEnabled(currentAccount, value);
     }
 
-    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean enablePushConnection) {
+    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection) {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String proxyAddress = preferences.getString("proxy_ip", "");
         String proxyUsername = preferences.getString("proxy_user", "");
@@ -477,7 +482,7 @@ public class ConnectionsManager extends BaseController {
             packageId = "";
         }
 
-        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
+        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
         checkConnection();
     }
 
@@ -801,7 +806,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_applyDatacenterAddress(int currentAccount, int datacenterId, String ipAddress, int port);
     public static native int native_getConnectionState(int currentAccount);
     public static native void native_setUserId(int currentAccount, long id);
-    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean enablePushConnection, boolean hasNetwork, int networkType, int performanceClass);
+    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection, boolean hasNetwork, int networkType, int performanceClass);
     public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret);
     public static native void native_setLangCode(int currentAccount, String langCode);
     public static native void native_setRegId(int currentAccount, String regId);

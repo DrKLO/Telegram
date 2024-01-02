@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -16,13 +17,15 @@ import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
-public class ToggleButton extends View {
+public class ToggleButton extends View implements FlashViews.Invertable {
 
     private Drawable drawable;
 
@@ -58,6 +61,7 @@ public class ToggleButton extends View {
         super.onDetachedFromWindow();
         if (activeBitmap != null) {
             activeBitmap.recycle();
+            activeBitmap = null;
         }
     }
 
@@ -70,6 +74,11 @@ public class ToggleButton extends View {
     private final AnimatedFloat valueAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     private final Path clipPath = new Path();
+
+    public void setInvert(float invert) {
+        drawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(0xFFFFFFFF, 0xFF000000, invert), PorterDuff.Mode.MULTIPLY));
+        activePaint.setColor(ColorUtils.blendARGB(0xFFFFFFFF, 0xFF000000, invert));
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {

@@ -16,6 +16,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -39,6 +40,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -184,7 +186,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             prolongWebView.query_id = queryId;
             prolongWebView.silent = silent;
             if (replyToMsgId != 0) {
-                prolongWebView.reply_to = SendMessagesHelper.creteReplyInput(replyToMsgId);
+                prolongWebView.reply_to = SendMessagesHelper.getInstance(currentAccount).createReplyInput(replyToMsgId);
                 prolongWebView.flags |= 1;
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(prolongWebView, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -323,6 +325,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             @Override
             public void onSetBackButtonVisible(boolean visible) {
                 AndroidUtilities.updateImageViewImageAnimated(actionBar.getBackButton(), visible ? R.drawable.ic_ab_back : R.drawable.ic_close_white);
+            }
+
+            @Override
+            public void onSetSettingsButtonVisible(boolean visible) {
+                if (settingsItem != null) {
+                    settingsItem.setVisibility(visible ? View.VISIBLE : View.GONE);
+                }
             }
 
             @Override
@@ -477,6 +486,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     return currentWebApp.title;
                 }
                 return null;
+            }
+
+            @Override
+            public boolean isClipboardAvailable() {
+                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId);
             }
         });
 
@@ -832,6 +846,30 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
+    public static JSONObject makeThemeParams(Theme.ResourcesProvider resourcesProvider) {
+        try {
+            JSONObject jsonObject = new JSONObject();
+            final int backgroundColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+            jsonObject.put("bg_color", backgroundColor);
+            jsonObject.put("section_bg_color", Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            jsonObject.put("secondary_bg_color", Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+            jsonObject.put("text_color", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            jsonObject.put("hint_color", Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+            jsonObject.put("link_color", Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            jsonObject.put("button_color", Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            jsonObject.put("button_text_color", Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            jsonObject.put("header_bg_color", Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
+            jsonObject.put("accent_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider)));
+            jsonObject.put("section_header_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider)));
+            jsonObject.put("subtitle_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)));
+            jsonObject.put("destructive_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_text_RedRegular, resourcesProvider)));
+            return jsonObject;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
     public void requestWebView(int currentAccount, long peerId, long botId, String buttonText, String buttonUrl, @WebViewType int type, int replyToMsgId, boolean silent, int flags) {
         requestWebView(currentAccount, peerId, botId, buttonText, buttonUrl, type, replyToMsgId, silent, null, null, false, null, null, flags);
     }
@@ -853,7 +891,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.buttonText = buttonText;
         this.currentWebApp = app;
 
-        actionBar.setTitle(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)));
+        CharSequence title = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId));
+        try {
+            TextPaint tp = new TextPaint();
+            tp.setTextSize(AndroidUtilities.dp(20));
+            title = Emoji.replaceEmoji(title, tp.getFontMetricsInt(), false);
+        } catch (Exception ignore) {}
+        actionBar.setTitle(title);
         ActionBarMenu menu = actionBar.createMenu();
         menu.removeAllViews();
 
@@ -868,6 +912,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         ActionBarMenuItem otherItem = menu.addItem(0, R.drawable.ic_ab_other);
         otherItem.addSubItem(R.id.menu_open_bot, R.drawable.msg_bot, LocaleController.getString(R.string.BotWebViewOpenBot));
         settingsItem = otherItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
+        settingsItem.setVisibility(View.GONE);
         otherItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
         if (currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu)) {
             otherItem.addSubItem(R.id.menu_delete_bot, R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot));
@@ -907,22 +952,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
         });
 
-        boolean hasThemeParams = true;
-        String themeParams = null;
-        try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("bg_color", getColor(Theme.key_windowBackgroundWhite));
-            jsonObject.put("secondary_bg_color", getColor(Theme.key_windowBackgroundGray));
-            jsonObject.put("text_color", getColor(Theme.key_windowBackgroundWhiteBlackText));
-            jsonObject.put("hint_color", getColor(Theme.key_windowBackgroundWhiteHintText));
-            jsonObject.put("link_color", getColor(Theme.key_windowBackgroundWhiteLinkText));
-            jsonObject.put("button_color", getColor(Theme.key_featuredStickers_addButton));
-            jsonObject.put("button_text_color", getColor(Theme.key_featuredStickers_buttonText));
-            themeParams = jsonObject.toString();
-        } catch (Exception e) {
-            FileLog.e(e);
-            hasThemeParams = false;
-        }
+        final JSONObject themeParams = makeThemeParams(resourcesProvider);
 
         webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
         webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
@@ -936,9 +966,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 req.url = buttonUrl;
                 req.flags |= 2;
 
-                if (hasThemeParams) {
+                if (themeParams != null) {
                     req.theme_params = new TLRPC.TL_dataJSON();
-                    req.theme_params.data = themeParams;
+                    req.theme_params.data = themeParams.toString();
                     req.flags |= 4;
                 }
 
@@ -960,9 +990,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                 req.platform = "android";
                 req.from_side_menu = (flags & FLAG_FROM_SIDE_MENU) != 0;
-                if (hasThemeParams) {
+                if (themeParams != null) {
                     req.theme_params = new TLRPC.TL_dataJSON();
-                    req.theme_params.data = themeParams;
+                    req.theme_params.data = themeParams.toString();
                     req.flags |= 1;
                 }
                 if (!TextUtils.isEmpty(buttonUrl)) {
@@ -994,13 +1024,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 }
 
                 if (replyToMsgId != 0) {
-                    req.reply_to = SendMessagesHelper.creteReplyInput(replyToMsgId);
+                    req.reply_to = SendMessagesHelper.getInstance(currentAccount).createReplyInput(replyToMsgId);
                     req.flags |= 1;
                 }
 
-                if (hasThemeParams) {
+                if (themeParams != null) {
                     req.theme_params = new TLRPC.TL_dataJSON();
-                    req.theme_params.data = themeParams;
+                    req.theme_params.data = themeParams.toString();
                     req.flags |= 4;
                 }
 
@@ -1032,9 +1062,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.flags |= 2;
                 }
 
-                if (hasThemeParams) {
+                if (themeParams != null) {
                     req.theme_params = new TLRPC.TL_dataJSON();
-                    req.theme_params.data = themeParams;
+                    req.theme_params.data = themeParams.toString();
                     req.flags |= 4;
                 }
 
@@ -1170,7 +1200,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
 
         swipeContainer.stickTo(swipeContainer.getHeight() + frameLayout.measureKeyboardHeight(), ()->{
-            super.dismiss();
+            try {
+                super.dismiss();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             if (callback != null) {
                 callback.run();
             }

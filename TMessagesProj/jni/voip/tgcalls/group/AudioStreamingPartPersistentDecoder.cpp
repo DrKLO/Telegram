@@ -55,6 +55,7 @@ public:
     
     ~AudioStreamingPartPersistentDecoderState() {
         if (_codecContext) {
+            avcodec_close(_codecContext);
             avcodec_free_context(&_codecContext);
         }
     }
@@ -85,6 +86,10 @@ AudioStreamingPartPersistentDecoder::AudioStreamingPartPersistentDecoder() {
 }
 
 AudioStreamingPartPersistentDecoder::~AudioStreamingPartPersistentDecoder() {
+    if (_state) {
+        delete _state;
+        _state = nullptr;
+    }
 }
 
 void AudioStreamingPartPersistentDecoder::maybeReset(AVCodecParameters const *codecParameters, AVRational timeBase) {

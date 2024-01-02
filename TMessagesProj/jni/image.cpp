@@ -1186,6 +1186,7 @@ std::vector<std::pair<float, float>> gatherPositions(std::vector<std::pair<float
 }
 
 thread_local static float *pixelCache = nullptr;
+thread_local static int pixelCacheSize = 0;
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *env, jclass clazz, jobject bitmap, jboolean unpin, jint phase, jfloat progress, jint width, jint height, jint stride, jintArray colors) {
     if (!bitmap) {
@@ -1221,6 +1222,13 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
 
     auto colorsArray = (uint8_t *) env->GetIntArrayElements(colors, nullptr);
     float *newPixelCache = nullptr;
+
+    if (width * height != pixelCacheSize && pixelCache != nullptr) {
+        delete[] pixelCache;
+        pixelCache = nullptr;
+    }
+    pixelCacheSize = width * height;
+
     if (pixelCache == nullptr) {
         newPixelCache = new float[width * height * 2];
     }

@@ -13,7 +13,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 public class LoginOrView extends View {
-    private final static int LINE_SIZE_DP = 48;
+    private final static int LINE_SIZE_DP = 64;
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);

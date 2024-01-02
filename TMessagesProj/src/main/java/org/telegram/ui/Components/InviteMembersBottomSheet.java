@@ -142,6 +142,9 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         searchListViewAdapter = searchAdapter = new SearchAdapter();
         listView.setAdapter(listViewAdapter = new ListAdapter());
 
+        emptyView.showProgress(false, false);
+        emptyView.setVisibility(View.GONE);
+
         ArrayList<TLRPC.TL_contact> arrayList = ContactsController.getInstance(account).contacts;
         for (int a = 0; a < arrayList.size(); a++) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(arrayList.get(a).user_id);

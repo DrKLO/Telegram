@@ -57,6 +57,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -82,6 +83,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerSetNameCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BackupImageView;
@@ -96,7 +98,6 @@ import org.telegram.ui.Components.EmojiTabsStrip;
 import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
@@ -117,7 +118,6 @@ import org.telegram.ui.WrappedResourceProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1122,7 +1122,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     listView.scrollToPosition(0, 0);
                     searchField.showProgress(false);
                     tabsStrip.showSelected(false);
-                }, null, false, false, false, true, 50);
+                }, null, false, false, false, true, 50, false);
             };
 
             @NonNull
@@ -1216,12 +1216,12 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         }
     }
 
-    public void showPremiumBulletin(String str, int resId) {
+    public void showPremiumBulletin(String text) {
         container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(
-                ContextCompat.getDrawable(getContext(), R.drawable.msg_premium_normal),
-                LocaleController.getString("IncreaseLimit", R.string.IncreaseLimit),
-                premiumText(LocaleController.getString(str, resId))
+                R.raw.star_premium_2,
+                LocaleController.getString(R.string.IncreaseLimit),
+                premiumText(text)
         ).show(true);
     }
 
@@ -1393,6 +1393,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+        FileLog.disableGson(true);
 
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_EMOJIPACKS);
         MediaDataController.getInstance(currentAccount).checkFeaturedEmoji();
@@ -1428,6 +1429,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
         closeKeyboard();
         super.dismiss();
+        FileLog.disableGson(false);
     }
 
     private Utilities.Callback2<Bitmap, Float> drawBlurBitmap;
@@ -1708,7 +1710,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 super.onAttachedToWindow();
                 attached = true;
                 if (drawable != null) {
-                    drawable.addView(listView);
+                    drawable.addView(this);
                 }
                 if (imageReceiver != null) {
                     imageReceiver.onAttachedToWindow();
@@ -1720,7 +1722,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 super.onDetachedFromWindow();
                 attached = false;
                 if (drawable != null) {
-                    drawable.removeView(listView);
+                    drawable.removeView(this);
                 }
                 if (imageReceiver != null) {
                     imageReceiver.onDetachedFromWindow();

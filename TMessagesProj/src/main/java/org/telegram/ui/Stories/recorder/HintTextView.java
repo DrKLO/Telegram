@@ -7,12 +7,13 @@ import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
-public class HintTextView extends View {
+public class HintTextView extends View implements FlashViews.Invertable {
 
     private final AnimatedTextView.AnimatedTextDrawable textDrawable;
 
@@ -23,7 +24,7 @@ public class HintTextView extends View {
         textDrawable.setAnimationProperties(.35f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
         textDrawable.setTextColor(0xffffffff);
         textDrawable.setTextSize(AndroidUtilities.dp(14));
-        textDrawable.getPaint().setShadowLayer(AndroidUtilities.dp(1.4f), 0, AndroidUtilities.dp(.4f), 0x4C000000);
+        textDrawable.setShadowLayer(AndroidUtilities.dp(1.4f), 0, AndroidUtilities.dp(.4f), 0x4C000000);
         textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
         textDrawable.setCallback(this);
         textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
@@ -51,5 +52,9 @@ public class HintTextView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         textDrawable.setOverrideFullWidth(getMeasuredWidth());
+    }
+
+    public void setInvert(float invert) {
+        textDrawable.setTextColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
     }
 }

@@ -124,11 +124,11 @@ public class CropRotationWheel extends FrameLayout {
     }
 
     public void setMirrored(boolean value) {
-        mirrorButton.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
+        mirrorButton.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY) : null);
     }
 
     public void setRotated(boolean value) {
-        rotation90Button.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
+        rotation90Button.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY) : null);
     }
 
     @Override

@@ -202,6 +202,11 @@ public class Bulletin {
         return this;
     }
 
+    public Bulletin setTag(int tag) {
+        this.tag = tag;
+        return this;
+    }
+
     public Bulletin show() {
         return show(false);
     }
@@ -604,6 +609,14 @@ public class Bulletin {
             return 0;
         }
 
+        default int getLeftPadding() {
+            return 0;
+        }
+
+        default int getRightPadding() {
+            return 0;
+        }
+
         default int getTopOffset(int tag) {
             return 0;
         }
@@ -661,7 +674,11 @@ public class Bulletin {
         }
 
         protected void setBackground(int color) {
-            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(10), color);
+            setBackground(color, 10);
+        }
+
+        public void setBackground(int color, int rounding) {
+            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(rounding), color);
         }
 
         public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {
@@ -1011,7 +1028,7 @@ public class Bulletin {
             if (bulletin == null) {
                 return;
             }
-            background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
+            background.setBounds(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
             if (isTransitionRunning() && delegate != null) {
                 final float top = delegate.getTopOffset(bulletin.tag) - getY();
                 final float bottom = ((View) getParent()).getMeasuredHeight() - getBottomOffset() - getY();
@@ -1072,9 +1089,17 @@ public class Bulletin {
             this.resourcesProvider = resourcesProvider;
         }
 
+        private boolean wrapWidth;
+        public void setWrapWidth() {
+            wrapWidth = true;
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             childrenMeasuredWidth = 0;
+            if (wrapWidth) {
+                widthMeasureSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.AT_MOST);
+            }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             if (button != null && MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
                 setMeasuredDimension(childrenMeasuredWidth + button.getMeasuredWidth(), getMeasuredHeight());
@@ -1888,10 +1913,5 @@ public class Bulletin {
                 BulletinWindow.this.getWindow().setAttributes(params);
             }
         }
-    }
-
-    public Bulletin setTag(int tag) {
-        this.tag = tag;
-        return this;
     }
 }

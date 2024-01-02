@@ -126,7 +126,7 @@ public class FileLog {
         try {
             checkGson();
             getInstance().dateFormat.format(System.currentTimeMillis());
-            String messageStr = "receive message -> " + message.getClass().getSimpleName() + " : " + gson.toJson(message);
+            String messageStr = "receive message -> " + message.getClass().getSimpleName() + " : " + (gsonDisabled ? message : gson.toJson(message));
             String res = "null";
             long time = System.currentTimeMillis();
             FileLog.getInstance().logQueue.postRunnable(() -> {
@@ -150,6 +150,11 @@ public class FileLog {
         }
     }
 
+    private static boolean gsonDisabled;
+    public static void disableGson(boolean disable) {
+        gsonDisabled = disable;
+    }
+
     private static void checkGson() {
         if (gson == null) {
             HashSet<String> privateFields = new HashSet<>();
@@ -170,7 +175,7 @@ public class FileLog {
             //exclude file loading
             excludeRequests = new HashSet<>();
             excludeRequests.add("TL_upload_getFile");
-            excludeRequests.add("TL_upload_a");
+            excludeRequests.add("TL_upload_getWebFile");
 
             ExclusionStrategy strategy = new ExclusionStrategy() {
 

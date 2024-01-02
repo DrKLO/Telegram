@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -1322,6 +1324,14 @@ public class ChatRightsEditActivity extends BaseFragment {
                 }
             }, err -> {
                 setLoading(false);
+                if (err != null && "USER_PRIVACY_RESTRICTED".equals(err.text)) {
+                    LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(ChatRightsEditActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, getResourceProvider());
+                    ArrayList<TLRPC.User> arrayList = new ArrayList<>();
+                    arrayList.add(currentUser);
+                    restrictedUsersBottomSheet.setRestrictedUsers(currentChat, arrayList);
+                    restrictedUsersBottomSheet.show();
+                    return false;
+                }
                 return true;
             });
         } else if (currentType == TYPE_BANNED) {
@@ -1400,19 +1410,26 @@ public class ChatRightsEditActivity extends BaseFragment {
 
     private ValueAnimator doneDrawableAnimator;
 
-    public void setLoading(boolean enable) {
+    public void setLoading(boolean newLoading) {
         if (doneDrawableAnimator != null) {
             doneDrawableAnimator.cancel();
         }
-        loading = !enable;
-        actionBar.getBackButton().setEnabled(!enable);
+        loading = newLoading;
+        actionBar.getBackButton().setEnabled(!loading);
         if (doneDrawable != null) {
-            doneDrawableAnimator = ValueAnimator.ofFloat(doneDrawable.getProgress(), enable ? 1f : 0f);
+            doneDrawableAnimator = ValueAnimator.ofFloat(doneDrawable.getProgress(), loading ? 1f : 0f);
             doneDrawableAnimator.addUpdateListener(a -> {
                 doneDrawable.setProgress((float) a.getAnimatedValue());
                 doneDrawable.invalidateSelf();
             });
-            doneDrawableAnimator.setDuration((long) (150 * Math.abs(doneDrawable.getProgress() - (enable ? 1 : 0))));
+            doneDrawableAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    doneDrawable.setProgress(loading ? 1 : 0);
+                    doneDrawable.invalidateSelf();
+                }
+            });
+            doneDrawableAnimator.setDuration((long) (150 * Math.abs(doneDrawable.getProgress() - (loading ? 1 : 0))));
             doneDrawableAnimator.start();
         }
     }

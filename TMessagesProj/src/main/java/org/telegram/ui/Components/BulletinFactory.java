@@ -9,6 +9,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -40,6 +41,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -176,12 +178,30 @@ public final class BulletinFactory {
     }
 
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text) {
+        return createSimpleBulletinWithIconSize(iconRawId, text, 36);
+    }
+
+    public Bulletin createSimpleBulletinWithIconSize(int iconRawId, CharSequence text, int iconSize) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
-        layout.setAnimation(iconRawId, 36, 36);
+        layout.setAnimation(iconRawId, iconSize, iconSize);
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createImageBulletin(int iconRawId, CharSequence title) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setBackground(Theme.getColor(Theme.key_undo_background, resourcesProvider), 12);
+        layout.imageView.setImageResource(iconRawId);
+        layout.textView.setText(title);
+        layout.textView.setSingleLine(false);
+        layout.textView.setLines(2);
+        layout.textView.setMaxLines(4);
+        layout.textView.setMaxWidth(HintView2.cutInFancyHalf(layout.textView.getText(), layout.textView.getPaint()));
+        ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = AndroidUtilities.dp(12);
+        layout.setWrapWidth();
+        return create(layout, Bulletin.DURATION_PROLONG);
     }
 
     public Bulletin createSimpleLargeBulletin(int iconRawId, CharSequence title, CharSequence subtitle) {
@@ -212,6 +232,26 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(maxLines);
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
+
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, int maxLines, int duration) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(iconRawId, 36, 36);
+        if (text != null) {
+            String string = text.toString();
+            SpannableStringBuilder ssb = text instanceof SpannableStringBuilder ? (SpannableStringBuilder) text : new SpannableStringBuilder(text);
+            for (int index = string.indexOf('\n'), l = 0; index >= 0 && index < text.length(); l++, index = string.indexOf('\n', index + 1)) {
+                if (l >= maxLines) {
+                    ssb.replace(index, index + 1, " ");
+                }
+            }
+            text = ssb;
+        }
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(maxLines);
+        return create(layout, duration);
     }
 
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence subtext) {
@@ -485,6 +525,20 @@ public final class BulletinFactory {
             layout.imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_undo_infoColor), PorterDuff.Mode.SRC_IN));
         }
         layout.setAnimation(document, 36, 36);
+        layout.textView.setText(text);
+        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createStaticEmojiBulletin(TLRPC.Document document, CharSequence text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        if (MessageObject.isTextColorEmoji(document)) {
+            layout.imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_undo_infoColor), PorterDuff.Mode.SRC_IN));
+        }
+        layout.setAnimation(document, 36, 36);
+        layout.imageView.stopAnimation();
         layout.textView.setText(text);
         layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         layout.textView.setSingleLine(false);

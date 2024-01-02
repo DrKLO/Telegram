@@ -535,14 +535,14 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew) {
-        return replaceEmoji(cs, fontMetrics, AndroidUtilities.dp(16), createNew, null);
+        return replaceEmoji(cs, fontMetrics, createNew, null);
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, null);
+        return replaceEmoji(cs, fontMetrics, createNew, null);
     }
 
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly) {
         return replaceEmoji(cs, fontMetrics, createNew, emojiOnly, DynamicDrawableSpan.ALIGN_BOTTOM);
     }
 

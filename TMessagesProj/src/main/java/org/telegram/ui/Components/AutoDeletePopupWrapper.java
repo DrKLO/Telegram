@@ -26,7 +26,7 @@ public class AutoDeletePopupWrapper {
     private final ActionBarMenuSubItem disableItem;
     Callback callback;
     long lastDismissTime;
-    TextView textView;
+    public TextView textView;
 
     public AutoDeletePopupWrapper(Context context, PopupSwipeBackLayout swipeBackLayout, Callback callback, boolean createBackground, int type, Theme.ResourcesProvider resourcesProvider) {
         windowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, createBackground ? R.drawable.popup_fixed_alert : 0, resourcesProvider);
@@ -115,14 +115,14 @@ public class AutoDeletePopupWrapper {
         }
     }
 
-    public void allowExtenededHint() {
+    public void allowExtendedHint(int linkColor) {
         if (textView == null) {
             return;
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append(LocaleController.getString("AutoDeletePopupDescription", R.string.AutoDeletePopupDescription));
         spannableStringBuilder.append("\n\n");
-        spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("AutoDeletePopupDescription2", R.string.AutoDeletePopupDescription2), () -> {
+        spannableStringBuilder.append(AndroidUtilities.replaceSingleLink(LocaleController.getString(R.string.AutoDeletePopupDescription2), linkColor, () -> {
             callback.showGlobalAutoDeleteScreen();
         }));
         textView.setText(spannableStringBuilder);

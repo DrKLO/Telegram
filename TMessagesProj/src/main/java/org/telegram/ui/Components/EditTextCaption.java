@@ -27,6 +27,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.CharacterStyle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -41,6 +42,7 @@ import android.widget.FrameLayout;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -69,7 +71,6 @@ public class EditTextCaption extends EditTextBoldCursor {
     private int selectionStart = -1;
     private int selectionEnd = -1;
     private boolean allowTextEntitiesIntersection;
-    private float offsetY;
     private int lineCount;
     private boolean isInitLineCount;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -83,6 +84,7 @@ public class EditTextCaption extends EditTextBoldCursor {
     public EditTextCaption(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        quoteColor = Theme.getColor(Theme.key_chat_inQuote, resourcesProvider);
         addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -167,6 +169,25 @@ public class EditTextCaption extends EditTextBoldCursor {
         applyTextStyleToSelection(new TextStyleSpan(run));
     }
 
+    public void makeSelectedQuote() {
+        int start, end;
+        if (selectionStart >= 0 && selectionEnd >= 0) {
+            start = selectionStart;
+            end = selectionEnd;
+            selectionStart = selectionEnd = -1;
+        } else {
+            start = getSelectionStart();
+            end = getSelectionEnd();
+        }
+        final int setSelection = QuoteSpan.putQuoteToEditable(getText(), start, end);
+        if (setSelection >= 0) {
+            setSelection(setSelection);
+            resetFontMetricsCache();
+        }
+        invalidateQuotes(true);
+        invalidateSpoilers();
+    }
+
     public void makeSelectedUrl() {
         AlertDialog.Builder builder;
         if (adaptiveCreateLinkDialog) {
@@ -214,7 +235,7 @@ public class EditTextCaption extends EditTextBoldCursor {
             if (spans != null && spans.length > 0) {
                 for (int a = 0; a < spans.length; a++) {
                     CharacterStyle oldSpan = spans[a];
-                    if (!(oldSpan instanceof AnimatedEmojiSpan)) {
+                    if (!(oldSpan instanceof AnimatedEmojiSpan) && !(oldSpan instanceof QuoteSpan.QuoteStyleSpan)) {
                         int spanStart = editable.getSpanStart(oldSpan);
                         int spanEnd = editable.getSpanEnd(oldSpan);
                         editable.removeSpan(oldSpan);
@@ -309,6 +330,22 @@ public class EditTextCaption extends EditTextBoldCursor {
             end = getSelectionEnd();
         }
         MediaDataController.addStyleToText(span, start, end, getText(), allowTextEntitiesIntersection);
+
+        if (span == null) {
+            Editable editable = getText();
+            CodeHighlighting.Span[] code = editable.getSpans(start, end, CodeHighlighting.Span.class);
+            for (int i = 0; i < code.length; ++i)
+                editable.removeSpan(code[i]);
+            QuoteSpan[] quotes = editable.getSpans(start, end, QuoteSpan.class);
+            for (int i = 0; i < quotes.length; ++i) {
+                editable.removeSpan(quotes[i]);
+                editable.removeSpan(quotes[i].styleSpan);
+            }
+            if (quotes.length > 0) {
+                invalidateQuotes(true);
+            }
+        }
+
         if (delegate != null) {
             delegate.onSpansChanged();
         }
@@ -405,7 +442,7 @@ public class EditTextCaption extends EditTextBoldCursor {
         }
     }
 
-    private boolean performMenuAction(int itemId) {
+    public boolean performMenuAction(int itemId) {
         if (itemId == R.id.menu_regular) {
             makeSelectedRegular();
             return true;
@@ -429,6 +466,9 @@ public class EditTextCaption extends EditTextBoldCursor {
             return true;
         } else if (itemId == R.id.menu_spoiler) {
             makeSelectedSpoiler();
+            return true;
+        } else if (itemId == R.id.menu_quote) {
+            makeSelectedQuote();
             return true;
         }
         return false;
@@ -498,15 +538,6 @@ public class EditTextCaption extends EditTextBoldCursor {
         invalidate();
     }
 
-    public void setOffsetY(float offset) {
-        this.offsetY = offset;
-        invalidate();
-    }
-
-    public float getOffsetY() {
-        return offsetY;
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
@@ -574,7 +605,7 @@ public class EditTextCaption extends EditTextBoldCursor {
                 try {
                     String html = clipData.getItemAt(0).getHtmlText();
                     Spannable pasted = CopyUtilities.fromHTML(html);
-                    Emoji.replaceEmoji(pasted, getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false, null);
+                    Emoji.replaceEmoji(pasted, getPaint().getFontMetricsInt(), false, null);
                     AnimatedEmojiSpan[] spans = pasted.getSpans(0, pasted.length(), AnimatedEmojiSpan.class);
                     if (spans != null) {
                         for (int k = 0; k < spans.length; ++k) {
@@ -583,6 +614,16 @@ public class EditTextCaption extends EditTextBoldCursor {
                     }
                     int start = Math.max(0, getSelectionStart());
                     int end = Math.min(getText().length(), getSelectionEnd());
+                    QuoteSpan.QuoteStyleSpan[] quotesInSelection = getText().getSpans(start, end, QuoteSpan.QuoteStyleSpan.class);
+                    if (quotesInSelection != null && quotesInSelection.length > 0) {
+                        QuoteSpan.QuoteStyleSpan[] quotesToDelete = pasted.getSpans(0, pasted.length(), QuoteSpan.QuoteStyleSpan.class);
+                        for (int i = 0; i < quotesToDelete.length; ++i) {
+                            pasted.removeSpan(quotesToDelete[i]);
+                            pasted.removeSpan(quotesToDelete[i].span);
+                        }
+                    } else {
+                        QuoteSpan.normalizeQuotes(pasted);
+                    }
                     setText(getText().replace(start, end, pasted));
                     setSelection(start + pasted.length(), start + pasted.length());
                     return true;

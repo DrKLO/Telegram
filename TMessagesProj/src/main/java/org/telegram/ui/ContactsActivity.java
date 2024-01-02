@@ -475,7 +475,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             Bundle args = new Bundle();
                             args.putLong("user_id", user.id);
                             if (getMessagesController().checkCanOpenChat(args, ContactsActivity.this)) {
-                                presentFragment(new ChatActivity(args), true);
+                                presentFragment(new ChatActivity(args), needFinishFragment);
                             }
                         }
                     }
@@ -588,7 +588,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 Bundle args = new Bundle();
                                 args.putLong("user_id", user.id);
                                 if (getMessagesController().checkCanOpenChat(args, ContactsActivity.this)) {
-                                    presentFragment(new ChatActivity(args), true);
+                                    presentFragment(new ChatActivity(args), needFinishFragment);
                                 }
                             }
                         }
@@ -950,8 +950,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             Activity activity = getParentActivity();
             if (activity != null) {
                 checkPermission = false;
-                if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    if (activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
+                if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED/* ||
+                    activity.checkSelfPermission(Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED*/) {
+                    if (activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)/* ||
+                        activity.shouldShowRequestPermissionRationale(Manifest.permission.WRITE_CONTACTS)*/) {
                         AlertDialog.Builder builder = AlertsCreator.createContactsPermissionDialog(activity, param -> {
                             askAboutContacts = param != 0;
                             if (param == 0) {
@@ -1000,7 +1002,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @TargetApi(Build.VERSION_CODES.M)
     private void askForPermissons(boolean alert) {
         Activity activity = getParentActivity();
-        if (activity == null || !UserConfig.getInstance(currentAccount).syncContacts || activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+        if (activity == null || !UserConfig.getInstance(currentAccount).syncContacts || activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED/* && activity.checkSelfPermission(Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED*/) {
             return;
         }
         if (alert && askAboutContacts) {
@@ -1067,7 +1069,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.storiesUpdated) {
-            listViewAdapter.setStories(getMessagesController().getStoriesController().getHiddenList(), true);
+            if (listViewAdapter != null) {
+                listViewAdapter.setStories(getMessagesController().getStoriesController().getHiddenList(), true);
+            }
             MessagesController.getInstance(currentAccount).getStoriesController().loadHiddenStories();
         } else if (id == NotificationCenter.contactsDidLoad) {
             if (listViewAdapter != null) {
@@ -1090,7 +1094,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", encryptedChat.id);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-                presentFragment(new ChatActivity(args2), true);
+                presentFragment(new ChatActivity(args2), false);
             }
         } else if (id == NotificationCenter.closeChats) {
             if (!creatingChat) {
@@ -1196,7 +1200,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         final boolean stories = dialogsActivity.storiesEnabled;
         RLottieImageView previousFab = dialogsActivity.getFloatingButton();
         View previousFabContainer = previousFab.getParent() != null ? (View) previousFab.getParent() : null;
-        if (floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
+        if (floatingButton != null && (floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4))) {
             if (stories) {
                 floatingButton.setAnimation(R.raw.write_contacts_fab_icon_camera, 56, 56);
             } else {
@@ -1249,20 +1253,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         animatorSet.playTogether(valueAnimator);
         AndroidUtilities.runOnUIThread(() -> {
+            if (floatingButton == null) {
+                return;
+            }
             animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, new int[]{NotificationCenter.diceStickersDidLoad}, false);
             animatorSet.start();
-            if (isOpen) {
-                if (stories) {
-                    floatingButton.setAnimation(R.raw.write_contacts_fab_icon_camera, 56, 56);
-                } else {
-                    floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
-                }
+            if (stories) {
+                floatingButton.setAnimation(isOpen ? R.raw.write_contacts_fab_icon_camera : R.raw.write_contacts_fab_icon_reverse_camera, 56, 56);
             } else {
-                if (stories) {
-                    floatingButton.setAnimation(R.raw.write_contacts_fab_icon_reverse_camera, 56, 56);
-                } else {
-                    floatingButton.setAnimation(R.raw.write_contacts_fab_icon_reverse, 52, 52);
-                }
+                floatingButton.setAnimation(isOpen ? R.raw.write_contacts_fab_icon : R.raw.write_contacts_fab_icon_reverse, 52, 52);
             }
             floatingButton.playAnimation();
             if (bounceIconAnimator != null) {

@@ -152,7 +152,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             return child != aspectRatioFrameLayout && super.drawChild(canvas, child, drawingTime);
         }
 
-
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -257,14 +256,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     if (duration != C.TIME_UNSET && position != C.TIME_UNSET) {
                         progress = 1.0f - (position / (float) duration);
                     } else {
-                        progress = 1;
+                        progress = 1f;
                     }
                 } else {
-                    progress = 1;
+                    progress = 1f;
                 }
             } else {
-                long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
-                progress = Math.max(0, destroyTime - msTime) / (destroyTtl * 1000.0f);
+                if (destroyTime == 0) {
+                    progress = 1f;
+                } else {
+                    long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
+                    progress = Math.max(0, destroyTime - msTime) / (destroyTtl * 1000.0f);
+                }
+
             }
 
             if (once) {
@@ -1382,9 +1386,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         secretHint.setInnerPadding(12, 7, 11, 7);
         secretHint.setIconMargin(2);
         secretHint.setIconTranslate(0, 0);
-        RLottieDrawable icon = new RLottieDrawable(R.raw.fire_on, "" + R.raw.fire_on, dp(34), dp(34));
-        icon.start();
-        secretHint.setIcon(icon);
+        secretHint.setIcon(R.raw.fire_on);
         secretHint.show();
         MessagesController.getGlobalMainSettings().edit().putInt("viewoncehint", MessagesController.getGlobalMainSettings().getInt("viewoncehint", 0) + 1).commit();
     }
@@ -1526,7 +1528,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     location =ImageLocation.getForDocument(document);
                 }
                 centerImage.setImage(location, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 1);
-                secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
             } else {
                 playerRetryPlayCount = 1;
                 actionBar.setTitle(LocaleController.getString("DisappearingVideo", R.string.DisappearingVideo));
@@ -1544,21 +1545,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 isVideo = true;
                 seekbarContainer.setVisibility(View.VISIBLE);
                 centerImage.setImage(null, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 2);
-                long destroyTime = (long) messageObject.messageOwner.destroyTime * 1000;
-                long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000L;
-                long timeToDestroy = destroyTime - currentTime;
-                long duration = (long) (messageObject.getDuration() * 1000L);
-//                if (duration > timeToDestroy) {
-//                    secretDeleteTimer.setDestroyTime(-1, -1, true);
-//                } else {
-                    secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
-//                }
             }
         } else {
             actionBar.setTitle(LocaleController.getString("DisappearingPhoto", R.string.DisappearingPhoto));
             TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
             centerImage.setImage(ImageLocation.getForObject(sizeFull, messageObject.photoThumbsObject), null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 2);
-            secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
 
             if (sizeFull != null) {
                 videoWidth = sizeFull.w;
@@ -1639,6 +1630,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 containerView.setLayerType(View.LAYER_TYPE_NONE, null);
             }
             containerView.invalidate();
+            secretDeleteTimer.setDestroyTime(messageObject.messageOwner.destroyTimeMillis, messageObject.messageOwner.ttl, false);
             if (closeAfterAnimation) {
                 closePhoto(true, true);
             } else {
@@ -1735,6 +1727,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     }
 
     public void destroyPhotoViewer() {
+        if (onClose != null) {
+            onClose.run();
+            onClose = null;
+        }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);

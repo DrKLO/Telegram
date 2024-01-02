@@ -170,7 +170,8 @@ enum RequestFlag {
     RequestFlagNeedQuickAck = 128,
     RequestFlagUseUnboundKey = 256,
     RequestFlagResendAfter = 512,
-    RequestFlagIgnoreFloodWait = 1024
+    RequestFlagIgnoreFloodWait = 1024,
+    RequestFlagIsCancel = 32768
 };
 
 inline std::string to_string_int32(int32_t value) {

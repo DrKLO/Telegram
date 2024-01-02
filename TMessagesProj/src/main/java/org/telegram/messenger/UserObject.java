@@ -10,10 +10,14 @@ package org.telegram.messenger;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.TLRPC;
 
 public class UserObject {
+
+    public static final long REPLY_BOT = 1271266957L;
 
     public static boolean isDeleted(TLRPC.User user) {
         return user == null || user instanceof TLRPC.TL_userDeleted_old2 || user instanceof TLRPC.TL_userEmpty || user.deleted;
@@ -28,13 +32,14 @@ public class UserObject {
     }
 
     public static boolean isReplyUser(TLRPC.User user) {
-        return user != null && (user.id == 708513 || user.id == 1271266957);
+        return user != null && (user.id == 708513 || user.id == REPLY_BOT);
     }
 
     public static boolean isReplyUser(long did) {
-        return did == 708513 || did == 1271266957;
+        return did == 708513 || did == REPLY_BOT;
     }
 
+    @NonNull
     public static String getUserName(TLRPC.User user) {
         if (user == null || isDeleted(user)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);
@@ -136,5 +141,34 @@ public class UserObject {
 
     public static boolean isService(long user_id) {
         return user_id == 333000 || user_id == 777000 || user_id == 42777;
+    }
+
+    public static MessagesController.PeerColor getPeerColorForAvatar(int currentAccount, TLRPC.User user) {
+//        if (user != null && user.profile_color != null && user.profile_color.color >= 0 && MessagesController.getInstance(currentAccount).profilePeerColors != null) {
+//            return MessagesController.getInstance(currentAccount).profilePeerColors.getColor(user.profile_color.color);
+//        }
+        return null;
+    }
+
+    public static int getColorId(TLRPC.User user) {
+        if (user == null) return 0;
+        if (user.color != null && (user.color.flags & 1) != 0) return user.color.color;
+        return (int) (user.id % 7);
+    }
+
+    public static long getEmojiId(TLRPC.User user) {
+        if (user != null && user.color != null && (user.color.flags & 2) != 0) return user.color.background_emoji_id;
+        return 0;
+    }
+
+    public static int getProfileColorId(TLRPC.User user) {
+        if (user == null) return 0;
+        if (user.profile_color != null && (user.profile_color.flags & 1) != 0) return user.profile_color.color;
+        return -1;
+    }
+
+    public static long getProfileEmojiId(TLRPC.User user) {
+        if (user != null && user.profile_color != null && (user.profile_color.flags & 2) != 0) return user.profile_color.background_emoji_id;
+        return 0;
     }
 }

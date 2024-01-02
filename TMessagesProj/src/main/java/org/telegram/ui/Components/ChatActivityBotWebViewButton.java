@@ -69,7 +69,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         textView.setText(text);
         textView.setTextColor(textColor);
         buttonColor = color;
-
+        backgroundColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), buttonColor, progress);
         rippleView.setBackground(Theme.createSelectorDrawable(BotWebViewContainer.getMainButtonRippleColor(buttonColor), 2));
         invalidate();
 

@@ -302,8 +302,20 @@ public:
             for (auto &videoSegment : segment->video) {
                 videoSegment->isPlaying = true;
                 cancelPendingVideoQualityUpdate(videoSegment);
-
-                auto frame = videoSegment->part->getFrameAtRelativeTimestamp(relativeTimestamp);
+                
+                std::shared_ptr<VideoStreamingSharedState> sharedVideoState;
+                auto endpointId = videoSegment->part->getActiveEndpointId();
+                if (endpointId.has_value()) {
+                    auto it = _sharedVideoStateByEndpointId.find(endpointId.value());
+                    if (it != _sharedVideoStateByEndpointId.end()) {
+                        sharedVideoState = it->second;
+                    } else {
+                        sharedVideoState = std::make_shared<VideoStreamingSharedState>();
+                        _sharedVideoStateByEndpointId.insert(std::make_pair(endpointId.value(), sharedVideoState));
+                    }
+                }
+                
+                auto frame = videoSegment->part->getFrameAtRelativeTimestamp(sharedVideoState.get(), relativeTimestamp);
                 if (frame) {
                     if (videoSegment->lastFramePts != frame->pts) {
                         videoSegment->lastFramePts = frame->pts;
@@ -324,8 +336,20 @@ public:
 
             for (auto &videoSegment : segment->unified) {
                 videoSegment->isPlaying = true;
+                
+                absl::optional<std::string> endpointId = "unified";
+                std::shared_ptr<VideoStreamingSharedState> sharedVideoState;
+                if (endpointId.has_value()) {
+                    auto it = _sharedVideoStateByEndpointId.find(endpointId.value());
+                    if (it != _sharedVideoStateByEndpointId.end()) {
+                        sharedVideoState = it->second;
+                    } else {
+                        sharedVideoState = std::make_shared<VideoStreamingSharedState>();
+                        _sharedVideoStateByEndpointId.insert(std::make_pair(endpointId.value(), sharedVideoState));
+                    }
+                }
 
-                auto frame = videoSegment->videoPart->getFrameAtRelativeTimestamp(relativeTimestamp);
+                auto frame = videoSegment->videoPart->getFrameAtRelativeTimestamp(sharedVideoState.get(), relativeTimestamp);
                 if (frame) {
                     if (videoSegment->lastFramePts != frame->pts) {
                         videoSegment->lastFramePts = frame->pts;
@@ -1039,6 +1063,7 @@ private:
 
     std::map<uint32_t, double> _volumeBySsrc;
     std::vector<StreamingMediaContext::VideoChannel> _activeVideoChannels;
+    std::map<std::string, std::shared_ptr<VideoStreamingSharedState>> _sharedVideoStateByEndpointId;
     std::map<std::string, std::vector<std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>>>> _videoSinks;
 
     std::map<std::string, int32_t> _currentEndpointMapping;

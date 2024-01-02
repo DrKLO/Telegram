@@ -46,6 +46,11 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     private final HintView2 hint;
     private final Runnable applyCaption;
 
+    @Override
+    protected int getEditTextStyle() {
+        return EditTextEmoji.STYLE_PHOTOVIEWER;
+    }
+
     public CaptionPhotoViewer(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager, Runnable applyCaption) {
         super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager);
         this.applyCaption = applyCaption;
@@ -298,7 +303,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     @Override
     public void updateColors(Theme.ResourcesProvider resourcesProvider) {
         super.updateColors(resourcesProvider);
-        timerDrawable.updateColors(0xffffffff, Theme.getColor(Theme.key_dialogFloatingButton, resourcesProvider));
+        timerDrawable.updateColors(0xffffffff, Theme.getColor(Theme.key_chat_editMediaButton, resourcesProvider), 0xffffffff);
     }
 
     @Override

@@ -72,8 +72,8 @@ public class DualCameraView extends CameraView implements CameraController.Error
     private boolean doNotSpanRotation;
     private float[] tempPoint = new float[4];
 
-    private Matrix toScreen = new Matrix();
-    private Matrix toGL = new Matrix();
+    private final Matrix toScreen = new Matrix();
+    private final Matrix toGL = new Matrix();
 
     private boolean firstMeasure = true;
     private boolean atTop, atBottom;

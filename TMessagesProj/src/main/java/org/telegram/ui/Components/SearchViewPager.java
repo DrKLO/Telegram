@@ -132,7 +132,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         itemAnimator.setMoveInterpolator(new OvershootInterpolator(1.1f));
         itemAnimator.setTranslationInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
 
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, fragment, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch()) {
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, fragment, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch(), null) {
             @Override
             public void notifyDataSetChanged() {
                 int itemCount = getCurrentItemCount();
@@ -465,7 +465,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     private boolean isSpeedItemVisible() {
-        if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked) {
+        if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
             return false;
         }
         for (MessageObject obj : selectedFiles.values()) {

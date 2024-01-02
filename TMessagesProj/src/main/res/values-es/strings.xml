@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; Recordatorio</string>
     <string name="OneResult">1 resultado</string>
     <string name="VideoQualityIsTooLow">La calidad del video es demasiado baja para cambiar los ajustes de compresión.</string>
-    <string name="TextSelectionHit">Mantén pulsada una **palabra**, luego mueve el cursor para seleccionar más texto para copiar.</string>
     <string name="CardNumberCopied">Número de tarjeta copiado al portapapeles</string>
     <string name="CopyCardNumber">Copiar</string>
     <string name="DiceInfo2">Puedes tirar un :dado: enviando su emoji en cualquier chat.</string>

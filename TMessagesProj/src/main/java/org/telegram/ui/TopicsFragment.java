@@ -52,8 +52,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -132,6 +130,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
 
 public class TopicsFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ChatActivityInterface, RightSlidingDialogContainer.BaseFragmentWithFullscreen {
 
@@ -193,6 +192,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     private static final int show_id = 13;
 
     private boolean removeFragmentOnTransitionEnd;
+    private boolean finishDialogRightSlidingPreviewOnTransitionEnd;
     TLRPC.ChatFull chatFull;
     boolean canShowCreateTopic;
     private UnreadCounterTextView bottomOverlayChatText;
@@ -234,6 +234,8 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     public boolean searching;
     private boolean opnendForSelect;
     private boolean openedForForward;
+    private boolean openedForQuote;
+    private boolean openedForReply;
     HashSet<Integer> excludeTopics;
     private boolean mute = false;
 
@@ -281,8 +283,36 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         chatId = arguments.getLong("chat_id", 0);
         opnendForSelect = arguments.getBoolean("for_select", false);
         openedForForward = arguments.getBoolean("forward_to", false);
+        openedForQuote = arguments.getBoolean("quote", false);
+        openedForReply = arguments.getBoolean("reply_to", false);
         topicsController = getMessagesController().getTopicsController();
         canShowProgress = !getUserConfig().getPreferences().getBoolean("topics_end_reached_" + chatId, false);
+    }
+
+    public static BaseFragment getTopicsOrChat(BaseFragment parentFragment, Bundle args) {
+        return getTopicsOrChat(parentFragment.getMessagesController(), parentFragment.getMessagesStorage(), args);
+    }
+
+    public static BaseFragment getTopicsOrChat(LaunchActivity launchActivity, Bundle args) {
+        return getTopicsOrChat(MessagesController.getInstance(launchActivity.currentAccount), MessagesStorage.getInstance(launchActivity.currentAccount), args);
+    }
+
+    private static BaseFragment getTopicsOrChat(MessagesController messagesController, MessagesStorage messagesStorage, Bundle args) {
+        long chatId = args.getLong("chat_id");
+        if (chatId != 0L) {
+            TLRPC.Dialog dialog = messagesController.getDialog(-chatId);
+            if (dialog != null && dialog.view_forum_as_messages) {
+                return new ChatActivity(args);
+            }
+            TLRPC.ChatFull chatFull = messagesController.getChatFull(chatId);
+            if (chatFull == null) {
+                chatFull = messagesStorage.loadChatInfo(chatId, true, new CountDownLatch(1), false, false);
+            }
+            if (chatFull != null && chatFull.view_forum_as_messages) {
+                return new ChatActivity(args);
+            }
+        }
+        return new TopicsFragment(args);
     }
 
     public static void prepareToSwitchAnimation(ChatActivity chatActivity) {
@@ -505,7 +535,13 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 TLRPC.TL_forumTopic topic;
                 switch (id) {
                     case toggle_id:
-                        switchToChat(false);
+                        getMessagesController().getTopicsController().toggleViewForumAsMessages(chatId, true);
+                        finishDialogRightSlidingPreviewOnTransitionEnd = true;
+                        Bundle bundle = new Bundle();
+                        bundle.putLong("chat_id", chatId);
+                        ChatActivity chatActivity = new ChatActivity(bundle);
+                        chatActivity.setSwitchFromTopics(true);
+                        presentFragment(chatActivity);
                         break;
                     case add_member_id:
                         TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chatId);
@@ -725,7 +761,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             }
         };
         SpannableString generalIcon = new SpannableString("#");
-        Drawable generalIconDrawable = ForumUtilities.createGeneralTopicDrawable(getContext(), .85f, Color.WHITE);
+        Drawable generalIconDrawable = ForumUtilities.createGeneralTopicDrawable(getContext(), .85f, Color.WHITE, false);
         generalIconDrawable.setBounds(0, AndroidUtilities.dp(2), AndroidUtilities.dp(16), AndroidUtilities.dp(18));
         generalIcon.setSpan(new ImageSpan(generalIconDrawable, DynamicDrawableSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         pullForegroundDrawable = new PullForegroundDrawable(
@@ -1391,7 +1427,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 parentAvatarImageView = new BackupImageView(getContext());
                 parentAvatarDrawable = new AvatarDrawable();
                 parentAvatarImageView.setRoundRadius(AndroidUtilities.dp(16));
-                parentAvatarDrawable.setInfo(getCurrentChat());
+                parentAvatarDrawable.setInfo(currentAccount, getCurrentChat());
                 parentAvatarImageView.setForUserOrChat(getCurrentChat(), parentAvatarDrawable);
             }
             parentDialogsActivity.getSearchItem().setSearchPaddingStart(52);
@@ -2368,7 +2404,11 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             }
             updateSubtitle();
         } else {
-            if (openedForForward) {
+            if (openedForReply) {
+                avatarContainer.setTitle(LocaleController.getString(R.string.ReplyToDialog));
+            } else if (openedForQuote) {
+                avatarContainer.setTitle(LocaleController.getString("QuoteTo", R.string.QuoteTo));
+            } else if (openedForForward) {
                 avatarContainer.setTitle(LocaleController.getString("ForwardTo", R.string.ForwardTo));
             } else {
                 avatarContainer.setTitle(LocaleController.getString("SelectTopic", R.string.SelectTopic));
@@ -2969,7 +3009,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             }
             if (topic != null && topic.id == 1) {
                 setAnimatedEmojiDrawable(null);
-                setForumIcon(ForumUtilities.createGeneralTopicDrawable(getContext(), 1f, getThemedColor(Theme.key_chat_inMenu)));
+                setForumIcon(ForumUtilities.createGeneralTopicDrawable(getContext(), 1f, getThemedColor(Theme.key_chat_inMenu), false));
             } else if (topic != null && topic.icon_emoji_id != 0) {
                 setForumIcon(null);
                 if (animatedEmojiDrawable == null || animatedEmojiDrawable.getDocumentId() != topic.icon_emoji_id) {
@@ -2977,7 +3017,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 }
             } else {
                 setAnimatedEmojiDrawable(null);
-                setForumIcon(ForumUtilities.createTopicDrawable(topic));
+                setForumIcon(ForumUtilities.createTopicDrawable(topic, false));
             }
             updateHidden(topic != null && topic.hidden, true);
 
@@ -3780,10 +3820,19 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
         notificationsLocker.unlock();
 
-        if (!isOpen && (opnendForSelect && removeFragmentOnTransitionEnd)) {
-            removeSelfFromStack();
-            if (dialogsActivity != null) {
-                dialogsActivity.removeSelfFromStack();
+        if (!isOpen) {
+            if (opnendForSelect && removeFragmentOnTransitionEnd) {
+                removeSelfFromStack();
+                if (dialogsActivity != null) {
+                    dialogsActivity.removeSelfFromStack();
+                }
+            } else if (finishDialogRightSlidingPreviewOnTransitionEnd) {
+                removeSelfFromStack();
+                if (parentDialogsActivity != null && parentDialogsActivity.rightSlidingDialogContainer != null) {
+                    if (parentDialogsActivity.rightSlidingDialogContainer.hasFragment()) {
+                        parentDialogsActivity.rightSlidingDialogContainer.finishPreview();
+                    }
+                }
             }
         }
     }

@@ -32,6 +32,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -141,6 +142,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             botMenuItem.setVisibility(GONE);
 
             botMenuItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
+            settingsItem = botMenuItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
+            settingsItem.setVisibility(View.GONE);
         }
     }
 
@@ -301,6 +304,18 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                         AndroidUtilities.updateImageViewImageAnimated(actionBar.getBackButton(), R.drawable.ic_close_white);
                     }
                 }
+            }
+
+            @Override
+            public void onSetSettingsButtonVisible(boolean visible) {
+                if (settingsItem != null) {
+                    settingsItem.setVisibility(visible ? View.VISIBLE : View.GONE);
+                }
+            }
+
+            @Override
+            public boolean isClipboardAvailable() {
+                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId);
             }
         });
 
@@ -770,21 +785,15 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         req.url = botUrl;
         req.flags |= 2;
 
-        try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("bg_color", getColor(Theme.key_windowBackgroundWhite));
-            jsonObject.put("secondary_bg_color", getColor(Theme.key_windowBackgroundGray));
-            jsonObject.put("text_color", getColor(key_windowBackgroundWhiteBlackText));
-            jsonObject.put("hint_color", getColor(Theme.key_windowBackgroundWhiteHintText));
-            jsonObject.put("link_color", getColor(Theme.key_windowBackgroundWhiteLinkText));
-            jsonObject.put("button_color", getColor(Theme.key_featuredStickers_addButton));
-            jsonObject.put("button_text_color", getColor(Theme.key_featuredStickers_buttonText));
-
+        Theme.ResourcesProvider resourcesProvider = null;
+        if (parentEnterView != null && parentEnterView.getParentFragment() != null) {
+            resourcesProvider = parentEnterView.getParentFragment().getResourceProvider();
+        }
+        JSONObject themeParams = BotWebViewSheet.makeThemeParams(resourcesProvider);
+        if (themeParams != null) {
             req.theme_params = new TLRPC.TL_dataJSON();
-            req.theme_params.data = jsonObject.toString();
+            req.theme_params.data = themeParams.toString();
             req.flags |= 4;
-        } catch (Exception e) {
-            FileLog.e(e);
         }
         req.from_bot_menu = true;
 

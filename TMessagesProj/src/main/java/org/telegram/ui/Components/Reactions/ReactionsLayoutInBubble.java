@@ -316,8 +316,6 @@ public class ReactionsLayoutInBubble {
             totalX = totalX * (animationProgress) + fromX * (1f - animationProgress);
             totalY = totalY * (animationProgress) + fromY * (1f - animationProgress);
         }
-        canvas.save();
-        canvas.translate(totalX, totalY);
         for (int i = 0; i < reactionButtons.size(); i++) {
             ReactionButton reactionButton = reactionButtons.get(i);
             if (reactionButton.reaction.equals(scrimViewReaction) || (drawOnlyReaction != null && !reactionButton.reaction.equals(drawOnlyReaction))) {
@@ -330,27 +328,24 @@ public class ReactionsLayoutInBubble {
                 x = reactionButton.x * animationProgress + reactionButton.animateFromX * (1f - animationProgress);
                 y = reactionButton.y * animationProgress + reactionButton.animateFromY * (1f - animationProgress);
             }
-            canvas.translate(x, y);
             float alpha = 1f;
             if (animationProgress != 1f && reactionButton.animationType == ANIMATION_TYPE_IN) {
                 float s = 0.5f + 0.5f * animationProgress;
                 alpha = animationProgress;
-                canvas.scale(s, s, reactionButton.width / 2f, reactionButton.height / 2f);
+                canvas.scale(s, s, totalX + x + reactionButton.width / 2f, totalY + y + reactionButton.height / 2f);
             }
-            reactionButton.draw(canvas, reactionButton.animationType == ANIMATION_TYPE_MOVE ? animationProgress : 1f, alpha, drawOnlyReaction != null);
+            reactionButton.draw(canvas, totalX + x, totalY + y, reactionButton.animationType == ANIMATION_TYPE_MOVE ? animationProgress : 1f, alpha, drawOnlyReaction != null);
             canvas.restore();
         }
 
         for (int i = 0; i < outButtons.size(); i++) {
             ReactionButton reactionButton = outButtons.get(i);
-            canvas.save();
-            canvas.translate(reactionButton.x, reactionButton.y);
             float s = 0.5f + 0.5f * (1f - animationProgress);
-            canvas.scale(s, s, reactionButton.width / 2f, reactionButton.height / 2f);
-            outButtons.get(i).draw(canvas, 1f, (1f - animationProgress), false);
+            canvas.save();
+            canvas.scale(s, s, totalX + reactionButton.x + reactionButton.width / 2f, totalY + reactionButton.y + reactionButton.height / 2f);
+            outButtons.get(i).draw(canvas, totalX + reactionButton.x, totalY + reactionButton.y, 1f, (1f - animationProgress), false);
             canvas.restore();
         }
-        canvas.restore();
     }
 
     public void recordDrawingState() {
@@ -584,12 +579,12 @@ public class ReactionsLayoutInBubble {
             counterDrawable.gravity = Gravity.LEFT;
         }
 
-        public void draw(Canvas canvas, float progress, float alpha, boolean drawOverlayScrim) {
+        public void draw(Canvas canvas, float x, float y, float progress, float alpha, boolean drawOverlayScrim) {
             wasDrawn = true;
             ImageReceiver imageReceiver = animatedEmojiDrawable != null ? animatedEmojiDrawable.getImageReceiver() : this.imageReceiver;
             if (isSmall && imageReceiver != null) {
                 imageReceiver.setAlpha(alpha);
-                drawingImageRect.set(0, 0, AndroidUtilities.dp(14), AndroidUtilities.dp(14));
+                drawingImageRect.set((int) x, (int) y, AndroidUtilities.dp(14), AndroidUtilities.dp(14));
                 imageReceiver.setImageCoords(drawingImageRect);
                 imageReceiver.setRoundRadius(0);
                 drawImage(canvas, alpha);
@@ -625,11 +620,11 @@ public class ReactionsLayoutInBubble {
             if (progress != 1f && animationType == ANIMATION_TYPE_MOVE) {
                 w = (int) (width * progress + animateFromWidth * (1f - progress));
             }
-            AndroidUtilities.rectTmp.set(0, 0, w, height);
+            AndroidUtilities.rectTmp.set(x, y, x + w, y + height);
             float rad = height / 2f;
             if (drawServiceShaderBackground > 0) {
                 Paint paint1 = getThemedPaint(Theme.key_paint_chatActionBackground);
-                Paint paint2 = Theme.chat_actionBackgroundGradientDarkenPaint;
+                Paint paint2 = getThemedPaint(Theme.key_paint_chatActionBackgroundDarken);
                 int oldAlpha = paint1.getAlpha();
                 int oldAlpha2 = paint2.getAlpha();
                 paint1.setAlpha((int) (oldAlpha * alpha * drawServiceShaderBackground));
@@ -650,32 +645,32 @@ public class ReactionsLayoutInBubble {
             canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint);
 
             if (imageReceiver != null) {
-                int size, x;
+                int size, X;
                 if (animatedEmojiDrawable != null) {
                     size = AndroidUtilities.dp(24);
-                    x = AndroidUtilities.dp(6);
+                    X = AndroidUtilities.dp(6);
                     imageReceiver.setRoundRadius(AndroidUtilities.dp(6));
                 } else {
                     size = AndroidUtilities.dp(20);
-                    x = AndroidUtilities.dp(8);
+                    X = AndroidUtilities.dp(8);
                     imageReceiver.setRoundRadius(0);
                 }
-                int y = (int) ((height - size) / 2f);
-                drawingImageRect.set(x, y, x + size, y + size);
+                int Y = (int) ((height - size) / 2f);
+                drawingImageRect.set((int) x + X, (int) y + Y, (int) x + X + size, (int) y + Y + size);
                 imageReceiver.setImageCoords(drawingImageRect);
                 drawImage(canvas, alpha);
             }
 
             if (counterDrawable != null && (count != 0 || counterDrawable.countChangeProgress != 1f)) {
                 canvas.save();
-                canvas.translate(AndroidUtilities.dp(8) + AndroidUtilities.dp(20) + AndroidUtilities.dp(2), 0);
+                canvas.translate(x + AndroidUtilities.dp(8) + AndroidUtilities.dp(20) + AndroidUtilities.dp(2), y);
                 counterDrawable.draw(canvas);
                 canvas.restore();
             }
 
             if (avatarsDrawable != null) {
                 canvas.save();
-                canvas.translate(AndroidUtilities.dp(10) + AndroidUtilities.dp(20) + AndroidUtilities.dp(2), 0);
+                canvas.translate(x + AndroidUtilities.dp(10) + AndroidUtilities.dp(20) + AndroidUtilities.dp(2), y);
                 avatarsDrawable.setAlpha(alpha);
                 avatarsDrawable.setTransitionProgress(progress);
                 avatarsDrawable.onDraw(canvas);

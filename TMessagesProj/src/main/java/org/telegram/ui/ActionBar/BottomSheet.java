@@ -29,6 +29,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -108,6 +109,8 @@ public class BottomSheet extends Dialog {
     protected boolean fullWidth;
     protected boolean isFullscreen;
     private boolean fullHeight;
+    private int cellType;
+    private Integer selectedPos;
     protected ColorDrawable backDrawable = new ColorDrawable(0xff000000) {
         @Override
         public void setAlpha(int alpha) {
@@ -178,6 +181,7 @@ public class BottomSheet extends Dialog {
     private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     protected int playingImagesLayerNum;
     protected int openedLayerNum;
+    private boolean skipDismissAnimation;
 
     public void setDisableScroll(boolean b) {
         disableScroll = b;
@@ -340,6 +344,8 @@ public class BottomSheet extends Dialog {
         }
 
         private float y = 0f;
+        private float swipeBackX = 0f;
+        private boolean allowedSwipeToBack;
         public boolean processTouchEvent(MotionEvent ev, boolean intercept) {
             if (dismissed) {
                 return false;
@@ -347,61 +353,134 @@ public class BottomSheet extends Dialog {
             if (onContainerTouchEvent(ev)) {
                 return true;
             }
-
-            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking && ev.getPointerCount() == 1)) {
-                startedTrackingX = (int) ev.getX();
-                startedTrackingY = (int) ev.getY();
-                if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
-                    onDismissWithTouchOutside();
-                    return true;
-                }
-                onScrollUpBegin(y);
-                startedTrackingPointerId = ev.getPointerId(0);
-                maybeStartTracking = true;
-                cancelCurrentAnimation();
-                if (velocityTracker != null) {
-                    velocityTracker.clear();
-                }
-            } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
-                if (velocityTracker == null) {
-                    velocityTracker = VelocityTracker.obtain();
-                }
-                float dx = Math.abs((int) (ev.getX() - startedTrackingX));
-                float dy = (int) ev.getY() - startedTrackingY;
-                boolean canScrollUp = onScrollUp(y + dy);
-                velocityTracker.addMovement(ev);
-                if (!disableScroll && maybeStartTracking && !startedTracking && (dy > 0 && dy / 3.0f > Math.abs(dx) && Math.abs(dy) >= touchSlop)) {
+            if (canSwipeToBack(ev) || allowedSwipeToBack) {
+                if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking && ev.getPointerCount() == 1)) {
+                    allowedSwipeToBack = true;
+                    startedTrackingX = (int) ev.getX();
                     startedTrackingY = (int) ev.getY();
+                    startedTrackingPointerId = ev.getPointerId(0);
+                    maybeStartTracking = true;
+                    cancelCurrentAnimation();
+                } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
+                    float dx = ev.getX() - startedTrackingX;
+                    float dy = ev.getY() - startedTrackingY;
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    velocityTracker.addMovement(ev);
+                    if (!disableScroll && maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= touchSlop)) {
+                        startedTrackingX = (int) ev.getX();
+                        maybeStartTracking = false;
+                        startedTracking = true;
+                    } else if (startedTracking) {
+                        swipeBackX += dx;
+                        containerView.setTranslationX(Math.max(swipeBackX, 0));
+                        startedTrackingX = (int) ev.getX();
+                        container.invalidate();
+                    }
+                } else if (ev == null || ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
+                    containerView.setTranslationX(0);
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    float velX = velocityTracker.getXVelocity();
+                    float velY = velocityTracker.getYVelocity();
+                    final boolean backAnimation = swipeBackX < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
+                    if (backAnimation) {
+                        swipeBackX = Math.max(swipeBackX, 0);
+                        ValueAnimator animator = ValueAnimator.ofFloat(swipeBackX, 0);
+                        animator.addUpdateListener(animation -> {
+                            swipeBackX = (float) animation.getAnimatedValue();
+                            setTranslationX(swipeBackX);
+                        });
+                        animator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                swipeBackX = 0;
+                                setTranslationX(0);
+                            }
+                        });
+                        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                        animator.setDuration(220);
+                        animator.start();
+                    } else {
+                        ValueAnimator animator = ValueAnimator.ofFloat(swipeBackX, getMeasuredWidth());
+                        animator.addUpdateListener(animation -> {
+                            swipeBackX = (float) animation.getAnimatedValue();
+                            setTranslationX(swipeBackX);
+                        });
+                        animator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                skipDismissAnimation = true;
+                                dismiss();
+                            }
+                        });
+                        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                        animator.setDuration(150);
+                        animator.start();
+                    }
                     maybeStartTracking = false;
-                    startedTracking = true;
-                    requestDisallowInterceptTouchEvent(true);
-                } else if (startedTracking) {
-                    y += dy;
-                    if (!canScrollUp)
-                        y = Math.max(y, 0);
-                    containerView.setTranslationY(Math.max(y, 0));
+                    startedTracking = false;
+                    startedTrackingPointerId = -1;
+                    allowedSwipeToBack = false;
+                }
+            } else {
+                if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking && ev.getPointerCount() == 1)) {
+                    startedTrackingX = (int) ev.getX();
                     startedTrackingY = (int) ev.getY();
-                    container.invalidate();
+                    if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
+                        onDismissWithTouchOutside();
+                        return true;
+                    }
+                    onScrollUpBegin(y);
+                    startedTrackingPointerId = ev.getPointerId(0);
+                    maybeStartTracking = true;
+                    cancelCurrentAnimation();
+                    if (velocityTracker != null) {
+                        velocityTracker.clear();
+                    }
+                } else if (canDismissWithSwipe() && ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    float dx = Math.abs((int) (ev.getX() - startedTrackingX));
+                    float dy = (int) ev.getY() - startedTrackingY;
+                    boolean canScrollUp = onScrollUp(y + dy);
+                    velocityTracker.addMovement(ev);
+                    if (!disableScroll && maybeStartTracking && !startedTracking && (dy > 0 && dy / 3.0f > Math.abs(dx) && Math.abs(dy) >= touchSlop)) {
+                        startedTrackingY = (int) ev.getY();
+                        maybeStartTracking = false;
+                        startedTracking = true;
+                        requestDisallowInterceptTouchEvent(true);
+                    } else if (startedTracking) {
+                        y += dy;
+                        if (!canScrollUp)
+                            y = Math.max(y, 0);
+                        containerView.setTranslationY(Math.max(y, 0));
+                        startedTrackingY = (int) ev.getY();
+                        container.invalidate();
+                    }
+                } else if (ev == null || ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
+                    if (velocityTracker == null) {
+                        velocityTracker = VelocityTracker.obtain();
+                    }
+                    velocityTracker.computeCurrentVelocity(1000);
+                    onScrollUpEnd(y);
+                    if (startedTracking || y > 0) {
+                        checkDismiss(velocityTracker.getXVelocity(), velocityTracker.getYVelocity());
+                    } else {
+                        maybeStartTracking = false;
+                    }
+                    startedTracking = false;
+                    if (velocityTracker != null) {
+                        velocityTracker.recycle();
+                        velocityTracker = null;
+                    }
+                    startedTrackingPointerId = -1;
                 }
-            } else if (ev == null || ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
-                if (velocityTracker == null) {
-                    velocityTracker = VelocityTracker.obtain();
-                }
-                velocityTracker.computeCurrentVelocity(1000);
-                onScrollUpEnd(y);
-                if (startedTracking || y > 0) {
-                    checkDismiss(velocityTracker.getXVelocity(), velocityTracker.getYVelocity());
-                } else {
-                    maybeStartTracking = false;
-                }
-                startedTracking = false;
-                if (velocityTracker != null) {
-                    velocityTracker.recycle();
-                    velocityTracker = null;
-                }
-                startedTrackingPointerId = -1;
             }
-            return !intercept && maybeStartTracking || startedTracking || !canDismissWithSwipe();
+            return (!intercept && maybeStartTracking) || startedTracking || !(canDismissWithSwipe() || canSwipeToBack(ev));
         }
 
         @Override
@@ -493,7 +572,7 @@ public class BottomSheet extends Dialog {
                     right -= getRightInset();
                     if (useSmoothKeyboard) {
                         t = 0;
-                    } else {
+                    } else if (!occupyNavigationBar) {
                         t -= lastInsets.getSystemWindowInsetBottom() * (1f - hideSystemVerticalInsetsProgress) - (drawNavigationBar ? 0 : getBottomInset());
                         if (Build.VERSION.SDK_INT >= 29) {
                             t -= getAdditionalMandatoryOffsets();
@@ -595,7 +674,7 @@ public class BottomSheet extends Dialog {
 
         @Override
         public boolean onInterceptTouchEvent(MotionEvent event) {
-            if (canDismissWithSwipe()) {
+            if (canDismissWithSwipe() || canSwipeToBack(event)) {
                 return processTouchEvent(event, true);
             }
             return super.onInterceptTouchEvent(event);
@@ -685,7 +764,7 @@ public class BottomSheet extends Dialog {
                 restore = true;
             }
             super.onDraw(canvas);
-            if (lastInsets != null && keyboardHeight != 0) {
+            if (drawNavigationBar && lastInsets != null && keyboardHeight != 0) {
                 backgroundPaint.setColor(behindKeyboardColorKey >= 0 ? getThemedColor(behindKeyboardColorKey) : behindKeyboardColor);
                 canvas.drawRect(containerView.getLeft() + backgroundPaddingLeft, getMeasuredHeight() - keyboardHeight - (drawNavigationBar ? getBottomInset() : 0), containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() - (drawNavigationBar ? getBottomInset() : 0), backgroundPaint);
             }
@@ -820,7 +899,9 @@ public class BottomSheet extends Dialog {
             this.resourcesProvider = resourcesProvider;
 
             currentType = type;
-            setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+            if (type != Builder.CELL_TYPE_CALL) {
+                setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+            }
             //setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
             imageView = new ImageView(context);
@@ -833,7 +914,7 @@ public class BottomSheet extends Dialog {
             textView.setSingleLine(true);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
-            if (type == 0) {
+            if (type == 0 || type == Builder.CELL_TYPE_CALL) {
                 textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
@@ -1010,6 +1091,7 @@ public class BottomSheet extends Dialog {
                 }
                 lastInsets = insets;
                 v.requestLayout();
+                onInsetsChanged();
                 if (Build.VERSION.SDK_INT >= 30) {
                     return WindowInsets.CONSUMED;
                 } else {
@@ -1026,6 +1108,10 @@ public class BottomSheet extends Dialog {
         backDrawable.setAlpha(0);
     }
 
+    protected void onInsetsChanged() {
+
+    }
+
     protected void mainContainerDispatchDraw(Canvas canvas) {
 
     }
@@ -1035,7 +1121,7 @@ public class BottomSheet extends Dialog {
     }
 
     public void fixNavigationBar(int bgColor) {
-        drawNavigationBar = true;
+        drawNavigationBar = !occupyNavigationBar;
         drawDoubleNavigationBar = true;
         scrollNavBar = true;
         navBarColorKey = -1;
@@ -1152,7 +1238,7 @@ public class BottomSheet extends Dialog {
                     if (items[a] == null) {
                         continue;
                     }
-                    BottomSheetCell cell = new BottomSheetCell(getContext(), 0, resourcesProvider);
+                    BottomSheetCell cell = new BottomSheetCell(getContext(), cellType, resourcesProvider);
                     cell.setTextAndIcon(items[a], itemIcons != null ? itemIcons[a] : 0, null, bigTitle);
                     containerView.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 0, topOffset, 0, 0));
                     topOffset += 48;
@@ -1246,7 +1332,10 @@ public class BottomSheet extends Dialog {
         }
         dismissed = false;
         cancelSheetAnimation();
-        containerView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x + backgroundPaddingLeft * 2, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, View.MeasureSpec.AT_MOST));
+        containerView.measure(
+            View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x + backgroundPaddingLeft * 2, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, View.MeasureSpec.AT_MOST)
+        );
         if (showWithoutAnimation) {
             backDrawable.setAlpha(dimBehind ? dimBehindAlpha : 0);
             containerView.setTranslationY(0);
@@ -1532,7 +1621,7 @@ public class BottomSheet extends Dialog {
                 ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)),
                 ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0)
         );
-        currentSheetAnimation.setDuration(180);
+        currentSheetAnimation.setDuration(cellType == Builder.CELL_TYPE_CALL ? 330 : 180);
         currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
         currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -1567,6 +1656,27 @@ public class BottomSheet extends Dialog {
         });
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
         currentSheetAnimation.start();
+
+        if (cellType == Builder.CELL_TYPE_CALL && selectedPos != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            int color1 = getItemViews().get(selectedPos).getTextView().getCurrentTextColor();
+            int color2 = getItemViews().get(item).getTextView().getCurrentTextColor();
+            ValueAnimator animator = ValueAnimator.ofArgb(color1, color2);
+            animator.addUpdateListener(a -> {
+                int color = (int) a.getAnimatedValue();
+                setItemColor(selectedPos, color, color);
+            });
+            animator.setDuration(130);
+            animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            animator.start();
+            ValueAnimator animator2 = ValueAnimator.ofArgb(color2, color1);
+            animator2.addUpdateListener(a -> {
+                int color = (int) a.getAnimatedValue();
+                setItemColor(item, color, color);
+            });
+            animator2.setDuration(130);
+            animator2.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            animator2.start();
+        }
     }
 
     @Override
@@ -1586,6 +1696,10 @@ public class BottomSheet extends Dialog {
         return containerView.getMeasuredHeight();
     }
 
+    protected boolean canSwipeToBack(MotionEvent event) {
+        return false;
+    }
+
     @Override
     public void dismiss() {
         if (delegate != null && !delegate.canDismiss()) {
@@ -1601,66 +1715,76 @@ public class BottomSheet extends Dialog {
         cancelSheetAnimation();
         long duration = 0;
         onDismissAnimationStart();
-        if (!allowCustomAnimation || !onCustomCloseAnimation()) {
-            currentSheetAnimationType = 2;
-            if (navigationBarAnimation != null) {
-                navigationBarAnimation.cancel();
-            }
-            navigationBarAnimation = ValueAnimator.ofFloat(navigationBarAlpha, 0f);
-            navigationBarAnimation.addUpdateListener(a -> {
-                navigationBarAlpha = (float) a.getAnimatedValue();
-                if (container != null) {
-                    container.invalidate();
+        if (skipDismissAnimation) {
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    dismissInternal();
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             });
-            currentSheetAnimation = new AnimatorSet();
-            ArrayList<Animator> animators = new ArrayList<>();
-            if (containerView != null) {
+        } else {
+            if (!allowCustomAnimation || !onCustomCloseAnimation()) {
+                currentSheetAnimationType = 2;
+                if (navigationBarAnimation != null) {
+                    navigationBarAnimation.cancel();
+                }
+                navigationBarAnimation = ValueAnimator.ofFloat(navigationBarAlpha, 0f);
+                navigationBarAnimation.addUpdateListener(a -> {
+                    navigationBarAlpha = (float) a.getAnimatedValue();
+                    if (container != null) {
+                        container.invalidate();
+                    }
+                });
+                currentSheetAnimation = new AnimatorSet();
+                ArrayList<Animator> animators = new ArrayList<>();
+                if (containerView != null) {
+                    if (transitionFromRight) {
+                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, AndroidUtilities.dp(48)));
+                        animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 0));
+                    } else {
+                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+                    }
+                }
+                animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
+                animators.add(navigationBarAnimation);
+                currentSheetAnimation.playTogether(animators);
+
                 if (transitionFromRight) {
-                    animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, AndroidUtilities.dp(48)));
-                    animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 0));
+                    currentSheetAnimation.setDuration(200);
+                    currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 } else {
-                    animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+                    currentSheetAnimation.setDuration(duration = 250);
+                    currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
                 }
-            }
-            animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
-            animators.add(navigationBarAnimation);
-            currentSheetAnimation.playTogether(animators);
-
-            if (transitionFromRight) {
-                currentSheetAnimation.setDuration(200);
-                currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            } else {
-                currentSheetAnimation.setDuration(duration = 250);
-                currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-            }
-            currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
-                        currentSheetAnimation = null;
-                        currentSheetAnimationType = 0;
-                        AndroidUtilities.runOnUIThread(() -> {
-                            try {
-                                dismissInternal();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                        });
+                currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
+                            currentSheetAnimation = null;
+                            currentSheetAnimationType = 0;
+                            AndroidUtilities.runOnUIThread(() -> {
+                                try {
+                                    dismissInternal();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            });
+                        }
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     }
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-                }
 
-                @Override
-                public void onAnimationCancel(Animator animation) {
-                    if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
-                        currentSheetAnimation = null;
-                        currentSheetAnimationType = 0;
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
+                            currentSheetAnimation = null;
+                            currentSheetAnimationType = 0;
+                        }
                     }
-                }
-            });
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
-            currentSheetAnimation.start();
+                });
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
+                currentSheetAnimation.start();
+            }
         }
 
         Bulletin bulletin = Bulletin.getVisibleBulletin();
@@ -1696,6 +1820,8 @@ public class BottomSheet extends Dialog {
     }
 
     public static class Builder {
+
+        public static int CELL_TYPE_CALL = 4;
 
         private BottomSheet bottomSheet;
 
@@ -1761,6 +1887,16 @@ public class BottomSheet extends Dialog {
         public Builder setTitle(CharSequence title, boolean big) {
             bottomSheet.title = title;
             bottomSheet.bigTitle = big;
+            return this;
+        }
+
+        public Builder selectedPos(Integer pos) {
+            bottomSheet.selectedPos = pos;
+            return this;
+        }
+
+        public Builder setCellType(int cellType) {
+            bottomSheet.cellType = cellType;
             return this;
         }
 

@@ -73,7 +73,7 @@ public class SeekBarView extends FrameLayout {
 
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(boolean stop, float progress);
-        void onSeekBarPressed(boolean pressed);
+        default void onSeekBarPressed(boolean pressed) {};
         default CharSequence getContentDescription() {
             return null;
         }
@@ -527,7 +527,7 @@ public class SeekBarView extends FrameLayout {
             return;
         }
         lastCaption = text;
-        lastDuration = duration;
+        lastDuration = duration * 10;
         if (!(text instanceof Spanned)) {
             timestamps = null;
             currentTimestamp = -1;
@@ -681,10 +681,9 @@ public class SeekBarView extends FrameLayout {
             timestampLabel = new StaticLayout[2];
         }
 
-        float left = selectorWidth / 2f;
-        float right = getMeasuredWidth() - selectorWidth / 2f;
-        float rightPadded = right - (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(36) : 0);
-        float width = Math.abs(left - rightPadded) - AndroidUtilities.dp(16 + 50);
+        float left = selectorWidth / 2f + (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(42) : 0);
+        float right = getMeasuredWidth() - selectorWidth / 2f - (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(42) : 0);
+        float width = Math.abs(left - right) - AndroidUtilities.dp(16 + 50);
 
         if (lastWidth > 0 && Math.abs(lastWidth - width) > 0.01f) {
             if (timestampLabel[0] != null) {

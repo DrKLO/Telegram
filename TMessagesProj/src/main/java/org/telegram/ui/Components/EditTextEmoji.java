@@ -5,8 +5,10 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -23,7 +25,9 @@ import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -33,6 +37,7 @@ import android.widget.ImageView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -41,6 +46,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -60,6 +66,9 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     private boolean emojiViewVisible;
     private SizeNotifierFrameLayout sizeNotifierLayout;
     private BaseFragment parentFragment;
+
+    private ItemOptions formatOptions;
+    private boolean shownFormatButton;
 
     private int keyboardHeight;
     private int keyboardHeightLand;
@@ -164,7 +173,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
 
             @Override
             protected int getActionModeStyle() {
-                if (style == STYLE_STORY) {
+                if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
                     return FloatingToolbar.STYLE_BLACK;
                 }
                 return super.getActionModeStyle();
@@ -172,8 +181,8 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
 
             @Override
             protected void extendActionMode(ActionMode actionMode, Menu menu) {
-                if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
-                    ChatActivity.fillActionModeMenu(menu, null);
+                if (allowEntities()) {
+                    ChatActivity.fillActionModeMenu(menu, null, currentStyle == STYLE_PHOTOVIEWER);
                 }
                 super.extendActionMode(actionMode, menu);
             }
@@ -182,6 +191,28 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             public void scrollTo(int x, int y) {
                 if (EditTextEmoji.this.onScrollYChange(y)) {
                     super.scrollTo(x, y);
+                }
+            }
+
+            private Drawable lastIcon = null;
+
+            @Override
+            protected void onSelectionChanged(int selStart, int selEnd) {
+                super.onSelectionChanged(selStart, selEnd);
+
+                if (emojiIconDrawable != null) {
+                    boolean selected = selEnd != selStart;
+                    boolean showFormat = allowEntities() && selected && (XiaomiUtilities.isMIUI() || true);
+                    if (shownFormatButton != showFormat) {
+                        shownFormatButton = showFormat;
+                        if (showFormat) {
+                            lastIcon = emojiIconDrawable.getIcon();
+                            emojiIconDrawable.setIcon(R.drawable.msg_edit, true);
+                        } else {
+                            emojiIconDrawable.setIcon(lastIcon, true);
+                            lastIcon = null;
+                        }
+                    }
                 }
             }
         };
@@ -200,7 +231,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
             editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             editText.setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
-            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
+            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(11));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 11 : 0, 1, LocaleController.isRTL ? 0 : 11, 0));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -216,7 +247,10 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setHandlesColor(0xffffffff);
             editText.setHighlightColor(0x30ffffff);
             editText.setLinkTextColor(0xFF46A3EB);
+            editText.quoteColor = 0xffffffff;
             editText.setTextIsSelectable(true);
+            setClipChildren(false);
+            setClipToPadding(false);
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 40, 0, 24, 0));
         } else {
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -242,7 +276,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (style == STYLE_FRAGMENT) {
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.smiles_tab_smiles, false);
-            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 7));
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 5));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(0x8cffffff, PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
@@ -259,7 +293,19 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             if (!emojiButton.isEnabled() || emojiButton.getAlpha() < 0.5f || (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress())) {
                 return;
             }
-            if (!isPopupShowing()) {
+            if (shownFormatButton) {
+                if (formatOptions == null) {
+                    editText.hideActionMode();
+                    ItemOptions itemOptions = ItemOptions.makeOptions(parent, resourcesProvider, emojiButton);
+                    itemOptions.setMaxHeight(AndroidUtilities.dp(280));
+                    editText.extendActionMode(null, new MenuToItemOptions(itemOptions, editText::performMenuAction, editText.getOnPremiumMenuLockClickListener()));
+                    itemOptions.forceTop(true);
+                    itemOptions.show();
+                } else {
+                    formatOptions.dismiss();
+                    formatOptions = null;
+                }
+            } else if (!isPopupShowing()) {
                 showPopup(1);
                 emojiView.onOpen(editText.length() > 0);
                 editText.requestFocus();
@@ -268,6 +314,10 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             }
         });
         emojiButton.setContentDescription(LocaleController.getString("Emoji", R.string.Emoji));
+    }
+
+    protected boolean allowEntities() {
+        return currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER;
     }
 
     public void setSuggestionsEnabled(boolean enabled) {
@@ -317,10 +367,11 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     public void setEnabled(boolean enabled) {
         editText.setEnabled(enabled);
         emojiButton.setVisibility(enabled ? VISIBLE : GONE);
+        int bottomPadding = AndroidUtilities.dp(currentStyle == STYLE_FRAGMENT ? 11 : 8);
         if (enabled) {
-            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
+            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), bottomPadding);
         } else {
-            editText.setPadding(0, 0, 0, AndroidUtilities.dp(8));
+            editText.setPadding(0, 0, 0, bottomPadding);
         }
     }
 
@@ -386,6 +437,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setCursorColor(0xffffffff);
             editText.setHandlesColor(0xffffffff);
             editText.setHighlightColor(0x30ffffff);
+            editText.quoteColor = 0xffffffff;
         } else {
             editText.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
             editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
@@ -439,7 +491,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 animator.addUpdateListener(animation -> {
                     float v = (float) animation.getAnimatedValue();
                     emojiView.setTranslationY(v);
-                    if (finalHeight > 0 && currentStyle == STYLE_STORY) {
+                    if (finalHeight > 0 && (currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER)) {
                         emojiView.setAlpha(1f - v / (float) finalHeight);
                     }
                     bottomPanelTranslationY(v - finalHeight);
@@ -542,7 +594,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 animator.addUpdateListener(animation -> {
                     float v = (float) animation.getAnimatedValue();
                     emojiView.setTranslationY(v);
-                    if (emojiPadding > 0 && currentStyle == STYLE_STORY) {
+                    if (emojiPadding > 0 && (currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER)) {
                         emojiView.setAlpha(1f - v / (float) emojiPadding);
                     }
                     bottomPanelTranslationY(v);
@@ -612,10 +664,10 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(parentFragment, allowAnimatedEmoji, false, false, getContext(), false, null, null, currentStyle != STYLE_STORY, resourcesProvider) {
+        emojiView = new EmojiView(parentFragment, allowAnimatedEmoji, false, false, getContext(), false, null, null, currentStyle != STYLE_STORY && currentStyle != STYLE_PHOTOVIEWER, resourcesProvider, false) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                if (currentStyle == STYLE_STORY) {
+                if (currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER) {
                     drawEmojiBackground(canvas, this);
                 }
                 super.dispatchDraw(canvas);
@@ -704,6 +756,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 if (i < 0) {
                     i = 0;
                 }
+
                 try {
                     innerTextChange = 2;
                     SpannableString spannable = new SpannableString(emoticon);

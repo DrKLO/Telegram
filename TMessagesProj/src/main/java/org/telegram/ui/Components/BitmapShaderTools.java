@@ -30,6 +30,13 @@ public class BitmapShaderTools {
         updateBounds();
     }
 
+    public BitmapShaderTools(int width, int height) {
+        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        canvas = new Canvas(bitmap);
+        paint.setShader(shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        updateBounds();
+    }
+
     public Bitmap getBitmap() {
         return bitmap;
     }
@@ -63,5 +70,13 @@ public class BitmapShaderTools {
     public void setBounds(float left, float top, float right, float bottom) {
         AndroidUtilities.rectTmp.set(left, top, right, bottom);
         setBounds(AndroidUtilities.rectTmp);
+    }
+
+    public void setMatrix(float offsetX, float offsetY, float scale, float degrees) {
+        matrix.reset();
+        matrix.postRotate(degrees, bitmap.getWidth() / 2f, bitmap.getHeight() / 2f);
+        matrix.postScale(scale, scale);
+        matrix.postTranslate(offsetX, offsetY);
+        shader.setLocalMatrix(matrix);
     }
 }

@@ -3,23 +3,19 @@ package org.telegram.ui.Stories;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.view.Gravity;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.Reactions.AnimatedEmojiEffect;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.Reactions.ReactionsUtils;
@@ -35,7 +31,7 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
     AnimatedTextView.AnimatedTextDrawable animatedTextDrawable = new AnimatedTextView.AnimatedTextDrawable();
     boolean hasCounter;
 
-    public StoryReactionWidgetView(Context context, View parent, TLRPC.TL_mediaAreaSuggestedReaction mediaArea, EmojiAnimationsOverlay overlay) {
+    public StoryReactionWidgetView(Context context, View parent, TL_stories.TL_mediaAreaSuggestedReaction mediaArea, EmojiAnimationsOverlay overlay) {
         super(context, parent, mediaArea);
         visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(mediaArea.reaction);
         if (mediaArea.flipped) {
@@ -52,8 +48,9 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
             }
         }
         animatedTextDrawable.setGravity(Gravity.CENTER);
-        animatedTextDrawable.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        animatedTextDrawable.setTextSize(AndroidUtilities.dp(14));
+        animatedTextDrawable.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
+        animatedTextDrawable.setTextSize(AndroidUtilities.dp(18));
+        animatedTextDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
 
         if (mediaArea.dark) {
             storyReactionWidgetBackground.nextStyle();
@@ -61,7 +58,13 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
         }
     }
 
-    public void setViews(TLRPC.StoryViews storyViews, boolean animated) {
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        animatedTextDrawable.setTextSize(Math.min(AndroidUtilities.dp(18), .8f * ((1f - 0.61f) / 2f) * getMeasuredHeight()));
+    }
+
+    public void setViews(TL_stories.StoryViews storyViews, boolean animated) {
         if (storyViews != null) {
             for (int i = 0; i < storyViews.reactions.size(); i++) {
                 if (ReactionsUtils.compare(storyViews.reactions.get(i).reaction, visibleReaction)) {

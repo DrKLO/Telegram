@@ -1129,7 +1129,6 @@
     <string name="MessageScheduledReminderNotification">&#128197; Erinnerung</string>
     <string name="OneResult">1 Ergebnis</string>
     <string name="VideoQualityIsTooLow">Die Videoqualität ist zu niedrig, um die Komprimierung zu ändern.</string>
-    <string name="TextSelectionHit">**Wort** gedrückt halten und Cursor bewegen, um noch mehr Text zu markieren.</string>
     <string name="CardNumberCopied">Kartennummer in Zwischenablage kopiert</string>
     <string name="CopyCardNumber">Kopieren</string>
     <string name="DiceInfo2">**:würfel:**-Emoji senden, um zu würfeln</string>

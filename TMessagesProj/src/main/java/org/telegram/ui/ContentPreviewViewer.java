@@ -214,8 +214,6 @@ public class ContentPreviewViewer {
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
-                menuVisible = true;
-                containerView.invalidate();
                 if (delegate != null) {
                     if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
                         items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
@@ -256,6 +254,8 @@ public class ContentPreviewViewer {
                 if (items.isEmpty()) {
                     return;
                 }
+                menuVisible = true;
+                containerView.invalidate();
                 int[] ic = new int[icons.size()];
                 for (int a = 0; a < icons.size(); a++) {
                     ic[a] = icons.get(a);
@@ -354,8 +354,6 @@ public class ContentPreviewViewer {
 
                 containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             } else if (currentContentType == CONTENT_TYPE_EMOJI && delegate != null) {
-                menuVisible = true;
-                containerView.invalidate();
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
@@ -396,6 +394,8 @@ public class ContentPreviewViewer {
                 if (items.isEmpty()) {
                     return;
                 }
+                menuVisible = true;
+                containerView.invalidate();
 
                 int[] ic = new int[icons.size()];
                 for (int a = 0; a < icons.size(); a++) {
@@ -492,8 +492,6 @@ public class ContentPreviewViewer {
                     valueAnimator.start();
                 }
             } else if (delegate != null) {
-                menuVisible = true;
-                containerView.invalidate();
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
@@ -531,6 +529,8 @@ public class ContentPreviewViewer {
                 if (items.isEmpty()) {
                     return;
                 }
+                menuVisible = true;
+                containerView.invalidate();
 
                 int[] ic = new int[icons.size()];
                 for (int a = 0; a < icons.size(); a++) {

@@ -2,6 +2,7 @@ package org.telegram.ui.Stories;
 
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 
 public class MessageMediaStoryFull_old extends TLRPC.TL_messageMediaStory {
 
@@ -14,7 +15,7 @@ public class MessageMediaStoryFull_old extends TLRPC.TL_messageMediaStory {
     public void readParams(AbstractSerializedData stream, boolean exception) {
         user_id = stream.readInt64(exception);
         id = stream.readInt32(exception);
-        storyItem = TLRPC.StoryItem.TLdeserialize(stream, stream.readInt32(exception), exception);
+        storyItem = TL_stories.StoryItem.TLdeserialize(stream, stream.readInt32(exception), exception);
     }
 
     public void serializeToStream(AbstractSerializedData stream) {

@@ -46,6 +46,10 @@ public class RecurrentPaymentsAcceptCell extends FrameLayout {
         return textView;
     }
 
+    public CheckBoxSquare getCheckBox() {
+        return checkBox;
+    }
+
     public void setText(CharSequence text) {
         textView.setText(text);
     }

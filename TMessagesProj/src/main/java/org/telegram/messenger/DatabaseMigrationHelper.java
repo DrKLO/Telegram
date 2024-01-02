@@ -1376,6 +1376,22 @@ public class DatabaseMigrationHelper {
             version = 134;
         }
 
+        if (version == 134) {
+            database.executeFast("DROP TABLE user_photos").stepThis().dispose();
+            database.executeFast("CREATE TABLE dialog_photos(uid INTEGER, id INTEGER, num INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
+            database.executeFast("CREATE TABLE dialog_photos_count(uid INTEGER PRIMARY KEY, count INTEGER)").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 135").stepThis().dispose();
+            version = 135;
+        }
+
+        if (version == 135) {
+//            database.executeFast("DROP TABLE stickersets").stepThis().dispose();
+            database.executeFast("CREATE TABLE stickersets2(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS stickersets2_id_index ON stickersets2(id);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 136").stepThis().dispose();
+            version = 136;
+        }
+
         return version;
     }
 

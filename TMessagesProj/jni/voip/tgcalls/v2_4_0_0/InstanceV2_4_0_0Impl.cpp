@@ -57,9 +57,7 @@ namespace tgcalls {
 namespace {
 
 static std::string intToString(int value) {
-    std::ostringstream stringStream;
-    stringStream << value;
-    return stringStream.str();
+    return std::to_string(value);
 }
 
 static VideoCaptureInterfaceObject *GetVideoCaptureAssumingSameThread(VideoCaptureInterface *videoCapture) {
@@ -1214,7 +1212,7 @@ public:
     _encryptionKey(std::move(descriptor.encryptionKey)),
     _stateUpdated(descriptor.stateUpdated),
     _signalBarsUpdated(descriptor.signalBarsUpdated),
-    _audioLevelsUpdated(descriptor.audioLevelsUpdated),
+    _audioLevelUpdated(descriptor.audioLevelsUpdated),
     _remoteBatteryLevelIsLowUpdated(descriptor.remoteBatteryLevelIsLowUpdated),
     _remoteMediaStateUpdated(descriptor.remoteMediaStateUpdated),
     _remotePrefferedAspectRatioUpdated(descriptor.remotePrefferedAspectRatioUpdated),
@@ -1253,14 +1251,15 @@ public:
     void start() {
         const auto weak = std::weak_ptr<InstanceV2_4_0_0ImplInternal>(shared_from_this());
 
-        _networking.reset(new ThreadLocalObject<NativeNetworkingImpl>(_threads->getNetworkThread(), [weak, threads = _threads, isOutgoing = _encryptionKey.isOutgoing, rtcServers = _rtcServers, enableP2P = _enableP2P]() {
-            return new NativeNetworkingImpl(NativeNetworkingImpl::Configuration{
+        _networking.reset(new ThreadLocalObject<NativeNetworkingImpl>(_threads->getNetworkThread(), [weak, threads = _threads, encryptionKey = _encryptionKey, isOutgoing = _encryptionKey.isOutgoing, rtcServers = _rtcServers, enableP2P = _enableP2P]() {
+            return new NativeNetworkingImpl(InstanceNetworking::Configuration{
+                .encryptionKey = encryptionKey,
                 .isOutgoing = isOutgoing,
                 .enableStunMarking = false,
                 .enableTCP = false,
                 .enableP2P = enableP2P,
                 .rtcServers = rtcServers,
-                .stateUpdated = [threads, weak](const NativeNetworkingImpl::State &state) {
+                .stateUpdated = [threads, weak](const InstanceNetworking::State &state) {
                     threads->getMediaThread()->PostTask([=] {
                         const auto strong = weak.lock();
                         if (!strong) {
@@ -1334,6 +1333,10 @@ public:
         mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
 
         mediaDeps.adm = _audioDeviceModule;
+
+        webrtc:: AudioProcessingBuilder builder;
+        mediaDeps.audio_processing = builder.Create();
+
 
         _availableVideoFormats = mediaDeps.video_encoder_factory->GetSupportedFormats();
 
@@ -1474,6 +1477,7 @@ public:
                 _negotiatedOutgoingAudioContent.value(),
                 _threads
             ));
+            _outgoingAudioChannel->setIsMuted(_isMicrophoneMuted);
         }
 
         adjustBitratePreferences(true);
@@ -1838,7 +1842,7 @@ public:
         _pendingIceCandidates.clear();
     }
 
-    void onNetworkStateUpdated(NativeNetworkingImpl::State const &state) {
+    void onNetworkStateUpdated(InstanceNetworking::State const &state) {
         State mappedState;
         if (state.isReadyToSendData) {
             mappedState = State::Established;
@@ -2078,7 +2082,7 @@ private:
     EncryptionKey _encryptionKey;
     std::function<void(State)> _stateUpdated;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float, float)> _audioLevelsUpdated;
+    std::function<void(float, float)> _audioLevelUpdated;
     std::function<void(bool)> _remoteBatteryLevelIsLowUpdated;
     std::function<void(AudioState, VideoState)> _remoteMediaStateUpdated;
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
@@ -2187,7 +2191,7 @@ void InstanceV2_4_0_0Impl::setMuteMicrophone(bool muteMicrophone) {
     });
 }
 
-void InstanceV2_4_0_0Impl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void InstanceV2_4_0_0Impl::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
     _internal->perform([sink](InstanceV2_4_0_0ImplInternal *internal) {
         internal->setIncomingVideoOutput(sink);
     });

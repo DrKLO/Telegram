@@ -47,6 +47,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -331,7 +332,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (!storiesController.hasStories(cell.dialogId) && !storiesController.hasUploadingStories(cell.dialogId)) {
             return;
         }
-        TLRPC.PeerStories userStories = storiesController.getStories(cell.dialogId);
+        TL_stories.PeerStories userStories = storiesController.getStories(cell.dialogId);
         long startFromDialogId = cell.dialogId;
         if (globalCancelable != null) {
             globalCancelable.cancel();
@@ -431,7 +432,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             items.add(new Item(UserConfig.getInstance(currentAccount).getClientUserId()));
         }
 
-        ArrayList<TLRPC.PeerStories> allStories = type == TYPE_ARCHIVE ? storiesController.getHiddenList() : storiesController.getDialogListStories();
+        ArrayList<TL_stories.PeerStories> allStories = type == TYPE_ARCHIVE ? storiesController.getHiddenList() : storiesController.getDialogListStories();
         for (int i = 0; i < allStories.size(); i++) {
             long dialogId = DialogObject.getPeerDialogId(allStories.get(i).peer);
             if (dialogId != UserConfig.getInstance(currentAccount).getClientUserId()) {
@@ -470,7 +471,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         }
 
         if (!hasOverlayText) {
-            titleView.setText(currentTitle, animated);
+            titleView.setText(currentTitle, animated && !LocaleController.isRTL);
         }
 
         miniItems.clear();
@@ -910,12 +911,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         textToSet = spannableString;
                     }
                 }
-                titleView.setText(textToSet, true);
+                titleView.setText(textToSet, !LocaleController.isRTL);
             }
         } else {
             hasOverlayText = false;
             overlayTextId = 0;
-            titleView.setText(currentTitle, true);
+            titleView.setText(currentTitle, !LocaleController.isRTL);
         }
         if (hasEllipsizedText) {
             ellipsizeSpanAnimator.addView(titleView);
@@ -946,7 +947,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public void onResume() {
         storiesController.checkExpiredStories();
         for (int i = 0; i < items.size(); i++) {
-            TLRPC.PeerStories stories = storiesController.getStories(items.get(i).dialogId);
+            TL_stories.PeerStories stories = storiesController.getStories(items.get(i).dialogId);
             if (stories != null) {
                 storiesController.preloadUserStories(stories);
             }
@@ -1164,7 +1165,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 avatarImage.clearImage();
                 return;
             }
-            avatarDrawable.setInfo(object);
+            avatarDrawable.setInfo(currentAccount, object);
             avatarImage.setForUserOrChat(object, avatarDrawable);
             if (mini) {
                 return;
@@ -1344,7 +1345,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 radialProgress.setDiff(0);
                 Paint paint = closeFriends ?
                         StoriesUtilities.getCloseFriendsPaint(avatarImage) :
-                        StoriesUtilities.getActiveCirclePaint(avatarImage, true);
+                        StoriesUtilities.getUnreadCirclePaint(avatarImage, true);
                 paint.setAlpha(255);
                 radialProgress.setPaint(paint);
                 radialProgress.setProgressRect(
@@ -1639,7 +1640,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         user = null;
                     }
                     if (object != null) {
-                        crossfadeAvatarDrawable.setInfo(object);
+                        crossfadeAvatarDrawable.setInfo(currentAccount, object);
                         crossfageToAvatarImage.setForUserOrChat(object, crossfadeAvatarDrawable);
                     }
                 } else {

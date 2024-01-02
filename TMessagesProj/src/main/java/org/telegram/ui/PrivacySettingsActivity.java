@@ -647,7 +647,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         callsRow = rowCount++;
         groupsRow = rowCount++;
         groupsDetailRow = -1;
-        if (!getMessagesController().premiumLocked || getUserConfig().isPremium()) {
+        if (!getMessagesController().premiumFeaturesBlocked() || getUserConfig().isPremium()) {
             voicesRow = rowCount++;
         } else {
             voicesRow = -1;

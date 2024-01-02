@@ -228,14 +228,14 @@ public class UserCell2 extends FrameLayout {
         lastAvatar = photo;
 
         if (currentUser != null) {
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
             if (currentUser.status != null) {
                 lastStatus = currentUser.status.expires;
             } else {
                 lastStatus = 0;
             }
         } else if (currentChat != null) {
-            avatarDrawable.setInfo(currentChat);
+            avatarDrawable.setInfo(currentAccount, currentChat);
         } else if (currentName != null) {
             avatarDrawable.setInfo(currentId, currentName.toString(), null);
         } else {

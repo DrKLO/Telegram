@@ -49,8 +49,8 @@ public class StoryPositionView {
         float top = headerView.getY() + headerView.titleView.getTop() + textDrawable.getHeight() / 2f - 1;// + //(headerView.titleView.getMeasuredHeight() - textDrawable.getHeight()) / 2f + AndroidUtilities.dp(1);
         int rightPadding = (int) textDrawable.getCurrentWidth();
         headerView.titleView.setRightPadding(rightPadding);
-        float left = AndroidUtilities.dp(4) + headerView.getLeft() + headerView.titleView.getLeft() + headerView.titleView.getTextWidth();
-        left -= Utilities.clamp(headerView.titleView.getTextWidth() + rightPadding - headerView.titleView.getWidth(), rightPadding, 0);
+        float left = AndroidUtilities.dp(4) + headerView.getLeft() + headerView.titleView.getLeft() + headerView.titleView.getTextWidth() + headerView.titleView.getRightDrawableWidth();
+        left -= Utilities.clamp(headerView.titleView.getTextWidth() + headerView.titleView.getRightDrawableWidth() + rightPadding - headerView.titleView.getWidth(), rightPadding, 0);
         canvas.translate(left, top);
 
         float horizontalPadding = AndroidUtilities.dp(8);

@@ -1085,13 +1085,13 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                 Object parentObject;
                 if (DialogObject.isUserDialog(peerId)) {
                     TLRPC.User currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
-                    noVideoStubLayout.avatarDrawable.setInfo(currentUser);
+                    noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentUser);
                     imageLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_BIG);
                     thumbLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_SMALL);
                     parentObject = currentUser;
                 } else {
                     TLRPC.Chat currentChat = AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().getChat(-peerId);
-                    noVideoStubLayout.avatarDrawable.setInfo(currentChat);
+                    noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentChat);
                     imageLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_BIG);
                     thumbLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_SMALL);
                     parentObject = currentChat;

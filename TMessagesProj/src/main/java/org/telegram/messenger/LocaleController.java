@@ -70,6 +70,10 @@ public class LocaleController {
     public FastDateFormat formatterScheduleDay;
     public FastDateFormat formatterScheduleYear;
     public FastDateFormat formatterMonthYear;
+    public FastDateFormat formatterGiveawayCard;
+    public FastDateFormat formatterBoostExpired;
+    public FastDateFormat formatterGiveawayMonthDay;
+    public FastDateFormat formatterGiveawayMonthDayYear;
     public FastDateFormat[] formatterScheduleSend = new FastDateFormat[15];
 
     private static HashMap<Integer, String> resourcesCacheMap = new HashMap<>();
@@ -1069,10 +1073,10 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, int res) {
-        return getStringInternal(key, null, res);
+        return getStringInternal(key, null, 0, res);
     }
 
-    private String getStringInternal(String key, String fallback, int res) {
+    private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
         String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
         if (value == null) {
             if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
@@ -1082,6 +1086,11 @@ public class LocaleController {
                 try {
                     value = ApplicationLoader.applicationContext.getString(res);
                 } catch (Exception e) {
+                    if (fallbackRes != 0) {
+                        try {
+                            value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                        } catch (Exception ignored) {}
+                    }
                     FileLog.e(e);
                 }
             }
@@ -1115,8 +1124,12 @@ public class LocaleController {
         return getInstance().getStringInternal(key, res);
     }
 
+    public static String getString(String key, String fallback, int fallbackRes, int res) {
+        return getInstance().getStringInternal(key, fallback, fallbackRes, res);
+    }
+
     public static String getString(String key, String fallback, int res) {
-        return getInstance().getStringInternal(key, fallback, res);
+        return getInstance().getStringInternal(key, fallback, 0, res);
     }
 
     public static String getString(String key) {
@@ -1137,7 +1150,8 @@ public class LocaleController {
         String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
         param = key + "_" + param;
         int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-        return getString(param, key + "_other", resourceId);
+        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
+        return getString(param, key + "_other", resourceId, fallbackResourceId);
     }
 
     public static String formatPluralString(String key, int plural, Object... args) {
@@ -1152,6 +1166,10 @@ public class LocaleController {
         argsWithPlural[0] = plural;
         System.arraycopy(args, 0, argsWithPlural, 1, args.length);
         return formatString(param, key + "_other", resourceId, fallbackResourceId, argsWithPlural);
+    }
+
+    public static String getStringParamForNumber(int number) {
+        return getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(number));
     }
 
     public static String formatPluralStringComma(String key, int plural) {
@@ -1178,6 +1196,11 @@ public class LocaleController {
                 int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
                 value = ApplicationLoader.applicationContext.getString(resourceId);
             }
+            if (value == null) {
+                int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
+                value = ApplicationLoader.applicationContext.getString(resourceId);
+            }
+            value = value.replace("%d", "%1$s");
             value = value.replace("%1$d", "%1$s");
 
             if (getInstance().currentLocale != null) {
@@ -1614,6 +1637,24 @@ public class LocaleController {
         return "LOC_ERR: formatDateChat";
     }
 
+    public static String formatSmallDateChat(long date) {
+        try {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            int currentYear = calendar.get(Calendar.YEAR);
+            date *= 1000;
+
+            calendar.setTimeInMillis(date);
+            if (currentYear == calendar.get(Calendar.YEAR)) {
+                return getInstance().formatterDayMonth.format(date);
+            }
+            return getInstance().formatterDayMonth.format(date) + ", " + calendar.get(Calendar.YEAR);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR: formatDateChat";
+    }
+
     public static String formatDate(long date) {
         try {
             date *= 1000;
@@ -1684,6 +1725,42 @@ public class LocaleController {
                 return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterDayMonth.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
+            } else {
+                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
+
+    public static String formatShortDate(long date) {
+        try {
+            date *= 1000;
+            Calendar rightNow = Calendar.getInstance();
+            int day = rightNow.get(Calendar.DAY_OF_YEAR);
+            int year = rightNow.get(Calendar.YEAR);
+            long timeInMillis = rightNow.getTimeInMillis();
+            rightNow.setTimeInMillis(date);
+            int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+            int dateYear = rightNow.get(Calendar.YEAR);
+
+            if (timeInMillis - date < 1000 * 60) {
+                return LocaleController.getString(R.string.ShortNow);
+            } else if (timeInMillis - date < 1000 * 60 * 60) {
+                int minutesAgo = (int) ((timeInMillis - date) / (1000 * 60));
+                return LocaleController.formatPluralString("ShortMinutesAgo", minutesAgo);
+            } else if (dateDay == day && year == dateYear) {
+                if (timeInMillis - date < 12 * 1000 * 60 * 60) {
+                    int hoursAgo = (int) ((timeInMillis - date) / (1000 * 60 * 60));
+                    return LocaleController.formatPluralString("ShortHoursAgo", hoursAgo);
+                } else {
+                    return LocaleController.getString(R.string.ShortToday);
+                }
+            } else if (dateDay + 1 == day && year == dateYear) {
+                return LocaleController.getString(R.string.ShortYesterday);
+            } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
+                return getInstance().formatterDayMonth.format(new Date(date));
             } else {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
             }
@@ -1920,6 +1997,10 @@ public class LocaleController {
                 || currentLocaleInfo != null && currentLocaleInfo.isRtl;
         nameDisplayOrder = lang.equals("ko") ? 2 : 1;
 
+        formatterBoostExpired = createFormatter(locale, getStringInternal("formatterBoostExpired", R.string.formatterBoostExpired), "MMM dd, yyyy");
+        formatterGiveawayCard = createFormatter(locale, getStringInternal("formatterGiveawayCard", R.string.formatterGiveawayCard), "dd MMM yyyy");
+        formatterGiveawayMonthDay = createFormatter(locale, getStringInternal("formatterGiveawayMonthDay", R.string.formatterGiveawayMonthDay), "MMMM dd");
+        formatterGiveawayMonthDayYear = createFormatter(locale, getStringInternal("formatterGiveawayMonthDayYear", R.string.formatterGiveawayMonthDayYear), "MMMM dd, yyyy");
         formatterMonthYear = createFormatter(locale, getStringInternal("formatterMonthYear", R.string.formatterMonthYear), "MMM yyyy");
         formatterDayMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
         formatterYear = createFormatter(locale, getStringInternal("formatterYear", R.string.formatterYear), "dd.MM.yy");

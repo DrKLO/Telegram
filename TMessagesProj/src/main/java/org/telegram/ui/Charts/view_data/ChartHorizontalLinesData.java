@@ -73,17 +73,17 @@ public class ChartHorizontalLinesData {
             boolean skipFloatValues = step / k < 1;
             for (int i = 0; i < n; i++) {
                 values[i] = newMinHeight + (int) (i * step);
-                valuesStr[i] = AndroidUtilities.formatWholeNumber(values[i], dif);
+                valuesStr[i] = AndroidUtilities.formatWholeNumber(values[i], 0);
                 if (k > 0) {
                     float v = (values[i] / k);
                     if (skipFloatValues) {
                         if (v - ((int) v) < 0.01f) {
-                            valuesStr2[i] = AndroidUtilities.formatWholeNumber((int) v, (int) (dif / k));
+                            valuesStr2[i] = AndroidUtilities.formatWholeNumber((int) v, 0);
                         } else {
                             valuesStr2[i] = "";
                         }
                     } else {
-                        valuesStr2[i] = AndroidUtilities.formatWholeNumber((int) v, (int) (dif / k));
+                        valuesStr2[i] = AndroidUtilities.formatWholeNumber((int) v, 0);
                     }
                 }
             }

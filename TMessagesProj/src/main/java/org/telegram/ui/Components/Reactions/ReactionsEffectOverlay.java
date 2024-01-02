@@ -144,14 +144,14 @@ public class ReactionsEffectOverlay {
                             if (chat == null) {
                                 continue;
                             }
-                            avatarDrawable.setInfo(chat);
+                            avatarDrawable.setInfo(currentAccount, chat);
                             imageReceiver.setForUserOrChat(chat, avatarDrawable);
                         } else {
                             user = MessagesController.getInstance(currentAccount).getUser(peerId);
                             if (user == null) {
                                 continue;
                             }
-                            avatarDrawable.setInfo(user);
+                            avatarDrawable.setInfo(currentAccount, user);
                             imageReceiver.setForUserOrChat(user, avatarDrawable);
                         }
 
@@ -225,8 +225,8 @@ public class ReactionsEffectOverlay {
             fromHeight = holderView.loopImageView.getWidth() * holderView.getScaleX();
         } else if (reactionButton != null) {
             cell.getLocationInWindow(loc);
-            fromX = loc[0] + cell.reactionsLayoutInBubble.x + reactionButton.x + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageX());
-            fromY = loc[1] + cell.reactionsLayoutInBubble.y + reactionButton.y + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageY());
+            fromX = loc[0] + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageX());
+            fromY = loc[1] + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageY());
             fromHeight = reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageHeight();
         } else if (cell != null) {
             ((View) cell.getParent()).getLocationInWindow(loc);
@@ -315,11 +315,11 @@ public class ReactionsEffectOverlay {
                     cell.getLocationInWindow(loc);
 
                     ReactionsLayoutInBubble.ReactionButton reactionButton = cell.getReactionButton(reaction);
-                    toX = loc[0] + cell.reactionsLayoutInBubble.x;
-                    toY = loc[1] + cell.reactionsLayoutInBubble.y;
+                    toX = loc[0];
+                    toY = loc[1];
                     if (reactionButton != null) {
-                        toX += reactionButton.x + reactionButton.drawingImageRect.left;
-                        toY += reactionButton.y + reactionButton.drawingImageRect.top;
+                        toX += reactionButton.drawingImageRect.left;
+                        toY += reactionButton.drawingImageRect.top;
                     }
                     if (chatActivity != null) {
                         toY += chatActivity.drawingChatLisViewYoffset;

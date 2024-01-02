@@ -376,7 +376,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             if (slowmodeInfoRow == -1 && gigaHeaderRow == -1 || removedUsersRow != -1) {
                 participantsDividerRow = rowCount++;
             }
-            if (ChatObject.canBlockUsers(currentChat) && (ChatObject.isChannel(currentChat) || currentChat.creator)) {
+            if (ChatObject.canBlockUsers(currentChat) && getParticipantsCount() > 1 && (ChatObject.isChannel(currentChat) || currentChat.creator)) {
                 addNewRow = rowCount++;
             }
 
@@ -729,7 +729,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     } else if (position == sendMediaVideosRow) {
                         defaultBannedRights.send_videos = !defaultBannedRights.send_videos;
                     } else if (position == sendMediaStickerGifsRow) {
-                        defaultBannedRights.send_stickers = !defaultBannedRights.send_stickers;
+                        defaultBannedRights.send_stickers = defaultBannedRights.send_games = defaultBannedRights.send_gifs = defaultBannedRights.send_inline = !defaultBannedRights.send_stickers;
                     } else if (position == sendMediaMusicRow) {
                         defaultBannedRights.send_audios = !defaultBannedRights.send_audios;
                     } else if (position == sendMediaFilesRow) {

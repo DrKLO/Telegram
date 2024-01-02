@@ -11,7 +11,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class UploadingDotsSpannable extends ReplacementSpan {
-    private String text = "…";
+    private final String text = "…";
 
     private View parent;
     int swapPosition1 = 1;
@@ -28,12 +28,14 @@ public class UploadingDotsSpannable extends ReplacementSpan {
         return (int) paint.measureText(this.text);
     }
 
+    public boolean fixTop;
+
     @Override
     public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
 
         TextPaint textPaint = (TextPaint) paint;
         float characterWidth = paint.measureText(this.text) / 3;
-        float baseline = -textPaint.getFontMetrics().top;
+        float baseline = fixTop ? -textPaint.getFontMetrics().ascent : -textPaint.getFontMetrics().top;
 
         float textThickness = (float) ((textPaint.getFontMetrics().bottom - textPaint.getFontMetrics().top) * (isMediumTypeface ? 0.05f : 0.0365f));
         baseline -= textThickness;

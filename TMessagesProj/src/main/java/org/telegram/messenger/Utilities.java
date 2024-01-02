@@ -522,6 +522,10 @@ public class Utilities {
         public ReturnType run();
     }
 
+    public static interface Callback0Return<ReturnType> {
+        public ReturnType run();
+    }
+
     public static interface CallbackReturn<Arg, ReturnType> {
         public ReturnType run(Arg arg);
     }
