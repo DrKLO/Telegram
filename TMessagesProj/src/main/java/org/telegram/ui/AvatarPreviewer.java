@@ -80,10 +80,11 @@ public class AvatarPreviewer {
     private Layout layout;
     private boolean visible;
 
-public void show(ViewGroup parentContainer, Data data, boolean accessibility,Callback callback) {
-        Preconditions.checkNotNull(parentContainer);
-        Preconditions.checkNotNull(data);
-        Preconditions.checkNotNull(callback);
+    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback,boolean accessibility) {
+
+        Objects.requireNonNull(parentContainer);
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(callback);
 
         final Context context = parentContainer.getContext();
 
@@ -131,12 +132,12 @@ public void show(ViewGroup parentContainer, Data data, boolean accessibility,Cal
                 parentContainer.requestDisallowInterceptTouchEvent(true);
                 visible = true;
             }
-            else layout.showBottomSheet();
+            else layout.showContextMenu();
         }
     }
 
-    public void show(ViewGroup parentContainer, Data data, Callback callback) {
-show(parentContainer,data,false,callback);
+    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback) {
+        show(parentContainer,resourcesProvider,data,callback,false);
     }
     public void close() {
         if (visible) {
@@ -459,9 +460,9 @@ show(parentContainer,data,false,callback);
             } else if (id == NotificationCenter.fileLoadProgressChanged) {
                 String fileName = (String) args[0];
                 if (TextUtils.equals(fileName, videoFileName)) {
-                        Long loadedSize = (Long) args[1];
-                        Long totalSize = (Long) args[2];
-                        float progress = Math.min(1f, loadedSize / (float) totalSize);
+                    Long loadedSize = (Long) args[1];
+                    Long totalSize = (Long) args[2];
+                    float progress = Math.min(1f, loadedSize / (float) totalSize);
                     avatarView.setProgress(progress);
                 }
             }
