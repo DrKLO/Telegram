@@ -42,52 +42,6 @@ uniform vec2 offset;
 float rand(vec2 n) { 
 	return fract(sin(dot(n,vec2(12.9898,4.1414-seed*.42)))*43758.5453);
 }
-float mod289(float x){return x-floor(x*(1./(289.+seed)))*(289.+seed);}
-vec4 mod289(vec4 x){return x-floor(x*(1./(289.+seed)))*(289.0+seed);}
-vec4 perm(vec4 x){return mod289(((x*34.)+1.)*x);}
-float noise(vec3 p){
-  
-  vec3 a = floor(p);
-  vec3 d = p - a;
-  d = d * d * (3. - 2. * d);
-
-  vec4 b = a.xxyy + vec4(0., 1., 0., 1.);
-  vec4 k1 = perm(b.xyxy);
-  vec4 k2 = perm(k1.xyxy + b.zzww);
-
-  vec4 c = k2 + a.zzzz;
-  vec4 k3 = perm(c);
-  vec4 k4 = perm(c + 1.0);
-
-  vec4 o3 = fract(k4 / 41.0) * d.z + fract(k3 / 41.0) * (1.0 - d.z);
-  vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
-
-  return o4.y * d.y + o4.x * (1.0 - d.y);
-}
-vec3 grad(vec3 p) {
-  const vec2 e = vec2(.1, .0);
-  return vec3(
-    noise(p + e.xyy) - noise(p - e.xyy),
-    noise(p + e.yxy) - noise(p - e.yxy),
-    noise(p + e.yyx) - noise(p - e.yyx)
-  ) / (2.0 * e.x);
-}
-vec3 curlNoise(vec3 p) {
-  p.xy /= size;
-  p.x *= (size.x / size.y);
-  p.xy = fract(p.xy);
-  p.xy *= noiseScale;
-
-  const vec2 e = vec2(.01, .0);
-  return grad(p).yzx - vec3(
-    grad(p + e.yxy).z,
-    grad(p + e.yyx).x,
-    grad(p + e.xyy).y
-  );
-}
-float modI(float a,float b) {
-  return floor(a-floor((a+0.5)/b)*b+0.5);
-}
 
 float particleEaseInWindowFunction(float t) {
     return t;
@@ -121,14 +75,14 @@ void main() {
     ) / gridSize.xy;
     position = (matrix * vec3(uv + .5 / gridSize.xy, 1.0)).xy;
     float direction = rand(3. * uv) * (3.14159265 * 2.0);
-    velocity = vec2(cos(direction), sin(direction)) * (0.1 + rand(5. * uv) * (0.2 - 0.1)) * 210.0 * dp;
+    velocity = vec2(cos(direction), sin(direction)) * (0.1 + rand(5. * uv) * (0.2 - 0.1)) * 260.0 * dp;
     particleTime = (0.7 + rand(uv) * (1.5 - 0.7)) / 1.15;
   }
 
   float effectFraction =   max(0.0, min(0.35, time)) / 0.35;
   float particleFraction = max(0.0, min(0.2, .1 + time - uv.x * 0.6)) / 0.2;
   position += velocity * deltaTime * particleFraction;
-  velocity += vec2(12.0, -60.0) * deltaTime * dp * particleFraction;
+  velocity += vec2(19.0 * (velocity.x > 0.0 ? 1.0 : -1.0) * (1.0 - effectFraction), -65.0) * deltaTime * dp * particleFraction;
   particleTime = max(0.0, particleTime - 1.2 * deltaTime * effectFraction);
 
   outUV = uv;

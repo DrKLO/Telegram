@@ -68,7 +68,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
@@ -205,7 +204,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             return 0;
         }
 
-        default int getTopicId() {
+        default long getTopicId() {
             return 0;
         }
 
@@ -1198,7 +1197,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     text = StoriesUtilities.createExpiredStoryString(true, "ExpiredStoryMentioned", R.string.ExpiredStoryMentioned, MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId()).first_name);
                 }
             } else if (delegate.getTopicId() == 0 && MessageObject.isTopicActionMessage(messageObject)) {
-                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.messageOwner, true));
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(currentAccount, messageObject.messageOwner, true));
                 text = ForumUtilities.createActionTextWithTopic(topic, messageObject);
             }
             if (text == null) {

@@ -862,7 +862,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             override = true;
                         }
                     }
-                    if (peerStoriesView != null && selfStoriesViewsOffset == 0 && !inSwipeToDissmissMode && !isCaption && storiesViewPager.currentState != ViewPager.SCROLL_STATE_DRAGGING) {
+                    if (peerStoriesView != null && selfStoriesViewsOffset == 0 && !inSwipeToDissmissMode && !isCaption && !isRecording && storiesViewPager.currentState != ViewPager.SCROLL_STATE_DRAGGING) {
                         AndroidUtilities.getViewPositionInParent(peerStoriesView.storyContainer, this, pointPosition);
                         ev.offsetLocation(-pointPosition[0], -pointPosition[1]);
                         storiesViewPager.getCurrentPeerView().checkPinchToZoom(ev);
@@ -900,14 +900,14 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                         startX = lastTouchX = ev.getX();
                         startY = ev.getY();
                         verticalScrollDetected = false;
-                        allowIntercept = !findClickableView(windowView, ev.getX(), ev.getY(), false);
-                        allowSwipeToDissmiss = !findClickableView(windowView, ev.getX(), ev.getY(), true);
+                        allowIntercept = !isRecording && !findClickableView(windowView, ev.getX(), ev.getY(), false);
+                        allowSwipeToDissmiss = !isRecording && !findClickableView(windowView, ev.getX(), ev.getY(), true);
                         setInTouchMode(allowIntercept && !isCaptionPartVisible);
-                        if (allowIntercept && isCaptionPartVisible) {
+                        if (allowIntercept && !isRecording && isCaptionPartVisible) {
                             delayedTapRunnable = () -> setInTouchMode(true);
                             AndroidUtilities.runOnUIThread(delayedTapRunnable, 150);
                         }
-                        if (allowIntercept && !keyboardVisible && !isInTextSelectionMode) {
+                        if (allowIntercept && !keyboardVisible && !isRecording && !isInTextSelectionMode) {
                             AndroidUtilities.runOnUIThread(longPressRunnable, 400);
                         }
                     } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
@@ -946,7 +946,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                     peerView.cancelTextSelection();
                                 }
                                 boolean viewsAllowed = peerView != null && peerView.viewsAllowed();
-                                allowSwipeToReply = !viewsAllowed && peerView != null && !peerView.isChannel && storiesIntro == null;
+                                allowSwipeToReply = !viewsAllowed && peerView != null && !peerView.isChannel && !peerView.isPremiumBlocked && storiesIntro == null;
                                 allowSelfStoriesView = viewsAllowed && !peerView.unsupported && peerView.currentStory.storyItem != null && storiesIntro == null;
                                 if (allowSelfStoriesView && keyboardHeight != 0) {
                                     allowSelfStoriesView = false;

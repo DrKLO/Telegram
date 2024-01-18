@@ -118,7 +118,7 @@ public class TopicsController extends BaseController {
 
                     topicsIsLoading.put(chatId, 0);
                     processTopics(chatId, topics.topics, messagesMap, false, loadType, ((TLRPC.TL_messages_forumTopics) response).count);
-                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0);
+                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
                     sortTopics(chatId);
                     getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
 
@@ -390,7 +390,7 @@ public class TopicsController extends BaseController {
                     getMessagesController().putChats(((TLRPC.TL_messages_forumTopics) response).chats, false);
 
                     processTopics(chatId, topics.topics, messagesMap, false, LOAD_TYPE_LOAD_UNKNOWN, -1);
-                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0);
+                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
                     getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
                     if (callback != null) {
                         callback.run();
@@ -400,7 +400,7 @@ public class TopicsController extends BaseController {
         }));
     }
 
-    public void updateMaxReadId(long chatId, int topicId, int readMaxId, int unreadCount, int mentionsUnread) {
+    public void updateMaxReadId(long chatId, long topicId, int readMaxId, int unreadCount, int mentionsUnread) {
         TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
         if (topic != null) {
             topic.read_inbox_max_id = readMaxId;
@@ -412,7 +412,7 @@ public class TopicsController extends BaseController {
         }
     }
 
-    public TLRPC.TL_forumTopic findTopic(long chatId, int topicId) {
+    public TLRPC.TL_forumTopic findTopic(long chatId, long topicId) {
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
         if (topicsMap != null) {
             return topicsMap.get(topicId);
@@ -717,7 +717,7 @@ public class TopicsController extends BaseController {
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
     }
 
-    public void updateMentionsUnread(long dialogId, int topicId, int topicMentionsCount) {
+    public void updateMentionsUnread(long dialogId, long topicId, int topicMentionsCount) {
         AndroidUtilities.runOnUIThread(() -> {
             TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
             if (topic != null) {
@@ -727,7 +727,7 @@ public class TopicsController extends BaseController {
         });
     }
 
-    public int updateReactionsUnread(long dialogId, int topicId, int count, boolean increment) {
+    public int updateReactionsUnread(long dialogId, long topicId, int count, boolean increment) {
         TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
         int totalCount = -1;
         if (topic != null) {
@@ -745,7 +745,7 @@ public class TopicsController extends BaseController {
         return totalCount;
     }
 
-    public void markAllReactionsAsRead(long chatId, int topicId) {
+    public void markAllReactionsAsRead(long chatId, long topicId) {
         TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
         if (topic != null && topic.unread_reactions_count > 0) {
             topic.unread_reactions_count = 0;
@@ -811,7 +811,7 @@ public class TopicsController extends BaseController {
                         topicsToReload.put(update.dialogId, arrayList);
                     }
                     TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
-                    forumTopic.id = update.topicId;
+                    forumTopic.id = (int) update.topicId;
                     arrayList.add(forumTopic);
                 } else {
                     TLRPC.TL_forumTopic topic = findTopic(-update.dialogId, update.topicId);
@@ -1031,7 +1031,7 @@ public class TopicsController extends BaseController {
     public static class TopicUpdate {
         public int totalMessagesCount = -1;
         long dialogId;
-        int topicId;
+        long topicId;
         int unreadMentions;
         int unreadCount;
         int topMessageId;
@@ -1057,13 +1057,13 @@ public class TopicsController extends BaseController {
         openedTopicsBuChatId.put(chatId, v);
     }
 
-    public void getTopicRepliesCount(long dialogId, int topicId) {
+    public void getTopicRepliesCount(long dialogId, long topicId) {
         TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
         if (topic != null) {
             if (topic.totalMessagesCount == 0) {
                 TLRPC.TL_messages_getReplies req = new TLRPC.TL_messages_getReplies();
                 req.peer = getMessagesController().getInputPeer(dialogId);
-                req.msg_id = topicId;
+                req.msg_id = (int) topicId;
                 req.limit = 1;
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response != null) {

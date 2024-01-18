@@ -5,12 +5,19 @@ import com.google.android.exoplayer2.util.Consumer;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChannelBoostsController {
 
@@ -27,7 +34,6 @@ public class ChannelBoostsController {
         connectionsManager = ConnectionsManager.getInstance(currentAccount);
     }
 
-
     public void getBoostsStats(long dialogId, Consumer<TL_stories.TL_premium_boostsStatus> consumer) {
         TL_stories.TL_premium_getBoostsStatus req = new TL_stories.TL_premium_getBoostsStatus();
         req.peer = messagesController.getInputPeer(dialogId);
@@ -35,7 +41,22 @@ public class ChannelBoostsController {
             if (response != null) {
                 consumer.accept((TL_stories.TL_premium_boostsStatus) response);
             } else {
-                BulletinFactory.showForError(error);
+                BaseFragment fragment = LaunchActivity.getLastFragment();
+                if (error != null && fragment != null && "CHANNEL_PRIVATE".equals(error.text)) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getContext(), fragment.getResourceProvider());
+                    builder.setTitle(LocaleController.getString(R.string.AppName));
+                    Map<String, Integer> colorsReplacement = new HashMap<>();
+                    colorsReplacement.put("info1.**", Theme.getColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info2.**", Theme.getColor(Theme.key_dialogTopBackground));
+                    builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground), colorsReplacement);
+                    builder.setTopAnimationIsNew(true);
+                    builder.setTitle(LocaleController.getString(R.string.ChannelPrivate));
+                    builder.setMessage(LocaleController.getString("ChannelCantOpenPrivate2", R.string.ChannelCantOpenPrivate2));
+                    builder.setPositiveButton(LocaleController.getString(R.string.Close), null);
+                    builder.show();
+                } else {
+                    BulletinFactory.global().showForError(error);
+                }
                 consumer.accept(null);
             }
         }));

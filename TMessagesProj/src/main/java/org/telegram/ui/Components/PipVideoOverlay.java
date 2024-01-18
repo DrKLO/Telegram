@@ -967,7 +967,7 @@ public class PipVideoOverlay {
                 path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(ROUNDED_CORNERS_DP), AndroidUtilities.dp(ROUNDED_CORNERS_DP), Path.Direction.CW);
             }
         };
-        contentView = new ViewGroup(context) {
+        contentView = new PipVideoViewGroup(context) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 contentFrameLayout.layout(0, 0, pipWidth, pipHeight);
@@ -1238,6 +1238,17 @@ public class PipVideoOverlay {
 
         private float getPipY() {
             return mPrefs.getFloat("y", -1);
+        }
+    }
+
+    public static class PipVideoViewGroup extends ViewGroup {
+        public PipVideoViewGroup(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
+
         }
     }
 }

@@ -72,6 +72,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 = 15;
     public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB = 16;
     public static final int CACHE_TYPE_EMOJI_CALL = 17;
+    public static final int CACHE_TYPE_SAVED_REACTION = 18;
 
     public int rawDrawIndex;
 
@@ -625,7 +626,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     private void updateAutoRepeat(ImageReceiver imageReceiver) {
         if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);
-        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
+        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
             imageReceiver.setAutoRepeatCount(1);
         } else if (cacheType == CACHE_TYPE_EMOJI_CALL){
             imageReceiver.setAutoRepeatCount(0);

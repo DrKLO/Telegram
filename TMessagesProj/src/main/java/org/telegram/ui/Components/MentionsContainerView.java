@@ -69,7 +69,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
     private RecyclerListView.OnItemClickListener mentionsOnItemClickListener;
     private Delegate delegate;
 
-    public MentionsContainerView(@NonNull Context context, long dialogId, int threadMessageId, BaseFragment baseFragment, SizeNotifierFrameLayout container, Theme.ResourcesProvider resourcesProvider) {
+    public MentionsContainerView(@NonNull Context context, long dialogId, long threadMessageId, BaseFragment baseFragment, SizeNotifierFrameLayout container, Theme.ResourcesProvider resourcesProvider) {
         super(context, container);
         this.baseFragment = baseFragment;
         this.sizeNotifierFrameLayout = container;

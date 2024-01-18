@@ -151,6 +151,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     public interface DialogsSearchAdapterDelegate {
         void searchStateChanged(boolean searching, boolean animated);
         void didPressedOnSubDialog(long did);
+        void didPressedBlockedDialog(View view, long did);
         void needRemoveHint(long did);
         void needClearList();
         void runResultsEnterAnimation();
@@ -164,12 +165,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         private final int currentAccount;
         private boolean drawChecked;
         private boolean forceDarkTheme;
+        private boolean showPremiumBlock;
         private Theme.ResourcesProvider resourcesProvider;
 
-        public CategoryAdapterRecycler(Context context, int account, boolean drawChecked, Theme.ResourcesProvider resourcesProvider) {
+        public CategoryAdapterRecycler(Context context, int account, boolean drawChecked, boolean showPremiumBlock, Theme.ResourcesProvider resourcesProvider) {
             this.drawChecked = drawChecked;
             mContext = context;
             currentAccount = account;
+            this.showPremiumBlock = showPremiumBlock;
             this.resourcesProvider = resourcesProvider;
         }
 
@@ -180,6 +183,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             HintDialogCell cell = new HintDialogCell(mContext, drawChecked, resourcesProvider);
+            if (showPremiumBlock) {
+                cell.showPremiumBlocked();
+            }
             cell.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(86)));
             return new RecyclerListView.Holder(cell);
         }
@@ -1374,7 +1380,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case VIEW_TYPE_PROFILE_CELL:
-                view = new ProfileSearchCell(mContext);
+                view = new ProfileSearchCell(mContext).showPremiumBlock(dialogsType == DialogsActivity.DIALOGS_TYPE_FORWARD);
                 break;
             case VIEW_TYPE_GRAY_SECTION:
                 view = new GraySectionCell(mContext);
@@ -1422,8 +1428,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
                 horizontalListView.setLayoutManager(layoutManager);
                 //horizontalListView.setDisallowInterceptTouchEvents(true);
-                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount, false, resourcesProvider));
+                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount, false, dialogsType == DialogsActivity.DIALOGS_TYPE_FORWARD, resourcesProvider));
                 horizontalListView.setOnItemClickListener((view1, position) -> {
+                    if (view1 instanceof HintDialogCell && ((HintDialogCell) view1).isBlocked()) {
+                        if (delegate != null) {
+                            delegate.didPressedBlockedDialog(view1, ((HintDialogCell) view1).getDialogId());
+                        }
+                        return;
+                    }
                     if (delegate != null) {
                         delegate.didPressedOnSubDialog((Long) view1.getTag());
                     }

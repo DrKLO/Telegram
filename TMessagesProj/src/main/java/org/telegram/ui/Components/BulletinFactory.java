@@ -32,6 +32,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -66,20 +67,16 @@ public final class BulletinFactory {
     public static BulletinFactory global() {
         BaseFragment baseFragment = LaunchActivity.getLastFragment();
         if (baseFragment == null) {
-            return null;
+            return BulletinFactory.of(Bulletin.BulletinWindow.make(ApplicationLoader.applicationContext), null);
         }
         return BulletinFactory.of(baseFragment);
     }
 
-    public static void showForError(TLRPC.TL_error error) {
-        BulletinFactory bulletinFactory = BulletinFactory.global();
-        if (bulletinFactory == null) {
-            return;
-        }
+    public void showForError(TLRPC.TL_error error) {
         if (BuildVars.DEBUG_VERSION) {
-            bulletinFactory.createErrorBulletin(error.code + " " + error.text).show();
+            createErrorBulletin(error.code + " " + error.text).show();
         } else {
-            bulletinFactory.createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
+            createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
         }
     }
 
@@ -1039,9 +1036,9 @@ public final class BulletinFactory {
         if (dialogsCount <= 1) {
             if (did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
                 if (messagesCount <= 1) {
-                    text = AndroidUtilities.replaceTags(LocaleController.getString("FwdMessageToSavedMessages", R.string.FwdMessageToSavedMessages));
+                    text = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.FwdMessageToSavedMessages), SavedMessagesController::openSavedMessages);
                 } else {
-                    text = AndroidUtilities.replaceTags(LocaleController.getString("FwdMessagesToSavedMessages", R.string.FwdMessagesToSavedMessages));
+                    text = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.FwdMessagesToSavedMessages), SavedMessagesController::openSavedMessages);
                 }
                 layout.setAnimation(R.raw.saved_messages, 30, 30);
             } else {

@@ -1826,11 +1826,11 @@ public class ChatObject {
     public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
         return canManageTopics(chat) || isMyTopic(currentAccount, topic);
     }
-    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         return canManageTopics(chat) || isMyTopic(currentAccount, chat, topicId);
     }
 
-    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         if (topicId == 1) {
             // general topic can't be deleted
             return false;
@@ -1849,11 +1849,11 @@ public class ChatObject {
         return topic != null && (topic.my || topic.from_id instanceof TLRPC.TL_peerUser && topic.from_id.user_id == UserConfig.getInstance(currentAccount).clientUserId);
     }
 
-    public static boolean isMyTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean isMyTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         return chat != null && chat.forum && isMyTopic(currentAccount, chat.id, topicId);
     }
 
-    public static boolean isMyTopic(int currentAccount, long chatId, int topicId) {
+    public static boolean isMyTopic(int currentAccount, long chatId, long topicId) {
         return isMyTopic(currentAccount, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chatId, topicId));
     }
 

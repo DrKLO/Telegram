@@ -449,6 +449,16 @@ public class Browser {
         return false;
     }
 
+    public static boolean isTMe(String url) {
+        try {
+            final String linkPrefix = MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix;
+            return TextUtils.equals(AndroidUtilities.getHostAuthority(url), linkPrefix);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }
+
     public static boolean isInternalUri(Uri uri, boolean[] forceBrowser) {
         return isInternalUri(uri, false, forceBrowser);
     }

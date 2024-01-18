@@ -3687,7 +3687,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 return super.dispatchTouchEvent(ev);
             }
         };
-        galleryListView.allowSearch(forAddingPart);
+//        galleryListView.allowSearch(forAddingPart);
         galleryListView.setOnBackClickListener(() -> {
             animateGalleryListView(false);
             lastGallerySelectedAlbum = null;

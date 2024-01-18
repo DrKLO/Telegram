@@ -77,7 +77,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private Theme.ResourcesProvider resourcesProvider;
 
     private long dialogId;
-    private int topicId;
+    private long topicId;
 
     private boolean addingException;
 
@@ -132,7 +132,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         super(args);
         this.resourcesProvider = resourcesProvider;
         dialogId = args.getLong("dialog_id");
-        topicId = args.getInt("topic_id");
+        topicId = args.getLong("topic_id");
         addingException = args.getBoolean("exception", false);
     }
 
@@ -404,7 +404,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             } else if (position == soundRow) {
                 Bundle bundle = new Bundle();
                 bundle.putLong("dialog_id", dialogId);
-                bundle.putInt("topic_id", topicId);
+                bundle.putLong("topic_id", topicId);
                 presentFragment(new NotificationsSoundActivity(bundle, resourcesProvider));
             } else if (position == ringtoneRow) {
                 try {

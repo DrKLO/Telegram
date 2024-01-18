@@ -24,12 +24,12 @@ public class NotificationsSettingsFacade {
     }
 
 
-    public boolean isDefault(long dialogId, int topicId) {
+    public boolean isDefault(long dialogId, long topicId) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId, true);
         return false;
     }
 
-    public void clearPreference(long dialogId, int topicId) {
+    public void clearPreference(long dialogId, long topicId) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId, true);
         getPreferences().edit()
                 .remove(PROPERTY_NOTIFY + key)
@@ -43,7 +43,7 @@ public class NotificationsSettingsFacade {
     }
 
 
-    public int getProperty(String property, long dialogId, int topicId, int defaultValue) {
+    public int getProperty(String property, long dialogId, long topicId, int defaultValue) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId, true);
         if (getPreferences().contains(property + key)) {
             return getPreferences().getInt(property + key, defaultValue);
@@ -52,7 +52,7 @@ public class NotificationsSettingsFacade {
         return getPreferences().getInt(property + key, defaultValue);
     }
 
-    public long getProperty(String property, long dialogId, int topicId, long defaultValue) {
+    public long getProperty(String property, long dialogId, long topicId, long defaultValue) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId, true);
         if (getPreferences().contains(property + key)) {
             return getPreferences().getLong(property + key, defaultValue);
@@ -61,7 +61,7 @@ public class NotificationsSettingsFacade {
         return getPreferences().getLong(property + key, defaultValue);
     }
 
-    public boolean getProperty(String property, long dialogId, int topicId, boolean defaultValue) {
+    public boolean getProperty(String property, long dialogId, long topicId, boolean defaultValue) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
         if (getPreferences().contains(property + key)) {
             return getPreferences().getBoolean(property + key, defaultValue);
@@ -70,7 +70,7 @@ public class NotificationsSettingsFacade {
         return getPreferences().getBoolean(property + key, defaultValue);
     }
 
-    public String getPropertyString(String property, long dialogId, int topicId, String defaultValue) {
+    public String getPropertyString(String property, long dialogId, long topicId, String defaultValue) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
         if (getPreferences().contains(property + key)) {
             return getPreferences().getString(property + key, defaultValue);
@@ -80,7 +80,7 @@ public class NotificationsSettingsFacade {
     }
 
 
-    public void removeProperty(String property, long dialogId, int topicId) {
+    public void removeProperty(String property, long dialogId, long topicId) {
         String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
         getPreferences().edit().remove(property + key).apply();
     }
@@ -89,7 +89,7 @@ public class NotificationsSettingsFacade {
         return MessagesController.getNotificationsSettings(currentAccount);
     }
 
-    public void applyDialogNotificationsSettings(long dialogId, int topicId, TLRPC.PeerNotifySettings notify_settings) {
+    public void applyDialogNotificationsSettings(long dialogId, long topicId, TLRPC.PeerNotifySettings notify_settings) {
         if (notify_settings == null) {
             return;
         }
@@ -183,7 +183,7 @@ public class NotificationsSettingsFacade {
         });
     }
 
-    public void applySoundSettings(TLRPC.NotificationSound settings, SharedPreferences.Editor editor, long dialogId, int topicId, int globalType, boolean serverUpdate) {
+    public void applySoundSettings(TLRPC.NotificationSound settings, SharedPreferences.Editor editor, long dialogId, long topicId, int globalType, boolean serverUpdate) {
         if (settings == null) {
             return;
         }

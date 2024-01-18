@@ -318,8 +318,13 @@ public class CodeNumberField extends EditTextBoldCursor {
             if (clipboard == null) {
                 return;
             }
-            clipboard.getPrimaryClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
-            ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+//            ClipDescription clipDescription = clipboard.getPrimaryClipDescription();
+//            clipDescription.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
+            ClipData clipData = clipboard.getPrimaryClip();
+            if (clipData == null) {
+                return;
+            }
+            ClipData.Item item = clipData.getItemAt(0);
             int i = -1;
             String text = item.getText().toString();
             try {

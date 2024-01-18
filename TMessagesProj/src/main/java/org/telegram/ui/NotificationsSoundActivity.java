@@ -115,7 +115,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
     private final int tonesStreamType = AudioManager.STREAM_ALARM;
 
-    int topicId = 0;
+    long topicId = 0;
 
     public NotificationsSoundActivity(Bundle args) {
         this(args, null);
@@ -130,7 +130,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
     public boolean onFragmentCreate() {
         if (getArguments() != null) {
             dialogId = getArguments().getLong("dialog_id", 0);
-            topicId = getArguments().getInt("topic_id", 0);
+            topicId = getArguments().getLong("topic_id", 0);
             currentType = getArguments().getInt("type", -1);
         }
         String prefPath;

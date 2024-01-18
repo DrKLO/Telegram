@@ -95,7 +95,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     Paint blackoutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private long dialogId;
-    private int topicId;
+    private long topicId;
     private boolean loading;
     private boolean checkEnterItems;
     private boolean inSelectionMode;
@@ -157,7 +157,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         dialogId = getArguments().getLong("dialog_id");
-        topicId = getArguments().getInt("topic_id");
+        topicId = getArguments().getLong("topic_id");
         calendarType = getArguments().getInt("type");
 
         if (calendarType == TYPE_PROFILE_STORIES) {

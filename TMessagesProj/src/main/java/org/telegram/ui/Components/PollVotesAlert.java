@@ -268,7 +268,7 @@ public class PollVotesAlert extends BottomSheet {
         private TLRPC.User currentUser;
         private TLRPC.Chat currentChat;
 
-        private String lastName;
+        private CharSequence lastName;
         private int lastStatus;
         private TLRPC.FileLocation lastAvatar;
 
@@ -296,9 +296,10 @@ public class PollVotesAlert extends BottomSheet {
             nameTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             nameTextView.setTextSize(16);
-            nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 65, 14, LocaleController.isRTL ? 65 : 28, 0));
-            statusBadgeComponent = new StatusBadgeComponent(nameTextView);
+            nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 65, 12, LocaleController.isRTL ? 65 : 28, 0));
+
+            statusBadgeComponent = new StatusBadgeComponent(nameTextView, 20);
         }
 
         public void setData(TLObject object, int num, boolean divider) {
@@ -390,7 +391,7 @@ public class PollVotesAlert extends BottomSheet {
                     } else if (currentChat != null) {
                         newName = currentChat.title;
                     }
-                    if (!newName.equals(lastName)) {
+                    if (!TextUtils.equals(newName, lastName)) {
                         continueUpdate = true;
                     }
                 }
@@ -412,13 +413,15 @@ public class PollVotesAlert extends BottomSheet {
 
             if (currentUser != null) {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+                lastName = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false);
             } else if (currentChat != null) {
                 lastName = currentChat.title;
+                lastName = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false);
             } else {
                 lastName = "";
             }
             nameTextView.setText(lastName);
-            nameTextView.setRightDrawable(statusBadgeComponent.updateDrawable(currentUser, currentChat, Theme.getColor(Theme.key_chats_verifiedBackground), false));
+            nameTextView.setRightDrawable(statusBadgeComponent.updateDrawable(currentUser, currentChat, Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider), false));
 
             lastAvatar = photo;
             if (currentChat != null) {

@@ -43,10 +43,13 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
-        super(fragment.getParentActivity(), needFocus, resourcesProvider);
+        this(fragment.getParentActivity(), fragment, needFocus, hasFixedSize, useNested, resourcesProvider);
+    }
+
+    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
+        super(context, needFocus, resourcesProvider);
         this.baseFragment = fragment;
         this.hasFixedSize = hasFixedSize;
-        Context context = fragment.getParentActivity();
         headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
         FrameLayout containerView;
         if (useNested) {

@@ -31,7 +31,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -432,7 +431,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     }
 
     public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat, int arrowType, TextPaint textPaint) {
-        if (messageObject == null) {
+        if (messageObject == null || messageObject.messageOwner == null) {
             return "";
         }
         if (arrowSpan[arrowType] == null) {
@@ -456,23 +455,36 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             arrowSpan[arrowType].setSpan(span, 0, arrowSpan[arrowType].length(), 0);
         }
         CharSequence fromName = null;
-        TLRPC.User user = messageObject.messageOwner.from_id.user_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.messageOwner.from_id.user_id) : null;
+        TLRPC.User user = null;
         TLRPC.Chat chatFrom = null, chatTo = null;
-        chatFrom = messageObject.messageOwner.from_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
-        if (chatFrom == null) {
-            chatFrom = messageObject.messageOwner.from_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
-        }
-        chatTo = messageObject.messageOwner.peer_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
-        if (chatTo == null) {
-            chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
-        }
-        if (!ChatObject.isChannelAndNotMegaGroup(chatTo) && !includeChat) {
-            chatTo = null;
+        if (messageObject.messageOwner.saved_peer_id != null) {
+            if (messageObject.getSavedDialogId() >= 0) {
+                user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.getSavedDialogId());
+            } else if (messageObject.getSavedDialogId() < 0) {
+                chatFrom = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-messageObject.getSavedDialogId());
+            }
+        } else {
+            if (messageObject.messageOwner.from_id.user_id != 0) {
+                user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.messageOwner.from_id.user_id);
+            }
+            if (messageObject.messageOwner.from_id.chat_id != 0) {
+                chatFrom = MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id);
+            }
+            if (chatFrom == null) {
+                chatFrom = messageObject.messageOwner.from_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
+            }
+            chatTo = messageObject.messageOwner.peer_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
+            if (chatTo == null) {
+                chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
+            }
+            if (!ChatObject.isChannelAndNotMegaGroup(chatTo) && !includeChat) {
+                chatTo = null;
+            }
         }
         if (user != null && chatTo != null) {
             CharSequence chatTitle = chatTo.title;
             if (ChatObject.isForum(chatTo)) {
-                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatTo.id, MessageObject.getTopicId(messageObject.messageOwner, true));
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatTo.id, MessageObject.getTopicId(messageObject.currentAccount, messageObject.messageOwner, true));
                 if (topic != null) {
                     chatTitle = ForumUtilities.getTopicSpannedName(topic, null, false);
                 }
@@ -491,7 +503,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         } else if (chatFrom != null) {
             CharSequence chatTitle = chatFrom.title;
             if (ChatObject.isForum(chatFrom)) {
-                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatFrom.id, MessageObject.getTopicId(messageObject.messageOwner, true));
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatFrom.id, MessageObject.getTopicId(messageObject.currentAccount, messageObject.messageOwner, true));
                 if (topic != null) {
                     chatTitle = ForumUtilities.getTopicSpannedName(topic, null, false);
                 }

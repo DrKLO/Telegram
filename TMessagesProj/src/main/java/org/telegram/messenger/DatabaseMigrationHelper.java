@@ -1392,6 +1392,29 @@ public class DatabaseMigrationHelper {
             version = 136;
         }
 
+        if (version == 136) {
+            database.executeFast("CREATE TABLE saved_dialogs(did INTEGER PRIMARY KEY, date INTEGER, last_mid INTEGER, pinned INTEGER, flags INTEGER, folder_id INTEGER, last_mid_group INTEGER, count INTEGER)").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON saved_dialogs(date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS last_mid_idx_dialogs ON saved_dialogs(last_mid);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_dialogs ON saved_dialogs(folder_id);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_dialogs ON saved_dialogs(flags);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 137").stepThis().dispose();
+            version = 137;
+        }
+
+        if (version == 137) {
+            database.executeFast("ALTER TABLE unread_push_messages ADD COLUMN is_reaction INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 138").stepThis().dispose();
+            version = 138;
+        }
+
+        if (version == 138) {
+            database.executeFast("CREATE TABLE IF NOT EXISTS saved_reaction_tags (data BLOB);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 139").stepThis().dispose();
+            version = 139;
+        }
+
         return version;
     }
 

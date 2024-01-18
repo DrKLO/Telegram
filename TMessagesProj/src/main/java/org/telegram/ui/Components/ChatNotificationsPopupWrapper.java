@@ -158,7 +158,7 @@ public class ChatNotificationsPopupWrapper {
         lastDismissTime = System.currentTimeMillis();
     }
 
-    public void update(long dialogId, int topicId, HashSet<Integer> topicExceptions) {
+    public void update(long dialogId, long topicId, HashSet<Integer> topicExceptions) {
         if (System.currentTimeMillis() - lastDismissTime < 200) {
             //do on popup close
             AndroidUtilities.runOnUIThread(() -> {

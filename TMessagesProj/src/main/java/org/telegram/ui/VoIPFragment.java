@@ -111,6 +111,7 @@ import org.telegram.ui.Components.voip.VoIPToggleButton;
 import org.telegram.ui.Components.voip.VoIPWindowView;
 import org.telegram.ui.Components.voip.VoIpGradientLayout;
 import org.telegram.ui.Components.voip.VoIpHintView;
+import org.telegram.ui.Components.voip.VoIpCoverView;
 import org.telegram.ui.Components.voip.VoIpSnowView;
 import org.telegram.ui.Components.voip.VoIpSwitchLayout;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -145,6 +146,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private ViewGroup fragmentView;
 
     private VoIpGradientLayout gradientLayout;
+    private VoIpCoverView voIpCoverView;
     private VoIpSnowView voIpSnowView;
     private ImageWithWavesView callingUserPhotoViewMini;
 
@@ -784,6 +786,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         //     callingUserTextureView.attachBackgroundRenderer();
 
         frameLayout.addView(gradientLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        frameLayout.addView(voIpCoverView = new VoIpCoverView(context, callingUser, backgroundProvider) , LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         frameLayout.addView(voIpSnowView = new VoIpSnowView(context), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 220));
         frameLayout.addView(callingUserTextureView);
 
@@ -866,7 +869,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         emojiLayout.setOrientation(LinearLayout.HORIZONTAL);
         emojiLayout.setPadding(0, 0, 0, AndroidUtilities.dp(30));
         emojiLayout.setClipToPadding(false);
-
+        emojiLayout.setContentDescription(LocaleController.getString("VoipHintEncryptionKey", R.string.VoipHintEncryptionKey));
         emojiLayout.setOnClickListener(view -> {
             if (System.currentTimeMillis() - lastContentTapTime < 500) {
                 return;
@@ -970,7 +973,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserTitle.setText(name);
         callingUserTitle.setMaxLines(2);
         callingUserTitle.setEllipsize(TextUtils.TruncateAt.END);
-        callingUserTitle.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
         callingUserTitle.setTextColor(Color.WHITE);
         callingUserTitle.setGravity(Gravity.CENTER_HORIZONTAL);
         callingUserTitle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -1587,6 +1589,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             return;
         }
         emojiExpanded = expanded;
+        voIpCoverView.onEmojiExpanded(expanded);
         if (expanded) {
             if (SharedConfig.callEncryptionHintDisplayedCount < 2) {
                 SharedConfig.incrementCallEncryptionHintDisplayed(2);
@@ -2124,6 +2127,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         updateSpeakerPhoneIcon();
 
         if (currentState == VoIPService.STATE_ESTABLISHED) {
+            voIpCoverView.onConnected();
             callingUserPhotoViewMini.onConnected();
             if (!gradientLayout.isConnectedCalled()) {
                 int[] loc = new int[2];
@@ -2134,6 +2138,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
         boolean isVideoMode = currentUserIsVideo || callingUserIsVideo;
         voIpSnowView.setState(isVideoMode);
+        voIpCoverView.setState(isVideoMode);
         backgroundProvider.setHasVideo(isVideoMode);
 
         if (callingUserIsVideo && !wasVideo && isNearEar) {

@@ -8,6 +8,8 @@
 
 package org.telegram.ui.ActionBar;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -65,6 +67,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.FiltersView;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CloseProgressDrawable2;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -73,6 +76,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1052,7 +1056,7 @@ public class ActionBarMenuItem extends FrameLayout {
         }
 
         for (int i = 0; i < searchFilterLayout.getChildCount(); i++) {
-            boolean removed = localFilters.remove(((SearchFilterView)searchFilterLayout.getChildAt(i)).getFilter());
+            boolean removed = localFilters.remove(((SearchFilterView) searchFilterLayout.getChildAt(i)).getFilter());
             if (!removed) {
                 searchFilterLayout.removeViewAt(i);
                 i--;
@@ -1060,8 +1064,14 @@ public class ActionBarMenuItem extends FrameLayout {
         }
 
         for (int i = 0; i < localFilters.size(); i++) {
-            SearchFilterView searchFilterView = new SearchFilterView(getContext(), resourcesProvider);
-            searchFilterView.setData(localFilters.get(i));
+            FiltersView.MediaFilterData filter = localFilters.get(i);
+            SearchFilterView searchFilterView;
+            if (filter.reaction != null) {
+                searchFilterView = new ReactionFilterView(getContext(), resourcesProvider);
+            } else {
+                searchFilterView = new SearchFilterView(getContext(), resourcesProvider);
+            }
+            searchFilterView.setData(filter);
             searchFilterView.setOnClickListener(view -> {
                 int index = currentSearchFilters.indexOf(searchFilterView.getFilter());
                 if (selectedFilterIndex != index) {
@@ -2014,6 +2024,78 @@ public class ActionBarMenuItem extends FrameLayout {
         return Theme.getColor(key, resourcesProvider);
     }
 
+    private static class ReactionFilterView extends SearchFilterView {
+
+        private ReactionsLayoutInBubble.ReactionButton reactionButton;
+
+        public ReactionFilterView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+            removeAllViews();
+            setBackground(null);
+
+            setWillNotDraw(false);
+        }
+
+        public void setData(FiltersView.MediaFilterData data) {
+            TLRPC.TL_reactionCount reactionCount = new TLRPC.TL_reactionCount();
+            reactionCount.count = 1;
+            reactionCount.reaction = data.reaction.toTLReaction();
+
+            reactionButton = new ReactionsLayoutInBubble.ReactionButton(null, UserConfig.selectedAccount, this, reactionCount, false, resourcesProvider) {
+                @Override
+                protected void updateColors(float progress) {
+                    lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, Theme.getColor(Theme.key_chat_inReactionButtonBackground, resourcesProvider), progress);
+                }
+
+                @Override
+                protected int getCacheType() {
+                    return AnimatedEmojiDrawable.CACHE_TYPE_ALERT_EMOJI_STATUS;
+                }
+            };
+            reactionButton.width = dp(44.33f);
+            reactionButton.height = dp(28);
+            reactionButton.choosen = true;
+            if (attached) {
+                reactionButton.attach();
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(dp(45 + 4), dp(32));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (reactionButton != null) {
+                reactionButton.draw(canvas, (getWidth() - dp(4) - reactionButton.width) / 2f, (getHeight() - reactionButton.height) / 2f, 1f, 1f, false);
+            }
+        }
+
+        private boolean attached;
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (!attached) {
+                if (reactionButton != null) {
+                    reactionButton.attach();
+                }
+                attached = true;
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (attached) {
+                if (reactionButton != null) {
+                    reactionButton.detach();
+                }
+                attached = false;
+            }
+        }
+    }
+
     private static class SearchFilterView extends FrameLayout {
 
         Drawable thumbDrawable;
@@ -2036,7 +2118,7 @@ public class ActionBarMenuItem extends FrameLayout {
             }
         };
 
-        private final Theme.ResourcesProvider resourcesProvider;
+        protected final Theme.ResourcesProvider resourcesProvider;
 
         public SearchFilterView(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);

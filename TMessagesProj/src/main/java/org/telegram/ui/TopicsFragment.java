@@ -258,7 +258,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             NotificationCenter.topicsDidLoaded
     });
     private View blurredView;
-    private int selectedTopicForTablet;
+    private long selectedTopicForTablet;
 
     private boolean joinRequested;
     private ChatActivityMemberRequestsDelegate pendingRequestsDelegate;
@@ -1855,7 +1855,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 AndroidUtilities.runOnUIThread(() -> {
                     Bundle args = new Bundle();
                     args.putLong("dialog_id", -chatId);
-                    args.putInt("topic_id", topic.id);
+                    args.putLong("topic_id", topic.id);
                     presentFragment(new ProfileNotificationsActivity(args, themeDelegate));
                 }, 500);
             }
@@ -2694,7 +2694,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             }
             boolean close = (Boolean) args[2];
             long dialog_id = (Long) args[0];
-            int topicId = (int) args[1];
+            long topicId = (Long) args[1];
             if (dialog_id == -chatId && !close) {
                 if (selectedTopicForTablet != topicId) {
                     selectedTopicForTablet = topicId;
@@ -3653,7 +3653,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                     MessageObject message = searchResultMessages.get(position - messagesStartRow);
                     TopicDialogCell dialogCell = (TopicDialogCell) holder.itemView;
                     dialogCell.drawDivider = position != messagesEndRow - 1;
-                    int topicId = MessageObject.getTopicId(message.messageOwner, true);
+                    long topicId = MessageObject.getTopicId(currentAccount, message.messageOwner, true);
                     if (topicId == 0) {
                         topicId = 1;
                     }

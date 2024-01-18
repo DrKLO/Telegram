@@ -150,6 +150,26 @@ public class StaticLayoutEx {
                             .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                             .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
                     layout = builder.build();
+
+                    boolean realWidthLarger = false;
+                    for (int l = 0; l < layout.getLineCount(); ++l) {
+                        if (layout.getLineRight(l) > outerWidth) {
+                            realWidthLarger = true;
+                            break;
+                        }
+                    }
+                    if (realWidthLarger) {
+                        builder = StaticLayout.Builder.obtain(source, 0, source.length(), paint, outerWidth)
+                            .setAlignment(align)
+                            .setLineSpacing(spacingAdd, spacingMult)
+                            .setIncludePad(includePad)
+                            .setEllipsize(null)
+                            .setEllipsizedWidth(ellipsisWidth)
+                            .setMaxLines(maxLines)
+                            .setBreakStrategy(StaticLayout.BREAK_STRATEGY_SIMPLE)
+                            .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
+                        layout = builder.build();
+                    }
                 } else {
                     layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
                 }

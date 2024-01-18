@@ -1210,20 +1210,29 @@ UserStatus *UserStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t constru
         case 0x8c703f:
             result = new TL_userStatusOffline();
             break;
-        case 0x7bf09fc:
-            result = new TL_userStatusLastWeek();
-            break;
         case 0x9d05049:
             result = new TL_userStatusEmpty();
-            break;
-        case 0x77ebc742:
-            result = new TL_userStatusLastMonth();
             break;
         case 0xedb93949:
             result = new TL_userStatusOnline();
             break;
-        case 0xe26f42f1:
+        case 0x7b197dc8:
             result = new TL_userStatusRecently();
+            break;
+        case 0x541a1d1a:
+            result = new TL_userStatusLastWeek();
+            break;
+        case 0x65899777:
+            result = new TL_userStatusLastMonth();
+            break;
+        case 0xe26f42f1:
+            result = new TL_userStatusRecently_layer171();
+            break;
+        case 0x7bf09fc:
+            result = new TL_userStatusLastWeek_layer171();
+            break;
+        case 0x77ebc742:
+            result = new TL_userStatusLastMonth_layer171();
             break;
         default:
             error = true;
@@ -1243,8 +1252,19 @@ void TL_userStatusOffline::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(expires);
 }
 
+void TL_userStatusLastWeek_layer171::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
 void TL_userStatusLastWeek::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
+    flags = by_me ? flags | 1 : flags &~ 1;
+    stream->writeInt32(flags);
+}
+
+void TL_userStatusLastWeek::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    by_me = (flags & 1) != 0;
 }
 
 void TL_userStatusEmpty::serializeToStream(NativeByteBuffer *stream) {
@@ -1252,6 +1272,17 @@ void TL_userStatusEmpty::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_userStatusLastMonth::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = by_me ? flags | 1 : flags &~ 1;
+    stream->writeInt32(flags);
+}
+
+void TL_userStatusLastMonth::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    by_me = (flags & 1) != 0;
+}
+
+void TL_userStatusLastMonth_layer171::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
 }
 
@@ -1265,6 +1296,21 @@ void TL_userStatusOnline::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_userStatusRecently::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = by_me ? flags | 1 : flags &~ 1;
+    stream->writeInt32(flags);
+}
+
+void TL_userStatusRecently::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    by_me = (flags & 1) != 0;
+}
+
+void TL_userStatusRecently_layer171::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_userStatusHidden::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
 }
 

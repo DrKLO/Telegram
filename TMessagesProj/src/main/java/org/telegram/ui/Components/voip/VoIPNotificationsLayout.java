@@ -224,12 +224,12 @@ public class VoIPNotificationsLayout extends LinearLayout {
             this.backgroundProvider = backgroundProvider;
             backgroundProvider.attach(this);
             iconView = new ImageView(context);
-            addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL, 10, 2, 10, 2));
+            addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL, 8, 2, 8, 2));
 
             textView = new TextView(context);
             textView.setTextColor(Color.WHITE);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, iconRes == 0 ? 14 : 42, 2, 14, 2));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, iconRes == 0 ? 14 : 36, 2, 14, 2));
         }
 
         public void setText(CharSequence text) {
@@ -249,7 +249,20 @@ public class VoIPNotificationsLayout extends LinearLayout {
         protected void dispatchDraw(Canvas canvas) {
             bgRect.set(0, 0, getWidth(), getHeight());
             backgroundProvider.setDarkTranslation(getX() + ((View) getParent()).getX(), getY() + ((View) getParent()).getY());
+
+            int oldDarkAlpha = backgroundProvider.getDarkPaint(ignoreShader).getAlpha();
+            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), oldDarkAlpha, Canvas.ALL_SAVE_FLAG);
+            backgroundProvider.getDarkPaint(ignoreShader).setAlpha(255);
             canvas.drawRoundRect(bgRect, dp(16), dp(16), backgroundProvider.getDarkPaint(ignoreShader));
+            backgroundProvider.getDarkPaint(ignoreShader).setAlpha(oldDarkAlpha);
+
+            if (backgroundProvider.isReveal()) {
+                int oldRevealDarkAlpha = backgroundProvider.getRevealDarkPaint().getAlpha();
+                backgroundProvider.getRevealDarkPaint().setAlpha(255);
+                canvas.drawRoundRect(bgRect, dp(16), dp(16), backgroundProvider.getRevealDarkPaint());
+                backgroundProvider.getRevealDarkPaint().setAlpha(oldRevealDarkAlpha);
+            }
+            canvas.restore();
             super.dispatchDraw(canvas);
         }
 

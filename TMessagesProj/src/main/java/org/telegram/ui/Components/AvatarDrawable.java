@@ -46,7 +46,9 @@ public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
     private boolean hasGradient;
+    private boolean hasAdvancedGradient;
     private int color, color2;
+    private GradientTools advancedGradient;
     private boolean needApplyColorAccent;
     private StaticLayout textLayout;
     private float textWidth;
@@ -75,7 +77,6 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_ARCHIVED = 2;
     public static final int AVATAR_TYPE_SHARES = 3;
     public static final int AVATAR_TYPE_REPLIES = 12;
-    public static final int AVATAR_TYPE_STORY = 20;
 
     public static final int AVATAR_TYPE_FILTER_CONTACTS = 4;
     public static final int AVATAR_TYPE_FILTER_NON_CONTACTS = 5;
@@ -92,6 +93,9 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_COUNTRY = 17;
     public static final int AVATAR_TYPE_UNCLAIMED = 18;
     public static final int AVATAR_TYPE_TO_BE_DISTRIBUTED = 19;
+    public static final int AVATAR_TYPE_STORY = 20;
+    public static final int AVATAR_TYPE_ANONYMOUS = 21;
+    public static final int AVATAR_TYPE_MY_NOTES = 22;
 
     private int alpha = 255;
     private Theme.ResourcesProvider resourcesProvider;
@@ -231,11 +235,11 @@ public class AvatarDrawable extends Drawable {
     public void setAvatarType(int value) {
         avatarType = value;
         rotate45Background = false;
+        hasAdvancedGradient = false;
+        hasGradient = false;
         if (avatarType == AVATAR_TYPE_REGISTER) {
-            hasGradient = false;
             color = color2 = Theme.getColor(Theme.key_chats_actionBackground);
         } else if (avatarType == AVATAR_TYPE_ARCHIVED) {
-            hasGradient = false;
             color = color2 = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
         } else if (avatarType == AVATAR_TYPE_REPLIES || avatarType == AVATAR_TYPE_SAVED || avatarType == AVATAR_TYPE_OTHER_CHATS) {
             hasGradient = true;
@@ -282,12 +286,24 @@ public class AvatarDrawable extends Drawable {
             hasGradient = true;
             color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
             color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(5)]);
+        } else if (avatarType == AVATAR_TYPE_ANONYMOUS) {
+            hasAdvancedGradient = true;
+            if (advancedGradient == null) {
+                advancedGradient = new GradientTools();
+            }
+            advancedGradient.setColors(0xFF837CFF, 0xFFB063FF, 0xFFFF72A9, 0xFFE269FF);
+        } else if (avatarType == AVATAR_TYPE_MY_NOTES) {
+            hasAdvancedGradient = true;
+            if (advancedGradient == null) {
+                advancedGradient = new GradientTools();
+            }
+            advancedGradient.setColors(0xFF4D8DFF, 0xFF2BBFFF, 0xFF20E2CD, 0xFF0EE1F1);
         } else {
             hasGradient = true;
             color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
             color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(4)]);
         }
-        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_STORY && avatarType != AVATAR_TYPE_REPLIES && avatarType != AVATAR_TYPE_OTHER_CHATS;
+        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_STORY && avatarType != AVATAR_TYPE_ANONYMOUS && avatarType != AVATAR_TYPE_REPLIES && avatarType != AVATAR_TYPE_OTHER_CHATS;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -318,12 +334,14 @@ public class AvatarDrawable extends Drawable {
 
     public void setColor(int value) {
         hasGradient = false;
+        hasAdvancedGradient = false;
         color = color2 = value;
         needApplyColorAccent = false;
     }
 
     public void setColor(int value, int value2) {
         hasGradient = true;
+        hasAdvancedGradient = false;
         color = value;
         color2 = value2;
         needApplyColorAccent = false;
@@ -359,6 +377,7 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(long id, String firstName, String lastName, String custom, Integer customColor, MessagesController.PeerColor profileColor) {
         hasGradient = true;
+        hasAdvancedGradient = false;
         invalidateTextLayout = true;
         if (profileColor != null) {
             color = profileColor.getAvatarColor1();
@@ -438,16 +457,20 @@ public class AvatarDrawable extends Drawable {
         }
         int size = bounds.width();
         namePaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_text), alpha));
-        if (hasGradient) {
+        Paint backgroundPaint = Theme.avatar_backgroundPaint;
+        if (hasAdvancedGradient && advancedGradient != null) {
+            advancedGradient.setBounds(bounds.left, bounds.top, bounds.left + size, bounds.top + size);
+            backgroundPaint = advancedGradient.paint;
+        } else if (hasGradient) {
             int color = ColorUtils.setAlphaComponent(getColor(), alpha);
             int color2 = ColorUtils.setAlphaComponent(getColor2(), alpha);
             if (gradient == null || gradientBottom != bounds.height() || gradientColor1 != color || gradientColor2 != color2) {
                 gradient = new LinearGradient(0, 0, 0, gradientBottom = bounds.height(), gradientColor1 = color, gradientColor2 = color2, Shader.TileMode.CLAMP);
             }
-            Theme.avatar_backgroundPaint.setShader(gradient);
+            backgroundPaint.setShader(gradient);
         } else {
-            Theme.avatar_backgroundPaint.setShader(null);
-            Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(getColor(), alpha));
+            backgroundPaint.setShader(null);
+            backgroundPaint.setColor(ColorUtils.setAlphaComponent(getColor(), alpha));
         }
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
@@ -459,9 +482,9 @@ public class AvatarDrawable extends Drawable {
             }
             if (roundRadius > 0) {
                 AndroidUtilities.rectTmp.set(0, 0, size, size);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, roundRadius, roundRadius, Theme.avatar_backgroundPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, roundRadius, roundRadius, backgroundPaint);
             } else {
-                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, backgroundPaint);
             }
             if (rotate45Background) {
                 canvas.restore();
@@ -470,8 +493,8 @@ public class AvatarDrawable extends Drawable {
 
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             if (archivedAvatarProgress != 0) {
-                Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_backgroundArchived), alpha));
-                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, Theme.avatar_backgroundPaint);
+                backgroundPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_backgroundArchived), alpha));
+                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint);
                 if (Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));
@@ -531,6 +554,10 @@ public class AvatarDrawable extends Drawable {
                 drawable = Theme.avatarDrawables[16];
             } else if (avatarType == AVATAR_TYPE_STORY) {
                 drawable = Theme.avatarDrawables[17];
+            } else if (avatarType == AVATAR_TYPE_ANONYMOUS) {
+                drawable = Theme.avatarDrawables[18];
+            } else if (avatarType == AVATAR_TYPE_MY_NOTES) {
+                drawable = Theme.avatarDrawables[19];
             } else {
                 drawable = Theme.avatarDrawables[9];
             }

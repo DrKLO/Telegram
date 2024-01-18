@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 
 import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
@@ -86,12 +87,21 @@ public class Utilities {
     public static native void setupNativeCrashesListener(String path);
 
     public static Bitmap stackBlurBitmapMax(Bitmap bitmap) {
+        return stackBlurBitmapMax(bitmap, false);
+    }
+
+    public static Bitmap stackBlurBitmapMax(Bitmap bitmap, boolean round) {
         int w = AndroidUtilities.dp(20);
         int h = (int) (AndroidUtilities.dp(20) * (float) bitmap.getHeight() / bitmap.getWidth());
         Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(scaledBitmap);
         canvas.save();
         canvas.scale((float) scaledBitmap.getWidth() / bitmap.getWidth(), (float) scaledBitmap.getHeight() / bitmap.getHeight());
+        if (round) {
+            Path path = new Path();
+            path.addCircle(bitmap.getWidth() / 2f, bitmap.getHeight() / 2f, Math.min(bitmap.getWidth(), bitmap.getHeight()) / 2f - 1, Path.Direction.CW);
+            canvas.clipPath(path);
+        }
         canvas.drawBitmap(bitmap, 0, 0, null);
         canvas.restore();
         Utilities.stackBlurBitmap(scaledBitmap, Math.max(10, Math.max(w, h) / 150));

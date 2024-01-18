@@ -185,10 +185,6 @@ public class SpoilerEffect2 {
         if (index == null) {
             index = 0;
         }
-        if (w > ow || h > oh) {
-            final float scale = Math.max(w / (float) ow, h / (float) oh);
-            canvas.scale(scale, scale);
-        }
         if ((index % 4) == 1) {
             canvas.rotate(180, ow / 2f, oh / 2f);
         }
@@ -198,6 +194,12 @@ public class SpoilerEffect2 {
         if ((index % 4) == 3) {
             canvas.scale(1, -1, ow / 2f, oh / 2f);
         }
+        canvas.translate(w / 2f, h / 2f);
+        if (w > ow || h > oh) {
+            final float scale = Math.max(w / (float) ow, h / (float) oh);
+            canvas.scale(scale, scale);
+        }
+        canvas.translate(-w / 2f, -h / 2f);
         if (toBitmap) {
             Bitmap bitmap = textureView.getBitmap();
             if (bitmap != null) {
@@ -494,15 +496,6 @@ public class SpoilerEffect2 {
             GLES31.glUniform1f(resetHandle, reset ? 1 : 0);
             GLES31.glUniform1f(radiusHandle, radius);
             GLES31.glUniform1f(seedHandle, Utilities.fastRandom.nextInt(256) / 256f);
-
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "noiseScale"), 6);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "noiseSpeed"), 0.6f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "noiseMovement"), 4f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "longevity"), 1.4f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "dampingMult"), .9999f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "maxVelocity"), 6.f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "velocityMult"), 1.0f);
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(drawProgram, "forceMult"), 0.6f);
         }
 
         private float t;

@@ -97,7 +97,7 @@ public class MessageEntityView extends EntityView {
                 messageOwner.fwd_from = null;
             }
             messageOwner.voiceTranscriptionOpen = false;
-            MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview);
+            MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview, false);
             messageObjects.add(newMsg);
         }
 //        dateCell = new ChatActionCell(context, false, resourcesProvider) {

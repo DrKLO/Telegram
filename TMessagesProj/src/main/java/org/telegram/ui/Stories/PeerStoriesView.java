@@ -35,6 +35,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -122,6 +123,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatAttachAlertDocumentLayout;
+import org.telegram.ui.Components.ChatGreetingsView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -132,6 +134,7 @@ import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.MentionsContainerView;
@@ -260,6 +263,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     private long dialogId;
     boolean isSelf;
     boolean isChannel;
+    boolean isPremiumBlocked;
 
     private float alpha = 1f;
     private int previousSelectedPotision = -1;
@@ -280,6 +284,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     ChatActivityEnterView chatActivityEnterView;
     private ValueAnimator changeBoundAnimator;
     ReactionsContainerLayout reactionsContainerLayout;
+    private LinearLayout premiumBlockedText;
+    private TextView premiumBlockedText1;
+    private TextView premiumBlockedText2;
 
     private StoryFailView failView;
     private ViewPropertyAnimator failViewAnimator;
@@ -2027,6 +2034,75 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         addView(failView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 0));
     }
 
+    private void createPremiumBlockedText() {
+        if (premiumBlockedText != null) {
+            return;
+        }
+        if (chatActivityEnterView == null) {
+            createEnterView();
+        }
+        premiumBlockedText = new LinearLayout(getContext());
+        premiumBlockedText.setOrientation(LinearLayout.HORIZONTAL);
+
+        ImageView imageView = new ImageView(getContext());
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setScaleX(1.35f);
+        imageView.setScaleY(1.35f);
+        imageView.setImageResource(R.drawable.mini_switch_lock);
+        imageView.setColorFilter(new PorterDuffColorFilter(0xFF858585, PorterDuff.Mode.SRC_IN));
+
+        premiumBlockedText1 = new TextView(getContext());
+        premiumBlockedText1.setTextColor(0xFF858585);
+        premiumBlockedText1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        premiumBlockedText1.setText(LocaleController.getString(R.string.StoryRepliesLocked));
+
+        premiumBlockedText2 = new TextView(getContext());
+        premiumBlockedText2.setTextColor(0xFFFFFFFF);
+        premiumBlockedText2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        premiumBlockedText2.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(40), 0x1affffff, 0x32ffffff));
+        premiumBlockedText2.setGravity(Gravity.CENTER);
+        ScaleStateListAnimator.apply(premiumBlockedText2);
+        premiumBlockedText2.setText(LocaleController.getString(R.string.StoryRepliesLockedButton));
+        premiumBlockedText2.setPadding(dp(7), 0, dp(7), 0);
+
+        premiumBlockedText.addView(imageView, LayoutHelper.createLinear(22, 22, Gravity.CENTER_VERTICAL, 12, 1, 4, 0));
+        premiumBlockedText.addView(premiumBlockedText1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        premiumBlockedText.addView(premiumBlockedText2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 19, Gravity.CENTER_VERTICAL, 5, 0, 0, 0));
+
+        chatActivityEnterView.addView(premiumBlockedText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+    }
+
+    private void updatePremiumBlockedText() {
+        if (premiumBlockedText1 != null) {
+            premiumBlockedText1.setText(LocaleController.getString(R.string.StoryRepliesLocked));
+        }
+        if (premiumBlockedText2 != null) {
+            premiumBlockedText2.setText(LocaleController.getString(R.string.StoryRepliesLockedButton));
+        }
+    }
+
+    private void showPremiumBlockedToast() {
+        AndroidUtilities.shakeViewSpring(chatActivityEnterView, shiftDp = -shiftDp);
+        BotWebViewVibrationEffect.APP_ERROR.vibrate();
+        String username = "";
+        if (dialogId >= 0) {
+            username = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(dialogId));
+        }
+        Bulletin bulletin;
+        if (MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
+            bulletin = BulletinFactory.of(storyContainer, resourcesProvider)
+                    .createSimpleBulletin(R.raw.star_premium_2, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserBlockedRepliesNonPremium, username)));
+        } else {
+            bulletin = BulletinFactory.of(storyContainer, resourcesProvider)
+                .createSimpleBulletin(R.raw.star_premium_2, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserBlockedRepliesNonPremium, username)), LocaleController.getString(R.string.UserBlockedNonPremiumButton), () -> {
+                    if (storyViewer != null) {
+                        storyViewer.presentFragment(new PremiumPreviewFragment("noncontacts"));
+                    }
+                });
+        }
+        bulletin.show();
+    }
+
     private void createEnterView() {
         Theme.ResourcesProvider emojiResourceProvider = new WrappedResourceProvider(resourcesProvider) {
             @Override
@@ -2035,6 +2111,41 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
         };
         chatActivityEnterView = new ChatActivityEnterView(AndroidUtilities.findActivity(getContext()), this, null, true, emojiResourceProvider) {
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (!isEnabled()) {
+                    AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                    boolean hit = AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY());
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                        if (hit && premiumBlockedText2 != null) {
+                            premiumBlockedText2.setPressed(true);
+                        }
+                    } else if (ev.getAction() == MotionEvent.ACTION_UP) {
+                        if (premiumBlockedText2 != null) {
+                            if (hit && premiumBlockedText2.isPressed()) {
+                                showPremiumBlockedToast();
+                            }
+                            premiumBlockedText2.setPressed(false);
+                        }
+                    } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
+                        if (premiumBlockedText2 != null) {
+                            premiumBlockedText2.setPressed(false);
+                        }
+                    }
+                    return premiumBlockedText2 != null && premiumBlockedText2.isPressed();
+                }
+                return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            public void setHorizontalPadding(float padding, float progress, boolean allowShare) {
+                float leftPadding = -padding * (1f - progress);
+                if (premiumBlockedText != null) {
+                    premiumBlockedText.setTranslationX(-leftPadding);
+                }
+                super.setHorizontalPadding(padding, progress, allowShare);
+            }
 
             private Animator messageEditTextAnimator;
             private int chatActivityEnterViewAnimateFromTop;
@@ -2136,12 +2247,15 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
 
             private void checkRecording() {
-                isRecording = chatActivityEnterView.isRecordingAudioVideo() || (recordedAudioPanel != null && recordedAudioPanel.getVisibility() == View.VISIBLE);
-                if (isActive) {
-                    delegate.setIsRecording(isRecording);
+                final boolean wasRecording = isRecording;
+                isRecording = chatActivityEnterView.isRecordingAudioVideo() || chatActivityEnterView.seekbarVisible() || (recordedAudioPanel != null && recordedAudioPanel.getVisibility() == View.VISIBLE);
+                if (wasRecording != isRecording) {
+                    if (isActive) {
+                        delegate.setIsRecording(isRecording);
+                    }
+                    invalidate();
+                    storyContainer.invalidate();
                 }
-                invalidate();
-                storyContainer.invalidate();
             }
 
             @Override
@@ -2227,12 +2341,19 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 checkInstantCameraView();
                 if (instantCameraView != null) {
                     if (state == 0) {
-                        instantCameraView.showCamera();
+                        instantCameraView.showCamera(false);
                     } else if (state == 1 || state == 3 || state == 4) {
                         instantCameraView.send(state, notify, scheduleDate, ttl);
                     } else if (state == 2 || state == 5) {
                         instantCameraView.cancel(state == 2);
                     }
+                }
+            }
+
+            @Override
+            public void toggleVideoRecordingPause() {
+                if (instantCameraView != null) {
+                    instantCameraView.togglePause();
                 }
             }
 
@@ -2294,6 +2415,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 return currentStory.storyItem;
             }
 
+            @Override
+            public boolean onceVoiceAvailable() {
+                TLRPC.User user = null;
+                if (dialogId >= 0) {
+                    user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+                } else {
+                    return false;
+                }
+                return user != null && !UserObject.isUserSelf(user) && !user.bot;
+            }
         });
         setDelegate(chatActivityEnterView);
         chatActivityEnterView.shouldDrawBackground = false;
@@ -2827,6 +2958,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         if (dialogId >= 0) {
             isSelf = dialogId == UserConfig.getInstance(currentAccount).getClientUserId();
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+            isPremiumBlocked = !UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(dialogId);
             avatarDrawable.setInfo(currentAccount, user);
             headerView.backupImageView.getImageReceiver().setForUserOrChat(user, avatarDrawable);
             if (isSelf) {
@@ -2854,6 +2986,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         } else {
             isSelf = false;
             isChannel = true;
+            isPremiumBlocked = false;
 
             if (storiesController.canEditStories(dialogId) || BuildVars.DEBUG_PRIVATE_VERSION) {
                 userCanSeeViews = true;
@@ -2948,6 +3081,15 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         } else {
             if (chatActivityEnterView == null) {
                 createEnterView();
+            }
+            if (isPremiumBlocked && premiumBlockedText == null) {
+                createPremiumBlockedText();
+            }
+            if (premiumBlockedText != null) {
+                if (isPremiumBlocked) {
+                    updatePremiumBlockedText();
+                }
+                premiumBlockedText.setVisibility(isPremiumBlocked ? View.VISIBLE : View.GONE);
             }
             if (failView != null) {
                 failView.setVisibility(View.GONE);
@@ -3310,6 +3452,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stealthModeChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesLimitUpdate);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userIsPremiumBlockedUpadted);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
     }
 
@@ -3341,6 +3484,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesListUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stealthModeChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesLimitUpdate);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userIsPremiumBlockedUpadted);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
     }
 
@@ -3419,6 +3563,12 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 }
             }, activity, storyLimit.getLimitReachedType(), currentAccount, null);
             delegate.showDialog(sheet);
+        } else if (id == NotificationCenter.userIsPremiumBlockedUpadted) {
+            boolean wasPremiumBlocked = isPremiumBlocked;
+            isPremiumBlocked = dialogId >= 0 && !UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(dialogId);
+            if (isPremiumBlocked != wasPremiumBlocked) {
+                updatePosition();
+            }
         }
     }
 
@@ -3430,13 +3580,18 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         }
         AndroidUtilities.cancelRunOnUIThread(updateStealthModeTimer);
         TL_stories.TL_storiesStealthMode stealthMode = storiesController.getStealthMode();
-        if (stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
+        if (isPremiumBlocked) {
+            stealthModeIsActive = false;
+            chatActivityEnterView.setEnabled(false);
+            chatActivityEnterView.setOverrideHint(" ", animated);
+        } else if (stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
             stealthModeIsActive = true;
             int time = stealthMode.active_until_date - ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             int minutes = time / 60;
             int seconds = time % 60;
             String textToMeasure = LocaleController.formatString("StealthModeActiveHint", R.string.StealthModeActiveHintShort, String.format(Locale.US, "%02d:%02d", 99, 99));
             int w = (int) chatActivityEnterView.getEditField().getPaint().measureText(textToMeasure);
+            chatActivityEnterView.setEnabled(true);
             if (w * 1.2f >= chatActivityEnterView.getEditField().getMeasuredWidth()) {
                 chatActivityEnterView.setOverrideHint(LocaleController.formatString("StealthModeActiveHintShort", R.string.StealthModeActiveHintShort, ""), String.format(Locale.US, "%02d:%02d", minutes, seconds), animated);
             } else {
@@ -3445,6 +3600,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             AndroidUtilities.runOnUIThread(updateStealthModeTimer, 1000);
         } else {
             stealthModeIsActive = false;
+            chatActivityEnterView.setEnabled(true);
             chatActivityEnterView.setOverrideHint(LocaleController.getString("ReplyPrivately", R.string.ReplyPrivately), animated);
         }
     }
@@ -3764,11 +3920,26 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (selfView != null) {
                 selfView.setVisibility(View.GONE);
             }
+            if (bottomActionsLinearLayout != null) {
+                bottomActionsLinearLayout.setVisibility(View.VISIBLE);
+            }
         } else {
             if (UserObject.isService(dialogId) && chatActivityEnterView != null) {
                 chatActivityEnterView.setVisibility(View.GONE);
             } else if (!isSelf && !isChannel && chatActivityEnterView != null) {
                 chatActivityEnterView.setVisibility(View.VISIBLE);
+            }
+            if (isPremiumBlocked && premiumBlockedText == null) {
+                createPremiumBlockedText();
+            }
+            if (premiumBlockedText != null) {
+                if (isPremiumBlocked) {
+                    updatePremiumBlockedText();
+                }
+                premiumBlockedText.setVisibility(isPremiumBlocked ? View.VISIBLE : View.GONE);
+            }
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setEnabled(!isPremiumBlocked);
             }
             if (isSelf && selfView != null) {
                 selfView.setVisibility(View.VISIBLE);
@@ -3776,11 +3947,14 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (unsupportedContainer != null) {
                 unsupportedContainer.setVisibility(View.GONE);
             }
-            if (UserObject.isService(dialogId)){
+            if (UserObject.isService(dialogId)) {
                 createReplyDisabledView();
                 replyDisabledTextView.setVisibility(View.VISIBLE);
             } else if (replyDisabledTextView != null) {
                 replyDisabledTextView.setVisibility(View.GONE);
+            }
+            if (bottomActionsLinearLayout != null) {
+                bottomActionsLinearLayout.setVisibility(View.VISIBLE);
             }
         }
 
@@ -5638,7 +5812,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     child.setScaleY(s);
                 } else {
                     child.setTranslationY(translationY);
-                    child.setAlpha(alpha);
+                    if (chatActivityEnterView == null || child != chatActivityEnterView.controlsView) {
+                        child.setAlpha(alpha);
+                    }
                 }
             }
         }
@@ -5801,7 +5977,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
         }, resourcesProvider);
         instantCameraView.drawBlur = false;
-        int i = indexOfChild(chatActivityEnterView.getRecordCircle());
+        int i = Math.min(indexOfChild(chatActivityEnterView.getRecordCircle()), indexOfChild(chatActivityEnterView.controlsView));
         addView(instantCameraView, i, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
     }
 

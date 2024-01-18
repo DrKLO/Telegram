@@ -91,14 +91,14 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     FrameLayout contentLayout;
     RecyclerListView listView;
     long dialogId;
-    int threadMsgId;
+    long threadMsgId;
 
     public EmojiAnimationsOverlay(FrameLayout frameLayout, int currentAccount) {
         this.contentLayout = frameLayout;
         this.currentAccount = currentAccount;
     }
 
-    public EmojiAnimationsOverlay(ChatActivity chatActivity, FrameLayout frameLayout, RecyclerListView chatListView, int currentAccount, long dialogId, int threadMsgId) {
+    public EmojiAnimationsOverlay(ChatActivity chatActivity, FrameLayout frameLayout, RecyclerListView chatListView, int currentAccount, long dialogId, long threadMsgId) {
         this.chatActivity = chatActivity;
         this.contentLayout = frameLayout;
         this.listView = chatListView;
@@ -854,7 +854,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
 
         TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
         if (threadMsgId != 0) {
-            req.top_msg_id = threadMsgId;
+            req.top_msg_id = (int) threadMsgId;
             req.flags |= 1;
         }
         req.action = interaction;
