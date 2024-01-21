@@ -5,8 +5,6 @@ import android.util.Base64;
 
 import androidx.core.util.Pair;
 
-import com.android.billingclient.api.AccountIdentifiers;
-import com.android.billingclient.api.Purchase;
 import com.google.android.exoplayer2.util.Util;
 import com.google.common.base.Charsets;
 
@@ -79,45 +77,5 @@ public class BillingUtilities {
             }
         }
         return result;
-    }
-
-    public static Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> extractDeveloperPayload(Purchase purchase) {
-        AccountIdentifiers identifiers = purchase.getAccountIdentifiers();
-        if (identifiers == null) {
-            FileLog.d("Billing: Extract payload. No AccountIdentifiers");
-            return null;
-        }
-        String obfuscatedAccountId = identifiers.getObfuscatedAccountId();
-        String obfuscatedData = identifiers.getObfuscatedProfileId();
-        if (obfuscatedAccountId == null || obfuscatedAccountId.isEmpty() || obfuscatedData == null || obfuscatedData.isEmpty()) {
-            FileLog.d("Billing: Extract payload. Empty AccountIdentifiers");
-            return null;
-        }
-
-        try {
-            TLRPC.InputStorePaymentPurpose purpose;
-            if (remPaymentPurpose == null) {
-                byte[] obfuscatedDataBytes = Base64.decode(obfuscatedData, Base64.DEFAULT);
-                SerializedData data = new SerializedData(obfuscatedDataBytes);
-                purpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(true), true);
-                data.cleanup();
-            } else {
-                purpose = remPaymentPurpose;
-                remPaymentPurpose = null;
-            }
-
-            byte[] obfuscatedAccountIdBytes = Base64.decode(obfuscatedAccountId, Base64.DEFAULT);
-            long accountId = Long.parseLong(new String(obfuscatedAccountIdBytes, Charsets.UTF_8));
-
-            AccountInstance acc = findAccountById(accountId);
-            if (acc == null) {
-                FileLog.d("Billing: Extract payload. AccountInstance not found");
-                return null;
-            }
-            return Pair.create(acc, purpose);
-        } catch (Exception e) {
-            FileLog.e("Billing: Extract Payload", e);
-            return null;
-        }
     }
 }
