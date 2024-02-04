@@ -213,6 +213,11 @@
     <string name="AccAutoDeleteTimer">Auto-delete timer</string>
     <string name="HistoryClearedUndo">History cleared.</string>
     <string name="ChatsDeletedUndo">Chats deleted.</string>
+    <string name="ContactsDeletedUndo_one">%d contact deleted.</string>
+    <string name="ContactsDeletedUndo_two">%d contacts deleted.</string>
+    <string name="ContactsDeletedUndo_few">%d contacts deleted.</string>
+    <string name="ContactsDeletedUndo_many">%d contacts deleted.</string>
+    <string name="ContactsDeletedUndo_other">%d contacts deleted.</string>
     <string name="ChatsMute">Mute</string>
     <string name="ChatsUnmute">Unmute</string>
     <string name="ChatDeletedUndo">Chat deleted</string>
