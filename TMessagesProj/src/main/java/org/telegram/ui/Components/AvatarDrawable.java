@@ -97,6 +97,20 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_ANONYMOUS = 21;
     public static final int AVATAR_TYPE_MY_NOTES = 22;
 
+    /**
+     * Matches {@link org.telegram.ui.Components.AvatarConstructorFragment#defaultColors}
+     * but reordered to preserve color tints.
+     */
+    public static final int[][] advancedGradients = new int[][]{
+            new int[]{0xFFF64884, 0xFFEF5B41, 0xFFF6A730, 0xFFFF7742},
+            new int[]{0xFFF5694E, 0xFFF5772C, 0xFFFFD412, 0xFFFFA743},
+            new int[]{0xFF837CFF, 0xFFB063FF, 0xFFFF72A9, 0xFFE269FF},
+            new int[]{0xFF09D260, 0xFF5EDC40, 0xFFC1E526, 0xFF80DF2B},
+            new int[]{0xFF5EB6FB, 0xFF1FCEEB, 0xFF45F7B7, 0xFF1FF1D9},
+            new int[]{0xFF4D8DFF, 0xFF2BBFFF, 0xFF20E2CD, 0xFF0EE1F1},
+            new int[]{0xFFF94BA0, 0xFFFB5C80, 0xFFFFB23A, 0xFFFE7E62},
+    };
+
     private int alpha = 255;
     private Theme.ResourcesProvider resourcesProvider;
     private boolean invalidateTextLayout;
@@ -376,32 +390,71 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setInfo(long id, String firstName, String lastName, String custom, Integer customColor, MessagesController.PeerColor profileColor) {
-        hasGradient = true;
-        hasAdvancedGradient = false;
+        setInfo(id, firstName, lastName, custom, customColor, profileColor, false);
+    }
+
+    public void setInfo(long id, String firstName, String lastName, String custom, Integer customColor, MessagesController.PeerColor profileColor, boolean advancedGradient) {
         invalidateTextLayout = true;
+        if (advancedGradient) {
+            hasGradient = false;
+            hasAdvancedGradient = true;
+            if (this.advancedGradient == null) {
+                this.advancedGradient = new GradientTools();
+            }
+        } else {
+            hasGradient = true;
+            hasAdvancedGradient = false;
+        }
+
         if (profileColor != null) {
-            color = profileColor.getAvatarColor1();
-            color2 = profileColor.getAvatarColor2();
+            if (advancedGradient) {
+                int[] gradient = advancedGradients[getPeerColorIndex(profileColor.getAvatarColor1())];
+                this.advancedGradient.setColors(gradient[0], gradient[1], gradient[2], gradient[3]);
+            } else {
+                color = profileColor.getAvatarColor1();
+                color2 = profileColor.getAvatarColor2();
+            }
         } else if (customColor != null) {
             if (customColor >= 14) {
                 MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
                 if (messagesController != null && messagesController.peerColors != null && messagesController.peerColors.getColor(customColor) != null) {
                     final int peerColor = messagesController.peerColors.getColor(customColor).getColor1();
-                    color = getThemedColor(Theme.keys_avatar_background[getPeerColorIndex(peerColor)]);
-                    color2 = getThemedColor(Theme.keys_avatar_background2[getPeerColorIndex(peerColor)]);
+                    if (advancedGradient) {
+                        int[] gradient = advancedGradients[getPeerColorIndex(peerColor)];
+                        this.advancedGradient.setColors(gradient[0], gradient[1], gradient[2], gradient[3]);
+                    } else {
+                        color = getThemedColor(Theme.keys_avatar_background[getPeerColorIndex(peerColor)]);
+                        color2 = getThemedColor(Theme.keys_avatar_background2[getPeerColorIndex(peerColor)]);
+                    }
+                } else {
+                    if (advancedGradient) {
+                        int[] gradient = advancedGradients[getColorIndex(customColor)];
+                        this.advancedGradient.setColors(gradient[0], gradient[1], gradient[2], gradient[3]);
+                    } else {
+                        color = getThemedColor(Theme.keys_avatar_background[getColorIndex(customColor)]);
+                        color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(customColor)]);
+                    }
+                }
+            } else {
+                if (advancedGradient) {
+                    int[] gradient = advancedGradients[getColorIndex(customColor)];
+                    this.advancedGradient.setColors(gradient[0], gradient[1], gradient[2], gradient[3]);
                 } else {
                     color = getThemedColor(Theme.keys_avatar_background[getColorIndex(customColor)]);
                     color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(customColor)]);
                 }
-            } else {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(customColor)]);
-                color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(customColor)]);
             }
         } else {
-            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(id)]);
-            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(id)]);
+            if (advancedGradient) {
+                int[] gradient = advancedGradients[getColorIndex(id)];
+                this.advancedGradient.setColors(gradient[0], gradient[1], gradient[2], gradient[3]);
+            } else {
+                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(id)]);
+                color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(id)]);
+            }
         }
         needApplyColorAccent = id == 5; // Tinting manually set blue color
+
 
         avatarType = AVATAR_TYPE_NORMAL;
         drawDeleted = false;
