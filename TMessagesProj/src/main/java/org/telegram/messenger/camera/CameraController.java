@@ -173,9 +173,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             List<Camera.Size> list = params.getSupportedPreviewSizes();
                             for (int a = 0; a < list.size(); a++) {
                                 Camera.Size size = list.get(a);
-                                if (size.width == 1280 && size.height != 720) {
-                                    continue;
-                                }
                                 if (size.height < 2160 && size.width < 2160) {
                                     cameraInfo.previewSizes.add(new Size(size.width, size.height));
                                     if (BuildVars.LOGS_ENABLED) {
