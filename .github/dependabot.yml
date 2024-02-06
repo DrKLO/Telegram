@@ -1,0 +1,110 @@
+updates:
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/TMessagesProj"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/TMessagesProj_App"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/TMessagesProj_AppHockeyApp" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/TMessagesProj_AppHuawei"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/TMessagesProj_AppStandalone"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/TMessagesProj"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/TMessagesProj_App"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/TMessagesProj_AppHockeyApp" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/TMessagesProj_AppHuawei"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/TMessagesProj_AppStandalone"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+version: 2
