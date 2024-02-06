@@ -86,7 +86,7 @@ public class VideoPlayerHolderBase {
 
     long startTime;
 
-    public void preparePlayer(Uri uri, boolean audioDisabled) {
+    public void preparePlayer(Uri uri, boolean audioDisabled, float speed) {
         this.audioDisabled = audioDisabled;
         this.currentAccount = currentAccount;
         this.contentUri = uri;
@@ -99,13 +99,14 @@ public class VideoPlayerHolderBase {
                 return;
             }
             ensurePlayerCreated(audioDisabled);
+            videoPlayer.setPlaybackSpeed(speed);
             videoPlayer.preparePlayer(uri, "other", FileLoader.PRIORITY_LOW);
             videoPlayer.setPlayWhenReady(false);
             videoPlayer.setWorkerQueue(dispatchQueue);
         });
     }
 
-    public void start(boolean paused, Uri uri, long position, boolean audioDisabled) {
+    public void start(boolean paused, Uri uri, long position, boolean audioDisabled, float speed) {
         startTime = System.currentTimeMillis();
         this.audioDisabled = audioDisabled;
         this.paused = paused;
@@ -118,6 +119,7 @@ public class VideoPlayerHolderBase {
             }
             if (videoPlayer == null) {
                 ensurePlayerCreated(audioDisabled);
+                videoPlayer.setPlaybackSpeed(speed);
                 videoPlayer.preparePlayer(uri, "other");
                 videoPlayer.setWorkerQueue(dispatchQueue);
                 if (!paused) {
@@ -280,6 +282,17 @@ public class VideoPlayerHolderBase {
         }
     }
 
+    public void setSpeed(float speed) {
+        if (released) {
+            return;
+        }
+        dispatchQueue.postRunnable(() -> {
+            if (videoPlayer != null) {
+                videoPlayer.setPlaybackSpeed(speed);
+            }
+        });
+    }
+
     public void play() {
         if (released) {
             return;
@@ -299,6 +312,31 @@ public class VideoPlayerHolderBase {
                     videoPlayer.seekTo(pendingSeekTo);
                     pendingSeekTo = 0;
                 }
+                videoPlayer.setPlayWhenReady(true);
+            }
+        });
+    }
+
+    public void play(float speed) {
+        if (released) {
+            return;
+        }
+        if (!paused) {
+            return;
+        }
+        paused = false;
+        dispatchQueue.postRunnable(() -> {
+            if (videoPlayer != null) {
+                if (surfaceView != null) {
+                    videoPlayer.setSurfaceView(surfaceView);
+                } else {
+                    videoPlayer.setTextureView(textureView);
+                }
+                if (pendingSeekTo > 0) {
+                    videoPlayer.seekTo(pendingSeekTo);
+                    pendingSeekTo = 0;
+                }
+                videoPlayer.setPlaybackSpeed(speed);
                 videoPlayer.setPlayWhenReady(true);
             }
         });
@@ -428,16 +466,6 @@ public class VideoPlayerHolderBase {
 
     public Uri getCurrentUri() {
         return contentUri;
-    }
-
-    public void setPlaybackSpeed(float currentVideoSpeed) {
-        dispatchQueue.postRunnable(() -> {
-            if (videoPlayer == null) {
-                return;
-            }
-            videoPlayer.setPlaybackSpeed(currentVideoSpeed);
-        });
-
     }
 
     private Runnable onSeekUpdate;

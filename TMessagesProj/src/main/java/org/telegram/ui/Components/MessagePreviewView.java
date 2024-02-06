@@ -693,7 +693,7 @@ public class MessagePreviewView extends FrameLayout {
                     MessageObject message = messages.previewMessages.get(position);
                     MessageObject.GroupedMessages group = getValidGroupedMessage(message);
                     if (group != null) {
-                        MessageObject.GroupedMessagePosition pos = group.positions.get(message);
+                        MessageObject.GroupedMessagePosition pos = group.getPosition(message);
                         if (pos.minX == pos.maxX || pos.minY != pos.maxY || pos.minY == 0) {
                             return false;
                         }
@@ -733,7 +733,7 @@ public class MessagePreviewView extends FrameLayout {
                         MessageObject message = messages.previewMessages.get(idx);
                         MessageObject.GroupedMessages groupedMessages = getValidGroupedMessage(message);
                         if (groupedMessages != null) {
-                            return groupedMessages.positions.get(message).spanSize;
+                            return groupedMessages.getPosition(message).spanSize;
                         }
                     }
                     return 1000;
@@ -1691,7 +1691,7 @@ public class MessagePreviewView extends FrameLayout {
             MessageObject.GroupedMessages groupedMessages = null;
             if (message.getGroupId() != 0) {
                 groupedMessages = messages.groupedMessagesMap.get(message.getGroupId());
-                if (groupedMessages != null && (groupedMessages.messages.size() <= 1 || groupedMessages.positions.get(message) == null)) {
+                if (groupedMessages != null && (groupedMessages.messages.size() <= 1 || groupedMessages.getPosition(message) == null)) {
                     groupedMessages = null;
                 }
             }

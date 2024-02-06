@@ -476,7 +476,13 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
             req.filter = new TLRPC.TL_inputMessagesFilterPhotoVideo();
         }
 
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+        req.peer = getMessagesController().getInputPeer(dialogId);
+        if (topicId != 0) {
+            if (dialogId == getUserConfig().getClientUserId()) {
+                req.flags |= 4;
+                req.saved_peer_id = getMessagesController().getInputPeer(topicId);
+            }
+        }
         req.offset_id = lastId;
 
         Calendar calendar = Calendar.getInstance();

@@ -17,6 +17,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 public class PremiumLockIconView extends ImageView {
@@ -61,6 +62,7 @@ public class PremiumLockIconView extends ImageView {
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint oldShaderPaint;
     ImageReceiver imageReceiver;
+    AnimatedEmojiDrawable emojiDrawable;
     float shaderCrossfadeProgress = 1f;
     boolean waitingImage;
     boolean wasDrawn;
@@ -106,6 +108,14 @@ public class PremiumLockIconView extends ImageView {
             if (imageReceiver != null && imageReceiver.getBitmap() != null) {
                 waitingImage = false;
                 setColor(AndroidUtilities.getDominantColor(imageReceiver.getBitmap()));
+            } else if (emojiDrawable != null) {
+                int color = AnimatedEmojiDrawable.getDominantColor(emojiDrawable);
+                if (color != 0) {
+                    waitingImage = false;
+                    setColor(color);
+                } else {
+                    invalidate();
+                }
             } else {
                 invalidate();
             }
@@ -158,6 +168,14 @@ public class PremiumLockIconView extends ImageView {
     public void setImageReceiver(ImageReceiver imageReceiver) {
         this.imageReceiver = imageReceiver;
         if (imageReceiver != null) {
+            waitingImage = true;
+            invalidate();
+        }
+    }
+
+    public void setAnimatedEmojiDrawable(AnimatedEmojiDrawable emojiDrawable) {
+        this.emojiDrawable = emojiDrawable;
+        if (emojiDrawable != null) {
             waitingImage = true;
             invalidate();
         }

@@ -349,6 +349,10 @@ public class BackupImageView extends View {
         invalidate();
     }
 
+    public AnimatedEmojiDrawable getAnimatedEmojiDrawable() {
+        return animatedEmojiDrawable;
+    }
+
     ValueAnimator roundRadiusAnimator;
     
     public void animateToRoundRadius(int animateToRad) {

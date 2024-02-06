@@ -429,11 +429,6 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    public static boolean useLessData() {
-        ensureCurrentNetworkGet();
-        return BuildVars.DEBUG_PRIVATE_VERSION && (SharedConfig.forceLessData || isConnectionSlow());
-    }
-
     public static boolean isConnectionSlow() {
         try {
             ensureCurrentNetworkGet(false);

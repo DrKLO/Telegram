@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.util.Log;
 
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.INavigationLayout;
@@ -30,12 +31,25 @@ public class ChatActivityContainer extends FrameLayout {
     private final INavigationLayout parentLayout;
     private View fragmentView;
 
-    public ChatActivityContainer(Context context, INavigationLayout parentLayout, Bundle args) {
+    public ChatActivityContainer(Context context, Utilities.Callback0Return<FrameLayout> resizableView, INavigationLayout parentLayout, Bundle args) {
         super(context);
         this.parentLayout = parentLayout;
 
-        chatActivity = new ChatActivity(args);
+        chatActivity = new ChatActivity(args) {
+            @Override
+            public void setNavigationBarColor(int color) {}
+
+            @Override
+            protected void onSearchLoadingUpdate(boolean loading) {
+                ChatActivityContainer.this.onSearchLoadingUpdate(loading);
+            }
+        };
+        chatActivity.insideContainerResizableView = resizableView;
         chatActivity.isInsideContainer = true;
+    }
+
+    protected void onSearchLoadingUpdate(boolean loading) {
+
     }
 
     @Override
@@ -57,6 +71,7 @@ public class ChatActivityContainer extends FrameLayout {
                 parent.removeView(fragmentView);
             }
         }
+        chatActivity.openedInstantly();
         addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         if (isActive) {
             chatActivity.onResume();

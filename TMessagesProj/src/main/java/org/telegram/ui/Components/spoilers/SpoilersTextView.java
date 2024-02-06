@@ -2,13 +2,16 @@ package org.telegram.ui.Components.spoilers;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.view.MotionEvent;
@@ -16,6 +19,8 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Cells.TextSelectionHelper;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +34,9 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     private Path path = new Path();
     private Paint xRefPaint;
     public boolean allowClickSpoilers = true;
+
+    public int cacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+    private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmoji;
 
     public SpoilersTextView(Context context) {
         this(context, true);
@@ -68,12 +76,20 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter);
         invalidateSpoilers();
+        updateAnimatedEmoji(true);
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         invalidateSpoilers();
+    }
+
+    private ColorFilter animatedEmojiColorFilter;
+    @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        animatedEmojiColorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
     @Override
@@ -99,6 +115,14 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         canvas.clipPath(path);
         super.onDraw(canvas);
         canvas.restore();
+
+        updateAnimatedEmoji(false);
+        if (animatedEmoji != null) {
+            canvas.save();
+            canvas.translate(getPaddingLeft(), getPaddingTop());
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmoji, 0, spoilers, 0, getHeight(), 0, 1f, animatedEmojiColorFilter);
+            canvas.restore();
+        }
 
         if (!spoilers.isEmpty()) {
             boolean useAlphaLayer = spoilers.get(0).getRippleProgress() != -1;
@@ -128,9 +152,26 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateAnimatedEmoji(true);
+    }
+
+    @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         invalidateSpoilers();
+    }
+
+    private Layout lastLayout = null;
+    private int lastTextLength;
+    public void updateAnimatedEmoji(boolean force) {
+        int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
+        if (force || lastLayout != getLayout() || lastTextLength != newTextLength) {
+            animatedEmoji = AnimatedEmojiSpan.update(cacheType, this, animatedEmoji, getLayout());
+            lastLayout = getLayout();
+            lastTextLength = newTextLength;
+        }
     }
 
     private void invalidateSpoilers() {

@@ -399,8 +399,13 @@ public class StickerSetCell extends FrameLayout {
             } else {
                 sideButtons.setVisibility(checked ? VISIBLE : INVISIBLE);
                 if (!checked) {
+                    sideButtons.setAlpha(0f);
                     sideButtons.setScaleX(0.1f);
                     sideButtons.setScaleY(0.1f);
+                } else {
+                    sideButtons.setAlpha(1f);
+                    sideButtons.setScaleX(1f);
+                    sideButtons.setScaleY(1f);
                 }
             }
         } else if (option == 3) {
@@ -424,8 +429,13 @@ public class StickerSetCell extends FrameLayout {
             } else {
                 optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
                 if (!checked) {
+                    optionsButton.setAlpha(0f);
                     optionsButton.setScaleX(0.1f);
                     optionsButton.setScaleY(0.1f);
+                } else {
+                    optionsButton.setAlpha(1f);
+                    optionsButton.setScaleX(1f);
+                    optionsButton.setScaleY(1f);
                 }
             }
         }

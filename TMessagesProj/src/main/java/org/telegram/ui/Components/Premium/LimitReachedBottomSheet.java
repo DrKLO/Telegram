@@ -648,6 +648,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         fireworksOverlay.start();
         fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         headerView.boostCounterView.setCount(canApplyBoost.boostCount, true);
+        recyclerListView.smoothScrollToPosition(0);
     }
 
     private void sendInviteMessages() {
@@ -1092,7 +1093,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         view.setPadding(0, 0, 0, AndroidUtilities.dp(8));
                         break;
                     case VIEW_TYPE_USER:
-                        view = new GroupCreateUserCell(context, 1, 8, false);
+                        view = new GroupCreateUserCell(context, 1, 0, false);
                         break;
                     case VIEW_TYPE_PROGRESS:
                         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context, null);

@@ -8,12 +8,20 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,9 +59,11 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TextStyleSpan;
 
@@ -297,7 +307,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
                 for (int a = 0; a < items.length; a++) {
                     RadioColorCell cell = new RadioColorCell(getParentActivity());
-                    cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                    cell.setPadding(dp(4), 0, dp(4), 0);
                     cell.setTag(a);
                     cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                     cell.setTextAndValue(items[a], selected == a);
@@ -354,16 +364,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             } else if (position == forwardsRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_FORWARDS));
             } else if (position == voicesRow) {
-                if (!getUserConfig().isPremium()) {
-                    try {
-                        fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    BulletinFactory.of(this).createRestrictVoiceMessagesPremiumBulletin().show();
-                    return;
-                }
-
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES));
             } else if (position == noncontactsRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_MESSAGES));
@@ -519,7 +519,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 1, 21, null);
                     checkBoxCell.setTag(a);
                     checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                    checkBoxCell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                    checkBoxCell.setPadding(dp(4), 0, dp(4), 0);
                     linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
                     checkBoxCell.setText(name, null, true, false);
                     checkBoxCell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
@@ -1012,19 +1012,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES);
                         }
-                        textCell.setTextAndValue(LocaleController.getString(R.string.PrivacyVoiceMessages), value, noncontactsRow != -1);
+                        textCell.setTextAndValue(addPremiumStar(LocaleController.getString(R.string.PrivacyVoiceMessages)), value, noncontactsRow != -1);
                         ImageView imageView = textCell.getValueImageView();
-                        if (!getUserConfig().isPremium()) {
-                            imageView.setVisibility(View.VISIBLE);
-                            imageView.setImageResource(R.drawable.msg_mini_premiumlock);
-                            imageView.setTranslationY(AndroidUtilities.dp(1));
-                            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteValueText), PorterDuff.Mode.MULTIPLY));
-                        } else {
-                            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
-                        }
+                        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
                     } else if (position == noncontactsRow) {
                         value = LocaleController.getString(noncontactsValue ? R.string.ContactsAndPremium : R.string.P2PEverybody);
-                        textCell.setTextAndValue(LocaleController.getString(R.string.PrivacyMessages), value, false);
+                        textCell.setTextAndValue(addPremiumStar(LocaleController.getString(R.string.PrivacyMessages)), value, false);
                     } else if (position == passportRow) {
                         textCell.setText(LocaleController.getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {
@@ -1228,6 +1221,20 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             }
             return 0;
         }
+    }
+
+    private SpannableString premiumStar;
+    private CharSequence addPremiumStar(String text) {
+        if (!getUserConfig().isPremium()) {
+            return text;
+        }
+        if (premiumStar == null) {
+            premiumStar = new SpannableString("★");
+            Drawable drawable = new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().premiumStarMenuDrawable, dp(18), dp(18));
+            drawable.setBounds(0, 0, dp(18), dp(18));
+            premiumStar.setSpan(new ImageSpan(drawable, DynamicDrawableSpan.ALIGN_CENTER), 0, premiumStar.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+        }
+        return new SpannableStringBuilder(text).append("  ").append(premiumStar);
     }
 
     @Override

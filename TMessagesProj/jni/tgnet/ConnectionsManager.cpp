@@ -2390,7 +2390,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         }
                     }
                     if (request->retryCount >= retryMax) {
-                        if (LOGS_ENABLED) DEBUG_E("timed out %s", typeInfo.name());
+                        if (LOGS_ENABLED) DEBUG_E("timed out %s, message_id = 0x%" PRIx64, typeInfo.name(), request->messageId);
                         auto error = new TL_error();
                         error->code = -123;
                         error->text = "RETRY_LIMIT";

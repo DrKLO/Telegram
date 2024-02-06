@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 
@@ -228,6 +229,9 @@ public class NotificationCenter {
     public static final int savedMessagesDialogsUpdate = totalEvents++;
     public static final int savedReactionTagsUpdate = totalEvents++;
     public static final int userIsPremiumBlockedUpadted = totalEvents++;
+    public static final int savedMessagesForwarded = totalEvents++;
+    public static final int emojiKeywordsLoaded = totalEvents++;
+    public static final int storyQualityUpdate = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;
@@ -507,7 +511,7 @@ public class NotificationCenter {
     }
 
     public void postNotificationName(int id, Object... args) {
-        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache || id == closeChats || id == invalidateMotionBackground;
+        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache || id == closeChats || id == invalidateMotionBackground || id == needCheckSystemBarColors;
         ArrayList<Integer> expiredIndices = null;
         if (!allowDuringAnimation && allowedNotifications.size() > 0) {
             int size = allowedNotifications.size();

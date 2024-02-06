@@ -1648,7 +1648,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     break;
                 case DO_SHUTDOWN_MESSAGE:
                     finish();
-                    if (recording && inputMessage.arg2 != -2) {
+                    if (recording && inputMessage.arg2 != -2 && videoEncoder != null) {
                         videoEncoder.stopRecording(inputMessage.arg1, inputMessage.arg2);
                     }
                     Looper looper = Looper.myLooper();

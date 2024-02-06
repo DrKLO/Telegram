@@ -1409,10 +1409,22 @@ public class DatabaseMigrationHelper {
             version = 138;
         }
 
-        if (version == 138) {
-            database.executeFast("CREATE TABLE IF NOT EXISTS saved_reaction_tags (data BLOB);").stepThis().dispose();
-            database.executeFast("PRAGMA user_version = 139").stepThis().dispose();
-            version = 139;
+        if (version == 138 || version == 139 || version == 140 || version == 141) {
+            database.executeFast("DROP TABLE IF EXISTS tag_message_id;").stepThis().dispose();
+            database.executeFast("CREATE TABLE tag_message_id(mid INTEGER, topic_id INTEGER, tag INTEGER, text TEXT);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS tag_idx_tag_message_id ON tag_message_id(tag);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS tag_text_idx_tag_message_id ON tag_message_id(tag, text);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS tag_topic_idx_tag_message_id ON tag_message_id(topic_id, tag);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS tag_topic_text_idx_tag_message_id ON tag_message_id(topic_id, tag, text);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 142").stepThis().dispose();
+            version = 142;
+        }
+
+        if (version == 142) {
+            database.executeFast("DROP TABLE IF EXISTS saved_reaction_tags;").stepThis().dispose();
+            database.executeFast("CREATE TABLE saved_reaction_tags (topic_id INTEGER PRIMARY KEY, data BLOB);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 143").stepThis().dispose();
+            version = 143;
         }
 
         return version;

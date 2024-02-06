@@ -508,6 +508,13 @@ public class ActionBarMenu extends LinearLayout {
         return null;
     }
 
+    public void setItemVisibility(int id, int visibility) {
+        View item = getItem(id);
+        if (item != null) {
+            item.setVisibility(visibility);
+        }
+    }
+
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);

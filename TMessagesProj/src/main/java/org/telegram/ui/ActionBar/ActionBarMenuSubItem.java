@@ -37,7 +37,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     private int itemHeight = 48;
     private final Theme.ResourcesProvider resourcesProvider;
-    Runnable openSwipeBackLayout;
+    public Runnable openSwipeBackLayout;
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
         this(context, false, top, bottom);

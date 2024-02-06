@@ -198,6 +198,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean isBulletinVisible;
     public boolean isTranslating = false;
 
+    public static float currentSpeed = 1f;
+
     public boolean isLongpressed;
 
     Runnable longPressRunnable = () -> setLongPressed(true);
@@ -274,6 +276,24 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         this.fragment = fragment;
     }
 
+    public void setSpeed(float speed) {
+        currentSpeed = speed;
+        if (playerHolder != null) {
+            playerHolder.setSpeed(speed);
+            StoryViewer otherStoryViewer = null;
+            if (fragment != null) {
+                if (fragment.overlayStoryViewer != this) {
+                    otherStoryViewer = fragment.overlayStoryViewer;
+                } else if (fragment.storyViewer != this) {
+                    otherStoryViewer = fragment.storyViewer;
+                }
+            }
+            if (otherStoryViewer != null && otherStoryViewer.playerHolder != null) {
+                otherStoryViewer.playerHolder.setSpeed(speed);
+            }
+        }
+    }
+
     public void open(Context context, TL_stories.StoryItem storyItem, PlaceProvider placeProvider) {
         if (storyItem == null) {
             return;
@@ -340,6 +360,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             doOnAnimationReadyRunnables.clear();
             return;
         }
+        setSpeed(1f);
         ATTACH_TO_FRAGMENT = !AndroidUtilities.isTablet() && !fromBottomSheet;
         USE_SURFACE_VIEW = SharedConfig.useSurfaceInStories && ATTACH_TO_FRAGMENT;
         messageId = storyItem == null ? 0 : storyItem.messageId;
@@ -1334,6 +1355,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 //                                aspectRatioFrameLayout.addView(surfaceView = new SurfaceView(context));
 //                            }
                             playerHolder.uri = uri;
+                            playerHolder.setSpeed(currentSpeed);
                             currentPlayerScope.player = playerHolder;
                             currentPlayerScope.firstFrameRendered = false;
                             currentPlayerScope.renderView = aspectRatioFrameLayout;
@@ -1345,12 +1367,13 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 t = playerSavedPosition;
                                 currentPlayerScope.firstFrameRendered = true;
                             }
-                            currentPlayerScope.player.start(isPaused(), uri, t, isInSilentMode);
+                            currentPlayerScope.player.start(isPaused(), uri, t, isInSilentMode, currentSpeed);
                             currentPlayerScope.invalidate();
                         }
                     } else if (sameUri) {
                         currentPlayerScope = scope;
                         currentPlayerScope.player = playerHolder;
+                        playerHolder.setSpeed(currentSpeed);
                         currentPlayerScope.firstFrameRendered = playerHolder.firstFrameRendered;
                         currentPlayerScope.renderView = aspectRatioFrameLayout;
                         currentPlayerScope.textureView = textureView;
@@ -1492,7 +1515,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                         playerHolder.uri = uri;
                         playerHolder.document = documents.get(i);
                         FileStreamLoadOperation.setPriorityForDocument(playerHolder.document, FileLoader.PRIORITY_LOW);
-                        playerHolder.preparePlayer(uri, isInSilentMode);
+                        playerHolder.preparePlayer(uri, isInSilentMode, currentSpeed);
                         preparedPlayers.add(playerHolder);
                         if (preparedPlayers.size() > 2) {
                             VideoPlayerHolder player = preparedPlayers.remove(0);
@@ -2004,7 +2027,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (pause) {
                 playerHolder.pause();
             } else {
-                playerHolder.play();
+                playerHolder.play(currentSpeed);
             }
         }
         storiesViewPager.enableTouch(!keyboardVisible && !isClosed && !isRecording && !isLongpressed && !isInPinchToZoom && selfStoriesViewsOffset == 0 && !isInTextSelectionMode);

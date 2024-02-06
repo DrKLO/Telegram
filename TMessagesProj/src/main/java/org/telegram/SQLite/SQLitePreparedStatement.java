@@ -25,7 +25,6 @@ public class SQLitePreparedStatement {
 
     private long startTime;
     private String query;
-    //private static HashMap<SQLitePreparedStatement, String> hashMap;
 
     public long getStatementHandle() {
         return sqliteStatementHandle;
@@ -112,9 +111,6 @@ public class SQLitePreparedStatement {
             }
         }
         try {
-            /*if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                hashMap.remove(this);
-            }*/
             isFinalized = true;
             finalize(sqliteStatementHandle);
         } catch (SQLiteException e) {

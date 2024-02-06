@@ -75,7 +75,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     private boolean removeStickerSet;
 
     private TLRPC.ChatFull info;
-    private long chatId;
+    private final long chatId;
 
     private int infoRow;
     private int headerRow;

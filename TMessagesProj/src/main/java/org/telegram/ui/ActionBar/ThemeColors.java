@@ -138,8 +138,8 @@ public class ThemeColors {
 
         defaultColors[key_avatar_text] = 0xffffffff;
 
-        defaultColors[key_avatar_backgroundSaved] = 0xff69BFFA;
-        defaultColors[key_avatar_background2Saved] = 0xff3D9DE0;
+        defaultColors[key_avatar_backgroundSaved] = 0xff69BDF9;
+        defaultColors[key_avatar_background2Saved] = 0xff409FE1;
         defaultColors[key_avatar_backgroundArchived] = 0xffB8C2CC;
         defaultColors[key_avatar_backgroundArchivedHidden] = 0xff66bffa;
         defaultColors[key_avatar_backgroundRed] = 0xffFF845E;
@@ -189,6 +189,7 @@ public class ThemeColors {
         defaultColors[key_actionBarDefaultSubmenuSeparator] = 0xfff5f5f5;
         defaultColors[key_actionBarActionModeDefaultSelector] = 0xffe2e2e2;
         defaultColors[key_actionBarActionModeReaction] = 0xfff0f0f0;
+        defaultColors[key_actionBarActionModeReactionText] = 0xff82868a;
         defaultColors[key_actionBarActionModeReactionDot] = 0xffc0c0c0;
         defaultColors[key_actionBarTabActiveText] = 0xffffffff;
         defaultColors[key_actionBarTabUnactiveText] = 0xffd5e8f7;
@@ -957,6 +958,7 @@ public class ThemeColors {
         colorKeysMap.put(key_actionBarActionModeDefaultIcon, "actionBarActionModeDefaultIcon");
         colorKeysMap.put(key_actionBarActionModeDefaultSelector, "actionBarActionModeDefaultSelector");
         colorKeysMap.put(key_actionBarActionModeReaction, "actionBarActionModeReaction");
+        colorKeysMap.put(key_actionBarActionModeReactionText, "actionBarActionModeReactionText");
         colorKeysMap.put(key_actionBarActionModeReactionDot, "actionBarActionModeReactionDot");
         colorKeysMap.put(key_actionBarDefaultTitle, "actionBarDefaultTitle");
         colorKeysMap.put(key_actionBarDefaultSubtitle, "actionBarDefaultSubtitle");

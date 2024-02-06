@@ -12,6 +12,9 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -19,14 +22,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -38,8 +45,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.CounterView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +70,14 @@ public class ReactionsLayoutInBubble {
     private static Paint tagPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static Paint cutTagPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
+    public static void initPaints(Theme.ResourcesProvider resourcesProvider) {
+        paint.setColor(Theme.getColor(Theme.key_chat_inLoader, resourcesProvider));
+        textPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        textPaint.setTextSize(dp(12));
+        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        cutTagPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+    }
     public boolean isSmall;
 
     public int x;
@@ -79,14 +99,14 @@ public class ReactionsLayoutInBubble {
     public boolean isEmpty;
     private float touchSlop;
     public int lastLineX;
-    ArrayList<ReactionButton> reactionButtons = new ArrayList<>();
+    public ArrayList<ReactionButton> reactionButtons = new ArrayList<>();
     ArrayList<ReactionButton> outButtons = new ArrayList<>();
     HashMap<String, ReactionButton> lastDrawingReactionButtons = new HashMap<>();
     HashMap<String, ReactionButton> lastDrawingReactionButtonsTmp = new HashMap<>();
     ChatMessageCell parentView;
     MessageObject messageObject;
     Theme.ResourcesProvider resourcesProvider;
-    private String scrimViewReaction;
+    private Integer scrimViewReaction;
 
     int availableWidth;
     private int lastDrawnWidth;
@@ -117,12 +137,8 @@ public class ReactionsLayoutInBubble {
     public ReactionsLayoutInBubble(ChatMessageCell parentView) {
         this.parentView = parentView;
         currentAccount = UserConfig.selectedAccount;
-        paint.setColor(Theme.getColor(Theme.key_chat_inLoader, resourcesProvider));
-        textPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
-        textPaint.setTextSize(dp(12));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        initPaints(resourcesProvider);
         touchSlop = ViewConfiguration.get(ApplicationLoader.applicationContext).getScaledTouchSlop();
-        cutTagPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
     }
 
     public static boolean equalsTLReaction(TLRPC.Reaction reaction, TLRPC.Reaction reaction1) {
@@ -135,9 +151,10 @@ public class ReactionsLayoutInBubble {
         return false;
     }
 
-    public void setMessage(MessageObject messageObject, boolean isSmall, Theme.ResourcesProvider resourcesProvider) {
+    public void setMessage(MessageObject messageObject, boolean isSmall, boolean isTag, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         this.isSmall = isSmall;
+        this.tags = isTag;
         this.messageObject = messageObject;
         ArrayList<ReactionButton> oldButtons = new ArrayList<>(reactionButtons);
         hasUnreadReactions = false;
@@ -159,9 +176,9 @@ public class ReactionsLayoutInBubble {
 //                            break;
 //                        }
 //                    }
-                    ReactionButton button = new ReactionLayoutButton(old, reactionCount, isSmall);
+                    ReactionButton button = new ReactionLayoutButton(old, reactionCount, isSmall, isTag);
                     reactionButtons.add(button);
-                    if (!isSmall && messageObject.messageOwner.reactions.recent_reactions != null) {
+                    if (!isSmall && !isTag && messageObject.messageOwner.reactions.recent_reactions != null) {
                         ArrayList<TLObject> users = null;
 
                         if (messageObject.getDialogId() > 0 && !UserObject.isReplyUser(messageObject.getDialogId())) {
@@ -212,7 +229,7 @@ public class ReactionsLayoutInBubble {
                         }
                     }
                     if (isSmall && reactionCount.count > 1 && reactionCount.chosen) {
-                        ReactionButton button2 = new ReactionLayoutButton(null, reactionCount, isSmall);
+                        ReactionButton button2 = new ReactionLayoutButton(null, reactionCount, isSmall, isTag);
                         reactionButtons.add(button2);
                         reactionButtons.get(0).isSelected = false;
                         reactionButtons.get(1).isSelected = true;
@@ -261,6 +278,14 @@ public class ReactionsLayoutInBubble {
             if (button.isSmall) {
                 button.width = dp(14);
                 button.height = dp(14);
+            } else if (button.isTag) {
+                button.width = dp(42);
+                button.height = dp(26);
+                if (button.hasName) {
+                    button.width += button.textDrawable.getAnimateToWidth() + dp(8);
+                } else if (button.counterDrawable != null && button.count > 1) {
+                    button.width += button.counterDrawable.getCurrentWidth() + dp(8);
+                }
             } else {
                 button.width = (int) (dp(8) + dp(20) + dp(4));
                 if (button.avatarsDrawable != null && button.users.size() > 0) {
@@ -269,8 +294,10 @@ public class ReactionsLayoutInBubble {
                     int c2 = button.users.size() > 1 ? button.users.size() - 1 : 0;
                     button.width += dp(2) + c1 * dp(20) + c2 * dp(20) * 0.8f + dp(1);
                     button.avatarsDrawable.height = dp(26);
+                } else if (button.hasName) {
+                    button.width += button.textDrawable.getAnimateToWidth() + dp(8);
                 } else {
-                    button.width += button.counterDrawable.textPaint.measureText(button.countText) + dp(8);
+                    button.width += button.counterDrawable.getCurrentWidth() + dp(8);
                 }
                 button.height = dp(26);
             }
@@ -314,7 +341,7 @@ public class ReactionsLayoutInBubble {
         drawServiceShaderBackground = 0f;
     }
 
-    public void draw(Canvas canvas, float animationProgress, String drawOnlyReaction) {
+    public void draw(Canvas canvas, float animationProgress, Integer drawOnlyReaction) {
         if (isEmpty && outButtons.isEmpty()) {
             return;
         }
@@ -329,7 +356,7 @@ public class ReactionsLayoutInBubble {
         }
         for (int i = 0; i < reactionButtons.size(); i++) {
             ReactionButton reactionButton = reactionButtons.get(i);
-            if (reactionButton.reaction.equals(scrimViewReaction) || (drawOnlyReaction != null && !reactionButton.reaction.equals(drawOnlyReaction))) {
+            if ((Objects.equals(reactionButton.reaction.hashCode(), scrimViewReaction)) || (drawOnlyReaction != null && reactionButton.reaction.hashCode() != drawOnlyReaction)) {
                 continue;
             }
             canvas.save();
@@ -397,6 +424,7 @@ public class ReactionsLayoutInBubble {
 
                     button.fromTextColor = lastButton.lastDrawnTextColor;
                     button.fromBackgroundColor = lastButton.lastDrawnBackgroundColor;
+                    button.fromTagDotColor = lastButton.lastDrawnTagDotColor;
                     button.animationType = ANIMATION_TYPE_MOVE;
 
                     if (button.count != lastButton.count && button.counterDrawable != null) {
@@ -492,13 +520,13 @@ public class ReactionsLayoutInBubble {
         return lastDrawingReactionButtons.get(hash);
     }
 
-    public void setScrimReaction(String scrimViewReaction) {
+    public void setScrimReaction(Integer scrimViewReaction) {
         this.scrimViewReaction = scrimViewReaction;
     }
 
     public class ReactionLayoutButton extends ReactionButton {
-        public ReactionLayoutButton(ReactionButton reuseFrom, TLRPC.ReactionCount reactionCount, boolean isSmall) {
-            super(reuseFrom, currentAccount, parentView, reactionCount, isSmall, resourcesProvider);
+        public ReactionLayoutButton(ReactionButton reuseFrom, TLRPC.ReactionCount reactionCount, boolean isSmall, boolean isTag) {
+            super(reuseFrom, currentAccount, parentView, reactionCount, isSmall, isTag, resourcesProvider);
         }
 
         @Override
@@ -532,6 +560,13 @@ public class ReactionsLayoutInBubble {
         }
     }
 
+    public boolean verifyDrawable(Drawable drawable) {
+        if (drawable instanceof AnimatedTextView.AnimatedTextDrawable) {
+            return true;
+        }
+        return false;
+    }
+
     public static class ReactionButton {
 
         private final TLRPC.ReactionCount reactionCount;
@@ -541,6 +576,7 @@ public class ReactionsLayoutInBubble {
         public int animateFromY;
         public int animateFromWidth;
         public int fromBackgroundColor;
+        public int fromTagDotColor;
         public int fromTextColor;
         public int realCount;
         public int choosenOrder;
@@ -555,15 +591,19 @@ public class ReactionsLayoutInBubble {
         VisibleReaction visibleReaction;
         android.graphics.Rect drawingImageRect = new Rect();
 
+        public boolean hasName;
+        public String name;
+
         public int count;
         public int x;
         public int y;
         public int width;
         public int height;
-        ImageReceiver imageReceiver;
-        AnimatedEmojiDrawable animatedEmojiDrawable;
+        public ImageReceiver imageReceiver;
+        public AnimatedEmojiDrawable animatedEmojiDrawable;
         int animatedEmojiDrawableColor;
         public CounterView.CounterDrawable counterDrawable;
+        public AnimatedTextView.AnimatedTextDrawable textDrawable;
         int backgroundColor;
         int textColor;
         int serviceBackgroundColor;
@@ -571,8 +611,10 @@ public class ReactionsLayoutInBubble {
 
         public int lastDrawnTextColor;
         public int lastDrawnBackgroundColor;
+        public int lastDrawnTagDotColor;
         boolean isSelected;
 
+        public boolean isTag;
         AvatarsDrawable avatarsDrawable;
         ArrayList<TLObject> users;
 
@@ -581,13 +623,17 @@ public class ReactionsLayoutInBubble {
         private final Theme.ResourcesProvider resourcesProvider;
 
         protected int getCacheType() {
+            if (isTag) {
+                return AnimatedEmojiDrawable.CACHE_TYPE_SAVED_REACTION;
+            }
             return AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW;
         }
 
-        public ReactionButton(ReactionButton reuseFrom, int currentAccount, View parentView, TLRPC.ReactionCount reactionCount, boolean isSmall, Theme.ResourcesProvider resourcesProvider) {
+        public ReactionButton(ReactionButton reuseFrom, int currentAccount, View parentView, TLRPC.ReactionCount reactionCount, boolean isSmall, boolean isTag, Theme.ResourcesProvider resourcesProvider) {
             this.currentAccount = currentAccount;
             this.parentView = parentView;
             this.resourcesProvider = resourcesProvider;
+            this.isTag = isTag;
             if (reuseFrom != null) {
                 counterDrawable = reuseFrom.counterDrawable;
             }
@@ -596,6 +642,14 @@ public class ReactionsLayoutInBubble {
             }
             if (counterDrawable == null) {
                 counterDrawable = new CounterView.CounterDrawable(parentView, false, null);
+            }
+            if (textDrawable == null) {
+                textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
+                textDrawable.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+                textDrawable.setTextSize(dp(13));
+                textDrawable.setCallback(parentView);
+                textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
             }
             this.reactionCount = reactionCount;
             this.reaction = reactionCount.reaction;
@@ -612,7 +666,6 @@ public class ReactionsLayoutInBubble {
             } else {
                 throw new RuntimeException("unsupported");
             }
-            countText = Integer.toString(reactionCount.count);
             imageReceiver.setParentView(parentView);
             isSelected = reactionCount.chosen;
             counterDrawable.updateVisibility = false;
@@ -633,9 +686,42 @@ public class ReactionsLayoutInBubble {
 
             counterDrawable.setSize(dp(26), dp(100));
             counterDrawable.textPaint = textPaint;
-            counterDrawable.setCount(count, false);
+            if (isTag) {
+                name = MessagesController.getInstance(currentAccount).getSavedTagName(reaction);
+                hasName = !TextUtils.isEmpty(name);
+            }
+            if (hasName) {
+                textDrawable.setText(Emoji.replaceEmoji(name, textDrawable.getPaint().getFontMetricsInt(), false), !LocaleController.isRTL);
+                if (drawTextWithCounter()) {
+                    countText = Integer.toString(reactionCount.count);
+                    counterDrawable.setCount(count, false);
+                } else {
+                    countText = "";
+                    counterDrawable.setCount(0, false);
+                }
+            } else {
+                if (textDrawable != null) {
+                    textDrawable.setText("", false);
+                }
+                countText = Integer.toString(reactionCount.count);
+                counterDrawable.setCount(count, false);
+            }
             counterDrawable.setType(CounterView.CounterDrawable.TYPE_CHAT_REACTIONS);
             counterDrawable.gravity = Gravity.LEFT;
+        }
+
+        private RectF bounds = new RectF(), rect2 = new RectF();
+        private final Path tagPath = new Path();
+        private void drawRoundRect(Canvas canvas, RectF rectF, float r, Paint paint) {
+            if (isTag) {
+                if (bounds.left != rectF.left || bounds.top != rectF.top || bounds.right != rectF.right || bounds.bottom != rectF.bottom) {
+                    bounds.set(rectF);
+                    fillTagPath(bounds, rect2, tagPath);
+                }
+                canvas.drawPath(tagPath, paint);
+            } else {
+                canvas.drawRoundRect(rectF, r, r, paint);
+            }
         }
 
         protected boolean isOutOwner() {
@@ -643,7 +729,11 @@ public class ReactionsLayoutInBubble {
         }
 
         protected boolean drawCounter() {
-            return count != 0 || counterDrawable.countChangeProgress != 1f;
+            return count != 0 && (!isTag || hasName || count != 1) || counterDrawable.countChangeProgress != 1f;
+        }
+
+        protected boolean drawTextWithCounter() {
+            return false;
         }
 
         public void draw(Canvas canvas, float x, float y, float progress, float alpha, boolean drawOverlayScrim) {
@@ -672,7 +762,11 @@ public class ReactionsLayoutInBubble {
             }
             updateColors(progress);
             textPaint.setColor(lastDrawnTextColor);
+            if (textDrawable != null) {
+                textDrawable.setTextColor(lastDrawnTextColor);
+            }
             paint.setColor(lastDrawnBackgroundColor);
+            final boolean cutTagCircle = isTag && drawTagDot() && Color.alpha(lastDrawnTagDotColor) == 0;
 
             if (alpha != 1f) {
                 textPaint.setAlpha((int) (textPaint.getAlpha() * alpha));
@@ -695,20 +789,39 @@ public class ReactionsLayoutInBubble {
                 int oldAlpha2 = paint2.getAlpha();
                 paint1.setAlpha((int) (oldAlpha * alpha * getDrawServiceShaderBackground()));
                 paint2.setAlpha((int) (oldAlpha2 * alpha * getDrawServiceShaderBackground()));
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint1);
+                drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint1);
                 if (resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService()) {
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint2);
+                    drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint2);
                 }
                 paint1.setAlpha(oldAlpha);
                 paint2.setAlpha(oldAlpha2);
             }
             if (drawOverlayScrim && getDrawServiceShaderBackground() < 1 && parentView instanceof ChatMessageCell) {
                 Theme.MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
-                if (messageBackground != null) {
+                if (messageBackground != null && !isTag) {
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, messageBackground.getPaint());
                 }
             }
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint);
+            if (cutTagCircle) {
+                AndroidUtilities.rectTmp.right += dp(4);
+                canvas.saveLayerAlpha(AndroidUtilities.rectTmp, 0xFF, Canvas.ALL_SAVE_FLAG);
+                AndroidUtilities.rectTmp.right -= dp(4);
+            }
+            drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint);
+            if (isTag && drawTagDot()) {
+                Paint paint;
+                if (cutTagCircle) {
+                    paint = cutTagPaint;
+                } else {
+                    tagPaint.setColor(lastDrawnTagDotColor);
+                    tagPaint.setAlpha((int) (tagPaint.getAlpha() * alpha));
+                    paint = tagPaint;
+                }
+                canvas.drawCircle(AndroidUtilities.rectTmp.right - dp(8.4f), AndroidUtilities.rectTmp.centerY(), dp(2.66f), paint);
+            }
+            if (cutTagCircle) {
+                canvas.restore();
+            }
 
             if (imageReceiver != null) {
                 int size, X;
@@ -722,31 +835,47 @@ public class ReactionsLayoutInBubble {
                     imageReceiver.setRoundRadius(0);
                 }
                 int Y = (int) ((height - size) / 2f);
+                if (isTag) {
+                    X -= dp(2);
+                }
                 drawingImageRect.set((int) x + X, (int) y + Y, (int) x + X + size, (int) y + Y + size);
                 imageReceiver.setImageCoords(drawingImageRect);
                 drawImage(canvas, alpha);
             }
 
+            float tx = 0;
+            if (textDrawable != null && textDrawable.isNotEmpty() > 0) {
+                canvas.save();
+                canvas.translate(x + dp(hasName && !drawTagDot() ? 10 : (hasName ? 9 : 8)) + dp(20) + dp(2), y);
+                textDrawable.setBounds(0, 0, width, height);
+                textDrawable.draw(canvas);
+                textDrawable.setAlpha((int) (0xFF * alpha));
+                canvas.restore();
+                tx = textDrawable.getCurrentWidth() + dp(4) * textDrawable.isNotEmpty();
+            }
             if (counterDrawable != null && drawCounter()) {
                 canvas.save();
-                canvas.translate(x + dp(8) + dp(20) + dp(2), y);
+                canvas.translate(x + dp(hasName && !drawTagDot() ? 10 : (hasName ? 9 : 8)) + dp(20) + dp(2) + tx, y);
                 counterDrawable.draw(canvas);
                 canvas.restore();
             }
 
-            if (avatarsDrawable != null) {
-                canvas.save();
-                canvas.translate(x + dp(10) + dp(20) + dp(2), y);
-                avatarsDrawable.setAlpha(alpha);
-                avatarsDrawable.setTransitionProgress(progress);
-                avatarsDrawable.onDraw(canvas);
-                canvas.restore();
+            if (!isTag) {
+                if (avatarsDrawable != null) {
+                    canvas.save();
+                    canvas.translate(x + dp(10) + dp(20) + dp(2), y);
+                    avatarsDrawable.setAlpha(alpha);
+                    avatarsDrawable.setTransitionProgress(progress);
+                    avatarsDrawable.onDraw(canvas);
+                    canvas.restore();
+                }
             }
         }
 
         protected void updateColors(float progress) {
             lastDrawnTextColor = ColorUtils.blendARGB(fromTextColor, ColorUtils.blendARGB(textColor, serviceTextColor, getDrawServiceShaderBackground()), progress);
             lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, ColorUtils.blendARGB(backgroundColor, serviceBackgroundColor, getDrawServiceShaderBackground()), progress);
+            lastDrawnTagDotColor = ColorUtils.blendARGB(fromTagDotColor, AndroidUtilities.computePerceivedBrightness(lastDrawnBackgroundColor) > .8f ? 0 : 0x5affffff, progress);
         }
 
         protected boolean isPlaying() {
@@ -868,6 +997,26 @@ public class ReactionsLayoutInBubble {
             }
             if (animatedEmojiDrawable != null) {
                 animatedEmojiDrawable.removeView(parentView);
+            }
+        }
+
+        public void startAnimation() {
+            ImageReceiver imageReceiver;
+            if (animatedEmojiDrawable != null && animatedEmojiDrawable.getImageReceiver() != null) {
+                imageReceiver = animatedEmojiDrawable.getImageReceiver();
+            } else {
+                imageReceiver = this.imageReceiver;
+            }
+            if (imageReceiver != null) {
+                RLottieDrawable rLottieDrawable = imageReceiver.getLottieAnimation();
+                if (rLottieDrawable != null) {
+                    rLottieDrawable.restart(true);
+                } else {
+                    AnimatedFileDrawable animatedFileDrawable = imageReceiver.getAnimation();
+                    if (animatedFileDrawable != null) {
+                        animatedFileDrawable.start();
+                    }
+                }
             }
         }
     }
@@ -1017,6 +1166,13 @@ public class ReactionsLayoutInBubble {
             imageReceiver.setAutoRepeat(0);
             imageReceiver.onAttachedToWindow();
             animatedReactions.put(reaction, imageReceiver);
+        } else if (tags && reaction.documentId != 0) {
+            for (int i = 0; i < reactionButtons.size(); ++i) {
+                if (reaction.isSame(reactionButtons.get(i).reaction)) {
+                    reactionButtons.get(i).startAnimation();
+                    return;
+                }
+            }
         }
     }
 
@@ -1107,5 +1263,102 @@ public class ReactionsLayoutInBubble {
             }
             return false;
         }
+
+        @NonNull
+        @Override
+        public String toString() {
+            if (!TextUtils.isEmpty(emojicon))
+                return emojicon;
+            if (documentId != 0) {
+                TLRPC.Document document = AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, documentId);
+                if (document != null) {
+                    return MessageObject.findAnimatedEmojiEmoticon(document, null);
+                }
+            }
+            return "VisibleReaction{" + documentId + ", " + emojicon + "}";
+        }
+
+        public CharSequence toCharSequence(Paint.FontMetricsInt fontMetrics, int cacheType) {
+            if (!TextUtils.isEmpty(emojicon)) {
+                return emojicon;
+            }
+            SpannableString string = new SpannableString("😀");
+            AnimatedEmojiSpan emojiSpan = new AnimatedEmojiSpan(documentId, fontMetrics);
+            emojiSpan.cacheType = cacheType;
+            string.setSpan(emojiSpan, 0, string.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+            return string;
+        }
+
+        public CharSequence toCharSequence(Paint.FontMetricsInt fontMetrics) {
+            if (!TextUtils.isEmpty(emojicon)) {
+                return emojicon;
+            }
+            SpannableString string = new SpannableString("😀");
+            AnimatedEmojiSpan emojiSpan = new AnimatedEmojiSpan(documentId, fontMetrics);
+            string.setSpan(emojiSpan, 0, string.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+            return string;
+        }
+
+        public CharSequence toCharSequence(int textSizeDp) {
+            TextPaint textPaint = new TextPaint();
+            textPaint.setTextSize(AndroidUtilities.dp(textSizeDp));
+            if (!TextUtils.isEmpty(emojicon)) {
+                CharSequence string = emojicon;
+                string = Emoji.replaceEmoji(string, textPaint.getFontMetricsInt(), false);
+                return string;
+            }
+            SpannableString string = new SpannableString("😀");
+            AnimatedEmojiSpan emojiSpan = new AnimatedEmojiSpan(documentId, textPaint.getFontMetricsInt());
+            string.setSpan(emojiSpan, 0, string.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+            return string;
+        }
+    }
+
+    public static boolean reactionsEqual(TLRPC.Reaction a, TLRPC.Reaction b) {
+        if (a instanceof TLRPC.TL_reactionEmoji) {
+            if (!(b instanceof TLRPC.TL_reactionEmoji))
+                return false;
+            return TextUtils.equals(((TLRPC.TL_reactionEmoji) a).emoticon, ((TLRPC.TL_reactionEmoji) b).emoticon);
+        } else if (a instanceof TLRPC.TL_reactionCustomEmoji) {
+            if (!(b instanceof TLRPC.TL_reactionCustomEmoji))
+                return false;
+            return ((TLRPC.TL_reactionCustomEmoji) a).document_id == ((TLRPC.TL_reactionCustomEmoji) b).document_id;
+        }
+        return false;
+    }
+
+    public static void fillTagPath(RectF bounds, Path path) {
+        fillTagPath(bounds, AndroidUtilities.rectTmp, path);
+    }
+    public static void fillTagPath(RectF bounds, RectF tempRect, Path path) {
+        path.rewind();
+        tempRect.set(bounds.left, bounds.top, bounds.left + dp(12), bounds.top + dp(12));
+        path.arcTo(tempRect, -90, -90, false);
+        tempRect.set(bounds.left, bounds.bottom - dp(12), bounds.left + dp(12), bounds.bottom);
+        path.arcTo(tempRect, -180, -90, false);
+
+        float arrowRound = bounds.height() > dp(26) ? 1.4f : 0f;
+        float x = bounds.right - dpf2(9.09f);
+        float x1 = x - dpf2(0.056f);
+        float x1a = x + dpf2(1.22f);
+        float x2 = x + dpf2(3.07f);
+        float x2a = x + dpf2(2.406f);
+        float x3 = x + dpf2(8.27f + arrowRound);
+        float x3a = x + dpf2(8.923f + arrowRound);
+        float ty2 = bounds.top + dpf2(1.753f);
+        float by2 = bounds.bottom - dpf2(1.753f);
+        float ty2a = bounds.top + dpf2(0.663f);
+        float by2a = bounds.bottom - dpf2(0.663f);
+        float ty3 = bounds.top + dpf2(10.263f + arrowRound);
+        float by3 = bounds.bottom - dpf2(10.263f + arrowRound);
+        float ty3a = bounds.top + dpf2(11.333f + arrowRound);
+        float by3a = bounds.bottom - dpf2(11.333f + arrowRound);
+        path.lineTo(x1, bounds.bottom);
+        path.cubicTo(x1a, bounds.bottom, x2a, by2a, x2, by2);
+        path.lineTo(x3, by3);
+        path.cubicTo(x3a, by3a, x3a, ty3a, x3, ty3);
+        path.lineTo(x2, ty2);
+        path.cubicTo(x2a, ty2a, x1a, bounds.top, x1, bounds.top);
+        path.close();
     }
 }

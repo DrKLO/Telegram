@@ -160,10 +160,10 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
             actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
 
             actionBar.setCastShadows(true);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setTitle(getTitle());
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override

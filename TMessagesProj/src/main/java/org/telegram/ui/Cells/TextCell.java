@@ -268,7 +268,7 @@ public class TextCell extends FrameLayout {
         int textKey = textView.getTag() instanceof Integer ? (int) textView.getTag() : Theme.key_windowBackgroundWhiteBlackText;
         textView.setTextColor(processColor(Theme.getColor(textKey, resourcesProvider)));
         if (imageView.getTag() instanceof Integer) {
-            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor((int) imageView.getTag(), resourcesProvider)), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor((int) imageView.getTag(), resourcesProvider), PorterDuff.Mode.MULTIPLY));
         }
         subtitleView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)));
         valueTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
@@ -279,7 +279,7 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(processColor(Theme.getColor(text, resourcesProvider)));
         textView.setTag(text);
         if (icon >= 0) {
-            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor(icon, resourcesProvider)), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }
     }

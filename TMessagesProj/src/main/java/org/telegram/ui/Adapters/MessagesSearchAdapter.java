@@ -23,11 +23,14 @@ import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
+    private HashSet<Integer> messageIds = new HashSet<>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
+    public int loadedCount;
 
     private int currentAccount = UserConfig.selectedAccount;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -39,7 +42,17 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public void notifyDataSetChanged() {
-        searchResultMessages = MediaDataController.getInstance(currentAccount).getFoundMessageObjects();
+        searchResultMessages.clear();
+        messageIds.clear();
+        ArrayList<MessageObject> searchResults = MediaDataController.getInstance(currentAccount).getFoundMessageObjects();
+        for (int i = 0; i < searchResults.size(); ++i) {
+            MessageObject m = searchResults.get(i);
+            if ((!m.hasValidGroupId() || m.isPrimaryGroupMessage) && !messageIds.contains(m.getId())) {
+                searchResultMessages.add(m);
+                messageIds.add(m.getId());
+            }
+        }
+        loadedCount = searchResultMessages.size();
         super.notifyDataSetChanged();
     }
 
@@ -85,8 +98,26 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
         if (holder.getItemViewType() == 0) {
             DialogCell cell = (DialogCell) holder.itemView;
             cell.useSeparator = true;
+            cell.isSavedDialog = true;
             MessageObject messageObject = (MessageObject) getItem(position);
-            cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, true, false);
+            int date;
+            boolean useMe = false;
+            long did;
+            if (messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                did = messageObject.getSavedDialogId();
+                if (messageObject.messageOwner.fwd_from != null && (messageObject.messageOwner.fwd_from.date != 0 || messageObject.messageOwner.fwd_from.saved_date != 0)) {
+                    date = messageObject.messageOwner.fwd_from.date;
+                    if (date == 0) {
+                        date = messageObject.messageOwner.fwd_from.saved_date;
+                    }
+                } else {
+                    date = messageObject.messageOwner.date;
+                }
+            } else {
+                did = messageObject.getDialogId();
+                date = messageObject.messageOwner.date;
+            }
+            cell.setDialog(did, messageObject, date, useMe, false);
         }
     }
 

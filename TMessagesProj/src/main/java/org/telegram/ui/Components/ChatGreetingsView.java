@@ -95,7 +95,7 @@ public class ChatGreetingsView extends LinearLayout {
         }
     }
 
-    private ImageView premiumIconView;
+    private RLottieImageView premiumIconView;
     private TextView premiumTextView;
     private TextView premiumButtonView;
 
@@ -105,12 +105,17 @@ public class ChatGreetingsView extends LinearLayout {
         premiumLock = lock;
         if (premiumLock) {
             if (premiumIconView == null) {
-                premiumIconView = new ImageView(getContext());
+                premiumIconView = new RLottieImageView(getContext());
                 premiumIconView.setScaleType(ImageView.ScaleType.CENTER);
                 premiumIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 premiumIconView.setBackground(Theme.createCircleDrawable(dp(78), 0x1c000000));
-                premiumIconView.setImageResource(R.drawable.large_message_lock);
+                premiumIconView.setAnimation(R.raw.large_message_lock, 80, 80);
+                premiumIconView.setOnClickListener(v -> {
+                    premiumIconView.setProgress(0);
+                    premiumIconView.playAnimation();
+                });
             }
+            premiumIconView.playAnimation();
             if (premiumTextView == null) {
                 premiumTextView = new TextView(getContext());
                 premiumTextView.setTextAlignment(TEXT_ALIGNMENT_CENTER);

@@ -1072,8 +1072,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return super.onSetAlpha(alpha);
         }
 
+        private VirtualViewHelper virtualViewHelper;
+
         public ControlsView(Context context) {
             super(context);
+
+            virtualViewHelper = new VirtualViewHelper(this);
+            ViewCompat.setAccessibilityDelegate(this, virtualViewHelper);
 
             periodDrawable = new CaptionContainerView.PeriodDrawable();
             periodDrawable.setCallback(this);
@@ -1498,6 +1503,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
         }
 
+        @Override
+        protected boolean dispatchHoverEvent(MotionEvent event) {
+            return super.dispatchHoverEvent(event) || virtualViewHelper.dispatchHoverEvent(event);
+        }
+
         public void updateColors() {
             periodDrawable.updateColors(
                 getThemedColor(Theme.key_chat_messagePanelVoiceLock),
@@ -1579,6 +1589,53 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         @Override
         protected boolean verifyDrawable(@NonNull Drawable who) {
             return who == periodDrawable || super.verifyDrawable(who);
+        }
+
+
+        private class VirtualViewHelper extends ExploreByTouchHelper {
+
+            public VirtualViewHelper(@NonNull View host) {
+                super(host);
+            }
+
+            @Override
+            protected int getVirtualViewAt(float x, float y) {
+                if (sendButtonVisible && recordCircle != null && pauseRect.contains(x, y)) {
+                    return 2;
+                }
+                if (onceVisible && (recordCircle != null && snapAnimationProgress > .1f) && onceRect.contains(x, y)) {
+                    return 4;
+                }
+                return HOST_ID;
+            }
+
+            @Override
+            protected void getVisibleVirtualViews(List<Integer> list) {
+                if (sendButtonVisible) {
+                    list.add(2);
+                }
+                if (onceVisible && (recordCircle != null && snapAnimationProgress > .1f)) {
+                    list.add(4);
+                }
+            }
+
+            @Override
+            protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+                if (id == 2) {
+                    rect.set((int) pauseRect.left, (int) pauseRect.top, (int) pauseRect.right, (int) pauseRect.bottom);
+                    info.setBoundsInParent(rect);
+                    info.setText(LocaleController.getString(transformToSeekbar > .5f ? R.string.AccActionResume : R.string.AccActionPause));
+                } else if (id == 4) {
+                    rect.set((int) onceRect.left, (int) onceRect.top, (int) onceRect.right, (int) onceRect.bottom);
+                    info.setBoundsInParent(rect);
+                    info.setText(LocaleController.getString(voiceOnce ? R.string.AccActionOnceDeactivate : R.string.AccActionOnceActivate));
+                }
+            }
+
+            @Override
+            protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
+                return true;
+            }
         }
     }
 
@@ -2763,6 +2820,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         sendButtonContainer.addView(audioVideoButtonContainer, LayoutHelper.createFrame(48, 48));
         audioVideoButtonContainer.setFocusable(true);
         audioVideoButtonContainer.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+
 //        audioVideoButtonContainer.setOnTouchListener((view, motionEvent) -> {
 //            createRecordCircle();
 //            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
@@ -2932,9 +2990,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 //        });
 
         audioVideoSendButton = new ChatActivityEnterViewAnimatedIconView(context);
-        audioVideoSendButton.setFocusable(true);
-        audioVideoSendButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        audioVideoSendButton.setAccessibilityDelegate(mediaMessageButtonsDelegate);
+        audioVideoSendButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+//        audioVideoSendButton.setFocusable(true);
+//        audioVideoSendButton.setAccessibilityDelegate(mediaMessageButtonsDelegate);
         padding = dp(9.5f);
         audioVideoSendButton.setPadding(padding, padding, padding, padding);
         audioVideoSendButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.SRC_IN));
@@ -4165,7 +4223,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
         if (sendWhenOnlineButton != null) {
             TLRPC.User user = parentFragment.getCurrentUser();
-            if (user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently)) {
+            if (user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently) && !(user.status instanceof TLRPC.TL_userStatusLastMonth) && !(user.status instanceof TLRPC.TL_userStatusLastWeek)) {
                 sendWhenOnlineButton.setVisibility(VISIBLE);
             } else {
                 sendWhenOnlineButton.setVisibility(GONE);

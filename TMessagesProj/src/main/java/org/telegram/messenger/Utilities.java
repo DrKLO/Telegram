@@ -499,6 +499,16 @@ public class Utilities {
         return Math.max(Math.min(value, maxValue), minValue);
     }
 
+    public static double clamp(double value, double maxValue, double minValue) {
+        if (Double.isNaN(value)) {
+            return minValue;
+        }
+        if (Double.isInfinite(value)) {
+            return maxValue;
+        }
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
     public static String generateRandomString() {
         return generateRandomString(16);
     }

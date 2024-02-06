@@ -80,6 +80,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     private TLRPC.ChatFull currentChatInfo;
     private TLRPC.UserFull currentUserInfo;
     private long dialogId;
+    private long topicId;
     private FrameLayout titlesContainer;
     private FrameLayout[] titles = new FrameLayout[2];
     private SimpleTextView[] nameTextView = new SimpleTextView[2];
@@ -116,6 +117,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     public boolean onFragmentCreate() {
         type = getArguments().getInt("type", TYPE_MEDIA);
         dialogId = getArguments().getLong("dialog_id");
+        topicId = getArguments().getLong("topic_id", 0);
         int defaultTab = SharedMediaLayout.TAB_PHOTOVIDEO;
         if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             defaultTab = SharedMediaLayout.TAB_ARCHIVED_STORIES;
@@ -126,7 +128,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesEnabledUpdate);
-        if (DialogObject.isUserDialog(dialogId)) {
+        if (DialogObject.isUserDialog(dialogId) && topicId == 0) {
             TLRPC.User user = getMessagesController().getUser(dialogId);
             if (UserObject.isUserSelf(user)) {
                 getMessagesController().loadUserInfo(user, false, this.classGuid);
@@ -210,10 +212,12 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                     }
                 } else if (id == 10) {
                     sharedMediaLayout.showMediaCalendar(sharedMediaLayout.getClosestTab(), false);
+                } else if (id == 11) {
+                    sharedMediaLayout.closeActionMode(true);
+                    sharedMediaLayout.getSearchItem().openSearch(false);
                 }
             }
         });
-        actionBar.setColorFilterMode(PorterDuff.Mode.SRC_IN);
         FrameLayout avatarContainer = new FrameLayout(context);
         SizeNotifierFrameLayout fragmentView = new SizeNotifierFrameLayout(context) {
 
@@ -386,7 +390,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             }
         };
         avatarImageView.getImageReceiver().setAllowDecodeSingleFrame(true);
-        avatarImageView.setRoundRadius(dp(21));
+        avatarImageView.setRoundRadius(dp(getDialogId() == getUserConfig().getClientUserId() && topicId == 0 && getMessagesController().savedViewAsChats ? 13 : 21));
         avatarImageView.setPivotX(0);
         avatarImageView.setPivotY(0);
         AvatarDrawable avatarDrawable = new AvatarDrawable();
@@ -537,7 +541,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             hideFloatingButton(true, false);
         }
 
-        if (type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId() && !getMessagesController().getSavedMessagesController().unsupported && getMessagesController().getSavedMessagesController().getAllCount() > 0) {
+        if (type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId() && topicId == 0 && !getMessagesController().getSavedMessagesController().unsupported && getMessagesController().getSavedMessagesController().hasDialogs()) {
             initialTab = SharedMediaLayout.TAB_SAVED_DIALOGS;
         }
         sharedMediaLayout = new SharedMediaLayout(context, dialogId, sharedMediaPreloader, 0, null, currentChatInfo, currentUserInfo, initialTab, this, new SharedMediaLayout.Delegate() {
@@ -616,7 +620,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             protected boolean includeSavedDialogs() {
-                return type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId();
+                return type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId() && topicId == 0;
             }
 
             @Override
@@ -752,9 +756,15 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 }
             }
         };
+        if (sharedMediaLayout.getSearchOptionsItem() != null) {
+            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+        }
         sharedMediaLayout.setPinnedToTop(true);
         sharedMediaLayout.getSearchItem().setTranslationY(0);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);
+        if (sharedMediaLayout.getSearchOptionsItem() != null) {
+            sharedMediaLayout.getSearchOptionsItem().setTranslationY(0);
+        }
 
         if (type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             fragmentView.addView(sharedMediaLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 64));
@@ -779,14 +789,26 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             fragmentView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 64, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         }
 
+        long avatarDialogId = dialogId;
+        if (topicId != 0 && dialogId == getUserConfig().getClientUserId()) {
+            avatarDialogId = topicId;
+        }
         TLObject avatarObject = null;
         if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             nameTextView[0].setText(LocaleController.getString("ProfileStoriesArchive"));
         } else if (type == TYPE_STORIES) {
             nameTextView[0].setText(LocaleController.getString("ProfileMyStories"));
             nameTextView[1].setText(LocaleController.getString("ProfileStoriesArchive"));
-        } else if (DialogObject.isEncryptedDialog(dialogId)) {
-            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(dialogId));
+        } else if (avatarDialogId == UserObject.ANONYMOUS) {
+            nameTextView[0].setText(LocaleController.getString(R.string.AnonymousForward));
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
+            avatarDrawable.setScaleSize(.75f);
+        } else if (topicId != 0 && avatarDialogId == getUserConfig().getClientUserId()) {
+            nameTextView[0].setText(LocaleController.getString(R.string.MyNotes));
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_MY_NOTES);
+            avatarDrawable.setScaleSize(.75f);
+        } else if (DialogObject.isEncryptedDialog(avatarDialogId)) {
+            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(avatarDialogId));
             if (encryptedChat != null) {
                 TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
                 if (user != null) {
@@ -795,8 +817,8 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                     avatarObject = user;
                 }
             }
-        } else if (DialogObject.isUserDialog(dialogId)) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+        } else if (DialogObject.isUserDialog(avatarDialogId)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(avatarDialogId);
             if (user != null) {
                 if (user.self) {
                     nameTextView[0].setText(LocaleController.getString("SavedMessages", R.string.SavedMessages));
@@ -809,7 +831,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 }
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-avatarDialogId);
             if (chat != null) {
                 nameTextView[0].setText(chat.title);
                 avatarDrawable.setInfo(currentAccount, chat);
@@ -826,6 +848,13 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
         if (sharedMediaLayout.isSearchItemVisible() && type != TYPE_STORIES) {
             sharedMediaLayout.getSearchItem().setVisibility(View.VISIBLE);
+        }
+        if (sharedMediaLayout.searchItemIcon != null && initialTab != SharedMediaLayout.TAB_SAVED_DIALOGS) {
+            sharedMediaLayout.searchItemIcon.setVisibility(View.GONE);
+        }
+        if (sharedMediaLayout.getSearchOptionsItem() != null && type != TYPE_STORIES) {
+            sharedMediaLayout.animateSearchToOptions(!sharedMediaLayout.isSearchItemVisible(), false);
+            sharedMediaLayout.getSearchOptionsItem().setVisibility(View.VISIBLE);
         }
         if (sharedMediaLayout.isCalendarItemVisible() && type != TYPE_STORIES) {
             sharedMediaLayout.photoVideoOptionsItem.setVisibility(View.VISIBLE);
@@ -1114,8 +1143,12 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
 
     private void updateColors() {
+        if (sharedMediaLayout.getSearchOptionsItem() != null) {
+            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+        }
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), true);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
         actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView[0].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -1160,11 +1193,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     }
 
     private class StoriesTabsView extends BottomPagerTabs {
-
         public StoriesTabsView(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
         }
-
         @Override
         public Tab[] createTabs() {
             Tab[] tabs = new Tab[] {

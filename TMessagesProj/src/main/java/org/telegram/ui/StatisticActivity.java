@@ -789,6 +789,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
         actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), true);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 

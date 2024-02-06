@@ -1001,7 +1001,7 @@ public class TopicsController extends BaseController {
         }
     }
 
-    public void loadTopic(long chatId, int topicId, Runnable runnable) {
+    public void loadTopic(long chatId, long topicId, Runnable runnable) {
         getMessagesStorage().loadTopics(-chatId, topics -> {
             AndroidUtilities.runOnUIThread(() -> {
                 if (BuildVars.LOGS_ENABLED) {
@@ -1015,7 +1015,7 @@ public class TopicsController extends BaseController {
                 } else {
                     ArrayList<TLRPC.TL_forumTopic> topicToReload = new ArrayList<>();
                     TLRPC.TL_forumTopic topic = new TLRPC.TL_forumTopic();
-                    topic.id = topicId;
+                    topic.id = (int) topicId;
                     reloadTopics(chatId, topicToReload, runnable);
                 }
             });

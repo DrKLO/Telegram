@@ -171,6 +171,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private Paint timerPaint2;
     SharedResources sharedResources;
     public boolean isSavedDialog;
+    public boolean isSavedDialogCell;
 
     public final StoriesUtilities.AvatarStoryParams storyParams = new StoriesUtilities.AvatarStoryParams(false) {
         @Override
@@ -331,7 +332,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int currentDialogFolderId;
     private int currentDialogFolderDialogsCount;
     private int currentEditDate;
-    private boolean isDialogCell;
+    public boolean isDialogCell;
     private int lastMessageDate;
     private int unreadCount;
     private boolean markUnread;
@@ -950,6 +951,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
+            Theme.dialogs_namePaint[0].setTextSize(AndroidUtilities.dp(17));
+            Theme.dialogs_nameEncryptedPaint[0].setTextSize(AndroidUtilities.dp(17));
+            Theme.dialogs_messagePaint[0].setTextSize(AndroidUtilities.dp(16));
+            Theme.dialogs_messagePrintingPaint[0].setTextSize(AndroidUtilities.dp(16));
+
             Theme.dialogs_namePaint[1].setTextSize(AndroidUtilities.dp(16));
             Theme.dialogs_nameEncryptedPaint[1].setTextSize(AndroidUtilities.dp(16));
             Theme.dialogs_messagePaint[1].setTextSize(AndroidUtilities.dp(15));
@@ -1226,7 +1232,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (draftMessage != null && TextUtils.isEmpty(draftMessage.message)) {
                     draftMessage = null;
                 }
-            } else if (isDialogCell) {
+            } else if (isDialogCell || isSavedDialogCell) {
                 draftMessage = MediaDataController.getInstance(currentAccount).getDraft(currentDialogId, 0);
             } else {
                 draftMessage = null;
@@ -1425,9 +1431,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         } else {
                             needEmoji = true;
                             updateMessageThumbs();
-                            if (chat != null && chat.id > 0 && fromChat == null && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message)) {
-                                messageNameString = getMessageNameString();
-                                if (chat.forum && !isTopic && !useFromUserAsAvatar) {
+                            String triedMessageName = null;
+                            if (!isSavedDialog && user != null && user.self && !message.isOutOwner()) {
+                                triedMessageName = getMessageNameString();
+                            }
+                            if (isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() || triedMessageName != null || chat != null && chat.id > 0 && fromChat == null && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message)) {
+                                messageNameString = triedMessageName != null ? triedMessageName : getMessageNameString();
+                                if (chat != null && chat.forum && !isTopic && !useFromUserAsAvatar) {
                                     CharSequence topicName = MessagesController.getInstance(currentAccount).getTopicsController().getTopicIconName(chat, message, currentMessagePaint);
                                     if (!TextUtils.isEmpty(topicName)) {
                                         SpannableStringBuilder arrowSpan = new SpannableStringBuilder("-");
@@ -2205,7 +2215,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (messageString instanceof Spannable) {
                 Spannable messageStringSpannable = (Spannable) messageString;
                 for (Object span : messageStringSpannable.getSpans(0, messageStringSpannable.length(), Object.class)) {
-                    if (span instanceof ClickableSpan || span instanceof CodeHighlighting.Span || span instanceof TypefaceSpan || span instanceof CodeHighlighting.ColorSpan || span instanceof QuoteSpan || span instanceof QuoteSpan.QuoteStyleSpan || (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == android.graphics.Typeface.BOLD)) {
+                    if (span instanceof ClickableSpan || span instanceof CodeHighlighting.Span || !isFolderCell() && span instanceof TypefaceSpan || span instanceof CodeHighlighting.ColorSpan || span instanceof QuoteSpan || span instanceof QuoteSpan.QuoteStyleSpan || (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == android.graphics.Typeface.BOLD)) {
                         messageStringSpannable.removeSpan(span);
                     }
                 }
@@ -3041,7 +3051,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 reactionsMentionsAnimator.start();
             }
 
-            avatarImage.setRoundRadius(chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar ? AndroidUtilities.dp(16) : AndroidUtilities.dp(28));
+            avatarImage.setRoundRadius(chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats ? dp(16) : dp(28));
         }
         if (!isTopic && (getMeasuredWidth() != 0 || getMeasuredHeight() != 0)) {
             rebuildLayout = true;
@@ -4797,6 +4807,24 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         TLRPC.User fromUser = null;
         TLRPC.Chat fromChat = null;
         long fromId = message.getFromChatId();
+        final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+        if (!isSavedDialog && currentDialogId == selfId) {
+            long savedDialogId = message.getSavedDialogId();
+            if (savedDialogId == selfId) {
+                return null;
+            } else if (savedDialogId != UserObject.ANONYMOUS) {
+                if (message.messageOwner != null && message.messageOwner.fwd_from != null) {
+                    long fwdId = DialogObject.getPeerDialogId(message.messageOwner.fwd_from.saved_from_id);
+                    if (fwdId == 0) {
+                        fwdId = DialogObject.getPeerDialogId(message.messageOwner.fwd_from.from_id);
+                    }
+                    if (fwdId > 0 && fwdId != savedDialogId) {
+                        return null;
+                    }
+                }
+                fromId = savedDialogId;
+            }
+        }
         if (isSavedDialog && message.messageOwner != null && message.messageOwner.fwd_from != null) {
             fromId = DialogObject.getPeerDialogId(message.messageOwner.fwd_from.saved_from_id);
             if (fromId == 0) {
@@ -4809,7 +4837,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             fromChat = MessagesController.getInstance(currentAccount).getChat(-fromId);
         }
 
-        if (message.isOutOwner()) {
+        if (currentDialogId == selfId) {
+            if (fromUser != null) {
+                return UserObject.getFirstName(fromUser).replace("\n", "");
+            } else if (fromChat != null) {
+                return fromChat.title.replace("\n", "");
+            }
+            return null;
+        } else if (message.isOutOwner()) {
             return LocaleController.getString("FromYou", R.string.FromYou);
         } else if (!isSavedDialog && message != null && message.messageOwner != null && message.messageOwner.from_id instanceof TLRPC.TL_peerUser && (user = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id)) != null) {
             return UserObject.getFirstName(user).replace("\n", "");
@@ -4827,7 +4862,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else if (fromChat != null && fromChat.title != null) {
             return fromChat.title.replace("\n", "");
-        }else {
+        } else {
             return "DELETED";
         }
     }

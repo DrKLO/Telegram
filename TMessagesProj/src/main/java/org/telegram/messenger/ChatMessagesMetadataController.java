@@ -23,7 +23,7 @@ public class ChatMessagesMetadataController {
     }
 
     public void checkMessages(ChatActivity.ChatActivityAdapter chatAdapter, int maxAdapterPosition, int minAdapterPosition, long currentTime) {
-        ArrayList<MessageObject> messages = chatActivity.messages;
+        ArrayList<MessageObject> messages = chatAdapter.getMessages();
         if (!chatActivity.isInScheduleMode() && maxAdapterPosition >= 0 && minAdapterPosition >= 0) {
             int from = minAdapterPosition - chatAdapter.messagesStartRow - 10;
             int to = maxAdapterPosition - chatAdapter.messagesStartRow + 10;

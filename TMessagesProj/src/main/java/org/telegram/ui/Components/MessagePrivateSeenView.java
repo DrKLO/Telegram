@@ -43,6 +43,8 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
+import java.util.Date;
+
 public class MessagePrivateSeenView extends FrameLayout {
 
     private final int currentAccount;
@@ -57,12 +59,15 @@ public class MessagePrivateSeenView extends FrameLayout {
     private final int messageId;
     private final Runnable dismiss;
 
+    private final int messageDiff;
+
     public MessagePrivateSeenView(Context context, @NonNull MessageObject messageObject, Runnable dismiss, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         currentAccount = messageObject.currentAccount;
         this.resourcesProvider = resourcesProvider;
         this.dismiss = dismiss;
+        messageDiff = ConnectionsManager.getInstance(currentAccount).getCurrentTime() - messageObject.messageOwner.date;
 
         dialogId = messageObject.getDialogId();
         messageId = messageObject.getId();
@@ -126,7 +131,7 @@ public class MessagePrivateSeenView extends FrameLayout {
                 }
             } else if (res instanceof TLRPC.TL_outboxReadDate) {
                 TLRPC.TL_outboxReadDate r = (TLRPC.TL_outboxReadDate) res;
-                valueTextView.setText(LocaleController.formatString(R.string.PmReadAt, LocaleController.formatSeenDate(r.date)));
+                valueTextView.setText(LocaleController.formatPmSeenDate(r.date));
                 premiumTextView.setVisibility(View.GONE);
             }
             valueLayout.animate().alpha(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(320).start();
@@ -302,22 +307,29 @@ public class MessagePrivateSeenView extends FrameLayout {
 
         if (minWidth < 0) {
             minWidth = 0;
+            final long date = System.currentTimeMillis();
             minWidth = Math.max(minWidth, dp(40 + 96 + 8));
             minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadUnknown)));
             minWidth = Math.max(minWidth, dp(40 + 16 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmRead) + premiumTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadShowWhen))));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadAt, LocaleController.formatString(R.string.TodayAtFormattedWithToday, "99:99"))));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadAt, LocaleController.formatString(R.string.YesterdayAtFormatted, "99:99"))));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadAt, LocaleController.formatString(R.string.formatDateAtTime, "99.99.99", "99:99"))));
+            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadTodayAt, LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            if (messageDiff > 60 * 60 * 24) {
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadYesterdayAt, LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            }
+            if (messageDiff > 60 * 60 * 24 * 2) {
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().formatterDayMonth.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            }
         }
 
-        if (width < minWidth) {
-            width = (int) minWidth;
-        }
         if (parent != null && parent.getWidth() > 0) {
             width = parent.getWidth();
             widthMode = MeasureSpec.EXACTLY;
         }
+        if (width < minWidth || widthMode == MeasureSpec.AT_MOST) {
+            width = (int) minWidth;
+            widthMode = MeasureSpec.EXACTLY;
+        }
 
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        super.onMeasure(MeasureSpec.makeMeasureSpec(width, widthMode), heightMeasureSpec);
     }
 }

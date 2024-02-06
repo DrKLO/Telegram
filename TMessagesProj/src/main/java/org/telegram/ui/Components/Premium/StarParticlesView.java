@@ -267,6 +267,18 @@ public class StarParticlesView extends View {
                     stars[i] = SvgHelper.getBitmap(R.raw.premium_object_star2, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 30));
                     svg = true;
                     continue;
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_SAVED_TAGS) {
+                    int res;
+                    if (i == 0) {
+                        res = R.raw.premium_object_tag;
+                    } else if (i == 1) {
+                        res = R.raw.premium_object_check;
+                    } else {
+                        res = R.raw.premium_object_star;
+                    }
+                    stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 30));
+                    svg = true;
+                    continue;
                 }
 
                 bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -540,6 +552,7 @@ public class StarParticlesView extends View {
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_SAVED_TAGS ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_WALLPAPER ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS

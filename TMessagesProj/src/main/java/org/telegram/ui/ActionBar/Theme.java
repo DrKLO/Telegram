@@ -3643,6 +3643,7 @@ public class Theme {
     public static final int key_chat_inBubbleShadow = colorsCount++;
 
     public static final int key_actionBarActionModeReaction = colorsCount++;
+    public static final int key_actionBarActionModeReactionText = colorsCount++;
     public static final int key_actionBarActionModeReactionDot = colorsCount++;
 
     //my messages bubbles
@@ -3719,6 +3720,7 @@ public class Theme {
     public static final int key_chat_outLocationIcon = colorsCount++;
     public static final int key_chat_outContactBackground = colorsCount++;
     public static final int key_chat_outContactIcon = colorsCount++;
+    public static final int key_chat_outReactionButtonBackground = colorsCount++;
     public static final int myMessagesEndIndex = colorsCount;
 
     public static final int key_chat_outTextSelectionHighlight = colorsCount++;
@@ -4101,7 +4103,6 @@ public class Theme {
     public static final int key_color_cyan = colorsCount++;
     public static final int[] keys_colors = {key_color_lightblue, key_color_blue, key_color_green, key_color_lightgreen, key_color_red, key_color_orange, key_color_yellow, key_color_purple, key_color_cyan};
 
-    public static final int key_chat_outReactionButtonBackground = colorsCount++;
     public static final int key_chat_inReactionButtonBackground = colorsCount++;
     public static final int key_chat_outReactionButtonText = colorsCount++;
     public static final int key_chat_inReactionButtonText = colorsCount++;
@@ -4395,6 +4396,7 @@ public class Theme {
         fallbackKeys.put(key_statisticChartLine_cyan, key_color_cyan);
 
         fallbackKeys.put(key_actionBarActionModeReaction, key_windowBackgroundGray);
+        fallbackKeys.put(key_actionBarActionModeReactionText, key_chat_inReactionButtonText);
 
         for (int i = 0; i < keys_avatar_background.length; i++) {
             themeAccentExclusionKeys.add(keys_avatar_background[i]);

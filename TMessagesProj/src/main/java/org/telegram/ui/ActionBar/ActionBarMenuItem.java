@@ -32,6 +32,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.transition.Visibility;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -990,7 +991,7 @@ public class ActionBarMenuItem extends FrameLayout {
         boolean visible = !currentSearchFilters.isEmpty();
         ArrayList<FiltersView.MediaFilterData> localFilters = new ArrayList<>(currentSearchFilters);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && searchContainer.getTag() != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && searchContainer != null && searchContainer.getTag() != null) {
             TransitionSet transition = new TransitionSet();
             ChangeBounds changeBounds = new ChangeBounds();
             changeBounds.setDuration(150);
@@ -1055,11 +1056,13 @@ public class ActionBarMenuItem extends FrameLayout {
             TransitionManager.beginDelayedTransition(searchFilterLayout, transition);
         }
 
-        for (int i = 0; i < searchFilterLayout.getChildCount(); i++) {
-            boolean removed = localFilters.remove(((SearchFilterView) searchFilterLayout.getChildAt(i)).getFilter());
-            if (!removed) {
-                searchFilterLayout.removeViewAt(i);
-                i--;
+        if (searchFilterLayout != null) {
+            for (int i = 0; i < searchFilterLayout.getChildCount(); i++) {
+                boolean removed = localFilters.remove(((SearchFilterView) searchFilterLayout.getChildAt(i)).getFilter());
+                if (!removed) {
+                    searchFilterLayout.removeViewAt(i);
+                    i--;
+                }
             }
         }
 
@@ -2041,10 +2044,11 @@ public class ActionBarMenuItem extends FrameLayout {
             reactionCount.count = 1;
             reactionCount.reaction = data.reaction.toTLReaction();
 
-            reactionButton = new ReactionsLayoutInBubble.ReactionButton(null, UserConfig.selectedAccount, this, reactionCount, false, resourcesProvider) {
+            reactionButton = new ReactionsLayoutInBubble.ReactionButton(null, UserConfig.selectedAccount, this, reactionCount, false, true, resourcesProvider) {
                 @Override
                 protected void updateColors(float progress) {
                     lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, Theme.getColor(Theme.key_chat_inReactionButtonBackground, resourcesProvider), progress);
+                    lastDrawnTagDotColor = ColorUtils.blendARGB(fromTagDotColor, 0x5affffff, progress);
                 }
 
                 @Override
@@ -2052,6 +2056,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     return AnimatedEmojiDrawable.CACHE_TYPE_ALERT_EMOJI_STATUS;
                 }
             };
+            reactionButton.isTag = true;
             reactionButton.width = dp(44.33f);
             reactionButton.height = dp(28);
             reactionButton.choosen = true;

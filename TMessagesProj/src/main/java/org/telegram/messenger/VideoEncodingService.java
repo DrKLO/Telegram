@@ -11,10 +11,9 @@ package org.telegram.messenger;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-
-import com.google.android.exoplayer2.util.Log;
 
 public class VideoEncodingService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
@@ -89,11 +88,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
                 Boolean enc = (Boolean) args[3];
                 int currentProgress = (int) (progress * 100);
                 builder.setProgress(100, currentProgress, currentProgress == 0);
-                try {
-                    NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
+                updateNotification();
             }
         } else if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
             String fileName = (String) args[0];
@@ -110,12 +105,27 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         }
     }
 
+    private void updateNotification() {
+        try {
+            MediaController.VideoConvertMessage message = MediaController.getInstance().getCurrentForegroundConverMessage();
+            if (message == null) {
+                return;
+            }
+            NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (isRunning()) {
             return Service.START_NOT_STICKY;
         }
-        instance = this;
         MediaController.VideoConvertMessage videoConvertMessage = MediaController.getInstance().getCurrentForegroundConverMessage();
+        if (videoConvertMessage == null) {
+            return Service.START_NOT_STICKY;
+        }
+        instance = this;
         if (builder == null) {
             NotificationsController.checkOtherNotificationsChannel();
             builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
@@ -124,7 +134,6 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
         }
-
         setCurrentMessage(videoConvertMessage);
         try {
             startForeground(4, builder.build());
@@ -132,7 +141,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             //ignore ForegroundServiceStartNotAllowedException
             FileLog.e(e);
         }
-        AndroidUtilities.runOnUIThread(() -> NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build()));
+        AndroidUtilities.runOnUIThread(this::updateNotification);
         return Service.START_NOT_STICKY;
     }
 
@@ -169,7 +178,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
         if (isRunning()) {
-            NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
+            updateNotification();
         }
     }
 

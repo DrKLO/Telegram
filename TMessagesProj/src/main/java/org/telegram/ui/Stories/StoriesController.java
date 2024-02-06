@@ -1351,7 +1351,13 @@ public class StoriesController {
     HashSet<Long> loadingAllStories = new HashSet<>();
 
     void loadSkippedStories(long dialogId) {
-        loadSkippedStories(getStories(dialogId), false);
+        boolean profile = false;
+        TL_stories.PeerStories peerStories = getStories(dialogId);
+        if (peerStories == null) {
+            profile = true;
+            peerStories = getStoriesFromFullPeer(dialogId);
+        }
+        loadSkippedStories(peerStories, profile);
     }
 
     void loadSkippedStories(TL_stories.PeerStories userStories, boolean profile) {

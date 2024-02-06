@@ -651,6 +651,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
             }
             hintLayout = new StaticLayout(text, paint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            invalidate();
         }
     }
 

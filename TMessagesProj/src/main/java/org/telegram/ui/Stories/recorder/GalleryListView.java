@@ -226,6 +226,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setItemsBackgroundColor(436207615, false);
         actionBar.setItemsColor(0xFFFFFFFF, false);
+        actionBar.setItemsColor(0xFFFFFFFF, true);
         addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -1172,7 +1173,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             super(context);
             setPadding(dp(onlyPhotos ? 14 : 16), dp(16), dp(8), dp(10));
 
-            if (onlyPhotos) {
+            if (onlyPhotos && false) {
                 searchButton = new ImageView(context);
                 searchButton.setImageResource(R.drawable.ic_ab_search);
                 searchButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));

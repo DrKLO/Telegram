@@ -157,10 +157,14 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION = 17;
     public final static int PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY = 18;
     public final static int PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING = 19;
-    public static final int PREMIUM_FEATURE_STORIES_PRIORITY_ORDER = 20;
-    public static final int PREMIUM_FEATURE_STORIES_CAPTION = 21;
+    public final static int PREMIUM_FEATURE_STORIES_PRIORITY_ORDER = 20;
+    public final static int PREMIUM_FEATURE_STORIES_CAPTION = 21;
     public final static int PREMIUM_FEATURE_WALLPAPER = 22;
     public final static int PREMIUM_FEATURE_NAME_COLOR = 23;
+    public final static int PREMIUM_FEATURE_SAVED_TAGS = 24;
+    public final static int PREMIUM_FEATURE_STORIES_QUALITY = 25;
+    public final static int PREMIUM_FEATURE_LAST_SEEN = 26;
+    public final static int PREMIUM_FEATURE_MESSAGE_PRIVACY = 27;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -218,6 +222,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_STORIES;
             case "stories__stealth_mode":
                 return PREMIUM_FEATURE_STORIES_STEALTH_MODE;
+            case "stories__quality":
+                return PREMIUM_FEATURE_STORIES_QUALITY;
             case "stories__permanent_views_history":
                 return PREMIUM_FEATURE_STORIES_VIEWS_HISTORY;
             case "stories__expiration_durations":
@@ -234,6 +240,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_WALLPAPER;
             case "peer_colors":
                 return PREMIUM_FEATURE_NAME_COLOR;
+            case "saved_tags":
+                return PREMIUM_FEATURE_SAVED_TAGS;
+            case "last_seen":
+                return PREMIUM_FEATURE_LAST_SEEN;
+            case "message_privacy":
+                return PREMIUM_FEATURE_MESSAGE_PRIVACY;
         }
         return -1;
     }
@@ -272,6 +284,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "stories";
             case PREMIUM_FEATURE_STORIES_STEALTH_MODE:
                 return "stories__stealth_mode";
+            case PREMIUM_FEATURE_STORIES_QUALITY:
+                return "stories__quality";
             case PREMIUM_FEATURE_STORIES_VIEWS_HISTORY:
                 return "stories__permanent_views_history";
             case PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION:
@@ -288,6 +302,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "wallpapers";
             case PREMIUM_FEATURE_NAME_COLOR:
                 return "peer_colors";
+            case PREMIUM_FEATURE_SAVED_TAGS:
+                return "saved_tags";
+            case PREMIUM_FEATURE_LAST_SEEN:
+                return "last_seen";
+            case PREMIUM_FEATURE_MESSAGE_PRIVACY:
+                return "message_privacy";
         }
         return null;
     }
@@ -655,14 +675,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_REACTIONS, R.drawable.msg_premium_reactions, LocaleController.getString(R.string.PremiumPreviewReactions2), LocaleController.getString(R.string.PremiumPreviewReactions2Description)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STICKERS, R.drawable.msg_premium_stickers, LocaleController.getString(R.string.PremiumPreviewStickers), LocaleController.getString(R.string.PremiumPreviewStickersDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, LocaleController.getString(R.string.PremiumPreviewEmoji), LocaleController.getString(R.string.PremiumPreviewEmojiDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.msg_premium_tools, LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.menu_premium_tools, LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, LocaleController.getString(R.string.PremiumPreviewProfileBadge), LocaleController.getString(R.string.PremiumPreviewProfileBadgeDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, LocaleController.getString(R.string.PremiumPreviewAnimatedProfiles), LocaleController.getString(R.string.PremiumPreviewAnimatedProfilesDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SAVED_TAGS, R.drawable.premium_tags, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewTags2)), LocaleController.getString(R.string.PremiumPreviewTagsDescription2)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_APPLICATION_ICONS, R.drawable.msg_premium_icons, LocaleController.getString(R.string.PremiumPreviewAppIcon), LocaleController.getString(R.string.PremiumPreviewAppIconDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.premium_status, LocaleController.getString(R.string.PremiumPreviewEmojiStatus), LocaleController.getString(R.string.PremiumPreviewEmojiStatusDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TRANSLATIONS, R.drawable.msg_premium_translate, LocaleController.getString(R.string.PremiumPreviewTranslations), LocaleController.getString(R.string.PremiumPreviewTranslationsDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_WALLPAPER, R.drawable.premium_wallpaper, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewWallpaper)), LocaleController.getString(R.string.PremiumPreviewWallpaperDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_NAME_COLOR, R.drawable.premium_colors, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewProfileColor)), LocaleController.getString(R.string.PremiumPreviewProfileColorDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_WALLPAPER, R.drawable.premium_wallpaper, LocaleController.getString(R.string.PremiumPreviewWallpaper), LocaleController.getString(R.string.PremiumPreviewWallpaperDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_NAME_COLOR, R.drawable.premium_colors, LocaleController.getString(R.string.PremiumPreviewProfileColor), LocaleController.getString(R.string.PremiumPreviewProfileColorDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LAST_SEEN, R.drawable.menu_premium_seen, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewLastSeen)), LocaleController.getString(R.string.PremiumPreviewLastSeenDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_PRIVACY, R.drawable.menu_premium_privacy, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewMessagePrivacy)), LocaleController.getString(R.string.PremiumPreviewMessagePrivacyDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
@@ -1621,6 +1644,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             return;
         }
         actionBar.setItemsColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), true);
         actionBar.setItemsBackgroundColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), 60), false);
         particlesView.drawable.updateColors();
         if (backgroundView != null) {

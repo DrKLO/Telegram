@@ -23,6 +23,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.tl.TL_stories;
@@ -76,7 +77,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 172;
+    public static final int LAYER = 173;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static final int constructor = 0xef7ff916;
@@ -28863,6 +28864,8 @@ public class TLRPC {
         public String title;
         public int count;
 
+        public long hash; // custom
+
         public static TL_savedReactionTag TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_savedReactionTag.constructor != constructor) {
                 if (exception) {
@@ -55720,6 +55723,8 @@ public class TLRPC {
 
     public static abstract class Reaction extends TLObject {
 
+        public long tag_long_id; // custom
+
         public static Reaction TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             Reaction result = null;
             switch (constructor) {
@@ -60820,7 +60825,7 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
-            if ((flags & 2) != 0) {
+            if ((flags & 4) != 0) {
                 saved_peer_id.serializeToStream(stream);
             }
             if ((flags & 1) != 0) {
@@ -64959,9 +64964,8 @@ public class TLRPC {
             return result;
         }
 
-        public Boolean documentExists;
         public Document getDocument() {
-            if (alt_document != null && ApplicationLoader.useLessData()) {
+            if (alt_document != null && !MessagesController.isStoryQualityFull()) {
                 return alt_document;
             }
             return document;
@@ -75061,8 +75065,10 @@ public class TLRPC {
     }
 
     public static class TL_messages_getSavedReactionTags extends TLObject {
-        public static final int constructor = 0x761ddacf;
+        public static final int constructor = 0x3637e05b;
 
+        public int flags;
+        public InputPeer peer;
         public long hash;
 
         @Override
@@ -75073,6 +75079,10 @@ public class TLRPC {
         @Override
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                peer.serializeToStream(stream);
+            }
             stream.writeInt64(hash);
         }
     }
