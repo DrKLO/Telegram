@@ -916,10 +916,19 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             this.delegate = delegate;
         }
 
+        private boolean isExpanded() {
+            return -offsetY + topActionBarOffsetY == swipeOffsetY;
+        }
+
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
             if (isScrolling && ev.getActionIndex() != 0) {
                 return false;
+            }
+
+            boolean superTouch = super.dispatchTouchEvent(ev);
+            if (isExpanded()) {
+                return superTouch;
             }
 
             MotionEvent rawEvent = MotionEvent.obtain(ev);
@@ -952,7 +961,6 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                 }
             }
 
-            boolean superTouch = super.dispatchTouchEvent(ev);
             if (!superTouch && !detector && ev.getAction() == MotionEvent.ACTION_DOWN) {
                 return true;
             }
