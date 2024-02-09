@@ -3622,6 +3622,7 @@
     <string name="BotWebViewSettings">Settings</string>
     <string name="BotWebViewOpenBot">Open bot</string>
     <string name="BotWebViewReloadPage">Reload page</string>
+    <string name="BotWebViewMinimizeView">Minimize</string>
     <string name="BotWebViewDeleteBot">Delete bot</string>
     <string name="BotWebViewRequestAllow">Allow</string>
     <string name="BotWebViewRequestDontAllow">Don\'t Allow</string>

@@ -144,6 +144,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             botMenuItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
             settingsItem = botMenuItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
             settingsItem.setVisibility(View.GONE);
+
+            botMenuItem.addSubItem(R.id.menu_minimize, R.drawable.msg_go_down, LocaleController.getString(R.string.BotWebViewMinimizeView));
         }
     }
 
@@ -558,6 +560,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                                 webViewContainer.reload();
                             } else if (id == R.id.menu_settings) {
                                 webViewContainer.onSettingsButtonPressed();
+                            } else if (id == R.id.menu_minimize) {
+                                swipeContainer.stickTo(0);
                             }
                         }
                     });

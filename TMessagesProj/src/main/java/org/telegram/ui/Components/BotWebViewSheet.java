@@ -914,9 +914,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         settingsItem = otherItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
         settingsItem.setVisibility(View.GONE);
         otherItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
+
         if (currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu)) {
             otherItem.addSubItem(R.id.menu_delete_bot, R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot));
         }
+        otherItem.addSubItem(R.id.menu_minimize, R.drawable.msg_go_down, LocaleController.getString(R.string.BotWebViewMinimizeView));
+
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -948,6 +951,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     webViewContainer.onSettingsButtonPressed();
                 } else if (id == R.id.menu_delete_bot) {
                     deleteBot(currentAccount, botId, () -> dismiss());
+                } else if (id == R.id.menu_minimize) {
+                    swipeContainer.stickTo(0);
                 }
             }
         });

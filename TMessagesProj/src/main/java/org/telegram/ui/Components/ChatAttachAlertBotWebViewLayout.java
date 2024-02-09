@@ -159,6 +159,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             }
         } else if (id == R.id.menu_settings) {
             webViewContainer.onSettingsButtonPressed();
+        } else if (id == R.id.menu_minimize) {
+            swipeContainer.stickTo(0);
         }
     }
 
@@ -172,6 +174,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         settingsItem.setVisibility(View.GONE);
         otherItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
         otherItem.addSubItem(R.id.menu_delete_bot, R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot));
+        otherItem.addSubItem(R.id.menu_minimize, R.drawable.msg_go_down, LocaleController.getString(R.string.BotWebViewMinimizeView));
 
         webViewContainer = new BotWebViewContainer(context, resourcesProvider, getThemedColor(Theme.key_dialogBackground)) {
             @Override
