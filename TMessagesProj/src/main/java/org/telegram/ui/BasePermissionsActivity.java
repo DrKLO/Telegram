@@ -1,11 +1,11 @@
 package org.telegram.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 
+import androidx.activity.ComponentActivity;
 import androidx.annotation.RawRes;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -22,7 +22,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
 
-public class BasePermissionsActivity extends Activity {
+public class BasePermissionsActivity extends ComponentActivity {
     public final static int REQUEST_CODE_GEOLOCATION = 2,
             REQUEST_CODE_EXTERNAL_STORAGE = 4,
             REQUEST_CODE_ATTACH_CONTACT = 5,
