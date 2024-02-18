@@ -45,28 +45,7 @@ dependencies {
     implementation 'com.android.billingclient:billing:6.1.0'
     implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.google.guava:guava:31.1-jre'
-
-    implementation 'androidx.compose.material3:material3:1.2.0'
-    implementation 'androidx.compose.material:material:1.6.1'
-    implementation 'androidx.compose.foundation:foundation:1.6.1'
-    implementation 'androidx.compose.ui:ui:1.6.1'
-    implementation 'androidx.compose.ui:ui-tooling-preview:1.6.1'
-    debugImplementation 'androidx.compose.ui:ui-tooling:1.6.1'
-    implementation 'androidx.compose.material:material-icons-core:1.6.1'
-    implementation 'androidx.compose.material:material-icons-extended:1.6.1'
-    implementation 'androidx.compose.material3:material3-window-size-class:1.2.0'
-    implementation 'androidx.activity:activity-compose:1.8.2'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
     implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
-    constraints {
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
-            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
-        }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
-            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
-        }
-    }
-
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
 
@@ -74,7 +53,7 @@ def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFa
 android {
     compileSdk = 34
     buildToolsVersion = '34.0.0'
-    ndkVersion "21.4.7075529"
+    ndkVersion "26.2.11394342"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -122,8 +101,8 @@ android {
 
         externalNativeBuild {
             cmake {
-                version '3.18.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
+                version '3.22.1'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21'
             }
         }
     }
@@ -215,6 +194,10 @@ android {
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
     }
+}
+
+kotlin{
+    jvmToolchain(8)
 }
 
 

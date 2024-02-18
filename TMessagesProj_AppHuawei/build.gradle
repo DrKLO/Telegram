@@ -11,7 +11,7 @@ configurations {
     compile.exclude module: 'support-v4'
 }
 
-configurations.all {
+configurations.configureEach {
     exclude group: 'com.google.firebase', module: 'firebase-core'
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
 }
@@ -19,19 +19,19 @@ configurations.all {
 dependencies {
     implementation project(':TMessagesProj')
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core-ktx:+'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 
-    implementation 'com.google.firebase:firebase-messaging:22.0.0'
-    implementation 'com.huawei.hms:push:6.5.0.300'
-    implementation 'com.huawei.hms:maps:6.6.0.300'
-    implementation 'com.huawei.hms:location:6.4.0.300'
+    implementation 'com.google.firebase:firebase-messaging:23.4.1'
+    implementation 'com.huawei.hms:push:6.11.0.300'
+    implementation 'com.huawei.hms:maps:6.11.2.301'
+    implementation 'com.huawei.hms:location:6.12.0.300'
 }
 
 android {
     compileSdkVersion 34
-    buildToolsVersion '33.0.0'
+    buildToolsVersion '34.0.0'
     namespace = APP_PACKAGE
     defaultConfig.applicationId = APP_PACKAGE
 
@@ -122,8 +122,8 @@ android {
 
     defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
             outputFileName = "app-huawei.apk"
             output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
         }
@@ -137,7 +137,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 34
         versionName APP_VERSION_NAME
         ndkVersion "21.4.7075529"
