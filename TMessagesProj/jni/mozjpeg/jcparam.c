@@ -487,9 +487,9 @@ jpeg_set_defaults (j_compress_ptr cinfo)
   /* Choose JPEG colorspace based on input space, set defaults accordingly */
 
   jpeg_default_colorspace(cinfo);
-  
-  cinfo->master->dc_scan_opt_mode = 1;
-  
+
+  cinfo->master->dc_scan_opt_mode = 0;
+
 #ifdef C_PROGRESSIVE_SUPPORTED
   if (cinfo->master->compress_profile == JCP_MAX_COMPRESSION) {
     cinfo->master->optimize_scans = TRUE;

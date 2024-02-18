@@ -3,8 +3,8 @@
  *
  * This file was part of the Independent JPEG Group's software:
  * Copyright (C) 1991-1997, Thomas G. Lane.
- * It was modified by The libjpeg-turbo Project to include only code relevant
- * to libjpeg-turbo.
+ * libjpeg-turbo Modifications:
+ * Copyright (C) 2019, 2022, D. R. Commander.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
  *
@@ -25,26 +25,37 @@
  * Optional progress monitor: display a percent-done figure on stderr.
  */
 
-#ifdef PROGRESS_REPORT
-
 METHODDEF(void)
 progress_monitor(j_common_ptr cinfo)
 {
   cd_progress_ptr prog = (cd_progress_ptr)cinfo->progress;
-  int total_passes = prog->pub.total_passes + prog->total_extra_passes;
-  int percent_done =
-    (int)(prog->pub.pass_counter * 100L / prog->pub.pass_limit);
 
-  if (percent_done != prog->percent_done) {
-    prog->percent_done = percent_done;
-    if (total_passes > 1) {
-      fprintf(stderr, "\rPass %d/%d: %3d%% ",
-              prog->pub.completed_passes + prog->completed_extra_passes + 1,
-              total_passes, percent_done);
-    } else {
-      fprintf(stderr, "\r %3d%% ", percent_done);
+  if (prog->max_scans != 0 && cinfo->is_decompressor) {
+    int scan_no = ((j_decompress_ptr)cinfo)->input_scan_number;
+
+    if (scan_no > (int)prog->max_scans) {
+      fprintf(stderr, "Scan number %d exceeds maximum scans (%u)\n", scan_no,
+              prog->max_scans);
+      exit(EXIT_FAILURE);
     }
-    fflush(stderr);
+  }
+
+  if (prog->report) {
+    int total_passes = prog->pub.total_passes + prog->total_extra_passes;
+    int percent_done =
+      (int)(prog->pub.pass_counter * 100L / prog->pub.pass_limit);
+
+    if (percent_done != prog->percent_done) {
+      prog->percent_done = percent_done;
+      if (total_passes > 1) {
+        fprintf(stderr, "\rPass %d/%d: %3d%% ",
+                prog->pub.completed_passes + prog->completed_extra_passes + 1,
+                total_passes, percent_done);
+      } else {
+        fprintf(stderr, "\r %3d%% ", percent_done);
+      }
+      fflush(stderr);
+    }
   }
 }
 
@@ -57,6 +68,8 @@ start_progress_monitor(j_common_ptr cinfo, cd_progress_ptr progress)
     progress->pub.progress_monitor = progress_monitor;
     progress->completed_extra_passes = 0;
     progress->total_extra_passes = 0;
+    progress->max_scans = 0;
+    progress->report = FALSE;
     progress->percent_done = -1;
     cinfo->progress = &progress->pub;
   }
@@ -72,8 +85,6 @@ end_progress_monitor(j_common_ptr cinfo)
     fflush(stderr);
   }
 }
-
-#endif
 
 
 /*

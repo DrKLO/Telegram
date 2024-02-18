@@ -3,6 +3,7 @@
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
 ; Copyright (C) 2009, 2016, D. R. Commander.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -379,12 +380,12 @@ EXTN(jsimd_idct_4x4_sse2):
     pshufd      xmm1, xmm4, 0x4E        ; xmm1=(20 21 22 23 30 31 32 33 00 ..)
     pshufd      xmm3, xmm4, 0x93        ; xmm3=(30 31 32 33 00 01 02 03 10 ..)
 
-    mov         rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
     movd        XMM_DWORD [rdx+rax*SIZEOF_JSAMPLE], xmm4
     movd        XMM_DWORD [rsi+rax*SIZEOF_JSAMPLE], xmm2
-    mov         rdx, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
     movd        XMM_DWORD [rdx+rax*SIZEOF_JSAMPLE], xmm1
     movd        XMM_DWORD [rsi+rax*SIZEOF_JSAMPLE], xmm3
 
@@ -558,8 +559,8 @@ EXTN(jsimd_idct_2x2_sse2):
     pextrw      ebx, xmm6, 0x00         ; ebx=(C0 D0 -- --)
     pextrw      ecx, xmm6, 0x01         ; ecx=(C1 D1 -- --)
 
-    mov         rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
     mov         word [rdx+rax*SIZEOF_JSAMPLE], bx
     mov         word [rsi+rax*SIZEOF_JSAMPLE], cx
 

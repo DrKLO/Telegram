@@ -1,1 +1,0 @@
-gas-preprocessor.pl @CMAKE_ASM_COMPILER@ ${1+"$@"}

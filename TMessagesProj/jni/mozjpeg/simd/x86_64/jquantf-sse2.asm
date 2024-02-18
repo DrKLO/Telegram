@@ -3,6 +3,7 @@
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
 ; Copyright (C) 2009, 2016, D. R. Commander.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -51,8 +52,8 @@ EXTN(jsimd_convsamp_float_sse2):
     mov         rdi, r12
     mov         rcx, DCTSIZE/2
 .convloop:
-    mov         rbx, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]  ; (JSAMPLE *)
-    mov         rdx, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]  ; (JSAMPLE *)
+    mov         rbxp, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]  ; (JSAMPLE *)
+    mov         rdxp, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]  ; (JSAMPLE *)
 
     movq        xmm0, XMM_MMWORD [rbx+rax*SIZEOF_JSAMPLE]
     movq        xmm1, XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE]

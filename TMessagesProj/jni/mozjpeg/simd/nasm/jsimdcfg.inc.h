@@ -1,8 +1,10 @@
-// This file generates the include file for the assembly
-// implementations by abusing the C preprocessor.
-//
-// Note: Some things are manually defined as they need to
-// be mapped to NASM types.
+/*
+ * This file generates the include file for the assembly
+ * implementations by abusing the C preprocessor.
+ *
+ * Note: Some things are manually defined as they need to
+ * be mapped to NASM types.
+ */
 
 ;
 ; Automatically generated include file from jsimdcfg.inc.h

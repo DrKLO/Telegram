@@ -5,7 +5,7 @@
  * Copyright (C) 1991-1996, Thomas G. Lane.
  * Modified 2017 by Guido Vollbeding.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2018, D. R. Commander.
+ * Copyright (C) 2018, 2021-2022, D. R. Commander.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
  *
@@ -28,22 +28,12 @@
 
 /* Macros to deal with unsigned chars as efficiently as compiler allows */
 
-#ifdef HAVE_UNSIGNED_CHAR
 typedef unsigned char U_CHAR;
 #define UCH(x)  ((int)(x))
-#else /* !HAVE_UNSIGNED_CHAR */
-#ifdef __CHAR_UNSIGNED__
-typedef char U_CHAR;
-#define UCH(x)  ((int)(x))
-#else
-typedef char U_CHAR;
-#define UCH(x)  ((int)(x) & 0xFF)
-#endif
-#endif /* HAVE_UNSIGNED_CHAR */
 
 
 #define ReadOK(file, buffer, len) \
-  (JFREAD(file, buffer, len) == ((size_t)(len)))
+  (fread(buffer, 1, len, file) == ((size_t)(len)))
 
 
 /* Private version of data source object */
@@ -344,8 +334,9 @@ start_input_tga(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   unsigned int width, height, maplen;
   boolean is_bottom_up;
 
-#define GET_2B(offset)  ((unsigned int)UCH(targaheader[offset]) + \
-                         (((unsigned int)UCH(targaheader[offset + 1])) << 8))
+#define GET_2B(offset) \
+  ((unsigned int)UCH(targaheader[offset]) + \
+   (((unsigned int)UCH(targaheader[offset + 1])) << 8))
 
   if (!ReadOK(source->pub.input_file, targaheader, 18))
     ERREXIT(cinfo, JERR_INPUT_EOF);
@@ -372,6 +363,11 @@ start_input_tga(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       interlace_type != 0 ||      /* currently don't allow interlaced image */
       width == 0 || height == 0)  /* image width/height must be non-zero */
     ERREXIT(cinfo, JERR_TGA_BADPARMS);
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  if (sinfo->max_pixels &&
+      (unsigned long long)width * height > sinfo->max_pixels)
+    ERREXIT(cinfo, JERR_WIDTH_OVERFLOW);
+#endif
 
   if (subtype > 8) {
     /* It's an RLE-coded file */
@@ -502,6 +498,9 @@ jinit_read_targa(j_compress_ptr cinfo)
   /* Fill in method ptrs, except get_pixel_rows which start_input sets */
   source->pub.start_input = start_input_tga;
   source->pub.finish_input = finish_input_tga;
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  source->pub.max_pixels = 0;
+#endif
 
   return (cjpeg_source_ptr)source;
 }

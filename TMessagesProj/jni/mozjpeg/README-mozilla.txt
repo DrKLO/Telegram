@@ -24,7 +24,7 @@ mozjpeg's implementation of the libjpeg API includes an extensibility framework
 that allows new features to be added without modifying the transparent libjpeg
 compress/decompress structures (which would break backward ABI compatibility.)
 Extension parameters are placed into the opaque jpeg_comp_master structure, and
-a set of accessor functions and globally unique tokens allows for 
+a set of accessor functions and globally unique tokens allows for
 getting/setting those parameters without directly accessing the structure.
 
 Currently, only the accessor functions necessary to support the mozjpeg
@@ -185,7 +185,7 @@ Integer Extension Parameters Supported by mozjpeg
   8 = Table from:  An Improved Detection Model for DCT Coefficient Quantization
       (1993) Peterson, Ahumada and Watson
 
-* JINT_DC_SCAN_OPT_MODE (default: 1)
+* JINT_DC_SCAN_OPT_MODE (default: 0)
   Specifies the DC scan optimization mode.  The following options are
   available:
   0 = One scan for all components

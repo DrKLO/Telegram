@@ -2,7 +2,7 @@
 ; jfdctint.asm - accurate integer FDCT (MMX)
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
-; Copyright (C) 2016, D. R. Commander.
+; Copyright (C) 2016, 2020, D. R. Commander.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -14,7 +14,7 @@
 ; NASM is available from http://nasm.sourceforge.net/ or
 ; http://sourceforge.net/project/showfiles.php?group_id=6208
 ;
-; This file contains a slow-but-accurate integer implementation of the
+; This file contains a slower but more accurate integer implementation of the
 ; forward DCT (Discrete Cosine Transform). The following code is based
 ; directly on the IJG's original jfdctint.c; see the jfdctint.c for
 ; more details.

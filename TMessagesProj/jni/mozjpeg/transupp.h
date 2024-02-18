@@ -2,9 +2,9 @@
  * transupp.h
  *
  * This file was part of the Independent JPEG Group's software:
- * Copyright (C) 1997-2011, Thomas G. Lane, Guido Vollbeding.
+ * Copyright (C) 1997-2019, Thomas G. Lane, Guido Vollbeding.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2017, D. R. Commander.
+ * Copyright (C) 2017, 2021, D. R. Commander.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
  *
@@ -68,6 +68,17 @@ extern "C" {
  * output image covers at least the requested region, but may cover more.)
  * The adjustment of the region dimensions may be optionally disabled.
  *
+ * A complementary lossless wipe option is provided to discard (gray out) data
+ * inside a given image region while losslessly preserving what is outside.
+ * A lossless drop option is also provided, which allows another JPEG image to
+ * be inserted ("dropped") into the source image data at a given position,
+ * replacing the existing image data at that position.  Both the source image
+ * and the drop image must have the same subsampling level.  It is best if they
+ * also have the same quantization (quality.)  Otherwise, the quantization of
+ * the output image will be adapted to accommodate the higher of the source
+ * image quality and the drop image quality.  The trim option can be used with
+ * the drop option to requantize the drop image to match the source image.
+ *
  * We also provide a lossless-resize option, which is kind of a lossless-crop
  * operation in the DCT coefficient block domain - it discards higher-order
  * coefficients and losslessly preserves lower-order coefficients of a
@@ -98,20 +109,23 @@ typedef enum {
   JXFORM_TRANSVERSE,      /* transpose across UR-to-LL axis */
   JXFORM_ROT_90,          /* 90-degree clockwise rotation */
   JXFORM_ROT_180,         /* 180-degree rotation */
-  JXFORM_ROT_270          /* 270-degree clockwise (or 90 ccw) */
+  JXFORM_ROT_270,         /* 270-degree clockwise (or 90 ccw) */
+  JXFORM_WIPE,            /* wipe */
+  JXFORM_DROP             /* drop */
 } JXFORM_CODE;
 
 /*
  * Codes for crop parameters, which can individually be unspecified,
  * positive or negative for xoffset or yoffset,
- * positive or forced for width or height.
+ * positive or force or reflect for width or height.
  */
 
 typedef enum {
   JCROP_UNSET,
   JCROP_POS,
   JCROP_NEG,
-  JCROP_FORCE
+  JCROP_FORCE,
+  JCROP_REFLECT
 } JCROP_CODE;
 
 /*
@@ -126,7 +140,7 @@ typedef struct {
   boolean perfect;              /* if TRUE, fail if partial MCUs are requested */
   boolean trim;                 /* if TRUE, trim partial MCUs as needed */
   boolean force_grayscale;      /* if TRUE, convert color image to grayscale */
-  boolean crop;                 /* if TRUE, crop source image */
+  boolean crop;                 /* if TRUE, crop or wipe source image, or drop */
   boolean slow_hflip;  /* For best performance, the JXFORM_FLIP_H transform
                           normally modifies the source coefficients in place.
                           Setting this to TRUE will instead use a slower,
@@ -139,13 +153,17 @@ typedef struct {
    * These can be filled in by jtransform_parse_crop_spec().
    */
   JDIMENSION crop_width;        /* Width of selected region */
-  JCROP_CODE crop_width_set;    /* (forced disables adjustment) */
+  JCROP_CODE crop_width_set;    /* (force-disables adjustment) */
   JDIMENSION crop_height;       /* Height of selected region */
-  JCROP_CODE crop_height_set;   /* (forced disables adjustment) */
+  JCROP_CODE crop_height_set;   /* (force-disables adjustment) */
   JDIMENSION crop_xoffset;      /* X offset of selected region */
   JCROP_CODE crop_xoffset_set;  /* (negative measures from right edge) */
   JDIMENSION crop_yoffset;      /* Y offset of selected region */
   JCROP_CODE crop_yoffset_set;  /* (negative measures from bottom edge) */
+
+  /* Drop parameters: set by caller for drop request */
+  j_decompress_ptr drop_ptr;
+  jvirt_barray_ptr *drop_coef_arrays;
 
   /* Internal workspace: caller should not touch these */
   int num_components;           /* # of components in workspace */
@@ -154,6 +172,8 @@ typedef struct {
   JDIMENSION output_height;
   JDIMENSION x_crop_offset;     /* destination crop offsets measured in iMCUs */
   JDIMENSION y_crop_offset;
+  JDIMENSION drop_width;        /* drop/wipe dimensions measured in iMCUs */
+  JDIMENSION drop_height;
   int iMCU_sample_width;        /* destination iMCU size */
   int iMCU_sample_height;
 } jpeg_transform_info;
@@ -199,10 +219,11 @@ EXTERN(boolean) jtransform_perfect_transform(JDIMENSION image_width,
  */
 
 typedef enum {
-  JCOPYOPT_NONE,          /* copy no optional markers */
-  JCOPYOPT_COMMENTS,      /* copy only comment (COM) markers */
-  JCOPYOPT_ALL,           /* copy all optional markers */
-  JCOPYOPT_ALL_EXCEPT_ICC /* copy all optional markers except APP2 */
+  JCOPYOPT_NONE,           /* copy no optional markers */
+  JCOPYOPT_COMMENTS,       /* copy only comment (COM) markers */
+  JCOPYOPT_ALL,            /* copy all optional markers */
+  JCOPYOPT_ALL_EXCEPT_ICC, /* copy all optional markers except APP2 */
+  JCOPYOPT_ICC             /* copy only ICC profile (APP2) markers */
 } JCOPY_OPTION;
 
 #define JCOPYOPT_DEFAULT  JCOPYOPT_COMMENTS     /* recommended default */

@@ -1,7 +1,6 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 apply plugin: 'com.android.library'
-apply plugin: 'org.jetbrains.kotlin.android'
 repositories {
     mavenCentral()
     google()
@@ -78,14 +77,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
 
         coreLibraryDesugaringEnabled true
-    }
-
-    buildFeatures {
-        compose true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.9"
     }
 
     defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
@@ -195,11 +186,6 @@ android {
         }
     }
 }
-
-kotlin{
-    jvmToolchain(8)
-}
-
 
 def getProps(String propName) {
     def propsFile = rootProject.file('local.properties')

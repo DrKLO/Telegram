@@ -6,7 +6,7 @@
  * this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
  * ----------------------------------------------------------------------------
  * libjpeg-turbo Modifications:
- * Copyright (C)2016, 2018-2019 D. R. Commander.  All Rights Reserved.
+ * Copyright (C)2016, 2018-2019, 2022 D. R. Commander.  All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * ----------------------------------------------------------------------------
  */
+
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -54,9 +54,8 @@ add_map_entry(j_decompress_ptr cinfo, int R, int G, int B)
 
   /* Check for duplicate color. */
   for (index = 0; index < ncolors; index++) {
-    if (GETJSAMPLE(colormap0[index]) == R &&
-        GETJSAMPLE(colormap1[index]) == G &&
-        GETJSAMPLE(colormap2[index]) == B)
+    if (colormap0[index] == R && colormap1[index] == G &&
+        colormap2[index] == B)
       return;                   /* color is already in map */
   }
 

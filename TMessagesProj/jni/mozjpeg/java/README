@@ -38,7 +38,7 @@ Installation Directory
 ----------------------
 
 The TurboJPEG Java Wrapper will look for the TurboJPEG JNI library
-(libturbojpeg.so, libturbojpeg.jnilib, or turbojpeg.dll) in the system library
+(libturbojpeg.so, libturbojpeg.dylib, or turbojpeg.dll) in the system library
 paths or in any paths specified in LD_LIBRARY_PATH (Un*x), DYLD_LIBRARY_PATH
 (Mac), or PATH (Windows.)  Failing this, on Un*x and Mac systems, the wrapper
 will look for the JNI library under the library directory configured when

@@ -1,6 +1,6 @@
 /*
- * Copyright (C)2011-2012, 2014-2015, 2017, 2019 D. R. Commander.
- *                                               All Rights Reserved.
+ * Copyright (C)2011-2012, 2014-2015, 2017, 2019, 2021-2023
+ *           D. R. Commander.  All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,11 @@
  * images using the TurboJPEG C API
  */
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
+
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,14 +150,11 @@ static void usage(char *programName)
   printf("General Options\n");
   printf("---------------\n\n");
 
-  printf("-fastupsample = Use the fastest chrominance upsampling algorithm available in\n");
-  printf("     the underlying codec.\n\n");
+  printf("-fastupsample = Use the fastest chrominance upsampling algorithm available\n\n");
 
-  printf("-fastdct = Use the fastest DCT/IDCT algorithms available in the underlying\n");
-  printf("     codec.\n\n");
+  printf("-fastdct = Use the fastest DCT/IDCT algorithm available\n\n");
 
-  printf("-accuratedct = Use the most accurate DCT/IDCT algorithms available in the\n");
-  printf("     underlying codec.\n\n");
+  printf("-accuratedct = Use the most accurate DCT/IDCT algorithm available\n\n");
 
   exit(1);
 }
@@ -273,6 +275,8 @@ int main(int argc, char **argv)
     if (size == 0)
       THROW("determining input file size", "Input file contains no data");
     jpegSize = (unsigned long)size;
+    if (jpegSize > (unsigned long)INT_MAX)
+      THROW("allocating JPEG buffer", "Input file is too large");
     if ((jpegBuf = (unsigned char *)tjAlloc(jpegSize)) == NULL)
       THROW_UNIX("allocating JPEG buffer");
     if (fread(jpegBuf, jpegSize, 1, jpegFile) < 1)
@@ -288,8 +292,10 @@ int main(int argc, char **argv)
         THROW_TJ("initializing transformer");
       xform.options |= TJXOPT_TRIM;
       if (tjTransform(tjInstance, jpegBuf, jpegSize, 1, &dstBuf, &dstSize,
-                      &xform, flags) < 0)
+                      &xform, flags) < 0) {
+        tjFree(dstBuf);
         THROW_TJ("transforming input image");
+      }
       tjFree(jpegBuf);
       jpegBuf = dstBuf;
       jpegSize = dstSize;
@@ -328,8 +334,12 @@ int main(int argc, char **argv)
       outSubsamp = inSubsamp;
 
     pixelFormat = TJPF_BGRX;
-    if ((imgBuf = (unsigned char *)tjAlloc(width * height *
-                                           tjPixelSize[pixelFormat])) == NULL)
+    if ((unsigned long long)width * height * tjPixelSize[pixelFormat] >
+        (unsigned long long)((size_t)-1))
+      THROW("allocating uncompressed image buffer", "Image is too large");
+    if ((imgBuf =
+         (unsigned char *)malloc(sizeof(unsigned char) * width * height *
+                                 tjPixelSize[pixelFormat])) == NULL)
       THROW_UNIX("allocating uncompressed image buffer");
 
     if (tjDecompress2(tjInstance, jpegBuf, jpegSize, imgBuf, width, 0, height,

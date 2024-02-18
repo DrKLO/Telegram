@@ -2,8 +2,9 @@
 ; jsimdext.inc - common declarations
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
-; Copyright (C) 2010, 2016, 2019, D. R. Commander.
+; Copyright (C) 2010, 2016, 2018-2019, D. R. Commander.
 ; Copyright (C) 2018, Matthieu Darbois.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library - version 1.02
 ;
@@ -130,13 +131,53 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 ;  Common types
 ;
 %ifdef __x86_64__
+%ifnidn __OUTPUT_FORMAT__, elfx32
 %define POINTER         qword           ; general pointer type
 %define SIZEOF_POINTER  SIZEOF_QWORD    ; sizeof(POINTER)
 %define POINTER_BIT     QWORD_BIT       ; sizeof(POINTER)*BYTE_BIT
-%else
+%define resp            resq
+%define dp              dq
+%define raxp            rax
+%define rbxp            rbx
+%define rcxp            rcx
+%define rdxp            rdx
+%define rsip            rsi
+%define rdip            rdi
+%define rbpp            rbp
+%define rspp            rsp
+%define r8p             r8
+%define r9p             r9
+%define r10p            r10
+%define r11p            r11
+%define r12p            r12
+%define r13p            r13
+%define r14p            r14
+%define r15p            r15
+%endif
+%endif
+%ifndef raxp
 %define POINTER         dword           ; general pointer type
 %define SIZEOF_POINTER  SIZEOF_DWORD    ; sizeof(POINTER)
 %define POINTER_BIT     DWORD_BIT       ; sizeof(POINTER)*BYTE_BIT
+%define resp            resd
+%define dp              dd
+; x86_64 ILP32 ABI (x32)
+%define raxp            eax
+%define rbxp            ebx
+%define rcxp            ecx
+%define rdxp            edx
+%define rsip            esi
+%define rdip            edi
+%define rbpp            ebp
+%define rspp            esp
+%define r8p             r8d
+%define r9p             r9d
+%define r10p            r10d
+%define r11p            r11d
+%define r12p            r12d
+%define r13p            r13d
+%define r14p            r14d
+%define r15p            r15d
 %endif
 
 %define INT             dword           ; signed integer type

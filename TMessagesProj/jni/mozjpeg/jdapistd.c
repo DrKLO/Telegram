@@ -4,7 +4,7 @@
  * This file was part of the Independent JPEG Group's software:
  * Copyright (C) 1994-1996, Thomas G. Lane.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2010, 2015-2018, D. R. Commander.
+ * Copyright (C) 2010, 2015-2020, 2022-2023, D. R. Commander.
  * Copyright (C) 2015, Google, Inc.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
@@ -21,6 +21,8 @@
 #include "jinclude.h"
 #include "jdmainct.h"
 #include "jdcoefct.h"
+#include "jdmaster.h"
+#include "jdmerge.h"
 #include "jdsample.h"
 #include "jmemsys.h"
 
@@ -157,8 +159,12 @@ jpeg_crop_scanline(j_decompress_ptr cinfo, JDIMENSION *xoffset,
   JDIMENSION input_xoffset;
   boolean reinit_upsampler = FALSE;
   jpeg_component_info *compptr;
+#ifdef UPSAMPLE_MERGING_SUPPORTED
+  my_master_ptr master = (my_master_ptr)cinfo->master;
+#endif
 
-  if (cinfo->global_state != DSTATE_SCANNING || cinfo->output_scanline != 0)
+  if ((cinfo->global_state != DSTATE_SCANNING &&
+       cinfo->global_state != DSTATE_BUFIMAGE) || cinfo->output_scanline != 0)
     ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
 
   if (!xoffset || !width)
@@ -206,6 +212,13 @@ jpeg_crop_scanline(j_decompress_ptr cinfo, JDIMENSION *xoffset,
    */
   *width = *width + input_xoffset - *xoffset;
   cinfo->output_width = *width;
+#ifdef UPSAMPLE_MERGING_SUPPORTED
+  if (master->using_merged_upsample && cinfo->max_v_samp_factor == 2) {
+    my_merged_upsample_ptr upsample = (my_merged_upsample_ptr)cinfo->upsample;
+    upsample->out_row_width =
+      cinfo->output_width * cinfo->out_color_components;
+  }
+#endif
 
   /* Set the first and last iMCU columns that we must decompress.  These values
    * will be used in single-scan decompressions.
@@ -223,9 +236,11 @@ jpeg_crop_scanline(j_decompress_ptr cinfo, JDIMENSION *xoffset,
     /* Set downsampled_width to the new output width. */
     orig_downsampled_width = compptr->downsampled_width;
     compptr->downsampled_width =
-      (JDIMENSION)jdiv_round_up((long)(cinfo->output_width *
-                                       compptr->h_samp_factor),
-                                (long)cinfo->max_h_samp_factor);
+      (JDIMENSION)jdiv_round_up((long)cinfo->output_width *
+                                (long)(compptr->h_samp_factor *
+                                       compptr->_DCT_scaled_size),
+                                (long)(cinfo->max_h_samp_factor *
+                                       cinfo->_min_DCT_scaled_size));
     if (compptr->downsampled_width < 2 && orig_downsampled_width >= 2)
       reinit_upsampler = TRUE;
 
@@ -316,6 +331,12 @@ LOCAL(void)
 read_and_discard_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
 {
   JDIMENSION n;
+#ifdef UPSAMPLE_MERGING_SUPPORTED
+  my_master_ptr master = (my_master_ptr)cinfo->master;
+#endif
+  JSAMPLE dummy_sample[1] = { 0 };
+  JSAMPROW dummy_row = dummy_sample;
+  JSAMPARRAY scanlines = NULL;
   void (*color_convert) (j_decompress_ptr cinfo, JSAMPIMAGE input_buf,
                          JDIMENSION input_row, JSAMPARRAY output_buf,
                          int num_rows) = NULL;
@@ -325,6 +346,10 @@ read_and_discard_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
   if (cinfo->cconvert && cinfo->cconvert->color_convert) {
     color_convert = cinfo->cconvert->color_convert;
     cinfo->cconvert->color_convert = noop_convert;
+    /* This just prevents UBSan from complaining about adding 0 to a NULL
+     * pointer.  The pointer isn't actually used.
+     */
+    scanlines = &dummy_row;
   }
 
   if (cinfo->cquantize && cinfo->cquantize->color_quantize) {
@@ -332,8 +357,15 @@ read_and_discard_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
     cinfo->cquantize->color_quantize = noop_quantize;
   }
 
+#ifdef UPSAMPLE_MERGING_SUPPORTED
+  if (master->using_merged_upsample && cinfo->max_v_samp_factor == 2) {
+    my_merged_upsample_ptr upsample = (my_merged_upsample_ptr)cinfo->upsample;
+    scanlines = &upsample->spare_row;
+  }
+#endif
+
   for (n = 0; n < num_lines; n++)
-    jpeg_read_scanlines(cinfo, NULL, 1);
+    jpeg_read_scanlines(cinfo, scanlines, 1);
 
   if (color_convert)
     cinfo->cconvert->color_convert = color_convert;
@@ -353,6 +385,12 @@ increment_simple_rowgroup_ctr(j_decompress_ptr cinfo, JDIMENSION rows)
 {
   JDIMENSION rows_left;
   my_main_ptr main_ptr = (my_main_ptr)cinfo->main;
+  my_master_ptr master = (my_master_ptr)cinfo->master;
+
+  if (master->using_merged_upsample && cinfo->max_v_samp_factor == 2) {
+    read_and_discard_scanlines(cinfo, rows);
+    return;
+  }
 
   /* Increment the counter to the next row group after the skipped rows. */
   main_ptr->rowgroup_ctr += rows / cinfo->max_v_samp_factor;
@@ -382,21 +420,27 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
 {
   my_main_ptr main_ptr = (my_main_ptr)cinfo->main;
   my_coef_ptr coef = (my_coef_ptr)cinfo->coef;
+  my_master_ptr master = (my_master_ptr)cinfo->master;
   my_upsample_ptr upsample = (my_upsample_ptr)cinfo->upsample;
   JDIMENSION i, x;
   int y;
   JDIMENSION lines_per_iMCU_row, lines_left_in_iMCU_row, lines_after_iMCU_row;
   JDIMENSION lines_to_skip, lines_to_read;
 
+  /* Two-pass color quantization is not supported. */
+  if (cinfo->quantize_colors && cinfo->two_pass_quantize)
+    ERREXIT(cinfo, JERR_NOTIMPL);
+
   if (cinfo->global_state != DSTATE_SCANNING)
     ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
 
   /* Do not skip past the bottom of the image. */
   if (cinfo->output_scanline + num_lines >= cinfo->output_height) {
+    num_lines = cinfo->output_height - cinfo->output_scanline;
     cinfo->output_scanline = cinfo->output_height;
     (*cinfo->inputctl->finish_input_pass) (cinfo);
     cinfo->inputctl->eoi_reached = TRUE;
-    return cinfo->output_height - cinfo->output_scanline;
+    return num_lines;
   }
 
   if (num_lines == 0)
@@ -445,8 +489,10 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
     main_ptr->buffer_full = FALSE;
     main_ptr->rowgroup_ctr = 0;
     main_ptr->context_state = CTX_PREPARE_FOR_IMCU;
-    upsample->next_row_out = cinfo->max_v_samp_factor;
-    upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+    if (!master->using_merged_upsample) {
+      upsample->next_row_out = cinfo->max_v_samp_factor;
+      upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+    }
   }
 
   /* Skipping is much simpler when context rows are not required. */
@@ -458,8 +504,10 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
       cinfo->output_scanline += lines_left_in_iMCU_row;
       main_ptr->buffer_full = FALSE;
       main_ptr->rowgroup_ctr = 0;
-      upsample->next_row_out = cinfo->max_v_samp_factor;
-      upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+      if (!master->using_merged_upsample) {
+        upsample->next_row_out = cinfo->max_v_samp_factor;
+        upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+      }
     }
   }
 
@@ -480,7 +528,7 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
    * all of the entropy decoding occurs in jpeg_start_decompress(), assuming
    * that the input data source is non-suspending.  This makes skipping easy.
    */
-  if (cinfo->inputctl->has_multiple_scans) {
+  if (cinfo->inputctl->has_multiple_scans || cinfo->buffered_image) {
     if (cinfo->upsample->need_context_rows) {
       cinfo->output_scanline += lines_to_skip;
       cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
@@ -494,7 +542,8 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
       cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
       increment_simple_rowgroup_ctr(cinfo, lines_to_read);
     }
-    upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+    if (!master->using_merged_upsample)
+      upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
     return num_lines;
   }
 
@@ -506,6 +555,8 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
          * decoded coefficients.  This is ~5% faster for large subsets, but
          * it's tough to tell a difference for smaller images.
          */
+        if (!cinfo->entropy->insufficient_data)
+          cinfo->master->last_good_iMCU_row = cinfo->input_iMCU_row;
         (*cinfo->entropy->decode_mcu) (cinfo, NULL);
       }
     }
@@ -535,7 +586,8 @@ jpeg_skip_scanlines(j_decompress_ptr cinfo, JDIMENSION num_lines)
    * bit odd, since "rows_to_go" seems to be redundantly keeping track of
    * output_scanline.
    */
-  upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+  if (!master->using_merged_upsample)
+    upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
 
   /* Always skip the requested number of lines. */
   return num_lines;

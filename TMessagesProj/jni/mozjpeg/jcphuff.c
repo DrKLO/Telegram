@@ -4,8 +4,10 @@
  * This file was part of the Independent JPEG Group's software:
  * Copyright (C) 1995-1997, Thomas G. Lane.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2011, 2015, 2018, D. R. Commander.
- * Copyright (C) 2016, 2018, Matthieu Darbois.
+ * Copyright (C) 2011, 2015, 2018, 2021-2022, D. R. Commander.
+ * Copyright (C) 2016, 2018, 2022, Matthieu Darbois.
+ * Copyright (C) 2020, Arm Limited.
+ * Copyright (C) 2021, Alex Richardson.
  * Copyright (C) 2014, Mozilla Corporation.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
@@ -21,7 +23,6 @@
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jsimd.h"
-#include "jconfigint.h"
 #include <limits.h>
 
 #ifdef HAVE_INTRIN_H
@@ -44,23 +45,28 @@
  * memory footprint by 64k, which is important for some mobile applications
  * that create many isolated instances of libjpeg-turbo (web browsers, for
  * instance.)  This may improve performance on some mobile platforms as well.
- * This feature is enabled by default only on ARM processors, because some x86
+ * This feature is enabled by default only on Arm processors, because some x86
  * chips have a slow implementation of bsr, and the use of clz/bsr cannot be
  * shown to have a significant performance impact even on the x86 chips that
- * have a fast implementation of it.  When building for ARMv6, you can
+ * have a fast implementation of it.  When building for Armv6, you can
  * explicitly disable the use of clz/bsr by adding -mthumb to the compiler
  * flags (this defines __thumb__).
  */
 
 /* NOTE: Both GCC and Clang define __GNUC__ */
-#if defined(__GNUC__) && (defined(__arm__) || defined(__aarch64__))
+#if (defined(__GNUC__) && (defined(__arm__) || defined(__aarch64__))) || \
+    defined(_M_ARM) || defined(_M_ARM64)
 #if !defined(__thumb__) || defined(__thumb2__)
 #define USE_CLZ_INTRINSIC
 #endif
 #endif
 
 #ifdef USE_CLZ_INTRINSIC
+#if defined(_MSC_VER) && !defined(__clang__)
+#define JPEG_NBITS_NONZERO(x)  (32 - _CountLeadingZeros(x))
+#else
 #define JPEG_NBITS_NONZERO(x)  (32 - __builtin_clz(x))
+#endif
 #define JPEG_NBITS(x)          (x ? JPEG_NBITS_NONZERO(x) : 0)
 #else
 #include "jpeg_nbits_table.h"
@@ -77,11 +83,11 @@ typedef struct {
   /* Pointer to routine to prepare data for encode_mcu_AC_first() */
   void (*AC_first_prepare) (const JCOEF *block,
                             const int *jpeg_natural_order_start, int Sl,
-                            int Al, JCOEF *values, size_t *zerobits);
+                            int Al, UJCOEF *values, size_t *zerobits);
   /* Pointer to routine to prepare data for encode_mcu_AC_refine() */
   int (*AC_refine_prepare) (const JCOEF *block,
                             const int *jpeg_natural_order_start, int Sl,
-                            int Al, JCOEF *absvalues, size_t *bits);
+                            int Al, UJCOEF *absvalues, size_t *bits);
 
   /* Mode flag: TRUE for optimization, FALSE for actual data output */
   boolean gather_statistics;
@@ -136,9 +142,9 @@ typedef phuff_entropy_encoder *phuff_entropy_ptr;
 #ifdef RIGHT_SHIFT_IS_UNSIGNED
 #define ISHIFT_TEMPS    int ishift_temp;
 #define IRIGHT_SHIFT(x,shft)  \
-        ((ishift_temp = (x)) < 0 ? \
+  ((ishift_temp = (x)) < 0 ? \
          (ishift_temp >> (shft)) | ((~0) << (16-(shft))) : \
-         (ishift_temp >> (shft)))
+   (ishift_temp >> (shft)))
 #else
 #define ISHIFT_TEMPS
 #define IRIGHT_SHIFT(x,shft)    ((x) >> (shft))
@@ -148,19 +154,19 @@ typedef phuff_entropy_encoder *phuff_entropy_ptr;
 
 /* Forward declarations */
 METHODDEF(boolean) encode_mcu_DC_first (j_compress_ptr cinfo,
-                                        JBLOCKROW *MCU_data);
+                                       JBLOCKROW *MCU_data);
 METHODDEF(void) encode_mcu_AC_first_prepare
   (const JCOEF *block, const int *jpeg_natural_order_start, int Sl, int Al,
-   JCOEF *values, size_t *zerobits);
-METHODDEF(boolean) encode_mcu_AC_first (j_compress_ptr cinfo,
-                                        JBLOCKROW *MCU_data);
+   UJCOEF *values, size_t *zerobits);
+METHODDEF(boolean) encode_mcu_AC_first(j_compress_ptr cinfo,
+                                       JBLOCKROW *MCU_data);
 METHODDEF(boolean) encode_mcu_DC_refine (j_compress_ptr cinfo,
-                                         JBLOCKROW *MCU_data);
+                                        JBLOCKROW *MCU_data);
 METHODDEF(int) encode_mcu_AC_refine_prepare
   (const JCOEF *block, const int *jpeg_natural_order_start, int Sl, int Al,
-   JCOEF *absvalues, size_t *bits);
-METHODDEF(boolean) encode_mcu_AC_refine (j_compress_ptr cinfo,
-                                         JBLOCKROW *MCU_data);
+   UJCOEF *absvalues, size_t *bits);
+METHODDEF(boolean) encode_mcu_AC_refine(j_compress_ptr cinfo,
+                                        JBLOCKROW *MCU_data);
 METHODDEF(void) finish_pass_phuff (j_compress_ptr cinfo);
 METHODDEF(void) finish_pass_gather_phuff (j_compress_ptr cinfo);
 
@@ -170,24 +176,26 @@ INLINE
 METHODDEF(int)
 count_zeroes(size_t *x)
 {
-  int result;
 #if defined(HAVE_BUILTIN_CTZL)
+  int result;
   result = __builtin_ctzl(*x);
   *x >>= result;
 #elif defined(HAVE_BITSCANFORWARD64)
+  unsigned long result;
   _BitScanForward64(&result, *x);
   *x >>= result;
 #elif defined(HAVE_BITSCANFORWARD)
+  unsigned long result;
   _BitScanForward(&result, *x);
   *x >>= result;
 #else
-  result = 0;
+  int result = 0;
   while ((*x & 1) == 0) {
     ++result;
     *x >>= 1;
   }
 #endif
-  return result;
+  return (int)result;
 }
 
 
@@ -267,7 +275,8 @@ start_pass_phuff (j_compress_ptr cinfo, boolean gather_statistics)
         entropy->count_ptrs[tbl] = (long *)
           (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE,
                                       257 * sizeof(long));
-      MEMZERO(entropy->count_ptrs[tbl], 257 * sizeof(long));
+      memset(entropy->count_ptrs[tbl], 0, 257 * sizeof(long));
+
       if (cinfo->master->trellis_passes) {
         /* When generating tables for trellis passes, make sure that all */
         /* codewords have an assigned length */
@@ -306,7 +315,7 @@ start_pass_phuff (j_compress_ptr cinfo, boolean gather_statistics)
 /* Emit a byte */
 #define emit_byte(entropy, val) { \
   *(entropy)->next_output_byte++ = (JOCTET)(val); \
-          if (--(entropy)->free_in_buffer == 0)  \
+  if (--(entropy)->free_in_buffer == 0) \
     dump_buffer(entropy); \
 }
 
@@ -403,7 +412,7 @@ emit_symbol (phuff_entropy_ptr entropy, int tbl_no, int symbol)
 
 LOCAL(void)
 emit_buffered_bits (phuff_entropy_ptr entropy, char *bufstart,
-                    unsigned int nbits)
+                   unsigned int nbits)
 {
   if (entropy->gather_statistics)
     return;                     /* no real work */
@@ -524,7 +533,7 @@ encode_mcu_DC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
     temp3 = temp >> (CHAR_BIT * sizeof(int) - 1);
     temp ^= temp3;
     temp -= temp3;              /* temp is abs value of input */
-      /* For a negative input, want temp2 = bitwise complement of abs(input) */
+    /* For a negative input, want temp2 = bitwise complement of abs(input) */
     temp2 = temp ^ temp3;
 
     /* Find the number of bits needed for the magnitude of the coefficient */
@@ -584,8 +593,8 @@ encode_mcu_DC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
       continue; \
     /* For a negative coef, want temp2 = bitwise complement of abs(coef) */ \
     temp2 ^= temp; \
-    values[k] = temp; \
-    values[k + DCTSIZE2] = temp2; \
+    values[k] = (UJCOEF)temp; \
+    values[k + DCTSIZE2] = (UJCOEF)temp2; \
     zerobits |= ((size_t)1U) << k; \
   } \
 }
@@ -593,7 +602,7 @@ encode_mcu_DC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 METHODDEF(void)
 encode_mcu_AC_first_prepare(const JCOEF *block,
                             const int *jpeg_natural_order_start, int Sl,
-                            int Al, JCOEF *values, size_t *bits)
+                            int Al, UJCOEF *values, size_t *bits)
 {
   register int k, temp, temp2;
   size_t zerobits = 0U;
@@ -666,9 +675,9 @@ encode_mcu_AC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   register int nbits, r;
   int Sl = cinfo->Se - cinfo->Ss + 1;
   int Al = cinfo->Al;
-  JCOEF values_unaligned[2 * DCTSIZE2 + 15];
-  JCOEF *values;
-  const JCOEF *cvalue;
+  UJCOEF values_unaligned[2 * DCTSIZE2 + 15];
+  UJCOEF *values;
+  const UJCOEF *cvalue;
   size_t zerobits;
   size_t bits[8 / SIZEOF_SIZE_T];
 
@@ -681,7 +690,7 @@ encode_mcu_AC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
       emit_restart(entropy, entropy->next_restart_num);
 
 #ifdef WITH_SIMD
-  cvalue = values = (JCOEF *)PAD((size_t)values_unaligned, 16);
+  cvalue = values = (UJCOEF *)PAD((JUINTPTR)values_unaligned, 16);
 #else
   /* Not using SIMD, so alignment is not needed */
   cvalue = values = values_unaligned;
@@ -696,9 +705,9 @@ encode_mcu_AC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   zerobits |= bits[1];
 #endif
 
-    /* Emit any pending EOBRUN */
+  /* Emit any pending EOBRUN */
   if (zerobits && (entropy->EOBRUN > 0))
-      emit_eobrun(entropy);
+    emit_eobrun(entropy);
 
 #if SIZEOF_SIZE_T == 4
   zerobits = bits[0];
@@ -815,7 +824,7 @@ encode_mcu_DC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
       zerobits |= ((size_t)1U) << k; \
       signbits |= ((size_t)(temp2 + 1)) << k; \
     } \
-    absvalues[k] = (JCOEF)temp; /* save abs value for main pass */ \
+    absvalues[k] = (UJCOEF)temp; /* save abs value for main pass */ \
     if (temp == 1) \
       EOB = k + koffset;        /* EOB = index of last newly-nonzero coef */ \
   } \
@@ -824,7 +833,7 @@ encode_mcu_DC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 METHODDEF(int)
 encode_mcu_AC_refine_prepare(const JCOEF *block,
                              const int *jpeg_natural_order_start, int Sl,
-                             int Al, JCOEF *absvalues, size_t *bits)
+                             int Al, UJCOEF *absvalues, size_t *bits)
 {
   register int k, temp, temp2;
   int EOB = 0;
@@ -869,7 +878,7 @@ encode_mcu_AC_refine_prepare(const JCOEF *block,
 
 #define ENCODE_COEFS_AC_REFINE(label) { \
   while (zerobits) { \
-    int idx = count_zeroes(&zerobits); \
+    idx = count_zeroes(&zerobits); \
     r += idx; \
     cabsvalue += idx; \
     signbits >>= idx; \
@@ -926,14 +935,14 @@ METHODDEF(boolean)
 encode_mcu_AC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 {
   phuff_entropy_ptr entropy = (phuff_entropy_ptr) cinfo->entropy;
-  register int temp, r;
+  register int temp, r, idx;
   char *BR_buffer;
   unsigned int BR;
   int Sl = cinfo->Se - cinfo->Ss + 1;
   int Al = cinfo->Al;
-  JCOEF absvalues_unaligned[DCTSIZE2 + 15];
-  JCOEF *absvalues;
-  const JCOEF *cabsvalue, *EOBPTR;
+  UJCOEF absvalues_unaligned[DCTSIZE2 + 15];
+  UJCOEF *absvalues;
+  const UJCOEF *cabsvalue, *EOBPTR;
   size_t zerobits, signbits;
   size_t bits[16 / SIZEOF_SIZE_T];
 
@@ -946,7 +955,7 @@ encode_mcu_AC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
       emit_restart(entropy, entropy->next_restart_num);
 
 #ifdef WITH_SIMD
-  cabsvalue = absvalues = (JCOEF *)PAD((size_t)absvalues_unaligned, 16);
+  cabsvalue = absvalues = (UJCOEF *)PAD((JUINTPTR)absvalues_unaligned, 16);
 #else
   /* Not using SIMD, so alignment is not needed */
   cabsvalue = absvalues = absvalues_unaligned;
@@ -977,13 +986,13 @@ encode_mcu_AC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 
   if (zerobits) {
     int diff = ((absvalues + DCTSIZE2 / 2) - cabsvalue);
-    int idx = count_zeroes(&zerobits);
+    idx = count_zeroes(&zerobits);
     signbits >>= idx;
     idx += diff;
     r += idx;
     cabsvalue += idx;
     goto first_iter_ac_refine;
-    }
+  }
 
   ENCODE_COEFS_AC_REFINE(first_iter_ac_refine:);
 #endif
@@ -1062,7 +1071,7 @@ finish_pass_gather_phuff (j_compress_ptr cinfo)
   /* It's important not to apply jpeg_gen_optimal_table more than once
    * per table, because it clobbers the input frequency counts!
    */
-  MEMZERO(did, sizeof(did));
+  memset(did, 0, sizeof(did));
 
   for (ci = 0; ci < cinfo->comps_in_scan; ci++) {
     compptr = cinfo->cur_comp_info[ci];

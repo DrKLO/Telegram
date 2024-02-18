@@ -4,8 +4,8 @@
  * This file was part of the Independent JPEG Group's software:
  * Copyright (C) 1995-1998, Thomas G. Lane.
  * Modified 2000-2009 by Guido Vollbeding.
- * It was modified by The libjpeg-turbo Project to include only code relevant
- * to libjpeg-turbo.
+ * libjpeg-turbo Modifications:
+ * Copyright (C) 2020, 2022, D. R. Commander.
  * mozjpeg Modifications:
  * Copyright (C) 2014, Mozilla Corporation.
  * For conditions of distribution and use, see the accompanying README file.
@@ -18,6 +18,7 @@
 #define JPEG_INTERNALS
 #include "jinclude.h"
 #include "jpeglib.h"
+#include "jpegcomp.h"
 
 
 /* Forward declarations */
@@ -106,7 +107,7 @@ jpeg_copy_critical_parameters (const j_decompress_ptr srcinfo, j_compress_ptr ds
       qtblptr = & dstinfo->quant_tbl_ptrs[tblno];
       if (*qtblptr == NULL)
         *qtblptr = jpeg_alloc_quant_table((j_common_ptr) dstinfo);
-      MEMCOPY((*qtblptr)->quantval, srcinfo->quant_tbl_ptrs[tblno]->quantval,
+      memcpy((*qtblptr)->quantval, srcinfo->quant_tbl_ptrs[tblno]->quantval,
               sizeof((*qtblptr)->quantval));
       (*qtblptr)->sent_table = FALSE;
     }
@@ -171,7 +172,7 @@ jpeg_copy_critical_parameters (const j_decompress_ptr srcinfo, j_compress_ptr ds
 
 LOCAL(void)
 transencode_master_selection (j_compress_ptr cinfo,
-                              jvirt_barray_ptr *coef_arrays)
+                             jvirt_barray_ptr *coef_arrays)
 {
   /* Although we don't actually use input_components for transcoding,
    * jcmaster.c's initial_setup will complain if input_components is 0.
@@ -380,7 +381,7 @@ compress_output (j_compress_ptr cinfo, JSAMPIMAGE input_buf)
 
 LOCAL(void)
 transencode_coef_controller (j_compress_ptr cinfo,
-                             jvirt_barray_ptr *coef_arrays)
+                            jvirt_barray_ptr *coef_arrays)
 {
   my_coef_ptr coef;
   JBLOCKROW buffer;

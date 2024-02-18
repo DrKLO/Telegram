@@ -6,13 +6,13 @@
  * Modified 2009-2017 by Guido Vollbeding.
  * libjpeg-turbo Modifications:
  * Modified 2011 by Siarhei Siamashka.
- * Copyright (C) 2015, 2017-2018, D. R. Commander.
+ * Copyright (C) 2015, 2017-2018, 2021-2022, D. R. Commander.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
  *
  * This file contains routines to read input images in Microsoft "BMP"
  * format (MS Windows 3.x, OS/2 1.x, and OS/2 2.x flavors).
- * Currently, only 8-bit and 24-bit images are supported, not 1-bit or
+ * Currently, only 8-, 24-, and 32-bit images are supported, not 1-bit or
  * 4-bit (feeding such low-depth images into JPEG would be silly anyway).
  * Also, we don't support RLE-compressed files.
  *
@@ -34,22 +34,12 @@
 
 /* Macros to deal with unsigned chars as efficiently as compiler allows */
 
-#ifdef HAVE_UNSIGNED_CHAR
 typedef unsigned char U_CHAR;
 #define UCH(x)  ((int)(x))
-#else /* !HAVE_UNSIGNED_CHAR */
-#ifdef __CHAR_UNSIGNED__
-typedef char U_CHAR;
-#define UCH(x)  ((int)(x))
-#else
-typedef char U_CHAR;
-#define UCH(x)  ((int)(x) & 0xFF)
-#endif
-#endif /* HAVE_UNSIGNED_CHAR */
 
 
 #define ReadOK(file, buffer, len) \
-  (JFREAD(file, buffer, len) == ((size_t)(len)))
+  (fread(buffer, 1, len, file) == ((size_t)(len)))
 
 static int alpha_index[JPEG_NUMCS] = {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 0, 0, -1
@@ -71,7 +61,7 @@ typedef struct _bmp_source_struct {
   JDIMENSION source_row;        /* Current source row number */
   JDIMENSION row_width;         /* Physical width of scanlines in file */
 
-  int bits_per_pixel;           /* remembers 8- or 24-bit format */
+  int bits_per_pixel;           /* remembers 8-, 24-, or 32-bit format */
   int cmap_length;              /* colormap length */
 
   boolean use_inversion_array;  /* TRUE = preload the whole image, which is
@@ -135,7 +125,8 @@ read_colormap(bmp_source_ptr sinfo, int cmaplen, int mapentrysize)
     break;
   }
 
-  if (sinfo->cinfo->in_color_space == JCS_UNKNOWN && gray)
+  if ((sinfo->cinfo->in_color_space == JCS_UNKNOWN ||
+       sinfo->cinfo->in_color_space == JCS_RGB) && gray)
     sinfo->cinfo->in_color_space = JCS_GRAYSCALE;
 
   if (sinfo->cinfo->in_color_space == JCS_GRAYSCALE && !gray)
@@ -179,14 +170,14 @@ get_8bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   outptr = source->pub.buffer[0];
   if (cinfo->in_color_space == JCS_GRAYSCALE) {
     for (col = cinfo->image_width; col > 0; col--) {
-      t = GETJSAMPLE(*inptr++);
+      t = *inptr++;
       if (t >= cmaplen)
         ERREXIT(cinfo, JERR_BMP_OUTOFRANGE);
       *outptr++ = colormap[0][t];
     }
   } else if (cinfo->in_color_space == JCS_CMYK) {
     for (col = cinfo->image_width; col > 0; col--) {
-      t = GETJSAMPLE(*inptr++);
+      t = *inptr++;
       if (t >= cmaplen)
         ERREXIT(cinfo, JERR_BMP_OUTOFRANGE);
       rgb_to_cmyk(colormap[0][t], colormap[1][t], colormap[2][t], outptr,
@@ -202,7 +193,7 @@ get_8bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
 
     if (aindex >= 0) {
       for (col = cinfo->image_width; col > 0; col--) {
-        t = GETJSAMPLE(*inptr++);
+        t = *inptr++;
         if (t >= cmaplen)
           ERREXIT(cinfo, JERR_BMP_OUTOFRANGE);
         outptr[rindex] = colormap[0][t];
@@ -213,7 +204,7 @@ get_8bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       }
     } else {
       for (col = cinfo->image_width; col > 0; col--) {
-        t = GETJSAMPLE(*inptr++);
+        t = *inptr++;
         if (t >= cmaplen)
           ERREXIT(cinfo, JERR_BMP_OUTOFRANGE);
         outptr[rindex] = colormap[0][t];
@@ -255,10 +246,9 @@ get_24bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
    */
   outptr = source->pub.buffer[0];
   if (cinfo->in_color_space == JCS_EXT_BGR) {
-    MEMCOPY(outptr, inptr, source->row_width);
+    memcpy(outptr, inptr, source->row_width);
   } else if (cinfo->in_color_space == JCS_CMYK) {
     for (col = cinfo->image_width; col > 0; col--) {
-      /* can omit GETJSAMPLE() safely */
       JSAMPLE b = *inptr++, g = *inptr++, r = *inptr++;
       rgb_to_cmyk(r, g, b, outptr, outptr + 1, outptr + 2, outptr + 3);
       outptr += 4;
@@ -272,7 +262,7 @@ get_24bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
 
     if (aindex >= 0) {
       for (col = cinfo->image_width; col > 0; col--) {
-        outptr[bindex] = *inptr++;      /* can omit GETJSAMPLE() safely */
+        outptr[bindex] = *inptr++;
         outptr[gindex] = *inptr++;
         outptr[rindex] = *inptr++;
         outptr[aindex] = 0xFF;
@@ -280,7 +270,7 @@ get_24bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       }
     } else {
       for (col = cinfo->image_width; col > 0; col--) {
-        outptr[bindex] = *inptr++;      /* can omit GETJSAMPLE() safely */
+        outptr[bindex] = *inptr++;
         outptr[gindex] = *inptr++;
         outptr[rindex] = *inptr++;
         outptr += ps;
@@ -320,10 +310,9 @@ get_32bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   outptr = source->pub.buffer[0];
   if (cinfo->in_color_space == JCS_EXT_BGRX ||
       cinfo->in_color_space == JCS_EXT_BGRA) {
-    MEMCOPY(outptr, inptr, source->row_width);
+    memcpy(outptr, inptr, source->row_width);
   } else if (cinfo->in_color_space == JCS_CMYK) {
     for (col = cinfo->image_width; col > 0; col--) {
-      /* can omit GETJSAMPLE() safely */
       JSAMPLE b = *inptr++, g = *inptr++, r = *inptr++;
       rgb_to_cmyk(r, g, b, outptr, outptr + 1, outptr + 2, outptr + 3);
       inptr++;                          /* skip the 4th byte (Alpha channel) */
@@ -338,7 +327,7 @@ get_32bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
 
     if (aindex >= 0) {
       for (col = cinfo->image_width; col > 0; col--) {
-        outptr[bindex] = *inptr++;      /* can omit GETJSAMPLE() safely */
+        outptr[bindex] = *inptr++;
         outptr[gindex] = *inptr++;
         outptr[rindex] = *inptr++;
         outptr[aindex] = *inptr++;
@@ -346,7 +335,7 @@ get_32bit_row(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       }
     } else {
       for (col = cinfo->image_width; col > 0; col--) {
-        outptr[bindex] = *inptr++;      /* can omit GETJSAMPLE() safely */
+        outptr[bindex] = *inptr++;
         outptr[gindex] = *inptr++;
         outptr[rindex] = *inptr++;
         inptr++;                        /* skip the 4th byte (Alpha channel) */
@@ -436,14 +425,14 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
    (((unsigned int)UCH(array[offset + 2])) << 16) + \
    (((unsigned int)UCH(array[offset + 3])) << 24))
 
-  unsigned int bfOffBits;
-  unsigned int headerSize;
+  int bfOffBits;
+  int headerSize;
   int biWidth;
   int biHeight;
   unsigned short biPlanes;
   unsigned int biCompression;
   int biXPelsPerMeter, biYPelsPerMeter;
-  unsigned int biClrUsed = 0;
+  int biClrUsed = 0;
   int mapentrysize = 0;         /* 0 indicates no colormap */
   int bPad;
   JDIMENSION row_width = 0;
@@ -462,7 +451,7 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   if (!ReadOK(source->pub.input_file, bmpinfoheader, 4))
     ERREXIT(cinfo, JERR_INPUT_EOF);
   headerSize = GET_4B(bmpinfoheader, 0);
-  if (headerSize < 12 || headerSize > 64)
+  if (headerSize < 12 || headerSize > 64 || (headerSize + 14) > bfOffBits)
     ERREXIT(cinfo, JERR_BMP_BADHEADER);
   if (!ReadOK(source->pub.input_file, bmpinfoheader + 4, headerSize - 4))
     ERREXIT(cinfo, JERR_INPUT_EOF);
@@ -481,7 +470,9 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       TRACEMS2(cinfo, 1, JTRC_BMP_OS2_MAPPED, biWidth, biHeight);
       break;
     case 24:                    /* RGB image */
-      TRACEMS2(cinfo, 1, JTRC_BMP_OS2, biWidth, biHeight);
+    case 32:                    /* RGB image + Alpha channel */
+      TRACEMS3(cinfo, 1, JTRC_BMP_OS2, biWidth, biHeight,
+               source->bits_per_pixel);
       break;
     default:
       ERREXIT(cinfo, JERR_BMP_BADDEPTH);
@@ -508,10 +499,8 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       TRACEMS2(cinfo, 1, JTRC_BMP_MAPPED, biWidth, biHeight);
       break;
     case 24:                    /* RGB image */
-      TRACEMS2(cinfo, 1, JTRC_BMP, biWidth, biHeight);
-      break;
     case 32:                    /* RGB image + Alpha channel */
-      TRACEMS2(cinfo, 1, JTRC_BMP, biWidth, biHeight);
+      TRACEMS3(cinfo, 1, JTRC_BMP, biWidth, biHeight, source->bits_per_pixel);
       break;
     default:
       ERREXIT(cinfo, JERR_BMP_BADDEPTH);
@@ -534,6 +523,11 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
 
   if (biWidth <= 0 || biHeight <= 0 || biWidth > 0x7fffffffL || biHeight > 0x7fffffffL)
     ERREXIT(cinfo, JERR_BMP_EMPTY);
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  if (sinfo->max_pixels &&
+      (unsigned long long)biWidth * biHeight > sinfo->max_pixels)
+    ERREXIT(cinfo, JERR_WIDTH_OVERFLOW);
+#endif
   if (biPlanes != 1)
     ERREXIT(cinfo, JERR_BMP_BADPLANES);
 
@@ -587,7 +581,9 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       cinfo->input_components = 4;
     else
       ERREXIT(cinfo, JERR_BAD_IN_COLORSPACE);
-    row_width = (JDIMENSION)(biWidth * 3);
+    if ((unsigned long long)biWidth * 3ULL > 0xFFFFFFFFULL)
+      ERREXIT(cinfo, JERR_WIDTH_OVERFLOW);
+    row_width = (JDIMENSION)biWidth * 3;
     break;
   case 32:
     if (cinfo->in_color_space == JCS_UNKNOWN)
@@ -598,7 +594,9 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
       cinfo->input_components = 4;
     else
       ERREXIT(cinfo, JERR_BAD_IN_COLORSPACE);
-    row_width = (JDIMENSION)(biWidth * 4);
+    if ((unsigned long long)biWidth * 4ULL > 0xFFFFFFFFULL)
+      ERREXIT(cinfo, JERR_WIDTH_OVERFLOW);
+    row_width = (JDIMENSION)biWidth * 4;
     break;
   default:
     ERREXIT(cinfo, JERR_BMP_BADDEPTH);
@@ -643,7 +641,7 @@ start_input_bmp(j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   /* Allocate one-row buffer for returned data */
   source->pub.buffer = (*cinfo->mem->alloc_sarray)
     ((j_common_ptr)cinfo, JPOOL_IMAGE,
-     (JDIMENSION)(biWidth * cinfo->input_components), (JDIMENSION)1);
+     (JDIMENSION)biWidth * (JDIMENSION)cinfo->input_components, (JDIMENSION)1);
   source->pub.buffer_height = 1;
 
   cinfo->data_precision = 8;
@@ -680,6 +678,9 @@ jinit_read_bmp(j_compress_ptr cinfo, boolean use_inversion_array)
   /* Fill in method ptrs, except get_pixel_rows which start_input sets */
   source->pub.start_input = start_input_bmp;
   source->pub.finish_input = finish_input_bmp;
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  source->pub.max_pixels = 0;
+#endif
 
   source->use_inversion_array = use_inversion_array;
 

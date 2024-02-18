@@ -5,7 +5,7 @@ set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libwebp.a,libflac.a,librlottie.a,libsqlite.a,
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libwebp.a,libflac.a,librlottie.a,libsqlite.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
@@ -75,14 +75,14 @@ target_include_directories(mozjpeg PUBLIC
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_sources(mozjpeg PRIVATE
-            mozjpeg/simd/arm/jsimd_neon.S
-            mozjpeg/simd/arm/jsimd.c)
+            mozjpeg/simd/arm/aarch32/jsimd_neon.S
+            mozjpeg/simd/arm/aarch32/jsimd.c)
     target_compile_definitions(mozjpeg PUBLIC
             SIZEOF_SIZE_T=4)
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     target_sources(mozjpeg PRIVATE
-            mozjpeg/simd/arm64/jsimd_neon.S
-            mozjpeg/simd/arm64/jsimd.c)
+            mozjpeg/simd/arm/aarch64/jsimd_neon.S
+            mozjpeg/simd/arm/aarch64/jsimd.c)
     target_compile_definitions(mozjpeg PUBLIC
             SIZEOF_SIZE_T=8)
 elseif(${ANDROID_ABI} STREQUAL "x86")

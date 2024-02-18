@@ -5,8 +5,9 @@
  * Copyright (C) 1991-1997, Thomas G. Lane.
  * Modified 1997-2009 by Guido Vollbeding.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2015-2016, D. R. Commander.
+ * Copyright (C) 2015-2016, 2019, 2021, D. R. Commander.
  * Copyright (C) 2015, Google, Inc.
+ * Copyright (C) 2021, Alex Richardson.
  * mozjpeg Modifications:
  * Copyright (C) 2014, Mozilla Corporation.
  * For conditions of distribution and use, see the accompanying README.ijg
@@ -30,33 +31,45 @@ typedef enum {            /* Operating modes for buffer controllers */
 } J_BUF_MODE;
 
 /* Values of global_state field (jdapi.c has some dependencies on ordering!) */
-#define CSTATE_START    100     /* after create_compress */
-#define CSTATE_SCANNING 101     /* start_compress done, write_scanlines OK */
-#define CSTATE_RAW_OK   102     /* start_compress done, write_raw_data OK */
-#define CSTATE_WRCOEFS  103     /* jpeg_write_coefficients done */
-#define DSTATE_START    200     /* after create_decompress */
-#define DSTATE_INHEADER 201     /* reading header markers, no SOS yet */
-#define DSTATE_READY    202     /* found SOS, ready for start_decompress */
-#define DSTATE_PRELOAD  203     /* reading multiscan file in start_decompress*/
-#define DSTATE_PRESCAN  204     /* performing dummy pass for 2-pass quant */
-#define DSTATE_SCANNING 205     /* start_decompress done, read_scanlines OK */
-#define DSTATE_RAW_OK   206     /* start_decompress done, read_raw_data OK */
-#define DSTATE_BUFIMAGE 207     /* expecting jpeg_start_output */
-#define DSTATE_BUFPOST  208     /* looking for SOS/EOI in jpeg_finish_output */
-#define DSTATE_RDCOEFS  209     /* reading file in jpeg_read_coefficients */
-#define DSTATE_STOPPING 210     /* looking for EOI in jpeg_finish_decompress */
+#define CSTATE_START     100    /* after create_compress */
+#define CSTATE_SCANNING  101    /* start_compress done, write_scanlines OK */
+#define CSTATE_RAW_OK    102    /* start_compress done, write_raw_data OK */
+#define CSTATE_WRCOEFS   103    /* jpeg_write_coefficients done */
+#define DSTATE_START     200    /* after create_decompress */
+#define DSTATE_INHEADER  201    /* reading header markers, no SOS yet */
+#define DSTATE_READY     202    /* found SOS, ready for start_decompress */
+#define DSTATE_PRELOAD   203    /* reading multiscan file in start_decompress*/
+#define DSTATE_PRESCAN   204    /* performing dummy pass for 2-pass quant */
+#define DSTATE_SCANNING  205    /* start_decompress done, read_scanlines OK */
+#define DSTATE_RAW_OK    206    /* start_decompress done, read_raw_data OK */
+#define DSTATE_BUFIMAGE  207    /* expecting jpeg_start_output */
+#define DSTATE_BUFPOST   208    /* looking for SOS/EOI in jpeg_finish_output */
+#define DSTATE_RDCOEFS   209    /* reading file in jpeg_read_coefficients */
+#define DSTATE_STOPPING  210    /* looking for EOI in jpeg_finish_decompress */
 
 
 /* JLONG must hold at least signed 32-bit values. */
 typedef long JLONG;
 
+/* JUINTPTR must hold pointer values. */
+#ifdef __UINTPTR_TYPE__
+/*
+ * __UINTPTR_TYPE__ is GNU-specific and available in GCC 4.6+ and Clang 3.0+.
+ * Fortunately, that is sufficient to support the few architectures for which
+ * sizeof(void *) != sizeof(size_t).  The only other options would require C99
+ * or Clang-specific builtins.
+ */
+typedef __UINTPTR_TYPE__ JUINTPTR;
+#else
+typedef size_t JUINTPTR;
+#endif
 
 /*
  * Left shift macro that handles a negative operand without causing any
  * sanitizer warnings
  */
 
-#define LEFT_SHIFT(a, b) ((JLONG)((unsigned long)(a) << (b)))
+#define LEFT_SHIFT(a, b)  ((JLONG)((unsigned long)(a) << (b)))
 
 
 /* Declarations for compression modules */
@@ -220,6 +233,9 @@ struct jpeg_decomp_master {
   JDIMENSION first_MCU_col[MAX_COMPONENTS];
   JDIMENSION last_MCU_col[MAX_COMPONENTS];
   boolean jinit_upsampler_no_alloc;
+
+  /* Last iMCU row that was successfully decoded */
+  JDIMENSION last_good_iMCU_row;
 };
 
 /* Input control module */
@@ -354,9 +370,9 @@ struct jpeg_color_quantizer {
 #ifdef RIGHT_SHIFT_IS_UNSIGNED
 #define SHIFT_TEMPS     JLONG shift_temp;
 #define RIGHT_SHIFT(x,shft)  \
-        ((shift_temp = (x)) < 0 ? \
+  ((shift_temp = (x)) < 0 ? \
          (shift_temp >> (shft)) | ((~((JLONG) 0)) << (32-(shft))) : \
-         (shift_temp >> (shft)))
+   (shift_temp >> (shft)))
 #else
 #define SHIFT_TEMPS
 #define RIGHT_SHIFT(x,shft)     ((x) >> (shft))
@@ -366,13 +382,13 @@ struct jpeg_color_quantizer {
 /* Compression module initialization routines */
 EXTERN(void) jinit_compress_master (j_compress_ptr cinfo);
 EXTERN(void) jinit_c_master_control (j_compress_ptr cinfo,
-                                     boolean transcode_only);
+                                    boolean transcode_only);
 EXTERN(void) jinit_c_main_controller (j_compress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_c_prep_controller (j_compress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_c_coef_controller (j_compress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_color_converter (j_compress_ptr cinfo);
 EXTERN(void) jinit_downsampler (j_compress_ptr cinfo);
 EXTERN(void) jinit_forward_dct (j_compress_ptr cinfo);
@@ -383,11 +399,11 @@ EXTERN(void) jinit_marker_writer (j_compress_ptr cinfo);
 /* Decompression module initialization routines */
 EXTERN(void) jinit_master_decompress (j_decompress_ptr cinfo);
 EXTERN(void) jinit_d_main_controller (j_decompress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_d_coef_controller (j_decompress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_d_post_controller (j_decompress_ptr cinfo,
-                                      boolean need_full_buffer);
+                                     boolean need_full_buffer);
 EXTERN(void) jinit_input_controller (j_decompress_ptr cinfo);
 EXTERN(void) jinit_marker_reader (j_decompress_ptr cinfo);
 EXTERN(void) jinit_huff_decoder (j_decompress_ptr cinfo);
@@ -412,10 +428,10 @@ jpeg_mem_dest_internal (j_compress_ptr cinfo,
 EXTERN(long) jdiv_round_up (long a, long b);
 EXTERN(long) jround_up (long a, long b);
 EXTERN(void) jcopy_sample_rows (JSAMPARRAY input_array, int source_row,
-                                JSAMPARRAY output_array, int dest_row,
-                                int num_rows, JDIMENSION num_cols);
+                               JSAMPARRAY output_array, int dest_row,
+                               int num_rows, JDIMENSION num_cols);
 EXTERN(void) jcopy_block_row (JBLOCKROW input_row, JBLOCKROW output_row,
-                              JDIMENSION num_blocks);
+                             JDIMENSION num_blocks);
 EXTERN(void) jzero_far (void *target, size_t bytestozero);
 
 #ifdef C_ARITH_CODING_SUPPORTED
@@ -435,12 +451,3 @@ extern const int jpeg_natural_order[]; /* zigzag coef order to natural order */
 
 /* Arithmetic coding probability estimation tables in jaricom.c */
 extern const JLONG jpeg_aritab[];
-
-/* Suppress undefined-structure complaints if necessary. */
-
-#ifdef INCOMPLETE_TYPES_BROKEN
-#ifndef AM_MEMORY_MANAGER       /* only jmemmgr.c defines these */
-struct jvirt_sarray_control { long dummy; };
-struct jvirt_barray_control { long dummy; };
-#endif
-#endif /* INCOMPLETE_TYPES_BROKEN */

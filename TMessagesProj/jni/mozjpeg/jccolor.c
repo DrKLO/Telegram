@@ -5,7 +5,7 @@
  * Copyright (C) 1991-1996, Thomas G. Lane.
  * libjpeg-turbo Modifications:
  * Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
- * Copyright (C) 2009-2012, 2015, D. R. Commander.
+ * Copyright (C) 2009-2012, 2015, 2022, D. R. Commander.
  * Copyright (C) 2014, MIPS Technologies, Inc., California.
  * For conditions of distribution and use, see the accompanying README.ijg
  * file.
@@ -17,7 +17,6 @@
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jsimd.h"
-#include "jconfigint.h"
 
 
 /* Private subobject */
@@ -83,6 +82,18 @@ typedef my_color_converter *my_cconvert_ptr;
 #define G_CR_OFF        (6 * (MAXJSAMPLE + 1))
 #define B_CR_OFF        (7 * (MAXJSAMPLE + 1))
 #define TABLE_SIZE      (8 * (MAXJSAMPLE + 1))
+
+/* 12-bit samples use a 16-bit data type, so it is possible to pass
+ * out-of-range sample values (< 0 or > 4095) to jpeg_write_scanlines().
+ * Thus, we mask the incoming 12-bit samples to guard against overrunning
+ * or underrunning the conversion tables.
+ */
+
+#if BITS_IN_JSAMPLE == 12
+#define RANGE_LIMIT(value)  ((value) & 0xFFF)
+#else
+#define RANGE_LIMIT(value)  (value)
+#endif
 
 
 /* Include inline routines for colorspace extensions */
@@ -392,11 +403,11 @@ cmyk_ycck_convert(j_compress_ptr cinfo, JSAMPARRAY input_buf,
     outptr3 = output_buf[3][output_row];
     output_row++;
     for (col = 0; col < num_cols; col++) {
-      r = MAXJSAMPLE - GETJSAMPLE(inptr[0]);
-      g = MAXJSAMPLE - GETJSAMPLE(inptr[1]);
-      b = MAXJSAMPLE - GETJSAMPLE(inptr[2]);
+      r = MAXJSAMPLE - RANGE_LIMIT(inptr[0]);
+      g = MAXJSAMPLE - RANGE_LIMIT(inptr[1]);
+      b = MAXJSAMPLE - RANGE_LIMIT(inptr[2]);
       /* K passes through as-is */
-      outptr3[col] = inptr[3];  /* don't need GETJSAMPLE here */
+      outptr3[col] = inptr[3];
       inptr += 4;
       /* If the inputs are 0..MAXJSAMPLE, the outputs of these equations
        * must be too; we do not need an explicit range-limiting operation.
@@ -438,7 +449,7 @@ grayscale_convert(j_compress_ptr cinfo, JSAMPARRAY input_buf,
     outptr = output_buf[0][output_row];
     output_row++;
     for (col = 0; col < num_cols; col++) {
-      outptr[col] = inptr[0];   /* don't need GETJSAMPLE() here */
+      outptr[col] = inptr[0];
       inptr += instride;
     }
   }
@@ -497,7 +508,7 @@ null_convert(j_compress_ptr cinfo, JSAMPARRAY input_buf, JSAMPIMAGE output_buf,
         inptr = *input_buf;
         outptr = output_buf[ci][output_row];
         for (col = 0; col < num_cols; col++) {
-          outptr[col] = inptr[ci]; /* don't need GETJSAMPLE() here */
+          outptr[col] = inptr[ci];
           inptr += nc;
         }
       }

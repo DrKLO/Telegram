@@ -1,5 +1,5 @@
 /*
- * Copyright (C)2011 D. R. Commander.  All Rights Reserved.
+ * Copyright (C)2011, 2022 D. R. Commander.  All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,13 +27,19 @@
  */
 
 #ifdef _WIN32
-#ifndef __MINGW32__
-#include <stdio.h>
-#define snprintf(str, n, format, ...) \
-  _snprintf_s(str, n, _TRUNCATE, format, __VA_ARGS__)
-#endif
+#ifndef strcasecmp
 #define strcasecmp  stricmp
+#endif
+#ifndef strncasecmp
 #define strncasecmp  strnicmp
+#endif
+#endif
+
+#ifdef _MSC_VER
+#define SNPRINTF(str, n, format, ...) \
+  _snprintf_s(str, n, _TRUNCATE, format, ##__VA_ARGS__)
+#else
+#define SNPRINTF  snprintf
 #endif
 
 #ifndef min

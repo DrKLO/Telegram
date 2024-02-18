@@ -2,6 +2,7 @@
 ; jccolext.asm - colorspace conversion (64-bit SSE2)
 ;
 ; Copyright (C) 2009, 2016, D. R. Commander.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -56,9 +57,9 @@ EXTN(jsimd_rgb_ycc_convert_sse2):
 
     mov         rsi, r12
     mov         ecx, r13d
-    mov         rdi, JSAMPARRAY [rsi+0*SIZEOF_JSAMPARRAY]
-    mov         rbx, JSAMPARRAY [rsi+1*SIZEOF_JSAMPARRAY]
-    mov         rdx, JSAMPARRAY [rsi+2*SIZEOF_JSAMPARRAY]
+    mov         rdip, JSAMPARRAY [rsi+0*SIZEOF_JSAMPARRAY]
+    mov         rbxp, JSAMPARRAY [rsi+1*SIZEOF_JSAMPARRAY]
+    mov         rdxp, JSAMPARRAY [rsi+2*SIZEOF_JSAMPARRAY]
     lea         rdi, [rdi+rcx*SIZEOF_JSAMPROW]
     lea         rbx, [rbx+rcx*SIZEOF_JSAMPROW]
     lea         rdx, [rdx+rcx*SIZEOF_JSAMPROW]
@@ -76,10 +77,10 @@ EXTN(jsimd_rgb_ycc_convert_sse2):
     push        rsi
     push        rcx                     ; col
 
-    mov         rsi, JSAMPROW [rsi]     ; inptr
-    mov         rdi, JSAMPROW [rdi]     ; outptr0
-    mov         rbx, JSAMPROW [rbx]     ; outptr1
-    mov         rdx, JSAMPROW [rdx]     ; outptr2
+    mov         rsip, JSAMPROW [rsi]    ; inptr
+    mov         rdip, JSAMPROW [rdi]    ; outptr0
+    mov         rbxp, JSAMPROW [rbx]    ; outptr1
+    mov         rdxp, JSAMPROW [rdx]    ; outptr2
 
     cmp         rcx, byte SIZEOF_XMMWORD
     jae         near .columnloop

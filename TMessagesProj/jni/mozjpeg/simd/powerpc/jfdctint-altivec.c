@@ -1,7 +1,7 @@
 /*
  * AltiVec optimizations for libjpeg-turbo
  *
- * Copyright (C) 2014, D. R. Commander.  All Rights Reserved.
+ * Copyright (C) 2014, 2020, D. R. Commander.  All Rights Reserved.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
@@ -20,7 +20,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-/* SLOW INTEGER FORWARD DCT */
+/* ACCURATE INTEGER FORWARD DCT */
 
 #include "jsimd_altivec.h"
 

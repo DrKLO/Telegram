@@ -3,6 +3,7 @@
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
 ; Copyright (C) 2009, 2016, D. R. Commander.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -460,21 +461,21 @@ EXTN(jsimd_idct_ifast_sse2):
     pshufd      xmm6, xmm4, 0x4E  ; xmm6=(50 51 52 53 54 55 56 57 40 41 42 43 44 45 46 47)
     pshufd      xmm2, xmm7, 0x4E  ; xmm2=(70 71 72 73 74 75 76 77 60 61 62 63 64 65 66 67)
 
-    mov         rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm1
     movq        XMM_MMWORD [rsi+rax*SIZEOF_JSAMPLE], xmm3
-    mov         rdx, JSAMPROW [rdi+4*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+6*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+4*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+6*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm4
     movq        XMM_MMWORD [rsi+rax*SIZEOF_JSAMPLE], xmm7
 
-    mov         rdx, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm5
     movq        XMM_MMWORD [rsi+rax*SIZEOF_JSAMPLE], xmm0
-    mov         rdx, JSAMPROW [rdi+5*SIZEOF_JSAMPROW]
-    mov         rsi, JSAMPROW [rdi+7*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+5*SIZEOF_JSAMPROW]
+    mov         rsip, JSAMPROW [rdi+7*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm6
     movq        XMM_MMWORD [rsi+rax*SIZEOF_JSAMPLE], xmm2
 

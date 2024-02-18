@@ -1,14 +1,14 @@
 TURBOJPEG_1.0
 {
   global:
-    tjInitCompress;
-    tjCompress;
     TJBUFSIZE;
-    tjInitDecompress;
-    tjDecompressHeader;
+    tjCompress;
     tjDecompress;
+    tjDecompressHeader;
     tjDestroy;
     tjGetErrorStr;
+    tjInitCompress;
+    tjInitDecompress;
   local:
     *;
 };

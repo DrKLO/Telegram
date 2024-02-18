@@ -61,12 +61,32 @@ extern "C" {
 #define org_libjpegturbo_turbojpeg_TJ_CS_YCCK 4L
 #undef org_libjpegturbo_turbojpeg_TJ_FLAG_BOTTOMUP
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_BOTTOMUP 2L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_FORCEMMX
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_FORCEMMX 8L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE 16L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE2
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE2 32L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE3
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE3 128L
 #undef org_libjpegturbo_turbojpeg_TJ_FLAG_FASTUPSAMPLE
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_FASTUPSAMPLE 256L
 #undef org_libjpegturbo_turbojpeg_TJ_FLAG_FASTDCT
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_FASTDCT 2048L
 #undef org_libjpegturbo_turbojpeg_TJ_FLAG_ACCURATEDCT
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_ACCURATEDCT 4096L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_STOPONWARNING
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_STOPONWARNING 8192L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_PROGRESSIVE
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_PROGRESSIVE 16384L
+#undef org_libjpegturbo_turbojpeg_TJ_FLAG_LIMITSCANS
+#define org_libjpegturbo_turbojpeg_TJ_FLAG_LIMITSCANS 32768L
+#undef org_libjpegturbo_turbojpeg_TJ_NUMERR
+#define org_libjpegturbo_turbojpeg_TJ_NUMERR 2L
+#undef org_libjpegturbo_turbojpeg_TJ_ERR_WARNING
+#define org_libjpegturbo_turbojpeg_TJ_ERR_WARNING 0L
+#undef org_libjpegturbo_turbojpeg_TJ_ERR_FATAL
+#define org_libjpegturbo_turbojpeg_TJ_ERR_FATAL 1L
 /*
  * Class:     org_libjpegturbo_turbojpeg_TJ
  * Method:    bufSize

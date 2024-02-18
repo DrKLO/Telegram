@@ -5,8 +5,9 @@
  * Copyright (C) 1994-1998, Thomas G. Lane.
  * Modified 2003-2010 by Guido Vollbeding.
  * libjpeg-turbo Modifications:
- * Copyright (C) 2014, D. R. Commander.
- * For conditions of distribution and use, see the accompanying README file.
+ * Copyright (C) 2022, D. R. Commander.
+ * For conditions of distribution and use, see the accompanying README.ijg
+ * file.
  *
  * This file contains application interface code for the compression half
  * of the JPEG library.  These are the "minimum" API routines that may be
@@ -53,7 +54,7 @@ jpeg_CreateCompress(j_compress_ptr cinfo, int version, size_t structsize)
   {
     struct jpeg_error_mgr *err = cinfo->err;
     void *client_data = cinfo->client_data; /* ignore Purify complaint here */
-    MEMZERO(cinfo, sizeof(struct jpeg_compress_struct));
+    memset(cinfo, 0, sizeof(struct jpeg_compress_struct));
     cinfo->err = err;
     cinfo->client_data = client_data;
   }
@@ -100,7 +101,7 @@ jpeg_CreateCompress(j_compress_ptr cinfo, int version, size_t structsize)
   cinfo->master = (struct jpeg_comp_master *)
       (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT,
                                   sizeof(my_comp_master));
-  MEMZERO(cinfo->master, sizeof(my_comp_master));
+  memset(cinfo->master, 0, sizeof(my_comp_master));
 
   cinfo->master->compress_profile = JCP_MAX_COMPRESSION;
 }

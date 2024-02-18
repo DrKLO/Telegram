@@ -3,11 +3,12 @@
  *
  * This file was part of the Independent JPEG Group's software:
  * Copyright (C) 1991-1997, Thomas G. Lane.
- * It was modified by The libjpeg-turbo Project to include only code relevant
- * to libjpeg-turbo.
+ * libjpeg-turbo Modifications:
+ * Copyright (C) 2022, D. R. Commander.
+ * For conditions of distribution and use, see the accompanying README.ijg
+ * file.
  * mozjpeg Modifications:
  * Copyright (C) 2014, Mozilla Corporation.
- * For conditions of distribution and use, see the accompanying README file.
  *
  * This file contains declarations for Huffman entropy encoding routines
  * that are shared between the sequential encoder (jchuff.c) and the
@@ -25,6 +26,14 @@
 #else
 #define MAX_COEF_BITS 14
 #endif
+
+/* The progressive Huffman encoder uses an unsigned 16-bit data type to store
+ * absolute values of coefficients, because it is possible to inject a
+ * coefficient value of -32768 into the encoder by attempting to transform a
+ * malformed 12-bit JPEG image, and the absolute value of -32768 would overflow
+ * a signed 16-bit integer.
+ */
+typedef unsigned short UJCOEF;
 
 /* Derived data constructed for each Huffman table */
 

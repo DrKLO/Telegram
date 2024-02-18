@@ -3,6 +3,7 @@
 ;
 ; Copyright 2009 Pierre Ossman <ossman@cendio.se> for Cendio AB
 ; Copyright (C) 2009, 2016, D. R. Commander.
+; Copyright (C) 2018, Matthias Räncker.
 ;
 ; Based on the x86 SIMD extension for IJG JPEG library
 ; Copyright (C) 1999-2006, MIYASAKA Masaru.
@@ -455,12 +456,12 @@ EXTN(jsimd_idct_float_sse2):
     pshufd      xmm5, xmm6, 0x4E  ; xmm5=(10 11 12 13 14 15 16 17 00 01 02 03 04 05 06 07)
     pshufd      xmm3, xmm7, 0x4E  ; xmm3=(30 31 32 33 34 35 36 37 20 21 22 23 24 25 26 27)
 
-    mov         rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
-    mov         rbx, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
+    mov         rbxp, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm6
     movq        XMM_MMWORD [rbx+rax*SIZEOF_JSAMPLE], xmm7
-    mov         rdx, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
-    mov         rbx, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
+    mov         rdxp, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
+    mov         rbxp, JSAMPROW [rdi+3*SIZEOF_JSAMPROW]
     movq        XMM_MMWORD [rdx+rax*SIZEOF_JSAMPLE], xmm5
     movq        XMM_MMWORD [rbx+rax*SIZEOF_JSAMPLE], xmm3
 
