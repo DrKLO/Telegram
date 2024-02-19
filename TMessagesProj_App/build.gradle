@@ -17,7 +17,7 @@ configurations.configureEach {
 dependencies {
     implementation project(':TMessagesProj')
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.core:core:1.12.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 }
@@ -184,8 +184,8 @@ android {
 
         externalNativeBuild {
             cmake {
-                version '3.18.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                version '3.22.1'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21'
             }
         }
     }
