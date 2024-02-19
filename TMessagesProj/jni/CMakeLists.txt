@@ -76,12 +76,32 @@ target_include_directories(mozjpeg PUBLIC
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_sources(mozjpeg PRIVATE
             mozjpeg/simd/arm/aarch32/jsimd_neon.S
+            mozjpeg/simd/arm/aarch32/jchuff-neon.c
+            mozjpeg/simd/arm/jdsample-neon.c
+            mozjpeg/simd/arm/jcgray-neon.c
+            mozjpeg/simd/arm/jcphuff-neon.c
+            mozjpeg/simd/arm/jdmerge-neon.c
+            mozjpeg/simd/arm/jquanti-neon.c
+            mozjpeg/simd/arm/jidctred-neon.c
+            mozjpeg/simd/arm/jfdctint-neon.c
+            mozjpeg/simd/arm/jfdctfst-neon.c
+            mozjpeg/simd/arm/jcsample-neon.c
+            mozjpeg/simd/arm/jdcolor-neon.c
             mozjpeg/simd/arm/aarch32/jsimd.c)
     target_compile_definitions(mozjpeg PUBLIC
             SIZEOF_SIZE_T=4)
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     target_sources(mozjpeg PRIVATE
             mozjpeg/simd/arm/aarch64/jsimd_neon.S
+            mozjpeg/simd/arm/jdsample-neon.c
+            mozjpeg/simd/arm/jcsample-neon.c
+            mozjpeg/simd/arm/jdmerge-neon.c
+            mozjpeg/simd/arm/jcphuff-neon.c
+            mozjpeg/simd/arm/jquanti-neon.c
+            mozjpeg/simd/arm/jcgray-neon.c
+            mozjpeg/simd/arm/jidctred-neon.c
+            mozjpeg/simd/arm/jfdctfst-neon.c
+            mozjpeg/simd/arm/jidctfst-neon.c
             mozjpeg/simd/arm/aarch64/jsimd.c)
     target_compile_definitions(mozjpeg PUBLIC
             SIZEOF_SIZE_T=8)
@@ -90,24 +110,7 @@ elseif(${ANDROID_ABI} STREQUAL "x86")
     target_sources(mozjpeg PRIVATE
             mozjpeg/simd/i386/jsimd.c
             mozjpeg/simd/i386/jsimdcpu.asm
-            mozjpeg/simd/i386/jfdctflt-3dn.asm
-            mozjpeg/simd/i386/jidctflt-3dn.asm
-            mozjpeg/simd/i386/jquant-3dn.asm
-            mozjpeg/simd/i386/jccolor-mmx.asm
-            mozjpeg/simd/i386/jcgray-mmx.asm
-            mozjpeg/simd/i386/jcsample-mmx.asm
-            mozjpeg/simd/i386/jdcolor-mmx.asm
-            mozjpeg/simd/i386/jdmerge-mmx.asm
-            mozjpeg/simd/i386/jdsample-mmx.asm
-            mozjpeg/simd/i386/jfdctfst-mmx.asm
-            mozjpeg/simd/i386/jfdctint-mmx.asm
-            mozjpeg/simd/i386/jidctfst-mmx.asm
-            mozjpeg/simd/i386/jidctint-mmx.asm
-            mozjpeg/simd/i386/jidctred-mmx.asm
-            mozjpeg/simd/i386/jquant-mmx.asm
             mozjpeg/simd/i386/jfdctflt-sse.asm
-            mozjpeg/simd/i386/jidctflt-sse.asm
-            mozjpeg/simd/i386/jquant-sse.asm
             mozjpeg/simd/i386/jccolor-sse2.asm
             mozjpeg/simd/i386/jcgray-sse2.asm
             mozjpeg/simd/i386/jchuff-sse2.asm
@@ -132,7 +135,8 @@ elseif(${ANDROID_ABI} STREQUAL "x86")
             mozjpeg/simd/i386/jdsample-avx2.asm
             mozjpeg/simd/i386/jfdctint-avx2.asm
             mozjpeg/simd/i386/jidctint-avx2.asm
-            mozjpeg/simd/i386/jquanti-avx2.asm)
+            mozjpeg/simd/i386/jquanti-avx2.asm
+            )
     target_compile_definitions(mozjpeg PUBLIC
             SIZEOF_SIZE_T=4)
 elseif(${ANDROID_ABI} STREQUAL "x86_64")

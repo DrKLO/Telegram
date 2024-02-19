@@ -306,7 +306,7 @@ check_c_source_compiles("
 if(BITS EQUAL 32)
   unset(CMAKE_REQUIRED_FLAGS)
 endif()
-configure_file(arm/neon-compat.h.in arm/neon-compat.h @ONLY)
+configure_file(arm/neon-compat.h arm/neon-compat.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/arm)
 
 # GCC 11 and earlier and some older versions of Clang do not have a full or

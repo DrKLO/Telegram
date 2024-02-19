@@ -73,16 +73,10 @@ jsimd_can_rgb_ycc(void)
 {
   init_simd();
 
-  /* The code is optimised for these values only */
-  if (BITS_IN_JSAMPLE != 8)
-    return 0;
-  if (sizeof(JDIMENSION) != 4)
-    return 0;
-  if ((RGB_PIXELSIZE != 3) && (RGB_PIXELSIZE != 4))
-    return 0;
+
 
   if ((simd_support & JSIMD_AVX2) &&
-      IS_ALIGNED_AVX(jconst_rgb_ycc_convert_avx2))
+  IS_ALIGNED_AVX(jconst_rgb_ycc_convert_avx2))
     return 1;
   if ((simd_support & JSIMD_SSE2) &&
       IS_ALIGNED_SSE(jconst_rgb_ycc_convert_sse2))
