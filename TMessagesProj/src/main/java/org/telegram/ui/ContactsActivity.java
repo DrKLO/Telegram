@@ -972,16 +972,32 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     private void performSelectedContactsDelete() {
-        ArrayList<TLRPC.User> contacts = new ArrayList<>(selectedContacts.size());
-        for (int i = 0; i < selectedContacts.size(); i++) {
-            long key = selectedContacts.keyAt(i);
-            TLRPC.User contact = selectedContacts.get(key);
-            contacts.add(contact);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), getResourceProvider());
+        if (selectedContacts.size() == 1) {
+            builder.setTitle(LocaleController.getString("DeleteContactTitle", R.string.DeleteContactTitle));
+            builder.setMessage(LocaleController.getString("DeleteContactSubtitle", R.string.DeleteContactSubtitle));
+        } else {
+            builder.setTitle(LocaleController.formatPluralString("DeleteContactsTitle", selectedContacts.size()));
+            builder.setMessage(LocaleController.getString("DeleteContactsSubtitle", R.string.DeleteContactsSubtitle));
         }
+        builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
+            ArrayList<TLRPC.User> contacts = new ArrayList<>(selectedContacts.size());
+            for (int i = 0; i < selectedContacts.size(); i++) {
+                long key = selectedContacts.keyAt(i);
+                TLRPC.User contact = selectedContacts.get(key);
+                contacts.add(contact);
+            }
 
-        getContactsController().deleteContactsUndoable(getContext(), this, contacts);
+            getContactsController().deleteContactsUndoable(getContext(), ContactsActivity.this, contacts);
 
-        hideActionMode();
+            hideActionMode();
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
+            dialog.dismiss();
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        dialog.redPositive();
     }
 
     private void didSelectResult(final TLRPC.User user, boolean useAlert, String param) {
