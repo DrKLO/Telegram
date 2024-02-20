@@ -26,7 +26,10 @@ import java.util.ArrayList;
 
 public class EmojiThemes {
 
+    public static final String REMOVED_EMOJI = "❌";
+
     public boolean showAsDefaultStub;
+    public boolean showAsRemovedStub;
     public String emoji;
     public TLRPC.WallPaper wallpaper;
     int currentIndex = 0;
@@ -65,6 +68,10 @@ public class EmojiThemes {
         }
     }
 
+    public boolean isAnyStub() {
+        return showAsDefaultStub || showAsRemovedStub;
+    }
+
     public static EmojiThemes createPreviewFullTheme(int currentAccount, TLRPC.TL_theme tl_theme) {
         EmojiThemes chatTheme = new EmojiThemes(currentAccount);
         chatTheme.emoji = tl_theme.emoticon;
@@ -82,8 +89,25 @@ public class EmojiThemes {
     public static EmojiThemes createChatThemesDefault(int currentAccount) {
 
         EmojiThemes themeItem = new EmojiThemes(currentAccount);
-        themeItem.emoji = "❌";
+        themeItem.emoji = REMOVED_EMOJI;
         themeItem.showAsDefaultStub = true;
+
+        ThemeItem lightTheme = new ThemeItem();
+        lightTheme.themeInfo = getDefaultThemeInfo(true);
+        themeItem.items.add(lightTheme);
+
+        ThemeItem darkTheme = new ThemeItem();
+        darkTheme.themeInfo = getDefaultThemeInfo(false);
+        themeItem.items.add(darkTheme);
+
+        return themeItem;
+    }
+
+    public static EmojiThemes createChatThemesRemoved(int currentAccount) {
+
+        EmojiThemes themeItem = new EmojiThemes(currentAccount);
+        themeItem.emoji = REMOVED_EMOJI;
+        themeItem.showAsRemovedStub = true;
 
         ThemeItem lightTheme = new ThemeItem();
         lightTheme.themeInfo = getDefaultThemeInfo(true);

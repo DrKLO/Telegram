@@ -776,7 +776,7 @@ public class FileLoader extends BaseController {
             if (priorityChanged) {
                 operation.getQueue().checkLoadingOperations();
             }
-            FileLog.d("load operation update position fileName=" + finalFileName + " position in queue " + operation.getPositionInQueue() + " preloadFinish " + operation.isPreloadFinished());
+            FileLog.d("load operation update position fileName=" + finalFileName + " position in queue " + operation.getPositionInQueue() + " preloadFinish " + operation.isPreloadFinished() + " priority=" + operation.getPriority());
             return operation;
         }
 
@@ -981,10 +981,10 @@ public class FileLoader extends BaseController {
         }
 
         loaderQueue.add(operation);
-        loaderQueue.checkLoadingOperations(operation.isStory && priority >= PRIORITY_HIGH);
+        loaderQueue.checkLoadingOperations(operation.isStory && priority >= FileLoaderPriorityQueue.PRIORITY_VALUE_MAX);
 
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("create load operation fileName=" + finalFileName + " documentName=" + getDocumentFileName(document) + " size=" + AndroidUtilities.formatFileSize(operation.totalBytesCount) + " position in queue " + operation.getPositionInQueue() + " account=" + currentAccount + " cacheType=" + cacheType);
+            FileLog.d("create load operation fileName=" + finalFileName + " documentName=" + getDocumentFileName(document) + " size=" + AndroidUtilities.formatFileSize(operation.totalBytesCount) + " position in queue " + operation.getPositionInQueue() + " account=" + currentAccount + " cacheType=" + cacheType + " priority=" + operation.getPriority());
         }
         return operation;
     }
@@ -1114,7 +1114,7 @@ public class FileLoader extends BaseController {
         fileLoaderQueue.postRunnable(() -> {
             if (queue.remove(operation)) {
                 loadOperationPaths.remove(operation.getFileName());
-                queue.checkLoadingOperations();
+                queue.checkLoadingOperations(operation.isStory);
             }
         }, delay);
     }

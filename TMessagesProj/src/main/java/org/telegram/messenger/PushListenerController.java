@@ -150,6 +150,10 @@ public class PushListenerController {
                     jsonString = new String(strBytes);
                     JSONObject json = new JSONObject(jsonString);
 
+                    if (ApplicationLoader.applicationLoaderInstance != null && ApplicationLoader.applicationLoaderInstance.consumePush(currentAccount, json)) {
+                        return;
+                    }
+
                     if (json.has("loc_key")) {
                         loc_key = json.getString("loc_key");
                     } else {

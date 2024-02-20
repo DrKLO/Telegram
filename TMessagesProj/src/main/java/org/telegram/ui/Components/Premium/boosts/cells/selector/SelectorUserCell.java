@@ -21,6 +21,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
+import org.telegram.ui.Components.StatusBadgeComponent;
 
 import java.util.Date;
 
@@ -32,9 +33,11 @@ public class SelectorUserCell extends BaseCell {
     private TLRPC.User user;
     private TLRPC.Chat chat;
     private TL_stories.TL_myBoost boost;
+    StatusBadgeComponent statusBadgeComponent;
 
     public SelectorUserCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean isGreen) {
         super(context, resourcesProvider);
+        statusBadgeComponent = new StatusBadgeComponent(this);
         titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         radioButton.setVisibility(View.GONE);
         checkBox = new CheckBox2(context, 21, resourcesProvider);
@@ -48,6 +51,18 @@ public class SelectorUserCell extends BaseCell {
         addView(checkBox);
         checkBox.setChecked(false, false);
         checkBox.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 13, 0, 14, 0));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        statusBadgeComponent.onAttachedToWindow();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        statusBadgeComponent.onDetachedFromWindow();
     }
 
     public TLRPC.User getUser() {
@@ -91,6 +106,7 @@ public class SelectorUserCell extends BaseCell {
         setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
         subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
         checkBox.setAlpha(1f);
+        titleTextView.setRightDrawable(statusBadgeComponent.updateDrawable(user, Theme.getColor(Theme.key_chats_verifiedBackground), false));
     }
 
     public void setChat(TLRPC.Chat chat, int participants_count) {
@@ -106,10 +122,11 @@ public class SelectorUserCell extends BaseCell {
         if (participants_count <= 0) {
             participants_count = chat.participants_count;
         }
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
         if (participants_count >= 1) {
-            subtitle = LocaleController.formatPluralString("Subscribers", participants_count);
+            subtitle = LocaleController.formatPluralString(isChannel? "Subscribers" : "Members", participants_count);
         } else {
-            subtitle = LocaleController.getString(R.string.DiscussChannel);
+            subtitle = LocaleController.getString(isChannel ? R.string.DiscussChannel : R.string.AccDescrGroup);
         }
         setSubtitle(subtitle);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));

@@ -1095,7 +1095,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         return rightDrawableY;
     }
 
-    private int getMaxTextWidth() {
+    public int getMaxTextWidth() {
         return getMeasuredWidth() - (rightDrawableOutside && rightDrawable != null ? rightDrawable.getIntrinsicWidth() + drawablePadding : 0) - (rightDrawableOutside && rightDrawable2 != null ? rightDrawable2.getIntrinsicWidth() + drawablePadding : 0);
     }
 

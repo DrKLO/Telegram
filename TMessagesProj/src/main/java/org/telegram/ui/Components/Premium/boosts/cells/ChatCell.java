@@ -8,8 +8,10 @@ import android.view.Gravity;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -53,7 +55,11 @@ public class ChatCell extends BaseCell {
         return false;
     }
 
-    public void setChat(TLRPC.Chat chat, int boosts, boolean removable) {
+    public TLRPC.Chat getChat() {
+        return chat;
+    }
+
+    public void setChat(TLRPC.Chat chat, int boosts, boolean removable, int participants_count) {
         this.removable = removable;
         this.chat = chat;
         avatarDrawable.setInfo(chat);
@@ -64,10 +70,17 @@ public class ChatCell extends BaseCell {
         text = Emoji.replaceEmoji(text, titleTextView.getPaint().getFontMetricsInt(), false);
         titleTextView.setText(text);
 
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
         if (removable) {
-            setSubtitle(null);
+            String subtitle;
+            if (participants_count >= 1) {
+                subtitle = LocaleController.formatPluralString(isChannel ? "Subscribers" : "Members", participants_count);
+            } else {
+                subtitle = LocaleController.getString(isChannel ? R.string.DiscussChannel : R.string.AccDescrGroup);
+            }
+            setSubtitle(subtitle);
         } else {
-            setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", boosts));
+            setSubtitle(LocaleController.formatPluralString(isChannel ? "BoostingChannelWillReceiveBoost" : "BoostingGroupWillReceiveBoost", boosts));
         }
 
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
@@ -88,11 +101,18 @@ public class ChatCell extends BaseCell {
         this.chatDeleteListener = chatDeleteListener;
     }
 
-    public void setCounter(int count) {
+    public void setCounter(int count, int participants_count) {
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
         if (removable) {
-            setSubtitle(null);
+            String subtitle;
+            if (participants_count >= 1) {
+                subtitle = LocaleController.formatPluralString(isChannel ? "Subscribers" : "Members", participants_count);
+            } else {
+                subtitle = LocaleController.getString(isChannel ? R.string.DiscussChannel : R.string.AccDescrGroup);
+            }
+            setSubtitle(subtitle);
         } else {
-            setSubtitle(LocaleController.formatPluralString("BoostingChannelWillReceiveBoost", count));
+            setSubtitle(LocaleController.formatPluralString(isChannel ? "BoostingChannelWillReceiveBoost" : "BoostingGroupWillReceiveBoost", count));
         }
     }
 }

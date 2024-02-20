@@ -3807,7 +3807,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         boolean allowPlayer = !PhotoViewer.getInstance().isVisibleOrAnimating();
         if (!allowPlayer || (currentPlayer != null && currentPlayer != bestView && videoPlayer != null)) {
             if (videoPlayer != null) {
-                currentPlayer.playFrom = videoPlayer.getCurrentPosition();
+                videoStates.put(currentPlayer.currentBlock.video_id, currentPlayer.setState(BlockVideoCellState.fromPlayer(videoPlayer, currentPlayer)));
+                if (currentPlayer.videoState != null) {
+                    if (currentPlayer.videoState.lastFrameBitmap != null) {
+                        currentPlayer.imageView.setImageBitmap(currentPlayer.videoState.lastFrameBitmap);
+                    }
+                    currentPlayer.updateButtonState(false);
+                }
                 videoPlayer.release(null);
             }
             videoPlayer = null;
@@ -4724,6 +4730,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             containerView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
         animatorSet.start();
+        
+        for (int i = 0; i < videoStates.size(); ++i) {
+            BlockVideoCellState state = videoStates.valueAt(i);
+            if (state.lastFrameBitmap != null) {
+                state.lastFrameBitmap.recycle();
+                state.lastFrameBitmap = null;
+            }
+        }
+        videoStates.clear();
     }
 
     private void onClosed() {
@@ -4962,6 +4977,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return null;
         }
     }
+
+    private LongSparseArray<BlockVideoCellState> videoStates = new LongSparseArray<>();
 
     private class WebpageAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -5729,7 +5746,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
                 case 5: {
                     BlockVideoCell cell = (BlockVideoCell) holder.itemView;
-                    cell.setBlock((TLRPC.TL_pageBlockVideo) block, position == 0, position == total - 1);
+                    TLRPC.TL_pageBlockVideo blockVideo = (TLRPC.TL_pageBlockVideo) block;
+                    cell.setBlock(blockVideo, videoStates.get(blockVideo.video_id), position == 0, position == total - 1);
                     cell.setParentBlock(channelBlock, originalBlock);
                     break;
                 }
@@ -6044,9 +6062,58 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
+    private static class BlockVideoCellState {
+        long playFrom;
+        Bitmap lastFrameBitmap;
+
+        public static BlockVideoCellState fromPlayer(VideoPlayerHolderBase player, BlockVideoCell videoCell) {
+            BlockVideoCellState state = new BlockVideoCellState();
+            state.playFrom = player.getCurrentPosition();
+            if (player.firstFrameRendered && videoCell.textureView != null && videoCell.textureView.getSurfaceTexture() != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    Surface surface = new Surface(videoCell.textureView.getSurfaceTexture());
+                    Bitmap bitmap = Bitmap.createBitmap(videoCell.textureView.getMeasuredWidth(), videoCell.textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                    AndroidUtilities.getBitmapFromSurface(surface, bitmap);
+                    surface.release();
+                    state.lastFrameBitmap = bitmap;
+                } else {
+                    state.lastFrameBitmap = videoCell.textureView.getBitmap();
+                }
+            }
+            return state;
+        }
+
+        public static BlockVideoCellState fromPlayer(VideoPlayer player, BlockVideoCell videoCell, TextureView textureView) {
+            BlockVideoCellState state = new BlockVideoCellState();
+            state.playFrom = player.getCurrentPosition();
+            if (textureView != null && textureView.getSurfaceTexture() != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    Surface surface = new Surface(textureView.getSurfaceTexture());
+                    Bitmap bitmap = Bitmap.createBitmap(textureView.getMeasuredWidth(), textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                    AndroidUtilities.getBitmapFromSurface(surface, bitmap);
+                    surface.release();
+                    state.lastFrameBitmap = bitmap;
+                } else {
+                    state.lastFrameBitmap = textureView.getBitmap();
+                }
+            }
+            return state;
+        }
+
+        public static BlockVideoCellState fromPlayer(VideoPlayer player, BlockVideoCell videoCell, SurfaceView surfaceView) {
+            BlockVideoCellState state = new BlockVideoCellState();
+            state.playFrom = player.getCurrentPosition();
+            if (surfaceView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Bitmap bitmap = Bitmap.createBitmap(surfaceView.getMeasuredWidth(), surfaceView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                AndroidUtilities.getBitmapFromSurface(surfaceView, bitmap);
+                state.lastFrameBitmap = bitmap;
+            }
+            return state;
+        }
+    }
+
     private class BlockVideoCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, TextSelectionHelper.ArticleSelectableView {
 
-        public long playFrom;
         private DrawingText captionLayout;
         private DrawingText creditLayout;
         private ImageReceiver imageView;
@@ -6070,6 +6137,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private int TAG;
 
         private TLRPC.TL_pageBlockVideo currentBlock;
+        private BlockVideoCellState videoState;
         private TLRPC.PageBlock parentBlock;
         private TLRPC.Document currentDocument;
         private boolean isGif;
@@ -6118,8 +6186,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return super.drawChild(canvas, child, drawingTime);
         }
 
-        public void setBlock(TLRPC.TL_pageBlockVideo block, boolean first, boolean last) {
+        public void setBlock(TLRPC.TL_pageBlockVideo block, BlockVideoCellState state, boolean first, boolean last) {
+            if (currentBlock != null && videoPlayer != null && currentPlayer == this) {
+                videoStates.put(currentBlock.video_id, videoState = BlockVideoCellState.fromPlayer(videoPlayer, this));
+            }
             currentBlock = block;
+            videoState = state;
             parentBlock = null;
             currentDocument = parentAdapter.getDocumentWithId(currentBlock.video_id);
             isGif = MessageObject.isVideoDocument(currentDocument) || MessageObject.isGifDocument(currentDocument)/* && currentBlock.autoplay*/;
@@ -6255,15 +6327,20 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     int photoY = (isFirst || currentType == 1 || currentType == 2 || currentBlock.level > 0) ? 0 : AndroidUtilities.dp(8);
                     imageView.setImageCoords(photoX, photoY, photoWidth, photoHeight);
                     if (isGif) {
-                        autoDownload = DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, currentDocument.size);
-                        File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument);
-                        File path2 = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument, true);
-                        if (autoDownload || path.exists() || path2.exists()) {
+                        if (videoState != null && videoState.lastFrameBitmap != null) {
                             imageView.setStrippedLocation(null);
-                            imageView.setImage(null, null, ImageLocation.getForDocument(currentDocument), "200_200_pframe", ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
+                            imageView.setImageBitmap(videoState.lastFrameBitmap);
                         } else {
-                            imageView.setStrippedLocation(ImageLocation.getForDocument(currentDocument));
-                            imageView.setImage(null, null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
+                            autoDownload = DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, currentDocument.size);
+                            File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument);
+                            File path2 = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument, true);
+                            if (autoDownload || path.exists() || path2.exists()) {
+                                imageView.setStrippedLocation(null);
+                                imageView.setImage(null, null, ImageLocation.getForDocument(currentDocument), "200_200_pframe", ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
+                            } else {
+                                imageView.setStrippedLocation(ImageLocation.getForDocument(currentDocument));
+                                imageView.setImage(null, null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
+                            }
                         }
                     } else {
                         imageView.setStrippedLocation(null);
@@ -6382,7 +6459,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
                 float setProgress = 0;
                 boolean progressVisible = false;
-                if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                if (videoState != null && videoState.lastFrameBitmap != null) {
+                    buttonState = -1;
+                } else if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                     if (!cancelLoading && autoDownload && isGif) {
                         progressVisible = true;
                         buttonState = 1;
@@ -6437,11 +6516,26 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         protected void onDetachedFromWindow() {
+            if (currentBlock != null && videoPlayer != null && currentPlayer == this) {
+                videoStates.put(currentBlock.video_id, setState(BlockVideoCellState.fromPlayer(videoPlayer, this)));
+            }
             super.onDetachedFromWindow();
             imageView.onDetachedFromWindow();
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
-            playFrom = 0;
             firstFrameRendered = false;
+        }
+
+        public BlockVideoCellState setState(BlockVideoCellState newState) {
+            if (videoState != null && newState != null && newState.lastFrameBitmap != null && videoState.lastFrameBitmap != null && newState.lastFrameBitmap != videoState.lastFrameBitmap) {
+                videoState.lastFrameBitmap.recycle();
+                videoState.lastFrameBitmap = null;
+            }
+            if (videoState != null && newState != null && newState.lastFrameBitmap == null && videoState.lastFrameBitmap != null) {
+                newState.playFrom = videoState.playFrom;
+                newState.lastFrameBitmap = videoState.lastFrameBitmap;
+            }
+            videoState = newState;
+            return videoState;
         }
 
         @Override
@@ -6470,6 +6564,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     if (!firstFrameRendered) {
                         firstFrameRendered = true;
                         textureView.setAlpha(1f);
+
+                        if (currentBlock != null) {
+                            videoStates.put(currentBlock.video_id, setState(BlockVideoCellState.fromPlayer(videoPlayer, BlockVideoCell.this)));
+                        }
                     }
                 }
             }.with(textureView);
@@ -6486,7 +6584,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
 
-            videoPlayer.seekTo(playFrom);
+            videoPlayer.seekTo(videoState == null ? 0 : videoState.playFrom);
             videoPlayer.preparePlayer(uri, true, 1f);
             videoPlayer.play();
 
@@ -8398,7 +8496,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         default: {
                             BlockVideoCell cell = (BlockVideoCell) holder.itemView;
                             cell.groupPosition = group.positions.get(pageBlock);
-                            cell.setBlock((TLRPC.TL_pageBlockVideo) pageBlock, true, true);
+                            TLRPC.TL_pageBlockVideo blockVideo = (TLRPC.TL_pageBlockVideo) pageBlock;
+                            cell.setBlock(blockVideo, videoStates.get(blockVideo.video_id), true, true);
                             break;
                         }
                     }
@@ -8637,7 +8736,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         ((BlockPhotoCell) view).setBlock((TLRPC.TL_pageBlockPhoto) block, true, true);
                     } else {
                         view = new BlockVideoCell(getContext(), parentAdapter, 1);
-                        ((BlockVideoCell) view).setBlock((TLRPC.TL_pageBlockVideo) block, true, true);
+                        TLRPC.TL_pageBlockVideo videoBlock = (TLRPC.TL_pageBlockVideo) block;
+                        ((BlockVideoCell) view).setBlock(videoBlock, videoStates.get(videoBlock.video_id), true, true);
                     }
                     container.addView(view);
                     ObjectContainer objectContainer = new ObjectContainer();
@@ -11680,28 +11780,20 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             SurfaceView surfaceView = PhotoViewer.getInstance().getVideoSurfaceView();
             BlockVideoCell videoCell = getViewFromListView(listView[0], pageBlock);
             if (videoCell != null && player != null && textureView != null) {
-                videoCell.playFrom = player.getCurrentPosition();
+                videoStates.put(videoCell.currentBlock.video_id, videoCell.setState(BlockVideoCellState.fromPlayer(player, videoCell, textureView)));
                 videoCell.firstFrameRendered = false;
                 videoCell.textureView.setAlpha(0);
-                if (textureView.getSurfaceTexture() != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        Surface surface = new Surface(textureView.getSurfaceTexture());
-                        Bitmap bitmap = Bitmap.createBitmap(textureView.getMeasuredWidth(), textureView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
-                        AndroidUtilities.getBitmapFromSurface(surface, bitmap);
-                        surface.release();
-                        videoCell.imageView.setImageBitmap(bitmap);
-                    } else {
-                        videoCell.imageView.setImageBitmap(textureView.getBitmap());
-                    }
+                if (videoCell.videoState != null && videoCell.videoState.lastFrameBitmap != null) {
+                    videoCell.imageView.setImageBitmap(videoCell.videoState.lastFrameBitmap);
                 }
             }
             if (videoCell != null && player != null && surfaceView != null) {
-                videoCell.playFrom = player.getCurrentPosition();
+                videoStates.put(videoCell.currentBlock.video_id, videoCell.setState(BlockVideoCellState.fromPlayer(player, videoCell, surfaceView)));
                 videoCell.firstFrameRendered = false;
                 videoCell.textureView.setAlpha(0);
-                Bitmap bitmap = Bitmap.createBitmap(surfaceView.getMeasuredWidth(), surfaceView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
-                AndroidUtilities.getBitmapFromSurface(surfaceView, bitmap);
-                videoCell.imageView.setImageBitmap(bitmap);
+                if (videoCell.videoState != null && videoCell.videoState.lastFrameBitmap != null) {
+                    videoCell.imageView.setImageBitmap(videoCell.videoState.lastFrameBitmap);
+                }
             }
             checkVideoPlayer();
         }

@@ -29,6 +29,7 @@ import android.widget.Toast;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -45,6 +46,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BoostsActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
@@ -104,19 +106,13 @@ public class BoostDialogs {
                 isGiveaway ? getString("BoostingGiveawayCreated", R.string.BoostingGiveawayCreated)
                         : getString("BoostingAwardsCreated", R.string.BoostingAwardsCreated),
                 AndroidUtilities.replaceSingleTag(
-                        isGiveaway ? getString("BoostingCheckStatistic", R.string.BoostingCheckStatistic) :
-                                getString("BoostingCheckGiftsStatistic", R.string.BoostingCheckGiftsStatistic),
+                        isGiveaway ? getString(ChatObject.isChannelAndNotMegaGroup(chat) ? R.string.BoostingCheckStatistic : R.string.BoostingCheckStatisticGroup) :
+                                getString(ChatObject.isChannelAndNotMegaGroup(chat) ? R.string.BoostingCheckGiftsStatistic : R.string.BoostingCheckGiftsStatisticGroup),
                         Theme.key_undo_cancelColor, 0, () -> {
                             if (chat != null) {
-                                Bundle args = new Bundle();
-                                args.putLong("chat_id", chat.id);
-                                args.putBoolean("is_megagroup", chat.megagroup);
-                                args.putBoolean("start_from_boosts", true);
-                                args.putBoolean("only_boosts", true);
-                                StatisticActivity fragment = new StatisticActivity(args);
                                 BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
                                 params.transitionFromLeft = true;
-                                LaunchActivity.getLastFragment().showAsSheet(fragment, params);
+                                LaunchActivity.getLastFragment().showAsSheet(new BoostsActivity(-chat.id), params);
                             }
                         }, resourcesProvider)
         ).setDuration(Bulletin.DURATION_PROLONG).show(), 300);
@@ -506,7 +502,7 @@ public class BoostDialogs {
         return false;
     }
 
-    public static void showAbout(String from, long msgDate, TLRPC.TL_payments_giveawayInfo giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
+    public static void showAbout(boolean isChannel, String from, long msgDate, TLRPC.TL_payments_giveawayInfo giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
         int quantity = giveaway.quantity;
         String months = formatPluralString("BoldMonths", giveaway.months);
         String endDate = LocaleController.getInstance().formatterGiveawayMonthDay.format(new Date(giveaway.until_date * 1000L));
@@ -518,7 +514,7 @@ public class BoostDialogs {
         builder.setTitle(getString("BoostingGiveAwayAbout", R.string.BoostingGiveAwayAbout));
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
 
-        stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksText", quantity, from, quantity, months)));
+        stringBuilder.append(replaceTags(formatPluralString(isChannel ? "BoostingGiveawayHowItWorksText" : "BoostingGiveawayHowItWorksTextGroup", quantity, from, quantity, months)));
         stringBuilder.append("\n\n");
 
         if (giveaway.prize_description != null && !giveaway.prize_description.isEmpty()) {
@@ -555,7 +551,7 @@ public class BoostDialogs {
         } else if (giveawayInfo.admin_disallowed_chat_id != 0) {
             TLRPC.Chat badChat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(giveawayInfo.admin_disallowed_chat_id);
             String title = badChat != null ? badChat.title : "";
-            stringBuilder.append(replaceTags(formatString("BoostingGiveawayNotEligibleAdmin", R.string.BoostingGiveawayNotEligibleAdmin, title)));
+            stringBuilder.append(replaceTags(formatString(isChannel ? R.string.BoostingGiveawayNotEligibleAdmin : R.string.BoostingGiveawayNotEligibleAdminGroup, title)));
         } else if (giveawayInfo.joined_too_early_date != 0) {
             String date = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveawayInfo.joined_too_early_date * 1000L));
             stringBuilder.append(replaceTags(formatString("BoostingGiveawayNotEligible", R.string.BoostingGiveawayNotEligible, date)));
@@ -574,7 +570,7 @@ public class BoostDialogs {
         applyDialogStyle(builder.show(), false);
     }
 
-    public static void showAboutEnd(String from, long msgDate, TLRPC.TL_payments_giveawayInfoResults giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
+    public static void showAboutEnd(boolean isChannel, String from, long msgDate, TLRPC.TL_payments_giveawayInfoResults giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
         if (giveaway.until_date == 0) {
             giveaway.until_date = giveawayInfo.finish_date;
         }
@@ -589,7 +585,7 @@ public class BoostDialogs {
         builder.setTitle(getString("BoostingGiveawayEnd", R.string.BoostingGiveawayEnd));
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
 
-        stringBuilder.append(replaceTags(formatPluralString("BoostingGiveawayHowItWorksTextEnd", quantity, from, quantity, months)));
+        stringBuilder.append(replaceTags(formatPluralString(isChannel ? "BoostingGiveawayHowItWorksTextEnd" : "BoostingGiveawayHowItWorksTextEndGroup", quantity, from, quantity, months)));
         stringBuilder.append("\n\n");
 
         if (giveaway.prize_description != null && !giveaway.prize_description.isEmpty()) {
@@ -676,11 +672,12 @@ public class BoostDialogs {
         }
     }
 
-    public static void showPrivateChannelAlert(Context context, Theme.ResourcesProvider resourcesProvider, Runnable onCanceled, Runnable onAccepted) {
+    public static void showPrivateChannelAlert(TLRPC.Chat chat, Context context, Theme.ResourcesProvider resourcesProvider, Runnable onCanceled, Runnable onAccepted) {
         final AtomicBoolean isAddButtonClicked = new AtomicBoolean(false);
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
-        builder.setTitle(getString("BoostingGiveawayPrivateChannel", R.string.BoostingGiveawayPrivateChannel));
-        builder.setMessage(getString("BoostingGiveawayPrivateChannelWarning", R.string.BoostingGiveawayPrivateChannelWarning));
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
+        builder.setTitle(getString(isChannel ? R.string.BoostingGiveawayPrivateChannel : R.string.BoostingGiveawayPrivateGroup));
+        builder.setMessage(getString(isChannel ? R.string.BoostingGiveawayPrivateChannelWarning : R.string.BoostingGiveawayPrivateGroupWarning));
         builder.setPositiveButton(getString("Add", R.string.Add), (dialogInterface, i) -> {
             isAddButtonClicked.set(true);
             onAccepted.run();
@@ -715,6 +712,7 @@ public class BoostDialogs {
         }
 
         final String fromName = getGiveawayCreatorName(messageObject);
+        final boolean isChannel = isChannel(messageObject);
         final long msgDate = messageObject.messageOwner.date * 1000L;
         BoostRepository.getGiveawayInfo(messageObject, result -> {
             if (isCanceled.get()) {
@@ -723,10 +721,10 @@ public class BoostDialogs {
             progress.end();
             if (result instanceof TLRPC.TL_payments_giveawayInfo) {
                 TLRPC.TL_payments_giveawayInfo giveawayInfo = (TLRPC.TL_payments_giveawayInfo) result;
-                showAbout(fromName, msgDate, giveawayInfo, giveaway, context, resourcesProvider);
+                showAbout(isChannel, fromName, msgDate, giveawayInfo, giveaway, context, resourcesProvider);
             } else if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
                 TLRPC.TL_payments_giveawayInfoResults giveawayInfoResults = (TLRPC.TL_payments_giveawayInfoResults) result;
-                showAboutEnd(fromName, msgDate, giveawayInfoResults, giveaway, context, resourcesProvider);
+                showAboutEnd(isChannel, fromName, msgDate, giveawayInfoResults, giveaway, context, resourcesProvider);
             }
         }, error -> {
             if (isCanceled.get()) {
@@ -736,6 +734,15 @@ public class BoostDialogs {
         });
     }
 
+    private static boolean isChannel(MessageObject messageObject) {
+        if (messageObject == null) {
+            return false;
+        }
+        final long chatId = messageObject.getFromChatId();
+        TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-chatId);
+        return chat != null && ChatObject.isChannelAndNotMegaGroup(chat);
+    }
+
     private static String getGiveawayCreatorName(MessageObject messageObject) {
         if (messageObject == null) {
             return "";
@@ -743,7 +750,7 @@ public class BoostDialogs {
         String forwardedName = messageObject.getForwardedName();
         final String name;
         if (forwardedName == null) {
-            final long chatId = messageObject.getFromChatId();
+            final long chatId = MessageObject.getPeerId(messageObject.messageOwner.peer_id);
             TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-chatId);
             name = chat != null ? chat.title : "";
         } else {
@@ -775,6 +782,7 @@ public class BoostDialogs {
                 return;
             }
             final String fromName = getGiveawayCreatorName(messageObject);
+            final boolean isChannel = isChannel(messageObject);
             final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), fragment.getResourceProvider());
 
             if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
@@ -799,10 +807,10 @@ public class BoostDialogs {
                     .setUndoAction(() -> {
                         if (result instanceof TLRPC.TL_payments_giveawayInfo) {
                             TLRPC.TL_payments_giveawayInfo giveawayInfo = (TLRPC.TL_payments_giveawayInfo) result;
-                            showAbout(fromName, msgDate, giveawayInfo, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
+                            showAbout(isChannel, fromName, msgDate, giveawayInfo, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
                         } else if (result instanceof TLRPC.TL_payments_giveawayInfoResults) {
                             TLRPC.TL_payments_giveawayInfoResults giveawayInfoResults = (TLRPC.TL_payments_giveawayInfoResults) result;
-                            showAboutEnd(fromName, msgDate, giveawayInfoResults, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
+                            showAboutEnd(isChannel, fromName, msgDate, giveawayInfoResults, giveaway, fragment.getParentActivity(), fragment.getResourceProvider());
                         }
                     }));
             Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();

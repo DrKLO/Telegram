@@ -252,6 +252,8 @@ public class FileLoadOperation {
     private int priority;
     private FilePathDatabase.FileMeta fileMetadata;
 
+    private volatile boolean writingToFilePartsStream, closeFilePartsStreamOnWriteEnd;
+
     private boolean ungzip;
 
     private int currentType;
@@ -285,6 +287,7 @@ public class FileLoadOperation {
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, long size) {
         updateParams();
         parentObject = parent;
+        isStory = parentObject instanceof TL_stories.TL_storyItem;
         fileMetadata = FileLoader.getFileMetadataFromParent(currentAccount, parentObject);
         isStream = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
         if (imageLocation.isEncrypted()) {
@@ -392,6 +395,7 @@ public class FileLoadOperation {
         updateParams();
         try {
             parentObject = parent;
+            isStory = parentObject instanceof TL_stories.TL_storyItem;
             fileMetadata = FileLoader.getFileMetadataFromParent(currentAccount, parentObject);
             if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
                 location = new TLRPC.TL_inputEncryptedFileLocation();
@@ -583,6 +587,9 @@ public class FileLoadOperation {
                 if (fileWriteRunnable != null) {
                     filesQueue.cancelRunnable(fileWriteRunnable);
                 }
+                synchronized (FileLoadOperation.this) {
+                    writingToFilePartsStream = true;
+                }
                 filesQueue.postRunnable(fileWriteRunnable = () -> {
                     long time = System.currentTimeMillis();
                     try {
@@ -608,6 +615,16 @@ public class FileLoadOperation {
                             }
                             filePartsStream.seek(0);
                             filePartsStream.write(filesQueueByteBuffer.buf, 0, bufferSize);
+                            writingToFilePartsStream = false;
+                            if (closeFilePartsStreamOnWriteEnd) {
+                                try {
+                                    filePartsStream.getChannel().close();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                                filePartsStream.close();
+                                filePartsStream = null;
+                            }
                         }
                     } catch (Exception e) {
                         FileLog.e(e, false);
@@ -780,7 +797,6 @@ public class FileLoadOperation {
     public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean streamPriority) {
         startTime = System.currentTimeMillis();
         updateParams();
-        isStory = parentObject instanceof TL_stories.TL_storyItem;
         if (currentDownloadChunkSize == 0) {
             if (forceSmallChunk) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -1350,7 +1366,7 @@ public class FileLoadOperation {
             }
             for (int i = 0; i < 2; i++) {
                 int connectionType = i == 0 ? ConnectionsManager.ConnectionTypeDownload : ConnectionsManager.ConnectionTypeDownload2;
-                if (waitingDownloadSize[i] > 512 * 1024 * 2)  {
+                if (waitingDownloadSize[i] > 1024 * 1024)  {
                     int datacenterId = isCdn ? cdnDatacenterId : this.datacenterId;
                     ConnectionsManager.getInstance(currentAccount).discardConnection(datacenterId, connectionType);
                 }
@@ -1402,13 +1418,17 @@ public class FileLoadOperation {
         try {
             if (filePartsStream != null) {
                 synchronized (FileLoadOperation.this) {
-                    try {
-                        filePartsStream.getChannel().close();
-                    } catch (Exception e) {
-                        FileLog.e(e);
+                    if (!writingToFilePartsStream) {
+                        try {
+                            filePartsStream.getChannel().close();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        filePartsStream.close();
+                        filePartsStream = null;
+                    } else {
+                        closeFilePartsStreamOnWriteEnd = true;
                     }
-                    filePartsStream.close();
-                    filePartsStream = null;
                 }
             }
         } catch (Exception e) {
@@ -2104,6 +2124,7 @@ public class FileLoadOperation {
             MessageObject messageObject = (MessageObject) parentObject;
             if (messageObject.getId() < 0 && messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.webpage != null) {
                 parentObject = messageObject.messageOwner.media.webpage;
+                isStory = false;
             }
         }
         if (BuildVars.LOGS_ENABLED) {

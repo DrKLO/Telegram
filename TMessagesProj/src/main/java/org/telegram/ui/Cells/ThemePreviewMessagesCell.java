@@ -47,6 +47,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
 
     public final static int TYPE_REACTIONS_DOUBLE_TAP = 2;
     public final static int TYPE_PEER_COLOR = 3;
+    public final static int TYPE_GROUP_PEER_COLOR = 4;
 
     private final Runnable invalidateRunnable = this::invalidate;
 
@@ -278,6 +279,12 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             message2.eventId = 1;
             message2.resetLayout();
             message2.replyMessageObject = replyMessageObject;
+            if (type == TYPE_GROUP_PEER_COLOR) {
+                TLRPC.User user = new TLRPC.TL_user();
+                user.first_name = LocaleController.getString(R.string.GroupThemePreviewSenderName);
+                message2.customName = user.first_name;
+                message2.customAvatarDrawable = new AvatarDrawable(user, false);
+            }
         }
 
         for (int a = 0; a < cells.length; a++) {
@@ -418,7 +425,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                     return type == progress;
                 }
             });
-            cells[a].isChat = type == TYPE_REACTIONS_DOUBLE_TAP;
+            cells[a].isChat = type == TYPE_REACTIONS_DOUBLE_TAP || type == TYPE_GROUP_PEER_COLOR;
             cells[a].setFullyDraw(true);
             MessageObject messageObject = a == 0 ? message2 : message1;
             if (messageObject == null) {

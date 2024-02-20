@@ -47,6 +47,8 @@
 #include "tuning_parameters.h"
 #ifdef FIXED_POINT
 #include "fixed/structs_FIX.h"
+#include "c_utils.h"
+
 #else
 #include "float/structs_FLP.h"
 #endif

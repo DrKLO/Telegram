@@ -112,6 +112,16 @@ public class DrawerActionCell extends FrameLayout {
         }
     }
 
+    public void setTextAndIcon(int id, CharSequence text, int resId) {
+        currentId = id;
+        try {
+            textView.setText(text);
+            imageView.setImageResource(resId);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
     public void updateTextAndIcon(String text, int resId) {
         try {
             textView.setText(text);

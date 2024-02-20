@@ -278,6 +278,9 @@ public class GiveawayMessageCell {
             maxWidth = parentWidth - AndroidUtilities.dp(80);
         }
 
+        MessagesController controller = MessagesController.getInstance(UserConfig.selectedAccount);
+        TLRPC.Chat fromChat = controller.getChat(-MessageObject.getPeerId(messageObject.isForwarded() ? messageObject.messageOwner.fwd_from.from_id : messageObject.messageOwner.peer_id));
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(fromChat);
         CharSequence giveawayPrizes = replaceTags(getString("BoostingGiveawayPrizes", R.string.BoostingGiveawayPrizes));
         SpannableStringBuilder titleStringBuilder = new SpannableStringBuilder(giveawayPrizes);
         titleStringBuilder.setSpan(new RelativeSizeSpan(1.05f), 0, giveawayPrizes.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -299,9 +302,9 @@ public class GiveawayMessageCell {
         topStringBuilder.append("\n");
 
         if (giveaway.only_new_subscribers) {
-            topStringBuilder.append(formatPluralString("BoostingGiveawayMsgNewSubsPlural", giveaway.channels.size()));
+            topStringBuilder.append(formatPluralString(isChannel ? "BoostingGiveawayMsgNewSubsPlural" : "BoostingGiveawayMsgNewSubsGroupPlural", giveaway.channels.size()));
         } else {
-            topStringBuilder.append(formatPluralString("BoostingGiveawayMsgAllSubsPlural", giveaway.channels.size()));
+            topStringBuilder.append(formatPluralString(isChannel ? "BoostingGiveawayMsgAllSubsPlural" : "BoostingGiveawayMsgAllSubsGroupPlural", giveaway.channels.size()));
         }
 
         CharSequence dateTitle = replaceTags(getString("BoostingWinnersDate", R.string.BoostingWinnersDate));

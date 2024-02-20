@@ -76,7 +76,7 @@ public class ChatMessagesMetadataController {
                 storyItem.dialogId = messageObject.messageOwner.media.user_id;
             } else if (messageObject.messageOwner.reply_to != null) {
                 storyItem = messageObject.messageOwner.replyStory;
-                storyItem.dialogId = messageObject.messageOwner.reply_to.user_id;
+                storyItem.dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.peer);
             } else {
                 continue;
             }

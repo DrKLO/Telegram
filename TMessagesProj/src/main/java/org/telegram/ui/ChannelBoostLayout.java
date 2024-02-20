@@ -152,7 +152,6 @@ public class ChannelBoostLayout extends FrameLayout {
                     break;
                 case HEADER_VIEW_TYPE_TABS:
                     boostsTabs = new ScrollSlidingTextTabStrip(fragment.getContext(), resourcesProvider);
-                    boostsTabs.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                     boostsTabs.setColors(Theme.key_profile_tabSelectedLine, Theme.key_profile_tabSelectedText, Theme.key_profile_tabText, Theme.key_profile_tabSelector);
                     FrameLayout frameLayoutWrapper = new FrameLayout(fragment.getContext()) {
                         private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -214,7 +213,7 @@ public class ChannelBoostLayout extends FrameLayout {
                         }
                     };
                     TextView textView = new TextView(getContext());
-                    textView.setText(LocaleController.getString("NoBoostersHint", R.string.NoBoostersHint));
+                    textView.setText(LocaleController.getString(isChannel() ? R.string.NoBoostersHint : R.string.NoBoostersGroupHint));
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
                     textView.setGravity(Gravity.CENTER);
@@ -256,9 +255,9 @@ public class ChannelBoostLayout extends FrameLayout {
                 overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString("BoostsLevel2", R.string.BoostsLevel2));
                 if (boostsStatus.premium_audience != null && boostsStatus.premium_audience.total != 0) {
                     float percent = (((float) boostsStatus.premium_audience.part / (float) boostsStatus.premium_audience.total) * 100f);
-                    overviewCell.setData(1, "~" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", percent) + "%", LocaleController.getString("PremiumSubscribers", R.string.PremiumSubscribers));
+                    overviewCell.setData(1, "~" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", percent) + "%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 } else {
-                    overviewCell.setData(1, "~0", "0%", LocaleController.getString("PremiumSubscribers", R.string.PremiumSubscribers));
+                    overviewCell.setData(1, "~0", "0%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 }
                 overviewCell.setData(2, String.valueOf(boostsStatus.boosts), null, LocaleController.getString("BoostsExisting", R.string.BoostsExisting));
                 overviewCell.setData(3, String.valueOf(Math.max(0, boostsStatus.next_level_boosts - boostsStatus.boosts)), null, LocaleController.getString("BoostsToLevel", R.string.BoostsToLevel));
@@ -388,6 +387,10 @@ public class ChannelBoostLayout extends FrameLayout {
         progressLayout.animate().alpha(1f).setDuration(200).setStartDelay(500).start();
     }
 
+    private boolean isChannel() {
+        return ChatObject.isChannelAndNotMegaGroup(currentChat);
+    }
+
     public void updateRows(boolean animated) {
         ArrayList<ItemInternal> oldItems = new ArrayList<>(items);
         items.clear();
@@ -420,7 +423,7 @@ public class ChannelBoostLayout extends FrameLayout {
                     } else {
                         items.add(new ItemInternal(EMPTY_VIEW_8DP, false));
                     }
-                    items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString("BoostersInfoDescription", R.string.BoostersInfoDescription)));
+                    items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostersInfoDescription : R.string.BoostersInfoGroupDescription)));
                 }
             } else {
                 if (gifts.isEmpty()) {
@@ -435,16 +438,16 @@ public class ChannelBoostLayout extends FrameLayout {
                     } else {
                         items.add(new ItemInternal(EMPTY_VIEW_8DP, false));
                     }
-                    items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString("BoostersInfoDescription", R.string.BoostersInfoDescription)));
+                    items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostersInfoDescription : R.string.BoostersInfoGroupDescription)));
                 }
             }
 
             items.add(new ItemInternal(HEADER_VIEW_TYPE, LocaleController.getString("LinkForBoosting", R.string.LinkForBoosting)));
             items.add(new ItemInternal(LINK_VIEW_TYPE, boostsStatus.boost_url));
-            if (MessagesController.getInstance(currentAccount).giveawayGiftsPurchaseAvailable && ChatObject.hasAdminRights(currentChat) && ChatObject.canPost(currentChat)) {
-                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString("BoostingShareThisLink", R.string.BoostingShareThisLink)));
+            if (MessagesController.getInstance(currentAccount).giveawayGiftsPurchaseAvailable && ChatObject.hasAdminRights(currentChat)) {
+                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostingShareThisLink : R.string.BoostingShareThisLinkGroup)));
                 items.add(new ItemInternal(SHOW_BOOST_BY_GIFTS, true));
-                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString("BoostingGetMoreBoosts", R.string.BoostingGetMoreBoosts)));
+                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostingGetMoreBoosts : R.string.BoostingGetMoreBoostsGroup)));
             }
         }
         if (animated) {

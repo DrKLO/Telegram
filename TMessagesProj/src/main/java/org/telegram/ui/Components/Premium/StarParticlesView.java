@@ -67,13 +67,17 @@ public class StarParticlesView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int sizeInternal = getMeasuredWidth() << 16 + getMeasuredHeight();
-        drawable.rect.set(0, 0, AndroidUtilities.dp(140), AndroidUtilities.dp(140));
+        drawable.rect.set(0, 0, getStarsRectWidth(), AndroidUtilities.dp(140));
         drawable.rect.offset((getMeasuredWidth() - drawable.rect.width()) / 2, (getMeasuredHeight() - drawable.rect.height()) / 2);
         drawable.rect2.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
         if (size != sizeInternal) {
             size = sizeInternal;
             drawable.resetPositions();
         }
+    }
+
+    protected int getStarsRectWidth() {
+        return AndroidUtilities.dp(140);
     }
 
     @Override
@@ -329,11 +333,7 @@ public class StarParticlesView extends View {
                     paint1.setPathEffect(null);
                     paint1.setAlpha(255);
                 } else {
-                    if (type == 100) {
-                        paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 200));
-                    } else {
-                        paint.setColor(Theme.getColor(colorKey, resourcesProvider));
-                    }
+                    paint.setColor(getPathColor());
                     if (roundEffect) {
                         paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dpf2(size1 / 5f)));
                     }
@@ -345,6 +345,13 @@ public class StarParticlesView extends View {
             }
         }
 
+        protected int getPathColor() {
+            if (type == 100) {
+                return ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 200);
+            } else {
+                return Theme.getColor(colorKey, resourcesProvider);
+            }
+        }
 
         public void resetPositions() {
             long time = System.currentTimeMillis();

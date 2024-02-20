@@ -132,7 +132,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     public TLRPC.InputReplyTo createReplyInput(TL_stories.StoryItem storyItem) {
         TLRPC.TL_inputReplyToStory replyTo = new TLRPC.TL_inputReplyToStory();
         replyTo.story_id = storyItem.id;
-        replyTo.user_id = getMessagesController().getInputUser(storyItem.dialogId);
+        replyTo.peer = getMessagesController().getInputPeer(storyItem.dialogId);
         return replyTo;
     }
 
@@ -3840,7 +3840,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             if (replyToStoryItem != null) {
                 newMsg.reply_to = new TLRPC.TL_messageReplyStoryHeader();
                 newMsg.reply_to.story_id = replyToStoryItem.id;
-                newMsg.reply_to.user_id = replyToStoryItem.dialogId;
+                newMsg.reply_to.peer = getMessagesController().getPeer(replyToStoryItem.dialogId);
                 newMsg.replyStory = replyToStoryItem;
                 newMsg.flags |= TLRPC.MESSAGE_FLAG_REPLY;
             } else if (replyToMsg != null && (replyToTopMsg == null || replyToMsg != replyToTopMsg || replyToTopMsg.getId() != 1)) {

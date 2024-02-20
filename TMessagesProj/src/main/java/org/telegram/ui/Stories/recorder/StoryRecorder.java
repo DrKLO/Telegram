@@ -104,6 +104,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.messenger.camera.CameraSession;
+import org.telegram.messenger.camera.CameraSessionWrapper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -2959,8 +2960,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 bitmap.recycle();
             }
             if (!savedFromTextureView) {
-                final CameraSession cameraSession = cameraView.getCameraSession();
-                takingPhoto = CameraController.getInstance().takePicture(outputFile, true, cameraSession, (orientation) -> {
+                takingPhoto = CameraController.getInstance().takePicture(outputFile, true, cameraView.getCameraSessionObject(), (orientation) -> {
                     if (useDisplayFlashlight()) {
                         try {
                             windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
@@ -3044,7 +3044,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         private void startRecording(boolean byLongPress, Runnable whenStarted) {
-            CameraController.getInstance().recordVideo(cameraView.getCameraSession(), outputFile, false, (thumbPath, duration) -> {
+            CameraController.getInstance().recordVideo(cameraView.getCameraSessionObject(), outputFile, false, (thumbPath, duration) -> {
                 if (recordControl != null) {
                     recordControl.stopRecordingLoading(true);
                 }
@@ -5331,7 +5331,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (cameraView == null || cameraView.getCameraSession() == null) {
             return null;
         }
-        if (cameraView.isFrontface() && cameraView.getCameraSession().availableFlashModes.isEmpty()) {
+        if (cameraView.isFrontface() && !cameraView.getCameraSession().hasFlashModes()) {
             checkFrontfaceFlashModes();
             return frontfaceFlashModes.get(frontfaceFlashMode);
         }
@@ -5342,7 +5342,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (cameraView == null || cameraView.getCameraSession() == null) {
             return null;
         }
-        if (cameraView.isFrontface() && cameraView.getCameraSession().availableFlashModes.isEmpty()) {
+        if (cameraView.isFrontface() && !cameraView.getCameraSession().hasFlashModes()) {
             checkFrontfaceFlashModes();
             return frontfaceFlashModes.get(frontfaceFlashMode + 1 >= frontfaceFlashModes.size() ? 0 : frontfaceFlashMode + 1);
         }
@@ -5353,7 +5353,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (cameraView == null || cameraView.getCameraSession() == null) {
             return;
         }
-        if (cameraView.isFrontface() && cameraView.getCameraSession().availableFlashModes.isEmpty()) {
+        if (cameraView.isFrontface() && !cameraView.getCameraSession().hasFlashModes()) {
             int index = frontfaceFlashModes.indexOf(mode);
             if (index >= 0) {
                 frontfaceFlashMode = index;

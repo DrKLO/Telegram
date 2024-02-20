@@ -35,6 +35,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -68,6 +69,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
@@ -367,9 +369,11 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         return false;
     }
     public static void openRenameTagAlert(Context context, int currentAccount, TLRPC.Reaction reaction, Theme.ResourcesProvider resourcesProvider, boolean forceNotAdaptive) {
+        BaseFragment fragment = LaunchActivity.getLastFragment();
         Activity activity = AndroidUtilities.findActivity(context);
         View currentFocus = activity != null ? activity.getCurrentFocus() : null;
-        final boolean adaptive = currentFocus instanceof EditText && !forceNotAdaptive;
+        final boolean isKeyboardVisible = fragment != null && fragment.getFragmentView() instanceof SizeNotifierFrameLayout && ((SizeNotifierFrameLayout) fragment.getFragmentView()).measureKeyboardHeight() > dp(20);
+        final boolean adaptive = isKeyboardVisible && !forceNotAdaptive;
         AlertDialog[] dialog = new AlertDialog[1];
         AlertDialog.Builder builder;
         if (adaptive) {
@@ -377,7 +381,6 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         } else {
             builder = new AlertDialog.Builder(context, resourcesProvider);
         }
-        String[] hintText = new String[1];
         String name = MessagesController.getInstance(currentAccount).getSavedTagName(reaction);
         builder.setTitle(new SpannableStringBuilder(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction).toCharSequence(20)).append("  ").append(LocaleController.getString(TextUtils.isEmpty(name) ? R.string.SavedTagLabelTag : R.string.SavedTagRenameTag)));
 

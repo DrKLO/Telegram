@@ -401,90 +401,99 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         return value;
     }
 
-    public boolean takePicture(final File path, final boolean ignoreOrientation, final CameraSession session, final Utilities.Callback<Integer> callback) {
-        if (session == null) {
+    public boolean takePicture(final File path, final boolean ignoreOrientation, final Object sessionObject, final Utilities.Callback<Integer> callback) {
+        if (sessionObject == null) {
             return false;
         }
-        final CameraInfo info = session.cameraInfo;
-        final boolean flipFront = session.isFlipFront();
-        Camera camera = info.camera;
-        try {
-            camera.takePicture(null, null, (data, camera1) -> {
-                Bitmap bitmap = null;
-                int orientation = 0;
-                int size = (int) (AndroidUtilities.getPhotoSize() / AndroidUtilities.density);
-                String key = String.format(Locale.US, "%s@%d_%d", Utilities.MD5(path.getAbsolutePath()), size, size);
-                try {
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inJustDecodeBounds = true;
-                    BitmapFactory.decodeByteArray(data, 0, data.length, options);
-//                    float scaleFactor = Math.max((float) options.outWidth / AndroidUtilities.getPhotoSize(), (float) options.outHeight / AndroidUtilities.getPhotoSize());
-//                    if (scaleFactor < 1) {
-//                        scaleFactor = 1;
-//                    }
-                    options.inJustDecodeBounds = false;
-                //    options.inSampleSize = (int) scaleFactor;
-                    options.inPurgeable = true;
-                    bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-                try {
-                    orientation = getOrientation(data);
-                    if (info.frontCamera != 0 && flipFront) {
-                        try {
-                            Matrix matrix = new Matrix();
-                            if (!ignoreOrientation && orientation != -1) {
-                                matrix.setRotate(orientation);
+        if (sessionObject instanceof CameraSession) {
+            CameraSession session = (CameraSession) sessionObject;
+            final CameraInfo info = session.cameraInfo;
+            final boolean flipFront = session.isFlipFront();
+            Camera camera = info.camera;
+            try {
+                camera.takePicture(null, null, (data, camera1) -> {
+                    Bitmap bitmap = null;
+                    int orientation = 0;
+                    int size = (int) (AndroidUtilities.getPhotoSize() / AndroidUtilities.density);
+                    String key = String.format(Locale.US, "%s@%d_%d", Utilities.MD5(path.getAbsolutePath()), size, size);
+                    try {
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true;
+                        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+                        //                    float scaleFactor = Math.max((float) options.outWidth / AndroidUtilities.getPhotoSize(), (float) options.outHeight / AndroidUtilities.getPhotoSize());
+                        //                    if (scaleFactor < 1) {
+                        //                        scaleFactor = 1;
+                        //                    }
+                        options.inJustDecodeBounds = false;
+                        //    options.inSampleSize = (int) scaleFactor;
+                        options.inPurgeable = true;
+                        bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                    try {
+                        orientation = getOrientation(data);
+                        if (info.frontCamera != 0 && flipFront) {
+                            try {
+                                Matrix matrix = new Matrix();
+                                if (!ignoreOrientation && orientation != -1) {
+                                    matrix.setRotate(orientation);
+                                }
+                                orientation = 0;
+                                matrix.postScale(-1, 1);
+                                Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                                if (scaled != bitmap) {
+                                    bitmap.recycle();
+                                }
+                                FileOutputStream outputStream = new FileOutputStream(path);
+                                scaled.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+                                outputStream.flush();
+                                outputStream.getFD().sync();
+                                outputStream.close();
+                                if (scaled != null) {
+                                    ImageLoader.getInstance().putImageToCache(new BitmapDrawable(scaled), key, false);
+                                }
+                                if (callback != null) {
+                                    callback.run(orientation);
+                                }
+                                return;
+                            } catch (Throwable e) {
+                                FileLog.e(e);
                             }
-                            orientation = 0;
-                            matrix.postScale(-1, 1);
-                            Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                            if (scaled != bitmap) {
-                                bitmap.recycle();
-                            }
-                            FileOutputStream outputStream = new FileOutputStream(path);
-                            scaled.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
-                            outputStream.flush();
-                            outputStream.getFD().sync();
-                            outputStream.close();
-                            if (scaled != null) {
-                                ImageLoader.getInstance().putImageToCache(new BitmapDrawable(scaled), key, false);
-                            }
-                            if (callback != null) {
-                                callback.run(orientation);
-                            }
-                            return;
-                        } catch (Throwable e) {
-                            FileLog.e(e);
                         }
+                        FileOutputStream outputStream = new FileOutputStream(path);
+                        outputStream.write(data);
+                        outputStream.flush();
+                        outputStream.getFD().sync();
+                        outputStream.close();
+                        if (bitmap != null) {
+                            ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmap), key, false);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
-                    FileOutputStream outputStream = new FileOutputStream(path);
-                    outputStream.write(data);
-                    outputStream.flush();
-                    outputStream.getFD().sync();
-                    outputStream.close();
-                    if (bitmap != null) {
-                        ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmap), key, false);
+                    if (callback != null) {
+                        callback.run(orientation);
                     }
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                if (callback != null) {
-                    callback.run(orientation);
-                }
-            });
-            return true;
-        } catch (Exception e) {
-            FileLog.e(e);
+                });
+                return true;
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return false;
+        } else if (sessionObject instanceof Camera2Session) {
+            Camera2Session session = (Camera2Session) sessionObject;
+            return session.takePicture(path, callback);
+        } else {
+            return false;
         }
-        return false;
     }
 
-    public void startPreview(final CameraSession session) {
-        if (session == null) {
+    public void startPreview(final Object sessionObject) {
+        if (sessionObject == null || !(sessionObject instanceof CameraSession)) {
             return;
         }
+        CameraSession session = (CameraSession) sessionObject;
         threadPool.execute(() -> {
             Camera camera = session.cameraInfo.camera;
             try {
@@ -503,10 +512,11 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
-    public void stopPreview(final CameraSession session) {
-        if (session == null) {
+    public void stopPreview(final Object sessionObject) {
+        if (sessionObject == null || !(sessionObject instanceof CameraSession)) {
             return;
         }
+        CameraSession session = (CameraSession) sessionObject;
         threadPool.execute(() -> {
             Camera camera = session.cameraInfo.camera;
             try {
@@ -615,39 +625,44 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
-    public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView) {
+    public void recordVideo(final Object session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView) {
         recordVideo(session, path, mirror, callback, onVideoStartRecord, cameraView, true);
     }
 
-    public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView, boolean createThumbnail) {
-        if (session == null) {
+    public void recordVideo(final Object sessionObject, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView, boolean createThumbnail) {
+        if (sessionObject == null) {
             return;
         }
-        final CameraInfo info = session.cameraInfo;
-        final Camera camera = info.camera;
         if (cameraView != null) {
             recordingCurrentCameraView = cameraView;
             onVideoTakeCallback = callback;
             recordedFile = path.getAbsolutePath();
             threadPool.execute(() -> {
                 try {
-                    if (camera != null) {
-                        try {
-                            Camera.Parameters params = camera.getParameters();
-                            params.setFlashMode(session.getCurrentFlashMode().equals(Camera.Parameters.FLASH_MODE_ON) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
-                            camera.setParameters(params);
-                            session.onStartRecord();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        AndroidUtilities.runOnUIThread(() -> {
-                            cameraView.startRecording(path, () -> finishRecordingVideo(createThumbnail));
-
-                            if (onVideoStartRecord != null) {
-                                onVideoStartRecord.run();
+                    if (sessionObject instanceof CameraSession) {
+                        CameraSession session = (CameraSession) sessionObject;
+                        final CameraInfo info = session.cameraInfo;
+                        final Camera camera = info.camera;
+                        if (camera != null) {
+                            try {
+                                Camera.Parameters params = camera.getParameters();
+                                params.setFlashMode(session.getCurrentFlashMode().equals(Camera.Parameters.FLASH_MODE_ON) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+                                camera.setParameters(params);
+                                session.onStartRecord();
+                            } catch (Exception e) {
+                                FileLog.e(e);
                             }
-                        });
+                        }
+                    } else if (sessionObject instanceof Camera2Session) {
+                        Camera2Session session = (Camera2Session) sessionObject;
+                        session.setRecordingVideo(true);
                     }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        cameraView.startRecording(path, () -> finishRecordingVideo(createThumbnail));
+                        if (onVideoStartRecord != null) {
+                            onVideoStartRecord.run();
+                        }
+                    });
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -656,60 +671,66 @@ public class CameraController implements MediaRecorder.OnInfoListener {
             return;
         }
 
-
-        threadPool.execute(() -> {
-            try {
-                if (camera != null) {
-                    try {
-                        Camera.Parameters params = camera.getParameters();
-                        params.setFlashMode(session.getCurrentFlashMode().equals(Camera.Parameters.FLASH_MODE_ON) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
-                        camera.setParameters(params);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    camera.unlock();
+        if (sessionObject instanceof CameraSession) {
+            CameraSession session = (CameraSession) sessionObject;
+            final CameraInfo info = session.cameraInfo;
+            final Camera camera = info.camera;
+            threadPool.execute(() -> {
+                try {
+                    if (camera != null) {
+                        try {
+                            Camera.Parameters params = camera.getParameters();
+                            params.setFlashMode(session.getCurrentFlashMode().equals(Camera.Parameters.FLASH_MODE_ON) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+                            camera.setParameters(params);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        camera.unlock();
 //                    camera.stopPreview();
-                    try {
-                        mirrorRecorderVideo = mirror;
-                        recorder = new MediaRecorder();
-                        recorder.setCamera(camera);
-                        recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                        recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                        session.configureRecorder(1, recorder);
-                        recorder.setOutputFile(path.getAbsolutePath());
-                        recorder.setMaxFileSize(1024 * 1024 * 1024);
-                        recorder.setVideoFrameRate(30);
-                        recorder.setMaxDuration(0);
-                        Size pictureSize;
-                        pictureSize = new Size(16, 9);
-                        pictureSize = CameraController.chooseOptimalSize(info.getPictureSizes(), 720, 480, pictureSize, false);
-                        int bitrate;
-                        if (Math.min(pictureSize.mHeight,pictureSize.mWidth) >= 720) {
-                            bitrate = 3500000;
-                        } else {
-                            bitrate = 1800000;
-                        }
-                        recorder.setVideoEncodingBitRate(bitrate);
-                        recorder.setVideoSize(pictureSize.getWidth(), pictureSize.getHeight());
-                        recorder.setOnInfoListener(CameraController.this);
-                        recorder.prepare();
-                        recorder.start();
+                        try {
+                            mirrorRecorderVideo = mirror;
+                            recorder = new MediaRecorder();
+                            recorder.setCamera(camera);
+                            recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+                            recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+                            session.configureRecorder(1, recorder);
+                            recorder.setOutputFile(path.getAbsolutePath());
+                            recorder.setMaxFileSize(1024 * 1024 * 1024);
+                            recorder.setVideoFrameRate(30);
+                            recorder.setMaxDuration(0);
+                            Size pictureSize;
+                            pictureSize = new Size(16, 9);
+                            pictureSize = CameraController.chooseOptimalSize(info.getPictureSizes(), 720, 480, pictureSize, false);
+                            int bitrate;
+                            if (Math.min(pictureSize.mHeight, pictureSize.mWidth) >= 720) {
+                                bitrate = 3500000;
+                            } else {
+                                bitrate = 1800000;
+                            }
+                            recorder.setVideoEncodingBitRate(bitrate);
+                            recorder.setVideoSize(pictureSize.getWidth(), pictureSize.getHeight());
+                            recorder.setOnInfoListener(CameraController.this);
+                            recorder.prepare();
+                            recorder.start();
 
-                        onVideoTakeCallback = callback;
-                        recordedFile = path.getAbsolutePath();
-                        if (onVideoStartRecord != null) {
-                            AndroidUtilities.runOnUIThread(onVideoStartRecord);
+                            onVideoTakeCallback = callback;
+                            recordedFile = path.getAbsolutePath();
+                            if (onVideoStartRecord != null) {
+                                AndroidUtilities.runOnUIThread(onVideoStartRecord);
+                            }
+                        } catch (Exception e) {
+                            recorder.release();
+                            recorder = null;
+                            FileLog.e(e);
                         }
-                    } catch (Exception e) {
-                        recorder.release();
-                        recorder = null;
-                        FileLog.e(e);
                     }
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
+            });
+        } else {
+            return;
+        }
     }
 
     private void finishRecordingVideo(boolean createThumbnail) {
@@ -796,11 +817,11 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         }
     }
 
-    public void stopVideoRecording(final CameraSession session, final boolean abandon) {
-        stopVideoRecording(session, abandon, true);
+    public void stopVideoRecording(final Object sessionObject, final boolean abandon) {
+        stopVideoRecording(sessionObject, abandon, true);
     }
 
-    public void stopVideoRecording(final CameraSession session, final boolean abandon, final boolean createThumbnail) {
+    public void stopVideoRecording(final Object sessionObject, final boolean abandon, final boolean createThumbnail) {
         if (recordingCurrentCameraView != null) {
             recordingCurrentCameraView.stopRecording();
             recordingCurrentCameraView = null;
@@ -808,9 +829,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         }
         threadPool.execute(() -> {
             try {
-                CameraInfo info = session.cameraInfo;
-                final Camera camera = info.camera;
-                if (camera != null && recorder != null) {
+                if (recorder != null) {
                     MediaRecorder tempRecorder = recorder;
                     recorder = null;
                     try {
@@ -823,34 +842,44 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    try {
-                        camera.reconnect();
-                        camera.startPreview();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    try {
-                        session.stopVideoRecording();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
                 }
-                try {
-                    Camera.Parameters params = camera.getParameters();
-                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-                    camera.setParameters(params);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                threadPool.execute(() -> {
+                if (sessionObject instanceof CameraSession) {
+                    CameraSession session = (CameraSession) sessionObject;
+                    CameraInfo info = session.cameraInfo;
+                    final Camera camera = info.camera;
+                    if (camera != null) {
+                        try {
+                            camera.reconnect();
+                            camera.startPreview();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        try {
+                            session.stopVideoRecording();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
                     try {
                         Camera.Parameters params = camera.getParameters();
-                        params.setFlashMode(session.getCurrentFlashMode());
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
                         camera.setParameters(params);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                });
+                    threadPool.execute(() -> {
+                        try {
+                            Camera.Parameters params = camera.getParameters();
+                            params.setFlashMode(session.getCurrentFlashMode());
+                            camera.setParameters(params);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+                } else if (sessionObject instanceof Camera2Session) {
+                    Camera2Session session = (Camera2Session) sessionObject;
+                    session.setRecordingVideo(false);
+                }
                 if (!abandon && onVideoTakeCallback != null) {
                     finishRecordingVideo(createThumbnail);
                 } else {
@@ -894,7 +923,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public interface ErrorCallback {
-        public default void onError(int errorId, Camera camera, CameraSession cameraSession) {
+        public default void onError(int errorId, Camera camera, CameraSessionWrapper cameraSession) {
 
         }
     }
@@ -920,7 +949,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 for (int i = 0; i < errorCallbacks.size(); ++i) {
                     ErrorCallback callback = errorCallbacks.get(i);
                     if (callback != null) {
-                        callback.onError(errorId, camera, session);
+                        callback.onError(errorId, camera, CameraSessionWrapper.of(session));
                     }
                 }
             }

@@ -103,6 +103,23 @@ public class ChannelBoostsController {
         public boolean boostedNow;
         public boolean isMaxLvl;
 
+        public CanApplyBoost copy() {
+            CanApplyBoost canApplyBoost = new CanApplyBoost();
+            canApplyBoost.canApply = canApply;
+            canApplyBoost.empty = empty;
+            canApplyBoost.replaceDialogId = replaceDialogId;
+            canApplyBoost.alreadyActive = alreadyActive;
+            canApplyBoost.needSelector = needSelector;
+            canApplyBoost.slot = slot;
+            canApplyBoost.myBoosts = myBoosts;
+            canApplyBoost.boostCount = boostCount;
+            canApplyBoost.currentPeer = currentPeer;
+            canApplyBoost.currentDialogId = currentDialogId;
+            canApplyBoost.currentChat = currentChat;
+            canApplyBoost.isMaxLvl = isMaxLvl;
+            return canApplyBoost;
+        }
+
         public void setMyBoosts(TL_stories.TL_premium_myBoosts myBoosts) {
             this.myBoosts = myBoosts;
             boostCount = 0;

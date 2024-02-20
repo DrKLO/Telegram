@@ -80,8 +80,12 @@ public final class BulletinFactory {
         if (BuildVars.DEBUG_VERSION) {
             createErrorBulletin(error.code + " " + error.text).show();
         } else {
-            createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
+            createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
         }
+    }
+
+    public static void showError(TLRPC.TL_error error) {
+        global().createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text)).show();
     }
 
     public enum FileType {

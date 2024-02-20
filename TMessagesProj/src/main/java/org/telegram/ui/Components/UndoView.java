@@ -1376,7 +1376,7 @@ public class UndoView extends FrameLayout {
                     infoTextView.setText(LocaleController.getString("BoostingSelectUpToWarningUsers", R.string.BoostingSelectUpToWarningUsers));
                     break;
                 case ACTION_BOOSTING_SELECTOR_WARNING_CHANNEL:
-                    infoTextView.setText(LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsPlural", (int) BoostRepository.giveawayAddPeersMax()));
+                    infoTextView.setText(LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsGroupsPlural", (int) BoostRepository.giveawayAddPeersMax()));
                     break;
                 case ACTION_BOOSTING_SELECTOR_WARNING_COUNTRY:
                     infoTextView.setText(LocaleController.formatPluralString("BoostingSelectUpToWarningCountriesPlural", (int) BoostRepository.giveawayCountriesMax()));

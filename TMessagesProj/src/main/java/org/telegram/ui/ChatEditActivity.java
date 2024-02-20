@@ -45,7 +45,6 @@ import android.widget.ScrollView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -60,6 +59,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -105,7 +105,6 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private AlertDialog progressDialog;
 
     private UndoView undoView;
-
     private LinearLayout avatarContainer;
     private BackupImageView avatarImage;
     private View avatarOverlay;
@@ -174,6 +173,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
     private boolean historyHidden;
     private TLRPC.ChatReactions availableReactions;
+    private TL_stories.TL_premium_boostsStatus boostsStatus;
 
     private boolean createAfterUpload;
     private boolean donePressed;
@@ -890,7 +890,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
             if (ChatObject.isChannelAndNotMegaGroup(currentChat) && ChatObject.canChangeChatInfo(currentChat)) {
                 colorCell = new PeerColorActivity.ChangeNameColorCell(currentAccount, -currentChat.id, context, getResourceProvider());
-                colorCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                colorCell.setBackground(Theme.getSelectorDrawable(true));
                 typeEditContainer.addView(colorCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 colorCell.setOnClickListener(v -> {
                     presentFragment(new ChannelColorActivity(-currentChat.id).setOnApplied(this));
@@ -949,6 +949,19 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
                     builder.setCustomView(linearLayout);
                     showDialog(builder.create());
+                });
+            }
+
+            if (ChatObject.isMegagroup(currentChat) && ChatObject.hasAdminRights(currentChat)) {
+                MessagesController.getInstance(currentAccount).getBoostsController().getBoostsStats(-currentChat.id, boostsStatus -> this.boostsStatus = boostsStatus);
+                colorCell = new PeerColorActivity.ChangeNameColorCell(currentAccount, -currentChat.id, context, getResourceProvider());
+                colorCell.setBackground(Theme.getSelectorDrawable(true));
+                typeEditContainer.addView(colorCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                colorCell.setOnClickListener(v -> {
+                    GroupColorActivity activity = new GroupColorActivity(-currentChat.id);
+                    activity.boostsStatus = boostsStatus;
+                    activity.setOnApplied(this);
+                    presentFragment(activity);
                 });
             }
 
@@ -1088,19 +1101,12 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 logCell.setOnClickListener(v -> presentFragment(new ChannelAdminLogActivity(currentChat)));
             }
 
-            if (ChatObject.isChannelAndNotMegaGroup(currentChat)) {
+            if (ChatObject.isBoostSupported(currentChat)) {
                 statsAndBoosts = new TextCell(context);
                 statsAndBoosts.setTextAndIcon(LocaleController.getString("StatisticsAndBoosts", R.string.StatisticsAndBoosts), R.drawable.msg_stats, true);
                 statsAndBoosts.setBackground(Theme.getSelectorDrawable(false));
                 statsAndBoosts.setOnClickListener(v -> {
-                    Bundle args = new Bundle();
-                    args.putLong("chat_id", chatId);
-                    args.putBoolean("is_megagroup", currentChat.megagroup);
-                    TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(chatId);
-                    if (chatInfo == null || !chatInfo.can_view_stats) {
-                        args.putBoolean("only_boosts", true);
-                    };
-                    presentFragment(new StatisticActivity(args));
+                    presentFragment(StatisticActivity.create(currentChat, false));
                 });
             }
 
@@ -1138,6 +1144,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     groupStickersActivity.setInfo(info);
                     presentFragment(groupStickersActivity);
                 });
+                if (statsAndBoosts != null) {
+                    infoContainer.addView(statsAndBoosts, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                }
             } else {
                 if (statsAndBoosts != null) {
                     infoContainer.addView(statsAndBoosts, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

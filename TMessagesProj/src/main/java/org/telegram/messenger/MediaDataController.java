@@ -75,6 +75,7 @@ import org.telegram.ui.Components.StickersArchiveAlert;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
+import org.telegram.ui.Components.voip.PrivateVideoPreviewDialog;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.StoriesStorage;
@@ -89,6 +90,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -5840,7 +5842,7 @@ public class MediaDataController extends BaseController {
                     }
                 } else if (messageObject.getId() > 0 && messageObject.isReplyToStory()) {
                     if (messageObject.messageOwner.replyStory == null) {
-                        long storyDialogId = messageObject.messageOwner.reply_to.user_id;
+                        long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.peer);
                         if (messagesWithUnknownStories == null) {
                             messagesWithUnknownStories = new LongSparseArray<>();
                         }
@@ -5851,7 +5853,7 @@ public class MediaDataController extends BaseController {
                         }
                         array.add(messageObject);
                     } else {
-                        long storyDialogId = messageObject.messageOwner.reply_to.user_id;
+                        long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.peer);
                         messageObject.messageOwner.replyStory = StoriesStorage.checkExpiredStateLocal(currentAccount, storyDialogId, messageObject.messageOwner.replyStory);
                     }
                 } else if (messageObject.getId() > 0 && messageObject.isReply()) {
@@ -7078,7 +7080,7 @@ public class MediaDataController extends BaseController {
             return a.reply_to_msg_id == b.reply_to_msg_id;
         }
         if (a instanceof TLRPC.TL_inputReplyToStory) {
-            return a.user_id == b.user_id && a.story_id == b.story_id;
+            return MessageObject.peersEqual(a.peer, b.peer) && a.story_id == b.story_id;
         }
         return true;
     }
@@ -7086,7 +7088,7 @@ public class MediaDataController extends BaseController {
     private static TLRPC.InputReplyTo toInputReplyTo(int currentAccount, TLRPC.MessageReplyHeader reply_to) {
         if (reply_to instanceof TLRPC.TL_messageReplyStoryHeader) {
             TLRPC.TL_inputReplyToStory inputReplyTo = new TLRPC.TL_inputReplyToStory();
-            inputReplyTo.user_id = MessagesController.getInstance(currentAccount).getInputUser(reply_to.user_id);
+            inputReplyTo.peer = MessagesController.getInstance(currentAccount).getInputPeer(reply_to.peer);
             inputReplyTo.story_id = reply_to.story_id;
             return inputReplyTo;
         } else if (reply_to instanceof TLRPC.TL_messageReplyHeader) {
@@ -8994,6 +8996,109 @@ public class MediaDataController extends BaseController {
                     editor.apply();
                 }
             }));
+        }
+    }
+
+    private boolean draftVoicesLoaded = false;
+    public LongSparseArray<DraftVoice> draftVoices = new LongSparseArray<>();
+    private void loadDraftVoiceMessages() {
+        if (draftVoicesLoaded) return;
+        SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("voicedrafts_" + currentAccount, Context.MODE_PRIVATE);
+        Set<? extends Map.Entry<String, ?>> entries = prefs.getAll().entrySet();
+        draftVoices.clear();
+        for (Map.Entry<String, ?> entry : entries) {
+            String key = entry.getKey();
+            String value = (String) entry.getValue();
+            DraftVoice draft = DraftVoice.fromString(value);
+            if (draft == null) continue;
+            draftVoices.put(Long.parseLong(key), draft);
+        }
+        draftVoicesLoaded = true;
+    }
+    public void toggleDraftVoiceOnce(long dialog_id, long topic_id, boolean once) {
+        DraftVoice draft = getDraftVoice(dialog_id, topic_id);
+        if (draft != null && draft.once != once) {
+            draft.once = once;
+            SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("voicedrafts_" + currentAccount, Context.MODE_PRIVATE);
+            prefs.edit().putString(Objects.hash(dialog_id, topic_id) + "", draft.toString()).apply();
+        }
+    }
+    public void pushDraftVoiceMessage(long dialog_id, long topic_id, DraftVoice draft) {
+        SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("voicedrafts_" + currentAccount, Context.MODE_PRIVATE);
+        final long hash = Objects.hash(dialog_id, topic_id);
+        final String key = hash + "";
+        if (draft == null) {
+            prefs.edit().remove(key).apply();
+            draftVoices.remove(hash);
+        } else {
+            prefs.edit().putString(key, draft.toString()).apply();
+            draftVoices.put(hash, draft);
+        }
+    }
+    public DraftVoice getDraftVoice(long dialog_id, long topic_id) {
+        loadDraftVoiceMessages();
+        return draftVoices.get(Objects.hash(dialog_id, topic_id));
+    }
+
+    public static class DraftVoice {
+        public String path;
+        public long samplesCount;
+        public int writedFrame;
+        public long recordTimeCount;
+        public long id;
+        public short[] recordSamples;
+        public boolean once;
+
+        public static DraftVoice of(MediaController mediaController, String path, boolean once) {
+            if (mediaController.recordingAudio == null) {
+                return null;
+            }
+            DraftVoice draft = new DraftVoice();
+            draft.path = path;
+            draft.samplesCount = mediaController.samplesCount;
+            draft.writedFrame = mediaController.writedFrame;
+            draft.recordTimeCount = mediaController.recordTimeCount;
+            draft.id = mediaController.recordingAudio.id;
+            draft.recordSamples = mediaController.recordSamples;
+            draft.once = once;
+            return draft;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            char[] recordSamplesArray = new char[recordSamples.length];
+            for (int i = 0; i < recordSamples.length; ++i) {
+                recordSamplesArray[i] = (char) recordSamples[i];
+            }
+            return path + "\n" + samplesCount + "\n" + writedFrame + "\n" + recordTimeCount + "\n" + (once ? 1 : 0) + "\n" + new String(recordSamplesArray);
+        }
+
+        public static DraftVoice fromString(String string) {
+            try {
+                if (string == null) return null;
+                String[] parts = string.split("\n");
+                if (parts.length < 6) return null;
+                DraftVoice draft = new DraftVoice();
+                draft.path = parts[0];
+                draft.samplesCount = Long.parseLong(parts[1]);
+                draft.writedFrame = Integer.parseInt(parts[2]);
+                draft.recordTimeCount = Long.parseLong(parts[3]);
+                draft.once = Integer.parseInt(parts[4]) != 0;
+                String[] recordSamplesParts = new String[parts.length - 5];
+                for (int i = 0; i < recordSamplesParts.length; ++i) {
+                    recordSamplesParts[i] = parts[5 + i];
+                }
+                String recordSamplesString = TextUtils.join("\n", recordSamplesParts);
+                draft.recordSamples = new short[recordSamplesString.length()];
+                for (int i = 0; i < draft.recordSamples.length; ++i) {
+                    draft.recordSamples[i] = (short) recordSamplesString.charAt(i);
+                }
+                return draft;
+            } catch (Exception e) {
+                FileLog.e(e);
+                return null;
+            }
         }
     }
 }

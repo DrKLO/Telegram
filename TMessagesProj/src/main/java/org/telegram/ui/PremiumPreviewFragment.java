@@ -1293,12 +1293,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     paint.setColor(Theme.getColor(Theme.key_dialogBackground));
                 }
 
+                private Path path = new Path();
                 @Override
                 public void draw(Canvas c) {
+                    path.rewind();
                     AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
-                    c.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(12), AndroidUtilities.dp(12), paint);
-
+                    path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(12), AndroidUtilities.dp(12), Path.Direction.CW);
+                    c.drawPath(path, paint);
+                    c.save();
+                    c.clipPath(path);
                     super.draw(c);
+                    c.restore();
                 }
 
                 @Override

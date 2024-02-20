@@ -1112,6 +1112,15 @@ public class AnimatedEmojiDrawable extends Drawable {
             set(document, cacheType, animated);
         }
 
+        public void removeOldDrawable() {
+            if (drawables[1] != null) {
+                if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                    ((AnimatedEmojiDrawable) drawables[1]).removeView(this);
+                }
+                drawables[1] = null;
+            }
+        }
+
         public void set(TLRPC.Document document, int cacheType, boolean animated) {
             if (drawables[0] instanceof AnimatedEmojiDrawable && document != null && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == document.id) {
                 return;

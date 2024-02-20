@@ -20,6 +20,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
@@ -664,7 +665,8 @@ public class StoriesController {
     }
 
     public int getMyStoriesCount() {
-        int count = uploadingAndEditingStories.size();
+        ArrayList<UploadingStory> myUploadingStories = uploadingAndEditingStories.get(getSelfUserId());
+        int count = myUploadingStories == null ? 0 : myUploadingStories.size();
         TL_stories.PeerStories userStories = getStories(getSelfUserId());
         if (userStories != null && userStories.stories != null) {
             count += userStories.stories.size();
@@ -2470,6 +2472,14 @@ public class StoriesController {
                                     loadChatIds.add(channel_id);
                                 }
                             }
+                            if (storyItem.from_id != null) {
+                                long did = DialogObject.getPeerDialogId(storyItem.from_id);
+                                if (did >= 0) {
+                                    loadUserIds.add(did);
+                                } else {
+                                    loadChatIds.add(-did);
+                                }
+                            }
                             msg.generateThumbs(false);
                             cacheResult.add(msg);
                             data.reuse();
@@ -3252,32 +3262,32 @@ public class StoriesController {
                                 consumer.accept(false);
                                 return;
                             }
-                            BaseFragment lastFragment = LaunchActivity.getLastFragment();
-                            LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getContext(), LimitReachedBottomSheet.TYPE_BOOSTS_FOR_POSTING, currentAccount, resourcesProvider);
-                            limitReachedBottomSheet.setBoostsStats(boostsStatus, false);
-                            limitReachedBottomSheet.setDialogId(dialogId);
-                            if (canPostStories(dialogId)) {
-                                limitReachedBottomSheet.showStatisticButtonInLink(() -> {
-                                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                                    Bundle args = new Bundle();
-                                    args.putLong("chat_id", -dialogId);
-                                    args.putBoolean("is_megagroup", chat.megagroup);
-                                    args.putBoolean("start_from_boosts", true);
-                                    args.putBoolean("only_boosts", true);
-                                    StatisticActivity fragment = new StatisticActivity(args);
-                                    BaseFragment lastFragment1 = LaunchActivity.getLastFragment();
-                                    if (lastFragment1 != null) {
-                                        if (StoryRecorder.isVisible()) {
-                                            BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
-                                            params.transitionFromLeft = true;
-                                            lastFragment1.showAsSheet(fragment, params);
-                                        } else {
-                                            lastFragment1.presentFragment(fragment);
+                            messagesController.getBoostsController().userCanBoostChannel(dialogId, boostsStatus, canApplyBoost -> {
+                                if (canApplyBoost == null) {
+                                    consumer.accept(false);
+                                    return;
+                                }
+                                BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                                Runnable runnable = null;
+                                if (canPostStories(dialogId)) {
+                                    runnable = () -> {
+                                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                                        BaseFragment fragment = StatisticActivity.create(chat);
+                                        BaseFragment lastFragment1 = LaunchActivity.getLastFragment();
+                                        if (lastFragment1 != null) {
+                                            if (StoryRecorder.isVisible()) {
+                                                BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                                                params.transitionFromLeft = true;
+                                                lastFragment1.showAsSheet(fragment, params);
+                                            } else {
+                                                lastFragment1.presentFragment(fragment);
+                                            }
                                         }
-                                    }
-                                });
-                            }
-                            limitReachedBottomSheet.show();
+                                    };
+                                }
+                                LimitReachedBottomSheet.openBoostsForPostingStories(lastFragment, dialogId, canApplyBoost, boostsStatus, runnable);
+                                consumer.accept(false);
+                            });
                             consumer.accept(false);
                         });
                     } else {
@@ -3425,7 +3435,7 @@ public class StoriesController {
     public boolean canPostStories(long dialogId) {
         if (dialogId < 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-            if (chat == null || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+            if (chat == null || !ChatObject.isBoostSupported(chat)) {
                 return false;
             }
             return chat.creator || chat.admin_rights != null && chat.admin_rights.post_stories;

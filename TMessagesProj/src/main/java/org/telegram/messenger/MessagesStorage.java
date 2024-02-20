@@ -1363,6 +1363,8 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM story_pushes").stepThis().dispose();
                 database.executeFast("DELETE FROM dialog_photos").stepThis().dispose();
                 database.executeFast("DELETE FROM dialog_photos_count").stepThis().dispose();
+                database.executeFast("DELETE FROM saved_reaction_tags").stepThis().dispose();
+
 
                 cursor = database.queryFinalized("SELECT did FROM dialogs WHERE 1");
                 while (cursor.next()) {
@@ -14835,6 +14837,9 @@ public class MessagesStorage extends BaseController {
                         }
                     }
                 }
+                if (message.media.storyItem != null && message.media.storyItem.from_id != null) {
+                    addLoadPeerInfo(message.media.storyItem.from_id, usersToLoad, chatsToLoad);
+                }
             }
             if (message.media instanceof TLRPC.TL_messageMediaWebPage && message.media.webpage != null && message.media.webpage.attributes != null) {
                 for (int i = 0; i < message.media.webpage.attributes.size(); ++i) {
@@ -14851,6 +14856,9 @@ public class MessagesStorage extends BaseController {
                                         chatsToLoad.add(channelId);
                                 }
                             }
+                        }
+                        if (attr.storyItem != null && attr.storyItem.from_id != null) {
+                            addLoadPeerInfo(attr.storyItem.from_id, usersToLoad, chatsToLoad);
                         }
                     }
                 }
@@ -15246,7 +15254,6 @@ public class MessagesStorage extends BaseController {
     }
 
     public static void createFirstHoles(long did, SQLitePreparedStatement state5, SQLitePreparedStatement state6, int messageId, long topicId) throws Exception {
-        FileLog.d("createFirstHoles " + did + " " + messageId + " " + topicId);
         state5.requery();
         int pointer = 1;
         state5.bindLong(pointer++, did);

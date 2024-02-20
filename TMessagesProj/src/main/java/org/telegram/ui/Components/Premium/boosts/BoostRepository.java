@@ -95,7 +95,7 @@ public class BoostRepository {
             TLRPC.Dialog dialog = dialogs.get(i);
             if (DialogObject.isChatDialog(dialog.id)) {
                 TLRPC.Chat chat = messagesController.getChat(-dialog.id);
-                if (ChatObject.isChannelAndNotMegaGroup(chat) && -dialog.id != currentChatId) {
+                if (ChatObject.isBoostSupported(chat) && -dialog.id != currentChatId) {
                     peers.add(messagesController.getInputPeer(dialog.id));
                 }
             }
@@ -602,7 +602,7 @@ public class BoostRepository {
                 for (int a = 0; a < res.chats.size(); a++) {
                     TLRPC.Chat chat = res.chats.get(a);
                     TLRPC.InputPeer inputPeer = MessagesController.getInputPeer(chat);
-                    if (chat.id != currentChatId && ChatObject.isChannelAndNotMegaGroup(chat)) {
+                    if (chat.id != currentChatId && ChatObject.isBoostSupported(chat)) {
                         result.add(inputPeer);
                     }
                 }
@@ -676,9 +676,8 @@ public class BoostRepository {
         ConnectionsManager connection = ConnectionsManager.getInstance(UserConfig.selectedAccount);
         MessagesController controller = MessagesController.getInstance(UserConfig.selectedAccount);
         TLRPC.TL_payments_getGiveawayInfo req = new TLRPC.TL_payments_getGiveawayInfo();
-        long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         req.msg_id = messageObject.getId();
-        req.peer = controller.getInputPeer(messageObject.getFromChatId());
+        req.peer = controller.getInputPeer(MessageObject.getPeerId(messageObject.messageOwner.peer_id));
         int reqId = connection.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error != null) {
                 onError.run(error);
@@ -726,6 +725,6 @@ public class BoostRepository {
                 controller.putChats(myBoosts.chats, false);
                 onDone.run(myBoosts);
             }
-        }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);
+        }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 }

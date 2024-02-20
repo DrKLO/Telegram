@@ -1613,7 +1613,7 @@ public class PreviewView extends FrameLayout {
 
     public static Drawable getBackgroundDrawableFromTheme(int currentAccount, EmojiThemes chatTheme, int prevPhase, boolean isDark, boolean preview) {
         Drawable drawable;
-        if (chatTheme.showAsDefaultStub) {
+        if (chatTheme.isAnyStub()) {
             Theme.ThemeInfo themeInfo = EmojiThemes.getDefaultThemeInfo(isDark);
             SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
             String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);

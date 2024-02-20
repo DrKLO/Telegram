@@ -492,11 +492,11 @@ public class SavedMessagesController {
                 }
             }
             if (d != null) {
-                if (Math.max(0, d.messagesCount - ids.size()) != d.messagesCount) {
+                if (d.messagesCountLoaded && Math.max(0, d.messagesCount - ids.size()) != d.messagesCount) {
                     d.messagesCount = Math.max(0, d.messagesCount - ids.size());
                     changed = true;
                 }
-                if (d.messagesCount <= 0) {
+                if (d.messagesCountLoaded && d.messagesCount <= 0) {
                     removeDialog(d.dialogId);
                     changed = true;
                 } else if (d.top_message_id <= maxId) {

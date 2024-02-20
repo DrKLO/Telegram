@@ -11,16 +11,13 @@ import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
@@ -32,22 +29,20 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.util.StateSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.ButtonBounce;
@@ -95,6 +90,7 @@ public class HintView2 extends View {
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Layout.Alignment textLayoutAlignment = Layout.Alignment.ALIGN_NORMAL;
     private StaticLayout textLayout;
+    private AnimatedEmojiSpan.EmojiGroupedSpans emojiGroupedSpans;
     private float textLayoutLeft, textLayoutWidth, textLayoutHeight;
     private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector();
     private float textX, textY;
@@ -589,6 +585,13 @@ public class HintView2 extends View {
         textLayoutWidth = Math.max(0, right - left);
         textLayoutHeight = textLayout.getHeight();
         textLayoutLeft = left;
+        emojiGroupedSpans = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, emojiGroupedSpans, textLayout);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        AnimatedEmojiSpan.release(this, emojiGroupedSpans);
     }
 
     private final ButtonBounce bounce = new ButtonBounce(this, 2f, 5f);
@@ -710,6 +713,7 @@ public class HintView2 extends View {
                 invalidate();
             }
             textLayout.draw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, textLayout, emojiGroupedSpans, 0, null, 0, 0, 0, 1f);
             canvas.restore();
         } else {
             if (textToSet != null) {

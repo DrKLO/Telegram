@@ -178,7 +178,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                 searchField.updateSpans(true, selectedIds, () -> updateList(true, false), null);
                 updateList(true, false);
                 if (chat != null && !ChatObject.isPublic(chat) && selectedIds.contains(id)) {
-                    BoostDialogs.showPrivateChannelAlert(getBaseFragment().getContext(), resourcesProvider, () -> {
+                    BoostDialogs.showPrivateChannelAlert(chat, getBaseFragment().getContext(), resourcesProvider, () -> {
                         selectedIds.remove(id);
                         searchField.updateSpans(true, selectedIds, () -> updateList(true, false), null);
                         updateList(true, false);
@@ -439,11 +439,12 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         String text;
         switch (type) {
             case TYPE_CHANNEL:
-                text = LocaleController.formatPluralString("BoostingSelectUpToPlural", (int) BoostRepository.giveawayAddPeersMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToGroupChannelPlural", (int) BoostRepository.giveawayAddPeersMax());
                 sectionCell.setLayerHeight(32);
                 break;
             case TYPE_USER:
-                text = LocaleController.formatPluralStringComma("Subscribers", Math.max(0, selectorAdapter.getParticipantsCount(currentChat) - 1));
+                boolean isChannel = ChatObject.isChannelAndNotMegaGroup(currentChat);
+                text = LocaleController.formatPluralStringComma(isChannel ? "Subscribers" : "Members", Math.max(0, selectorAdapter.getParticipantsCount(currentChat) - 1));
                 sectionCell.setLayerHeight(32);
                 break;
             case TYPE_COUNTRY:
@@ -460,7 +461,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         String text = "";
         switch (type) {
             case TYPE_CHANNEL:
-                text = LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsPlural", (int) BoostRepository.giveawayAddPeersMax());
+                text = LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsGroupsPlural", (int) BoostRepository.giveawayAddPeersMax());
                 break;
             case TYPE_USER:
                 text = LocaleController.getString("BoostingSelectUpToWarningUsers", R.string.BoostingSelectUpToWarningUsers);
@@ -671,7 +672,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
     protected CharSequence getTitle() {
         switch (type) {
             case TYPE_CHANNEL:
-                return LocaleController.getString("BoostingAddChannel", R.string.BoostingAddChannel);
+                return LocaleController.getString("BoostingAddChannelOrGroup", R.string.BoostingAddChannelOrGroup);
             case TYPE_USER:
                 return LocaleController.getString("GiftPremium", R.string.GiftPremium);
             case TYPE_COUNTRY:

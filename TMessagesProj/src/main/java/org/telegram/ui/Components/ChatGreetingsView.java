@@ -12,6 +12,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.text.Layout;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -75,6 +76,7 @@ public class ChatGreetingsView extends LinearLayout {
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         descriptionView.setGravity(Gravity.CENTER_HORIZONTAL);
         stickerToSendView = new BackupImageView(context);
+        ScaleStateListAnimator.apply(stickerToSendView);
         updateLayout();
 
         updateColors();

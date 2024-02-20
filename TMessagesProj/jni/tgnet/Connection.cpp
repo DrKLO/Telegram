@@ -114,7 +114,7 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
                 parseLaterBuffer = buffer->hasRemaining() ? buffer : nullptr;
                 buffer = restOfTheData;
             } else {
-                if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received packet size less(%u) then message size(%u)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, restOfTheData->position(), lastPacketLength);
+//                if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received packet size less(%u) then message size(%u)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, restOfTheData->position(), lastPacketLength);
                 return;
             }
         }

@@ -316,14 +316,6 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         emojiStatusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, AndroidUtilities.dp(24));
-
-        setOnLongClickListener(v -> {
-            if (canSearch()) {
-                openSearch();
-                return true;
-            }
-            return false;
-        });
     }
 
     private ButtonBounce bounce = new ButtonBounce(this);

@@ -307,7 +307,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 }
             } else if (!isPopupShowing()) {
                 showPopup(1);
-                emojiView.onOpen(editText.length() > 0);
+                emojiView.onOpen(editText.length() > 0, false);
                 editText.requestFocus();
             } else {
                 openKeyboardInternal();
