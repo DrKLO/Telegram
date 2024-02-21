@@ -1342,7 +1342,7 @@ public class StoryCaptionView extends NestedScrollView {
             verticalPadding = dp(8);
             if (sizeCached != size) {
                 sizeCached = size;
-                int width = MeasureSpec.getSize(widthMeasureSpec) - horizontalPadding * 2;
+                int width = Math.max(0, MeasureSpec.getSize(widthMeasureSpec) - horizontalPadding * 2);
                 state[0].measure(width);
                 if (state[1] != null) {
                     state[1].measure(width);

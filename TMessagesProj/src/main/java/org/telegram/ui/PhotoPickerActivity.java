@@ -522,7 +522,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
                 @Override
                 public void onShowSubMenu() {
-                    showAsListItem.setText(listSort ? LocaleController.getString("ShowAsGrid", R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
+                    showAsListItem.setText(listSort ? LocaleController.getString(R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
                     showAsListItem.setIcon(listSort ? R.drawable.msg_media : R.drawable.msg_list);
                 }
 

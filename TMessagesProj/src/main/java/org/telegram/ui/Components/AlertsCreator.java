@@ -240,7 +240,24 @@ public class AlertsCreator {
         if (error == null || error.code == 406 || error.text == null) {
             return null;
         }
-        if (request instanceof TLRPC.TL_messages_initHistoryImport || request instanceof TLRPC.TL_messages_checkHistoryImportPeer || request instanceof TLRPC.TL_messages_checkHistoryImport || request instanceof TLRPC.TL_messages_startHistoryImport) {
+        if (request instanceof TLRPC.TL_messages_sendMessage && error.text.contains("PRIVACY_PREMIUM_REQUIRED")) {
+            TLRPC.TL_messages_sendMessage req = (TLRPC.TL_messages_sendMessage) request;
+            long dialogId = DialogObject.getPeerDialogId(req.peer);
+            String username = "";
+            if (dialogId >= 0) {
+                username = UserObject.getFirstName(MessagesController.getInstance(currentAccount).getUser(dialogId));
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                if (chat != null) {
+                    username = chat.title;
+                }
+            }
+            if (fragment == null) {
+                fragment = LaunchActivity.getLastFragment();
+            }
+            showSimpleAlert(fragment, LocaleController.getString(R.string.MessagePremiumErrorTitle), LocaleController.formatString(R.string.MessagePremiumErrorMessage, username));
+            MessagesController.getInstance(currentAccount).invalidateUserPremiumBlocked(dialogId, 0);
+        } else if (request instanceof TLRPC.TL_messages_initHistoryImport || request instanceof TLRPC.TL_messages_checkHistoryImportPeer || request instanceof TLRPC.TL_messages_checkHistoryImport || request instanceof TLRPC.TL_messages_startHistoryImport) {
             TLRPC.InputPeer peer;
             if (request instanceof TLRPC.TL_messages_initHistoryImport) {
                 peer = ((TLRPC.TL_messages_initHistoryImport) request).peer;
@@ -4094,7 +4111,7 @@ public class AlertsCreator {
         return builder;
     }
 
-    public static BottomSheet createMuteAlert(BaseFragment fragment, final long dialog_id, int topicId, Theme.ResourcesProvider resourcesProvider) {
+    public static BottomSheet createMuteAlert(BaseFragment fragment, final long dialog_id, long topicId, Theme.ResourcesProvider resourcesProvider) {
         if (fragment == null || fragment.getParentActivity() == null) {
             return null;
         }
@@ -4615,7 +4632,7 @@ public class AlertsCreator {
         return createColorSelectDialog(parentActivity, dialog_id, topicId, globalType, onSelect, null);
     }
 
-    public static Dialog createColorSelectDialog(Activity parentActivity, final long dialog_id, final int topicId, final int globalType, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
+    public static Dialog createColorSelectDialog(Activity parentActivity, final long dialog_id, final long topicId, final int globalType, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
         int currentColor;
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         String key = NotificationsController.getSharedPrefKey(dialog_id, topicId);
@@ -4725,11 +4742,11 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, int topicId, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, long topicId, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
         return createVibrationSelectDialog(parentActivity, dialogId, topicId, globalGroup, globalAll, onSelect, null);
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, int topicId, final boolean globalGroup, final boolean globalAll, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, long topicId, final boolean globalGroup, final boolean globalAll, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
         String prefix;
         if (dialogId != 0) {
             prefix = "vibrate_" + dialogId;
@@ -4739,11 +4756,11 @@ public class AlertsCreator {
         return createVibrationSelectDialog(parentActivity, dialogId, topicId, prefix, onSelect, resourcesProvider);
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, int topicId, final String prefKeyPrefix, final Runnable onSelect) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, long topicId, final String prefKeyPrefix, final Runnable onSelect) {
         return createVibrationSelectDialog(parentActivity, dialogId, topicId, prefKeyPrefix, onSelect, null);
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, int topicId, final String prefKeyPrefix, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialogId, long topicId, final String prefKeyPrefix, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         final int[] selected = new int[1];
         String[] descriptions;
@@ -5092,7 +5109,7 @@ public class AlertsCreator {
         return createPrioritySelectDialog(parentActivity, dialog_id, topicId, globalType, onSelect, null);
     }
 
-    public static Dialog createPrioritySelectDialog(Activity parentActivity, final long dialog_id, int topicId, final int globalType, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
+    public static Dialog createPrioritySelectDialog(Activity parentActivity, final long dialog_id, long topicId, final int globalType, final Runnable onSelect, Theme.ResourcesProvider resourcesProvider) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         final int[] selected = new int[1];
         String[] descriptions;
@@ -5398,7 +5415,7 @@ public class AlertsCreator {
         void didPressedNewCard();
     }
 
-    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, boolean scheduled, int loadParticipant, Runnable onDelete, Runnable hideDim, Theme.ResourcesProvider resourcesProvider) {
+    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, boolean scheduled, boolean isSavedMessages, int loadParticipant, Runnable onDelete, Runnable hideDim, Theme.ResourcesProvider resourcesProvider) {
         if (fragment == null || user == null && chat == null && encryptedChat == null) {
             return;
         }
@@ -5459,7 +5476,7 @@ public class AlertsCreator {
         boolean hasNotOut = false;
         int myMessagesCount = 0;
         boolean canDeleteInbox = encryptedChat == null && user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
-        if (chat != null && chat.megagroup && !scheduled) {
+        if (chat != null && chat.megagroup && !scheduled && !isSavedMessages) {
             boolean canBan = ChatObject.canBlockUsers(chat);
             if (selectedMessage != null) {
                 if (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
@@ -5535,7 +5552,7 @@ public class AlertsCreator {
                         } else if (error != null && "USER_NOT_PARTICIPANT".equals(error.text)) {
                             loadType = 0;
                         }
-                        createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, scheduled, loadType, onDelete, hideDim, resourcesProvider);
+                        createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, scheduled, isSavedMessages, loadType, onDelete, hideDim, resourcesProvider);
                     }));
                     AndroidUtilities.runOnUIThread(() -> {
                         if (progressDialog[0] == null) {
@@ -5599,7 +5616,7 @@ public class AlertsCreator {
             } else {
                 actionUser = null;
             }
-        } else if (!scheduled && !ChatObject.isChannel(chat) && encryptedChat == null) {
+        } else if (!scheduled && !isSavedMessages && !ChatObject.isChannel(chat) && encryptedChat == null) {
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && (!user.bot || user.support) || chat != null) {
                 if (selectedMessage != null) {
                     boolean hasOutgoing = !selectedMessage.isSendError() && (
@@ -5664,6 +5681,10 @@ public class AlertsCreator {
 
         DialogInterface.OnClickListener deleteAction = (dialogInterface, i) -> {
             ArrayList<Integer> ids = null;
+            long thisDialogId = dialogId;
+            if (isSavedMessages) {
+                thisDialogId = UserConfig.getInstance(currentAccount).getClientUserId();
+            }
             if (selectedMessage != null) {
                 ids = new ArrayList<>();
                 ArrayList<Long> random_ids = null;
@@ -5685,7 +5706,7 @@ public class AlertsCreator {
                         random_ids.add(selectedMessage.messageOwner.random_id);
                     }
                 }
-                MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, dialogId, deleteForAll[0], scheduled);
+                MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, thisDialogId, deleteForAll[0], scheduled);
             } else {
                 for (int a = 1; a >= 0; a--) {
                     ids = new ArrayList<>();
@@ -5702,7 +5723,7 @@ public class AlertsCreator {
                             }
                         }
                     }
-                    MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, dialogId, deleteForAll[0], scheduled);
+                    MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, thisDialogId, deleteForAll[0], scheduled);
                     selectedMessages[a].clear();
                 }
             }
@@ -5732,19 +5753,33 @@ public class AlertsCreator {
             }
         };
 
-        if (count == 1) {
-            builder.setTitle(LocaleController.getString("DeleteSingleMessagesTitle", R.string.DeleteSingleMessagesTitle));
+        if (isSavedMessages) {
+            if (count == 1) {
+                builder.setTitle(LocaleController.getString(R.string.UnsaveSingleMessagesTitle));
+            } else {
+                builder.setTitle(LocaleController.formatString(R.string.UnsaveMessagesTitle, LocaleController.formatPluralString("messages", count)));
+            }
         } else {
-            builder.setTitle(LocaleController.formatString("DeleteMessagesTitle", R.string.DeleteMessagesTitle, LocaleController.formatPluralString("messages", count)));
+            if (count == 1) {
+                builder.setTitle(LocaleController.getString(R.string.DeleteSingleMessagesTitle));
+            } else {
+                builder.setTitle(LocaleController.formatString(R.string.DeleteMessagesTitle, LocaleController.formatPluralString("messages", count)));
+            }
         }
 
-        if (chat != null && hasNotOut) {
-            if (hasDeleteForAllCheck && myMessagesCount != count) {
-                builder.setMessage(LocaleController.formatString("DeleteMessagesTextGroupPart", R.string.DeleteMessagesTextGroupPart, LocaleController.formatPluralString("messages", myMessagesCount)));
-            } else if (count == 1) {
-                builder.setMessage(LocaleController.getString("AreYouSureDeleteSingleMessage", R.string.AreYouSureDeleteSingleMessage));
+        if (isSavedMessages) {
+            if (count == 1) {
+                builder.setMessage(LocaleController.getString(R.string.AreYouSureUnsaveSingleMessage));
             } else {
-                builder.setMessage(LocaleController.getString("AreYouSureDeleteFewMessages", R.string.AreYouSureDeleteFewMessages));
+                builder.setMessage(LocaleController.getString(R.string.AreYouSureUnsaveFewMessages));
+            }
+        } else if (chat != null && hasNotOut) {
+            if (hasDeleteForAllCheck && myMessagesCount != count) {
+                builder.setMessage(LocaleController.formatString(R.string.DeleteMessagesTextGroupPart, LocaleController.formatPluralString("messages", myMessagesCount)));
+            } else if (count == 1) {
+                builder.setMessage(LocaleController.getString(R.string.AreYouSureDeleteSingleMessage));
+            } else {
+                builder.setMessage(LocaleController.getString(R.string.AreYouSureDeleteFewMessages));
             }
         } else if (hasDeleteForAllCheck && !canDeleteInbox && myMessagesCount != count) {
             if (chat != null) {
@@ -5793,12 +5828,12 @@ public class AlertsCreator {
             }
         }
 
-        if (isActiveGiveawayAndOwner) {
+        if (isActiveGiveawayAndOwner && !isSavedMessages) {
             builder.setTitle(LocaleController.getString("BoostingGiveawayDeleteMsgTitle", R.string.BoostingGiveawayDeleteMsgTitle));
             builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGiveawayDeleteMsgText", R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
             builder.setNeutralButton(LocaleController.getString("Delete", R.string.Delete), deleteAction);
         } else {
-            builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), deleteAction);
+            builder.setPositiveButton(LocaleController.getString(isSavedMessages ? R.string.Remove : R.string.Delete), deleteAction);
         }
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         builder.setOnPreDismissListener(di -> {

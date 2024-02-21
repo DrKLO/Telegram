@@ -269,35 +269,23 @@ public class EditTextCaption extends EditTextBoldCursor {
                 AndroidUtilities.showKeyboard(editText);
             });
             creationLinkDialog.showDelayed(250);
-            if (editText != null) {
-                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();
-                if (layoutParams != null) {
-                    if (layoutParams instanceof FrameLayout.LayoutParams) {
-                        ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
-                    }
-                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(24);
-                    layoutParams.height = AndroidUtilities.dp(36);
-                    editText.setLayoutParams(layoutParams);
-                }
-                editText.setSelection(0, editText.getText().length());
-            }
         } else {
             builder.show().setOnShowListener(dialog -> {
                 editText.requestFocus();
                 AndroidUtilities.showKeyboard(editText);
             });
-            if (editText != null) {
-                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();
-                if (layoutParams != null) {
-                    if (layoutParams instanceof FrameLayout.LayoutParams) {
-                        ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
-                    }
-                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(24);
-                    layoutParams.height = AndroidUtilities.dp(36);
-                    editText.setLayoutParams(layoutParams);
+        }
+        if (editText != null) {
+            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();
+            if (layoutParams != null) {
+                if (layoutParams instanceof FrameLayout.LayoutParams) {
+                    ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
                 }
-                editText.setSelection(0, editText.getText().length());
+                layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(24);
+                layoutParams.height = AndroidUtilities.dp(36);
+                editText.setLayoutParams(layoutParams);
             }
+            editText.setSelection(0, editText.getText().length());
         }
     }
 

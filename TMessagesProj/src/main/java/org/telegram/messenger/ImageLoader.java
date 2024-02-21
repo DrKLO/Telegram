@@ -1115,7 +1115,12 @@ public class ImageLoader {
                         }
                     }
                     boolean createDecoder = fistFrame || (cacheImage.filter != null && ("d".equals(cacheImage.filter) || cacheImage.filter.contains("_d")));
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, createDecoder, 0, cacheImage.priority, notCreateStream ? null : cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions);
+                    TLRPC.Document document = notCreateStream ? null : cacheImage.imageLocation.document;
+                    int cacheType = document != null ? 1 : 0;
+                    if (cacheImage.cacheType > 1) {
+                        cacheType = cacheImage.cacheType;
+                    }
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, createDecoder, 0, cacheImage.priority, notCreateStream ? null : cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions, cacheType);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(cacheImage.imageLocation.document) || MessageObject.isVideoSticker(cacheImage.imageLocation.document) || isAnimatedAvatar(cacheImage.filter));
                 }
                 if (fistFrame) {
@@ -1229,7 +1234,9 @@ public class ImageLoader {
                             w_filter = Float.parseFloat(args[0]) * AndroidUtilities.density;
                             h_filter = Float.parseFloat(args[1]) * AndroidUtilities.density;
                         }
-                        if (cacheImage.filter.contains("b2")) {
+                        if (cacheImage.filter.contains("b2r")) {
+                            blurType = 4;
+                        } else if (cacheImage.filter.contains("b2")) {
                             blurType = 3;
                         } else if (cacheImage.filter.contains("b1")) {
                             blurType = 2;
@@ -1430,8 +1437,23 @@ public class ImageLoader {
                                 if (image.getConfig() == Bitmap.Config.ARGB_8888) {
                                     Utilities.blurBitmap(image, 1, opts.inPurgeable ? 0 : 1, image.getWidth(), image.getHeight(), image.getRowBytes());
                                 }
-                            } else if (blurType == 3) {
+                            } else if (blurType == 3 || blurType == 4) {
                                 if (image.getConfig() == Bitmap.Config.ARGB_8888) {
+                                    if (blurType == 4) {
+                                        Bitmap nbitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), image.getConfig());
+                                        Canvas canvas = new Canvas(nbitmap);
+                                        canvas.save();
+                                        final float s = 1.2f;
+                                        canvas.scale(s, s, image.getWidth() / 2f, image.getHeight() / 2f);
+                                        canvas.drawBitmap(image, 0, 0, null);
+                                        canvas.restore();
+                                        android.graphics.Path path = new android.graphics.Path();
+                                        path.addCircle(image.getWidth() / 2f, image.getHeight() / 2f, Math.min(image.getWidth(), image.getHeight()) / 2f, android.graphics.Path.Direction.CW);
+                                        canvas.clipPath(path);
+                                        canvas.drawBitmap(image, 0, 0, null);
+                                        image.recycle();
+                                        image = nbitmap;
+                                    }
                                     Utilities.blurBitmap(image, 7, opts.inPurgeable ? 0 : 1, image.getWidth(), image.getHeight(), image.getRowBytes());
                                     Utilities.blurBitmap(image, 7, opts.inPurgeable ? 0 : 1, image.getWidth(), image.getHeight(), image.getRowBytes());
                                     Utilities.blurBitmap(image, 7, opts.inPurgeable ? 0 : 1, image.getWidth(), image.getHeight(), image.getRowBytes());
@@ -1829,8 +1851,24 @@ public class ImageLoader {
         data[166] = photoBytes[2];
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = SharedConfig.deviceIsHigh() ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
+        final boolean isRound = !TextUtils.isEmpty(filter) && filter.contains("r");
+        options.inPreferredConfig = SharedConfig.deviceIsHigh() || isRound ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, len, options);
+        if (isRound) {
+            Bitmap nbitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), bitmap.getConfig());
+            Canvas canvas = new Canvas(nbitmap);
+            canvas.save();
+            final float s = 1.2f;
+            canvas.scale(s, s, bitmap.getWidth() / 2f, bitmap.getHeight() / 2f);
+            canvas.drawBitmap(bitmap, 0, 0, null);
+            canvas.restore();
+            android.graphics.Path path = new android.graphics.Path();
+            path.addCircle(bitmap.getWidth() / 2f, bitmap.getHeight() / 2f, Math.min(bitmap.getWidth(), bitmap.getHeight()) / 2f, android.graphics.Path.Direction.CW);
+            canvas.clipPath(path);
+            canvas.drawBitmap(bitmap, 0, 0, null);
+            bitmap.recycle();
+            bitmap = nbitmap;
+        }
         if (bitmap != null && !TextUtils.isEmpty(filter) && filter.contains("b")) {
             Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
         }
@@ -1852,6 +1890,7 @@ public class ImageLoader {
         protected long size;
         protected int imageType;
         protected int type;
+        protected int cacheType;
 
         protected int currentAccount;
 
@@ -2274,6 +2313,7 @@ public class ImageLoader {
                                     cacheImage.cacheTask = new CacheOutTask(cacheImage);
                                     cacheImage.filter = filter;
                                     cacheImage.imageType = img.imageType;
+                                    cacheImage.cacheType = img.cacheType;
                                     imageLoadingByKeys.put(key, cacheImage);
                                     tasks.add(cacheImage.cacheTask);
                                 }
@@ -3212,6 +3252,7 @@ public class ImageLoader {
 
                     img.type = type;
                     img.key = key;
+                    img.cacheType = cacheType;
                     img.filter = filter;
                     img.imageLocation = imageLocation;
                     img.ext = ext;
@@ -3727,6 +3768,7 @@ public class ImageLoader {
                     cacheImage.parentObject = img.parentObject;
                     cacheImage.isPFrame = img.isPFrame;
                     cacheImage.key = key;
+                    cacheImage.cacheType = img.cacheType;
                     cacheImage.imageLocation = img.imageLocation;
                     cacheImage.type = type;
                     cacheImage.ext = img.ext;

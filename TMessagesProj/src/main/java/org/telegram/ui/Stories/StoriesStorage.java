@@ -88,6 +88,9 @@ public class StoriesStorage {
                                         chatsToLoad.add(channel_id);
                                 }
                             }
+                            if (storyItem.from_id != null) {
+                                MessagesStorage.addLoadPeerInfo(storyItem.from_id, usersToLoad, chatsToLoad);
+                            }
                             StoryCustomParamsHelper.readLocalParams(storyItem, customData);
                             storyItems.add(storyItem);
                             data.reuse();

@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -29,6 +30,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 
 import androidx.collection.LongSparseArray;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -88,6 +90,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private static final int VIEW_TYPE_INNER_CHECK = 13;
     private static final int VIEW_TYPE_EXPANDABLE_SWITCH = 14;
+    private static final int VIEW_TYPE_NOT_RESTRICT_BOOSTERS_SLIDER = 15;
 
     private ListAdapter listViewAdapter;
     private StickerEmptyView emptyView;
@@ -163,6 +166,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     private int slowmodeRow;
     private int slowmodeSelectRow;
     private int slowmodeInfoRow;
+    private int dontRestrictBoostersRow;
+    private int dontRestrictBoostersInfoRow;
+    private int dontRestrictBoostersSliderRow;
 
     private int contactsHeaderRow;
     private int contactsStartRow;
@@ -192,6 +198,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private int selectedSlowmode;
     private int initialSlowmode;
+    private boolean isEnabledNotRestrictBoosters;
+    private int notRestrictBoosters;
 
     private final static int search_button = 0;
     private final static int done_button = 1;
@@ -314,6 +322,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         slowmodeRow = -1;
         slowmodeSelectRow = -1;
         slowmodeInfoRow = -1;
+        dontRestrictBoostersRow = -1;
+        dontRestrictBoostersInfoRow = -1;
+        dontRestrictBoostersSliderRow = -1;
         loadingProgressRow = -1;
         loadingUserCellRow = -1;
         loadingHeaderRow = -1;
@@ -367,6 +378,18 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 slowmodeSelectRow = rowCount++;
                 slowmodeInfoRow = rowCount++;
             }
+
+            if (isNotRestrictBoostersVisible()) {
+                if (participantsDivider2Row == -1) {
+                    participantsDivider2Row = rowCount++;
+                }
+                dontRestrictBoostersRow = rowCount++;
+                if (isEnabledNotRestrictBoosters) {
+                    dontRestrictBoostersSliderRow = rowCount++;
+                }
+                dontRestrictBoostersInfoRow = rowCount++;
+            }
+
             if (ChatObject.isChannel(currentChat)) {
                 if (participantsDivider2Row == -1) {
                     participantsDivider2Row = rowCount++;
@@ -754,6 +777,17 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
                     checkBoxCell.setChecked(!checkBoxCell.isChecked(), true);
                     AndroidUtilities.updateVisibleRows(listView);
+                    DiffCallback diffCallback = saveState();
+                    updateRows();
+                    updateListAnimated(diffCallback);
+                } else if (position == dontRestrictBoostersRow) {
+                    TextCheckCell2 checkBoxCell = (TextCheckCell2) view;
+                    isEnabledNotRestrictBoosters = !checkBoxCell.isChecked();
+                    checkBoxCell.setChecked(isEnabledNotRestrictBoosters);
+                    AndroidUtilities.updateVisibleRows(listView);
+                    DiffCallback diffCallback = saveState();
+                    updateRows();
+                    updateListAnimated(diffCallback);
                 } else if (position == addNewRow) {
                     if (type == TYPE_BANNED || type == TYPE_KICKED) {
                         Bundle bundle = new Bundle();
@@ -1048,6 +1082,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             if (sendMediaRow >= 0) {
                                 listViewAdapter.notifyItemChanged(sendMediaRow);
                             }
+                            DiffCallback diffCallback = saveState();
+                            updateRows();
+                            updateListAnimated(diffCallback);
                         } else if (position == sendMediaRow) {
                             DiffCallback diffCallback = saveState();
                             sendMediaExpanded = !sendMediaExpanded;
@@ -1854,6 +1891,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 info = chatFull;
                 if (!hadInfo) {
                     selectedSlowmode = initialSlowmode = getCurrentSlowmode();
+                    isEnabledNotRestrictBoosters = info.boosts_unrestrict > 0;
+                    notRestrictBoosters = info.boosts_unrestrict;
                 }
                 AndroidUtilities.runOnUIThread(() -> loadChatParticipants(0, 200));
             }
@@ -1917,7 +1956,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private boolean checkDiscard() {
         String newBannedRights = ChatObject.getBannedRightsString(defaultBannedRights);
-        if (!newBannedRights.equals(initialBannedRights) || initialSlowmode != selectedSlowmode) {
+        if (!newBannedRights.equals(initialBannedRights) || initialSlowmode != selectedSlowmode || hasNotRestrictBoostersChanges()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("UserRestrictionsApplyChanges", R.string.UserRestrictionsApplyChanges));
             if (isChannel) {
@@ -2064,13 +2103,40 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             info.flags |= 131072;
             getMessagesController().setChannelSlowMode(chatId, info.slowmode_seconds);
         }
+
+        if (hasNotRestrictBoostersChanges()) {
+            boolean isEnabledNotRestrictBoosters = this.isEnabledNotRestrictBoosters && isNotRestrictBoostersVisible();
+            if (isEnabledNotRestrictBoosters && notRestrictBoosters == 0) {
+                getMessagesController().setBoostsToUnblockRestrictions(chatId, 1);
+            } else if (!isEnabledNotRestrictBoosters && notRestrictBoosters != 0) {
+                getMessagesController().setBoostsToUnblockRestrictions(chatId, 0);
+            } else {
+                getMessagesController().setBoostsToUnblockRestrictions(chatId, notRestrictBoosters);
+            }
+        }
         finishFragment();
+    }
+
+    private boolean hasNotRestrictBoostersChanges() {
+        boolean isEnabledNotRestrictBoosters = this.isEnabledNotRestrictBoosters && isNotRestrictBoostersVisible();
+        return info != null && (info.boosts_unrestrict != notRestrictBoosters
+                || (isEnabledNotRestrictBoosters && notRestrictBoosters == 0)
+                || (!isEnabledNotRestrictBoosters && notRestrictBoosters != 0));
+    }
+
+    private boolean isNotRestrictBoostersVisible() {
+        return currentChat.megagroup && !currentChat.gigagroup && ChatObject.canUserDoAdminAction(currentChat,ChatObject.ACTION_DELETE_MESSAGES) &&
+                (selectedSlowmode > 0 || defaultBannedRights.send_plain || defaultBannedRights.send_media || defaultBannedRights.send_photos || defaultBannedRights.send_videos
+                        || defaultBannedRights.send_stickers || defaultBannedRights.send_audios || defaultBannedRights.send_docs
+                        || defaultBannedRights.send_voices || defaultBannedRights.send_roundvideos || defaultBannedRights.embed_links || defaultBannedRights.send_polls);
     }
 
     public void setInfo(TLRPC.ChatFull chatFull) {
         info = chatFull;
         if (info != null) {
             selectedSlowmode = initialSlowmode = getCurrentSlowmode();
+            isEnabledNotRestrictBoosters = info.boosts_unrestrict > 0;
+            notRestrictBoosters = info.boosts_unrestrict;
         }
     }
 
@@ -3062,10 +3128,33 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         if (info == null) {
                             return;
                         }
+                        boolean needRowsUpdate = (selectedSlowmode > 0 && which == 0) || (selectedSlowmode == 0 && which > 0);
                         selectedSlowmode = which;
+                        if (needRowsUpdate) {
+                            DiffCallback diffCallback = saveState();
+                            updateRows();
+                            updateListAnimated(diffCallback);
+                        }
                         listViewAdapter.notifyItemChanged(slowmodeInfoRow);
                     });
                     break;
+                case VIEW_TYPE_NOT_RESTRICT_BOOSTERS_SLIDER: {
+                    SlideChooseView slider = new SlideChooseView(mContext);
+                    view = slider;
+                    slider.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    Drawable[] drawables = new Drawable[]{
+                            ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_profile_badge),
+                            ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_profile_badge2),
+                            ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_profile_badge2),
+                            ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_profile_badge2),
+                            ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_profile_badge2)
+                    };
+                    slider.setOptions(notRestrictBoosters > 0 ? (notRestrictBoosters - 1) : 0, drawables, "1", "2", "3", "4", "5");
+                    slider.setCallback(which -> {
+                        notRestrictBoosters = which + 1;
+                    });
+                    break;
+                }
                 case VIEW_TYPE_INNER_CHECK:
                     CheckBoxCell checkBoxCell = new CheckBoxCell(mContext, 4, 21, getResourceProvider());
                     checkBoxCell.getCheckBoxRound().setDrawBackgroundAsArc(14);
@@ -3218,6 +3307,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         privacyCell.setText(LocaleController.getString("ChannelHideMembersInfo", R.string.ChannelHideMembersInfo));
                     } else if (position == gigaInfoRow) {
                         privacyCell.setText(LocaleController.getString("BroadcastGroupConvertInfo", R.string.BroadcastGroupConvertInfo));
+                    } else if (position == dontRestrictBoostersInfoRow) {
+                        privacyCell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        if (isEnabledNotRestrictBoosters) {
+                            privacyCell.setText(LocaleController.getString(R.string.GroupNotRestrictBoostersInfo2));
+                        } else {
+                            privacyCell.setText(LocaleController.getString(R.string.GroupNotRestrictBoostersInfo));
+                        }
                     }
                     break;
                 case 2:
@@ -3288,6 +3384,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 case VIEW_TYPE_EXPANDABLE_SWITCH:
                 case 7:
                     TextCheckCell2 checkCell = (TextCheckCell2) holder.itemView;
+                    checkCell.getCheckBox().setDrawIconType(1);
+                    checkCell.getCheckBox().setColors(Theme.key_fill_RedNormal, Theme.key_switch2TrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
                     boolean animated = checkCell.getTag() != null && (Integer) checkCell.getTag() == position;
                     checkCell.setTag(position);
                     if (position == changeInfoRow) {
@@ -3298,6 +3396,10 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         checkCell.setTextAndCheck(LocaleController.getString("UserRestrictionsPinMessages", R.string.UserRestrictionsPinMessages), !defaultBannedRights.pin_messages && !ChatObject.isPublic(currentChat), true, animated);
                     } else if (position == sendMessagesRow) {
                         checkCell.setTextAndCheck(LocaleController.getString("UserRestrictionsSendText", R.string.UserRestrictionsSendText), !defaultBannedRights.send_plain, true, animated);
+                    } else if(position == dontRestrictBoostersRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.GroupNotRestrictBoosters), isEnabledNotRestrictBoosters, false, animated);
+                        checkCell.getCheckBox().setDrawIconType(0);
+                        checkCell.getCheckBox().setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
                     } else if (position == sendMediaRow) {
                         int sentMediaCount = getSendMediaSelectedCount();
                         checkCell.setTextAndCheck(LocaleController.getString("UserRestrictionsSendMedia", R.string.UserRestrictionsSendMedia), sentMediaCount > 0, true, animated);
@@ -3307,7 +3409,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                 boolean checked = !checkCell.isChecked();
                                 checkCell.setChecked(checked);
                                 setSendMediaEnabled(checked);
-
                             }
                         });
                     } else if (position == sendStickersRow) {
@@ -3419,14 +3520,14 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 return 3;
             } else if (position == restricted1SectionRow || position == permissionsSectionRow || position == slowmodeRow || position == gigaHeaderRow) {
                 return 5;
-            } else if (position == participantsInfoRow || position == slowmodeInfoRow || position == gigaInfoRow || position == antiSpamInfoRow || position == hideMembersInfoRow) {
+            } else if (position == participantsInfoRow || position == slowmodeInfoRow || position == dontRestrictBoostersInfoRow || position == gigaInfoRow || position == antiSpamInfoRow || position == hideMembersInfoRow) {
                 return 1;
             } else if (position == blockedEmptyRow) {
                 return 4;
             } else if (position == removedUsersRow) {
                 return 6;
             } else if (position == changeInfoRow || position == addUsersRow || position == pinMessagesRow || position == sendMessagesRow ||
-                    position == sendStickersRow || position == embedLinksRow || position == manageTopicsRow) {
+                    position == sendStickersRow || position == embedLinksRow || position == manageTopicsRow || position == dontRestrictBoostersRow) {
                 return 7;
             } else if (position == membersHeaderRow || position == contactsHeaderRow || position == botHeaderRow || position == loadingHeaderRow) {
                 return 8;
@@ -3442,6 +3543,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 return VIEW_TYPE_INNER_CHECK;
             } else if (position == sendMediaRow) {
                 return VIEW_TYPE_EXPANDABLE_SWITCH;
+            } else if (position == dontRestrictBoostersSliderRow) {
+                return VIEW_TYPE_NOT_RESTRICT_BOOSTERS_SLIDER;
             }
             return 0;
         }
@@ -3460,6 +3563,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private void setSendMediaEnabled(boolean enabled) {
         defaultBannedRights.send_media = !enabled;
+        defaultBannedRights.send_gifs = !enabled;
+        defaultBannedRights.send_inline = !enabled;
+        defaultBannedRights.send_games = !enabled;
         defaultBannedRights.send_photos = !enabled;
         defaultBannedRights.send_videos = !enabled;
         defaultBannedRights.send_stickers = !enabled;
@@ -3470,6 +3576,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         defaultBannedRights.embed_links = !enabled;
         defaultBannedRights.send_polls = !enabled;
         AndroidUtilities.updateVisibleRows(listView);
+        DiffCallback diffCallback = saveState();
+        updateRows();
+        updateListAnimated(diffCallback);
     }
 
     private boolean isExpandableSendMediaRow(int position) {
@@ -3609,6 +3718,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             put(++pointer, slowmodeRow, sparseIntArray);
             put(++pointer, slowmodeSelectRow, sparseIntArray);
             put(++pointer, slowmodeInfoRow, sparseIntArray);
+            put(++pointer, dontRestrictBoostersRow, sparseIntArray);
+            put(++pointer, dontRestrictBoostersSliderRow, sparseIntArray);
+            put(++pointer, dontRestrictBoostersInfoRow, sparseIntArray);
             put(++pointer, loadingProgressRow, sparseIntArray);
             put(++pointer, loadingUserCellRow, sparseIntArray);
             put(++pointer, loadingHeaderRow, sparseIntArray);

@@ -400,7 +400,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public int precalculateHeight() {
-            int MOST_SPEC = View.MeasureSpec.makeMeasureSpec(999999, View.MeasureSpec.AT_MOST);
+            int MOST_SPEC = View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST);
             linearLayout.measure(MOST_SPEC, MOST_SPEC);
             return linearLayout.getMeasuredHeight();
         }

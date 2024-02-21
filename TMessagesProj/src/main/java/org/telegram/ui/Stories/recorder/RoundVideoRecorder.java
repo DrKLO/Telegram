@@ -77,7 +77,7 @@ public class RoundVideoRecorder extends FrameLayout {
         addView(cameraView);
         cameraView.setDelegate(() -> {
             if (recordingStarted > 0) return;
-            CameraController.getInstance().recordVideo(cameraView.getCameraSession(), file, false, (thumbPath, duration) -> {
+            CameraController.getInstance().recordVideo(cameraView.getCameraSessionObject(), file, false, (thumbPath, duration) -> {
                 recordingStopped = System.currentTimeMillis();
                 AndroidUtilities.cancelRunOnUIThread(stopRunnable);
                 if (cancelled) {

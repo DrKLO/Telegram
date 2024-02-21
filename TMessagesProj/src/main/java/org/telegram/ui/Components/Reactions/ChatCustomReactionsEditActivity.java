@@ -11,6 +11,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.LayoutTransition;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.SpannableString;
@@ -706,7 +707,12 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     private boolean closeKeyboard() {
         if (emojiKeyboardVisible) {
             emojiKeyboardVisible = false;
-            editText.clearFocus();
+            if (isClearFocusNotWorking()) {
+                switchLayout.setFocusableInTouchMode(true);
+                switchLayout.requestFocus();
+            } else {
+                editText.clearFocus();
+            }
             updateScrollViewMarginBottom(0);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             bottomDialogLayout.animate().setListener(null).cancel();
@@ -717,11 +723,18 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 public void onAnimationEnd(Animator animation) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     bottomDialogLayout.setVisibility(View.INVISIBLE);
+                    if (isClearFocusNotWorking()) {
+                        switchLayout.setFocusableInTouchMode(false);
+                    }
                 }
             }).start();
             return true;
         }
         return false;
+    }
+
+    private boolean isClearFocusNotWorking() {
+        return Build.MODEL.toLowerCase().startsWith("zte") && Build.VERSION.SDK_INT <= Build.VERSION_CODES.P;
     }
 
     private void updateScrollViewMarginBottom(int margin) {

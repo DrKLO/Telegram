@@ -72,6 +72,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 = 15;
     public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB = 16;
     public static final int CACHE_TYPE_EMOJI_CALL = 17;
+    public static final int CACHE_TYPE_SAVED_REACTION = 18;
 
     public int rawDrawIndex;
 
@@ -603,7 +604,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setLayerNum(6656);
         }
         imageReceiver.setAspectFit(true);
-        if (cacheType == CACHE_TYPE_RENDERING_VIDEO || cacheType == STANDARD_LOTTIE_FRAME || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
+        if (cacheType == CACHE_TYPE_RENDERING_VIDEO || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == STANDARD_LOTTIE_FRAME || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
             imageReceiver.setAllowStartAnimation(false);
             imageReceiver.setAllowStartLottieAnimation(false);
             imageReceiver.setAutoRepeat(0);
@@ -625,9 +626,9 @@ public class AnimatedEmojiDrawable extends Drawable {
     private void updateAutoRepeat(ImageReceiver imageReceiver) {
         if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);
-        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
+        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
             imageReceiver.setAutoRepeatCount(1);
-        } else if (cacheType == CACHE_TYPE_EMOJI_CALL){
+        } else if (cacheType == CACHE_TYPE_EMOJI_CALL) {
             imageReceiver.setAutoRepeatCount(0);
         }
     }
@@ -1109,6 +1110,15 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         public void set(TLRPC.Document document, boolean animated) {
             set(document, cacheType, animated);
+        }
+
+        public void removeOldDrawable() {
+            if (drawables[1] != null) {
+                if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                    ((AnimatedEmojiDrawable) drawables[1]).removeView(this);
+                }
+                drawables[1] = null;
+            }
         }
 
         public void set(TLRPC.Document document, int cacheType, boolean animated) {

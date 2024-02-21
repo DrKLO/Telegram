@@ -145,6 +145,7 @@ public class ReplyMessageLine {
     public static final int TYPE_QUOTE = 1;
     public static final int TYPE_CODE = 2;
     public static final int TYPE_LINK = 3;
+    public static final int TYPE_CONTACT = 4;
 
     public int check(MessageObject messageObject, TLRPC.User currentUser, TLRPC.Chat currentChat, Theme.ResourcesProvider resourcesProvider, final int type) {
         final boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
@@ -155,6 +156,24 @@ public class ReplyMessageLine {
             color1 = color2 = color3 = Theme.getColor(Theme.key_chat_inReplyLine, resourcesProvider);
             backgroundColor = Theme.multAlpha(color1, dark ? 0.12f : 0.10f);
             return nameColorAnimated.set(nameColor = Theme.getColor(Theme.key_chat_inReplyNameText, resourcesProvider));
+        } else if (type == TYPE_CONTACT
+                && messageObject.messageOwner != null
+                && MessageObject.getMedia(messageObject.messageOwner) != null
+                && MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaContact
+        ) {
+            int colorId = 0;
+            TLRPC.User user = null;
+            long uid = MessageObject.getMedia(messageObject.messageOwner).user_id;
+            if (uid != 0) {
+                user = MessagesController.getInstance(messageObject.currentAccount).getUser(uid);
+            }
+            if (user != null) {
+                colorId = UserObject.getColorId(user);
+                emojiDocumentId = UserObject.getEmojiId(user);
+            }
+            resolveColor(messageObject, colorId, resourcesProvider);
+            backgroundColor = Theme.multAlpha(color1, 0.10f);
+            nameColor = color1;
         } else if (type != TYPE_REPLY && (
             messageObject.overrideLinkColor >= 0 ||
             messageObject.messageOwner != null && (
@@ -294,7 +313,7 @@ public class ReplyMessageLine {
             backgroundColor = Theme.multAlpha(color3, dark ? 0.12f : 0.10f);
             nameColor = Theme.getColor(Theme.key_chat_outReplyNameText, resourcesProvider);
         }
-        if ((type == TYPE_REPLY || type == TYPE_LINK) && messageObject != null && messageObject.overrideLinkEmoji != -1) {
+        if ((type == TYPE_REPLY || type == TYPE_LINK || type == TYPE_CONTACT) && messageObject != null && messageObject.overrideLinkEmoji != -1) {
             emojiDocumentId = messageObject.overrideLinkEmoji;
         }
         if (emojiDocumentId != 0 && emoji == null) {

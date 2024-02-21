@@ -237,7 +237,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 chatBackgroundDrawable = null;
             }
         }
-        backupImageView.setVisibility(item.chatTheme.showAsDefaultStub && fallbackWallpaper != null ? View.GONE : View.VISIBLE);
+        backupImageView.setVisibility(item.chatTheme.isAnyStub() && fallbackWallpaper != null ? View.GONE : View.VISIBLE);
 
         if (itemChanged || darkModeChanged) {
             if (animated) {
@@ -332,7 +332,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             }
         }
 
-        if (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.showAsDefaultStub) {
+        if (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.isAnyStub()) {
             setContentDescription(LocaleController.getString(R.string.ChatNoTheme));
         } else {
             setContentDescription(chatThemeItem.chatTheme.getEmoticon());
@@ -423,7 +423,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         color = themeItem.outBubbleColor;
         themeDrawable.outBubblePaintSecond.setColor(color);
 
-        int strokeColor = chatThemeItem.chatTheme.showAsDefaultStub
+        int strokeColor = chatThemeItem.chatTheme.isAnyStub()
                 ? getThemedColor(Theme.key_featuredStickers_addButton)
                 : themeItem.outLineColor;
         int strokeAlpha = themeDrawable.strokePaint.getAlpha();
@@ -513,7 +513,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                     bitmapDrawable.setFilterBitmap(true);
                     drawable = bitmapDrawable;
                 }
-            } else if (!(chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.showAsDefaultStub)) {
+            } else if (!(chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.isAnyStub())) {
                 drawable = new MotionBackgroundDrawable(0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884, true);
             }
         }
@@ -627,7 +627,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                     outlineBackgroundPaint.setAlpha(wasAlpha);
                 }
                 canvas.restore();
-            } else if (!(chatThemeItem != null && chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.showAsDefaultStub && chatBackgroundDrawable != null)) {
+            } else if (!(chatThemeItem != null && chatThemeItem.chatTheme != null && chatThemeItem.chatTheme.isAnyStub() && chatBackgroundDrawable != null)) {
                 canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
             }
         }
@@ -635,7 +635,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         public void draw(Canvas canvas, float alpha) {
             if (isSelected || strokeAlphaAnimator != null) {
                 EmojiThemes.ThemeItem themeItem = chatThemeItem.chatTheme.getThemeItem(chatThemeItem.themeIndex);
-                int strokeColor = chatThemeItem.chatTheme.showAsDefaultStub
+                int strokeColor = chatThemeItem.chatTheme.isAnyStub()
                         ? getThemedColor(Theme.key_featuredStickers_addButton)
                         : themeItem.outLineColor;
                 strokePaint.setColor(strokeColor);
@@ -648,7 +648,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             inBubblePaint.setAlpha((int) (255 * alpha));
             rectF.set(INNER_RECT_SPACE, INNER_RECT_SPACE, getWidth() - INNER_RECT_SPACE, getHeight() - INNER_RECT_SPACE);
 
-            if (chatThemeItem.chatTheme == null || (chatThemeItem.chatTheme.showAsDefaultStub && chatThemeItem.chatTheme.wallpaper == null)) {
+            if (chatThemeItem.chatTheme == null || (chatThemeItem.chatTheme.isAnyStub() && chatThemeItem.chatTheme.wallpaper == null)) {
                 if (fallbackWallpaper == null) {
                     canvas.drawRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, backgroundFillPaint);
                     canvas.save();

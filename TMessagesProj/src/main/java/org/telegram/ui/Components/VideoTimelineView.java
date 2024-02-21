@@ -250,7 +250,7 @@ public class VideoTimelineView extends View {
     }
 
     public void setVideoPath(String path) {
-        destroy();
+        destroy(false);
         mediaMetadataRetriever = new MediaMetadataRetriever();
         progressLeft = 0.0f;
         progressRight = 1.0f;
@@ -347,6 +347,10 @@ public class VideoTimelineView extends View {
     }
 
     public void destroy() {
+        destroy(true);
+    }
+
+    public void destroy(boolean recycle) {
         synchronized (sync) {
             try {
                 if (mediaMetadataRetriever != null) {
@@ -357,18 +361,20 @@ public class VideoTimelineView extends View {
                 FileLog.e(e);
             }
         }
-        if (!keyframes.isEmpty()) {
-            for (int a = 0; a < keyframes.size(); a++) {
-                Bitmap bitmap = keyframes.get(a);
-                if (bitmap != null) {
-                    bitmap.recycle();
+        if (recycle) {
+            if (!keyframes.isEmpty()) {
+                for (int a = 0; a < keyframes.size(); a++) {
+                    Bitmap bitmap = keyframes.get(a);
+                    if (bitmap != null) {
+                        bitmap.recycle();
+                    }
                 }
-            }
-        } else {
-            for (int a = 0; a < frames.size(); a++) {
-                Bitmap bitmap = frames.get(a);
-                if (bitmap != null) {
-                    bitmap.recycle();
+            } else {
+                for (int a = 0; a < frames.size(); a++) {
+                    Bitmap bitmap = frames.get(a);
+                    if (bitmap != null) {
+                        bitmap.recycle();
+                    }
                 }
             }
         }
@@ -436,7 +442,7 @@ public class VideoTimelineView extends View {
             int offset = 0;
             for (int a = 0; a < frames.size(); a++) {
                 Bitmap bitmap = frames.get(a);
-                if (bitmap != null) {
+                if (bitmap != null && !bitmap.isRecycled()) {
                     int x = offset * (isRoundFrames ? frameWidth / 2 : frameWidth);
                     if (isRoundFrames) {
                         rect2.set(x, topOffset, x + AndroidUtilities.dp(28), topOffset + AndroidUtilities.dp(32));

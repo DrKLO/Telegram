@@ -863,6 +863,7 @@ public class Theme {
                 rad = heightHalf;
             }
             if (isOut) {
+                // LEFT-BOTTOM <- RIGHT-BOTTOM
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
                     int radToUse = botButtonsBottom ? nearRad : rad;
                     if (currentType == TYPE_MEDIA) {
@@ -878,10 +879,12 @@ public class Theme {
                     path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
                 }
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullTop) {
+                    // LEFT-BOTTOM -> LEFT-TOP
                     path.lineTo(bounds.left + padding, bounds.top + padding + rad);
                     rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
                     path.arcTo(rect, 180, 90, false);
 
+                    // LEFT-TOP -> RIGHT-TOP
                     int radToUse = isTopNear ? nearRad : rad;
                     if (currentType == TYPE_MEDIA) {
                         path.lineTo(bounds.right - padding - radToUse, bounds.top + padding);
@@ -892,13 +895,17 @@ public class Theme {
                     }
                     path.arcTo(rect, 270, 90, false);
                 } else {
+                    // LEFT-BOTTOM -> LEFT-TOP
                     path.lineTo(bounds.left + padding, top - topY - dp(2));
+
+                    // LEFT-TOP -> RIGHT-TOP
                     if (currentType == TYPE_MEDIA) {
                         path.lineTo(bounds.right - padding, top - topY - dp(2));
                     } else {
                         path.lineTo(bounds.right - dp(8), top - topY - dp(2));
                     }
                 }
+                // RIGHT-TOP -> RIGHT-BOTTOM
                 if (currentType == TYPE_MEDIA) {
                     if (customPaint || drawFullBottom) {
                         int radToUse = isBottomNear ? nearRad : rad;
@@ -3098,7 +3105,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable[] avatarDrawables = new Drawable[18];
+    public static Drawable[] avatarDrawables = new Drawable[20];
 
     public static Drawable moveUpDrawable;
 
@@ -3635,6 +3642,10 @@ public class Theme {
     public static final int key_chat_inBubbleSelectedOverlay = colorsCount++;
     public static final int key_chat_inBubbleShadow = colorsCount++;
 
+    public static final int key_actionBarActionModeReaction = colorsCount++;
+    public static final int key_actionBarActionModeReactionText = colorsCount++;
+    public static final int key_actionBarActionModeReactionDot = colorsCount++;
+
     //my messages bubbles
     public static final int myMessagesBubblesStartIndex = colorsCount;
     public static final int key_chat_outBubble = colorsCount++;
@@ -3709,6 +3720,7 @@ public class Theme {
     public static final int key_chat_outLocationIcon = colorsCount++;
     public static final int key_chat_outContactBackground = colorsCount++;
     public static final int key_chat_outContactIcon = colorsCount++;
+    public static final int key_chat_outReactionButtonBackground = colorsCount++;
     public static final int myMessagesEndIndex = colorsCount;
 
     public static final int key_chat_outTextSelectionHighlight = colorsCount++;
@@ -4091,7 +4103,6 @@ public class Theme {
     public static final int key_color_cyan = colorsCount++;
     public static final int[] keys_colors = {key_color_lightblue, key_color_blue, key_color_green, key_color_lightgreen, key_color_red, key_color_orange, key_color_yellow, key_color_purple, key_color_cyan};
 
-    public static final int key_chat_outReactionButtonBackground = colorsCount++;
     public static final int key_chat_inReactionButtonBackground = colorsCount++;
     public static final int key_chat_outReactionButtonText = colorsCount++;
     public static final int key_chat_inReactionButtonText = colorsCount++;
@@ -4383,6 +4394,9 @@ public class Theme {
         fallbackKeys.put(key_statisticChartLine_purple, key_color_purple);
         fallbackKeys.put(key_statisticChartLine_indigo, key_color_purple);
         fallbackKeys.put(key_statisticChartLine_cyan, key_color_cyan);
+
+        fallbackKeys.put(key_actionBarActionModeReaction, key_windowBackgroundGray);
+        fallbackKeys.put(key_actionBarActionModeReactionText, key_chat_inReactionButtonText);
 
         for (int i = 0; i < keys_avatar_background.length; i++) {
             themeAccentExclusionKeys.add(keys_avatar_background[i]);
@@ -8134,6 +8148,8 @@ public class Theme {
             avatarDrawables[15] = resources.getDrawable(R.drawable.filled_unknown);
             avatarDrawables[16] = resources.getDrawable(R.drawable.filled_unclaimed);
             avatarDrawables[17] = resources.getDrawable(R.drawable.large_repost_story);
+            avatarDrawables[18] = resources.getDrawable(R.drawable.large_hidden);
+            avatarDrawables[19] = resources.getDrawable(R.drawable.large_notes);
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
@@ -8683,7 +8699,7 @@ public class Theme {
             chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_button_share).mutate();
             chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_button_reply);
             chat_closeIconDrawable = resources.getDrawable(R.drawable.msg_voiceclose).mutate();
-            chat_goIconDrawable = resources.getDrawable(R.drawable.message_arrow);
+            chat_goIconDrawable = resources.getDrawable(R.drawable.filled_open_message);
 
             int rad = AndroidUtilities.dp(2);
             RectF rect = new RectF();
@@ -9867,7 +9883,7 @@ public class Theme {
                     MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
                     Bitmap patternBitmap = null;
 
-                    if (wallpaperFile != null && !isCustomTheme()) {
+                    if (wallpaperFile != null) {
                         if (wallpaperDocument != null) {
                             File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
                             patternBitmap = SvgHelper.getBitmap(f, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);

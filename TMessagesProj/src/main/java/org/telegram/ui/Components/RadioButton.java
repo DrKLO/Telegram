@@ -15,8 +15,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import androidx.annotation.Keep;
+
+import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -81,6 +84,15 @@ public class RadioButton extends View {
         size = value;
     }
 
+    private Drawable icon;
+    public void setIcon(Drawable drawable) {
+        icon = drawable;
+        if (icon != null) {
+            icon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        }
+        invalidate();
+    }
+
     public int getColor() {
         return color;
     }
@@ -88,11 +100,17 @@ public class RadioButton extends View {
     public void setColor(int color1, int color2) {
         color = color1;
         checkedColor = color2;
+        if (icon != null) {
+            icon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        }
         invalidate();
     }
 
     public void setBackgroundColor(int color1) {
         color = color1;
+        if (icon != null) {
+            icon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        }
         invalidate();
     }
 
@@ -174,6 +192,15 @@ public class RadioButton extends View {
             int c = Color.rgb(r1 + rD, g1 + gD, b1 + bD);
             paint.setColor(c);
             checkedPaint.setColor(c);
+        }
+        if (icon != null) {
+            icon.setBounds(
+                (int) (getWidth() / 2f  - icon.getIntrinsicWidth() / 2f),
+                (int) (getHeight() / 2f - icon.getIntrinsicHeight() / 2f),
+                (int) (getWidth() / 2f  + icon.getIntrinsicWidth() / 2f),
+                (int) (getHeight() / 2f + icon.getIntrinsicHeight() / 2f)
+            );
+            icon.draw(canvas);
         }
         if (bitmap != null) {
             bitmap.eraseColor(0);

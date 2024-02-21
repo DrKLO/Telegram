@@ -37,6 +37,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
@@ -180,6 +181,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     private void updateStories(boolean animated, boolean asUpdate) {
         final boolean me = dialogId == UserConfig.getInstance(currentAccount).getClientUserId();
+        final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         TL_stories.PeerStories userFullStories = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesFromFullPeer(dialogId);
         TL_stories.PeerStories stateStories = MessagesController.getInstance(currentAccount).getStoriesController().getStories(dialogId);
         final TL_stories.PeerStories userStories;
@@ -241,6 +243,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                         continue;
                     }
                 }
+                if (storyItem.expire_date != 0 && now > storyItem.expire_date) {
+                    continue;
+                }
                 if (me || storyItem.id > max_read_id) {
                     storiesToShow.add(storyItem);
                     if (storiesToShow.size() >= CIRCLES_MAX) {
@@ -278,6 +283,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                     }
                 }
                 if (storyItem instanceof TL_stories.TL_storyItemDeleted) {
+                    continue;
+                }
+                if (storyItem.expire_date != 0 && now > storyItem.expire_date) {
                     continue;
                 }
                 if (!storiesToShow.contains(storyItem)) {

@@ -971,11 +971,13 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
                     sendMessagesToConnectionWithConfirmation(messages, connection, false);
                 }
             } else {
+                if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received unparsed packet on 0x%" PRIx64, connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), messageId);
                 if (delegate != nullptr) {
                     delegate->onUnparsedMessageReceived(messageId, data, connection->getConnectionType(), instanceNum);
                 }
             }
         } else {
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received unprocessed packet on 0x%" PRIx64, connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), messageId);
             std::vector<std::unique_ptr<NetworkMessage>> messages;
             sendMessagesToConnectionWithConfirmation(messages, connection, false);
         }
@@ -1059,6 +1061,9 @@ TLObject *ConnectionsManager::TLdeserialize(TLObject *request, uint32_t bytes, N
                 }
             }
         } else {
+            if (constructor == 0x96a18d5) {
+                if (LOGS_ENABLED) DEBUG_D("not found file 0x%x", constructor);
+            }
             if (LOGS_ENABLED) DEBUG_D("not found request to parse constructor 0x%x", constructor);
         }
     }
@@ -1628,6 +1633,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             processServerResponse(object, messageId, messageSeqNo, messageSalt, connection, innerMsgId, containerMessageId);
             delete object;
         } else {
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received unparsed from gzip object on %0x" PRIx64, connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), messageId);
             if (delegate != nullptr) {
                 delegate->onUnparsedMessageReceived(messageId, data, connection->getConnectionType(), instanceNum);
             }
@@ -1933,7 +1939,7 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
         Request *request = iter->get();
         if ((token != 0 && request->requestToken == token) || (messageId != 0 && request->respondsToMessageId(messageId))) {
             request->cancelled = true;
-            if (LOGS_ENABLED) DEBUG_D("cancelled queued rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
+            if (LOGS_ENABLED) DEBUG_D("cancelled queued rpc request %p - %s of messageId 0x%" PRIx64, request->rawRequest, typeid(*request->rawRequest).name(), request->messageId);
             requestsQueue.erase(iter);
             if (removeFromClass) {
                 removeRequestFromGuid(token);
@@ -1946,7 +1952,7 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
         Request *request = iter->get();
         if ((token != 0 && request->requestToken == token) || (messageId != 0 && request->respondsToMessageId(messageId))) {
             request->cancelled = true;
-            if (LOGS_ENABLED) DEBUG_D("cancelled waiting login  rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
+            if (LOGS_ENABLED) DEBUG_D("cancelled waiting login rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
             waitingLoginRequests.erase(iter);
             if (removeFromClass) {
                 removeRequestFromGuid(token);
@@ -1964,7 +1970,7 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
                 sendRequest(dropAnswer, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin | RequestFlagFailOnServerErrors | RequestFlagIsCancel, request->datacenterId, request->connectionType, true);
             }
             request->cancelled = true;
-            if (LOGS_ENABLED) DEBUG_D("cancelled running rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
+            if (LOGS_ENABLED) DEBUG_D("cancelled running rpc request %p - %s, of messageId 0x%" PRIx64, request->rawRequest, typeid(*request->rawRequest).name(), request->messageId);
             runningRequests.erase(iter);
             if (removeFromClass) {
                 removeRequestFromGuid(token);
@@ -2316,12 +2322,13 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
             forceThisRequest = false;
         }
 
-        if (forceThisRequest || (abs(currentTime - request->startTime) > maxTimeout &&
-                                 (currentTime >= request->minStartTime ||
-                                  (request->failedByFloodWait != 0 && (request->minStartTime - currentTime) > request->failedByFloodWait) ||
-                                  (request->failedByFloodWait == 0 && abs(currentTime - request->minStartTime) >= 60))
-        )
-                ) {
+        if (forceThisRequest || (
+            abs(currentTime - request->startTime) > maxTimeout && (
+                currentTime >= request->minStartTime ||
+                (request->failedByFloodWait != 0 && (request->minStartTime - currentTime) > request->failedByFloodWait) ||
+                (request->failedByFloodWait == 0 && abs(currentTime - request->minStartTime) >= 60)
+            )
+        )) {
             if (!forceThisRequest && request->connectionToken > 0) {
                 if ((request->connectionType & ConnectionTypeGeneric || request->connectionType & ConnectionTypeTemp) && request->connectionToken == connection->getConnectionToken()) {
                     if (LOGS_ENABLED) DEBUG_D("request token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
@@ -2354,7 +2361,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         }
                     }
                     if (request->retryCount >= retryMax) {
-                        if (LOGS_ENABLED) DEBUG_E("timed out %s", typeInfo.name());
+                        if (LOGS_ENABLED) DEBUG_E("timed out %s, message_id = 0x%" PRIx64, typeInfo.name(), request->messageId);
                         auto error = new TL_error();
                         error->code = -123;
                         error->text = "RETRY_LIMIT";

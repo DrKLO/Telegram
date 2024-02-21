@@ -97,7 +97,7 @@ public class MessageEntityView extends EntityView {
                 messageOwner.fwd_from = null;
             }
             messageOwner.voiceTranscriptionOpen = false;
-            MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview);
+            MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview, false);
             messageObjects.add(newMsg);
         }
 //        dateCell = new ChatActionCell(context, false, resourcesProvider) {
@@ -792,7 +792,7 @@ public class MessageEntityView extends EntityView {
                 MessageObject message = messageObjects.get(position);
                 boolean pinnedTop = false;
                 if (groupedMessages != null) {
-                    MessageObject.GroupedMessagePosition p = groupedMessages.positions.get(message);
+                    MessageObject.GroupedMessagePosition p = groupedMessages.getPosition(message);
                     if (p != null) {
                         pinnedTop = p.minY != 0;
                     }
@@ -825,7 +825,7 @@ public class MessageEntityView extends EntityView {
                 position = messageObjects.size() - 1 - position;
                 if (groupedMessages != null && position >= 0 && position < messageObjects.size()) {
                     MessageObject message = messageObjects.get(position);
-                    MessageObject.GroupedMessagePosition pos = groupedMessages.positions.get(message);
+                    MessageObject.GroupedMessagePosition pos = groupedMessages.getPosition(message);
                     if (pos == null || pos.minX == pos.maxX || pos.minY != pos.maxY || pos.minY == 0) {
                         return false;
                     }
@@ -849,7 +849,7 @@ public class MessageEntityView extends EntityView {
                 position = messageObjects.size() - 1 - position;
                 if (groupedMessages != null && position >= 0 && position < groupedMessages.messages.size()) {
                     MessageObject message = groupedMessages.messages.get(position);
-                    MessageObject.GroupedMessagePosition groupedPosition = groupedMessages.positions.get(message);
+                    MessageObject.GroupedMessagePosition groupedPosition = groupedMessages.getPosition(message);
                     if (groupedPosition != null) {
                         return groupedPosition.spanSize;
                     }

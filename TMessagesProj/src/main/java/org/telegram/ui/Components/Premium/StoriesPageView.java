@@ -61,6 +61,11 @@ public class StoriesPageView extends BaseListPageView {
                 LocaleController.getString("PremiumStoriesStealthDescription", R.string.PremiumStoriesStealthDescription),
                 PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_STEALTH_MODE
         ));
+        itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quality_hd,
+                LocaleController.getString(R.string.PremiumStoriesQuality),
+                LocaleController.getString(R.string.PremiumStoriesQualityDescription),
+                PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_QUALITY
+        ));
         itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_views,
                 LocaleController.getString("PremiumStoriesViews", R.string.PremiumStoriesViews),
                 LocaleController.getString("PremiumStoriesViewsDescription", R.string.PremiumStoriesViewsDescription),

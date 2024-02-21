@@ -27,10 +27,11 @@ import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Loadable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
-public class PremiumButtonView extends FrameLayout {
+public class PremiumButtonView extends FrameLayout implements Loadable {
 
     private Paint paintOverlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -39,7 +40,6 @@ public class PremiumButtonView extends FrameLayout {
     public AnimatedTextView buttonTextView;
     public AnimatedTextView overlayTextView;
     private int radius;
-
     private boolean showOverlay;
     private float overlayProgress;
     public FrameLayout buttonLayout;
@@ -156,6 +156,10 @@ public class PremiumButtonView extends FrameLayout {
             paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
             updateOverlayProgress();
         }
+    }
+
+    public boolean isShowOverlay() {
+        return showOverlay;
     }
 
     public RLottieImageView getIconView() {

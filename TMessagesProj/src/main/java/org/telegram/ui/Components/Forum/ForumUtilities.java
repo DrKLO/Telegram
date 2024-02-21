@@ -16,12 +16,9 @@ import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.util.SparseArray;
-import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -87,12 +84,12 @@ public class ForumUtilities {
         return new GeneralTopicDrawable(context, scale, color, isDialog);
     }
 
-    public static void filterMessagesByTopic(int threadMessageId, ArrayList<MessageObject> messageObjects) {
+    public static void filterMessagesByTopic(long threadMessageId, ArrayList<MessageObject> messageObjects) {
         if (messageObjects == null) {
             return;
         }
         for (int i = 0; i < messageObjects.size(); i++) {
-            if (threadMessageId != MessageObject.getTopicId(messageObjects.get(i).messageOwner, true)) {
+            if (threadMessageId != MessageObject.getTopicId(messageObjects.get(i).currentAccount, messageObjects.get(i).messageOwner, true)) {
                 messageObjects.remove(i);
                 i--;
             }
@@ -368,7 +365,7 @@ public class ForumUtilities {
         if (messageObject.getDialogId() > 0) {
             return;
         }
-        TLRPC.TL_forumTopic topic = MessagesController.getInstance(messageObject.currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.messageOwner, true));
+        TLRPC.TL_forumTopic topic = MessagesController.getInstance(messageObject.currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.currentAccount, messageObject.messageOwner, true));
         if (topic != null && messageObject.topicIconDrawable[0] instanceof ForumBubbleDrawable) {
             ((ForumBubbleDrawable) messageObject.topicIconDrawable[0]).setColor(topic.icon_color);
         }

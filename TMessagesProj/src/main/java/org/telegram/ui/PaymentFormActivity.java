@@ -4164,7 +4164,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private void setDonePressed(boolean value) {
         donePressed = value;
         swipeBackEnabled = !value;
-        if (actionBar != null) {
+        if (actionBar != null && actionBar.getBackButton() != null) {
             actionBar.getBackButton().setEnabled(!donePressed);
         }
         if (detailSettingsCell[0] != null) {

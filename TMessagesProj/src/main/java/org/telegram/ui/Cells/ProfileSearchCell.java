@@ -8,9 +8,14 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -40,10 +45,12 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CanvasButton;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.NotificationsSettingsActivity;
@@ -101,6 +108,10 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     private boolean drawCheck;
     private boolean drawPremium;
 
+    private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private boolean showPremiumBlocked;
+    private boolean premiumBlocked;
+
     private int statusLeft;
     private StaticLayout statusLayout;
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusDrawable;
@@ -132,6 +143,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         statusDrawable.setCallback(this);
     }
 
+    public ProfileSearchCell showPremiumBlock(boolean show) {
+        showPremiumBlocked = show;
+        return this;
+    }
+
     private boolean customPaints;
     private TextPaint namePaint, statusPaint;
     public ProfileSearchCell useCustomPaints() {
@@ -150,14 +166,17 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             user = (TLRPC.User) object;
             chat = null;
             contact = null;
+            premiumBlocked = showPremiumBlocked && user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(user.id);
         } else if (object instanceof TLRPC.Chat) {
             chat = (TLRPC.Chat) object;
             user = null;
             contact = null;
+            premiumBlocked = false;
         } else if (object instanceof ContactsController.Contact) {
             contact = (ContactsController.Contact) object;
             chat = null;
             user = null;
+            premiumBlocked = showPremiumBlocked && contact != null && contact.user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(contact.user.id);
         }
         encryptedChat = ec;
         subLabel = s;
@@ -235,6 +254,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         super.onDetachedFromWindow();
         avatarImage.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        if (showPremiumBlocked) {
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.userIsPremiumBlockedUpadted);
+        }
         statusDrawable.detach();
     }
 
@@ -243,6 +265,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         super.onAttachedToWindow();
         avatarImage.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        if (showPremiumBlocked) {
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.userIsPremiumBlockedUpadted);
+        }
         statusDrawable.attach();
     }
 
@@ -250,6 +275,12 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiLoaded) {
             invalidate();
+        } else if (id == NotificationCenter.userIsPremiumBlockedUpadted) {
+            final boolean wasPremiumBlocked = premiumBlocked;
+            premiumBlocked = showPremiumBlocked && (user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(user.id) || contact != null && contact.user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(contact.user.id));
+            if (premiumBlocked != wasPremiumBlocked) {
+                invalidate();
+            }
         }
     }
 
@@ -709,6 +740,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         postInvalidate();
     }
 
+    private PremiumGradient.PremiumGradientTools premiumGradient;
+    private Drawable lockDrawable;
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (user == null && chat == null && encryptedChat == null && contact == null) {
@@ -786,6 +820,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             actionLayout.draw(canvas);
             canvas.restore();
         }
+
         if (user != null) {
             StoriesUtilities.drawAvatarWithStory(user.id, canvas, avatarImage, avatarStoryParams);
         } else if (chat != null) {
@@ -794,6 +829,38 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             avatarImage.setImageCoords(avatarStoryParams.originalAvatarRect);
             avatarImage.draw(canvas);
         }
+
+        final float lockT = premiumBlockedT.set(premiumBlocked);
+        if (lockT > 0) {
+            float top = avatarImage.getCenterY() + dp(14);
+            float left = avatarImage.getCenterX() + dp(16);
+
+            canvas.save();
+            Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            canvas.drawCircle(left, top, dp(10 + 1.33f) * lockT, Theme.dialogs_onlineCirclePaint);
+            if (premiumGradient == null) {
+                premiumGradient = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
+            }
+            premiumGradient.gradientMatrix((int) (left - dp(10)), (int) (top - dp(10)), (int) (left + dp(10)), (int) (top + dp(10)), 0, 0);
+            canvas.drawCircle(left, top, dp(10) * lockT, premiumGradient.paint);
+            if (lockDrawable == null) {
+                lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock2).mutate();
+                lockDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            }
+            lockDrawable.setBounds(
+                    (int) (left - lockDrawable.getIntrinsicWidth() / 2f * .875f * lockT),
+                    (int) (top  - lockDrawable.getIntrinsicHeight() / 2f * .875f * lockT),
+                    (int) (left + lockDrawable.getIntrinsicWidth() / 2f * .875f * lockT),
+                    (int) (top  + lockDrawable.getIntrinsicHeight() / 2f * .875f * lockT)
+            );
+            lockDrawable.setAlpha((int) (0xFF * lockT));
+            lockDrawable.draw(canvas);
+            canvas.restore();
+        }
+    }
+
+    public boolean isBlocked() {
+        return premiumBlocked;
     }
 
     @Override

@@ -71,7 +71,7 @@ public class DiscountSpan extends ReplacementSpan {
         }
         bgPaint.setColor(color);
         textPaint.setColor(AndroidUtilities.computePerceivedBrightness(color) > .721f ? Color.BLACK : Color.WHITE);
-        float x = _x + dp(6), y = _y - height + dp(2f);
+        float x = _x + dp(10), y = _y - height + dp(2f);
         AndroidUtilities.rectTmp.set(x, y, x + width, y + height);
         float r = dp(4f);
         AndroidUtilities.rectTmp.inset(dp(-4.5f), dp(-1.66f));

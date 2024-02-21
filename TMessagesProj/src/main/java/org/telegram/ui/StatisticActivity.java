@@ -100,6 +100,22 @@ import java.util.Locale;
 
 public class StatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
+    public static BaseFragment create(TLRPC.Chat chat) {
+        return create(chat, true);
+    }
+
+    public static BaseFragment create(TLRPC.Chat chat, boolean startFromBoosts) {
+        Bundle args = new Bundle();
+        args.putLong("chat_id", chat.id);
+        args.putBoolean("is_megagroup", chat.megagroup);
+        args.putBoolean("start_from_boosts", startFromBoosts);
+        TLRPC.ChatFull chatInfo = MessagesController.getInstance(UserConfig.selectedAccount).getChatFull(chat.id);
+        if (chatInfo == null || !chatInfo.can_view_stats) {
+            return new BoostsActivity(-chat.id);
+        }
+        return new StatisticActivity(args);
+    }
+
     private TLRPC.ChatFull chat;
     private final long chatId;
 
@@ -286,7 +302,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).getId();
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chatId, 0, false, count, lastPostId, 0, 0, classGuid, 0, false, 0, 0, true, false, null);
+                    getMessagesStorage().getMessages(-chatId, 0, false, count, lastPostId, 0, 0, classGuid, 0, 0, 0, 0, true, false, null);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -528,7 +544,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     @Override
     public View createView(Context context) {
         sharedUi = new BaseChartView.SharedUiComponents();
-        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chatId, currentAccount);
+        TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
+        boolean isBoostSupported = ChatObject.isBoostSupported(currentChat);
         BottomPagerTabs storiesTabsView = new BottomPagerTabs(context, getResourceProvider()) {
             @Override
             public Tab[] createTabs() {
@@ -567,10 +584,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             }
         });
         FrameLayout statisticLayout = new FrameLayout(context);
-        if (isChannel) {
+        if (isBoostSupported) {
             boostLayout = new ChannelBoostLayout(StatisticActivity.this, -chatId, getResourceProvider());
         }
-        boolean showTabs = isChannel && !onlyBoostsStat;
+        boolean showTabs = isBoostSupported && !onlyBoostsStat;
         if (showTabs && startFromBoosts) {
             viewPagerFixed.setPosition(1);
         }
@@ -580,7 +597,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (onlyBoostsStat) {
                     return 1;
                 }
-                if (isChannel) {
+                if (isBoostSupported) {
                     return 2;
                 }
                 return 1;
@@ -789,6 +806,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
         actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), true);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
@@ -2212,7 +2230,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < messages.size(); i++) {
                     messageObjects.add(new MessageObject(currentAccount, messages.get(i), false, true));
                 }
-                getMessagesStorage().putMessages(messages, false, true, true, 0, false, 0);
+                getMessagesStorage().putMessages(messages, false, true, true, 0, 0, 0);
             }
 
             AndroidUtilities.runOnUIThread(() -> {

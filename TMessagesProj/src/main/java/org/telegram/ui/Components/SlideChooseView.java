@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextPaint;
 import android.view.HapticFeedbackConstants;
@@ -42,6 +44,7 @@ public class SlideChooseView extends View {
 
     private String[] optionsStr;
     private int[] optionsSizes;
+    private Drawable[] leftDrawables;
 
     private int selectedIndex;
     private float selectedIndexTouch;
@@ -96,11 +99,21 @@ public class SlideChooseView extends View {
     }
 
     public void setOptions(int selected, String... options) {
+        setOptions(selected, null, options);
+    }
+
+    public void setOptions(int selected, Drawable[] leftDrawables, String... options) {
         this.optionsStr = options;
+        this.leftDrawables = leftDrawables;
         selectedIndex = selected;
         optionsSizes = new int[optionsStr.length];
         for (int i = 0; i < optionsStr.length; i++) {
             optionsSizes[i] = (int) Math.ceil(textPaint.measureText(optionsStr[i]));
+        }
+        if (this.leftDrawables != null) {
+            for (Drawable drawable : this.leftDrawables) {
+                drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+            }
         }
         requestLayout();
     }
@@ -227,12 +240,33 @@ public class SlideChooseView extends View {
             int size = optionsSizes[a];
             String text = optionsStr[a];
             textPaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundWhiteGrayText), getThemedColor(Theme.key_windowBackgroundWhiteBlueText), t));
+
+            if (leftDrawables != null) {
+                canvas.save();
+                if (a == 0) {
+                    canvas.translate(AndroidUtilities.dp(12), AndroidUtilities.dp(15.5f));
+                } else if (a == optionsStr.length - 1) {
+                    canvas.translate(getMeasuredWidth() - size - AndroidUtilities.dp(22) - AndroidUtilities.dp(10), AndroidUtilities.dp(28) - AndroidUtilities.dp(12.5f));
+                } else {
+                    canvas.translate(cx - size / 2 - AndroidUtilities.dp(10), AndroidUtilities.dp(28) - AndroidUtilities.dp(12.5f));
+                }
+                leftDrawables[a].setColorFilter(textPaint.getColor(), PorterDuff.Mode.MULTIPLY);
+                leftDrawables[a].draw(canvas);
+                canvas.restore();
+                canvas.save();
+                canvas.translate((leftDrawables[a].getIntrinsicWidth() / 2f) - AndroidUtilities.dp(a == 0 ? 3 : 2), 0);
+            }
+
             if (a == 0) {
                 canvas.drawText(text, AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
             } else if (a == optionsStr.length - 1) {
                 canvas.drawText(text, getMeasuredWidth() - size - AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
             } else {
                 canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
+            }
+
+            if (leftDrawables != null) {
+                canvas.restore();
             }
         }
 

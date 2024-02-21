@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -126,7 +127,7 @@ public class HeaderCell extends FrameLayout {
         setWillNotDraw(false);
     }
 
-    public void setBoostViaGifsText() {
+    public void setBoostViaGifsText(TLRPC.Chat currentChat) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             setOutlineProvider(new ViewOutlineProvider() {
                 @Override
@@ -142,7 +143,8 @@ public class HeaderCell extends FrameLayout {
         setLayoutParams(lp);
         setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         titleView.setText(LocaleController.formatString("BoostingBoostsViaGifts", R.string.BoostingBoostsViaGifts));
-        subtitleView.setText(LocaleController.formatString("BoostingGetMoreBoost", R.string.BoostingGetMoreBoost));
+        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(currentChat);
+        subtitleView.setText(LocaleController.formatString(isChannel ? R.string.BoostingGetMoreBoost : R.string.BoostingGetMoreBoostGroup));
         subtitleView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
     }
 

@@ -316,7 +316,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             if (!TextUtils.isEmpty(txt)) {
                 editText.setText(txt);
-                editText.setSelection(editText.getText().length());
+                editText.setSelection(0, editText.getText().length());
             }
         }
     }

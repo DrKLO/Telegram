@@ -122,15 +122,7 @@ public class ReactionsUtils {
         limitReachedBottomSheet.setDialogId(dialogId);
         limitReachedBottomSheet.showStatisticButtonInLink(() -> {
             TLRPC.Chat chat = fragment.getMessagesController().getChat(-dialogId);
-            Bundle args = new Bundle();
-            args.putLong("chat_id", -dialogId);
-            args.putBoolean("is_megagroup", chat.megagroup);
-            args.putBoolean("start_from_boosts", true);
-            TLRPC.ChatFull chatInfo = fragment.getMessagesController().getChatFull(-dialogId);
-            if (chatInfo == null || !chatInfo.can_view_stats) {
-                args.putBoolean("only_boosts", true);
-            }
-            fragment.presentFragment(new StatisticActivity(args));
+            fragment.presentFragment(StatisticActivity.create(chat));
         });
         limitReachedBottomSheet.show();
     }

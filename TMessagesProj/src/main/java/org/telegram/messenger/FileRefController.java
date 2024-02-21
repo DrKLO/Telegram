@@ -1,6 +1,7 @@
 package org.telegram.messenger;
 
 import android.os.SystemClock;
+import android.util.Log;
 
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -1081,13 +1082,13 @@ public class FileRefController extends BaseController {
                     TL_stories.StoryItem storyItem = stories.stories.get(0);
                     if (storyItem.media != null) {
                         newStoryItem = storyItem;
-                        if (storyItem.media.photo != null) {
+                        if (result == null && storyItem.media.photo != null) {
                             result = getFileReference(storyItem.media.photo, requester.location, needReplacement, locationReplacement);
                         }
-                        if (storyItem.media.document != null) {
+                        if (result == null && storyItem.media.document != null) {
                             result = getFileReference(storyItem.media.document, requester.location, needReplacement, locationReplacement);
                         }
-                        if (storyItem.media.alt_document != null) {
+                        if (result == null && storyItem.media.alt_document != null) {
                             result = getFileReference(storyItem.media.alt_document, requester.location, needReplacement, locationReplacement);
                         }
                     }

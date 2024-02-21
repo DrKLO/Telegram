@@ -83,7 +83,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private int currentAccount = UserConfig.selectedAccount;
     private Context mContext;
     private long dialog_id;
-    private int threadMessageId;
+    private long threadMessageId;
     private TLRPC.ChatFull info;
     private SearchAdapterHelper searchAdapterHelper;
     private ArrayList<TLObject> searchResultUsernames;
@@ -181,7 +181,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
     };
 
-    public MentionsAdapter(Context context, boolean darkTheme, long did, int threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
+    public MentionsAdapter(Context context, boolean darkTheme, long did, long threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         mContext = context;
         delegate = mentionsAdapterDelegate;
@@ -1145,7 +1145,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 }
             }
             final TLRPC.Chat chat;
-            int threadId;
+            long threadId;
             if (parentFragment != null) {
                 chat = parentFragment.getCurrentChat();
                 threadId = parentFragment.getThreadId();
@@ -1333,7 +1333,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                         channelParticipantsMentions.q = usernameString;
                         if (threadId != 0) {
                             channelParticipantsMentions.flags |= 2;
-                            channelParticipantsMentions.top_msg_id = threadId;
+                            channelParticipantsMentions.top_msg_id = (int) threadId;
                         }
                         req.filter = channelParticipantsMentions;
                         final int currentReqId = ++channelLastReqId;

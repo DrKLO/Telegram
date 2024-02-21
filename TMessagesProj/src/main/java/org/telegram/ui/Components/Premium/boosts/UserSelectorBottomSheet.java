@@ -417,7 +417,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             View child = recyclerListView.getChildAt(i);
             if (child instanceof SelectorUserCell) {
                 int position = recyclerListView.getChildAdapterPosition(child);
-                if (position <= 0) {
+                if (position - 1 < 0 || position - 1 >= items.size()) {
                     continue;
                 }
                 if (visibleItemsFrom == -1) {
@@ -444,8 +444,13 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         actionButton.setShowZero(false);
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         if (selectedIds.size() == 0) {
-            stringBuilder.append("d").setSpan(recipientsBtnSpaceSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            stringBuilder.append(LocaleController.getString("GiftPremiumChooseRecipientsBtn", R.string.GiftPremiumChooseRecipientsBtn));
+            if (LocaleController.isRTL) {
+                stringBuilder.append(LocaleController.getString("GiftPremiumChooseRecipientsBtn", R.string.GiftPremiumChooseRecipientsBtn));
+                stringBuilder.append("d").setSpan(recipientsBtnSpaceSpan, stringBuilder.length() - 1, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                stringBuilder.append("d").setSpan(recipientsBtnSpaceSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                stringBuilder.append(LocaleController.getString("GiftPremiumChooseRecipientsBtn", R.string.GiftPremiumChooseRecipientsBtn));
+            }
         } else {
             stringBuilder.append(LocaleController.getString("GiftPremiumProceedBtn", R.string.GiftPremiumProceedBtn));
         }

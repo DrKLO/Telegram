@@ -18,6 +18,7 @@ import org.telegram.tgnet.TLRPC;
 public class UserObject {
 
     public static final long REPLY_BOT = 1271266957L;
+    public static final long ANONYMOUS = 2666000L;
 
     public static boolean isDeleted(TLRPC.User user) {
         return user == null || user instanceof TLRPC.TL_userDeleted_old2 || user instanceof TLRPC.TL_userEmpty || user.deleted;
@@ -32,7 +33,11 @@ public class UserObject {
     }
 
     public static boolean isReplyUser(TLRPC.User user) {
-        return user != null && (user.id == 708513 || user.id == REPLY_BOT);
+        return user != null && (user.id == 708513L || user.id == REPLY_BOT);
+    }
+
+    public static boolean isAnonymous(TLRPC.User user) {
+        return user != null && user.id == ANONYMOUS;
     }
 
     public static boolean isReplyUser(long did) {

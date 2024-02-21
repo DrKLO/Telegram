@@ -206,6 +206,18 @@ class TL_userStatusLastWeek : public UserStatus {
 public:
     static const uint32_t constructor = 0x7bf09fc;
 
+    uint32_t flags;
+    bool by_me;
+
+    void serializeToStream(NativeByteBuffer *stream);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+};
+
+class TL_userStatusLastWeek_layer171 : public UserStatus {
+
+public:
+    static const uint32_t constructor = 0x7bf09fc;
+
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -218,6 +230,19 @@ public:
 };
 
 class TL_userStatusLastMonth : public UserStatus {
+
+public:
+    static const uint32_t constructor = 0x65899777;
+
+    uint32_t flags;
+    bool by_me;
+
+    void serializeToStream(NativeByteBuffer *stream);
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+};
+
+class TL_userStatusLastMonth_layer171 : public UserStatus {
 
 public:
     static const uint32_t constructor = 0x77ebc742;
@@ -237,7 +262,27 @@ public:
 class TL_userStatusRecently : public UserStatus {
 
 public:
+    static const uint32_t constructor = 0x7b197dc8;
+
+    uint32_t flags;
+    bool by_me;
+
+    void serializeToStream(NativeByteBuffer *stream);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+};
+
+class TL_userStatusRecently_layer171 : public UserStatus {
+
+public:
     static const uint32_t constructor = 0xe26f42f1;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_userStatusHidden : public UserStatus {
+
+public:
+    static const uint32_t constructor = 0xcf7d64b1;
 
     void serializeToStream(NativeByteBuffer *stream);
 };

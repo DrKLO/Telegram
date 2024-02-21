@@ -483,6 +483,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     }
 
     public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions) {
+        this(file, createDecoder, streamSize, streamLoadingPriority, document, location, parentObject, seekTo, account, preview, w, h, cacheOptions, document != null ? 1 : 0);
+    }
+
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions, int cacheType) {
         path = file;
         PRERENDER_FRAME = SharedConfig.deviceIsAboveAverage();
         streamFileSize = streamSize;
@@ -494,7 +498,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         this.document = document;
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         if (streamSize != 0 && (document != null || location != null)) {
-            stream = new AnimatedFileDrawableStream(document, location, parentObject, account, preview, streamLoadingPriority);
+            stream = new AnimatedFileDrawableStream(document, location, parentObject, account, preview, streamLoadingPriority, cacheType);
         }
         if (createDecoder && !this.precache) {
             nativePtr = createDecoder(file.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream, preview);

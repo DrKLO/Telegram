@@ -268,7 +268,7 @@ public class TextCell extends FrameLayout {
         int textKey = textView.getTag() instanceof Integer ? (int) textView.getTag() : Theme.key_windowBackgroundWhiteBlackText;
         textView.setTextColor(processColor(Theme.getColor(textKey, resourcesProvider)));
         if (imageView.getTag() instanceof Integer) {
-            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor((int) imageView.getTag(), resourcesProvider)), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor((int) imageView.getTag(), resourcesProvider), PorterDuff.Mode.MULTIPLY));
         }
         subtitleView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)));
         valueTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
@@ -279,14 +279,14 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(processColor(Theme.getColor(text, resourcesProvider)));
         textView.setTag(text);
         if (icon >= 0) {
-            imageView.setColorFilter(new PorterDuffColorFilter(processColor(Theme.getColor(icon, resourcesProvider)), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }
     }
 
     private CharSequence valueText;
 
-    public void setText(String text, boolean divider) {
+    public void setText(CharSequence text, boolean divider) {
         imageLeft = 21;
         textView.setText(text);
         textView.setRightDrawable(null);
@@ -300,8 +300,12 @@ public class TextCell extends FrameLayout {
     }
 
     public void setLockLevel(boolean plus, int level) {
-        textView.setRightDrawable(new PeerColorActivity.LevelLock(getContext(), plus, level, resourcesProvider));
-        textView.setDrawablePadding(dp(6));
+        if (level <= 0) {
+            textView.setRightDrawable(null);
+        } else {
+            textView.setRightDrawable(new PeerColorActivity.LevelLock(getContext(), plus, level, resourcesProvider));
+            textView.setDrawablePadding(dp(6));
+        }
     }
 
     public void setTextAndIcon(CharSequence text, int resId, boolean divider) {
@@ -380,6 +384,10 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+    }
+
+    public void setValue(String value, boolean animated) {
+        valueTextView.setText(TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
     }
 
     public void setTextAndValueAndColorfulIcon(String text, CharSequence value, boolean animated, int resId, int color, boolean divider) {

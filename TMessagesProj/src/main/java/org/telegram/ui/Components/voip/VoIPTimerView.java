@@ -40,7 +40,6 @@ public class VoIPTimerView extends View {
         super(context);
         textPaint.setTextSize(AndroidUtilities.dp(15));
         textPaint.setColor(Color.WHITE);
-        textPaint.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
         activePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.9f)));
         inactivePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.4f)));
         callsDeclineDrawable = ContextCompat.getDrawable(context, R.drawable.calls_decline);

@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -53,6 +54,15 @@ public class DialogsHintCell extends FrameLayout {
         messageView.setEllipsize(TextUtils.TruncateAt.END);
         contentView.addView(messageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP));
 
+        NotificationCenter.getGlobalInstance().listen(this, NotificationCenter.emojiLoaded, args -> {
+            if (titleView != null) {
+                titleView.invalidate();
+            }
+            if (messageView != null) {
+                messageView.invalidate();
+            }
+        });
+
         chevronView = new ImageView(context);
         chevronView.setImageResource(R.drawable.arrow_newchat);
         addView(chevronView, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
@@ -83,15 +93,10 @@ public class DialogsHintCell extends FrameLayout {
         closeView.setVisibility(GONE);
     }
 
-    public void setChristmasStyle(OnClickListener closeListener) {
+    public void setOnCloseListener(OnClickListener closeListener) {
         chevronView.setVisibility(INVISIBLE);
         closeView.setVisibility(VISIBLE);
         closeView.setOnClickListener(closeListener);
-        Emoji.EmojiDrawable drawable = Emoji.getEmojiDrawable("\uD83C\uDF84");
-        if (drawable != null) {
-            drawable.setBounds(dp(2), -dp(2), Emoji.drawImgSize + dp(2), Emoji.drawImgSize - dp(2));
-            titleView.setCompoundDrawables(null, null, drawable, null);
-        }
     }
 
     @Override

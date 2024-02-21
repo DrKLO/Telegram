@@ -209,6 +209,9 @@ public class AvatarsDrawable {
     }
 
     public void animateFromState(AvatarsDrawable avatarsDrawable, int currentAccount, boolean createAnimator) {
+        if (avatarsDrawable == null) {
+            return;
+        }
         if (avatarsDrawable.transitionProgressAnimator != null) {
             avatarsDrawable.transitionProgressAnimator.cancel();
             if (transitionInProgress) {

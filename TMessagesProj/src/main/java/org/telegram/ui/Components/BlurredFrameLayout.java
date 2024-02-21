@@ -15,7 +15,7 @@ import org.telegram.messenger.SharedConfig;
 
 public class BlurredFrameLayout extends FrameLayout {
 
-    private final SizeNotifierFrameLayout sizeNotifierFrameLayout;
+    protected final SizeNotifierFrameLayout sizeNotifierFrameLayout;
     protected Paint backgroundPaint;
     public int backgroundColor = Color.TRANSPARENT;
     public int backgroundPaddingBottom;

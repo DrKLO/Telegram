@@ -132,7 +132,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     public TLRPC.InputReplyTo createReplyInput(TL_stories.StoryItem storyItem) {
         TLRPC.TL_inputReplyToStory replyTo = new TLRPC.TL_inputReplyToStory();
         replyTo.story_id = storyItem.id;
-        replyTo.user_id = getMessagesController().getInputUser(storyItem.dialogId);
+        replyTo.peer = getMessagesController().getInputPeer(storyItem.dialogId);
         return replyTo;
     }
 
@@ -1134,7 +1134,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                                     ArrayList<TLRPC.Message> messages = new ArrayList<>();
                                     messages.add(obj.messageOwner);
-                                    getMessagesStorage().putMessages(messages, false, true, false, 0, obj.scheduled, 0);
+                                    getMessagesStorage().putMessages(messages, false, true, false, 0, obj.scheduled ? 1 : 0, 0);
                                     break;
                                 }
                             }
@@ -1145,7 +1145,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                             ArrayList<TLRPC.Message> messages = new ArrayList<>();
                             messages.add(message.obj.messageOwner);
-                            getMessagesStorage().putMessages(messages, false, true, false, 0, message.obj.scheduled, 0);
+                            getMessagesStorage().putMessages(messages, false, true, false, 0, message.obj.scheduled ? 1 : 0, 0);
                             break;
                         }
                     }
@@ -1216,7 +1216,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     messageObject.messageOwner.attachPath = cacheFile.toString();
                                     ArrayList<TLRPC.Message> messages = new ArrayList<>();
                                     messages.add(messageObject.messageOwner);
-                                    getMessagesStorage().putMessages(messages, false, true, false, 0, messageObject.scheduled, 0);
+                                    getMessagesStorage().putMessages(messages, false, true, false, 0, messageObject.scheduled ? 1 : 0, 0);
                                     getNotificationCenter().postNotificationName(NotificationCenter.updateMessageMedia, messageObject.messageOwner);
                                     message.photoSize = photo.sizes.get(photo.sizes.size() - 1);
                                     message.locationParent = photo;
@@ -1265,7 +1265,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 }
                                 ArrayList<TLRPC.Message> messages = new ArrayList<>();
                                 messages.add(messageObject.messageOwner);
-                                getMessagesStorage().putMessages(messages, false, true, false, 0, messageObject.scheduled, 0);
+                                getMessagesStorage().putMessages(messages, false, true, false, 0, messageObject.scheduled ? 1 : 0, 0);
                                 message.performMediaUpload = true;
                                 performSendDelayedMessage(message);
                                 getNotificationCenter().postNotificationName(NotificationCenter.updateMessageMedia, message.obj.messageOwner);
@@ -1328,7 +1328,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(object.messageOwner);
-        getMessagesStorage().putMessages(arr, false, true, false, 0, object.scheduled, 0);
+        getMessagesStorage().putMessages(arr, false, true, false, 0, object.scheduled ? 1 : 0, 0);
 
         ArrayList<MessageObject> arrayList = new ArrayList<>();
         arrayList.add(object);
@@ -1406,7 +1406,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                                     TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();
                                     messagesRes.messages.add(prevMessage.messageOwner);
-                                    getMessagesStorage().putMessages(messagesRes, message.peer, -2, 0, false, scheduled, 0);
+                                    getMessagesStorage().putMessages(messagesRes, message.peer, -2, 0, false, scheduled ? 1 : 0, 0);
                                 }
                                 if (!checkReadyToSendGroups.contains(message)) {
                                     checkReadyToSendGroups.add(message);
@@ -1620,7 +1620,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(message);
-        getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0);
+        getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0, 0);
 
         performSendMessageRequest(req, newMsgObj, null, null, null, null, false);
     }
@@ -2140,7 +2140,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
 
                 if (arr.size() == 100 || a == messages.size() - 1 || a != messages.size() - 1 && messages.get(a + 1).getDialogId() != msgObj.getDialogId()) {
-                    getMessagesStorage().putMessages(new ArrayList<>(arr), false, true, false, 0, scheduleDate != 0, 0);
+                    getMessagesStorage().putMessages(new ArrayList<>(arr), false, true, false, 0, scheduleDate != 0 ? 1 : 0, 0);
                     getMessagesController().updateInterfaceWithMessages(peer, objArr, scheduleDate != 0);
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
                     getUserConfig().saveConfig(false);
@@ -2189,6 +2189,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     a1--;
                                 }
                             }
+                            getNotificationCenter().postNotificationNameOnUIThread(NotificationCenter.savedMessagesForwarded, newMessagesByIds);
                             Integer value = getMessagesController().dialogs_read_outbox_max.get(peer);
                             if (value == null) {
                                 value = getMessagesStorage().getDialogReadMax(true, peer);
@@ -2261,7 +2262,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                                 messageIds.add(oldId);
                                                 getMessagesController().deleteMessages(messageIds, null, null, newMsgObj1.dialog_id, false, true);
                                                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, false, 0);
+                                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, 0, 0);
                                                     AndroidUtilities.runOnUIThread(() -> {
                                                         ArrayList<MessageObject> messageObjects = new ArrayList<>();
                                                         messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true, true));
@@ -2275,7 +2276,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         } else {
                                             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                                                 getMessagesStorage().updateMessageStateAndId(newMsgObj1.random_id, MessageObject.getPeerId(peer_id), oldId, newMsgObj1.id, 0, false, scheduleDate != 0 ? 1 : 0);
-                                                getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduleDate != 0, 0);
+                                                getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduleDate != 0 ? 1 : 0, 0);
                                                 AndroidUtilities.runOnUIThread(() -> {
                                                     newMsgObj1.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                                     getMediaDataController().increasePeerRaiting(peer);
@@ -2542,7 +2543,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                getMessagesStorage().putMessages(arr, false, true, false, 0, messageObject.scheduled, MessageObject.getTopicId(newMsg, getMessagesController().isForum(newMsg)));
+                getMessagesStorage().putMessages(arr, false, true, false, 0, messageObject.scheduled ? 1 : 0, 0);
                 getMessagesController().getTopicsController().processEditedMessage(newMsg);
 
                 messageObject.type = -1;
@@ -2958,7 +2959,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return voteSendTime.get(pollId, 0L);
     }
 
-    public void sendReaction(MessageObject messageObject, ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions, ReactionsLayoutInBubble.VisibleReaction addedReaction, boolean big, boolean addToRecent, ChatActivity parentFragment, Runnable callback) {
+    public void sendReaction(MessageObject messageObject, ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions, ReactionsLayoutInBubble.VisibleReaction addedReaction, boolean big, boolean addToRecent, BaseFragment parentFragment, Runnable callback) {
         if (messageObject == null || parentFragment == null) {
             return;
         }
@@ -3839,7 +3840,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             if (replyToStoryItem != null) {
                 newMsg.reply_to = new TLRPC.TL_messageReplyStoryHeader();
                 newMsg.reply_to.story_id = replyToStoryItem.id;
-                newMsg.reply_to.user_id = replyToStoryItem.dialogId;
+                newMsg.reply_to.peer = getMessagesController().getPeer(replyToStoryItem.dialogId);
                 newMsg.replyStory = replyToStoryItem;
                 newMsg.flags |= TLRPC.MESSAGE_FLAG_REPLY;
             } else if (replyToMsg != null && (replyToTopMsg == null || replyToMsg != replyToTopMsg || replyToTopMsg.getId() != 1)) {
@@ -3971,7 +3972,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                     }
                     if (isForum) {
-                        anotherTopic = replyToTopMsg.getId() != replyToMsg.getId() && MessageObject.getTopicId(replyToMsg.messageOwner, true) != replyToTopMsg.getId();
+                        anotherTopic = replyToTopMsg.getId() != replyToMsg.getId() && MessageObject.getTopicId(currentAccount, replyToMsg.messageOwner, true) != replyToTopMsg.getId();
                     }
                 }
                 if (anotherChat || anotherTopic) {
@@ -4036,6 +4037,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
             if (newMsgObj.videoEditedInfo != null && videoEditedInfo == null) {
                 videoEditedInfo = newMsgObj.videoEditedInfo;
+            } else if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
+                newMsgObj.videoEditedInfo.notReadyYet = videoEditedInfo.notReadyYet;
             }
 
             if (groupId == 0) {
@@ -4043,7 +4046,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 objArr.add(newMsgObj);
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                MessagesStorage.getInstance(currentAccount).putMessages(arr, false, true, false, 0, scheduleDate != 0, 0);
+                MessagesStorage.getInstance(currentAccount).putMessages(arr, false, true, false, 0, scheduleDate != 0 ? 1 : 0, 0);
                 MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(peer, objArr, scheduleDate != 0);
                 if (scheduleDate == 0) {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogsNeedReload);
@@ -4090,6 +4093,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         inputWebPage.url = mediaWebPage.webpage.url;
                         inputWebPage.force_large_media = mediaWebPage.force_large_media;
                         inputWebPage.force_small_media = mediaWebPage.force_small_media;
+                        inputWebPage.optional = true;
                         reqSend.media = inputWebPage;
                         if (replyToStoryItem != null) {
                             reqSend.reply_to = createReplyInput(replyToStoryItem);
@@ -5057,10 +5061,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + document.id + ".mp4";
                         }
                         putToDelayedMessages(location, message);
-                        if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
-                            getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
-                        } else {
-                            getFileLoader().uploadFile(location, false, false, ConnectionsManager.FileTypeVideo);
+                        if (message.obj.videoEditedInfo == null || !message.obj.videoEditedInfo.notReadyYet) {
+                            if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
+                                getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
+                            } else {
+                                getFileLoader().uploadFile(location, false, false, ConnectionsManager.FileTypeVideo);
+                            }
                         }
                         putToUploadingMessages(message.obj);
                     } else {
@@ -5098,10 +5104,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                     }
                     putToDelayedMessages(location, message);
-                    if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
-                        getFileLoader().uploadFile(location, true, false, document.size, ConnectionsManager.FileTypeVideo, false);
-                    } else {
-                        getFileLoader().uploadFile(location, true, false, ConnectionsManager.FileTypeVideo);
+                    if (message.obj.videoEditedInfo == null || !message.obj.videoEditedInfo.notReadyYet) {
+                        if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
+                            getFileLoader().uploadFile(location, true, false, document.size, ConnectionsManager.FileTypeVideo, false);
+                        } else {
+                            getFileLoader().uploadFile(location, true, false, ConnectionsManager.FileTypeVideo);
+                        }
                     }
                     putToUploadingMessages(message.obj);
                 }
@@ -5392,7 +5400,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             return;
         } else if (add) {
             delayedMessages.remove(key);
-            getMessagesStorage().putMessages(message.messages, false, true, false, 0, message.scheduled, 0);
+            getMessagesStorage().putMessages(message.messages, false, true, false, 0, message.scheduled ? 1 : 0, 0);
             getMessagesController().updateInterfaceWithMessages(message.peer, message.messageObjects, message.scheduled);
             if (!message.scheduled) {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
@@ -5731,7 +5739,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
                             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                                 getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, MessageObject.getPeerId(newMsgObj.peer_id), oldId, newMsgObj.id, 0, false, scheduled ? 1 : 0);
-                                getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduled, 0);
+                                getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduled ? 1 : 0, 0);
                                 AndroidUtilities.runOnUIThread(() -> {
                                     getMediaDataController().increasePeerRaiting(newMsgObj.dialog_id);
                                     getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
@@ -6035,7 +6043,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 messageIds.add(oldId);
                                 getMessagesController().deleteMessages(messageIds, null, null, newMsgObj.dialog_id, false, true);
                                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, false, 0);
+                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, false, 0, 0);
                                     AndroidUtilities.runOnUIThread(() -> {
                                         ArrayList<MessageObject> messageObjects = new ArrayList<>();
                                         messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true, true));
@@ -6049,7 +6057,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
                                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                                     getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, MessageObject.getPeerId(newMsgObj.peer_id), oldId, newMsgObj.id, 0, false, scheduled ? 1 : 0);
-                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduled, 0);
+                                    getMessagesStorage().putMessages(sentMessages, true, false, false, 0, scheduled ? 1 : 0, 0);
                                     AndroidUtilities.runOnUIThread(() -> {
                                         getMediaDataController().increasePeerRaiting(newMsgObj.dialog_id);
                                         getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
@@ -6987,7 +6995,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                 TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();
                 messagesRes.messages.add(prevMessage.messageOwner);
-                accountInstance.getMessagesStorage().putMessages(messagesRes, message.peer, -2, 0, false, scheduleDate != 0, 0);
+                accountInstance.getMessagesStorage().putMessages(messagesRes, message.peer, -2, 0, false, scheduleDate != 0 ? 1 : 0, 0);
                 instance.sendReadyToSendGroup(message, true, true);
             }
         });
@@ -7478,7 +7486,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     @UiThread
-    public static void prepareSendingText(AccountInstance accountInstance, String text, long dialogId, int topicId, boolean notify, int scheduleDate) {
+    public static void prepareSendingText(AccountInstance accountInstance, String text, long dialogId, long topicId, boolean notify, int scheduleDate) {
         accountInstance.getMessagesStorage().getStorageQueue().postRunnable(() -> Utilities.stageQueue.postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
             String textFinal = getTrimmedString(text);
             if (textFinal.length() != 0) {
@@ -8625,7 +8633,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                 }
                 if (document == null) {
-                    thumb = createVideoThumbnailAtTime(videoPath, startTime);
+                    if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
+                        thumb = videoEditedInfo.thumb;
+                    }
+                    if (thumb == null) {
+                        thumb = createVideoThumbnailAtTime(videoPath, startTime);
+                    }
                     if (thumb == null) {
                         thumb = createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
                     }
@@ -8669,14 +8682,19 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     attributeVideo.round_message = isRound;
                     document.attributes.add(attributeVideo);
-                    if (videoEditedInfo != null && videoEditedInfo.needConvert()) {
+                    if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
+                        attributeVideo.w = videoEditedInfo.resultWidth;
+                        attributeVideo.h = videoEditedInfo.resultHeight;
+                        attributeVideo.duration = videoEditedInfo.estimatedDuration / 1000.0;
+                        document.size = videoEditedInfo.estimatedSize;
+                    } else if (videoEditedInfo != null && videoEditedInfo.needConvert()) {
                         if (videoEditedInfo.muted) {
                             document.attributes.add(new TLRPC.TL_documentAttributeAnimated());
                             fillVideoAttribute(videoPath, attributeVideo, videoEditedInfo);
                             videoEditedInfo.originalWidth = attributeVideo.w;
                             videoEditedInfo.originalHeight = attributeVideo.h;
                         } else {
-                            attributeVideo.duration = (int) (videoEditedInfo.estimatedDuration / 1000);
+                            attributeVideo.duration = videoEditedInfo.estimatedDuration / 1000.0;
                         }
 
                         int w, h;

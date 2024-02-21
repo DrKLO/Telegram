@@ -1,6 +1,9 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -26,6 +29,11 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
     }
 
     @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (maxHeight != 0) {
             heightMeasureSpec = MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST);
@@ -46,20 +54,27 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
             if (reactionsLayout.showCustomEmojiReaction()) {
                 widthMeasureSpec = MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.EXACTLY);
             }
+            reactionsLayout.measureHint();
 
             int reactionsLayoutTotalWidth = reactionsLayout.getTotalWidth();
             View menuContainer = popupWindowLayout.getSwipeBack() != null ? popupWindowLayout.getSwipeBack().getChildAt(0) : popupWindowLayout.getChildAt(0);
-            int maxReactionsLayoutWidth = menuContainer.getMeasuredWidth() + AndroidUtilities.dp(16) + AndroidUtilities.dp(16) + AndroidUtilities.dp(36);
-            if (maxReactionsLayoutWidth > maxWidth) {
+            int maxReactionsLayoutWidth = menuContainer.getMeasuredWidth() + dp(16) + dp(16) + dp(36);
+            int hintTextWidth = reactionsLayout.getHintTextWidth();
+            if (hintTextWidth > maxReactionsLayoutWidth) {
+                maxReactionsLayoutWidth = hintTextWidth;
+            } else if (maxReactionsLayoutWidth > maxWidth) {
                 maxReactionsLayoutWidth = maxWidth;
             }
-            reactionsLayout.bigCircleOffset = AndroidUtilities.dp(36);
+            reactionsLayout.bigCircleOffset = dp(36);
             if (reactionsLayout.showCustomEmojiReaction()) {
                 reactionsLayout.getLayoutParams().width = reactionsLayoutTotalWidth;
-                reactionsLayout.bigCircleOffset = Math.max(reactionsLayoutTotalWidth - menuContainer.getMeasuredWidth() - AndroidUtilities.dp(36), AndroidUtilities.dp(36));
+                reactionsLayout.bigCircleOffset = Math.max(reactionsLayoutTotalWidth - menuContainer.getMeasuredWidth() - dp(36), dp(36));
             } else if (reactionsLayoutTotalWidth > maxReactionsLayoutWidth) {
-                int maxFullCount = ((maxReactionsLayoutWidth - AndroidUtilities.dp(16)) / AndroidUtilities.dp(36)) + 1;
-                int newWidth = maxFullCount * AndroidUtilities.dp(36) + AndroidUtilities.dp(16) - AndroidUtilities.dp(8);
+                int maxFullCount = ((maxReactionsLayoutWidth - dp(16)) / dp(36)) + 1;
+                int newWidth = maxFullCount * dp(36) + dp(8);
+                if (hintTextWidth + dp(24) > newWidth) {
+                    newWidth = hintTextWidth + dp(24);
+                }
                 if (newWidth > reactionsLayoutTotalWidth || maxFullCount == reactionsLayout.getItemsCount()) {
                     newWidth = reactionsLayoutTotalWidth;
                 }
@@ -73,7 +88,7 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
                     widthDiff = popupWindowLayout.getSwipeBack().getMeasuredWidth() - popupWindowLayout.getSwipeBack().getChildAt(0).getMeasuredWidth();
                 }
                 if (reactionsLayout.getLayoutParams().width != LayoutHelper.WRAP_CONTENT && reactionsLayout.getLayoutParams().width + widthDiff > maxWidth) {
-                    widthDiff = maxWidth - reactionsLayout.getLayoutParams().width + AndroidUtilities.dp(8);
+                    widthDiff = maxWidth - reactionsLayout.getLayoutParams().width + dp(8);
                 }
                 if (widthDiff < 0) {
                     widthDiff = 0;
@@ -84,23 +99,23 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
             } else {
                 popupLayoutLeftOffset = (maxWidth - menuContainer.getMeasuredWidth()) * 0.25f;
                 reactionsLayout.bigCircleOffset -= popupLayoutLeftOffset;
-                if (reactionsLayout.bigCircleOffset < AndroidUtilities.dp(36)) {
+                if (reactionsLayout.bigCircleOffset < dp(36)) {
                     popupLayoutLeftOffset = 0;
-                    reactionsLayout.bigCircleOffset = AndroidUtilities.dp(36);
+                    reactionsLayout.bigCircleOffset = dp(36);
                 }
                 updatePopupTranslation();
             }
             if (bottomView != null) {
                 if (reactionsLayout.showCustomEmojiReaction()) {
-                    bottomView.getLayoutParams().width = menuContainer.getMeasuredWidth() + AndroidUtilities.dp(16);
+                    bottomView.getLayoutParams().width = menuContainer.getMeasuredWidth() + dp(16);
                     updatePopupTranslation();
                 } else {
                     bottomView.getLayoutParams().width = LayoutHelper.MATCH_PARENT;
                 }
                 if (popupWindowLayout.getSwipeBack() != null) {
-                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = widthDiff + AndroidUtilities.dp(36);
+                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = widthDiff + dp(36);
                 } else {
-                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = AndroidUtilities.dp(36);
+                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = dp(36);
                 }
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

@@ -375,7 +375,7 @@ public class CaptionContainerView extends FrameLayout {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ignoreTouches || ev.getAction() == MotionEvent.ACTION_DOWN && ignoreTouches(ev.getX(), ev.getY()) || !bounds.contains(ev.getX(), ev.getY()) && !keyboardShown) {
+        if (ignoreTouches || ev.getAction() == MotionEvent.ACTION_DOWN && ignoreTouches(ev.getX(), ev.getY()) || !clickBounds.contains(ev.getX(), ev.getY()) && !keyboardShown) {
             return false;
         }
         if (ev.getAction() == MotionEvent.ACTION_DOWN && !keyboardShown) {
@@ -764,6 +764,7 @@ public class CaptionContainerView extends FrameLayout {
 
     private final RectF rectF = new RectF();
     private final RectF bounds = new RectF();
+    private final RectF clickBounds = new RectF();
 
     protected void onEditHeightChange(int height) {}
 
@@ -886,19 +887,25 @@ public class CaptionContainerView extends FrameLayout {
             editText.getEditText().setTranslationY(lastHeightTranslation = heightTranslation);
         }
 
-        final float pad = lerp(AndroidUtilities.dp(12), 0, keyboardT);
+        final float pad = lerp(dp(12), 0, keyboardT);
         bounds.set(
             pad,
             getHeight() - pad - heightAnimated,
             getWidth() - pad,
             getHeight() - pad
         );
+        clickBounds.set(
+            0,
+            getHeight() - heightAnimated - dp(24),
+            getWidth(),
+            getHeight()
+        );
 
         canvas.save();
         final float s = bounce.getScale(.018f);
         canvas.scale(s, s, bounds.centerX(), bounds.centerY());
 
-        final float r = lerp(AndroidUtilities.dp(21), 0, keyboardT);
+        final float r = lerp(dp(21), 0, keyboardT);
         if (customBlur()) {
             drawBlur(backgroundBlur, canvas, bounds, r, false, 0, 0, true);
             backgroundPaint.setAlpha((int) (lerp(0x26, 0x40, keyboardT)));

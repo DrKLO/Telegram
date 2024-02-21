@@ -10,6 +10,8 @@ package org.telegram.SQLite;
 
 import android.os.SystemClock;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -23,7 +25,6 @@ public class SQLitePreparedStatement {
 
     private long startTime;
     private String query;
-    //private static HashMap<SQLitePreparedStatement, String> hashMap;
 
     public long getStatementHandle() {
         return sqliteStatementHandle;
@@ -110,9 +111,6 @@ public class SQLitePreparedStatement {
             }
         }
         try {
-            /*if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                hashMap.remove(this);
-            }*/
             isFinalized = true;
             finalize(sqliteStatementHandle);
         } catch (SQLiteException e) {

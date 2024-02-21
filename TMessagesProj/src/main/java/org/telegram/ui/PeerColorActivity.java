@@ -27,11 +27,8 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Bundle;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -50,15 +47,10 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.common.io.CharSource;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ChatThemeController;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -92,13 +84,11 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.FilledTabsView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
-import org.telegram.ui.Components.SpannableStringLight;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.StoriesUtilities;
@@ -1345,7 +1335,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
     public static class ChangeNameColorCell extends View {
         private final int currentAccount;
-        private final boolean isChannel;
+        private final boolean isChannelOrGroup;
+        private final boolean isGroup;
         private final Theme.ResourcesProvider resourcesProvider;
 
         private final Drawable drawable;
@@ -1362,16 +1353,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         public ChangeNameColorCell(int currentAccount, long dialogId, Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            MessagesController mc = MessagesController.getInstance(currentAccount);
+            TLRPC.Chat chat = mc.getChat(-dialogId);
 
             this.currentAccount = currentAccount;
-            this.isChannel = dialogId < 0;
+            this.isChannelOrGroup = dialogId < 0;
+            this.isGroup = isChannelOrGroup && !ChatObject.isChannelAndNotMegaGroup(chat);
             this.resourcesProvider = resourcesProvider;
 
-            drawable = context.getResources().getDrawable(R.drawable.msg_palette).mutate();
+            drawable = context.getResources().getDrawable(R.drawable.menu_edit_appearance).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            CharSequence button = LocaleController.getString(isChannel ? R.string.ChangeChannelNameColor2 : R.string.ChangeUserNameColor);
-            if (isChannel && MessagesController.getInstance(currentAccount).getMainSettings().getInt("boostingappearance", 0) < 3) {
-                MessagesController mc = MessagesController.getInstance(currentAccount);
+            CharSequence button = LocaleController.getString(isChannelOrGroup ? (isGroup ? R.string.ChangeGroupAppearance : R.string.ChangeChannelNameColor2) : R.string.ChangeUserNameColor);
+            if (isChannelOrGroup && !isGroup && MessagesController.getInstance(currentAccount).getMainSettings().getInt("boostingappearance", 0) < 3) {
                 int minlvl = Integer.MAX_VALUE, maxlvl = 0;
                 if (mc.peerColors != null) {
                     minlvl = Math.min(minlvl, mc.peerColors.maxLevel());
@@ -1395,13 +1388,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 maxlvl = Math.max(maxlvl, mc.channelWallpaperLevelMin);
                 minlvl = Math.min(minlvl, mc.channelCustomWallpaperLevelMin);
                 maxlvl = Math.max(maxlvl, mc.channelCustomWallpaperLevelMin);
-                TLRPC.Chat chat = mc.getChat(-dialogId);
                 int currentLevel = chat == null ? 0 : chat.level;
                 if (currentLevel < maxlvl) {
                     lock = new LevelLock(context, true, Math.max(currentLevel, minlvl), resourcesProvider);
                 }
             }
-            if (isChannel && lock == null) {
+            if (isChannelOrGroup && lock == null) {
                 button = TextCell.applyNewSpan(button);
             }
             buttonText = new Text(button, 16);
@@ -1409,8 +1401,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         public void updateColors() {
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(isChannel ? Theme.key_windowBackgroundWhiteGrayIcon : Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            buttonText.setColor(Theme.getColor(isChannel ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider));
+            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(isChannelOrGroup ? Theme.key_windowBackgroundWhiteGrayIcon : Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            buttonText.setColor(Theme.getColor(isChannelOrGroup ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider));
 
             if (userText != null && userTextBackgroundPaint != null && userTextColorKey != -1) {
                 final int color = Theme.getColor(userTextColorKey, resourcesProvider);
@@ -1511,7 +1503,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 lock.draw(canvas);
             }
 
-            if (color1Drawable != null && color2Drawable != null) {
+            if (isGroup && color2Drawable != null) {
+                int x = LocaleController.isRTL ? dp(24 + 16 + 18) : getMeasuredWidth() - dp(24);
+                color2Drawable.setBounds(x - dp(11), (getMeasuredHeight() - dp(11)) / 2, x, (getMeasuredHeight() + dp(11)) / 2);
+                color2Drawable.stroke(dpf2(3), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                color2Drawable.draw(canvas);
+            } else if (color1Drawable != null && color2Drawable != null) {
 
                 int x = LocaleController.isRTL ? dp(24 + 16 + 18) : getMeasuredWidth() - dp(24);
                 color2Drawable.setBounds(x - dp(11), (getMeasuredHeight() - dp(11)) / 2, x, (getMeasuredHeight() + dp(11)) / 2);
@@ -1523,7 +1520,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 color1Drawable.stroke(dpf2(3), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                 color1Drawable.draw(canvas);
 
-            } else if (userText != null) {
+            } else if (userText != null && !isGroup) {
                 final int maxWidth = (int) (getMeasuredWidth() - dp(64 + 7 + 15 + 9 + 9 + 12) - Math.min(buttonText.getWidth() + (lock == null ? 0 : lock.getIntrinsicWidth() + dp(6 + 6)), getMeasuredWidth() - dp(64 + 100)));
                 final int w = (int) Math.min(userText.getWidth(), maxWidth);
 
@@ -2112,9 +2109,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private final long dialogId;
         private final boolean isChannel;
 
-        private final ImageReceiver imageReceiver = new ImageReceiver(this);
-        private final AvatarDrawable avatarDrawable = new AvatarDrawable();
-        private final SimpleTextView titleView, subtitleView;
+        protected final ImageReceiver imageReceiver = new ImageReceiver(this);
+        protected final AvatarDrawable avatarDrawable = new AvatarDrawable();
+        protected final SimpleTextView titleView, subtitleView;
 
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusEmoji;
 

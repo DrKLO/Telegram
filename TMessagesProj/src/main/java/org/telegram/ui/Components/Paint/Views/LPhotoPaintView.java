@@ -2742,23 +2742,25 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 parent.addView(flipView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
             }
 
-            TextView duplicateView = new TextView(getContext());
-            duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
-            duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            duplicateView.setGravity(Gravity.CENTER_VERTICAL);
-            duplicateView.setEllipsize(TextUtils.TruncateAt.END);
-            duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
-            duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            duplicateView.setTag(2);
-            duplicateView.setText(LocaleController.getString("PaintDuplicate", R.string.PaintDuplicate));
-            duplicateView.setOnClickListener(v -> {
-                duplicateSelectedEntity();
+            if (!(entityView instanceof PhotoView)) {
+                TextView duplicateView = new TextView(getContext());
+                duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                duplicateView.setGravity(Gravity.CENTER_VERTICAL);
+                duplicateView.setEllipsize(TextUtils.TruncateAt.END);
+                duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
+                duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                duplicateView.setTag(2);
+                duplicateView.setText(LocaleController.getString("PaintDuplicate", R.string.PaintDuplicate));
+                duplicateView.setOnClickListener(v -> {
+                    duplicateSelectedEntity();
 
-                if (popupWindow != null && popupWindow.isShowing()) {
-                    popupWindow.dismiss(true);
-                }
-            });
-            parent.addView(duplicateView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss(true);
+                    }
+                });
+                parent.addView(duplicateView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+            }
 
             if (entityView instanceof PhotoView && ((PhotoView) entityView).hasSegmentedImage()) {
                 PhotoView photoView = (PhotoView) entityView;

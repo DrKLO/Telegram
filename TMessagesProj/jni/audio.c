@@ -52,6 +52,19 @@ typedef struct {
     int copy_comments;
 } oe_enc_opt;
 
+typedef struct {
+    ogg_int32_t _packetId;
+    opus_int64 bytes_written;
+    opus_int64 pages_out;
+    opus_int64 total_samples;
+    ogg_int64_t enc_granulepos;
+    int size_segments;
+    int last_segments;
+    ogg_int64_t last_granulepos;
+    opus_int32 min_bytes;
+    int max_frame_bytes;
+} resume_data;
+
 static int write_uint32(Packet *p, ogg_uint32_t val) {
     if (p->pos > p->maxlen - 4) {
         return 0;
@@ -233,6 +246,7 @@ ogg_int32_t _packetId;
 OpusEncoder *_encoder = 0;
 uint8_t *_packet = 0;
 ogg_stream_state os;
+const char *_filePath;
 FILE *_fileOs = 0;
 oe_enc_opt inopt;
 OpusHeader header;
@@ -277,6 +291,10 @@ void cleanupRecorder() {
     size_segments = 0;
     last_segments = 0;
     last_granulepos = 0;
+    if (_filePath) {
+        free(_filePath);
+        _filePath = 0;
+    }
     memset(&os, 0, sizeof(ogg_stream_state));
     memset(&inopt, 0, sizeof(oe_enc_opt));
     memset(&header, 0, sizeof(OpusHeader));
@@ -294,7 +312,11 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
         LOGE("path is null");
         return 0;
     }
-    
+
+    int length = strlen(path);
+    _filePath = (char*) malloc(length + 1);
+    strcpy(_filePath, path);
+
     _fileOs = fopen(path, "w");
     if (!_fileOs) {
         LOGE("error cannot open file: %s", path);
@@ -416,6 +438,134 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     
     return 1;
 }
+
+void saveResumeData() {
+    if (_filePath == NULL) {
+        return;
+    }
+    const char* ext = ".resume";
+    char* _resumeFilePath = (char*) malloc(strlen(_filePath) + strlen(ext) + 1);
+    strcpy(_resumeFilePath, _filePath);
+    strcat(_resumeFilePath, ext);
+
+    FILE* resumeFile = fopen(_resumeFilePath, "wb");
+    if (!resumeFile) {
+        LOGE("error cannot open resume file to write: %s", _resumeFilePath);
+        free(_resumeFilePath);
+        return;
+    }
+    resume_data data;
+    data._packetId = _packetId;
+    data.bytes_written = bytes_written;
+    data.pages_out = pages_out;
+    data.total_samples = total_samples;
+    data.enc_granulepos = enc_granulepos;
+    data.size_segments = size_segments;
+    data.last_segments = last_segments;
+    data.last_granulepos = last_granulepos;
+    data.min_bytes = min_bytes;
+    data.max_frame_bytes = max_frame_bytes;
+
+    if (fwrite(&data, sizeof(resume_data), 1, resumeFile) != 1) {
+        LOGE("error writing resume data to file: %s", _resumeFilePath);
+    }
+    fclose(resumeFile);
+
+    free(_resumeFilePath);
+}
+
+resume_data readResumeData(const char* filePath) {
+
+    const char* ext = ".resume";
+    char* _resumeFilePath = (char*) malloc(strlen(filePath) + strlen(ext) + 1);
+    strcpy(_resumeFilePath, filePath);
+    strcat(_resumeFilePath, ext);
+
+    resume_data data;
+
+    FILE* resumeFile = fopen(_resumeFilePath, "rb");
+    if (!resumeFile) {
+        LOGE("error cannot open resume file to read: %s", _resumeFilePath);
+        memset(&data, 0, sizeof(resume_data));
+        return data;
+    }
+
+    if (fread(&data, sizeof(resume_data), 1, resumeFile) != 1) {
+        LOGE("error cannot read resume file: %s", _resumeFilePath);
+        memset(&data, 0, sizeof(resume_data));
+    }
+
+    fclose(resumeFile);
+    free(_resumeFilePath);
+
+    return data;
+}
+
+int resumeRecorder(const char *path, opus_int32 sampleRate) {
+    cleanupRecorder();
+
+    coding_rate = sampleRate;
+    rate = sampleRate;
+
+    if (!path) {
+        LOGE("path is null");
+        return 0;
+    }
+
+    int length = strlen(path);
+    _filePath = (char*) malloc(length + 1);
+    strcpy(_filePath, path);
+
+    resume_data resumeData = readResumeData(path);
+    _packetId = resumeData._packetId;
+    bytes_written = resumeData.bytes_written;
+    pages_out = resumeData.pages_out;
+    total_samples = resumeData.total_samples;
+    enc_granulepos = resumeData.enc_granulepos;
+    size_segments = resumeData.size_segments;
+    last_segments = resumeData.last_segments;
+    last_granulepos = resumeData.last_granulepos;
+    min_bytes = resumeData.min_bytes;
+    max_frame_bytes = resumeData.max_frame_bytes;
+
+    _fileOs = fopen(path, "a");
+    if (!_fileOs) {
+        LOGE("error cannot open resume file: %s", path);
+        return 0;
+    }
+
+    int result = OPUS_OK;
+    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_VOIP, &result);
+    if (result != OPUS_OK) {
+        LOGE("Error cannot create encoder: %s", opus_strerror(result));
+        return 0;
+    }
+
+    _packet = malloc(max_frame_bytes);
+
+    result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
+    //result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
+    if (result != OPUS_OK) {
+        LOGE("Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
+        return 0;
+    }
+
+#ifdef OPUS_SET_LSB_DEPTH
+    result = opus_encoder_ctl(_encoder, OPUS_SET_LSB_DEPTH(MAX(8, MIN(24, 16))));
+    if (result != OPUS_OK) {
+        LOGE("Warning OPUS_SET_LSB_DEPTH returned: %s", opus_strerror(result));
+    }
+#endif
+
+    if (ogg_stream_init(&os, rand()) == -1) {
+        LOGE("Error: stream init failed");
+        return 0;
+    }
+
+    return 1;
+}
+
+
 int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
     size_t cur_frame_size = frame_size;
     _packetId++;
@@ -433,7 +583,7 @@ int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
     if (nb_samples != 0) {
         uint8_t *paddedFrameBytes = framePcmBytes;
         int freePaddedFrameBytes = 0;
-        
+
         if (nb_samples < cur_frame_size) {
             paddedFrameBytes = malloc(cur_frame_size * 2);
             freePaddedFrameBytes = 1;
@@ -503,6 +653,18 @@ JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *e
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int32_t result = initRecorder(pathStr, sampleRate);
+
+    if (pathStr != 0) {
+        (*env)->ReleaseStringUTFChars(env, path, pathStr);
+    }
+
+    return result;
+}
+
+JNIEXPORT jint Java_org_telegram_messenger_MediaController_resumeRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
+    const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
+
+    int32_t result = resumeRecorder(pathStr, sampleRate);
     
     if (pathStr != 0) {
         (*env)->ReleaseStringUTFChars(env, path, pathStr);
@@ -516,7 +678,10 @@ JNIEXPORT jint Java_org_telegram_messenger_MediaController_writeFrame(JNIEnv *en
     return writeFrame((uint8_t *) frameBytes, (uint32_t) len);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_MediaController_stopRecord(JNIEnv *env, jclass class) {
+JNIEXPORT void Java_org_telegram_messenger_MediaController_stopRecord(JNIEnv *env, jclass class, jboolean allowResuming) {
+    if (allowResuming && _filePath != NULL) {
+        saveResumeData();
+    }
     cleanupRecorder();
 }
 

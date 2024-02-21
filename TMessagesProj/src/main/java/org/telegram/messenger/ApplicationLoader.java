@@ -37,15 +37,18 @@ import androidx.multidex.MultiDex;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
+import org.json.JSONObject;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.IUpdateLayout;
 import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class ApplicationLoader extends Application {
 
@@ -429,11 +432,6 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    public static boolean useLessData() {
-        ensureCurrentNetworkGet();
-        return BuildVars.DEBUG_PRIVATE_VERSION && (SharedConfig.forceLessData || isConnectionSlow());
-    }
-
     public static boolean isConnectionSlow() {
         try {
             ensureCurrentNetworkGet(false);
@@ -598,6 +596,34 @@ public class ApplicationLoader extends Application {
 
     public IUpdateLayout takeUpdateLayout(Activity activity, ViewGroup sideMenu, ViewGroup sideMenuContainer) {
         return null;
+    }
+
+    public TLRPC.Update parseTLUpdate(int constructor) {
+        return null;
+    }
+
+    public void processUpdate(int currentAccount, TLRPC.Update update) {
+
+    }
+
+    public boolean onSuggestionFill(String suggestion, String[] output, boolean[] closeable) {
+        return false;
+    }
+
+    public boolean onSuggestionClick(String suggestion) {
+        return false;
+    }
+
+    public boolean extendDrawer(ArrayList<DrawerLayoutAdapter.Item> items) {
+        return false;
+    }
+
+    public boolean checkRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) {
+        return false;
+    }
+
+    public boolean consumePush(int account, JSONObject json) {
+        return false;
     }
 
 }

@@ -4,4 +4,46 @@
         <data android:mimeType="*/*" />
         <category android:name="org.telegram.messenger.SHORTCUT_SHARE" />
     </share-target>
+
+    <capability android:name="actions.intent.GET_THING">
+        <intent>
+            <url-template android:value="tg://search{?query}" />
+            <parameter
+                android:name="thing.name"
+                android:key="query"
+                android:required="true" />
+        </intent>
+        <intent>
+            <url-template android:value="tg://search" />
+        </intent>
+    </capability>
+    <capability android:name="actions.intent.CREATE_CALL">
+        <intent>
+            <url-template android:value="tg://call{?format,name,phone}" />
+            <parameter
+                android:name="call.callFormat"
+                android:key="format" />
+            <parameter
+                android:name="call.participant.name"
+                android:key="name" />
+            <parameter
+                android:name="call.participant.telephone"
+                android:key="phone" />
+        </intent>
+    </capability>
+    <capability android:name="actions.intent.GET_ACCOUNT">
+        <intent>
+            <url-template android:value="tg://settings" />
+        </intent>
+    </capability>
+    <capability android:name="actions.intent.GET_BARCODE">
+        <intent>
+            <url-template android:value="tg://scanqr" />
+        </intent>
+    </capability>
+    <capability android:name="actions.intent.GET_CALL">
+        <intent>
+            <url-template android:value="tg://calllog" />
+        </intent>
+    </capability>
 </shortcuts>

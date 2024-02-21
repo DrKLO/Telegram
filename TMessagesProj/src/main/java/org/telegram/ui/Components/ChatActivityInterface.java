@@ -37,7 +37,7 @@ public interface ChatActivityInterface {
         return 0;
     }
 
-    default int getTopicId() {
+    default long getTopicId() {
         return 0;
     }
 

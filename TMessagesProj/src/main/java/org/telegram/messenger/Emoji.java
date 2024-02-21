@@ -452,8 +452,10 @@ public class Emoji {
                     } else if (emojiCode.length() >= 2 && emojiCode.charAt(0) == 0xD83C && emojiCode.charAt(1) == 0xDFF4 && next == 0xDB40) {
                         i++;
                         while (true) {
-                            emojiCode.append(cs.charAt(i));
-                            if (i + 1 >= cs.length()) {
+                            if (i < cs.length()) {
+                                emojiCode.append(cs.charAt(i));
+                            }
+                            if (i + 1 < cs.length()) {
                                 emojiCode.append(cs.charAt(i + 1));
                             }
                             startLength += 2;

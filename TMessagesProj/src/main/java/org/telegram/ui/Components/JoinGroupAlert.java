@@ -37,10 +37,12 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 
-import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 
 public class JoinGroupAlert extends BottomSheet {
+
+    public static final int ORIGINATION_OTHER = -1;
+    public static final int ORIGINATION_SPONSORED_CHAT = 0;
 
     private final String hash;
     private final BaseFragment fragment;
@@ -50,6 +52,10 @@ public class JoinGroupAlert extends BottomSheet {
     private RadialProgressView requestProgressView;
 
     public JoinGroupAlert(final Context context, TLObject obj, String group, BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider) {
+        this(context, obj, group, parentFragment, resourcesProvider, ORIGINATION_OTHER);
+    }
+
+    public JoinGroupAlert(final Context context, TLObject obj, String group, BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider, int origination) {
         super(context, false, resourcesProvider);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
@@ -146,10 +152,15 @@ public class JoinGroupAlert extends BottomSheet {
         textView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setText(isChannel
-                ? LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase()
-                : LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase()
-        );
+
+        if (chatInvite != null && origination == ORIGINATION_SPONSORED_CHAT) {
+            textView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase());
+        } else {
+            textView.setText(isChannel
+                    ? LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase()
+                    : LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase()
+            );
+        }
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 0, 10, hasAbout ? 0 : 20));
 
         if (hasAbout) {
@@ -317,15 +328,14 @@ public class JoinGroupAlert extends BottomSheet {
                                 chat.kicked = false;
                                 MessagesController.getInstance(currentAccount).putUsers(updates.users, false);
                                 MessagesController.getInstance(currentAccount).putChats(updates.chats, false);
-                                Bundle args = new Bundle();
-                                args.putLong("chat_id", chat.id);
-                                if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args, fragment)) {
-                                    ChatActivity chatActivity = new ChatActivity(args);
-                                    fragment.presentFragment(chatActivity, fragment instanceof ChatActivity);
-                                }
+                                openChat(chat.id);
                             }
                         } else {
-                            AlertsCreator.processError(currentAccount, error, fragment, req);
+                            if ("USER_ALREADY_PARTICIPANT".equals(error.text) && origination == ORIGINATION_SPONSORED_CHAT && chatInvite != null && chatInvite.chat != null) {
+                                openChat(chatInvite.chat.id);
+                            } else {
+                                AlertsCreator.processError(currentAccount, error, fragment, req);
+                            }
                         }
                     });
                 }, ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -371,5 +381,14 @@ public class JoinGroupAlert extends BottomSheet {
 //        ScamDrawable scamDrawable = new ScamDrawable(11, type);
 //        scamDrawable.setColor(getThemedColor(Theme.key_avatar_subtitleInProfileBlue));
         return type == 0 ? Theme.dialogs_scamDrawable : Theme.dialogs_fakeDrawable;
+    }
+
+    private void openChat(long chatId) {
+        Bundle args = new Bundle();
+        args.putLong("chat_id", chatId);
+        if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args, fragment)) {
+            ChatActivity chatActivity = new ChatActivity(args);
+            fragment.presentFragment(chatActivity, fragment instanceof ChatActivity);
+        }
     }
 }

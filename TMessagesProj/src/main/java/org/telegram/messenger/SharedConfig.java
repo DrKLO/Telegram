@@ -238,7 +238,6 @@ public class SharedConfig {
     public static int keepMedia = CacheByChatsController.KEEP_MEDIA_ONE_MONTH; //deprecated
     public static int lastKeepMediaCheckTime;
     public static int lastLogsCheckTime;
-    public static int searchMessagesAsListHintShows;
     public static int textSelectionHintShows;
     public static int scheduledOrNoSoundHintShows;
     public static long scheduledOrNoSoundHintSeenAt;
@@ -255,6 +254,7 @@ public class SharedConfig {
     public static boolean forceDisableTabletMode;
     public static boolean updateStickersOrderOnSend = true;
     public static boolean bigCameraForRound;
+    public static boolean useCamera2;
     public static boolean useSurfaceInStories;
     public static boolean photoViewerBlur = true;
     public static boolean payByInvoice;
@@ -310,7 +310,6 @@ public class SharedConfig {
     public static int messageSeenHintCount;
     public static int emojiInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
-    public static boolean forceLessData;
     public static int callEncryptionHintDisplayedCount;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
@@ -616,7 +615,6 @@ public class SharedConfig {
             debugWebView = preferences.getBoolean("debugWebView", false);
             lastKeepMediaCheckTime = preferences.getInt("lastKeepMediaCheckTime", 0);
             lastLogsCheckTime = preferences.getInt("lastLogsCheckTime", 0);
-            searchMessagesAsListHintShows = preferences.getInt("searchMessagesAsListHintShows", 0);
             searchMessagesAsListUsed = preferences.getBoolean("searchMessagesAsListUsed", false);
             stickersReorderingHintUsed = preferences.getBoolean("stickersReorderingHintUsed", false);
             storyReactionsLongPressHint = preferences.getBoolean("storyReactionsLongPressHint", false);
@@ -645,11 +643,11 @@ public class SharedConfig {
             updateStickersOrderOnSend = preferences.getBoolean("updateStickersOrderOnSend", true);
             dayNightWallpaperSwitchHint = preferences.getInt("dayNightWallpaperSwitchHint", 0);
             bigCameraForRound = preferences.getBoolean("bigCameraForRound", false);
+            useCamera2 = preferences.getBoolean("useCamera2", false);
             useSurfaceInStories = preferences.getBoolean("useSurfaceInStories", Build.VERSION.SDK_INT >= 30);
             payByInvoice = preferences.getBoolean("payByInvoice", false);
             photoViewerBlur = preferences.getBoolean("photoViewerBlur", true);
             multipleReactionsPromoShowed = preferences.getBoolean("multipleReactionsPromoShowed", false);
-            forceLessData = preferences.getBoolean("forceLessData", false);
             callEncryptionHintDisplayedCount = preferences.getInt("callEncryptionHintDisplayedCount", 0);
 
             loadDebugConfig(preferences);
@@ -1000,13 +998,6 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("lockRecordAudioVideoHint", 3);
-        editor.apply();
-    }
-
-    public static void increaseSearchAsListHintShows() {
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt("searchMessagesAsListHintShows", ++searchMessagesAsListHintShows);
         editor.apply();
     }
 
@@ -1545,11 +1536,6 @@ public class SharedConfig {
         preferences.edit().putInt("emojiInteractionsHintCount", emojiInteractionsHintCount).apply();
     }
 
-    public static void setForceLessData(boolean value) {
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        preferences.edit().putBoolean("forceLessData", forceLessData = value).apply();
-    }
-
     public static void updateDayNightThemeSwitchHintCount(int count) {
         dayNightThemeSwitchHintCount = count;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -1750,6 +1736,13 @@ public class SharedConfig {
         ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
                 .edit()
                 .putBoolean("bigCameraForRound", bigCameraForRound)
+                .apply();
+    }
+
+    public static void toggleUseCamera2() {
+        ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
+                .edit()
+                .putBoolean("useCamera2", useCamera2 = !useCamera2)
                 .apply();
     }
 

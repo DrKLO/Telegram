@@ -10,6 +10,7 @@ package org.telegram.messenger.video;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.util.Log;
 
 import com.coremedia.iso.BoxParser;
 import com.coremedia.iso.IsoFile;
@@ -38,11 +39,18 @@ import com.coremedia.iso.boxes.TrackHeaderBox;
 import com.googlecode.mp4parser.DataSource;
 import com.googlecode.mp4parser.util.Matrix;
 
+import org.telegram.messenger.AndroidUtilities;
+
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -206,6 +214,47 @@ public class MP4Builder {
         fc.close();
         fos.close();
     }
+
+    public void finishMovie(File into) throws Exception {
+        if (into == null) {
+            finishMovie();
+            return;
+        }
+
+        fos.flush();
+        final long wasPosition = fc.position();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
+
+        AndroidUtilities.copyFile(currentMp4Movie.getCacheFile(), into);
+
+        try (RandomAccessFile raf = new RandomAccessFile(into, "rw");
+             FileChannel copiedFc = raf.getChannel()) {
+
+            // put mdat box
+            copiedFc.position(wasPosition);
+            if (mdat.getContentSize() != 0) {
+                copiedFc.position(mdat.getOffset());
+                mdat.getBox(copiedFc);
+                copiedFc.position(wasPosition);
+            }
+
+            // put moov box
+            track2SampleSizes.clear();
+            for (Track track : currentMp4Movie.getTracks()) {
+                List<Sample> samples = track.getSamples();
+                long[] sizes = new long[samples.size()];
+                for (int i = 0; i < sizes.length; i++) {
+                    sizes[i] = samples.get(i).getSize();
+                }
+                track2SampleSizes.put(track, sizes);
+            }
+            Box moov = createMovieBox(currentMp4Movie);
+            moov.getBox(copiedFc);
+        }
+    }
+
 
     protected FileTypeBox createFileTypeBox(boolean hevc) {
         LinkedList<String> minorBrands = new LinkedList<>();

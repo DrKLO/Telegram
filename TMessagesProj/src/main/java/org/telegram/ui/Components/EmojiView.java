@@ -34,7 +34,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -49,29 +48,24 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.IntDef;
@@ -134,14 +128,12 @@ import org.telegram.ui.Cells.StickerSetNameCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ListView.RecyclerListViewWithOverlayDraw;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
-import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.ContentPreviewViewer;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 import org.telegram.ui.StickersActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -149,7 +141,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -1282,6 +1273,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 long documentId = imageViewEmoji.getSpan().documentId;
                 TLRPC.Document document = imageViewEmoji.getSpan().document;
                 String emoticon = null;
+                boolean isGroupEmojis = imageViewEmoji.pack != null && imageViewEmoji.pack.forGroup;
                 if (document == null) {
                     for (int i = 0; i < emojipacksProcessed.size(); ++i) {
                         EmojiPack pack = emojipacksProcessed.get(i);
@@ -1299,7 +1291,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 if (emoticon == null && document != null) {
                     emoticon = MessageObject.findAnimatedEmojiEmoticon(document);
                 }
-                if (!MessageObject.isFreeEmoji(document) && !UserConfig.getInstance(currentAccount).isPremium() && !(delegate != null && delegate.isUserSelf()) && !allowEmojisForNonPremium) {
+                if (!MessageObject.isFreeEmoji(document) && !UserConfig.getInstance(currentAccount).isPremium() && !(delegate != null && delegate.isUserSelf()) && !allowEmojisForNonPremium && !isGroupEmojis) {
                     showBottomTab(false, true);
                     BulletinFactory factory = fragment != null ? BulletinFactory.of(fragment) : BulletinFactory.of(bulletinContainer, resourcesProvider);
                     if (premiumBulletin || fragment == null) {
@@ -3610,6 +3602,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         RLottieImageView lockView;
         SimpleTextView headerView;
+        TextView markView;
 
         FrameLayout buttonsView;
         TextView addButtonView;
@@ -3638,8 +3631,17 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     openEmojiPackAlert(this.pack.set);
                 }
             });
+            markView = new TextView(context);
+            markView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+            markView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
+            markView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            markView.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(getThemedColor(Theme.key_chat_emojiPanelIcon), .12f)));
+            markView.setPadding(dp(6), dp(1.5f), dp(6), dp(1.5f));
+            markView.setText(LocaleController.getString(R.string.GroupEmoji));
+
             headerView.setEllipsizeByGradient(true);
             addView(headerView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.START, 15, 15, 0, 0));
+            addView(markView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 15, 10, 0, 0));
 
             buttonsView = new FrameLayout(context);
             buttonsView.setPadding(AndroidUtilities.dp(11), AndroidUtilities.dp(11), AndroidUtilities.dp(11), 0);
@@ -3778,7 +3780,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             super.onLayout(changed, left, top, right, bottom);
-            headerView.setRightPadding(buttonsView.getWidth() + AndroidUtilities.dp(11));
+            int padding = buttonsView.getWidth() + AndroidUtilities.dp(11) + (markView.getVisibility() == View.VISIBLE ? markView.getMeasuredWidth() : 0);
+            headerView.setRightPadding(padding);
+            if (markView.getVisibility() == View.VISIBLE) {
+                markView.setTranslationX(headerView.getTextWidth() + dp(4));
+                int max = headerView.getMaxTextWidth() - padding + dp(4);
+                if (markView.getTranslationX() > max) {
+                    markView.setTranslationX(max);
+                }
+            }
         }
 
         public void setStickerSet(EmojiPack pack, boolean divider) {
@@ -3789,6 +3799,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             this.pack = pack;
             this.divider = divider;
             headerView.setText(pack.set.title);
+            markView.setVisibility(pack.forGroup ? View.VISIBLE : View.GONE);
 
             if (pack.installed && !pack.set.official) {
                 premiumButtonView.setButton(LocaleController.getString("Restore", R.string.Restore), e -> openPremiumAnimatedEmojiFeature());
@@ -5632,7 +5643,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         forseMultiwindowLayout = value;
     }
 
-    public void onOpen(boolean forceEmoji) {
+    public void onOpen(boolean forceEmoji, boolean groupEmojiHintWasVisible) {
         if (currentPage != 0 && stickersBanned) {
             currentPage = 0;
         }
@@ -5644,6 +5655,21 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             showStickerSettingsButton(false, false);
             if (pager.getCurrentItem() != 0) {
                 pager.setCurrentItem(0, !forceEmoji);
+            }
+            if (groupEmojiHintWasVisible) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    ArrayList<EmojiPack> packs = getEmojipacks();
+                    for (int i = 0; i < packs.size(); i++) {
+                        EmojiPack pack = packs.get(i);
+                        if (pack.forGroup) {
+                            int pos = emojiAdapter.sectionToPosition.get(i + EmojiData.dataColored.length);
+                            emojiGridView.stopScroll();
+                            updateEmojiTabsPosition(pos);
+                            scrollEmojisToPosition(pos, dp(-9));
+                            checkEmojiTabY(null, 0);
+                        }
+                    }
+                }, 350);
             }
         } else if (currentPage == 1) {
             showBackspaceButton(false, false);
@@ -5684,6 +5710,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         super.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupPackUpdated);
         if (stickersGridAdapter != null) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentDocumentsDidLoad);
@@ -5734,6 +5761,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupPackUpdated);
         if (stickersGridAdapter != null) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recentDocumentsDidLoad);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.featuredStickersDidLoad);
@@ -5851,6 +5879,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         if (show) {
             if (!ChatObject.hasAdminRights(chat) && chat.default_banned_rights != null && (chat.default_banned_rights.send_stickers || (emoji && chat.default_banned_rights.send_plain))) {
+                if (fragment instanceof ChatActivity && ((ChatActivity) fragment).checkCanRemoveRestrictionsByBoosts()) {
+                    return;
+                }
                 if (emoji) {
                     mediaBanTooltip.setText(LocaleController.getString("GlobalAttachEmojiRestricted", R.string.GlobalAttachEmojiRestricted));
                 } else if (gif) {
@@ -5979,6 +6010,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 } else {
                     emojiAdapter.notifyDataSetChanged(false);
                 }
+            }
+        } else if (id == NotificationCenter.groupPackUpdated) {
+            long chatId = (long) args[0];
+            boolean isEmoji = (boolean) args[1];
+            if (info != null && info.id == chatId && isEmoji) {
+                emojiAdapter.notifyDataSetChanged(true);
             }
         } else if (id == NotificationCenter.recentDocumentsDidLoad) {
             boolean isGif = (Boolean) args[0];
@@ -6671,6 +6708,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         public boolean installed;
         public boolean featured;
         public boolean expanded;
+        public boolean forGroup;
 
         public int resId;
     }
@@ -6986,6 +7024,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             return VIEW_TYPE_EMOJI;
         }
 
+        private void removeGroupEmojiPackFromInstalled(TLRPC.StickerSet pack, ArrayList<TLRPC.TL_messages_stickerSet> installedEmojipacks) {
+            for (int i = 0; i < installedEmojipacks.size(); i++) {
+                TLRPC.TL_messages_stickerSet set = installedEmojipacks.get(i);
+                if (set != null && set.set.id == pack.id) {
+                    installedEmojipacks.remove(i);
+                    break;
+                }
+            }
+        }
+
         public void processEmoji(boolean updateEmojipacks) {
             emojipacksProcessed.clear();
             if (!allowAnimatedEmoji) {
@@ -6999,6 +7047,24 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             ArrayList<TLRPC.TL_messages_stickerSet> installedEmojipacks = frozenEmojiPacks;
             boolean isPremium = UserConfig.getInstance(currentAccount).isPremium() || allowEmojisForNonPremium;
             int index = 0;
+
+            if (info != null && info.emojiset != null) {
+                TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getGroupStickerSetById(info.emojiset);
+                if (stickerSet != null) {
+                    EmojiPack pack = new EmojiPack();
+                    pack.index = index++;
+                    pack.set = info.emojiset;
+                    pack.documents = new ArrayList<>(stickerSet.documents);
+                    pack.free = true;
+                    pack.installed = true;
+                    pack.featured = false;
+                    pack.expanded = true;
+                    pack.forGroup = true;
+                    emojipacksProcessed.add(pack);
+                    removeGroupEmojiPackFromInstalled(pack.set, installedEmojipacks);
+                }
+            }
+
             if (!isPremium) {
                 for (int i = 0; i < installedEmojipacks.size(); ++i) {
                     TLRPC.TL_messages_stickerSet set = installedEmojipacks.get(i);
@@ -7224,7 +7290,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     if (!pack.expanded && pack.documents.size() > maxlen) {
                         count--;
                     }
-                    rowHashCodes.add(Objects.hash(pack.featured ? 56345 : -495231, (pack.set == null ? b : pack.set.id)));
+                    rowHashCodes.add(Objects.hash(pack.featured ? 56345 : -495231, (pack.set == null ? b : pack.set.id), pack.forGroup));
                     for (int i = 1; i < count; ++i) {
                         rowHashCodes.add(Objects.hash(pack.featured ? 3442 : -9964, pack.documents.get(i - 1).id));
                     }
@@ -7234,11 +7300,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         rowHashCodes.add(Objects.hash(pack.featured ? -65174 : 92242, pack.set.id));
                         itemCount++;
                     }
-//                    if (!pack.installed) {
-//                        positionToUnlock.put(itemCount, b);
-//                        itemCount++;
-//                        rowHashCodes.add(Objects.hash(7, pack.set.id));
-//                    }
                 }
             }
         }
@@ -8985,9 +9046,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         private final int currentAccount;
         private final long dialogId;
-        private final int threadId;
+        private final long threadId;
 
-        public ChooseStickerActionTracker(int currentAccount, long dialogId, int threadId) {
+        public ChooseStickerActionTracker(int currentAccount, long dialogId, long threadId) {
             this.currentAccount = currentAccount;
             this.dialogId = dialogId;
             this.threadId = threadId;

@@ -73,6 +73,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Pair;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -153,6 +154,9 @@ import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.PipRoundVideoView;
+import org.telegram.ui.Components.PipVideoOverlay;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -312,6 +316,7 @@ public class AndroidUtilities {
     };
 
     public static final String STICKERS_PLACEHOLDER_PACK_NAME = "tg_placeholders_android";
+    public static final String STICKERS_PLACEHOLDER_PACK_NAME_2 = "tg_superplaceholders_android_2";
 
     private static boolean containsUnsupportedCharacters(String text) {
         if (text.contains("\u202C")) {
@@ -4439,6 +4444,7 @@ public class AndroidUtilities {
     }
 
     public static void makeAccessibilityAnnouncement(CharSequence what) {
+        if (TextUtils.isEmpty(what)) return;
         AccessibilityManager am = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
         if (am.isEnabled()) {
             AccessibilityEvent ev = AccessibilityEvent.obtain();
@@ -5225,6 +5231,9 @@ public class AndroidUtilities {
             int[] location = new int[2];
             for (int i = 0; i < finalViews.size(); ++i) {
                 View view = finalViews.get(i);
+                if (view instanceof PipRoundVideoView.PipFrameLayout || view instanceof PipRoundVideoView.PipFrameLayout) {
+                    continue;
+                }
 
                 ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
                 if (layoutParams instanceof WindowManager.LayoutParams) {

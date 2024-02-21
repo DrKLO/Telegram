@@ -14,6 +14,7 @@ import android.text.TextUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -36,7 +37,17 @@ public class ExpiredStoryView {
 
     public void measure(ChatMessageCell parent) {
         CharSequence title = StoriesUtilities.createExpiredStoryString();
-        TLRPC.TL_messageMediaStory mediaStory = (TLRPC.TL_messageMediaStory) parent.getMessageObject().messageOwner.media;
+        MessageObject messageObject = parent.getMessageObject();
+        TLRPC.TL_messageMediaStory mediaStory;
+        if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaStory) {
+            mediaStory = (TLRPC.TL_messageMediaStory) messageObject.messageOwner.media;
+        } else {
+            verticalPadding = AndroidUtilities.dp(4);
+            horizontalPadding = AndroidUtilities.dp(12);
+            height = 0;
+            width = 0;
+            return;
+        }
         TLRPC.User user = MessagesController.getInstance(parent.currentAccount).getUser(mediaStory.user_id);
         String fromName = user == null ? "DELETED" : user.first_name;
         int forwardedNameWidth;
@@ -119,9 +130,13 @@ public class ExpiredStoryView {
 
         canvas.save();
         canvas.translate(textX, textY);
-        titleLayout.draw(canvas);
-        canvas.translate(0, titleLayout.getHeight() + AndroidUtilities.dp(2));
-        subtitleLayout.draw(canvas);
+        if (titleLayout != null) {
+            titleLayout.draw(canvas);
+            canvas.translate(0, titleLayout.getHeight() + AndroidUtilities.dp(2));
+        }
+        if (subtitleLayout != null) {
+            subtitleLayout.draw(canvas);
+        }
         canvas.restore();
     }
 }

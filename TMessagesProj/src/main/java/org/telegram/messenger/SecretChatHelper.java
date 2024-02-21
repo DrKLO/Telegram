@@ -154,7 +154,7 @@ public class SecretChatHelper extends BaseController {
 
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(newMsg);
-        getMessagesStorage().putMessages(arr, false, true, true, 0, false, 0);
+        getMessagesStorage().putMessages(arr, false, true, true, 0, false, 0, 0);
 
         return newMsg;
     }
@@ -534,7 +534,7 @@ public class SecretChatHelper extends BaseController {
                 ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, ImageLocation.getForPhoto(size, newMsg.media.photo), true);
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0);
+                getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0, 0);
 
                 //getMessagesStorage().putSentFile(originalPath, newMsg.media.photo, 3);
             } else if (newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
@@ -568,7 +568,7 @@ public class SecretChatHelper extends BaseController {
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0);
+                getMessagesStorage().putMessages(arr, false, true, false, 0, 0, 0);
             }
         }
     }

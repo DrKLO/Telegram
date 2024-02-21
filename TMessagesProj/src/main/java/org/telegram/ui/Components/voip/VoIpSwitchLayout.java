@@ -102,6 +102,7 @@ public class VoIpSwitchLayout extends FrameLayout {
             default:
                 newText = "";
         }
+        setContentDescription(newText);
 
         if (currentTextView.getVisibility() == GONE && newTextView.getVisibility() == GONE) {
             currentTextView.setVisibility(VISIBLE);
@@ -147,7 +148,7 @@ public class VoIpSwitchLayout extends FrameLayout {
         newVoIpButtonView.setSelectedState(isSelected, false, type);
         newVoIpButtonView.setAlpha(0f);
         newVoIpButtonView.setOnBtnClickedListener(voIpButtonView.onBtnClickedListener);
-        addView(newVoIpButtonView, LayoutHelper.createFrame(VoIpButtonView.ITEM_SIZE, VoIpButtonView.ITEM_SIZE, Gravity.CENTER_HORIZONTAL));
+        addView(newVoIpButtonView, LayoutHelper.createFrame(VoIpButtonView.ITEM_SIZE + 1.5f, VoIpButtonView.ITEM_SIZE + 1.5f, Gravity.CENTER_HORIZONTAL));
         final VoIpButtonView oldVoIpButton = voIpButtonView;
         voIpButtonView = newVoIpButtonView;
         newVoIpButtonView.animate().alpha(1f).setDuration(250).start();
@@ -369,8 +370,26 @@ public class VoIpSwitchLayout extends FrameLayout {
             darkPaint.setAlpha(VoIPBackgroundProvider.DARK_LIGHT_DEFAULT_ALPHA);
         }
 
+        private ValueAnimator pressedScaleAnimator;
+        private float pressedScale = 1.0f;
+
+        private void setPressedBtn(boolean pressed) {
+            if (pressedScaleAnimator != null) {
+                pressedScaleAnimator.cancel();
+            }
+            pressedScaleAnimator = ValueAnimator.ofFloat(pressedScale, pressed ? 0.8f : 1f);
+            pressedScaleAnimator.addUpdateListener(animation -> {
+                pressedScale = (float) animation.getAnimatedValue();
+                invalidate();
+            });
+            pressedScaleAnimator.setDuration(150);
+            pressedScaleAnimator.start();
+        }
+
         @Override
         protected void onDraw(Canvas canvas) {
+            canvas.save();
+            canvas.scale(pressedScale, pressedScale, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
             float cx = getWidth() / 2f;
             float cy = getHeight() / 2f;
 
@@ -435,6 +454,7 @@ public class VoIpSwitchLayout extends FrameLayout {
                 selectedIcon.setAlpha((int) (255 * VoIPBackgroundProvider.DARK_LIGHT_PERCENT));
                 selectedIcon.draw(canvas); //dimming icons
             }
+            canvas.restore();
         }
 
         private boolean isAnimating() {
@@ -451,14 +471,12 @@ public class VoIpSwitchLayout extends FrameLayout {
         public boolean onTouchEvent(MotionEvent event) {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).start();
-                    animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).start();
+                    setPressedBtn(true);
                     startX = event.getX();
                     startY = event.getY();
                     break;
                 case MotionEvent.ACTION_UP:
-                    animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
-                    animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
+                    setPressedBtn(false);
                     float endX = event.getX();
                     float endY = event.getY();
                     if (isClick(startX, endX, startY, endY) && !isAnimating()) {
@@ -466,8 +484,7 @@ public class VoIpSwitchLayout extends FrameLayout {
                     }
                     break;
                 case MotionEvent.ACTION_CANCEL:
-                    animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
-                    animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
+                    setPressedBtn(false);
                     break;
             }
             return true;

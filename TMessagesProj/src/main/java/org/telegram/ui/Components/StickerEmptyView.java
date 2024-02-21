@@ -30,6 +30,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.LaunchActivity;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -43,7 +44,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     public LinearLayout linearLayout;
     public BackupImageView stickerView;
     private RadialProgressView progressBar;
-    public final TextView title;
+    public final SpoilersTextView title;
     public final LinkSpanDrawable.LinksTextView subtitle;
     private boolean progressShowing;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -103,9 +104,9 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         stickerView = new BackupImageView(context);
         stickerView.setOnClickListener(view -> stickerView.getImageReceiver().startAnimation());
 
-        title = new TextView(context);
+        title = new SpoilersTextView(context);
 
-        title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         title.setTag(Theme.key_windowBackgroundWhiteBlackText);
         title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

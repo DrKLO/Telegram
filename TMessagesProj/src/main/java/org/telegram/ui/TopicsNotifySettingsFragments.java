@@ -86,7 +86,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     topicsFragment.setOnTopicSelectedListener((topic) -> {
                         Bundle bundle2 = new Bundle();
                         bundle2.putLong("dialog_id", dialogId);
-                        bundle2.putInt("topic_id", topic.id);
+                        bundle2.putLong("topic_id", topic.id);
                         bundle2.putBoolean("exception", true);
                         ProfileNotificationsActivity fragment = new ProfileNotificationsActivity(bundle2);
                         fragment.setDelegate(exception -> {
@@ -102,7 +102,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     TLRPC.TL_forumTopic topic = (TLRPC.TL_forumTopic) items.get(position).topic;
                     Bundle bundle = new Bundle();
                     bundle.putLong("dialog_id", dialogId);
-                    bundle.putInt("topic_id", topic.id);
+                    bundle.putLong("topic_id", topic.id);
                     bundle.putBoolean("exception", false);
                     ProfileNotificationsActivity topicsFragment = new ProfileNotificationsActivity(bundle);
                     topicsFragment.setDelegate(new ProfileNotificationsActivity.ProfileNotificationsActivityDelegate() {

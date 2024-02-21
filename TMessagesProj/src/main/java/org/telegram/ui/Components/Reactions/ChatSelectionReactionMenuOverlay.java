@@ -66,7 +66,9 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void checkCreateReactionsLayout() {
         if (reactionsContainerLayout == null) {
-            reactionsContainerLayout = new ReactionsContainerLayout(ReactionsContainerLayout.TYPE_DEFAULT, parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
+            final boolean tags = parentFragment.getUserConfig().getClientUserId() == parentFragment.getDialogId();
+
+            reactionsContainerLayout = new ReactionsContainerLayout(tags ? ReactionsContainerLayout.TYPE_TAGS : ReactionsContainerLayout.TYPE_DEFAULT, parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
                 float enabledAlpha = 1f;
                 long lastUpdate;
 
@@ -110,7 +112,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
             reactionsContainerLayout.setDelegate(new ReactionsContainerLayout.ReactionsContainerDelegate() {
                 @Override
                 public void onReactionClicked(View view, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
-                    parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent);
+                    parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent, false);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (reactionsContainerLayout != null) {
                             reactionsContainerLayout.dismissParent(true);

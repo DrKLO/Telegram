@@ -2467,17 +2467,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     if (!insideBottomSheet()) {
                         limitReachedBottomSheet.showStatisticButtonInLink(() -> {
                             TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-                            Bundle args = new Bundle();
-                            args.putLong("chat_id", -dialogId);
-                            args.putBoolean("is_megagroup", chat.megagroup);
-                            args.putBoolean("start_from_boosts", true);
-                            TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(-dialogId);
-                            if (chatInfo == null || !chatInfo.can_view_stats) {
-                                args.putBoolean("only_boosts", true);
-                            }
-                            ;
-                            StatisticActivity fragment = new StatisticActivity(args);
-                            presentFragment(fragment);
+                            presentFragment(StatisticActivity.create(chat));
                         });
                     }
                     showDialog(limitReachedBottomSheet);

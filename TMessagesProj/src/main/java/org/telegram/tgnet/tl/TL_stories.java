@@ -1926,6 +1926,7 @@ public class TL_stories {
         public boolean out;
         public int id;
         public int date;
+        public TLRPC.Peer from_id;
         public StoryFwdHeader fwd_from;
         public int expire_date;
         public String caption;
@@ -1953,19 +1954,22 @@ public class TL_stories {
         public static StoryItem TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             StoryItem result = null;
             switch (constructor) {
-                case 0xaf6365a1:
+                case TL_storyItem.constructor:
                     result = new TL_storyItem();
                     break;
-                case 0x44c457ce:
+                case TL_storyItem_layer174.constructor:
+                    result = new TL_storyItem_layer174();
+                    break;
+                case TL_storyItem_layer166.constructor:
                     result = new TL_storyItem_layer166();
                     break;
-                case 0x562aa637:
+                case TL_storyItem_layer160.constructor:
                     result = new TL_storyItem_layer160();
                     break;
-                case 0x51e6ee4f:
+                case TL_storyItemDeleted.constructor:
                     result = new TL_storyItemDeleted();
                     break;
-                case 0xffadc913:
+                case TL_storyItemSkipped.constructor:
                     result = new TL_storyItemSkipped();
                     break;
             }
@@ -2241,6 +2245,150 @@ public class TL_stories {
     }
 
     public static class TL_storyItem extends StoryItem {
+        public static final int constructor = 0x79b26a24;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            pinned = (flags & 32) != 0;
+            isPublic = (flags & 128) != 0;
+            close_friends = (flags & 256) != 0;
+            min = (flags & 512) != 0;
+            noforwards = (flags & 1024) != 0;
+            edited = (flags & 2048) != 0;
+            contacts = (flags & 4096) != 0;
+            selected_contacts = (flags & 8192) != 0;
+            out = (flags & 65536) != 0;
+            id = stream.readInt32(exception);
+            date = stream.readInt32(exception);
+            if ((flags & 262144) != 0) {
+                from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 131072) != 0) {
+                fwd_from = TL_storyFwdHeader.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            expire_date = stream.readInt32(exception);
+            if ((flags & 1) != 0) {
+                caption = stream.readString(exception);
+            }
+            if ((flags & 2) != 0) {
+                int magic = stream.readInt32(exception);
+                if (magic != 0x1cb5c415) {
+                    if (exception) {
+                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                    }
+                    return;
+                }
+                int count = stream.readInt32(exception);
+                for (int a = 0; a < count; a++) {
+                    TLRPC.MessageEntity object = TLRPC.MessageEntity.TLdeserialize(stream, stream.readInt32(exception), exception);
+                    if (object == null) {
+                        return;
+                    }
+                    entities.add(object);
+                }
+            }
+            media = TLRPC.MessageMedia.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if ((flags & 16384) != 0) {
+                int magic = stream.readInt32(exception);
+                if (magic != 0x1cb5c415) {
+                    if (exception) {
+                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                    }
+                    return;
+                }
+                int count = stream.readInt32(exception);
+                for (int a = 0; a < count; a++) {
+                    MediaArea object = MediaArea.TLdeserialize(stream, stream.readInt32(exception), exception);
+                    if (object == null) {
+                        return;
+                    }
+                    media_areas.add(object);
+                }
+            }
+            if ((flags & 4) != 0) {
+                int magic = stream.readInt32(exception);
+                if (magic != 0x1cb5c415) {
+                    if (exception) {
+                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                    }
+                    return;
+                }
+                int count = stream.readInt32(exception);
+                for (int a = 0; a < count; a++) {
+                    TLRPC.PrivacyRule object = TLRPC.PrivacyRule.TLdeserialize(stream, stream.readInt32(exception), exception);
+                    if (object == null) {
+                        return;
+                    }
+                    privacy.add(object);
+                }
+            }
+            if ((flags & 8) != 0) {
+                views = StoryViews.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 32768) != 0) {
+                sent_reaction = TLRPC.Reaction.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = pinned ? (flags | 32) : (flags &~ 32);
+            flags = isPublic ? (flags | 128) : (flags &~ 128);
+            flags = close_friends ? (flags | 256) : (flags &~ 256);
+            flags = min ? (flags | 512) : (flags &~ 512);
+            flags = noforwards ? (flags | 1024) : (flags &~ 1024);
+            flags = edited ? (flags | 2048) : (flags &~ 2048);
+            flags = contacts ? (flags | 4096) : (flags &~ 4096);
+            flags = selected_contacts ? (flags | 8192) : (flags &~ 8192);
+            flags = out ? (flags | 65536) : (flags &~ 65536);
+            stream.writeInt32(flags);
+            stream.writeInt32(id);
+            stream.writeInt32(date);
+            if ((flags & 262144) != 0) {
+                from_id.serializeToStream(stream);
+            }
+            if ((flags & 131072) != 0) {
+                fwd_from.serializeToStream(stream);
+            }
+            stream.writeInt32(expire_date);
+            if ((flags & 1) != 0) {
+                stream.writeString(caption);
+            }
+            if ((flags & 2) != 0) {
+                stream.writeInt32(0x1cb5c415);
+                int count = entities.size();
+                stream.writeInt32(count);
+                for (int a = 0; a < count; a++) {
+                    entities.get(a).serializeToStream(stream);
+                }
+            }
+            media.serializeToStream(stream);
+            if ((flags & 16384) != 0) {
+                stream.writeInt32(0x1cb5c415);
+                int count = media_areas.size();
+                stream.writeInt32(count);
+                for (int a = 0; a < count; a++) {
+                    media_areas.get(a).serializeToStream(stream);
+                }
+            }
+            if ((flags & 4) != 0) {
+                stream.writeInt32(0x1cb5c415);
+                int count = privacy.size();
+                stream.writeInt32(count);
+                for (int a = 0; a < count; a++) {
+                    privacy.get(a).serializeToStream(stream);
+                }
+            }
+            if ((flags & 8) != 0) {
+                views.serializeToStream(stream);
+            }
+            if ((flags & 32768) != 0) {
+                sent_reaction.serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_storyItem_layer174 extends TL_storyItem {
         public static final int constructor = 0xaf6365a1;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {

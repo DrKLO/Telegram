@@ -27,14 +27,14 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private int debugCanceledCount;
     private boolean debugReportSend;
 
-    public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev, int loadingPriority) {
+    public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev, int loadingPriority, int cacheType) {
         document = d;
         location = l;
         parentObject = p;
         currentAccount = a;
         preview = prev;
         this.loadingPriority = loadingPriority;
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, 0, preview, loadingPriority);
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, 0, preview, loadingPriority, cacheType);
     }
 
     public boolean isFinishedLoadingFile() {

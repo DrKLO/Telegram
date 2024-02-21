@@ -32,12 +32,13 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private int iconColor;
     private int selectorColor;
 
+    int selectorRad = 6;
     boolean top;
     boolean bottom;
 
     private int itemHeight = 48;
     private final Theme.ResourcesProvider resourcesProvider;
-    Runnable openSwipeBackLayout;
+    public Runnable openSwipeBackLayout;
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
         this(context, false, top, bottom);
@@ -281,8 +282,18 @@ public class ActionBarMenuSubItem extends FrameLayout {
         updateBackground();
     }
 
+    public void updateSelectorBackground(boolean top, boolean bottom, int selectorRad) {
+        if (this.top == top && this.bottom == bottom && this.selectorRad == selectorRad) {
+            return;
+        }
+        this.top = top;
+        this.bottom = bottom;
+        this.selectorRad = selectorRad;
+        updateBackground();
+    }
+
     public void updateBackground() {
-        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? 6 : 0, bottom ? 6 : 0));
+        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
     }
 
     private int getThemedColor(int key) {

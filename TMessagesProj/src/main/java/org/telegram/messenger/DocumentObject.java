@@ -53,7 +53,7 @@ public class DocumentObject {
             TLRPC.PhotoSize photoSize = sizes.get(a);
             if (photoSize instanceof TLRPC.TL_photoPathSize) {
                 photoPathSize = (TLRPC.TL_photoPathSize) photoSize;
-            } else {
+            } else if (photoSize instanceof TLRPC.TL_photoSize) {
                 w = photoSize.w;
                 h = photoSize.h;
             }

@@ -20,14 +20,15 @@ uniform float deltaTime;
 uniform vec2 size;
 uniform float r;
 uniform float seed;
-uniform float noiseScale;
-uniform float noiseSpeed;
-uniform float noiseMovement;
-uniform float dampingMult;
-uniform float forceMult;
-uniform float velocityMult;
-uniform float longevity;
-uniform float maxVelocity;
+
+#define noiseScale 6.0
+#define noiseSpeed 0.6
+#define noiseMovement 4.0
+#define longevity 1.4
+#define dampingMult .9999
+#define maxVelocity 6.0
+#define velocityMult 1.0
+#define forceMult 0.6
 
 float rand(vec2 n) { 
 	return fract(sin(dot(n,vec2(12.9898,4.1414-seed*.42)))*4375.5453);

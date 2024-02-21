@@ -77,13 +77,19 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
     @SuppressLint("StaticFieldLeak")
     private static PipRoundVideoView instance;
 
+    public class PipFrameLayout extends FrameLayout {
+        public PipFrameLayout(Context context) {
+            super(context);
+        }
+    }
+
     public void show(Activity activity, Runnable closeRunnable) {
         if (activity == null) {
             return;
         }
         instance = this;
         onCloseRunnable = closeRunnable;
-        windowView = new FrameLayout(activity) {
+        windowView = new PipFrameLayout(activity) {
 
             private float startX;
             private float startY;
