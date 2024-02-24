@@ -29724,6 +29724,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    public void sendContacts(ArrayList<TLRPC.User> users, String caption, boolean notify, int scheduleDate) {
+        if (checkSlowModeAlert()) {
+            if (!TextUtils.isEmpty(caption)) {
+                SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(caption, dialog_id, null, null, null, true, null, null, null, true, 0, null, false));
+            }
+            for (TLRPC.User user : users) {
+                getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(user, dialog_id, null, null, null, null, notify, scheduleDate));
+            }
+            afterMessageSend();
+        }
+    }
+
     public void sendPoll(TLRPC.TL_messageMediaPoll poll, HashMap<String, String> params, boolean notify, int scheduleDate) {
         if (checkSlowModeAlert()) {
             getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(poll, dialog_id, replyingMessageObject, getThreadMessage(), null, params, notify, scheduleDate));

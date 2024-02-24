@@ -3250,7 +3250,22 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
         if (contactsLayout == null) {
             layouts[2] = contactsLayout = new ChatAttachAlertContactsLayout(this, getContext(), resourcesProvider);
-            contactsLayout.setDelegate((user, notify, scheduleDate) -> ((ChatActivity) baseFragment).sendContact(user, notify, scheduleDate));
+            contactsLayout.setDelegate(new ChatAttachAlertContactsLayout.PhonebookShareAlertDelegate() {
+                @Override
+                public void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate) {
+                    ((ChatActivity) baseFragment).sendContact(user, notify, scheduleDate);
+                }
+
+                @Override
+                public void didSelectContacts(ArrayList<TLRPC.User> users, String caption, boolean notify, int scheduleDate) {
+                    ((ChatActivity) baseFragment).sendContacts(users, caption, notify, scheduleDate);
+                }
+            });
+        }
+        if (baseFragment instanceof ChatActivity) {
+            ChatActivity chatActivity = (ChatActivity) baseFragment;
+            TLRPC.Chat currentChat = chatActivity.getCurrentChat();
+            contactsLayout.setMultipleSelectionAllowed(!(currentChat != null && !ChatObject.hasAdminRights(currentChat) && currentChat.slowmode_enabled));
         }
         showLayout(contactsLayout);
     }

@@ -1321,6 +1321,7 @@
     <string name="DiscardVideoMessageTitle">Discard Video Message</string>
     <string name="DiscardVideoMessageDescription">Are you sure you want to stop recording and discard your video message?</string>
     <string name="DiscardVoiceMessageAction">Discard</string>
+    <string name="AttachContactsSlowMode">Slow Mode is active. You can\'t send more than 1 contact.</string>
     <string name="AttachMediaRestricted">The admins of this group have restricted you from sending media here until %1$s</string>
     <string name="AttachAudioRestricted">The admins of this group have restricted you from sending audio here until %1$s</string>
     <string name="AttachPhotoRestricted">The admins of this group have restricted you from sending photo here until %1$s</string>
