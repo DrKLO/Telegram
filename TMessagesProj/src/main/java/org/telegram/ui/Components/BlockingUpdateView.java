@@ -152,7 +152,6 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
                     Browser.openUrl(getContext(), appUpdate.url);
                 }
             } else if (BuildVars.isHuaweiStoreApp()){
-                Browser.openUrl(context, BuildVars.HUAWEI_STORE_URL);
             } else {
                 Browser.openUrl(context, BuildVars.PLAYSTORE_APP_URL);
             }
