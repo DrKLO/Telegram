@@ -24,6 +24,7 @@ import android.util.Log;
 import android.util.Size;
 import android.util.SizeF;
 import android.view.Surface;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -78,7 +79,7 @@ public class Camera2Session {
 
     private long lastTime;
 
-    public static Camera2Session create(boolean round, boolean front, int viewWidth, int viewHeight) {
+    public static Camera2Session create(boolean front, int viewWidth, int viewHeight) {
         final Context context = ApplicationLoader.applicationContext;
         final CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
 
@@ -97,12 +98,12 @@ public class Camera2Session {
                 StreamConfigurationMap confMap = (StreamConfigurationMap) characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 Size pixelSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
                 float cameraAspectRatio = pixelSize == null ? 0 : (float) pixelSize.getWidth() / pixelSize.getHeight();
-                final Size targetAspectRatio = round ? new Size(1, 1) : new Size(9, 16);
-                final int targetWidth = round ? MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize : viewWidth;
-                final int targetHeight = round ? MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize : viewHeight;
-                if (bestAspectRatio <= 0 || Math.abs((float) targetAspectRatio.getWidth() / targetAspectRatio.getHeight() - bestAspectRatio) > Math.abs((float) targetAspectRatio.getWidth() / targetAspectRatio.getHeight() - cameraAspectRatio)) {
+                if ((viewWidth / (float) viewHeight >= 1f) != (cameraAspectRatio >= 1f)) {
+                    cameraAspectRatio = 1f / cameraAspectRatio;
+                }
+                if (bestAspectRatio <= 0 || Math.abs((float) viewWidth / viewHeight - bestAspectRatio) > Math.abs((float) viewWidth / viewHeight - cameraAspectRatio)) {
                     if (confMap != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        Size size = chooseOptimalSize(confMap.getOutputSizes(SurfaceTexture.class), targetWidth, targetHeight, targetAspectRatio, false);
+                        Size size = chooseOptimalSize(confMap.getOutputSizes(SurfaceTexture.class), viewWidth, viewHeight, false);
                         if (size != null) {
                             bestAspectRatio = cameraAspectRatio;
                             cameraId = id;
@@ -249,18 +250,93 @@ public class Camera2Session {
     }
 
     public int getDisplayOrientation() {
-        // TODO
+        try {
+            Context context = ApplicationLoader.applicationContext;
+            if (context == null) {
+                return 0;
+            }
+            int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+            int degrees = 0;
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    degrees = 0;
+                    break;
+                case Surface.ROTATION_90:
+                    degrees = 90;
+                    break;
+                case Surface.ROTATION_180:
+                    degrees = 180;
+                    break;
+                case Surface.ROTATION_270:
+                    degrees = 270;
+                    break;
+            }
+
+            Integer sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            int displayOrientation;
+            if (isFront) {
+                displayOrientation = (sensorOrientation + degrees) % 360;
+                displayOrientation = (360 - displayOrientation) % 360; // compensate the mirror
+            } else { // back-facing
+                displayOrientation = (sensorOrientation - degrees + 360) % 360;
+            }
+            return displayOrientation;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return 0;
+    }
+
+    private int getJpegOrientation() {
+        try {
+            Context context = ApplicationLoader.applicationContext;
+            if (context == null) {
+                return 0;
+            }
+            int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+            int degrees = 0;
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    degrees = 0;
+                    break;
+                case Surface.ROTATION_90:
+                    degrees = 90;
+                    break;
+                case Surface.ROTATION_180:
+                    degrees = 180;
+                    break;
+                case Surface.ROTATION_270:
+                    degrees = 270;
+                    break;
+            }
+
+            Integer sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            int jpegOrientation;
+            if (isFront) {
+                jpegOrientation = (sensorOrientation + degrees) % 360;
+                jpegOrientation = (360 - jpegOrientation) % 360; // compensate the mirror
+            } else { // back-facing
+                jpegOrientation = (sensorOrientation - degrees + 360) % 360;
+            }
+            return jpegOrientation;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
         return 0;
     }
 
     public int getWorldAngle() {
-        // TODO
-        return 0;
+        int displayOrientation = getDisplayOrientation();
+        int jpegOrientation = getJpegOrientation();
+        int diffOrientation = jpegOrientation - displayOrientation;
+        if (diffOrientation < 0) {
+            diffOrientation += 360;
+        }
+        return diffOrientation;
     }
 
     public int getCurrentOrientation() {
-        // TODO
-        return 0;
+        return getJpegOrientation();
     }
 
     private final Rect cropRegion = new Rect();
@@ -319,8 +395,8 @@ public class Camera2Session {
                     imageReader.close();
                     imageReader = null;
                 }
+                thread.quitSafely();
                 AndroidUtilities.runOnUIThread(() -> {
-                    thread.quitSafely();
                     try {
                         thread.join();
                     } catch (Exception e) {
@@ -424,6 +500,8 @@ public class Camera2Session {
         if (cameraDevice == null || captureSession == null) return false;
         try {
             CaptureRequest.Builder captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            final int orientation = getJpegOrientation();
+            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation);
             imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -451,7 +529,7 @@ public class Camera2Session {
 
                     AndroidUtilities.runOnUIThread(() -> {
                         if (whenDone != null) {
-                            whenDone.run(0);
+                            whenDone.run(orientation);
                         }
                     });
                 }
@@ -460,42 +538,7 @@ public class Camera2Session {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE, CameraMetadata.CONTROL_SCENE_MODE_BARCODE);
             }
             captureRequestBuilder.addTarget(imageReader.getSurface());
-            captureSession.capture(captureRequestBuilder.build(), new CameraCaptureSession.CaptureCallback() {
-                @Override
-                public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
-                    super.onCaptureStarted(session, request, timestamp, frameNumber);
-                }
-
-                @Override
-                public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
-                    super.onCaptureProgressed(session, request, partialResult);
-                }
-
-                @Override
-                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                    super.onCaptureCompleted(session, request, result);
-                }
-
-                @Override
-                public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
-                    super.onCaptureFailed(session, request, failure);
-                }
-
-                @Override
-                public void onCaptureSequenceCompleted(@NonNull CameraCaptureSession session, int sequenceId, long frameNumber) {
-                    super.onCaptureSequenceCompleted(session, sequenceId, frameNumber);
-                }
-
-                @Override
-                public void onCaptureSequenceAborted(@NonNull CameraCaptureSession session, int sequenceId) {
-                    super.onCaptureSequenceAborted(session, sequenceId);
-                }
-
-                @Override
-                public void onCaptureBufferLost(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull Surface target, long frameNumber) {
-                    super.onCaptureBufferLost(session, request, target, frameNumber);
-                }
-            }, null);
+            captureSession.capture(captureRequestBuilder.build(), new CameraCaptureSession.CaptureCallback() {}, null);
             return true;
         } catch (Exception e) {
             FileLog.e("Camera2Sessions takePicture error", e);
@@ -504,11 +547,11 @@ public class Camera2Session {
     }
 
 
-    public static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio, boolean notBigger) {
+    public static Size chooseOptimalSize(Size[] choices, int width, int height, boolean notBigger) {
         List<Size> bigEnoughWithAspectRatio = new ArrayList<>(choices.length);
         List<Size> bigEnough = new ArrayList<>(choices.length);
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
+        int w = width;
+        int h = height;
         for (int a = 0; a < choices.length; a++) {
             Size option = choices[a];
             if (notBigger && (option.getHeight() > height || option.getWidth() > width)) {

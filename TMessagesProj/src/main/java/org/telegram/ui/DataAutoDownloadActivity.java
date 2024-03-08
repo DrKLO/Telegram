@@ -816,7 +816,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 case 0: {
                     TextCheckCell cell = new TextCheckCell(mContext);
                     cell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-                    cell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    cell.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                     cell.setHeight(56);
                     view = cell;
                     break;

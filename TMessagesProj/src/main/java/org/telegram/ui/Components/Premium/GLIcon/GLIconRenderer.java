@@ -17,7 +17,7 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
 
     private int mWidth;
     private int mHeight;
-    public Star3DIcon star;
+    public Icon3D model;
     public float angleX = 0;
     public float angleX2 = 0;
     public float angleY = 0;
@@ -38,6 +38,8 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     public float gradientScaleX;
     public float gradientScaleY;
 
+    public boolean forceNight;
+    boolean night;
     int color1;
     int color2;
 
@@ -45,13 +47,16 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     public int colorKey2 = Theme.key_premiumStartGradient2;
 
     private final int style;
+    private final int type;
     public final static int FRAGMENT_STYLE = 0;
     public final static int DIALOG_STYLE = 1;
+    public final static int BUSINESS_STYLE = 2;
     public boolean isDarkBackground;
 
-    public GLIconRenderer(Context context, int style) {
+    public GLIconRenderer(Context context, int style, int type) {
         this.context = context;
         this.style = style;
+        this.type = type;
         updateColors();
     }
 
@@ -86,18 +91,22 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
 
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         GLES20.glClearColor(0f, 0f, 0f, 0f);
-        if (star != null) {
-            star.destroy();
+        if (model != null) {
+            model.destroy();
         }
-        star = new Star3DIcon(context);
+        model = new Icon3D(context, type);
         if (backgroundBitmap != null) {
-            star.setBackground(backgroundBitmap);
+            model.setBackground(backgroundBitmap);
         }
         if (isDarkBackground) {
-            star.spec1 = 1f;
-            star.spec2 = 0.2f;
+            model.spec1 = 1f;
+            model.spec2 = 0.2f;
         }
+    }
 
+    private float dt;
+    public void setDeltaTime(float dt) {
+        this.dt = dt;
     }
 
     public void onDrawFrame(GL10 glUnused) {
@@ -115,12 +124,12 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mRotationMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
 
-        if (star != null) {
-            star.gradientColor1 = color1;
-            star.gradientColor2 = color2;
-            star.draw(mMVPMatrix, mRotationMatrix, mWidth, mHeight, gradientStartX, gradientScaleX, gradientStartY, gradientScaleY);
+        if (model != null) {
+            model.night = night;
+            model.gradientColor1 = color1;
+            model.gradientColor2 = color2;
+            model.draw(mMVPMatrix, mRotationMatrix, mWidth, mHeight, gradientStartX, gradientScaleX, gradientStartY, gradientScaleY, dt);
         }
-
     }
 
     public void onSurfaceChanged(GL10 glUnused, int width, int height) {
@@ -134,13 +143,14 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     }
 
     public void setBackground(Bitmap gradientTextureBitmap) {
-        if (star != null) {
-            star.setBackground(gradientTextureBitmap);
+        if (model != null) {
+            model.setBackground(gradientTextureBitmap);
         }
         backgroundBitmap = gradientTextureBitmap;
     }
 
     public void updateColors() {
+        night = forceNight || ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground)) < 0.5f;
         color1 = Theme.getColor(colorKey1);
         color2 = Theme.getColor(colorKey2);
         isDarkBackground = style == DIALOG_STYLE && ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground)) < 0.5f;

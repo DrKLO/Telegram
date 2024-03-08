@@ -3632,7 +3632,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 for (int i = 0; i < allowUsers.users.size(); ++i) {
                     long userId = allowUsers.users.get(i);
                     TLRPC.InputUser inputUser = messagesController.getInputUser(userId);
-                    if (!(inputUser instanceof TLRPC.TL_inputUserEmpty)) {
+                    if (inputUser != null && !(inputUser instanceof TLRPC.TL_inputUserEmpty)) {
                         rule.users.add(inputUser);
                         selectedUserIds.add(userId);
                         selectedInputUsers.add(inputUser);
@@ -4017,7 +4017,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             } else if (type == TYPE_CLOSE_FRIENDS) {
                 return user.close_friend;
             } else if (type == TYPE_SELECTED_CONTACTS) {
-                return selectedUserIds.contains(user.id);
+                if (selectedUserIds.contains(user.id)) {
+                    return true;
+                }
+                for (ArrayList<Long> userIds : selectedUserIdsByGroup.values()) {
+                    if (userIds.contains(user.id)) {
+                        return true;
+                    }
+                }
             }
             return false;
         }

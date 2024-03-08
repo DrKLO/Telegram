@@ -27,6 +27,9 @@ public:
     void beginHandshake(bool reconnect);
     void cleanupHandshake();
     void processHandshakeResponse(TLObject *message, int64_t messageId);
+    void processHandshakeResponse_resPQ(TLObject *message, int64_t messageId);
+    void processHandshakeResponse_serverDHParams(TLObject *message, int64_t messageId);
+    void processHandshakeResponse_serverDHParamsAnswer(TLObject *message, int64_t messageId);
     void onHandshakeConnectionConnected();
     void onHandshakeConnectionClosed();
     static void cleanupServerKeys();

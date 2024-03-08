@@ -127,7 +127,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     private int customActionBarBackground;
 
     @Override
-    void onMenuItemClick(int id) {
+    public void onMenuItemClick(int id) {
         if (id == -1) {
             if (!webViewContainer.onBackPressed()) {
                 onCheckDismissByUser();
@@ -239,7 +239,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    boolean onDismissWithTouchOutside() {
+    public boolean onDismissWithTouchOutside() {
         onCheckDismissByUser();
         return false;
     }
@@ -273,7 +273,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    boolean hasCustomBackground() {
+    public boolean hasCustomBackground() {
         return hasCustomBackground;
     }
 
@@ -283,12 +283,12 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    boolean hasCustomActionBarBackground() {
+    public boolean hasCustomActionBarBackground() {
         return hasCustomActionBarBackground;
     }
 
     @Override
-    int getCustomActionBarBackground() {
+    public int getCustomActionBarBackground() {
         return customActionBarBackground;
     }
 
@@ -381,7 +381,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
+    public void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         CharSequence title = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId));
         try {
             TextPaint tp = new TextPaint();
@@ -404,7 +404,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void onShown() {
+    public void onShown() {
         if (webViewContainer.isPageLoaded()) {
             requestEnableKeyboard();
         }
@@ -427,7 +427,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void onHidden() {
+    public void onHidden() {
         super.onHidden();
 
         parentAlert.setFocusable(false);
@@ -435,7 +435,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    int getCurrentItemTop() {
+    public int getCurrentItemTop() {
         return (int) (swipeContainer.getSwipeOffsetY() + swipeContainer.getOffsetY());
     }
 
@@ -511,7 +511,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void onDestroy() {
+    public void onDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.webViewResultSent);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
 
@@ -526,7 +526,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void onHide() {
+    public void onHide() {
         super.onHide();
         otherItem.setVisibility(GONE);
         isBotButtonAvailable = false;
@@ -550,17 +550,17 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    int getListTopPadding() {
+    public int getListTopPadding() {
         return (int) swipeContainer.getOffsetY();
     }
 
     @Override
-    int getFirstOffset() {
+    public int getFirstOffset() {
         return getListTopPadding() + AndroidUtilities.dp(56);
     }
 
     @Override
-    void onPreMeasure(int availableWidth, int availableHeight) {
+    public void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
         if (!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
             padding = (int) (availableHeight / 3.5f);
@@ -580,12 +580,12 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    int getButtonsHideOffset() {
+    public int getButtonsHideOffset() {
         return (int) swipeContainer.getTopActionBarOffsetY() + AndroidUtilities.dp(12);
     }
 
     @Override
-    boolean onBackPressed() {
+    public boolean onBackPressed() {
         if (webViewContainer.onBackPressed()) {
             return true;
         }
@@ -602,17 +602,17 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     @Override
-    void scrollToTop() {
+    public void scrollToTop() {
         swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY());
     }
 
     @Override
-    boolean shouldHideBottomButtons() {
+    public boolean shouldHideBottomButtons() {
         return false;
     }
 
     @Override
-    int needsActionBar() {
+    public int needsActionBar() {
         return 1;
     }
 

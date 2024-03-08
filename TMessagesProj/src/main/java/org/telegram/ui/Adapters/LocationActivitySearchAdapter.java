@@ -39,8 +39,8 @@ public class LocationActivitySearchAdapter extends BaseLocationAdapter {
     }
 
     private FlickerLoadingView globalGradientView;
-    public LocationActivitySearchAdapter(Context context, Theme.ResourcesProvider resourcesProvider, boolean stories) {
-        super(stories);
+    public LocationActivitySearchAdapter(Context context, Theme.ResourcesProvider resourcesProvider, boolean stories, boolean biz) {
+        super(stories, biz);
 
         mContext = context;
         this.resourcesProvider = resourcesProvider;

@@ -70,20 +70,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         setTimerVisible(false, false);
         addView(timerButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 11, 10));
 
-        hint = new HintView2(context, HintView2.DIRECTION_BOTTOM);// {
-//            @Override
-//            protected boolean drawBlur(Canvas canvas, RectF bounds, Path path, float alpha) {
-//                if (customBlur()) {
-//                    canvas.saveLayerAlpha(bounds, (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
-//                    canvas.clipPath(path);
-//                    CaptionPhotoViewer.this.drawBlur(hintBlur, canvas, bounds, 0, false, 0, -hint.getY(), false);
-//                    canvas.restore();
-//                    return true;
-//                }
-//                return false;
-//            }
-//        };
-//        hintBlur = new BlurringShader.StoryBlurDrawer(blurManager, hint, BlurringShader.StoryBlurDrawer.BLUR_TYPE_MENU_BACKGROUND);
+        hint = new HintView2(context, HintView2.DIRECTION_BOTTOM);
         hint.setRounding(12);
         hint.setPadding(dp(12), 0, dp(12), dp(8));
         hint.setJoint(1, -21);

@@ -827,10 +827,16 @@ public class UndoView extends FrameLayout {
                     }
                     if (DialogObject.isUserDialog(dialogId)) {
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+                        String name = UserObject.getFirstName(user);
+                        if (UserObject.isUserSelf(user)) {
+                            name = LocaleController.getString(R.string.SavedMessages);
+                        } else if (UserObject.isReplyUser(user)) {
+                            name = LocaleController.getString(R.string.RepliesTitle);
+                        }
                         if (action == ACTION_ADDED_TO_FOLDER) {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserAddedToExisting", R.string.FilterUserAddedToExisting, UserObject.getFirstName(user), filter.name));
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserAddedToExisting", R.string.FilterUserAddedToExisting, name, filter.name));
                         } else {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserRemovedFrom", R.string.FilterUserRemovedFrom, UserObject.getFirstName(user), filter.name));
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserRemovedFrom", R.string.FilterUserRemovedFrom, name, filter.name));
                         }
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);

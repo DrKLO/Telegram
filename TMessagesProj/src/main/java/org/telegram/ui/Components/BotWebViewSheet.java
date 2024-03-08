@@ -41,7 +41,9 @@ import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
@@ -66,6 +68,7 @@ import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 
+import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
@@ -917,6 +920,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         if (currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu)) {
             otherItem.addSubItem(R.id.menu_delete_bot, R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot));
         }
+        if (currentBot != null && currentBot.show_in_side_menu && !MediaDataController.getInstance(currentAccount).isShortcutAdded(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT)) {
+            otherItem.addSubItem(R.id.menu_add_to_home_screen_bot, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -948,6 +954,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     webViewContainer.onSettingsButtonPressed();
                 } else if (id == R.id.menu_delete_bot) {
                     deleteBot(currentAccount, botId, () -> dismiss());
+                } else if (id == R.id.menu_add_to_home_screen_bot) {
+                    MediaDataController.getInstance(currentAccount).installShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
                 }
             }
         });
@@ -956,6 +964,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
         webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
         webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
+        preloadShortcutBotIcon(botUser, currentBot);
         switch (type) {
             case TYPE_BOT_MENU_BUTTON: {
                 TLRPC.TL_messages_requestWebView req = new TLRPC.TL_messages_requestWebView();
@@ -1081,6 +1090,21 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
+    private void preloadShortcutBotIcon(TLRPC.User botUser, TLRPC.TL_attachMenuBot currentBot) {
+        if (currentBot != null && currentBot.show_in_side_menu && !MediaDataController.getInstance(currentAccount).isShortcutAdded(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT)) {
+            TLRPC.User user = botUser;
+            if (user == null) {
+                user = MessagesController.getInstance(currentAccount).getUser(botId);
+            }
+            if (user != null && user.photo != null) {
+                File f = FileLoader.getInstance(currentAccount).getPathToAttach(user.photo.photo_small, true);
+                if (!f.exists()) {
+                    MediaDataController.getInstance(currentAccount).preloadImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), FileLoader.PRIORITY_LOW);
+                }
+            }
+        }
+    }
+
     public static void deleteBot(int currentAccount, long botId, Runnable onDone) {
         String description;
         TLRPC.TL_attachMenuBot currentBot = null;
@@ -1108,6 +1132,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
                     finalCurrentBot.show_in_side_menu = false;
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.attachMenuBotsDidLoad);
+                    MediaDataController.getInstance(currentAccount).uninstallShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
                     if (onDone != null) {
                         onDone.run();
                     }
@@ -1143,6 +1168,10 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
         });
         super.show();
+    }
+
+    public long getBotId() {
+        return botId;
     }
 
     @Override

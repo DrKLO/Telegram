@@ -133,6 +133,16 @@ public class GroupCreateSpan extends View {
                     uid = Long.MIN_VALUE + 6;
                     firstName = LocaleController.getString("FilterRead", R.string.FilterRead);
                     break;
+                case "existing_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_EXISTING_CHATS);
+                    uid = Long.MIN_VALUE + 8;
+                    firstName = LocaleController.getString(R.string.FilterExistingChats);
+                    break;
+                case "new_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NEW_CHATS);
+                    uid = Long.MIN_VALUE + 9;
+                    firstName = LocaleController.getString(R.string.FilterNewChats);
+                    break;
                 case "archived":
                 default:
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);

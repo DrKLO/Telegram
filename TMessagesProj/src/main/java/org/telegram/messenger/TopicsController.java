@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
@@ -118,9 +119,9 @@ public class TopicsController extends BaseController {
 
                     topicsIsLoading.put(chatId, 0);
                     processTopics(chatId, topics.topics, messagesMap, false, loadType, ((TLRPC.TL_messages_forumTopics) response).count);
-                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
                     sortTopics(chatId);
-                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
+                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
+                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
 
                     if (!topics.topics.isEmpty() && loadType == LOAD_TYPE_LOAD_NEXT) {
                         TLRPC.TL_forumTopic lastTopic = topics.topics.get(topics.topics.size() - 1);
@@ -193,6 +194,15 @@ public class TopicsController extends BaseController {
                     topicsMap.put(newTopic.id, newTopic);
                     topicsByTopMsgId.put(messageHash(newTopic.top_message, chatId), newTopic);
                     changed = true;
+                } else if (!newTopic.isShort) {
+                    TLRPC.TL_forumTopic oldTopic = topicsMap.get(newTopic.id);
+                    if (oldTopic != null) {
+                        if (oldTopic.closed != newTopic.closed) {
+                            oldTopic.closed = newTopic.closed;
+                            getMessagesStorage().updateTopicData(-chatId, newTopic, TOPIC_FLAG_CLOSE);
+                            changed = true;
+                        }
+                    }
                 }
             }
         }
@@ -210,15 +220,15 @@ public class TopicsController extends BaseController {
         }
 
         if (deletedTopics != null && loadType == LOAD_TYPE_LOAD_UNKNOWN) {
-           for (int i = 0; i < deletedTopics.size(); i++) {
-               for (int j = 0; j < topics.size(); j++) {
-                   if (topics.get(j).id == deletedTopics.get(i)) {
-                       topics.remove(j);
-                       break;
-                   }
-               }
-           }
-           getMessagesStorage().removeTopics(chatId, deletedTopics);
+            for (int i = 0; i < deletedTopics.size(); i++) {
+                for (int j = 0; j < topics.size(); j++) {
+                    if (topics.get(j).id == deletedTopics.get(i)) {
+                        topics.remove(j);
+                        break;
+                    }
+                }
+            }
+            getMessagesStorage().removeTopics(chatId, deletedTopics);
         }
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
             reloadTopics(chatId, topicsToReload, null);
@@ -390,8 +400,8 @@ public class TopicsController extends BaseController {
                     getMessagesController().putChats(((TLRPC.TL_messages_forumTopics) response).chats, false);
 
                     processTopics(chatId, topics.topics, messagesMap, false, LOAD_TYPE_LOAD_UNKNOWN, -1);
+                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
                     getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
-                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
                     if (callback != null) {
                         callback.run();
                     }
@@ -495,7 +505,7 @@ public class TopicsController extends BaseController {
         map.put(forumTopic.id, forumTopic);
         list.add(forumTopic);
         if (saveInDatabase) {
-            getMessagesStorage().saveTopics(dialogId, Collections.singletonList(forumTopic), false, true);
+            getMessagesStorage().saveTopics(dialogId, Collections.singletonList(forumTopic), false, true, getConnectionsManager().getCurrentTime());
         }
         sortTopics(-dialogId, true);
     }
@@ -651,11 +661,7 @@ public class TopicsController extends BaseController {
             getMessagesStorage().updateTopicData(-chatId, topic, TOPIC_FLAG_PIN | TOPIC_FLAG_HIDE | TOPIC_FLAG_CLOSE);
         }
 
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
-            if (err != null) {
-
-            }
-        });
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
     }
 
     public void toggleViewForumAsMessages(long channelId, boolean enabled) {

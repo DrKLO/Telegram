@@ -32,6 +32,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -46,6 +47,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     private RadialProgressView progressBar;
     public final SpoilersTextView title;
     public final LinkSpanDrawable.LinksTextView subtitle;
+    public final ButtonWithCounterView button;
     private boolean progressShowing;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -119,9 +121,13 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitle.setGravity(Gravity.CENTER);
 
+        button = new ButtonWithCounterView(context, resourcesProvider);
+        button.setVisibility(View.GONE);
+
         linearLayout.addView(stickerView, LayoutHelper.createLinear(117, 117, Gravity.CENTER_HORIZONTAL));
         linearLayout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
         linearLayout.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+        linearLayout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL, 28, 16, 28, 0));
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 46, 0, 46, 30));
 
         if (progressView == null) {

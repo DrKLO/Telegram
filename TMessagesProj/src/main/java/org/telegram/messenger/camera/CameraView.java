@@ -103,6 +103,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     public boolean WRITE_TO_FILE_IN_BACKGROUND = false;
 
     public boolean isStory;
+    private float scaleX, scaleY;
     private Size[] previewSize = new Size[2];
     private Size[] pictureSize = new Size[2];
     CameraInfo[] info = new CameraInfo[2];
@@ -120,7 +121,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private int focusAreaSize;
     private Drawable thumbDrawable;
 
-    private final boolean useCamera2 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.useCamera2;
+    private final boolean useCamera2 = false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.useCamera2;
     private final CameraSessionWrapper[] cameraSession = new CameraSessionWrapper[2];
     private CameraSessionWrapper cameraSessionRecording;
 
@@ -202,6 +203,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         flipHalfReached = false;
         flipping = true;
         flipAnimator = ValueAnimator.ofFloat(0, 1f);
+        textureView.setCameraDistance(textureView.getMeasuredHeight() * 4f);
+        blurredStubView.setCameraDistance(blurredStubView.getMeasuredHeight() * 4f);
         flipAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1279,8 +1282,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 FileLog.e("gl initied");
             }
 
-            float tX = 1.0f / 2.0f;
-            float tY = 1.0f / 2.0f;
+            updateScale(0);
+
+            float tX = 1.0f / scaleX / 2.0f;
+            float tY = 1.0f / scaleY / 2.0f;
             float[] texData = {
                     0.5f - tX, 0.5f - tY,
                     0.5f + tX, 0.5f - tY,
@@ -1307,7 +1312,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
                 cameraSurface[1] = new SurfaceTexture(cameraTexture[1][0]);
                 cameraSurface[1].setOnFrameAvailableListener(this::updTex);
-
             }
 
             if (initDual) {
@@ -1670,6 +1674,21 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     }
                     createCamera(cameraSurface[i], i);
 
+                    updateScale(i);
+
+                    float tX = 1.0f / scaleX / 2.0f;
+                    float tY = 1.0f / scaleY / 2.0f;
+
+                    float[] texData = {
+                            0.5f - tX, 0.5f - tY,
+                            0.5f + tX, 0.5f - tY,
+                            0.5f - tX, 0.5f + tY,
+                            0.5f + tX, 0.5f + tY
+                    };
+
+                    textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+                    textureBuffer.put(texData).position(0);
+
                     if (i == 1) {
                         dualAppeared = false;
                         synchronized (layoutLock) {
@@ -1796,6 +1815,33 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     break;
                 }
             }
+        }
+
+        private void updateScale(int surfaceIndex) {
+            int width, height;
+            if (previewSize[surfaceIndex] != null) {
+                width = previewSize[surfaceIndex].getWidth();
+                height = previewSize[surfaceIndex].getHeight();
+            } else {
+                return;
+            }
+
+            float scale = surfaceWidth / (float) Math.min(width, height);
+
+            width *= scale;
+            height *= scale;
+
+            if (width == height) {
+                scaleX = 1f;
+                scaleY = 1f;
+            } else if (width > height) {
+                scaleX = height / (float) surfaceWidth;
+                scaleY = 1.0f;
+            } else {
+                scaleX = 1.0f;
+                scaleY = width / (float) surfaceHeight;
+            }
+            FileLog.d("CameraView camera scaleX = " + scaleX + " scaleY = " + scaleY);
         }
 
 //        private final float[] tempVertices = new float[6];
@@ -1944,9 +1990,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
 
             if (useCamera2) {
-                Camera2Session session = Camera2Session.create(false, i == 0 ? isFrontface : !isFrontface, surfaceWidth, surfaceHeight);
+                Camera2Session session = Camera2Session.create(i == 0 ? isFrontface : !isFrontface, surfaceWidth, surfaceHeight);
                 if (session == null) return;
                 cameraSession[i] = CameraSessionWrapper.of(session);
+                previewSize[i] = new Size(session.getPreviewWidth(), session.getPreviewHeight());
                 cameraThread.setCurrentSession(cameraSession[i], i);
                 session.whenDone(() -> {
                     requestLayout();
@@ -2764,9 +2811,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-            float tX = 1.0f / 2.0f;
-            float tY = 1.0f / 2.0f;
-
+            float tX = 1.0f / scaleX / 2.0f;
+            float tY = 1.0f / scaleY / 2.0f;
             float[] texData = {
                     0.5f - tX, 0.5f - tY,
                     0.5f + tX, 0.5f - tY,
@@ -2775,7 +2821,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             };
             textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
             textureBuffer.put(texData).position(0);
-
 
             int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RLottieDrawable.readRes(null, R.raw.camera_vert));
             int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RLottieDrawable.readRes(null, R.raw.camera_frag));

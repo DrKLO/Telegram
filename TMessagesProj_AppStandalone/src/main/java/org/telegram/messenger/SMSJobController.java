@@ -10,9 +10,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.telecom.PhoneAccountHandle;
 import android.telephony.CellInfo;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionInfo;
@@ -27,8 +29,10 @@ import androidx.annotation.RequiresPermission;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.web.R;
+import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TL_smsjobs;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.Bulletin;
@@ -74,6 +78,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
 
     public final int currentAccount;
 
+    private int lastErrorId, seenErrorId;
     public int currentState;
 
     public TL_smsjobs.TL_smsjobs_status currentStatus;
@@ -95,29 +100,32 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         this.currentAccount = account;
         journalPrefs = ApplicationLoader.applicationContext.getSharedPreferences("smsjobs_journal_" + currentAccount, Context.MODE_PRIVATE);
         loadCacheStatus();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newSuggestionsAvailable);
+        AndroidUtilities.runOnUIThread(() -> {
+            readPending();
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newSuggestionsAvailable);
+        });
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.newSuggestionsAvailable) {
-            if (currentState != STATE_NONE) {
-                checkIsEligible(true);
+            if (currentState != STATE_NONE && currentState != STATE_JOINED) {
+                checkIsEligible(true, null);
             }
             invalidateStatus();
         }
     }
 
     public boolean isAvailable() {
-        if (currentState != STATE_NONE) {
-            checkIsEligible(false);
+        if (currentState != STATE_NONE && currentState != STATE_JOINED) {
+            checkIsEligible(false, null);
             loadStatus(false);
         }
         return currentState != STATE_NONE && (isEligible != null || currentStatus != null);
     }
 
-    public void checkIsEligible(boolean force) {
-        if (loadedIsEligible && !force || loadingIsEligible) return;
+    public void checkIsEligible(boolean force, Utilities.Callback<TL_smsjobs.TL_smsjobs_eligibleToJoin> whenDone) {
+        if (loadedIsEligible && !force || loadingIsEligible && whenDone == null) return;
         loadingIsEligible = true;
         ConnectionsManager.getInstance(currentAccount).sendRequest(new TL_smsjobs.TL_smsjobs_isEligibleToJoin(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
             loadingIsEligible = false;
@@ -133,6 +141,9 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             }
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
+            if (whenDone != null) {
+                whenDone.run(isEligible);
+            }
         }));
     }
 
@@ -170,13 +181,15 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
                 setState(state);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
+
+                SMSJobsNotification.check();
             }
         }));
     }
 
     public void invalidateStatus() {
         loadedStatus = false;
-        if (atStatisticsPage) {
+        if (atStatisticsPage || ApplicationLoader.mainInterfacePaused) {
             loadStatus(false);
         }
     }
@@ -195,7 +208,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             } else if (selectedSimId == -1) {
                 selectedSimCard = sims.get(0);
             } else {
-                selectedSimCard = null;
+                selectedSimCard = sims.get(0);
                 for (int i = 0; i < sims.size(); ++i) {
                     if (sims.get(i).id == selectedSimId) {
                         selectedSimCard = sims.get(i);
@@ -217,8 +230,8 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
                 } else if (res instanceof TLRPC.TL_boolFalse) {
                     BulletinFactory.global().createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
                 } else {
-                    SMSJobController.getInstance(currentAccount).setState(SMSJobController.STATE_JOINED);
-                    SMSJobController.getInstance(currentAccount).loadStatus(true);
+                    setState(SMSJobController.STATE_JOINED);
+                    loadStatus(true);
                     SMSSubscribeSheet.showSubscribed(LaunchActivity.instance == null ? ApplicationLoader.applicationContext : LaunchActivity.instance, null);
                 }
             }));
@@ -250,6 +263,8 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
 
     private void loadCacheStatus() {
         currentState = MessagesController.getMainSettings(currentAccount).getInt("smsjobs_state", STATE_NONE);
+        lastErrorId = MessagesController.getMainSettings(currentAccount).getInt("smsjobs_error", 0);
+        seenErrorId = MessagesController.getMainSettings(currentAccount).getInt("smsjobs_seen_error", 0);
         String string = MessagesController.getMainSettings(currentAccount).getString("smsjobs_status", null);
         if (string != null) {
             try {
@@ -273,6 +288,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         if (currentState == STATE_JOINED) {
             MessagesController.getInstance(currentAccount).removeSuggestion(0, "PREMIUM_SMSJOBS");
         }
+        SMSJobsNotification.check();
     }
 
     public int getState() {
@@ -318,26 +334,14 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         checkSelectedSIMCard();
         final String phone_number = !job.phone_number.startsWith("+") ? "+" + job.phone_number : job.phone_number;
         FileLog.d("[smsjob] running sms job " + job.job_id + (BuildVars.DEBUG_PRIVATE_VERSION ? ": " + job.text + " to " + phone_number : "") + ", selected sim: " + (selectedSimCard == null ? "null" : "{id=" + selectedSimCard.id + ", icc=" + selectedSimCard.iccId + ", name=" + selectedSimCard.name + ", slot=" + selectedSimCard.slot + "}"));
-        boolean[] finished = new boolean[1];
+        pushToJournal(job.job_id, 1, phone_number, null);
         sendSMS(
             ApplicationLoader.applicationContext,
+            currentAccount,
+            job.job_id,
             selectedSimCard,
             phone_number,
-            job.text,
-            (success, reason) /* sent callback */ -> {
-                FileLog.d("[smsjob] sms job " + job.job_id + " sent callback: success=" + success + ", reason=" + reason);
-                if (!finished[0] && !success) {
-                    finished[0] = true;
-                    finishJob(job.job_id, phone_number, reason);
-                }
-            },
-            (success, reason) /* delivered callback */ -> {
-                FileLog.d("[smsjob] sms job " + job.job_id + " delivered callback: success=" + success + ", reason=" + reason);
-                if (!finished[0]) {
-                    finished[0] = true;
-                    finishJob(job.job_id, phone_number, success ? null : reason);
-                }
-            }
+            job.text
         );
     }
 
@@ -359,25 +363,163 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             } else if (err != null) {
                 FileLog.d("[smsjob] finished sms job " + job_id + ", received error " + err.code + " " + err.text);
             }
-            pushToJournal(job_id, phone_number, error);
+            pushToJournal(job_id, 0, phone_number, error);
             invalidateStatus();
         }));
     }
 
 
-    private static class PendingSMS {
-        public final int id;
-        public final Utilities.Callback2<Boolean, String> whenSent;
-        public final Utilities.Callback2<Boolean, String> whenDelivered;
+    private static class PendingSMS extends TLObject {
+        public int id;
+
+        public int currentAccount;
+        public String jobId;
+        public int simId;
+        public String phone, text;
+
         public final boolean received[] = new boolean[2];
-        public PendingSMS(int id, Utilities.Callback2<Boolean, String> whenSent, Utilities.Callback2<Boolean, String> whenDelivered) {
+        public boolean finished = false;
+
+        public int triesLeft = 2;
+
+        public long sentTime = System.currentTimeMillis();
+
+        private Runnable timerCallback;
+
+        private PendingSMS() {}
+
+        public PendingSMS(
+            int id,
+            int currentAccount,
+            String jobId,
+            SIM sim,
+            String phone,
+            String text
+        ) {
             this.id = id;
-            this.whenSent = whenSent;
-            this.whenDelivered = whenDelivered;
+            this.currentAccount = currentAccount;
+            this.jobId = jobId;
+            this.simId = sim == null ? -1 : sim.id;
+            this.phone = phone;
+            this.text = text;
+        }
+
+        public void setup() {
+            final long now = System.currentTimeMillis();
+            long timeout = sentTime + 2 * 60 * 1000 - now;
+            AndroidUtilities.runOnUIThread(timerCallback = () -> {
+                whenSent(false, "2MIN_TIMEOUT");
+                SMSJobController.pending.remove(id);
+                savePending();
+            }, Math.max(0, timeout));
+        }
+
+        public void whenSent(boolean success, String reason) {
+            if (received[0]) return;
+            received[0] = true;
+
+            AndroidUtilities.cancelRunOnUIThread(timerCallback);
+
+            FileLog.d("[smsjob] sms job " + jobId + " sent callback: success=" + success + ", reason=" + reason);
+            if (!finished) {
+                finished = true;
+                SMSJobController.getInstance(currentAccount).finishJob(jobId, phone, success ? null : reason);
+            }
+        }
+
+        public void whenDelivered(boolean success, String reason) {
+            if (received[1]) return;
+            received[1] = true;
+
+            AndroidUtilities.cancelRunOnUIThread(timerCallback);
+
+            FileLog.d("[smsjob] sms job " + jobId + " delivered callback: success=" + success + ", reason=" + reason);
+            if (!finished) {
+                finished = true;
+                SMSJobController.getInstance(currentAccount).finishJob(jobId, phone, success ? null : reason);
+            }
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(0x8384213);
+            stream.writeInt32(id);
+            stream.writeInt32(currentAccount);
+            stream.writeString(jobId);
+            stream.writeInt32(simId);
+            stream.writeString(phone);
+            stream.writeString(text);
+            int flags = 0;
+            flags |= (received[0] ? 1 : 0);
+            flags |= (received[1] ? 2 : 0);
+            flags |= (finished ? 4 : 0);
+            stream.writeInt32(flags);
+            stream.writeInt32(triesLeft);
+            stream.writeInt64(sentTime);
+        }
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            id = stream.readInt32(exception);
+            currentAccount = stream.readInt32(exception);
+            jobId = stream.readString(exception);
+            simId = stream.readInt32(exception);
+            phone = stream.readString(exception);
+            text = stream.readString(exception);
+            int flags = stream.readInt32(exception);
+            received[0] = (flags & 1) != 0;
+            received[1] = (flags & 2) != 0;
+            finished = (flags & 4) != 0;
+            triesLeft = stream.readInt32(exception);
+            sentTime = stream.readInt64(exception);
         }
     }
 
+    private static boolean readCachedPending = false;
     private static HashMap<Integer, PendingSMS> pending = new HashMap<>();
+
+    private static void readPending() {
+        if (readCachedPending) return;
+        String pendingText = MessagesController.getGlobalMainSettings().getString("smsjobs_pending", null);
+        if (pendingText != null) {
+            try {
+                SerializedData serializedData = new SerializedData(Utilities.hexToBytes(pendingText));
+                int count = serializedData.readInt32(true);
+                for (int i = 0; i < count; ++i) {
+                    int magic = serializedData.readInt32(true);
+                    if (magic != 0x8384213) throw new RuntimeException("pending parse unknown magic " + magic);
+                    PendingSMS pending = new PendingSMS();
+                    pending.readParams(serializedData, true);
+                    pending.setup();
+                    SMSJobController.pending.put(pending.id, pending);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        readCachedPending = true;
+    }
+
+    private static void savePending() {
+        if (pending.isEmpty()) {
+            MessagesController.getGlobalMainSettings().edit().remove("smsjobs_pending").apply();
+            return;
+        }
+        try {
+            int size = pending.size() * 8;
+            for (PendingSMS pending : pending.values()) {
+                size += pending.getObjectSize();
+            }
+            SerializedData data = new SerializedData(size);
+            data.writeInt32(pending.size());
+            for (PendingSMS pending : pending.values()) {
+                pending.serializeToStream(data);
+            }
+            MessagesController.getGlobalMainSettings().edit().putString("smsjobs_pending", Utilities.bytesToHex(data.toByteArray())).apply();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     public static void receivedSMSIntent(Intent intent, final int resultCode) {
         if (intent == null) return;
@@ -390,6 +532,11 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             return;
         }
         FileLog.d("[smsjob] received sms callback with id " + id + ", "+ (sent ? "sent" : (delivered ? "delivered" : "null")));
+        if (resultCode == SmsManager.RESULT_RIL_SMS_SEND_FAIL_RETRY && pending.triesLeft > 0) {
+            pending.triesLeft--;
+            resendPending(pending);
+            return;
+        }
         boolean success = false;
         String reason = null;
         switch (resultCode) {
@@ -461,34 +608,41 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             case SmsManager.RESULT_RECEIVE_WHILE_ENCRYPTED: reason = "RESULT_RECEIVE_WHILE_ENCRYPTED"; break;
             case SmsManager.RESULT_RECEIVE_SQL_EXCEPTION: reason = "RESULT_RECEIVE_SQL_EXCEPTION"; break;
             case SmsManager.RESULT_RECEIVE_URI_EXCEPTION: reason = "RESULT_RECEIVE_URI_EXCEPTION"; break;
+            case 33: reason = "RESULT_USER_NOT_ALLOWED"; break;
             default: reason = "UNKNOWN_EXCEPTION_" + resultCode; break;
         }
-        if (sent && !pending.received[0]) {
-            pending.whenSent.run(success, reason);
-            pending.received[0] = true;
-        } else if (delivered && !pending.received[1]) {
-            pending.whenDelivered.run(success, reason);
-            pending.received[1] = true;
+        int errorCode = intent.getIntExtra("errorCode", -1);
+        if (errorCode != -1) {
+            reason += "_" + errorCode;
+        }
+        if (sent) {
+            pending.whenSent(success, reason);
+        } else if (delivered) {
+            pending.whenDelivered(success, reason);
         }
         if (pending.received[0] && pending.received[1]) {
             SMSJobController.pending.remove(id);
+            savePending();
         }
     }
 
     private static void sendSMS(
         Context context,
+        int currentAccount,
+        String jobId,
         SIM sim,
         String phone,
-        String text,
-        final Utilities.Callback2<Boolean, String> whenSent,
-        final Utilities.Callback2<Boolean, String> whenDelivered
+        String text
     ) {
         SmsManager smsManager;
-        if (sim != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+        if (sim != null && Build.VERSION.SDK_INT >= 31) {
+            smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(sim.id);
+        } else if (sim != null && Build.VERSION.SDK_INT >= 22) {
             smsManager = SmsManager.getSmsManagerForSubscriptionId(sim.id);
         } else {
             smsManager = SmsManager.getDefault();
         }
+
         final int ID = (int) (Math.random() * 1_000_000);
         final Intent sentIntent = new Intent(context, SMSResultService.class);
         sentIntent.putExtra("sent", true);
@@ -500,10 +654,59 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         deliveredIntent.putExtra("tg_sms_id", ID);
         final PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, deliveredIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        pending.put(ID, new PendingSMS(ID, whenSent, whenDelivered));
+        PendingSMS pendingSMS = new PendingSMS(ID, currentAccount, jobId, sim, phone, text);
+        pendingSMS.setup();
+        pending.put(ID, pendingSMS);
+        savePending();
 
         FileLog.d("[smsjob] sending sms with id " + ID);
-        smsManager.sendTextMessage(phone, null, text, sentPI, deliveredPI);
+        try {
+            smsManager.sendTextMessage(phone, null, text, sentPI, deliveredPI);
+            FileLog.d("[smsjob] sent sms with id " + ID);
+        } catch (Throwable e) {
+            FileLog.e("[smsjob] failed to send sms with id " + ID + ", caught error", e);
+            pendingSMS.whenSent(false, (e == null ? "CAUGHT_EXCEPTION" : e.getMessage()));
+        }
+    }
+
+    private static void resendPending(PendingSMS pending) {
+        Context context = ApplicationLoader.applicationContext;
+        if (context == null) {
+            context = LaunchActivity.instance;
+        }
+        if (context == null) {
+            FileLog.d("[smsjob] resending failed: no context; with id " + pending.id);
+            pending.whenSent(false, "RESENDING_NULL_CONTEXT");
+            return;
+        }
+
+        SmsManager smsManager;
+        if (pending.simId != -1 && Build.VERSION.SDK_INT >= 31) {
+            smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(pending.simId);
+        } else if (pending.simId != -1 && Build.VERSION.SDK_INT >= 22) {
+            smsManager = SmsManager.getSmsManagerForSubscriptionId(pending.simId);
+        } else {
+            smsManager = SmsManager.getDefault();
+        }
+
+        final Intent sentIntent = new Intent(context, SMSResultService.class);
+        sentIntent.putExtra("sent", true);
+        sentIntent.putExtra("tg_sms_id", pending.id);
+        final PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        final Intent deliveredIntent = new Intent(context, SMSResultService.class);
+        deliveredIntent.putExtra("delivered", true);
+        deliveredIntent.putExtra("tg_sms_id", pending.id);
+        final PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, deliveredIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        FileLog.d("[smsjob] resending sms with id " + pending.id);
+        try {
+            smsManager.sendTextMessage(pending.phone, null, pending.text, sentPI, deliveredPI);
+            FileLog.d("[smsjob] resent sms with id " + pending.id);
+        } catch (Throwable e) {
+            FileLog.e("[smsjob] failed to resend sms with id " + pending.id + ", caught error", e);
+            pending.whenSent(false, (e == null ? "CAUGHT_EXCEPTION" : e.getMessage()));
+        }
     }
 
     public static class SIM {
@@ -525,8 +728,8 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             this.phone_number = null;
         }
 
-        public SIM(int slot, String country) {
-            this.id = slot;
+        public SIM(int id, int slot, String country) {
+            this.id = id;
             this.slot = slot;
             this.name = "SIM" + (1 + slot);
             this.iccId = null;
@@ -577,9 +780,18 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
 
     private static ArrayList<SIM> getSIMs(Context context) {
         final ArrayList<SIM> simInfoList = new ArrayList<>();
-        if (android.os.Build.VERSION.SDK_INT >= 30) {
+        if (Build.VERSION.SDK_INT >= 22) {
             final SubscriptionManager subscriptionManager = SubscriptionManager.from(context);
-            final List<SubscriptionInfo> infos = subscriptionManager.getCompleteActiveSubscriptionInfoList();
+            List<SubscriptionInfo> infos = null;
+            if (Build.VERSION.SDK_INT >= 30) {
+                infos = subscriptionManager.getCompleteActiveSubscriptionInfoList();
+            }
+            if ((infos == null || infos.isEmpty()) && Build.VERSION.SDK_INT >= 28) {
+                infos = subscriptionManager.getAccessibleSubscriptionInfoList();
+            }
+            if (infos == null || infos.isEmpty()) {
+                infos = subscriptionManager.getActiveSubscriptionInfoList();
+            }
             if (infos != null) {
                 for (int i = 0; i < infos.size(); ++i) {
                     SIM sim = SIM.from(subscriptionManager, infos.get(i));
@@ -588,18 +800,11 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
                     }
                 }
             }
-        } else if (android.os.Build.VERSION.SDK_INT >= 26) {
-            TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            for (int i = 0; i < 4; ++i) {
-                try {
-                    if (telephonyManager.getSimState(i) == TelephonyManager.SIM_STATE_READY) {
-                        String country = null;
-                        SIM sim = new SIM(i, country);
-                        simInfoList.add(sim);
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
+        } else {
+            final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            if (telephonyManager.getSimState() == TelephonyManager.SIM_STATE_READY) {
+                SIM sim = new SIM(0, 0, telephonyManager.getSimCountryIso());
+                simInfoList.add(sim);
             }
         }
         return simInfoList;
@@ -616,9 +821,10 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
                 BulletinFactory.global().createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
             } else {
                 SMSJobController.getInstance(currentAccount).loadStatus(true);
-                SMSJobController.getInstance(currentAccount).checkIsEligible(true);
+                SMSJobController.getInstance(currentAccount).checkIsEligible(true, null);
             }
         }));
+        SMSJobsNotification.check();
     }
 
     private int updateSettingsReqId;
@@ -653,6 +859,16 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
             }
         }
         Collections.sort(journal, (a, b) -> b.date - a.date);
+
+        if (!MessagesController.getMainSettings(currentAccount).getBoolean("smsjobs_checked_journal", false)) {
+            for (int i = 0; i < journal.size(); ++i) {
+                if (!TextUtils.isEmpty(journal.get(i).error)) {
+                    registerError();
+                    break;
+                }
+            }
+            MessagesController.getMainSettings(currentAccount).edit().putBoolean("smsjobs_checked_journal", true).apply();
+        }
     }
 
     private void clearJournal() {
@@ -660,15 +876,28 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         journalPrefs.edit().clear().apply();
     }
 
-    private void pushToJournal(String job_id, String phone_number, String error) {
-        JobEntry entry = new JobEntry();
+    private void pushToJournal(String job_id, int state, String phone_number, String error) {
+        JobEntry entry = null;
+        for (int i = 0; i < journal.size(); ++i) {
+            if (TextUtils.equals(journal.get(i).job_id, job_id)) {
+                entry = journal.get(i);
+                break;
+            }
+        }
+        if (entry == null) {
+            journal.add(0, entry = new JobEntry());
+        }
+        entry.state = state;
         entry.job_id = job_id;
         entry.error = error;
         entry.date = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         entry.country = getCountryFromPhoneNumber(ApplicationLoader.applicationContext, phone_number);
-        journal.add(0, entry);
         journalPrefs.edit().putString(entry.job_id, entry.toString()).apply();
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
+
+        if (!TextUtils.isEmpty(error)) {
+            registerError();
+        }
     }
 
     public static String getCountryFromPhoneNumber(Context context, String phone_number) {
@@ -703,23 +932,51 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         public String job_id;
         public String error;
         public String country;
+        public int state;
         public int date;
 
         @NonNull
         @Override
         public String toString() {
-            return job_id + "," + (error == null ? "" : error) + "," + date + "," + country;
+            return job_id + "," + (error == null ? "" : error) + "," + date + "," + country + "," + state;
         }
 
         public static JobEntry fromString(String string) {
             String[] parts = string.split(",");
-            if (parts.length != 4) return null;
+            if (parts.length != 4 && parts.length != 5) return null;
             JobEntry entry = new JobEntry();
             entry.job_id = parts[0];
             entry.error = TextUtils.isEmpty(parts[1]) ? null : parts[1];
             entry.date = Utilities.parseInt(parts[2]);
             entry.country = parts[3];
+            entry.state = parts.length >= 5 ? Utilities.parseInt(parts[4]) : 0;
             return entry;
+        }
+    }
+
+    public boolean hasError() {
+        return lastErrorId > seenErrorId;
+    }
+
+    public void registerError() {
+        final boolean hadError = hasError();
+        MessagesController.getMainSettings(currentAccount).edit().putInt("smsjobs_error", ++lastErrorId).apply();
+        if (hasError() != hadError) {
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumPromoUpdated);
+        }
+    }
+
+    public void seenError() {
+        if (seenErrorId < lastErrorId) {
+            final boolean hadError = hasError();
+            MessagesController.getMainSettings(currentAccount).edit().putInt("smsjobs_seen_error", seenErrorId = lastErrorId).apply();
+            if (hasError() != hadError) {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumPromoUpdated);
+            }
         }
     }
 }

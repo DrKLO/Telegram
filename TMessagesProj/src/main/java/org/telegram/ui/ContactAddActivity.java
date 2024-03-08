@@ -755,7 +755,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(message);
       //  MessagesStorage.getInstance(currentAccount).putMessages(arr, false, true, false, 0, false, 0);
-        MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(user_id, objArr, false);
+        MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(user_id, objArr, 0);
 
 
         getMessagesController().photoSuggestion.put(message.local_id, imageUpdater);

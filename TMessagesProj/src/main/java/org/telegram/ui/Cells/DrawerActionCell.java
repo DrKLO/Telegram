@@ -49,6 +49,7 @@ public class DrawerActionCell extends FrameLayout {
     private TextView textView;
     private int currentId;
     private RectF rect = new RectF();
+    private boolean currentError;
 
     public DrawerActionCell(Context context) {
         super(context);
@@ -71,23 +72,26 @@ public class DrawerActionCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        if (currentId == 8) {
+        boolean redError = currentError;
+        boolean error = currentError;
+        if (!error && currentId == 8) {
             Set<String> suggestions = MessagesController.getInstance(UserConfig.selectedAccount).pendingSuggestions;
-            if (suggestions.contains("VALIDATE_PHONE_NUMBER") || suggestions.contains("VALIDATE_PASSWORD")) {
-                int countTop = AndroidUtilities.dp(12.5f);
-                int countWidth = AndroidUtilities.dp(9);
-                int countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
+            error = suggestions.contains("VALIDATE_PHONE_NUMBER") || suggestions.contains("VALIDATE_PASSWORD");
+        }
+        if (error) {
+            int countTop = AndroidUtilities.dp(12.5f);
+            int countWidth = AndroidUtilities.dp(9);
+            int countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
 
-                int x = countLeft - AndroidUtilities.dp(5.5f);
-                rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(14), countTop + AndroidUtilities.dp(23));
-                Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chats_archiveBackground));
-                canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_docBackPaint);
+            int x = countLeft - AndroidUtilities.dp(5.5f);
+            rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(14), countTop + AndroidUtilities.dp(23));
+            Theme.chat_docBackPaint.setColor(Theme.getColor(redError ? Theme.key_text_RedBold : Theme.key_chats_archiveBackground));
+            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_docBackPaint);
 
-                int w = Theme.dialogs_errorDrawable.getIntrinsicWidth();
-                int h = Theme.dialogs_errorDrawable.getIntrinsicHeight();
-                Theme.dialogs_errorDrawable.setBounds((int) (rect.centerX() - w / 2), (int) (rect.centerY() - h / 2), (int) (rect.centerX() + w / 2), (int) (rect.centerY() + h / 2));
-                Theme.dialogs_errorDrawable.draw(canvas);
-            }
+            int w = Theme.dialogs_errorDrawable.getIntrinsicWidth();
+            int h = Theme.dialogs_errorDrawable.getIntrinsicHeight();
+            Theme.dialogs_errorDrawable.setBounds((int) (rect.centerX() - w / 2), (int) (rect.centerY() - h / 2), (int) (rect.centerX() + w / 2), (int) (rect.centerY() + h / 2));
+            Theme.dialogs_errorDrawable.draw(canvas);
         }
     }
 
@@ -110,6 +114,11 @@ public class DrawerActionCell extends FrameLayout {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    public void setError(boolean error) {
+        currentError = error;
+        invalidate();
     }
 
     public void setTextAndIcon(int id, CharSequence text, int resId) {

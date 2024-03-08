@@ -152,7 +152,7 @@ public class TextCheckCell2 extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
-    public void setTextAndValueAndCheck(String text, String value, boolean checked, boolean multiline, boolean divider) {
+    public void setTextAndValueAndCheck(CharSequence text, CharSequence value, boolean checked, boolean multiline, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
         checkBox.setChecked(checked, false);

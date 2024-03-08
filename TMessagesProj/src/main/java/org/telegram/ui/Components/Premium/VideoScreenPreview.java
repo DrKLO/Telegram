@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 import android.view.TextureView;
 import android.widget.FrameLayout;
 
@@ -32,12 +33,14 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.video.VideoPlayerHolderBase;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.StoryViewer;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -97,7 +100,8 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
     boolean firstFrameRendered;
 
     float progress;
-    VideoPlayer videoPlayer;
+//    VideoPlayer videoPlayer;
+    VideoPlayerHolderBase videoPlayerBase;
     AspectRatioFrameLayout aspectRatioFrameLayout;
     TextureView textureView;
 
@@ -375,8 +379,8 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             } else if (speedLinesDrawable != null) {
                 float videoSpeedScale = 0.2f;
 
-                if (videoPlayer != null) {
-                    float p = videoPlayer.getCurrentPosition() / (float) videoPlayer.getDuration();
+                if (videoPlayerBase != null) {
+                    float p = videoPlayerBase.getCurrentPosition() / (float) videoPlayerBase.getDuration();
                     p = Utilities.clamp(p, 1f, 0);
                     float step = 1f / (speedScaleVideoTimestamps.length - 1);
                     int fromIndex = (int) (p / step);
@@ -539,58 +543,38 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
 
     private void runVideoPlayer() {
         if (file != null || SharedConfig.streamMedia) {
-            if (videoPlayer != null) {
+            if (videoPlayerBase != null) {
                 return;
             }
             aspectRatioFrameLayout.setAspectRatio(aspectRatio, 0);
-            videoPlayer = new VideoPlayer();
-            videoPlayer.setTextureView(textureView);
-            videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+            videoPlayerBase = new VideoPlayerHolderBase() {
                 @Override
                 public void onStateChanged(boolean playWhenReady, int playbackState) {
+                    if (videoPlayerBase == null) return;
                     if (playbackState == ExoPlayer.STATE_ENDED) {
-                        videoPlayer.seekTo(0);
-                        videoPlayer.play();
+                        videoPlayerBase.seekTo(0);
+                        videoPlayerBase.play();
                     } else if (playbackState == ExoPlayer.STATE_IDLE) {
-                        videoPlayer.play();
+                        videoPlayerBase.play();
                     }
                 }
 
                 @Override
-                public void onError(VideoPlayer player, Exception e) {
-
-                }
-
-                @Override
-                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-
-                }
-
-                @Override
                 public void onRenderedFirstFrame() {
-                    if (!firstFrameRendered) {
+                    if (textureView == null) return;
+                    if (!VideoScreenPreview.this.firstFrameRendered) {
                         textureView.setAlpha(0);
                         textureView.animate().alpha(1f).setListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
-                                firstFrameRendered = true;
+                                VideoScreenPreview.this.firstFrameRendered = true;
                                 invalidate();
                             }
                         }).setDuration(200);
                     }
                 }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-            });
+            };
+            videoPlayerBase.with(textureView);
 
             Uri uri;
             if (file != null && file.exists()) {
@@ -616,25 +600,25 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 return;
             }
 
-            videoPlayer.preparePlayer(uri, "other");
-            videoPlayer.setPlayWhenReady(true);
+            videoPlayerBase.preparePlayer(uri, false, 1f);
             if (!firstFrameRendered) {
                 imageReceiver.stopAnimation();
                 textureView.setAlpha(0);
             }
-            videoPlayer.seekTo(lastFrameTime + 60);
-            videoPlayer.play();
+            videoPlayerBase.seekTo(lastFrameTime + 60);
+            videoPlayerBase.play();
         }
     }
 
     long lastFrameTime;
 
     private void stopVideoPlayer() {
-        if (videoPlayer != null) {
-            lastFrameTime = videoPlayer.getCurrentPosition();
-            videoPlayer.setTextureView(null);
-            videoPlayer.releasePlayer(true);
-            videoPlayer = null;
+        if (videoPlayerBase != null) {
+            lastFrameTime = videoPlayerBase.getCurrentPosition();
+            videoPlayerBase.release(() -> {
+
+            });
+            videoPlayerBase = null;
         }
     }
 }

@@ -151,6 +151,7 @@ public class PushListenerController {
                     JSONObject json = new JSONObject(jsonString);
 
                     if (ApplicationLoader.applicationLoaderInstance != null && ApplicationLoader.applicationLoaderInstance.consumePush(currentAccount, json)) {
+                        countDownLatch.countDown();
                         return;
                     }
 

@@ -138,6 +138,9 @@ public class NotificationCenter {
     public static final int recentEmojiStatusesUpdate = totalEvents++;
     public static final int updateSearchSettings = totalEvents++;
     public static final int updateTranscriptionLock = totalEvents++;
+    public static final int businessMessagesUpdated = totalEvents++;
+    public static final int quickRepliesUpdated = totalEvents++;
+    public static final int quickRepliesDeleted = totalEvents++;
 
     public static final int messageTranslated = totalEvents++;
     public static final int messageTranslating = totalEvents++;
@@ -236,6 +239,7 @@ public class NotificationCenter {
     public static final int groupRestrictionsUnlockedByBoosts = totalEvents++;
     public static final int chatWasBoostedByUser = totalEvents++;
     public static final int groupPackUpdated = totalEvents++;
+    public static final int timezonesUpdated = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

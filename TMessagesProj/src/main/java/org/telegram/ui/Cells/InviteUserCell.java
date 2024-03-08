@@ -90,7 +90,8 @@ public class InviteUserCell extends FrameLayout {
         }
         String newName = null;
 
-        avatarDrawable.setInfo(currentContact.contact_id, currentContact.first_name, currentContact.last_name);
+        avatarDrawable.setInfo(currentContact.contact_id, currentContact.first_name, currentContact.last_name, null, null, null, true);
+
 
         if (currentName != null) {
             nameTextView.setText(currentName, true);

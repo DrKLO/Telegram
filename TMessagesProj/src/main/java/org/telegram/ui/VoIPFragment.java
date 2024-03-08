@@ -1694,7 +1694,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 showAcceptDeclineView = true;
                 lockOnScreen = false;
                 acceptDeclineView.setRetryMod(false);
-                if (service != null && service.privateCall.video) {
+                if (service != null && service.privateCall != null && service.privateCall.video) {
                     statusTextView.setText(LocaleController.getString("VoipInVideoCallBranding", R.string.VoipInVideoCallBranding), false, animated);
                     acceptDeclineView.setTranslationY(-AndroidUtilities.dp(60));
                 } else {

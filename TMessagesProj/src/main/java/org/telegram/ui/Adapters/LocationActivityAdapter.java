@@ -52,6 +52,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     private SendLocationCell sendLocationCell;
     private Location gpsLocation;
     private Location customLocation;
+    private String overrideAddressName;
     private String addressName;
     private Location previousFetchedLocation;
     private int locationType;
@@ -69,8 +70,13 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     public boolean animated = true;
     public TLRPC.TL_messageMediaVenue city, street;
 
-    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider, boolean stories) {
-        super(stories);
+    public void setAddressNameOverride(String address) {
+        overrideAddressName = address;
+        updateCell();
+    }
+
+    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider, boolean stories, boolean biz) {
+        super(stories, biz);
 
         mContext = context;
         locationType = type;
@@ -171,9 +177,24 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     private void updateCell() {
         if (sendLocationCell != null) {
-            if (locationType == LocationActivity.LOCATION_TYPE_GROUP || customLocation != null) {
+            if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
                 String address = "";
-                if (!TextUtils.isEmpty(addressName)) {
+                if (!TextUtils.isEmpty(overrideAddressName)) {
+                    address = overrideAddressName;
+                } else if (!TextUtils.isEmpty(addressName)) {
+                    address = addressName;
+                } else if (fetchingLocation) {
+                    address = LocaleController.getString("Loading", R.string.Loading);
+                } else {
+                    address = LocaleController.getString(R.string.UnknownLocation);
+                }
+                sendLocationCell.setText(LocaleController.getString(R.string.SetThisLocation), address);
+                sendLocationCell.setHasLocation(true);
+            } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP || customLocation != null) {
+                String address = "";
+                if (!TextUtils.isEmpty(overrideAddressName)) {
+                    address = overrideAddressName;
+                } else if (!TextUtils.isEmpty(addressName)) {
                     address = addressName;
                 } else if (customLocation == null && gpsLocation == null || fetchingLocation) {
                     address = LocaleController.getString("Loading", R.string.Loading);
@@ -192,7 +213,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 sendLocationCell.setHasLocation(true);
             } else {
                 if (gpsLocation != null) {
-                    sendLocationCell.setText(LocaleController.getString("SendLocation", R.string.SendLocation), LocaleController.formatString("AccurateTo", R.string.AccurateTo, LocaleController.formatPluralString("Meters", (int) gpsLocation.getAccuracy())));
+                    sendLocationCell.setText(LocaleController.getString(R.string.SendLocation), LocaleController.formatString(R.string.AccurateTo, LocaleController.formatPluralString("Meters", (int) gpsLocation.getAccuracy())));
                     sendLocationCell.setHasLocation(true);
                 } else {
                     sendLocationCell.setText(LocaleController.getString("SendLocation", R.string.SendLocation), myLocationDenied ? "" : LocaleController.getString("Loading", R.string.Loading));
@@ -202,7 +223,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         }
     }
 
-    private String getAddressName() {
+    public String getAddressName() {
         return addressName;
     }
 
@@ -210,9 +231,13 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     public void onLocationAddressAvailable(String address, String displayAddress, TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location) {
         fetchingLocation = false;
         previousFetchedLocation = location;
-        addressName = address;
+        if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
+            addressName = displayAddress;
+        } else {
+            addressName = address;
+        }
 
-        if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY && askingForMyLocation) {
+        if ((locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY) && askingForMyLocation) {
             this.city = null;
             this.street = null;
         }
@@ -241,7 +266,19 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     }
 
     public void fetchLocationAddress() {
-        if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
+        if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
+            Location location;
+            if (customLocation != null) {
+                location = customLocation;
+            } else if (gpsLocation != null) {
+                location = gpsLocation;
+            } else {
+                return;
+            }
+            fetchingLocation = true;
+            updateCell();
+            LocationController.fetchLocationAddress(location, biz ? LocationController.TYPE_BIZ : 0, this);
+        } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
             Location location;
             if (customLocation != null) {
                 location = customLocation;
@@ -279,6 +316,8 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW) {
             return 2;
         } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
+            return 2;
+        } else if (biz) {
             return 2;
         } else if (currentMessageObject != null) {
             return 2 + (currentLiveLocations.isEmpty() ? 1 : currentLiveLocations.size() + 3);
@@ -351,7 +390,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 break;
             }
             case VIEW_TYPE_SHARING:
-                view = new SharingLiveLocationCell(mContext, true, locationType == LocationActivity.LOCATION_TYPE_GROUP || locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW ? 16 : 54, resourcesProvider);
+                view = new SharingLiveLocationCell(mContext, true, locationType == LocationActivity.LOCATION_TYPE_GROUP || locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW || locationType == 3 ? 16 : 54, resourcesProvider);
                 break;
             case VIEW_TYPE_DIRECTION: {
                 LocationDirectionCell cell = new LocationDirectionCell(mContext, resourcesProvider);
@@ -425,7 +464,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
                 if (locationType == 0) {
                     position -= 4;
-                } else if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY) {
+                } else if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY || locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
                     position -= 4;
                     if (this.street != null) {
                         position--;

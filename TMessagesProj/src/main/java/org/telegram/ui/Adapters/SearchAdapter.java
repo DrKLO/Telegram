@@ -50,7 +50,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<Object> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private SearchAdapterHelper searchAdapterHelper;
-    private LongSparseArray<?> checkedMap;
+    private LongSparseArray<TLRPC.User> selectedUsers;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
     private boolean useUserCell;
@@ -67,9 +67,10 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<ContactsController.Contact> unregistredContacts = new ArrayList<>();
 
 
-    public SearchAdapter(Context context, LongSparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
+    public SearchAdapter(Context context, LongSparseArray<TLRPC.User> arg1, LongSparseArray<TLRPC.User> selected, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
+        selectedUsers = selected;
         onlyMutual = mutual;
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
@@ -92,10 +93,6 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 return ignoreUsers;
             }
         });
-    }
-
-    public void setCheckedMap(LongSparseArray<?> map) {
-        checkedMap = map;
     }
 
     public void setUseUserCell(boolean value) {
@@ -334,9 +331,6 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             case 0:
                 if (useUserCell) {
                     view = new UserCell(mContext, 1, 1, false);
-                    if (checkedMap != null) {
-                        ((UserCell) view).setChecked(false, false);
-                    }
                 } else {
                     view = new ProfileSearchCell(mContext);
                 }
@@ -412,9 +406,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (useUserCell) {
                         UserCell userCell = (UserCell) holder.itemView;
                         userCell.setData(object, name, username, 0);
-                        if (checkedMap != null) {
-                            userCell.setChecked(checkedMap.indexOfKey(id) >= 0, false);
-                        }
+                        userCell.setChecked(selectedUsers.indexOfKey(id) >= 0, false);
                     } else {
                         ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
                         if (self) {
@@ -422,6 +414,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                         profileSearchCell.setData(object, null, name, username, false, self);
                         profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
+                        profileSearchCell.setChecked(selectedUsers.indexOfKey(id) >= 0, false);
                         /*if (ignoreUsers != null) {
                             if (ignoreUsers.containsKey(id)) {
                                 profileSearchCell.drawAlpha = 0.5f;

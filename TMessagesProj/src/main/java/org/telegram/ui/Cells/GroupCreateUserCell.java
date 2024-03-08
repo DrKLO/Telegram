@@ -279,8 +279,14 @@ public class GroupCreateUserCell extends FrameLayout {
                 case "non_contacts":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
                     break;
+                case "existing_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_EXISTING_CHATS);
+                    break;
                 case "groups":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
+                    break;
+                case "new_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NEW_CHATS);
                     break;
                 case "channels":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);

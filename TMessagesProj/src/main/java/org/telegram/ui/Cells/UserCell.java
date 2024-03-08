@@ -25,6 +25,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -41,10 +42,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.UItem;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.NotificationsSettingsActivity;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
@@ -56,12 +59,13 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     protected SimpleTextView nameTextView;
     protected SimpleTextView statusTextView;
     private ImageView imageView;
-    private CheckBox checkBox;
+    private CheckBox2 checkBox;
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
     private TextView addButton;
     private Drawable premiumDrawable;
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
+    private ImageView closeView;
     protected Theme.ResourcesProvider resourcesProvider;
 
     protected AvatarDrawable avatarDrawable;
@@ -187,10 +191,11 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             checkBoxBig = new CheckBoxSquare(context, false);
             addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
         } else if (checkbox == 1) {
-            checkBox = new CheckBox(context, R.drawable.round_check2);
-            checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(Theme.getColor(Theme.key_checkbox, resourcesProvider), Theme.getColor(Theme.key_checkboxCheck, resourcesProvider));
-            addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 40, LocaleController.isRTL ? 37 + padding : 0, 0));
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(3);
+            checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 36, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
 
         if (admin) {
@@ -491,6 +496,12 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 case "archived":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
                     break;
+                case "new_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NEW_CHATS);
+                    break;
+                case "existing_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_EXISTING_CHATS);
+                    break;
             }
             avatarImageView.setImage(null, "50_50", avatarDrawable);
             currentStatus = "";
@@ -667,5 +678,72 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
     public long getDialogId() {
         return dialogId;
+    }
+
+    public void setFromUItem(int currentAccount, UItem item, boolean divider) {
+        if (item.chatType != null) {
+            setData(item.chatType, item.text, null, 0, divider);
+            return;
+        }
+        long id = item.dialogId;
+        if (id > 0) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(id);
+            if (user != null) {
+                String status;
+                if (user.bot) {
+                    status = LocaleController.getString("Bot", R.string.Bot);
+                } else if (user.contact) {
+                    status = LocaleController.getString("FilterContact", R.string.FilterContact);
+                } else {
+                    status = LocaleController.getString("FilterNonContact", R.string.FilterNonContact);
+                }
+                setData(user, null, status, 0, divider);
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-id);
+            if (chat != null) {
+                String status;
+                if (chat.participants_count != 0) {
+                    if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                        status = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
+                    } else {
+                        status = LocaleController.formatPluralStringComma("Members", chat.participants_count);
+                    }
+                } else if (!ChatObject.isPublic(chat)) {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        status = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate);
+                    } else {
+                        status = LocaleController.getString("MegaPrivate", R.string.MegaPrivate);
+                    }
+                } else {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        status = LocaleController.getString("ChannelPublic", R.string.ChannelPublic);
+                    } else {
+                        status = LocaleController.getString("MegaPublic", R.string.MegaPublic);
+                    }
+                }
+                setData(chat, null, status, 0, divider);
+            }
+        }
+    }
+
+    public void setCloseIcon(Runnable onClick) {
+        if (onClick == null) {
+            if (closeView != null) {
+                removeView(closeView);
+                closeView = null;
+            }
+        } else {
+            if (closeView == null) {
+                closeView = new ImageView(getContext());
+                closeView.setScaleType(ImageView.ScaleType.CENTER);
+                ScaleStateListAnimator.apply(closeView);
+                closeView.setImageResource(R.drawable.ic_close_white);
+                closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO));
+                addView(closeView, LayoutHelper.createFrame(30, 30, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 0));
+            }
+            closeView.setOnClickListener(v -> onClick.run());
+        }
     }
 }

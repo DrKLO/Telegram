@@ -93,7 +93,7 @@ public class ChatAttachRestrictedLayout extends ChatAttachAlert.AttachAlertLayou
 
 
     @Override
-    int getCurrentItemTop() {
+    public int getCurrentItemTop() {
         if (listView.getChildCount() <= 0) {
             return Integer.MAX_VALUE;
         }
@@ -119,17 +119,17 @@ public class ChatAttachRestrictedLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     @Override
-    int getFirstOffset() {
+    public int getFirstOffset() {
         return getListTopPadding() + AndroidUtilities.dp(4);
     }
 
     @Override
-    int getListTopPadding() {
+    public int getListTopPadding() {
         return listView.getPaddingTop();
     }
 
     @Override
-    void onPreMeasure(int availableWidth, int availableHeight) {
+    public void onPreMeasure(int availableWidth, int availableHeight) {
         super.onPreMeasure(availableWidth, availableHeight);
         int newSize = Math.max(0, availableHeight - ActionBar.getCurrentActionBarHeight());
         if (gridExtraSpace != newSize) {

@@ -1001,8 +1001,13 @@ public class LocationController extends BaseController implements NotificationCe
         void onLocationAddressAvailable(String address, String displayAddress, TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location);
     }
 
+    public static final int TYPE_BIZ = 1;
+
     private static HashMap<LocationFetchCallback, Runnable> callbacks = new HashMap<>();
     public static void fetchLocationAddress(Location location, LocationFetchCallback callback) {
+        fetchLocationAddress(location, 0, callback);
+    }
+    public static void fetchLocationAddress(Location location, int type, LocationFetchCallback callback) {
         if (callback == null) {
             return;
         }
@@ -1033,16 +1038,65 @@ public class LocationController extends BaseController implements NotificationCe
                 List<Address> addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
                 if (addresses.size() > 0) {
                     Address address = addresses.get(0);
-                    boolean hasAny = false;
-                    String arg;
+                    if (type == TYPE_BIZ) {
+                        ArrayList<String> parts = new ArrayList<>();
 
-                    StringBuilder nameBuilder = new StringBuilder();
-                    StringBuilder displayNameBuilder = new StringBuilder();
-                    StringBuilder cityBuilder = new StringBuilder();
-                    StringBuilder streetBuilder = new StringBuilder();
+                        String arg = null;
+                        try {
+                            arg = address.getAddressLine(0);
+                        } catch (Exception ignore) {}
+                        if (TextUtils.isEmpty(arg)) {
+                            try {
+                                parts.add(address.getSubThoroughfare());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getThoroughfare());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getAdminArea());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getCountryName());
+                            } catch (Exception ignore) {}
+                        } else {
+                            parts.add(arg);
+                        }
 
-                    String locality = null;
-                    String feature = null;
+                        for (int i = 0; i < parts.size(); ++i) {
+                            if (parts.get(i) != null) {
+                                String[] partsInside = parts.get(i).split(", ");
+                                if (partsInside.length > 1) {
+                                    parts.remove(i);
+                                    for (int j = 0; j < partsInside.length; ++j) {
+                                        parts.add(i, partsInside[j]);
+                                        i++;
+                                    }
+                                }
+                            }
+                        }
+                        for (int i = 0; i < parts.size(); ++i) {
+                            if (TextUtils.isEmpty(parts.get(i)) || parts.indexOf(parts.get(i)) != i || parts.get(i).matches("^\\s*\\d{4,}\\s*$")) {
+                                parts.remove(i);
+                                i--;
+                            }
+                        }
+
+                        name = displayName = parts.isEmpty() ? null : TextUtils.join(", ", parts);
+                        city = null;
+                        street = null;
+                        countryCode = null;
+                    } else {
+
+                        boolean hasAny = false;
+                        String arg;
+
+                        StringBuilder nameBuilder = new StringBuilder();
+                        StringBuilder displayNameBuilder = new StringBuilder();
+                        StringBuilder cityBuilder = new StringBuilder();
+                        StringBuilder streetBuilder = new StringBuilder();
+
+                        String locality = null;
+                        String feature = null;
 //                    String addressLine = null;
 //                    try {
 //                        addressLine = address.getAddressLine(0);
@@ -1063,148 +1117,149 @@ public class LocationController extends BaseController implements NotificationCe
 ////                            feature = parts[0].replace(",", "").trim();
 //                        }
 //                    }
-                    if (TextUtils.isEmpty(locality)) {
-                        locality = address.getLocality();
-                    }
-                    if (TextUtils.isEmpty(locality)) {
-                        locality = address.getSubAdminArea();
-                    }
-                    if (TextUtils.isEmpty(locality)) {
-                        locality = address.getAdminArea();
-                    }
-
-//                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getFeatureName(), locality) && !TextUtils.equals(address.getFeatureName(), address.getCountryName())) {
-//                        feature = address.getFeatureName();
-//                    }
-                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getThoroughfare(), locality) && !TextUtils.equals(address.getThoroughfare(), address.getCountryName())) {
-                        feature = address.getThoroughfare();
-                    }
-                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getSubLocality(), locality) && !TextUtils.equals(address.getSubLocality(), address.getCountryName())) {
-                        feature = address.getSubLocality();
-                    }
-                    if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getLocality(), locality) && !TextUtils.equals(address.getLocality(), address.getCountryName())) {
-                        feature = address.getLocality();
-                    }
-                    if (!TextUtils.isEmpty(feature) && !TextUtils.equals(feature, locality) && !TextUtils.equals(feature, address.getCountryName())) {
-                        if (streetBuilder.length() > 0) {
-                            streetBuilder.append(", ");
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getLocality();
                         }
-                        streetBuilder.append(feature);
-                    } else {
-                        streetBuilder = null;
-                    }
-                    if (!TextUtils.isEmpty(locality)) {
-                        if (cityBuilder.length() > 0) {
-                            cityBuilder.append(", ");
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getSubAdminArea();
                         }
-                        cityBuilder.append(locality);
-                        onlyCountry = false;
-                        if (streetBuilder != null) {
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getAdminArea();
+                        }
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getThoroughfare(), locality) && !TextUtils.equals(address.getThoroughfare(), address.getCountryName())) {
+                            feature = address.getThoroughfare();
+                        }
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getSubLocality(), locality) && !TextUtils.equals(address.getSubLocality(), address.getCountryName())) {
+                            feature = address.getSubLocality();
+                        }
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getLocality(), locality) && !TextUtils.equals(address.getLocality(), address.getCountryName())) {
+                            feature = address.getLocality();
+                        }
+                        if (!TextUtils.isEmpty(feature) && !TextUtils.equals(feature, locality) && !TextUtils.equals(feature, address.getCountryName())) {
                             if (streetBuilder.length() > 0) {
                                 streetBuilder.append(", ");
                             }
-                            streetBuilder.append(locality);
+                            streetBuilder.append(feature);
+                        } else {
+                            streetBuilder = null;
                         }
-                    }
+                        if (!TextUtils.isEmpty(locality)) {
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(locality);
+                            onlyCountry = false;
+                            if (streetBuilder != null) {
+                                if (streetBuilder.length() > 0) {
+                                    streetBuilder.append(", ");
+                                }
+                                streetBuilder.append(locality);
+                            }
+                        }
 
-                    arg = address.getSubThoroughfare();
-                    if (!TextUtils.isEmpty(arg)) {
-                        nameBuilder.append(arg);
-                        hasAny = true;
-                    }
-                    arg = address.getThoroughfare();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(" ");
+                        arg = address.getSubThoroughfare();
+                        if (!TextUtils.isEmpty(arg)) {
+                            nameBuilder.append(arg);
+                            hasAny = true;
                         }
-                        nameBuilder.append(arg);
-                        hasAny = true;
-                    }
-                    if (!hasAny) {
-                        arg = address.getAdminArea();
+                        arg = address.getThoroughfare();
+                        if (!TextUtils.isEmpty(arg)) {
+                            if (nameBuilder.length() > 0) {
+                                nameBuilder.append(" ");
+                            }
+                            nameBuilder.append(arg);
+                            hasAny = true;
+                        }
+                        if (!hasAny) {
+                            arg = address.getAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (nameBuilder.length() > 0) {
+                                    nameBuilder.append(", ");
+                                }
+                                nameBuilder.append(arg);
+                            }
+                            arg = address.getSubAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (nameBuilder.length() > 0) {
+                                    nameBuilder.append(", ");
+                                }
+                                nameBuilder.append(arg);
+                            }
+                        }
+                        arg = address.getLocality();
                         if (!TextUtils.isEmpty(arg)) {
                             if (nameBuilder.length() > 0) {
                                 nameBuilder.append(", ");
                             }
                             nameBuilder.append(arg);
                         }
-                        arg = address.getSubAdminArea();
+                        countryCode = address.getCountryCode();
+                        arg = address.getCountryName();
                         if (!TextUtils.isEmpty(arg)) {
                             if (nameBuilder.length() > 0) {
                                 nameBuilder.append(", ");
                             }
                             nameBuilder.append(arg);
-                        }
-                    }
-                    arg = address.getLocality();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(", ");
-                        }
-                        nameBuilder.append(arg);
-                    }
-                    countryCode = address.getCountryCode();
-                    arg = address.getCountryName();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(", ");
-                        }
-                        nameBuilder.append(arg);
-                        String shortCountry = arg;
-                        final String lng = finalLocale.getLanguage();
-                        if (("US".equals(address.getCountryCode()) || "AE".equals(address.getCountryCode())) && ("en".equals(lng) || "uk".equals(lng) || "ru".equals(lng)) || "GB".equals(address.getCountryCode()) && "en".equals(lng)) {
-                            shortCountry = "";
-                            String[] words = arg.split(" ");
-                            for (String word : words) {
-                                if (word.length() > 0)
-                                    shortCountry += word.charAt(0);
+                            String shortCountry = arg;
+                            final String lng = finalLocale.getLanguage();
+                            if (("US".equals(address.getCountryCode()) || "AE".equals(address.getCountryCode())) && ("en".equals(lng) || "uk".equals(lng) || "ru".equals(lng)) || "GB".equals(address.getCountryCode()) && "en".equals(lng)) {
+                                shortCountry = "";
+                                String[] words = arg.split(" ");
+                                for (String word : words) {
+                                    if (word.length() > 0)
+                                        shortCountry += word.charAt(0);
+                                }
+                            } else if ("US".equals(address.getCountryCode())) {
+                                shortCountry = "USA";
                             }
-                        } else if ("US".equals(address.getCountryCode())) {
-                            shortCountry = "USA";
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(shortCountry);
                         }
-                        if (cityBuilder.length() > 0) {
-                            cityBuilder.append(", ");
-                        }
-                        cityBuilder.append(shortCountry);
-                    }
 
-                    arg = address.getCountryName();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (displayNameBuilder.length() > 0) {
-                            displayNameBuilder.append(", ");
-                        }
-                        displayNameBuilder.append(arg);
-                    }
-                    arg = address.getLocality();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (displayNameBuilder.length() > 0) {
-                            displayNameBuilder.append(", ");
-                        }
-                        displayNameBuilder.append(arg);
-                    }
-                    if (!hasAny) {
-                        arg = address.getAdminArea();
+                        arg = address.getCountryName();
                         if (!TextUtils.isEmpty(arg)) {
                             if (displayNameBuilder.length() > 0) {
                                 displayNameBuilder.append(", ");
                             }
                             displayNameBuilder.append(arg);
                         }
-                        arg = address.getSubAdminArea();
+                        arg = address.getLocality();
                         if (!TextUtils.isEmpty(arg)) {
                             if (displayNameBuilder.length() > 0) {
                                 displayNameBuilder.append(", ");
                             }
                             displayNameBuilder.append(arg);
                         }
-                    }
+                        if (!hasAny) {
+                            arg = address.getAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (displayNameBuilder.length() > 0) {
+                                    displayNameBuilder.append(", ");
+                                }
+                                displayNameBuilder.append(arg);
+                            }
+                            arg = address.getSubAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (displayNameBuilder.length() > 0) {
+                                    displayNameBuilder.append(", ");
+                                }
+                                displayNameBuilder.append(arg);
+                            }
+                        }
 
-                    name = nameBuilder.toString();
-                    displayName = displayNameBuilder.toString();
-                    city = cityBuilder.toString();
-                    street = streetBuilder == null ? null : streetBuilder.toString();
+                        name = nameBuilder.toString();
+                        displayName = displayNameBuilder.toString();
+                        city = cityBuilder.toString();
+                        street = streetBuilder == null ? null : streetBuilder.toString();
+                    }
                 } else {
-                    name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                    if (type == TYPE_BIZ) {
+                        name = displayName = null;
+                    } else {
+                        name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                    }
                     city = null;
                     street = null;
                 }

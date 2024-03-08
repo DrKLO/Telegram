@@ -27,5 +27,5 @@ void main() {
     fragmentColor += texture2D(sTexture, fourStepsLeftTextureCoordinate) * -0.02143;
     fragmentColor += texture2D(sTexture, fourStepsRightTextureCoordinate) * -0.02143;
 
-    gl_FragColor = texture2D(sTexture, centerTextureCoordinate);
+    gl_FragColor = fragmentColor;
 }

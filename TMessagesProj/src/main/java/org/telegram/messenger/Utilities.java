@@ -569,8 +569,16 @@ public class Utilities {
     public static interface Callback4<T, T2, T3, T4> {
         public void run(T arg, T2 arg2, T3 arg3, T4 arg4);
     }
+
+    public static interface Callback4Return<T, T2, T3, T4, ReturnType> {
+        public ReturnType run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
     public static interface Callback5<T, T2, T3, T4, T5> {
         public void run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
+    }
+
+    public static interface Callback5Return<T, T2, T3, T4, T5, ReturnType> {
+        public ReturnType run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
     }
 
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {

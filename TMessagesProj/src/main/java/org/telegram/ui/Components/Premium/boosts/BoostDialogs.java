@@ -81,7 +81,7 @@ public class BoostDialogs {
         }
         if (error.text.contains("PREMIUM_SUB_ACTIVE_UNTIL_")) {
             String strDate = error.text.replace("PREMIUM_SUB_ACTIVE_UNTIL_", "");
-            int date = Integer.parseInt(strDate);
+            long date = Long.parseLong(strDate);
             String formattedDate = LocaleController.getInstance().formatterBoostExpired.format(new Date(date * 1000L));
             String subTitleText = getString("GiftPremiumActivateErrorText", R.string.GiftPremiumActivateErrorText);
             SpannableStringBuilder subTitleWithLink = AndroidUtilities.replaceSingleTag(

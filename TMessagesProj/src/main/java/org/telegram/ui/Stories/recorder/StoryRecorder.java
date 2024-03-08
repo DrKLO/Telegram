@@ -264,13 +264,13 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         protected void hide() {}
         protected void drawAbove(Canvas canvas, float alpha) {}
 
-        public static SourceView fromAvatarImage(ProfileActivity.AvatarImageView avatarImage) {
+        public static SourceView fromAvatarImage(ProfileActivity.AvatarImageView avatarImage, boolean isForum) {
             if (avatarImage == null || avatarImage.getRootView() == null) {
                 return null;
             }
             float scale = ((View)avatarImage.getParent()).getScaleX();
             final float size = avatarImage.getImageReceiver().getImageWidth() * scale;
-            final float radius = size / 2f;
+            final float rounding = isForum ? size * 0.32f : size;
             SourceView src = new SourceView() {
                 @Override
                 protected void show() {
@@ -293,7 +293,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
             src.screenRect.set(x, y, x + size, y + size);
             src.backgroundImageReceiver = avatarImage.getImageReceiver();
-            src.rounding = radius * 2;
+            src.rounding = rounding;
             return src;
         }
 

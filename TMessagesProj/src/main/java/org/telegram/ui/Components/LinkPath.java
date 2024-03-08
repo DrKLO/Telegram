@@ -14,10 +14,12 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
 
-public class LinkPath extends Path {
+public class LinkPath extends CornerPath {
 
     private Layout currentLayout;
     private int currentLine;
@@ -45,11 +47,13 @@ public class LinkPath extends Path {
 
     public LinkPath() {
         super();
+        useCornerPathImplementation = false;
     }
 
     public LinkPath(boolean roundRect) {
         super();
         useRoundRect = roundRect;
+        useCornerPathImplementation = false;
     }
 
     public void setCurrentLayout(Layout layout, int start, float yOffset) {
@@ -103,7 +107,7 @@ public class LinkPath extends Path {
     private float minX = Float.MAX_VALUE, maxX, minY = Float.MAX_VALUE, maxY;
 
     @Override
-    public void addRect(float left, float top, float right, float bottom, Direction dir) {
+    public void addRect(float left, float top, float right, float bottom, @NonNull Direction dir) {
         if (currentLayout == null) {
             superAddRect(left, top, right, bottom, dir);
             return;

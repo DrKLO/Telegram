@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 public class CanvasButton {
 
-    Path drawingPath;
+    CornerPath drawingPath;
     ArrayList<RectF> drawingRects = new ArrayList<>();
     int usingRectCount;
     boolean buttonPressed;
@@ -111,7 +111,7 @@ public class CanvasButton {
         if (usingRectCount > 1) {
             if (!pathCreated) {
                 if (drawingPath == null) {
-                    drawingPath = new Path();
+                    drawingPath = new CornerPath(2);
                 } else {
                     drawingPath.rewind();
                 }
@@ -141,6 +141,7 @@ public class CanvasButton {
                         selectorDrawable.setBounds(left, top, right, bottom);
                     }
                 }
+                drawingPath.closeRects();
                 pathCreated = true;
             }
             paint.setPathEffect(pathEffect);

@@ -472,6 +472,8 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     private void fillAreaView(RectF targetRect, boolean allowZoomOut) {
+        if (state == null) return;
+
         final float[] currentScale = new float[]{1.0f};
         float scale = Math.max(targetRect.width() / areaView.getCropWidth(), targetRect.height() / areaView.getCropHeight());
 

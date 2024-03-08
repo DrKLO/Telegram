@@ -615,7 +615,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				otherItem.setVisibility(View.GONE);
 				listViewAdapter.notifyDataSetChanged();
 			} else {
-				getMessagesController().deleteMessages(new ArrayList<>(selectedIds), null, null, 0, checks[0], false);
+				getMessagesController().deleteMessages(new ArrayList<>(selectedIds), null, null, 0, 0, checks[0], 0);
 			}
 			hideActionMode(false);
 		});

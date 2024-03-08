@@ -403,16 +403,14 @@ public class LimitPreviewView extends LinearLayout {
             arrowAnimator.addUpdateListener(animation -> {
                 float v = (float) animation.getAnimatedValue();
                 float moveValue = Math.min(1f, v);
-                if (animatingRotate) {
-                    if (v > 1f) {
-                        if (!wasHaptic) {
-                            wasHaptic = true;
-                            limitIcon.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-                        }
-                        limitIcon.setRotation(limitIconRotation + (v - 1f) * 60);
-                    } else {
-                        limitIcon.setRotation(limitIconRotation);
+                if (v > 1f && animatingRotate) {
+                    if (!wasHaptic) {
+                        wasHaptic = true;
+                        limitIcon.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     }
+                    limitIcon.setRotation(limitIconRotation + (v - 1f) * 60);
+                } else if (!animatingRotation) {
+                    limitIcon.setRotation(limitIconRotation);
                 }
                 if (animation == arrowAnimator) {
                     limitIcon.setTranslationX(fromX * (1f - moveValue) + finalToX * moveValue);
@@ -524,7 +522,9 @@ public class LimitPreviewView extends LinearLayout {
 
     public void setPremiumLocked() {
         limitsContainer.setVisibility(View.GONE);
-        limitIcon.setPadding(dp(24), dp(3), dp(24), dp(3));
+        if (limitIcon != null) {
+            limitIcon.setPadding(dp(24), dp(3), dp(24), dp(3));
+        }
         premiumLocked = true;
     }
 

@@ -45,6 +45,8 @@ import java.util.Locale;
 public class TextCheckCell extends FrameLayout {
     private boolean isAnimatingToThumbInsteadOfTouch;
 
+    public int itemId;
+
     private TextView textView;
     private TextView valueTextView;
     private Switch checkBox;
@@ -301,9 +303,11 @@ public class TextCheckCell extends FrameLayout {
 
     @Override
     public void setBackgroundColor(int color) {
-        clearAnimation();
-        animatedColorBackground = 0;
-        super.setBackgroundColor(color);
+        if (animatedColorBackground != color) {
+            clearAnimation();
+            animatedColorBackground = 0;
+            super.setBackgroundColor(color);
+        }
     }
 
     public void setBackgroundColorAnimated(boolean checked, int color) {
@@ -325,8 +329,8 @@ public class TextCheckCell extends FrameLayout {
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                setBackgroundColor(animatedColorBackground);
                 animatedColorBackground = 0;
+                setBackgroundColor(color);
                 invalidate();
             }
         });

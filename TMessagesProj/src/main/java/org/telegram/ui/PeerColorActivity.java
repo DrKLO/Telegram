@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -1552,6 +1553,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         { backgroundPaint.setStyle(Paint.Style.STROKE); }
 
+        public static final int TYPE_FOLDER_TAG = 2;
+
         public class ColorButton {
             private final Paint paint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
             private final Paint paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1559,6 +1562,11 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             private final Path circlePath = new Path();
             private final Path color2Path = new Path();
             private boolean hasColor2, hasColor3;
+            private boolean hasClose;
+
+            private Path closePath;
+            private Paint closePaint;
+            private Drawable lockDrawable;
 
             private final ButtonBounce bounce = new ButtonBounce(PeerColorGrid.this);
 
@@ -1574,6 +1582,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 hasColor3 = false;
                 paint1.setColor(color1);
                 paint2.setColor(color2);
+            }
+
+            public void setClose(boolean close) {
+                hasClose = close;
             }
 
             public void set(MessagesController.PeerColor color) {
@@ -1661,9 +1673,43 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                     canvas.drawCircle(
                         bounds.centerX(), bounds.centerY(),
-                        Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * AndroidUtilities.lerp(.5f, -2f, selectT),
+                        Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * lerp(.5f, -2f, selectT),
                         backgroundPaint
                     );
+                }
+
+                if (hasClose) {
+                    if (lock) {
+                        if (lockDrawable == null) {
+                            lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock3);
+                            lockDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+                        }
+                        lockDrawable.setBounds(
+                            (int) (bounds.centerX() - lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
+                            (int) (bounds.centerY() - lockDrawable.getIntrinsicHeight() / 2f * 1.2f),
+                            (int) (bounds.centerX() + lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
+                            (int) (bounds.centerY() + lockDrawable.getIntrinsicHeight() / 2f * 1.2f)
+                        );
+                        lockDrawable.draw(canvas);
+                    } else {
+                        if (closePath == null) {
+                            closePath = new Path();
+                        }
+                        if (closePaint == null) {
+                            closePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                            closePaint.setColor(0xffffffff);
+                            closePaint.setStyle(Paint.Style.STROKE);
+                            closePaint.setStrokeCap(Paint.Cap.ROUND);
+                        }
+                        closePaint.setStrokeWidth(dp(2));
+                        closePath.rewind();
+                        final float r = lerp(dp(5), dp(4), selectT);
+                        closePath.moveTo(bounds.centerX() - r, bounds.centerY() - r);
+                        closePath.lineTo(bounds.centerX() + r, bounds.centerY() + r);
+                        closePath.moveTo(bounds.centerX() + r, bounds.centerY() - r);
+                        closePath.lineTo(bounds.centerX() - r, bounds.centerY() + r);
+                        canvas.drawPath(closePath, closePaint);
+                    }
                 }
 
                 canvas.restore();
@@ -1681,6 +1727,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         private final int type;
         private final int currentAccount;
+        private boolean lock;
 
         private ColorButton[] buttons;
 
@@ -1691,12 +1738,20 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             this.resourcesProvider = resourcesProvider;
         }
 
+        public void setCloseAsLock(boolean lock) {
+            this.lock = lock;
+        }
+
         public void updateColors() {
             if (buttons == null) return;
             final MessagesController mc = MessagesController.getInstance(currentAccount);
             final MessagesController.PeerColors peerColors = type == PAGE_NAME ? mc.peerColors : mc.profilePeerColors;
             for (int i = 0; i < buttons.length; ++i) {
-                if (i < 7 && type == PAGE_NAME) {
+                if (type == TYPE_FOLDER_TAG) {
+                    buttons[i].id = order[i];
+                    buttons[i].setClose(buttons[i].id < 0);
+                    buttons[i].set(Theme.getColor(order[i] < 0 ? Theme.key_avatar_backgroundGray : Theme.keys_avatar_nameInMessage[order[i] % Theme.keys_avatar_nameInMessage.length], resourcesProvider));
+                } else if (i < 7 && type == PAGE_NAME) {
                     buttons[i].id = order[i];
                     buttons[i].set(Theme.getColor(Theme.keys_avatar_nameInMessage[order[i]], resourcesProvider));
                 } else {
@@ -1709,7 +1764,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             invalidate();
         }
-        final int[] order = new int[] { 5, 3, 1, 0, 2, 4, 6 };
+        final int[] order = new int[] { 5, 3, 1, 0, 2, 4, 6, -1 };
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -1717,8 +1772,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             final MessagesController mc = MessagesController.getInstance(currentAccount);
             final MessagesController.PeerColors peerColors = type == PAGE_NAME ? mc.peerColors : mc.profilePeerColors;
-            final int colorsCount = peerColors == null ? 0 : peerColors.colors.size();
-            final int columns = type == PAGE_NAME ? 7 : 8;
+            int colorsCount = peerColors == null ? 0 : peerColors.colors.size();
+            if (type == TYPE_FOLDER_TAG) {
+                colorsCount = 8;
+            }
+            final int columns;
+            if (type == TYPE_FOLDER_TAG) {
+                columns = 8;
+            } else if (type == PAGE_NAME) {
+                columns = 7;
+            } else {
+                columns = 8;
+            }
 
             final float iconSize = Math.min(dp(38 + 16), width / (columns + (columns + 1) * .28947f));
             final float horizontalSeparator = Math.min(iconSize * .28947f, dp(8));
@@ -1733,7 +1798,11 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 buttons = new ColorButton[colorsCount];
                 for (int i = 0; i < colorsCount; ++i) {
                     buttons[i] = new ColorButton();
-                    if (peerColors != null && i >= 0 && i < peerColors.colors.size()) {
+                    if (type == TYPE_FOLDER_TAG) {
+                        buttons[i].id = order[i];
+                        buttons[i].setClose(buttons[i].id < 0);
+                        buttons[i].set(Theme.getColor(order[i] < 0 ? Theme.key_avatar_backgroundGray : Theme.keys_avatar_nameInMessage[order[i] % Theme.keys_avatar_nameInMessage.length], resourcesProvider));
+                    } else if (peerColors != null && i >= 0 && i < peerColors.colors.size()) {
                         buttons[i].id = peerColors.colors.get(i).id;
                         buttons[i].set(peerColors.colors.get(i));
                     }

@@ -22,7 +22,7 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 47;
+    private final static int LIB_VERSION = 48;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";

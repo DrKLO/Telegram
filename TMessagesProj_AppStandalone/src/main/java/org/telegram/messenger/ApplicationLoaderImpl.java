@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.text.SpannableStringBuilder;
 import android.view.ViewGroup;
 
 import androidx.core.content.FileProvider;
@@ -22,6 +23,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.SpannableStringLight;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
 import org.telegram.ui.Components.UpdateLayout;
 import org.telegram.ui.IUpdateLayout;
@@ -134,7 +136,7 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
             if (MessagesController.getGlobalMainSettings().getBoolean("newppsms", true)) {
                 text = applyNewSpan(text.toString());
             }
-            items.add(new DrawerLayoutAdapter.Item(93, text, R.drawable.left_sms).onClick(v -> {
+            DrawerLayoutAdapter.Item item = new DrawerLayoutAdapter.Item(93, text, R.drawable.left_sms).onClick(v -> {
                 MessagesController.getGlobalMainSettings().edit().putBoolean("newppsms", false).apply();
                 SMSJobController controller = (SMSJobController) SMSJobController.getInstance(UserConfig.selectedAccount);
                 final int state = controller.currentState;
@@ -185,7 +187,11 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
                 if (lastFragment != null) {
                     lastFragment.presentFragment(new SMSStatsActivity());
                 }
-            }));
+            });
+            if (SMSStatsActivity.isAirplaneMode(LaunchActivity.instance) || SMSJobController.getInstance(UserConfig.selectedAccount).hasError()) {
+                item.withError();
+            }
+            items.add(item);
         }
         return true;
     }
@@ -199,7 +205,13 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
     }
 
     @Override
-    public boolean onSuggestionFill(String suggestion, String[] output, boolean[] closeable) {
+    public boolean onSuggestionFill(String suggestion, CharSequence[] output, boolean[] closeable) {
+        if (suggestion == null && SMSJobController.getInstance(UserConfig.selectedAccount).hasError()) {
+            output[0] = new SpannableStringBuilder().append(SMSStatsActivity.error(17)).append("  ").append(LocaleController.getString(R.string.SmsJobsErrorHintTitle));
+            output[1] = LocaleController.getString(R.string.SmsJobsErrorHintMessage);
+            closeable[0] = false;
+            return true;
+        }
         if ("PREMIUM_SMSJOBS".equals(suggestion) && SMSJobController.getInstance(UserConfig.selectedAccount).currentState != SMSJobController.STATE_JOINED) {
             output[0] = LocaleController.getString(R.string.SmsJobsPremiumHintTitle);
             output[1] = LocaleController.getString(R.string.SmsJobsPremiumHintMessage);
@@ -211,8 +223,30 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public boolean onSuggestionClick(String suggestion) {
-        if ("PREMIUM_SMSJOBS".equals(suggestion)) {
-            SMSSubscribeSheet.show(LaunchActivity.instance, SMSJobController.getInstance(UserConfig.selectedAccount).isEligible, null, null);
+        if (suggestion == null) {
+            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+            if (lastFragment != null) {
+                SMSJobController.getInstance(UserConfig.selectedAccount).seenError();
+                SMSStatsActivity fragment = new SMSStatsActivity();
+                lastFragment.presentFragment(fragment);
+                AndroidUtilities.runOnUIThread(() -> {
+                    fragment.showDialog(new SMSStatsActivity.SMSHistorySheet(fragment));
+                }, 800);
+            }
+            return true;
+        } else if ("PREMIUM_SMSJOBS".equals(suggestion)) {
+            SMSJobController controller = SMSJobController.getInstance(UserConfig.selectedAccount);
+            if (controller.isEligible != null) {
+                SMSSubscribeSheet.show(LaunchActivity.instance, controller.isEligible, null, null);
+            } else {
+                controller.checkIsEligible(true, isEligible -> {
+                    if (isEligible == null) {
+                        MessagesController.getInstance(UserConfig.selectedAccount).removeSuggestion(0, "PREMIUM_SMSJOBS");
+                        return;
+                    }
+                    SMSSubscribeSheet.show(LaunchActivity.instance, isEligible, null, null);
+                });
+            }
             return true;
         }
         return false;
@@ -231,5 +265,27 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
             FileLog.e(e);
         }
         return false;
+    }
+
+    @Override
+    public boolean onPause() {
+        super.onPause();
+        return SMSJobsNotification.check();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        SMSJobsNotification.check();
+    }
+
+    @Override
+    public BaseFragment openSettings(int n) {
+        if (n == 13) {
+            if (SMSJobController.getInstance(UserConfig.selectedAccount).getState() == SMSJobController.STATE_JOINED) {
+                return new SMSStatsActivity();
+            }
+        }
+        return null;
     }
 }

@@ -33,8 +33,6 @@ import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.Base64;
-import android.util.Log;
-import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
@@ -49,7 +47,9 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -59,7 +59,6 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.QuoteSpan;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.Reactions.ReactionsUtils;
-import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.TranscribeButton;
@@ -244,6 +243,15 @@ public class MessageObject {
     public boolean preview;
     public boolean previewForward;
 
+    public int getChatMode() {
+        if (scheduled) {
+            return ChatActivity.MODE_SCHEDULED;
+        } else if (isQuickReply()) {
+            return ChatActivity.MODE_QUICK_REPLIES;
+        }
+        return 0;
+    }
+
     public ArrayList<TLRPC.TL_pollAnswer> checkedVotes;
 
     public CharSequence editingMessage;
@@ -314,10 +322,12 @@ public class MessageObject {
     };
     public boolean isRepostPreview;
     public boolean isRepostVideoPreview;
+    public boolean business;
     public boolean forceAvatar;
     public Drawable customAvatarDrawable;
     public boolean isSaved;
     public boolean isSavedFiltered;
+    public String quick_reply_shortcut;
 
     private byte[] randomWaveform;
     public boolean drawServiceWithDefaultTypeface;
@@ -366,6 +376,9 @@ public class MessageObject {
 
     public static long getTopicId(int currentAccount, TLRPC.Message message, boolean sureIsForum) {
         final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+        if ((message.flags & 1073741824) != 0 && DialogObject.getPeerDialogId(message.peer_id) == selfId) {
+            return message.quick_reply_shortcut_id;
+        }
         if (!sureIsForum && message != null && currentAccount >= 0 && DialogObject.getPeerDialogId(message.peer_id) == selfId) {
             return getSavedDialogId(selfId, message);
         }
@@ -1619,7 +1632,7 @@ public class MessageObject {
         }
     }
 
-    private void checkBigAnimatedEmoji() {
+    protected void checkBigAnimatedEmoji() {
         emojiAnimatedSticker = null;
         emojiAnimatedStickerId = null;
         if (emojiOnlyCount == 1 && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage) && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaInvoice) && (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaEmpty || getMedia(messageOwner) == null) && this.messageOwner.grouped_id == 0) {
@@ -6300,7 +6313,16 @@ public class MessageObject {
         if (isSaved) {
             long selfId = UserConfig.getInstance(currentAccount).clientUserId;
             long dialogId = MessageObject.getSavedDialogId(selfId, messageOwner);
-            return dialogId != selfId && dialogId != UserObject.ANONYMOUS;
+            if (dialogId == selfId || dialogId == UserObject.ANONYMOUS) {
+                return false;
+            }
+            if (messageOwner == null || messageOwner.fwd_from == null) {
+                return false;
+            }
+            if (messageOwner.fwd_from.from_id == null && messageOwner.fwd_from.saved_from_id == null) {
+                return false;
+            }
+            return true;
         }
         if (type == TYPE_JOINED_CHANNEL) {
             return false;
@@ -8745,6 +8767,9 @@ public class MessageObject {
                     return title;
                 } else if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
                     if (attribute.round_message) {
+                        if (isQuickReply()) {
+                            return LocaleController.formatString(R.string.BusinessInReplies, "/" + getQuickReplyDisplayName());
+                        }
                         return LocaleController.formatDateAudio(messageOwner.date, true);
                     }
                 }
@@ -8971,6 +8996,7 @@ public class MessageObject {
     }
 
     public boolean canForwardMessage() {
+        if (isQuickReply()) return false;
         return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && !messageOwner.noforwards;
     }
 
@@ -10049,5 +10075,86 @@ public class MessageObject {
             return nextIndex;
         }
         return prevIndex;
+    }
+
+    public void applyQuickReply(String name, int id) {
+        if (messageOwner == null) return;
+        if (id != 0) {
+            messageOwner.flags |= 1073741824;
+            messageOwner.quick_reply_shortcut_id = id;
+//        }
+            TLRPC.TL_inputQuickReplyShortcutId shortcut = new TLRPC.TL_inputQuickReplyShortcutId();
+            shortcut.shortcut_id = id;
+            messageOwner.quick_reply_shortcut = shortcut;
+        } else if (name != null) {
+            TLRPC.TL_inputQuickReplyShortcut shortcut = new TLRPC.TL_inputQuickReplyShortcut();
+            shortcut.shortcut = name;
+            messageOwner.quick_reply_shortcut = shortcut;
+        } else {
+            messageOwner.flags &=~ 1073741824;
+            messageOwner.quick_reply_shortcut_id = 0;
+            messageOwner.quick_reply_shortcut = null;
+        }
+    }
+
+    public static int getQuickReplyId(TLRPC.Message message) {
+        if (message == null) return 0;
+        if ((message.flags & 1073741824) != 0) {
+            return message.quick_reply_shortcut_id;
+        }
+        if (message.quick_reply_shortcut instanceof TLRPC.TL_inputQuickReplyShortcutId) {
+            return ((TLRPC.TL_inputQuickReplyShortcutId) message.quick_reply_shortcut).shortcut_id;
+        }
+        return 0;
+    }
+
+    public static int getQuickReplyId(int currentAccount, TLRPC.Message message) {
+        if (message == null) return 0;
+        if ((message.flags & 1073741824) != 0) {
+            return message.quick_reply_shortcut_id;
+        }
+        if (message.quick_reply_shortcut instanceof TLRPC.TL_inputQuickReplyShortcutId) {
+            return ((TLRPC.TL_inputQuickReplyShortcutId) message.quick_reply_shortcut).shortcut_id;
+        }
+        String replyName = getQuickReplyName(message);
+        if (replyName != null) {
+            QuickRepliesController.QuickReply reply = QuickRepliesController.getInstance(currentAccount).findReply(replyName);
+            if (reply != null) {
+                return reply.id;
+            }
+        }
+        return 0;
+    }
+
+    public int getQuickReplyId() {
+        return getQuickReplyId(messageOwner);
+    }
+
+    public static String getQuickReplyName(TLRPC.Message message) {
+        if (message == null) return null;
+        if (message.quick_reply_shortcut instanceof TLRPC.TL_inputQuickReplyShortcut) {
+            return ((TLRPC.TL_inputQuickReplyShortcut) message.quick_reply_shortcut).shortcut;
+        }
+        return null;
+    }
+
+    public String getQuickReplyName() {
+        return getQuickReplyName(messageOwner);
+    }
+
+    public String getQuickReplyDisplayName() {
+        String name = getQuickReplyName();
+        if (name != null) return name;
+        QuickRepliesController.QuickReply quickReply = QuickRepliesController.getInstance(currentAccount).findReply(getQuickReplyId());
+        if (quickReply != null) return quickReply.name;
+        return "";
+    }
+
+    public static boolean isQuickReply(TLRPC.Message message) {
+        return message != null && ((message.flags & 1073741824) != 0 || message.quick_reply_shortcut != null);
+    }
+
+    public boolean isQuickReply() {
+        return isQuickReply(messageOwner);
     }
 }

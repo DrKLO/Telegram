@@ -1727,12 +1727,12 @@ public class ChatObject {
         return chatFull != null && chatFull.boosts_applied > 0;
     }
 
-    public static boolean isGroupAndSupportBoost(TLRPC.Chat chat) {
-        return isMegagroup(chat);
-    }
-
     public static boolean isForum(TLRPC.Chat chat) {
         return chat != null && chat.forum;
+    }
+
+    public static boolean hasStories(TLRPC.Chat chat) {
+        return chat != null && MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(-chat.id);
     }
 
     public static boolean isMegagroup(int currentAccount, long chatId) {

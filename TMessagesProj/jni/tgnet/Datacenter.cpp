@@ -1450,12 +1450,12 @@ void Datacenter::exportAuthorization() {
                     if (LOGS_ENABLED) DEBUG_D("dc%u failed import authorization", datacenterId);
                 }
                 exportingAuthorization = false;
-            }, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
+            }, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
         } else {
             if (LOGS_ENABLED) DEBUG_D("dc%u failed export authorization", datacenterId);
             exportingAuthorization = false;
         }
-    }, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
+    }, nullptr, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
 }
 
 bool Datacenter::isExportingAuthorization() {

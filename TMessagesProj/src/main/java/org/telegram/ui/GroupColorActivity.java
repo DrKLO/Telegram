@@ -158,7 +158,7 @@ public class GroupColorActivity extends ChannelColorActivity {
             public void onGlobalLayout() {
                 view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 initProfilePreview();
-                profilePreview.infoLayout.setOnClickListener(v -> openBoostDialog());
+                profilePreview.infoLayout.setOnClickListener(v -> openBoostDialog(LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS));
             }
         });
         return view;
@@ -238,7 +238,7 @@ public class GroupColorActivity extends ChannelColorActivity {
         });
     }
 
-    private void openBoostDialog() {
+    protected void openBoostDialog(int type) {
         if (boostsStatus == null || isLoading) {
             return;
         }
@@ -249,7 +249,7 @@ public class GroupColorActivity extends ChannelColorActivity {
                 isLoading = false;
                 return;
             }
-            LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS, currentAccount, resourceProvider) {
+            LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, getContext(), type, currentAccount, resourceProvider) {
                 @Override
                 public void onOpenAnimationEnd() {
                     isLoading = false;

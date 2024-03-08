@@ -93,7 +93,7 @@ public class CameraSessionWrapper {
             // TODO
             return Camera.Parameters.FLASH_MODE_OFF;
         } else if (camera1Session != null) {
-            return camera1Session.getNextFlashMode();
+            return camera1Session.getCurrentFlashMode();
         }
         return null;
     }

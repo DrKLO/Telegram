@@ -309,7 +309,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             loadInactiveChannels();
         }
         updatePremiumButtonText();
-        if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || type == TYPE_BOOSTS_FOR_POSTING) {
+        if (type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isBoostingForAdminPossible()) {
             fireworksOverlay = new FireworksOverlay(getContext());
             container.addView(fireworksOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
@@ -742,7 +742,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
         headerView.recreateTitleAndDescription();
         headerView.title.setText(getBoostsTitleString());
-        headerView.description.setText(AndroidUtilities.replaceTags(getBoostsDescriptionString(false)));
+        headerView.description.setText(AndroidUtilities.replaceTags(getBoostDescriptionStringAfterBoost()));
         updateButton();
         fireworksOverlay.start();
         fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
@@ -1384,7 +1384,20 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
     }
 
     private boolean isMiniBoostBtnForAdminAvailable() {
-        return (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_POSTING) && ChatObject.hasAdminRights(getChat());
+        return isBoostingForAdminPossible() && ChatObject.hasAdminRights(getChat());
+    }
+
+    private boolean isBoostingForAdminPossible() {
+        return type == TYPE_BOOSTS_FOR_USERS
+                || type == TYPE_BOOSTS_FOR_POSTING
+                || type == TYPE_BOOSTS_FOR_COLOR
+                || type == TYPE_BOOSTS_FOR_PROFILE_COLOR
+                || type == TYPE_BOOSTS_FOR_EMOJI_STATUS
+                || type == TYPE_BOOSTS_FOR_CUSTOM_EMOJI_PACK
+                || type == TYPE_BOOSTS_FOR_WALLPAPER
+                || type == TYPE_BOOSTS_FOR_REPLY_ICON
+                || type == TYPE_BOOSTS_FOR_PROFILE_ICON
+                || type == TYPE_BOOSTS_FOR_CUSTOM_WALLPAPER;
     }
 
     private String getBoostLink() {
@@ -1909,6 +1922,57 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         return Math.max(chatFull.boosts_unrestrict - chatFull.boosts_applied, 0);
     }
 
+    private String getBoostDescriptionStringAfterBoost() {
+        String descriptionStr = null;
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        boolean isGroup = isGroup();
+        if (type == TYPE_BOOSTS_FOR_COLOR) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForColorDescription : R.string.ChannelNeedBoostsForColorDescription,
+                    channelColorLevelMin()
+            );
+        } else if (type == TYPE_BOOSTS_FOR_PROFILE_COLOR) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForProfileColorDescription : R.string.ChannelNeedBoostsForProfileColorDescription,
+                    channelColorLevelMin()
+            );
+        } else if (type == TYPE_BOOSTS_FOR_CUSTOM_EMOJI_PACK) {
+            descriptionStr = LocaleController.formatString(
+                    R.string.GroupNeedBoostsForCustomEmojiPackDescription,
+                    messagesController.groupEmojiStickersLevelMin
+            );
+        } else if (type == TYPE_BOOSTS_FOR_EMOJI_STATUS) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForEmojiStatusDescription : R.string.ChannelNeedBoostsForEmojiStatusDescription,
+                    isGroup ? messagesController.groupEmojiStatusLevelMin : messagesController.channelEmojiStatusLevelMin
+            );
+        } else if (type == TYPE_BOOSTS_FOR_REPLY_ICON) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForReplyIconDescription : R.string.ChannelNeedBoostsForReplyIconDescription,
+                    messagesController.channelBgIconLevelMin
+            );
+        } else if (type == TYPE_BOOSTS_FOR_PROFILE_ICON) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForProfileIconDescription : R.string.ChannelNeedBoostsForProfileIconDescription,
+                    isGroup ? messagesController.groupProfileBgIconLevelMin : messagesController.channelProfileIconLevelMin
+            );
+        } else if (type == TYPE_BOOSTS_FOR_WALLPAPER) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForWallpaperDescription : R.string.ChannelNeedBoostsForWallpaperDescription,
+                    isGroup ? messagesController.groupWallpaperLevelMin : messagesController.channelWallpaperLevelMin
+            );
+        } else if (type == TYPE_BOOSTS_FOR_CUSTOM_WALLPAPER) {
+            descriptionStr = LocaleController.formatString(
+                    isGroup ? R.string.GroupNeedBoostsForCustomWallpaperDescription : R.string.ChannelNeedBoostsForCustomWallpaperDescription,
+                    isGroup ? messagesController.groupCustomWallpaperLevelMin : messagesController.channelCustomWallpaperLevelMin
+            );
+        }
+        if (descriptionStr != null) {
+            return descriptionStr;
+        }
+        return getBoostsDescriptionString(false);
+    }
+
     private String getBoostsDescriptionString(boolean init) {
         if (type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS) {
             return getDescriptionForRemoveRestrictions();
@@ -2320,6 +2384,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         if (boostsStatus != null) {
             startLevel = boostsStatus.level + 1;
         }
+        if (type == TYPE_FEATURES) {
+            startLevel = 1;
+        }
         int maxlvl = 10;
         final MessagesController m = MessagesController.getInstance(currentAccount);
         if (m != null) {
@@ -2347,11 +2414,6 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 boostFeatures.addAll(featureList);
                 lastFeatureList = featureList;
             }
-        }
-
-        if (type == TYPE_FEATURES && boostFeatures.isEmpty()) {
-            boostFeatures.add(new BoostFeature.BoostFeatureLevel(10, true));
-            boostFeatures.addAll(boostFeaturesForLevel(10));
         }
     }
 

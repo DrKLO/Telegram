@@ -50,6 +50,8 @@ class ConnectionSocket;
 typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
 typedef std::function<void()> onWriteToSocketFunc;
+typedef std::function<void()> onRequestClearFunc;
+typedef std::function<void()> onRequestCancelDoneFunc;
 typedef std::function<void(int64_t messageId)> fillParamsFunc;
 typedef std::function<void(int64_t requestTime)> onRequestTimeFunc;
 typedef std::list<std::unique_ptr<Request>> requestsList;
@@ -171,6 +173,7 @@ enum RequestFlag {
     RequestFlagUseUnboundKey = 256,
     RequestFlagResendAfter = 512,
     RequestFlagIgnoreFloodWait = 1024,
+    RequestFlagListenAfterCancel = 2048,
     RequestFlagIsCancel = 32768
 };
 

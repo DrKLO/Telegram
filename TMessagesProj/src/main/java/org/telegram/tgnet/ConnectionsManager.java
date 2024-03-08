@@ -9,6 +9,8 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.LongSparseArray;
+import android.util.SparseIntArray;
 
 import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
@@ -52,6 +54,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -83,6 +86,7 @@ public class ConnectionsManager extends BaseController {
     public final static int RequestFlagInvokeAfter = 64;
     public final static int RequestFlagNeedQuickAck = 128;
     public final static int RequestFlagDoNotWaitFloodWait = 1024;
+    public final static int RequestFlagListenAfterCancel = 2048;
 
     public final static int ConnectionStateConnecting = 1;
     public final static int ConnectionStateWaitingForNetwork = 2;
@@ -296,37 +300,37 @@ public class ConnectionsManager extends BaseController {
         return sendRequest(object, completionBlock, null, null, null, flags, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
     }
 
-    public int sendRequest(TLObject object, RequestDelegate completionBlock, int flags, int connetionType) {
-        return sendRequest(object, completionBlock, null, null, null, flags, DEFAULT_DATACENTER_ID, connetionType, true);
+    public int sendRequest(TLObject object, RequestDelegate completionBlock, int flags, int connectionType) {
+        return sendRequest(object, completionBlock, null, null, null, flags, DEFAULT_DATACENTER_ID, connectionType, true);
     }
 
-    public int sendRequest(TLObject object, RequestDelegateTimestamp completionBlock, int flags, int connetionType, int datacenterId) {
-        return sendRequest(object, null, completionBlock, null, null, flags, datacenterId, connetionType, true);
+    public int sendRequest(TLObject object, RequestDelegateTimestamp completionBlock, int flags, int connectionType, int datacenterId) {
+        return sendRequest(object, null, completionBlock, null, null, flags, datacenterId, connectionType, true);
     }
 
     public int sendRequest(TLObject object, RequestDelegate completionBlock, QuickAckDelegate quickAckBlock, int flags) {
         return sendRequest(object, completionBlock, null, quickAckBlock, null, flags, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
     }
 
-    public int sendRequest(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
-        return sendRequest(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
+    public int sendRequest(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
+        return sendRequest(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
     }
 
-    public int sendRequestSync(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
+    public int sendRequestSync(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
-        sendRequestInternal(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
+        sendRequestInternal(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         return requestToken;
     }
 
-    public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
+    public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
         Utilities.stageQueue.postRunnable(() -> {
-            sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
+            sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         });
         return requestToken;
     }
 
-    private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connetionType, boolean immediate, int requestToken) {
+    private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }
@@ -340,7 +344,7 @@ public class ConnectionsManager extends BaseController {
                 startRequestTime = System.currentTimeMillis();
             }
             long finalStartRequestTime = startRequestTime;
-            native_sendRequest(currentAccount, buffer.address, (response, errorCode, errorText, networkType, timestamp, requestMsgId) -> {
+            listen(requestToken, (response, errorCode, errorText, networkType, timestamp, requestMsgId) -> {
                 try {
                     TLObject resp = null;
                     TLRPC.TL_error error = null;
@@ -370,7 +374,7 @@ public class ConnectionsManager extends BaseController {
                             FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
                         }
                         cleanup(true);
-                        sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
+                        sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
                         return;
                     }
                     if (resp != null) {
@@ -395,14 +399,115 @@ public class ConnectionsManager extends BaseController {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-            }, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate, requestToken);
+            }, onQuickAck, onWriteToSocket);
+            native_sendRequest(currentAccount, buffer.address, flags, datacenterId, connectionType, immediate, requestToken);
         } catch (Exception e) {
             FileLog.e(e);
         }
     }
 
+    private final ConcurrentHashMap<Integer, RequestCallbacks> requestCallbacks = new ConcurrentHashMap<>();
+    private static class RequestCallbacks {
+        public RequestDelegateInternal onComplete;
+        public QuickAckDelegate onQuickAck;
+        public WriteToSocketDelegate onWriteToSocket;
+        public Runnable onCancelled;
+        public RequestCallbacks(RequestDelegateInternal onComplete, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket) {
+            this.onComplete = onComplete;
+            this.onQuickAck = onQuickAck;
+            this.onWriteToSocket = onWriteToSocket;
+        }
+    }
+
+    private void listen(int requestToken, RequestDelegateInternal onComplete, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket) {
+        requestCallbacks.put(requestToken, new RequestCallbacks(onComplete, onQuickAck, onWriteToSocket));
+        FileLog.d("{rc} listen(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
+    }
+
+    private void listenCancel(int requestToken, Runnable onCancelled) {
+        RequestCallbacks callbacks = requestCallbacks.get(requestToken);
+        if (callbacks != null) {
+            callbacks.onCancelled = onCancelled;
+            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
+        } else {
+            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): callback not found, " + requestCallbacks.size() + " requests' callbacks");
+        }
+    }
+
+    public static void onRequestClear(int currentAccount, int requestToken, boolean cancelled) {
+        ConnectionsManager connectionsManager = getInstance(currentAccount);
+        if (connectionsManager == null) return;
+        RequestCallbacks callbacks = connectionsManager.requestCallbacks.get(requestToken);
+        if (cancelled) {
+            if (callbacks != null) {
+                if (callbacks.onCancelled != null) {
+                    callbacks.onCancelled.run();
+                }
+                connectionsManager.requestCallbacks.remove(requestToken);
+                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+            } else {
+                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is not found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+            }
+        } else if (callbacks != null) {
+            connectionsManager.requestCallbacks.remove(requestToken);
+            FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        }
+    }
+
+    public static void onRequestComplete(int currentAccount, int requestToken, long response, int errorCode, String errorText, int networkType, long timestamp, long requestMsgId) {
+        ConnectionsManager connectionsManager = getInstance(currentAccount);
+        if (connectionsManager == null) return;
+        RequestCallbacks callbacks = connectionsManager.requestCallbacks.get(requestToken);
+        connectionsManager.requestCallbacks.remove(requestToken);
+        if (callbacks != null) {
+            if (callbacks.onComplete != null) {
+                callbacks.onComplete.run(response, errorCode, errorText, networkType, timestamp, requestMsgId);
+            }
+            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        } else {
+            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        }
+    }
+
+    public static void onRequestQuickAck(int currentAccount, int requestToken) {
+        ConnectionsManager connectionsManager = getInstance(currentAccount);
+        if (connectionsManager == null) return;
+        RequestCallbacks callbacks = connectionsManager.requestCallbacks.get(requestToken);
+        if (callbacks != null) {
+            if (callbacks.onQuickAck != null) {
+                callbacks.onQuickAck.run();
+            }
+            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        } else {
+            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        }
+    }
+
+    public static void onRequestWriteToSocket(int currentAccount, int requestToken) {
+        ConnectionsManager connectionsManager = getInstance(currentAccount);
+        if (connectionsManager == null) return;
+        RequestCallbacks callbacks = connectionsManager.requestCallbacks.get(requestToken);
+        if (callbacks != null) {
+            if (callbacks.onWriteToSocket != null) {
+                callbacks.onWriteToSocket.run();
+            }
+            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        } else {
+            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+        }
+    }
+
     public void cancelRequest(int token, boolean notifyServer) {
+        cancelRequest(token, notifyServer, null);
+    }
+
+    public void cancelRequest(int token, boolean notifyServer, Runnable onCancelled) {
         Utilities.stageQueue.postRunnable(() -> {
+            if (onCancelled != null) {
+                listenCancel(token, () -> {
+                    Utilities.stageQueue.postRunnable(onCancelled);
+                });
+            }
             native_cancelRequest(currentAccount, token, notifyServer);
         });
     }
@@ -798,7 +903,7 @@ public class ConnectionsManager extends BaseController {
     public static native int native_getCurrentTime(int currentAccount);
     public static native int native_getCurrentDatacenterId(int currentAccount);
     public static native int native_getTimeDifference(int currentAccount);
-    public static native void native_sendRequest(int currentAccount, long object, RequestDelegateInternal onComplete, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connetionType, boolean immediate, int requestToken);
+    public static native void native_sendRequest(int currentAccount, long object, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken);
     public static native void native_cancelRequest(int currentAccount, int token, boolean notifyServer);
     public static native void native_cleanUp(int currentAccount, boolean resetKeys);
     public static native void native_cancelRequestsForGuid(int currentAccount, int guid);

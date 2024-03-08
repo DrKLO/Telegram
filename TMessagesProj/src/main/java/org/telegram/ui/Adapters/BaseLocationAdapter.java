@@ -37,9 +37,11 @@ import java.util.Locale;
 public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdapter {
 
     public final boolean stories;
+    public final boolean biz;
 
-    public BaseLocationAdapter(boolean stories) {
+    public BaseLocationAdapter(boolean stories, boolean biz) {
         this.stories = stories;
+        this.biz = biz;
     }
 
     public interface BaseLocationAdapterDelegate {
@@ -101,7 +103,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         searchingUser = true;
         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
         req.username = stories ?
-            MessagesController.getInstance(currentAccount).venueSearchBot : // MessagesController.getInstance(currentAccount).storyVenueSearchBot :
+            MessagesController.getInstance(currentAccount).storyVenueSearchBot :
             MessagesController.getInstance(currentAccount).venueSearchBot;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (response != null) {
@@ -169,7 +171,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
 
         TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(
             stories ?
-                MessagesController.getInstance(currentAccount).venueSearchBot : // MessagesController.getInstance(currentAccount).storyVenueSearchBot :
+                MessagesController.getInstance(currentAccount).storyVenueSearchBot :
                 MessagesController.getInstance(currentAccount).venueSearchBot
         );
         if (!(object instanceof TLRPC.User)) {
@@ -198,13 +200,14 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         }
 
-        if (!TextUtils.isEmpty(query) && stories) {
+        if (!TextUtils.isEmpty(query) && (stories || biz)) {
             searchingLocations = true;
             final Locale locale = LocaleController.getInstance().getCurrentLocale();
             final String finalQuery = query;
             Utilities.globalQueue.postRunnable(() -> {
                 final ArrayList<TLRPC.TL_messageMediaVenue> locations = new ArrayList<>();
                 try {
+                    final int maxCount = biz ? 10 : 5;
                     Geocoder geocoder = new Geocoder(ApplicationLoader.applicationContext, locale);
                     List<Address> addresses = geocoder.getFromLocationName(finalQuery, 5);
                     HashSet<String> countries = new HashSet<>();
@@ -289,52 +292,74 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                             countryBuilder.append(arg);
                         }
 
-                        if (countryBuilder.length() > 0 && !countries.contains(countryBuilder.toString())) {
-                            TLRPC.TL_messageMediaVenue countryLocation = new TLRPC.TL_messageMediaVenue();
-                            countryLocation.geo = new TLRPC.TL_geoPoint();
-                            countryLocation.geo.lat = lat;
-                            countryLocation.geo._long = _long;
-                            countryLocation.query_id = -1;
-                            countryLocation.title = countryBuilder.toString();
-                            countryLocation.icon = "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png";
-                            countryLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
-                            countries.add(countryLocation.title);
-                            countryLocation.address = LocaleController.getString("Country", R.string.Country);
-                            locations.add(countryLocation);
-                            if (locations.size() >= 5) {
-                                break;
+                        if (biz) {
+                            StringBuilder addressBuilder = new StringBuilder();
+                            try {
+                                arg = address.getAddressLine(0);
+                                if (!TextUtils.isEmpty(arg)) {
+                                    addressBuilder.append(arg);
+                                }
+                            } catch (Exception ignore) {
                             }
-                        }
-
-                        if (!onlyCountry && !cities.contains(cityBuilder.toString())) {
-                            TLRPC.TL_messageMediaVenue cityLocation = new TLRPC.TL_messageMediaVenue();
-                            cityLocation.geo = new TLRPC.TL_geoPoint();
-                            cityLocation.geo.lat = lat;
-                            cityLocation.geo._long = _long;
-                            cityLocation.query_id = -1;
-                            cityLocation.title = cityBuilder.toString();
-                            cityLocation.icon = "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
-                            cityLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
-                            cities.add(cityLocation.title);
-                            cityLocation.address = LocaleController.getString("PassportCity", R.string.PassportCity);
-                            locations.add(cityLocation);
-                            if (locations.size() >= 5) {
-                                break;
+                            if (addressBuilder.length() > 0) {
+                                TLRPC.TL_messageMediaVenue streetLocation = new TLRPC.TL_messageMediaVenue();
+                                streetLocation.geo = new TLRPC.TL_geoPoint();
+                                streetLocation.geo.lat = lat;
+                                streetLocation.geo._long = _long;
+                                streetLocation.query_id = -1;
+                                streetLocation.title = addressBuilder.toString();
+                                streetLocation.icon = "pin";
+                                streetLocation.address = LocaleController.getString(R.string.PassportAddress);
+                                locations.add(streetLocation);
                             }
-                        }
+                        } else {
+                            if (streetBuilder != null && streetBuilder.length() > 0) {
+                                TLRPC.TL_messageMediaVenue streetLocation = new TLRPC.TL_messageMediaVenue();
+                                streetLocation.geo = new TLRPC.TL_geoPoint();
+                                streetLocation.geo.lat = lat;
+                                streetLocation.geo._long = _long;
+                                streetLocation.query_id = -1;
+                                streetLocation.title = streetBuilder.toString();
+                                streetLocation.icon = "pin";
+                                streetLocation.address = onlyCity ? LocaleController.getString("PassportCity", R.string.PassportCity) : LocaleController.getString("PassportStreet1", R.string.PassportStreet1);
+                                locations.add(streetLocation);
+                                if (locations.size() >= maxCount) {
+                                    break;
+                                }
+                            }
 
-                        if (streetBuilder != null && streetBuilder.length() > 0) {
-                            TLRPC.TL_messageMediaVenue streetLocation = new TLRPC.TL_messageMediaVenue();
-                            streetLocation.geo = new TLRPC.TL_geoPoint();
-                            streetLocation.geo.lat = lat;
-                            streetLocation.geo._long = _long;
-                            streetLocation.query_id = -1;
-                            streetLocation.title = streetBuilder.toString();
-                            streetLocation.icon = "pin";
-                            streetLocation.address = onlyCity ? LocaleController.getString("PassportCity", R.string.PassportCity) : LocaleController.getString("PassportStreet1", R.string.PassportStreet1);
-                            locations.add(streetLocation);
-                            if (locations.size() >= 5) {
-                                break;
+                            if (!onlyCountry && !cities.contains(cityBuilder.toString())) {
+                                TLRPC.TL_messageMediaVenue cityLocation = new TLRPC.TL_messageMediaVenue();
+                                cityLocation.geo = new TLRPC.TL_geoPoint();
+                                cityLocation.geo.lat = lat;
+                                cityLocation.geo._long = _long;
+                                cityLocation.query_id = -1;
+                                cityLocation.title = cityBuilder.toString();
+                                cityLocation.icon = "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
+                                cityLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
+                                cities.add(cityLocation.title);
+                                cityLocation.address = LocaleController.getString("PassportCity", R.string.PassportCity);
+                                locations.add(cityLocation);
+                                if (locations.size() >= maxCount) {
+                                    break;
+                                }
+                            }
+
+                            if (countryBuilder.length() > 0 && !countries.contains(countryBuilder.toString())) {
+                                TLRPC.TL_messageMediaVenue countryLocation = new TLRPC.TL_messageMediaVenue();
+                                countryLocation.geo = new TLRPC.TL_geoPoint();
+                                countryLocation.geo.lat = lat;
+                                countryLocation.geo._long = _long;
+                                countryLocation.query_id = -1;
+                                countryLocation.title = countryBuilder.toString();
+                                countryLocation.icon = "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png";
+                                countryLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
+                                countries.add(countryLocation.title);
+                                countryLocation.address = LocaleController.getString("Country", R.string.Country);
+                                locations.add(countryLocation);
+                                if (locations.size() >= maxCount) {
+                                    break;
+                                }
                             }
                         }
                     }

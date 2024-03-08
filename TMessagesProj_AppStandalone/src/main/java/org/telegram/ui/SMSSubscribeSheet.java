@@ -30,6 +30,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SMSJobController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -140,6 +141,8 @@ public class SMSSubscribeSheet {
                 return;
             }
             SMSJobController.getInstance(currentAccount).setState(SMSJobController.STATE_ASKING_PERMISSION);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.smsJobStatusUpdate);
             requestSMSPermissions(context, () -> {
                 SMSJobController.getInstance(currentAccount).checkSelectedSIMCard();
                 if (SMSJobController.getInstance(currentAccount).getSelectedSIM() == null) {

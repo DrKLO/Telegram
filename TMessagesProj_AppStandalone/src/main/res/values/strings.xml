@@ -4,6 +4,8 @@
 
     <string name="SmsJobsPremiumHintTitle">Premium Subscription **for free**</string>
     <string name="SmsJobsPremiumHintMessage">Help Telegram send SMS codes and get a free premium subscription.</string>
+    <string name="SmsJobsErrorHintTitle">Some SMS were not sent successfully</string>
+    <string name="SmsJobsErrorHintMessage">Review SMS history to troubleshoot</string>
 
     <string name="SmsSubscribeTitle">Premium for Free</string>
     <string name="SmsSubscribeMessage">You are one of **0.01%** users eligible to take part in Telegram\'s **Premium for SMS** initiative!</string>
@@ -65,5 +67,14 @@
     <string name="SmsHistoryDateCountry">Date and Country</string>
     <string name="SmsHistoryStatus">Status</string>
     <string name="SmsHistoryStatusSuccess">Sent</string>
+    <string name="SmsHistoryStatusPending">Pending</string>
     <string name="SmsHistoryStatusFailure">Failed</string>
+
+    <string name="SmsAirplaneMode">Airplane mode</string>
+    <string name="SmsDescrRESULT_ERROR_RADIO_OFF">Your device has been in airplane mode.</string>
+    <string name="SmsDescrRESULT_ERROR_NO_SERVICE">Your device hasn\'t had contact with cell phone network.</string>
+    <string name="SmsDescrRESULT_RIL_NETWORK_ERR">Network error. Make sure your SIM card is active.</string>
+
+    <string name="SmsNotificationTitle">Telegram Premium for SMS</string>
+    <string name="SmsNotificationSubtitle">%1$d of %2$d SMS Sent</string>
 </resources>

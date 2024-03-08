@@ -65,16 +65,24 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
     private long idleDelay = 2000;
 
-    private final int animationsCount = 5;
+    private final int animationsCount;
     int animationPointer;
     ArrayList<Integer> animationIndexes = new ArrayList<>();
     boolean attached;
     StarParticlesView starParticlesView;
+    int type;
 
     public GLIconTextureView(Context context, int style) {
+        this(context, style, Icon3D.TYPE_STAR);
+    }
+
+    public GLIconTextureView(Context context, int style, int type) {
         super(context);
+
+        this.type = type;
+        animationsCount = type == Icon3D.TYPE_COIN ? 1 : 5;
         setOpaque(false);
-        setRenderer(new GLIconRenderer(context, style));
+        setRenderer(new GLIconRenderer(context, style, type));
         initialize(context);
 
         gestureDetector = new GestureDetector(context, new GestureDetector.OnGestureListener() {
@@ -287,8 +295,10 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
                 }
 
                 if (!shouldSleep()) {
-                    lastFrameTime = System.currentTimeMillis();
-                    drawSingleFrame();
+                    final long now = System.currentTimeMillis();
+                    float dt = (now - lastFrameTime) / 1000f;
+                    lastFrameTime = now;
+                    drawSingleFrame(dt);
                 }
 
                 try {
@@ -316,9 +326,10 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         }
     }
 
-    private synchronized void drawSingleFrame() {
+    private synchronized void drawSingleFrame(float dt) {
         checkCurrent();
         if (mRenderer != null) {
+            mRenderer.setDeltaTime(dt);
             mRenderer.onDrawFrame(mGl);
         }
         checkGlError();
@@ -511,6 +522,11 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         cancelAnimatons();
+        if (mRenderer != null) {
+            mRenderer.angleX = 0;
+            mRenderer.angleY = 0;
+            mRenderer.angleX2 = 0;
+        }
         attached = false;
     }
 
@@ -563,7 +579,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         if (i == 0) {
             pullAnimation();
         } else if (i == 1) {
-            slowFlipAination();
+            slowFlipAnimation();
         } else if (i == 2) {
             sleepAnimation();
         } else {
@@ -571,7 +587,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         }
     }
 
-    private void slowFlipAination() {
+    private void slowFlipAnimation() {
         animatorSet = new AnimatorSet();
         ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleX, 360);
         v1.addUpdateListener(xUpdater);
@@ -594,7 +610,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private void pullAnimation() {
         int i = Math.abs(Utilities.random.nextInt() % 4);
         animatorSet = new AnimatorSet();
-        if (i == 0) {
+        if (i == 0 && type != Icon3D.TYPE_COIN) {
             int a = 48;
 
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);
@@ -610,9 +626,13 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
             v2.setInterpolator(AndroidUtilities.overshootInterpolator);
             animatorSet.playTogether(v1, v2);
         } else {
-            int a = 485;
+            int dg = 485;
+            if (type == Icon3D.TYPE_COIN) {
+                dg = 360;
+            }
+            int a = dg;
             if (i == 2) {
-                a = -485;
+                a = -dg;
             }
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);
             v1.addUpdateListener(xUpdater);

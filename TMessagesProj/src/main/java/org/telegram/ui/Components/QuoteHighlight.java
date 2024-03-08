@@ -29,7 +29,7 @@ public class QuoteHighlight extends Path {
 
     public final int id, start, end;
     public final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path path = new Path();
+    private final CornerPath path = new CornerPath();
 
     private final AnimatedFloat t;
 
@@ -166,6 +166,7 @@ public class QuoteHighlight extends Path {
                 Path.Direction.CW
             );
         }
+        path.closeRects();
 
         int wasAlpha = paint.getAlpha();
         paint.setAlpha((int) (wasAlpha * alpha));

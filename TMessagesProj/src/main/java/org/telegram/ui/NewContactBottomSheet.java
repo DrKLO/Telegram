@@ -667,7 +667,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 if (res != null) {
                     if (!res.users.isEmpty()) {
                         MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                        MessagesController.openChatOrProfileWith(res.users.get(0), null, parentFragment, 1, true);
+                        MessagesController.openChatOrProfileWith(res.users.get(0), null, parentFragment, 1, false);
                         dismiss();
                     } else {
                         if (parentFragment.getParentActivity() == null) {

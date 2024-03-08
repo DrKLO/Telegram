@@ -149,6 +149,7 @@ public class ThemeColors {
         defaultColors[key_avatar_backgroundCyan] = 0xff5BCBE3;
         defaultColors[key_avatar_backgroundBlue] = 0xff5CAFFA;
         defaultColors[key_avatar_backgroundPink] = 0xffFF8AAC;
+        defaultColors[key_avatar_backgroundGray] = 0xffA1ABB5;
 
         defaultColors[key_avatar_background2Red] = 0xffD45246;
         defaultColors[key_avatar_background2Orange] = 0xffF68136;

@@ -53,8 +53,9 @@ public final class ObjLoader {
                 positions[positionIndex++] = vertices.get(index);
 
                 index = 2 * inputStream.readInt();
-                textureCoordinates[normalIndex++] = textures.get(index++);
-                textureCoordinates[normalIndex++] = 1 - textures.get(index);
+                textureCoordinates[normalIndex++] = index < 0 || index >= textures.size() ? 0 : textures.get(index);
+                index++;
+                textureCoordinates[normalIndex++] = index < 0 || index >= textures.size() ? 0 : 1 - textures.get(index);
 
                 index = 3 * inputStream.readInt();
                 this.normals[textureIndex++] = normals.get(index++);

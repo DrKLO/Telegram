@@ -117,6 +117,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         }
     }
 
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (isRunning()) {
             return Service.START_NOT_STICKY;

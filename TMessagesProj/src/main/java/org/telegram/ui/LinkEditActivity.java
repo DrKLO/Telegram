@@ -330,7 +330,7 @@ public class LinkEditActivity extends BaseFragment {
         timeEditText.setGravity(Gravity.CENTER_VERTICAL);
         timeEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         timeEditText.setHint(LocaleController.getString("TimeLimitHint", R.string.TimeLimitHint));
-        timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
+        timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, LocaleController.getString(R.string.ExpireAfter), LocaleController.getString(R.string.SetTimeLimit), -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
 
         timeChooseView.setCallback(index -> {
             if (index < dispalyedDates.size()) {

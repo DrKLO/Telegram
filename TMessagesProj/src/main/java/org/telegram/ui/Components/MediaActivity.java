@@ -97,9 +97,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     private int shiftDp = -12;
     private ActionBarMenuSubItem calendarItem, zoomInItem, zoomOutItem;
 
-    private ImageView floatingButton;
-    private FrameLayout floatingButtonContainer;
-
     private StoriesTabsView tabsView;
     private FrameLayout buttonContainer;
     private ButtonWithCounterView button;
@@ -162,9 +159,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 }
             }
         } else if (id == NotificationCenter.currentUserPremiumStatusChanged || id == NotificationCenter.storiesEnabledUpdate) {
-            if (!getMessagesController().storiesEnabled()) {
-                hideFloatingButton(true, true);
-            }
+
         }
     }
 
@@ -492,54 +487,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                     return AndroidUtilities.dp(64);
                 }
             });
-
-            floatingButtonContainer = new FrameLayout(context);
-            floatingButtonContainer.setVisibility(View.VISIBLE);
-            floatingButtonContainer.setOnClickListener(v -> {
-                StoryRecorder.getInstance(getParentActivity(), getCurrentAccount())
-                        .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer));
-            });
-
-            floatingButton = new RLottieImageView(context);
-            floatingButton.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
-            floatingButton.setImageResource(R.drawable.story_camera);
-            floatingButtonContainer.setContentDescription(LocaleController.getString("AccDescrCaptureStory", R.string.AccDescrCaptureStory));
-//            if (Build.VERSION.SDK_INT >= 21) {
-//                StateListAnimator animator = new StateListAnimator();
-//                animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Z, AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-//                animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Z, AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-//                floatingButtonContainer.setStateListAnimator(animator);
-//                floatingButtonContainer.setOutlineProvider(new ViewOutlineProvider() {
-//                    @SuppressLint("NewApi")
-//                    @Override
-//                    public void getOutline(View view, Outline outline) {
-//                        outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-//                    }
-//                });
-//            }
-            Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-            if (Build.VERSION.SDK_INT < 21) {
-                Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-                shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-                combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                drawable = combinedDrawable;
-            }
-            floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
-            if (floatingButtonContainer != null) {
-                drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-                if (Build.VERSION.SDK_INT < 21) {
-                    Drawable shadowDrawable = ContextCompat.getDrawable(getParentActivity(), R.drawable.floating_shadow).mutate();
-                    shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-                    combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                    drawable = combinedDrawable;
-                }
-                floatingButtonContainer.setBackground(drawable);
-            }
-
-            hideFloatingButton(true, false);
         }
 
         if (type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId() && topicId == 0 && !getMessagesController().getSavedMessagesController().unsupported && getMessagesController().getSavedMessagesController().hasDialogs()) {
@@ -780,9 +727,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             showSubtitle(1, false, false);
         }
 
-        if (floatingButtonContainer != null) {
-            fragmentView.addView(floatingButtonContainer, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14 + 64));
-        }
         if (tabsView != null) {
             fragmentView.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         }
@@ -942,7 +886,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 } else {
                     showSubtitle(1, false, true);
                 }
-                hideFloatingButton(id != SharedMediaLayout.TAB_ARCHIVED_STORIES || sharedMediaLayout.getStoriesCount(SharedMediaLayout.TAB_ARCHIVED_STORIES) > 0, true);
             }
 
             if (optionsItem != null) {
@@ -1021,62 +964,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
     public long getDialogId() {
         return dialogId;
-    }
-
-    private float floatingButtonTranslation1;
-    private float floatingButtonTranslation2;
-    private void updateFloatingButtonOffset() {
-        if (floatingButtonContainer == null) {
-            return;
-        }
-        floatingButtonContainer.setTranslationY(floatingButtonTranslation + floatingButtonTranslation1 + floatingButtonTranslation2);
-    }
-
-    private boolean floatingHidden;
-    private AnimatorSet floatingAnimator;
-    private float floatingButtonHideProgress, floatingButtonTranslation;
-    private void hideFloatingButton(boolean hide, boolean animated) {
-        if (floatingButtonContainer == null) {
-            return;
-        }
-        if (!getMessagesController().storiesEnabled()) {
-            hide = true;
-        }
-        if (floatingHidden == hide) {
-            return;
-        }
-        floatingHidden = hide;
-        if (floatingAnimator != null) {
-            floatingAnimator.cancel();
-        }
-        if (animated) {
-            floatingButtonContainer.setVisibility(View.VISIBLE);
-            floatingAnimator = new AnimatorSet();
-            ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress, floatingHidden ? 1f : 0f);
-            valueAnimator.addUpdateListener(animation -> {
-                floatingButtonHideProgress = (float) animation.getAnimatedValue();
-                floatingButtonTranslation = dp(100) * floatingButtonHideProgress;
-                updateFloatingButtonOffset();
-            });
-            valueAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (floatingHidden) {
-                        floatingButtonContainer.setVisibility(View.GONE);
-                    }
-                }
-            });
-            floatingAnimator.playTogether(valueAnimator);
-            floatingAnimator.setDuration(300);
-            floatingAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-            floatingButtonContainer.setClickable(!hide);
-            floatingAnimator.start();
-        } else {
-            floatingButtonHideProgress = hide ? 1f : 0f;
-            floatingButtonTranslation = dp(100) * floatingButtonHideProgress;
-            updateFloatingButtonOffset();
-            floatingButtonContainer.setVisibility(hide ? View.GONE : View.VISIBLE);
-        }
     }
 
     private final boolean[] subtitleShown = new boolean[2];

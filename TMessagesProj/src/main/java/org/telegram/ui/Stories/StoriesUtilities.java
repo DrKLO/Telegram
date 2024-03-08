@@ -6,7 +6,10 @@ import static org.telegram.ui.Stories.StoriesController.STATE_UNREAD_CLOSE_FRIEN
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -111,7 +114,7 @@ public class StoriesUtilities {
         int state;
         int unreadState = 0;
         boolean showProgress = storiesController.isLoading(dialogId);
-        boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId) && !params.isStoryCell;
+        boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId) && !params.isDialogStoriesCell;
         if (params.drawHiddenStoriesAsSegments) {
             hasStories = storiesController.hasHiddenStories();
         }
@@ -564,11 +567,32 @@ public class StoriesUtilities {
         }
     }
 
+    private static final Path forumRoundRectPath = new Path();
+    private static final Matrix forumRoundRectMatrix = new Matrix();
+    private static final PathMeasure forumRoundRectPathMeasure = new PathMeasure();
+    private static final Path forumSegmentPath = new Path();
+
     private static void drawSegment(Canvas canvas, RectF rectTmp, Paint paint, float startAngle, float endAngle, AvatarStoryParams params, boolean isForum) {
         if (isForum) {
-            forumRect.set(rectTmp);
-            forumRect.inset(AndroidUtilities.dp(0.5f), AndroidUtilities.dp(0.5f));
-            canvas.drawRoundRect(forumRect, AndroidUtilities.dp(18), AndroidUtilities.dp(18), paint);
+            float r = rectTmp.height() * 0.32f;
+            float rotateAngle = (((int)(startAngle)) / 90) * 90 + 90;
+            float pathAngleStart = -199 + rotateAngle;
+            float percentFrom = (startAngle - pathAngleStart) / 360;
+            float percentTo = (endAngle - pathAngleStart) / 360;
+            forumRoundRectPath.rewind();
+            forumRoundRectPath.addRoundRect(rectTmp, r, r, Path.Direction.CW);
+
+            forumRoundRectMatrix.reset();
+            forumRoundRectMatrix.postRotate(rotateAngle, rectTmp.centerX(), rectTmp.centerY());
+            forumRoundRectPath.transform(forumRoundRectMatrix);
+
+            forumRoundRectPathMeasure.setPath(forumRoundRectPath, false);
+            float length = forumRoundRectPathMeasure.getLength();
+
+            forumSegmentPath.reset();
+            forumRoundRectPathMeasure.getSegment(length * percentFrom, length * percentTo, forumSegmentPath, true);
+            forumSegmentPath.rLineTo(0, 0);
+            canvas.drawPath(forumSegmentPath, paint);
             return;
         }
         if (!params.isFirst && !params.isLast) {
@@ -1066,6 +1090,7 @@ public class StoriesUtilities {
         public int prevState;
         public float progressToSate = 1f;
         public boolean showProgress = false;
+        public boolean isDialogStoriesCell;
 
         private final boolean isStoryCell;
         public RectF originalAvatarRect = new RectF();

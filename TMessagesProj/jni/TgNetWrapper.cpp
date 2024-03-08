@@ -8,19 +8,15 @@
 #include "tgnet/FileLog.h"
 
 JavaVM *java;
-jclass jclass_RequestDelegateInternal;
-jmethodID jclass_RequestDelegateInternal_run;
 
 jclass jclass_RequestTimeDelegate;
 jmethodID jclass_RequestTimeDelegate_run;
 
-jclass jclass_QuickAckDelegate;
-jmethodID jclass_QuickAckDelegate_run;
-
-jclass jclass_WriteToSocketDelegate;
-jmethodID jclass_WriteToSocketDelegate_run;
-
 jclass jclass_ConnectionsManager;
+jmethodID jclass_ConnectionsManager_onRequestClear;
+jmethodID jclass_ConnectionsManager_onRequestComplete;
+jmethodID jclass_ConnectionsManager_onRequestQuickAck;
+jmethodID jclass_ConnectionsManager_onRequestWriteToSocket;
 jmethodID jclass_ConnectionsManager_onUnparsedMessageReceived;
 jmethodID jclass_ConnectionsManager_onUpdate;
 jmethodID jclass_ConnectionsManager_onSessionCreated;
@@ -93,22 +89,10 @@ jint getTimeDifference(JNIEnv *env, jclass c, jint instanceNum) {
     return ConnectionsManager::getInstance(instanceNum).getTimeDifference();
 }
 
-void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject onComplete, jobject onQuickAck, jobject onWriteToSocket, jint flags, jint datacenterId, jint connetionType, jboolean immediate, jint token) {
+void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jint flags, jint datacenterId, jint connectionType, jboolean immediate, jint token) {
     TL_api_request *request = new TL_api_request();
     request->request = (NativeByteBuffer *) (intptr_t) object;
-    if (onComplete != nullptr) {
-        DEBUG_REF("sendRequest onComplete");
-        onComplete = env->NewGlobalRef(onComplete);
-    }
-    if (onQuickAck != nullptr) {
-        DEBUG_REF("sendRequest onQuickAck");
-        onQuickAck = env->NewGlobalRef(onQuickAck);
-    }
-    if (onWriteToSocket != nullptr) {
-        DEBUG_REF("sendRequest onWriteToSocket");
-        onWriteToSocket = env->NewGlobalRef(onWriteToSocket);
-    }
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([instanceNum, token](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         TL_api_response *resp = (TL_api_response *) response;
         jlong ptr = 0;
         jint errorCode = 0;
@@ -125,25 +109,23 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
                 errorText = jniEnv[instanceNum]->NewStringUTF("UTF-8 ERROR");
             }
         }
-        if (onComplete != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime, msgId);
-        }
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestComplete, instanceNum, token, ptr, errorCode, errorText, networkType, responseTime, msgId);
         if (errorText != nullptr) {
             jniEnv[instanceNum]->DeleteLocalRef(errorText);
         }
-    }), ([onQuickAck, instanceNum] {
-        if (onQuickAck != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onQuickAck, jclass_QuickAckDelegate_run);
-        }
-    }), ([onWriteToSocket, instanceNum] {
-        if (onWriteToSocket != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onWriteToSocket, jclass_WriteToSocketDelegate_run);
-        }
-    }), (uint32_t) flags, (uint32_t) datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck, onWriteToSocket);
+    }), ([instanceNum, token] {
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestQuickAck, instanceNum, token);
+    }), ([instanceNum, token] {
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestWriteToSocket, instanceNum, token);
+    }), ([instanceNum, token] {
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestClear, instanceNum, token, false);
+    }), (uint32_t) flags, (uint32_t) datacenterId, (ConnectionType) connectionType, immediate, token);
 }
 
 void cancelRequest(JNIEnv *env, jclass c, jint instanceNum, jint token, jboolean notifyServer) {
-    return ConnectionsManager::getInstance(instanceNum).cancelRequest(token, notifyServer);
+    return ConnectionsManager::getInstance(instanceNum).cancelRequest(token, notifyServer, ([instanceNum, token]() -> void {
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestClear, instanceNum, token, true);
+    }));
 }
 
 void failNotRunningRequest(JNIEnv *env, jclass c, jint instanceNum, jint token) {
@@ -452,7 +434,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_getCurrentDatacenterId", "(I)I", (void *) getCurrentDatacenterId},
         {"native_isTestBackend", "(I)I", (void *) isTestBackend},
         {"native_getTimeDifference", "(I)I", (void *) getTimeDifference},
-        {"native_sendRequest", "(IJLorg/telegram/tgnet/RequestDelegateInternal;Lorg/telegram/tgnet/QuickAckDelegate;Lorg/telegram/tgnet/WriteToSocketDelegate;IIIZI)V", (void *) sendRequest},
+        {"native_sendRequest", "(IJIIIZI)V", (void *) sendRequest},
         {"native_cancelRequest", "(IIZ)V", (void *) cancelRequest},
         {"native_cleanUp", "(IZ)V", (void *) cleanUp},
         {"native_cancelRequestsForGuid", "(II)V", (void *) cancelRequestsForGuid},
@@ -503,16 +485,6 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
         return JNI_FALSE;
     }
 
-    DEBUG_REF("RequestDelegateInternal class");
-    jclass_RequestDelegateInternal = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/RequestDelegateInternal"));
-    if (jclass_RequestDelegateInternal == 0) {
-        return JNI_FALSE;
-    }
-    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(JILjava/lang/String;IJJ)V");
-    if (jclass_RequestDelegateInternal_run == 0) {
-        return JNI_FALSE;
-    }
-
     DEBUG_REF("RequestTimeDelegate class");
     jclass_RequestTimeDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/RequestTimeDelegate"));
     if (jclass_RequestTimeDelegate == 0) {
@@ -523,28 +495,25 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
         return JNI_FALSE;
     }
 
-    DEBUG_REF("QuickAckDelegate class");
-    jclass_QuickAckDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/QuickAckDelegate"));
-    if (jclass_RequestDelegateInternal == 0) {
-        return JNI_FALSE;
-    }
-    jclass_QuickAckDelegate_run = env->GetMethodID(jclass_QuickAckDelegate, "run", "()V");
-    if (jclass_QuickAckDelegate_run == 0) {
-        return JNI_FALSE;
-    }
-
-    DEBUG_REF("WriteToSocketDelegate class");
-    jclass_WriteToSocketDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/WriteToSocketDelegate"));
-    if (jclass_WriteToSocketDelegate == 0) {
-        return JNI_FALSE;
-    }
-    jclass_WriteToSocketDelegate_run = env->GetMethodID(jclass_WriteToSocketDelegate, "run", "()V");
-    if (jclass_WriteToSocketDelegate_run == 0) {
-        return JNI_FALSE;
-    }
     DEBUG_REF("ConnectionsManager class");
     jclass_ConnectionsManager = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/ConnectionsManager"));
     if (jclass_ConnectionsManager == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onRequestClear = env->GetStaticMethodID(jclass_ConnectionsManager, "onRequestClear", "(IIZ)V");
+    if (jclass_ConnectionsManager_onRequestClear == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onRequestComplete = env->GetStaticMethodID(jclass_ConnectionsManager, "onRequestComplete", "(IIJILjava/lang/String;IJJ)V");
+    if (jclass_ConnectionsManager_onRequestComplete == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onRequestWriteToSocket = env->GetStaticMethodID(jclass_ConnectionsManager, "onRequestWriteToSocket", "(II)V");
+    if (jclass_ConnectionsManager_onRequestWriteToSocket == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onRequestQuickAck = env->GetStaticMethodID(jclass_ConnectionsManager, "onRequestQuickAck", "(II)V");
+    if (jclass_ConnectionsManager_onRequestQuickAck == 0) {
         return JNI_FALSE;
     }
     jclass_ConnectionsManager_onUnparsedMessageReceived = env->GetStaticMethodID(jclass_ConnectionsManager, "onUnparsedMessageReceived", "(JIJ)V");

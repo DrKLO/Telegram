@@ -36,7 +36,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
@@ -131,7 +130,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         this.currentAccount = currentAccount;
         this.giftTier = gift;
         dummyCell = new PremiumFeatureCell(getContext());
-        PremiumPreviewFragment.fillPremiumFeaturesList(premiumFeatures, currentAccount);
+        PremiumPreviewFragment.fillPremiumFeaturesList(premiumFeatures, currentAccount, false);
 
         if (giftTier != null || UserConfig.getInstance(currentAccount).isPremium()) {
             buttonContainer.setVisibility(View.GONE);

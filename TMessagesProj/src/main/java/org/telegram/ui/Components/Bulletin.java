@@ -1741,6 +1741,10 @@ public class Bulletin {
         }
 
         public UndoButton(@NonNull Context context, boolean text, Theme.ResourcesProvider resourcesProvider) {
+            this(context, text, !text, resourcesProvider);
+        }
+
+        public UndoButton(@NonNull Context context, boolean text, boolean icon, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             this.resourcesProvider = resourcesProvider;
 
@@ -1748,24 +1752,28 @@ public class Bulletin {
 
             if (text) {
                 undoTextView = new TextView(context);
-                undoTextView.setOnClickListener(v -> undo());
                 undoTextView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 undoTextView.setTextColor(undoCancelColor);
                 undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);
-                ViewHelper.setPaddingRelative(undoTextView, 12, 8, 12, 8);
+                ViewHelper.setPaddingRelative(undoTextView, icon ? 34 : 12, 8, 12, 8);
                 addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
-            } else {
+            }
+
+            if (icon) {
                 final ImageView undoImageView = new ImageView(getContext());
-                undoImageView.setOnClickListener(v -> undo());
                 undoImageView.setImageResource(R.drawable.chats_undo);
                 undoImageView.setColorFilter(new PorterDuffColorFilter(undoCancelColor, PorterDuff.Mode.MULTIPLY));
-                undoImageView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000));
+                if (!text) {
+                    undoImageView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000));
+                }
                 ViewHelper.setPaddingRelative(undoImageView, 0, 12, 0, 12);
                 addView(undoImageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.CENTER_VERTICAL));
             }
+
+            setOnClickListener(v -> undo());
         }
 
         public UndoButton setText(CharSequence text) {

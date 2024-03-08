@@ -97,7 +97,7 @@ public class FileLoaderPriorityQueue {
             FileLoadOperation operation = allOperations.get(i);
             if (i > 0 && !pauseAllNextOperations) {
                 if (type == TYPE_LARGE) {
-                    if (prevOperation != null && prevOperation.isStory && prevOperation.getPriority() >= PRIORITY_VALUE_MAX) {
+                    if (prevOperation != null && prevOperation.isStory && prevOperation.getPriority() >= PRIORITY_VALUE_MAX && operation.getPriority() <= PRIORITY_VALUE_LOW) {
                         pauseAllNextOperations = true;
                     }
                 }

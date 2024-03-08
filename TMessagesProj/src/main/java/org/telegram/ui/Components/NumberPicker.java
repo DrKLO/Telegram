@@ -734,10 +734,27 @@ public class NumberPicker extends LinearLayout {
         removeAllCallbacks();
     }
 
+    private int thisGravity;
+    @Override
+    public void setGravity(int gravity) {
+        super.setGravity(thisGravity = gravity);
+    }
+
     private final static CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0, 0.5f, 0.5f, 1f);
     @Override
     protected void onDraw(Canvas canvas) {
-        float x = (getRight() - getLeft()) / 2 + textOffset;
+        float x;
+        if (thisGravity == Gravity.RIGHT) {
+            mSelectorWheelPaint.setTextAlign(Align.RIGHT);
+            x = getWidth();
+        } else if (thisGravity == Gravity.LEFT) {
+            mSelectorWheelPaint.setTextAlign(Align.LEFT);
+            x = 0;
+        } else {
+            mSelectorWheelPaint.setTextAlign(Align.CENTER);
+            x = getWidth() / 2f;
+        }
+        x += textOffset;
         float y = mCurrentScrollOffset;
 
         // draw the selector wheel

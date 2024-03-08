@@ -48,7 +48,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -2433,17 +2432,19 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
             if (chat != null) {
                 applyButton1.setText(LocaleController.formatString(R.string.ApplyWallpaperForChannel, chat.title));
-                if (boostsStatus != null && boostsStatus.level < getMessagesController().channelCustomWallpaperLevelMin) {
+                if (boostsStatus != null && boostsStatus.level < getCustomWallpaperLevelMin()) {
                     SpannableStringBuilder text = new SpannableStringBuilder("l");
                     if (lockSpan == null) {
                         lockSpan = new ColoredImageSpan(R.drawable.mini_switch_lock);
                         lockSpan.setTopOffset(1);
                     }
                     text.setSpan(lockSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    text.append(" ").append(LocaleController.formatPluralString("ReactionLevelRequiredBtn", getMessagesController().channelCustomWallpaperLevelMin));
+                    text.append(" ").append(LocaleController.formatPluralString("ReactionLevelRequiredBtn", getCustomWallpaperLevelMin()));
                     applyButton1.setSubText(text, animated);
                 } else if (boostsStatus == null) {
                     checkBoostsLevel();
+                } else {
+                    applyButton1.setSubText(null, animated);
                 }
             } else {
                 applyButton1.setText(LocaleController.formatString(R.string.ApplyWallpaperForChannel, LocaleController.getString(R.string.AccDescrChannel).toLowerCase()));
@@ -2453,9 +2454,16 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         }
     }
 
+    private int getCustomWallpaperLevelMin() {
+        if (ChatObject.isChannelAndNotMegaGroup(-dialogId, currentAccount)) {
+            return getMessagesController().channelCustomWallpaperLevelMin;
+        }
+        return getMessagesController().groupCustomWallpaperLevelMin;
+    }
+
     private void applyWallpaperBackground(boolean forBoth) {
         if (dialogId < 0) {
-            if (boostsStatus != null && boostsStatus.level < getMessagesController().channelCustomWallpaperLevelMin) {
+            if (boostsStatus != null && boostsStatus.level < getCustomWallpaperLevelMin()) {
                 getMessagesController().getBoostsController().userCanBoostChannel(dialogId, boostsStatus, canApplyBoost -> {
                     if (getContext() == null) {
                         return;
@@ -3256,6 +3264,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
     @Override
     public boolean onFragmentCreate() {
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatWasBoostedByUser);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.invalidateMotionBackground);
         getNotificationCenter().addObserver(this, NotificationCenter.wallpaperSettedToUser);
@@ -3288,6 +3297,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
     @Override
     public void onFragmentDestroy() {
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatWasBoostedByUser);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.invalidateMotionBackground);
         getNotificationCenter().removeObserver(this, NotificationCenter.wallpaperSettedToUser);
@@ -3541,7 +3551,12 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiLoaded) {
+        if (id == NotificationCenter.chatWasBoostedByUser) {
+            if (dialogId == (long) args[2]) {
+                this.boostsStatus = (TL_stories.TL_premium_boostsStatus) args[0];
+                updateApplyButton1(true);
+            }
+        } else if (id == NotificationCenter.emojiLoaded) {
             if (listView == null) {
                 return;
             }
@@ -5796,7 +5811,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(message);
         //  MessagesStorage.getInstance(currentAccount).putMessages(arr, false, true, false, 0, false, 0);
-        MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(dialogId, objArr, false);
+        MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(dialogId, objArr, 0);
     }
 
     public interface DayNightSwitchDelegate {

@@ -1108,6 +1108,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         public StoryCell(Context context) {
             super(context);
             params.isArchive = type == TYPE_ARCHIVE;
+            params.isDialogStoriesCell = true;
             avatarImage.setInvalidateAll(true);
             avatarImage.setAllowLoadingOnAttachedOnly(true);
 

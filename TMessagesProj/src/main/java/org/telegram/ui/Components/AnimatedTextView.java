@@ -869,6 +869,10 @@ public class AnimatedTextView extends View {
             this.gravity = gravity;
         }
 
+        public int getGravity() {
+            return this.gravity;
+        }
+
         public void setAnimationProperties(float moveAmplitude, long startDelay, long duration, TimeInterpolator interpolator) {
             this.moveAmplitude = moveAmplitude;
             animateDelay = startDelay;

@@ -252,6 +252,8 @@ public class AboutLinkCell extends FrameLayout {
     private Paint backgroundPaint = new Paint();
     @Override
     public void draw(Canvas canvas) {
+        super.draw(canvas);
+
         View parent = (View) getParent();
         float alpha = parent == null ? 1f : (float) Math.pow(parent.getAlpha(), 2f);
 
@@ -276,8 +278,6 @@ public class AboutLinkCell extends FrameLayout {
         }
 
         container.draw(canvas);
-
-        super.draw(canvas);
     }
 
     final float SPACE = AndroidUtilities.dp(3f);
@@ -682,7 +682,7 @@ public class AboutLinkCell extends FrameLayout {
 
     private StaticLayout makeTextLayout(CharSequence string, int width) {
         if (Build.VERSION.SDK_INT >= 24) {
-            return StaticLayout.Builder.obtain(string, 0, string.length(), Theme.profile_aboutTextPaint, width)
+            return StaticLayout.Builder.obtain(string, 0, string.length(), Theme.profile_aboutTextPaint, Math.max(1, width))
                     .setBreakStrategy(StaticLayout.BREAK_STRATEGY_SIMPLE)
                     .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
                     .setAlignment(LocaleController.isRTL ? StaticLayoutEx.ALIGN_RIGHT() : StaticLayoutEx.ALIGN_LEFT())

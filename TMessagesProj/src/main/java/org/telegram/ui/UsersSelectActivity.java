@@ -65,6 +65,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
+import org.telegram.ui.Business.BusinessRecipientsHelper;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Components.AnimatedAvatarContainer;
@@ -73,10 +74,12 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StickerEmptyView;
 
 import java.util.ArrayList;
 
@@ -84,12 +87,14 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
 
     public final static int TYPE_FILTER = 0;
     public final static int TYPE_AUTO_DELETE_EXISTING_CHATS = 1;
+    public final static int TYPE_PRIVATE = 2;
 
     private ScrollView scrollView;
     private SpansContainer spansContainer;
     private EditTextBoldCursor editText;
     private RecyclerListView listView;
-    private EmptyTextProgressView emptyView;
+    private FlickerLoadingView progressView;
+    private StickerEmptyView emptyView;
     private GroupCreateAdapter adapter;
     private FilterUsersActivityDelegate delegate;
     private AnimatorSet currentDoneButtonAnimation;
@@ -103,6 +108,8 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
     AnimatedAvatarContainer animatedAvatarContainer;
 
     public boolean noChatTypes;
+    public boolean allowSelf;
+    public boolean doNotNewChats;
     private boolean isInclude;
     private int filterFlags;
     private ArrayList<Long> initialIds;
@@ -358,11 +365,19 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         filterFlags = flags;
         initialIds = arrayList;
         type = TYPE_FILTER;
+        allowSelf = type != TYPE_AUTO_DELETE_EXISTING_CHATS;
+    }
+
+    public UsersSelectActivity asPrivateChats() {
+        type = TYPE_PRIVATE;
+        allowSelf = false;
+        return this;
     }
 
     public UsersSelectActivity(int type) {
         super();
         this.type = type;
+        allowSelf = type != TYPE_AUTO_DELETE_EXISTING_CHATS;
     }
 
     @Override
@@ -387,22 +402,34 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         if (span.isDeleting()) {
             currentDeletingSpan = null;
             spansContainer.removeSpan(span);
-            if (span.getUid() == Long.MIN_VALUE) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
-            } else if (span.getUid() == Long.MIN_VALUE + 1) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
-            } else if (span.getUid() == Long.MIN_VALUE + 2) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_GROUPS;
-            } else if (span.getUid() == Long.MIN_VALUE + 3) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
-            } else if (span.getUid() == Long.MIN_VALUE + 4) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_BOTS;
-            } else if (span.getUid() == Long.MIN_VALUE + 5) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
-            } else if (span.getUid() == Long.MIN_VALUE + 6) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
-            } else if (span.getUid() == Long.MIN_VALUE + 7) {
-                filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
+            if (type == TYPE_PRIVATE) {
+                if (span.getUid() == Long.MIN_VALUE + 8) {
+                    filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_EXISTING_CHATS;
+                } else if (span.getUid() == Long.MIN_VALUE + 9) {
+                    filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_NEW_CHATS;
+                } else if (span.getUid() == Long.MIN_VALUE) {
+                    filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_CONTACTS;
+                } else if (span.getUid() == Long.MIN_VALUE + 1) {
+                    filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_NON_CONTACTS;
+                }
+            } else {
+                if (span.getUid() == Long.MIN_VALUE) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
+                } else if (span.getUid() == Long.MIN_VALUE + 1) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
+                } else if (span.getUid() == Long.MIN_VALUE + 2) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_GROUPS;
+                } else if (span.getUid() == Long.MIN_VALUE + 3) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
+                } else if (span.getUid() == Long.MIN_VALUE + 4) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_BOTS;
+                } else if (span.getUid() == Long.MIN_VALUE + 5) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
+                } else if (span.getUid() == Long.MIN_VALUE + 6) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
+                } else if (span.getUid() == Long.MIN_VALUE + 7) {
+                    filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
+                }
             }
             updateHint();
             checkVisibleRows();
@@ -430,7 +457,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         }
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (type == TYPE_FILTER) {
+        if (type == TYPE_FILTER || type == TYPE_PRIVATE) {
             if (isInclude) {
                 actionBar.setTitle(LocaleController.getString("FilterAlwaysShow", R.string.FilterAlwaysShow));
             } else {
@@ -466,6 +493,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 scrollView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(maxSize, MeasureSpec.AT_MOST));
                 listView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight(), MeasureSpec.EXACTLY));
                 emptyView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight(), MeasureSpec.EXACTLY));
+                progressView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight(), MeasureSpec.EXACTLY));
                 if (floatingButton != null) {
                     int w = AndroidUtilities.dp(Build.VERSION.SDK_INT >= 21 ? 56 : 60);
                     floatingButton.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY));
@@ -477,7 +505,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 scrollView.layout(0, 0, scrollView.getMeasuredWidth(), scrollView.getMeasuredHeight());
                 listView.layout(0, scrollView.getMeasuredHeight(), listView.getMeasuredWidth(), scrollView.getMeasuredHeight() + listView.getMeasuredHeight());
                 emptyView.layout(0, scrollView.getMeasuredHeight(), emptyView.getMeasuredWidth(), scrollView.getMeasuredHeight() + emptyView.getMeasuredHeight());
-
+                progressView.layout(0, scrollView.getMeasuredHeight(), emptyView.getMeasuredWidth(), scrollView.getMeasuredHeight() + progressView.getMeasuredHeight());
                 if (floatingButton != null) {
                     int l = LocaleController.isRTL ? AndroidUtilities.dp(14) : (right - left) - AndroidUtilities.dp(14) - floatingButton.getMeasuredWidth();
                     int t = bottom - top - AndroidUtilities.dp(14) - floatingButton.getMeasuredHeight();
@@ -584,22 +612,34 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                     } else if (event.getAction() == KeyEvent.ACTION_UP && wasEmpty && !allSpans.isEmpty()) {
                         GroupCreateSpan span = allSpans.get(allSpans.size() - 1);
                         spansContainer.removeSpan(span);
-                        if (span.getUid() == Long.MIN_VALUE) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
-                        } else if (span.getUid() == Long.MIN_VALUE + 1) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
-                        } else if (span.getUid() == Long.MIN_VALUE + 2) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_GROUPS;
-                        } else if (span.getUid() == Long.MIN_VALUE + 3) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
-                        } else if (span.getUid() == Long.MIN_VALUE + 4) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_BOTS;
-                        } else if (span.getUid() == Long.MIN_VALUE + 5) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
-                        } else if (span.getUid() == Long.MIN_VALUE + 6) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
-                        } else if (span.getUid() == Long.MIN_VALUE + 7) {
-                            filterFlags &=~ MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
+                        if (type == TYPE_PRIVATE) {
+                            if (span.getUid() == Long.MIN_VALUE + 8) {
+                                filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_EXISTING_CHATS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 9) {
+                                filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_NEW_CHATS;
+                            } else if (span.getUid() == Long.MIN_VALUE) {
+                                filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_CONTACTS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 1) {
+                                filterFlags &= ~BusinessRecipientsHelper.PRIVATE_FLAG_NON_CONTACTS;
+                            }
+                        } else {
+                            if (span.getUid() == Long.MIN_VALUE) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 1) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 2) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_GROUPS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 3) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 4) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_BOTS;
+                            } else if (span.getUid() == Long.MIN_VALUE + 5) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
+                            } else if (span.getUid() == Long.MIN_VALUE + 6) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
+                            } else if (span.getUid() == Long.MIN_VALUE + 7) {
+                                filterFlags &= ~MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
+                            }
                         }
                         updateHint();
                         checkVisibleRows();
@@ -629,9 +669,9 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                         adapter.setSearching(true);
                         listView.setFastScrollVisible(false);
                         listView.setVerticalScrollBarEnabled(true);
-                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                        emptyView.showProgress();
+                        emptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
                     }
+                    emptyView.showProgress(true);
                     adapter.searchDialogs(editText.getText().toString());
                 } else {
                     closeSearch();
@@ -639,14 +679,24 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             }
         });
 
-        emptyView = new EmptyTextProgressView(context);
-        if (ContactsController.getInstance(currentAccount).isLoadingContacts()) {
-            emptyView.showProgress();
-        } else {
-            emptyView.showTextView();
-        }
-        emptyView.setShowAtCenter(true);
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        progressView = new FlickerLoadingView(context);
+        progressView.setViewType(FlickerLoadingView.USERS2_TYPE);
+        progressView.showDate(false);
+        progressView.setItemsCount(3);
+        progressView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, Theme.key_listSelector);
+        frameLayout.addView(progressView);
+
+        emptyView = new StickerEmptyView(context, progressView, StickerEmptyView.STICKER_TYPE_SEARCH) {
+            @Override
+            public void setVisibility(int visibility) {
+                super.setVisibility(visibility);
+                if (visibility != View.VISIBLE) {
+                    showProgress(false, false);
+                }
+            }
+        };
+        emptyView.showProgress(ContactsController.getInstance(currentAccount).isLoadingContacts());
+        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
         frameLayout.addView(emptyView);
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
@@ -667,7 +717,21 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 long id;
                 if (object instanceof String) {
                     int flag;
-                    if (isInclude) {
+                    if (type == TYPE_PRIVATE) {
+                        if (position == 1) {
+                            flag = BusinessRecipientsHelper.PRIVATE_FLAG_EXISTING_CHATS;
+                            id = Long.MIN_VALUE + 8;
+                        } else if (position == 2 && !doNotNewChats) {
+                            flag = BusinessRecipientsHelper.PRIVATE_FLAG_NEW_CHATS;
+                            id = Long.MIN_VALUE + 9;
+                        } else if (position == 2 + (doNotNewChats ? 0 : 1)) {
+                            flag = BusinessRecipientsHelper.PRIVATE_FLAG_CONTACTS;
+                            id = Long.MIN_VALUE;
+                        } else {
+                            flag = BusinessRecipientsHelper.PRIVATE_FLAG_NON_CONTACTS;
+                            id = Long.MIN_VALUE + 1;
+                        }
+                    } else if (isInclude) {
                         if (position == 1) {
                             flag = MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
                             id = Long.MIN_VALUE;
@@ -795,7 +859,21 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             int id;
             int flag;
             Object object;
-            if (isInclude) {
+            if (type == TYPE_PRIVATE) {
+                if (position == 1) {
+                    object = "existing_chats";
+                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_EXISTING_CHATS;
+                } else if (position == 2 && !doNotNewChats) {
+                    object = "new_chats";
+                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_NEW_CHATS;
+                } else if (position == 2 + (doNotNewChats ? 0 : 1)) {
+                    object = "contacts";
+                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_CONTACTS;
+                } else {
+                    object = "non_contacts";
+                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_NON_CONTACTS;
+                }
+            } else if (isInclude) {
                 if (position == 1) {
                     object = "contacts";
                     flag = MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
@@ -865,7 +943,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.contactsDidLoad) {
             if (emptyView != null) {
-                emptyView.showTextView();
+                emptyView.showProgress(false);
             }
             if (adapter != null) {
                 adapter.notifyDataSetChanged();
@@ -933,6 +1011,12 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                         case "read":
                             id = Long.MIN_VALUE + 6;
                             break;
+                        case "existing_chats":
+                            id = Long.MIN_VALUE + 8;
+                            break;
+                        case "new_chats":
+                            id = Long.MIN_VALUE + 8;
+                            break;
                         case "archived":
                         default:
                             id = Long.MIN_VALUE + 7;
@@ -960,7 +1044,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         ArrayList<Long> result = new ArrayList<>();
         for (int a = 0; a < selectedContacts.size(); a++) {
             long uid = selectedContacts.keyAt(a);
-            if (uid <= Long.MIN_VALUE + 7) {
+            if (uid <= Long.MIN_VALUE + 9) {
                 continue;
             }
             result.add(selectedContacts.keyAt(a));
@@ -979,7 +1063,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         adapter.searchDialogs(null);
         listView.setFastScrollVisible(true);
         listView.setVerticalScrollBarEnabled(false);
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
     }
 
     private void updateHint() {
@@ -1025,10 +1109,29 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         private Runnable searchRunnable;
         private boolean searching;
         private ArrayList<TLObject> contacts = new ArrayList<>();
-        private final int usersStartRow = type == TYPE_FILTER && !noChatTypes ? isInclude ? 7 : 5 : 0;
+        private final int usersStartRow;
 
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
+
+            if (type == TYPE_PRIVATE) {
+                usersStartRow = 5 + (doNotNewChats ? 0 : 1);
+            } else if (type == TYPE_FILTER) {
+                if (!noChatTypes) {
+                    if (isInclude) {
+                        usersStartRow = 7;
+                    } else {
+                        usersStartRow = 5;
+                    }
+                } else {
+                    usersStartRow = 0;
+                }
+            } else {
+                usersStartRow = 0;
+            }
+
+            final boolean allowBots = type != TYPE_PRIVATE;
+            final boolean allowChats = type != TYPE_PRIVATE;
 
             boolean hasSelf = false;
             ArrayList<TLRPC.Dialog> dialogs = getMessagesController().getAllDialogs();
@@ -1040,7 +1143,10 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 if (DialogObject.isUserDialog(dialog.id)) {
                     TLRPC.User user = getMessagesController().getUser(dialog.id);
                     if (user != null) {
-                        if (type == TYPE_AUTO_DELETE_EXISTING_CHATS && UserObject.isUserSelf(user)) {
+                        if (!allowSelf && UserObject.isUserSelf(user)) {
+                            continue;
+                        }
+                        if (user.bot && !allowBots) {
                             continue;
                         }
                         contacts.add(user);
@@ -1050,12 +1156,13 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                     }
                 } else {
                     TLRPC.Chat chat = getMessagesController().getChat(-dialog.id);
+                    if (!allowChats) continue;
                     if (chat != null) {
                         contacts.add(chat);
                     }
                 }
             }
-            if (!hasSelf && type != TYPE_AUTO_DELETE_EXISTING_CHATS) {
+            if (!hasSelf && allowSelf) {
                 TLRPC.User user = getMessagesController().getUser(getUserConfig().clientUserId);
                 contacts.add(0, user);
             }
@@ -1064,7 +1171,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             searchAdapterHelper.setAllowGlobalResults(false);
             searchAdapterHelper.setDelegate((searchId) -> {
                 if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress()) {
-                    emptyView.showTextView();
+                    emptyView.showProgress(false);
                 }
                 notifyDataSetChanged();
             });
@@ -1093,7 +1200,9 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 count += localServerCount + globalCount;
                 return count;
             } else {
-                if (type == TYPE_FILTER) {
+                if (type == TYPE_PRIVATE) {
+                    count = 3 + (doNotNewChats ? 0 : 1);
+                } else if (type == TYPE_FILTER) {
                     if (noChatTypes) {
                         count = 0;
                     } else if (isInclude) {
@@ -1129,7 +1238,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             switch (holder.getItemViewType()) {
                 case 1: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    Object object;
+                    Object object = null;
                     CharSequence username = null;
                     CharSequence name = null;
                     if (searching) {
@@ -1189,7 +1298,25 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                     } else {
                         if (position < usersStartRow) {
                             int flag;
-                            if (isInclude) {
+                            if (type == TYPE_PRIVATE) {
+                                if (position == 1) {
+                                    name = LocaleController.getString(R.string.FilterExistingChats);
+                                    object = "existing_chats";
+                                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_EXISTING_CHATS;
+                                } else if (position == 2 && !doNotNewChats) {
+                                    name = LocaleController.getString(R.string.FilterNewChats);
+                                    object = "new_chats";
+                                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_NEW_CHATS;
+                                } else if (position == 2 + (doNotNewChats ? 0 : 1)) {
+                                    name = LocaleController.getString(R.string.FilterContacts);
+                                    object = "contacts";
+                                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_CONTACTS;
+                                } else {
+                                    name = LocaleController.getString(R.string.FilterNonContacts);
+                                    object = "non_contacts";
+                                    flag = BusinessRecipientsHelper.PRIVATE_FLAG_NON_CONTACTS;
+                                }
+                            } else if (isInclude) {
                                 if (position == 1) {
                                     name = LocaleController.getString("FilterContacts", R.string.FilterContacts);
                                     object = "contacts";
@@ -1243,7 +1370,9 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                     }
                     boolean blueText = false;
                     boolean enabled = true;
-                    if (type == TYPE_FILTER) {
+                    if (type == TYPE_PRIVATE) {
+
+                    } else if (type == TYPE_FILTER) {
                         if (!searching) {
                             StringBuilder builder = new StringBuilder();
                             ArrayList<MessagesController.DialogFilter> filters = getMessagesController().dialogFilters;
@@ -1312,7 +1441,11 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             if (searching) {
                 return 1;
             } else {
-                if (type == TYPE_FILTER) {
+                if (type == TYPE_PRIVATE) {
+                    if (position == 0 || position == 4 + (doNotNewChats ? 0 : 1)) {
+                        return 2;
+                    }
+                } else if (type == TYPE_FILTER) {
                     if (noChatTypes) {
                         if (position == 0) {
                             return 2;
@@ -1354,19 +1487,18 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 Utilities.searchQueue.cancelRunnable(searchRunnable);
                 searchRunnable = null;
             }
-            boolean allowSerachChats = true;
-
+            final boolean allowBots = type != TYPE_PRIVATE;
+            final boolean allowChats = type != TYPE_PRIVATE;
             if (query == null) {
                 searchResult.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
 
-                searchAdapterHelper.queryServerSearch(null, true, allowSerachChats, false, false, false, 0, false, 0, 0);
+                searchAdapterHelper.queryServerSearch(null, true, false, false, false, false, 0, false, 0, 0);
                 notifyDataSetChanged();
             } else {
-                boolean finalAllowSerachChats = allowSerachChats;
                 Utilities.searchQueue.postRunnable(searchRunnable = () -> AndroidUtilities.runOnUIThread(() -> {
-                    searchAdapterHelper.queryServerSearch(query, true, finalAllowSerachChats, true, type != TYPE_AUTO_DELETE_EXISTING_CHATS, false, 0, false, 0, 0);
+                    searchAdapterHelper.queryServerSearch(query, true, allowChats, allowChats, allowSelf, false, 0, false, 0, 0);
                     Utilities.searchQueue.postRunnable(searchRunnable = () -> {
                         String search1 = query.trim().toLowerCase();
                         if (search1.length() == 0) {
@@ -1398,13 +1530,18 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                                 username = UserObject.getPublicUsername(user);
                                 if (UserObject.isReplyUser(user)) {
                                     names[2] = LocaleController.getString("RepliesTitle", R.string.RepliesTitle).toLowerCase();
-                                } else if (user.self) {
+                                } else if (UserObject.isUserSelf(user)) {
+                                    if (!allowSelf) continue;
                                     names[2] = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
+                                } else if (user.bot && !allowBots) {
+                                    continue;
                                 }
                             } else {
                                 TLRPC.Chat chat = (TLRPC.Chat) object;
                                 names[0] = chat.title.toLowerCase();
                                 username = chat.username;
+                                if (!allowChats)
+                                    continue;
                             }
                             names[1] = LocaleController.getInstance().getTranslitString(names[0]);
                             if (names[0].equals(names[1])) {
@@ -1457,7 +1594,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 searchResultNames = names;
                 searchAdapterHelper.mergeResults(searchResult);
                 if (searching && !searchAdapterHelper.isSearchInProgress()) {
-                    emptyView.showTextView();
+                    emptyView.showProgress(false);
                 }
                 notifyDataSetChanged();
             });

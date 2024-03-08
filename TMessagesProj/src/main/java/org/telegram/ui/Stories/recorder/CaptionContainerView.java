@@ -171,7 +171,7 @@ public class CaptionContainerView extends FrameLayout {
             protected void createEmojiView() {
                 super.createEmojiView();
                 EmojiView emojiView = getEmojiView();
-                if (emojiView != null && getEditTextStyle() == EditTextEmoji.STYLE_STORY) {
+                if (emojiView != null && (getEditTextStyle() == EditTextEmoji.STYLE_STORY || getEditTextStyle() == EditTextEmoji.STYLE_PHOTOVIEWER)) {
                     emojiView.shouldLightenBackground = false;
                     emojiView.fixBottomTabContainerTranslation = false;
                     emojiView.setShouldDrawBackground(false);

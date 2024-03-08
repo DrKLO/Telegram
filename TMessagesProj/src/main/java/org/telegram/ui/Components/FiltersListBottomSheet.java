@@ -24,8 +24,11 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.checkerframework.common.subtyping.qual.Bottom;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -54,12 +57,24 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
     private ArrayList<MessagesController.DialogFilter> dialogFilters;
 
     public interface FiltersListBottomSheetDelegate {
-        void didSelectFilter(MessagesController.DialogFilter filter);
+        void didSelectFilter(MessagesController.DialogFilter filter, boolean checked);
     }
+
+    private final ArrayList<Long> selectedDialogs;
+    private final DialogsActivity fragment;
 
     public FiltersListBottomSheet(DialogsActivity baseFragment, ArrayList<Long> selectedDialogs) {
         super(baseFragment.getParentActivity(), false);
-        dialogFilters = getCanAddDialogFilters(baseFragment, selectedDialogs);
+        this.selectedDialogs = selectedDialogs;
+        this.fragment = baseFragment;
+//        dialogFilters = getCanAddDialogFilters(baseFragment, selectedDialogs);
+        dialogFilters = new ArrayList<>(baseFragment.getMessagesController().dialogFilters);
+        for (int i = 0; i < dialogFilters.size(); ++i) {
+            if (dialogFilters.get(i).isDefault()) {
+                dialogFilters.remove(i);
+                i--;
+            }
+        }
         Context context = baseFragment.getParentActivity();
 
         containerView = new FrameLayout(context) {
@@ -205,7 +220,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
             }
         });
         listView.setOnItemClickListener((view, position) -> {
-            delegate.didSelectFilter(adapter.getItem(position));
+            delegate.didSelectFilter(adapter.getItem(position), view instanceof BottomSheet.BottomSheetCell ? ((BottomSheet.BottomSheetCell) view).isChecked() : false);
             dismiss();
         });
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
@@ -218,10 +233,10 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
         titleTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
         titleTextView.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
-        titleTextView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
+        titleTextView.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
-        titleTextView.setText(LocaleController.getString("FilterChoose", R.string.FilterChoose));
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setText(LocaleController.getString(R.string.FilterChoose));
+        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 40, 0));
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
@@ -301,12 +316,13 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiLoaded) {
-            if (listView != null) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    listView.getChildAt(a).invalidate();
+            AndroidUtilities.forEachViews(listView, view -> {
+                if (view instanceof BottomSheetCell) {
+                    ((BottomSheetCell) view).getTextView().invalidate();
+                } else {
+                    view.invalidate();
                 }
-            }
+            });
         }
     }
 
@@ -417,7 +433,15 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                 } else {
                     icon = R.drawable.msg_folders;
                 }
-                cell.setTextAndIcon(filter.name, icon);
+                cell.setTextAndIcon(Emoji.replaceEmoji(filter.name, cell.getTextView().getPaint().getFontMetricsInt(), false), 0, new FolderDrawable(getContext(), icon, filter.color), false);
+                boolean isChecked = true;
+                for (int i = 0; i < selectedDialogs.size(); ++i) {
+                    long did = selectedDialogs.get(i);
+                    if (!filter.includesDialog(AccountInstance.getInstance(currentAccount), did)) {
+                        isChecked = false;
+                    }
+                }
+                cell.setChecked(isChecked);
             } else {
                 cell.getImageView().setColorFilter(null);
                 Drawable drawable1 = context.getResources().getDrawable(R.drawable.poll_add_circle);

@@ -4,8 +4,7 @@ uniform mat4 uSTMatrix;
 attribute vec4 aPosition;
 attribute vec4 aTextureCoord;
 
-uniform float texelWidthOffset;
-uniform float texelHeightOffset;
+uniform vec2 texelSize;
 
 varying vec2 centerTextureCoordinate;
 varying vec2 oneStepLeftTextureCoordinate;
@@ -20,10 +19,10 @@ varying vec2 fourStepsRightTextureCoordinate;
 void main() {
    gl_Position = uMVPMatrix * aPosition;
 
-   vec2 firstOffset = vec2(texelWidthOffset, texelHeightOffset);
-   vec2 secondOffset = vec2(2.0 * texelWidthOffset, 2.0 * texelHeightOffset);
-   vec2 thirdOffset = vec2(3.0 * texelWidthOffset, 3.0 * texelHeightOffset);
-   vec2 fourthOffset = vec2(4.0 * texelWidthOffset, 4.0 * texelHeightOffset);
+   vec2 firstOffset = texelSize;
+   vec2 secondOffset = 2.0 * texelSize;
+   vec2 thirdOffset = 3.0 * texelSize;
+   vec2 fourthOffset = 4.0 * texelSize;
 
    centerTextureCoordinate = (uSTMatrix * aTextureCoord).xy;
    oneStepLeftTextureCoordinate = centerTextureCoordinate - firstOffset;

@@ -24,6 +24,7 @@ uniform vec3 normalSpecColor;
 uniform vec3 specColor;
 uniform vec2 resolution;
 uniform vec4 gradientPosition;
+uniform int modelIndex;
 
 void main() {
     vec3 vLightPosition2 = vec3(-400,400,400);
@@ -50,7 +51,7 @@ void main() {
     float diffuse = max(dot(vNormalW, viewDirectionW), (1.0 - u_diffuse));
 
     float mixValue = distance(vUV,vec2(1,0));
-    vec4 gradientColorFinal = vec4(mix(gradientColor1,gradientColor2,mixValue), 1.0);
+    vec4 gradientColorFinal = vec4(mix(gradientColor1, gradientColor2, mixValue), 1.0);
 
     angleW = normalize(viewDirectionW + vLightPositionNormal);
     float normalSpecComp = max(0., dot(finalNormal, angleW));

@@ -363,24 +363,24 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    int needsActionBar() {
+    public int needsActionBar() {
         return 1;
     }
 
     @Override
-    void onResume() {
+    public void onResume() {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
     }
 
     @Override
-    void onHideShowProgress(float progress) {
+    public void onHideShowProgress(float progress) {
         parentAlert.doneItem.setAlpha((parentAlert.doneItem.isEnabled() ? 1.0f : 0.5f) * progress);
     }
 
     @Override
-    void onMenuItemClick(int id) {
+    public void onMenuItemClick(int id) {
         if (id == done_button) {
             if (quizPoll && parentAlert.doneItem.getAlpha() != 1.0f) {
                 int checksCount = 0;
@@ -443,7 +443,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    int getCurrentItemTop() {
+    public int getCurrentItemTop() {
         if (listView.getChildCount() <= 1) {
             return Integer.MAX_VALUE;
         }
@@ -461,7 +461,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    int getFirstOffset() {
+    public int getFirstOffset() {
         return getListTopPadding() + AndroidUtilities.dp(17);
     }
 
@@ -472,12 +472,12 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    int getListTopPadding() {
+    public int getListTopPadding() {
         return topPadding;
     }
 
     @Override
-    void onPreMeasure(int availableWidth, int availableHeight) {
+    public void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
         if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
             padding = AndroidUtilities.dp(52);
@@ -504,7 +504,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    int getButtonsHideOffset() {
+    public int getButtonsHideOffset() {
         return AndroidUtilities.dp(70);
     }
 
@@ -517,7 +517,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    void scrollToTop() {
+    public void scrollToTop() {
         listView.smoothScrollToPosition(1);
     }
 
@@ -638,7 +638,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
+    public void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         try {
             parentAlert.actionBar.getTitleTextView().setBuildFullLayout(true);
         } catch (Exception ignore) {}
@@ -652,12 +652,12 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    void onHidden() {
+    public void onHidden() {
         parentAlert.doneItem.setVisibility(INVISIBLE);
     }
 
     @Override
-    boolean onBackPressed() {
+    public boolean onBackPressed() {
         if (!checkDiscard()) {
             return true;
         }

@@ -31,7 +31,7 @@ public class BitmapShaderTools {
     }
 
     public BitmapShaderTools(int width, int height) {
-        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap = Bitmap.createBitmap(Math.max(1, width), Math.max(1, height), Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bitmap);
         paint.setShader(shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         updateBounds();

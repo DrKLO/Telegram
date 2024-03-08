@@ -104,6 +104,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         } else {
             linkPath = new LinkPath(true);
         }
+        linkPath.setUseCornerPathImplementation(!isLite);
         linkPath.reset();
         mPathes.add(linkPath);
         mPathesCount = mPathes.size();
@@ -206,6 +207,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         mSelectionPaint.setAlpha((int) (mSelectionAlpha * selectionAlpha * Math.min(1, pressT * 5f) * (1f - releaseT)));
         mSelectionPaint.setStrokeWidth(Math.min(1, 1f - longPress) * AndroidUtilities.dp(5));
         for (int i = 0; i < mPathesCount; ++i) {
+            mPathes.get(i).closeRects();
             canvas.drawPath(mPathes.get(i), mSelectionPaint);
         }
 

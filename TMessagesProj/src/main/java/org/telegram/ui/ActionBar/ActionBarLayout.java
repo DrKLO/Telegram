@@ -222,7 +222,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
-            processMenuButtonsTouch(ev);
+//            processMenuButtonsTouch(ev);
             boolean passivePreview = inPreviewMode && previewMenu == null;
             if ((passivePreview || transitionAnimationPreviewMode) && (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN)) {
                 return false;

@@ -205,7 +205,15 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     if (storiesForceState != null) {
                         params.forceState = storiesForceState;
                     }
-                    StoriesUtilities.drawAvatarWithStory(parentFragment != null ? parentFragment.getDialogId() : 0, canvas, imageReceiver, params);
+
+                    long dialogId = 0;
+                    if (parentFragment != null) {
+                        dialogId = parentFragment.getDialogId();
+                    } else if (baseFragment instanceof TopicsFragment) {
+                        dialogId = ((TopicsFragment) baseFragment).getDialogId();
+                    }
+
+                    StoriesUtilities.drawAvatarWithStory(dialogId, canvas, imageReceiver, params);
                 } else {
                     super.onDraw(canvas);
                 }
@@ -222,8 +230,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         };
         if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {
-            sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
-            if (parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2)) {
+            if (parentFragment == null || parentFragment.getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
+                sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
+            }
+            if (parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == ChatActivity.MODE_PINNED || parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES)) {
                 avatarImageView.setVisibility(GONE);
             }
         }
@@ -243,7 +253,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         titleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         titleTextView.setTextSize(18);
         titleTextView.setGravity(Gravity.LEFT);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         titleTextView.setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
         titleTextView.setCanHideRightDrawable(false);
         titleTextView.setRightDrawableOutside(true);
@@ -1094,7 +1104,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarDrawable.setInfo(currentAccount, chat);
         if (avatarImageView != null) {
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
-            avatarImageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
+            avatarImageView.setRoundRadius(ChatObject.isForum(chat) ? AndroidUtilities.dp(ChatObject.hasStories(chat) ? 11 : 16) : AndroidUtilities.dp(21));
         }
     }
 
@@ -1183,7 +1193,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
-            avatarImageView.setRoundRadius(chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
+            avatarImageView.setRoundRadius(chat.forum ? AndroidUtilities.dp(ChatObject.hasStories(chat) ? 11 : 16) : AndroidUtilities.dp(21));
         }
     }
 

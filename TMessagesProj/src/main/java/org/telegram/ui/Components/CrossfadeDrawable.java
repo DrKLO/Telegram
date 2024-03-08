@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
@@ -8,6 +9,8 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
+import org.telegram.messenger.AndroidUtilities;
 
 public class CrossfadeDrawable extends Drawable {
 
@@ -118,5 +121,20 @@ public class CrossfadeDrawable extends Drawable {
     public void setProgress(float value) {
         progress = value;
         invalidateSelf();
+    }
+
+    private ValueAnimator animator;
+    public void animateToProgress(float value) {
+        if (animator != null) {
+            animator.cancel();
+        }
+        animator = ValueAnimator.ofFloat(getProgress(), value);
+        animator.addUpdateListener(a -> {
+            setProgress((float) a.getAnimatedValue());
+            invalidateSelf();
+        });
+        animator.setDuration((long) (200 * Math.abs(getProgress() - value)));
+        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        animator.start();
     }
 }

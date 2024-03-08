@@ -561,7 +561,7 @@ public class DraftsController {
             this.audioRight = entry.audioRight;
             this.audioVolume = entry.audioVolume;
 
-            this.roundPath = entry.round == null ? "" : entry.round.getAbsolutePath();
+            this.roundPath = entry.round == null ? null : entry.round.getAbsolutePath();
             this.roundThumb = entry.roundThumb;
             this.roundDuration = entry.roundDuration;
             this.roundOffset = entry.roundOffset;
@@ -778,7 +778,7 @@ public class DraftsController {
                 new TLRPC.TL_inputPeerSelf().serializeToStream(stream);
             }
 
-            if (roundPath == null) {
+            if (TextUtils.isEmpty(roundPath)) {
                 stream.writeInt32(TLRPC.TL_null.constructor);
             } else {
                 stream.writeInt32(TLRPC.TL_documentAttributeVideo.constructor);

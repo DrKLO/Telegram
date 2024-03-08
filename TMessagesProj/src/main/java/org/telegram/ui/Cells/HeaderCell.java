@@ -32,6 +32,9 @@ import java.util.ArrayList;
 
 public class HeaderCell extends FrameLayout {
 
+    protected int padding;
+    protected int bottomMargin;
+
     private TextView textView;
     private SimpleTextView textView2;
     private int height = 40;
@@ -64,10 +67,12 @@ public class HeaderCell extends FrameLayout {
     public HeaderCell(Context context, int textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.padding = padding;
+        this.bottomMargin = bottomMargin;
 
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setMinHeight(AndroidUtilities.dp(height - topMargin));

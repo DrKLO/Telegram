@@ -1427,6 +1427,54 @@ public class DatabaseMigrationHelper {
             version = 143;
         }
 
+        if (version == 143) {
+            database.executeFast("ALTER TABLE dialog_filter ADD COLUMN color INTEGER default -1").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 144").stepThis().dispose();
+            version = 144;
+        }
+
+        if (version == 144) {
+//            database.executeFast("CREATE TABLE business_messages(mid INTEGER, type INTEGER, topic_id INTEGER, send_state INTEGER, date INTEGER, data BLOB, ttl INTEGER, replydata BLOB, reply_to_message_id INTEGER, PRIMARY KEY(mid, type))").stepThis().dispose();
+//            database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_business_messages ON business_messages(mid, send_state, date);").stepThis().dispose();
+//            database.executeFast("CREATE INDEX IF NOT EXISTS type_topic_date_idx_business_messages ON business_messages(type, topic_id, date);").stepThis().dispose();
+//            database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_business_messages ON business_messages(mid, reply_to_message_id);").stepThis().dispose();
+//            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_business_messages ON business_messages(reply_to_message_id, mid);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 145").stepThis().dispose();
+            version = 145;
+        }
+
+        if (version == 145) {
+            database.executeFast("CREATE TABLE business_replies(topic_id INTEGER PRIMARY KEY, name TEXT, order_value INTEGER);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 146").stepThis().dispose();
+            version = 146;
+        }
+
+        if (version == 146) {
+            database.executeFast("CREATE TABLE quick_replies_messages(mid INTEGER, topic_id INTEGER, send_state INTEGER, date INTEGER, data BLOB, ttl INTEGER, replydata BLOB, reply_to_message_id INTEGER, PRIMARY KEY(mid, topic_id))").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_quick_replies_messages ON quick_replies_messages(mid, send_state, date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS topic_date_idx_quick_replies_messages ON quick_replies_messages(topic_id, date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_quick_replies_messages ON quick_replies_messages(mid, reply_to_message_id);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_quick_replies_messages ON quick_replies_messages(reply_to_message_id, mid);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 147").stepThis().dispose();
+            version = 147;
+        }
+
+        if (version == 147) {
+            database.executeFast("ALTER TABLE business_replies ADD COLUMN count INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 148").stepThis().dispose();
+            version = 148;
+        }
+
+        if (version == 148) {
+            database.executeFast("ALTER TABLE topics ADD COLUMN edit_date INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 149").stepThis().dispose();
+            version = 149;
+        }
+
         return version;
     }
 
