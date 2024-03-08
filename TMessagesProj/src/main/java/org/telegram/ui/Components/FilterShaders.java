@@ -3,11 +3,9 @@ package org.telegram.ui.Components;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.PointF;
-import android.media.MediaFormat;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -67,24 +65,24 @@ public class FilterShaders {
                 "gl_FragColor = vec4(mix(image.rgb, tone.rgb, 1.0 - mask.b), 1.0);" +
             "}";
 
-    private static final String yuv_highpassSkinSmoothingCompositingFilterFragmentShaderString_300 =
-        "%1$s\n" +
-        "in highp vec2 vTextureCoord;" +
-        "in highp vec2 texCoord2;" +
-        "uniform sampler2D toneCurveTexture;" +
-        "uniform sampler2D inputImageTexture3;" +
-        "uniform lowp float mixturePercent;" +
-        "out vec4 fragColor;" +
-        "void main() {" +
-        "vec4 image = TEX(vTextureCoord);" +
-        "vec4 mask = texture(inputImageTexture3, texCoord2);" +
-        "float redCurveValue = texture(toneCurveTexture, vec2(image.r, 0.0)).r;" +
-        "float greenCurveValue = texture(toneCurveTexture, vec2(image.g, 0.0)).g;" +
-        "float blueCurveValue = texture(toneCurveTexture, vec2(image.b, 0.0)).b;" +
-        "vec4 result = vec4(redCurveValue, greenCurveValue, blueCurveValue, image.a);" +
-        "vec4 tone = mix(image, result, mixturePercent);" +
-        "fragColor = vec4(mix(image.rgb, tone.rgb, 1.0 - mask.b), 1.0);" +
-        "}";
+    private static final String HDRHighpassSkinSmoothingCompositingFilterFragmentShaderString =
+            "%1$s\n" +
+            "precision lowp float;" +
+            "varying highp vec2 vTextureCoord;" +
+            "varying highp vec2 texCoord2;" +
+            "uniform sampler2D toneCurveTexture;" +
+            "uniform sampler2D inputImageTexture3;" +
+            "uniform lowp float mixturePercent;" +
+            "void main() {" +
+                "vec4 image = TEX(vTextureCoord);" +
+                "vec4 mask = texture2D(inputImageTexture3, texCoord2);" +
+                "float redCurveValue = texture2D(toneCurveTexture, vec2(image.r, 0.0)).r;" +
+                "float greenCurveValue = texture2D(toneCurveTexture, vec2(image.g, 0.0)).g;" +
+                "float blueCurveValue = texture2D(toneCurveTexture, vec2(image.b, 0.0)).b;" +
+                "vec4 result = vec4(redCurveValue, greenCurveValue, blueCurveValue, image.a);" +
+                "vec4 tone = mix(image, result, mixturePercent);" +
+                "gl_FragColor = vec4(mix(image.rgb, tone.rgb, 1.0 - mask.b), 1.0);" +
+            "}";
 
     private static final String greenAndBlueChannelOverlayFragmentShaderCode =
             "%1$s\n" +
@@ -100,18 +98,18 @@ public class FilterShaders {
                 "gl_FragColor = vec4(ba,ba,ba,image.a);" +
             "}";
 
-    private static final String greenAndBlueChannelOverlayFragmentShaderCode_300 =
-        "%1$s\n" +
-        "in highp vec2 vTextureCoord;" +
-        "out vec4 fragColor;" +
-        "void main() {" +
-        "vec4 inp = TEX(vTextureCoord);" +
-        "vec4 image = vec4(inp.rgb * pow(2.0, -1.0), inp.w);" +
-        "vec4 base = vec4(image.g, image.g, image.g, 1.0);" +
-        "vec4 overlay = vec4(image.b, image.b, image.b, 1.0);" +
-        "float ba = 2.0 * overlay.b * base.b + overlay.b * (1.0 - base.a) + base.b * (1.0 - overlay.a);" +
-        "fragColor = vec4(ba,ba,ba,image.a);" +
-        "}";
+    private static final String HDRGreenAndBlueChannelOverlayFragmentShaderCode =
+            "%1$s\n" +
+            "precision lowp float;" +
+            "varying highp vec2 vTextureCoord;" +
+            "void main() {" +
+                "vec4 inp = TEX(vTextureCoord);" +
+                "vec4 image = vec4(inp.rgb * pow(2.0, -1.0), inp.w);" +
+                "vec4 base = vec4(image.g, image.g, image.g, 1.0);" +
+                "vec4 overlay = vec4(image.b, image.b, image.b, 1.0);" +
+                "float ba = 2.0 * overlay.b * base.b + overlay.b * (1.0 - base.a) + base.b * (1.0 - overlay.a);" +
+                "gl_FragColor = vec4(ba,ba,ba,image.a);" +
+            "}";
 
     private static final String stillImageHighPassFilterFragmentShaderCode =
             "precision lowp float;" +
@@ -335,17 +333,6 @@ public class FilterShaders {
                 "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
             "}";
 
-    private static final String simpleVertexVideoShaderCode_300 =
-            "#version 320 es\n" +
-            "in vec4 position;" +
-            "uniform mat4 videoMatrix;" +
-            "in vec4 inputTexCoord;" +
-            "out vec2 vTextureCoord;" +
-            "void main() {" +
-            "gl_Position = position;" +
-            "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
-            "}";
-
     private static final String simpleTwoTextureVertexVideoShaderCode =
             "attribute vec4 position;" +
             "uniform mat4 videoMatrix;" +
@@ -356,19 +343,6 @@ public class FilterShaders {
                 "gl_Position = position;" +
                 "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
                 "texCoord2 = inputTexCoord.xy;" +
-            "}";
-
-    private static final String simpleTwoTextureVertexVideoShaderCode_300 =
-            "#version 320 es\n" +
-            "in vec4 position;" +
-            "uniform mat4 videoMatrix;" +
-            "in vec4 inputTexCoord;" +
-            "out vec2 vTextureCoord;" +
-            "out vec2 texCoord2;" +
-            "void main() {" +
-            "gl_Position = position;" +
-            "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
-            "texCoord2 = inputTexCoord.xy;" +
             "}";
 
     private static final String rgbToHsvFragmentShaderCode =
@@ -389,22 +363,22 @@ public class FilterShaders {
                 "gl_FragColor = vec4(rgb_to_hsv(texel.rgb), texel.a);" +
             "}";
 
-    private static final String yuvToHsvFragmentShaderCode_300 =
-        "%1$s\n" +
-        "in vec2 vTextureCoord;" +
-        "out vec4 fragColor;" +
-        "highp vec3 rgb_to_hsv(vec3 c) {" +
-        "highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
-        "highp vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
-        "highp vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
-        "highp float d = q.x - min(q.w, q.y);" +
-        "highp float e = 1.0e-10;" +
-        "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
-        "}" +
-        "void main() {" +
-        "vec4 texel = TEX(vTextureCoord);" +
-        "fragColor = vec4(rgb_to_hsv(texel.rgb), texel.a);" +
-        "}";
+    private static final String HDRRgbToHsvFragmentShaderCode =
+            "%1$s\n" +
+            "precision highp float;" +
+            "varying vec2 vTextureCoord;" +
+            "vec3 rgb_to_hsv(vec3 c) {" +
+                "vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
+                "vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
+                "vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
+                "float d = q.x - min(q.w, q.y);" +
+                "float e = 1.0e-10;" +
+                "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
+            "}" +
+            "void main() {" +
+                "vec4 texel = TEX(vTextureCoord);" +
+                "gl_FragColor = vec4(rgb_to_hsv(texel.rgb), texel.a);" +
+            "}";
 
     private static final String enhanceFragmentShaderCode =
             "precision highp float;" +
@@ -472,6 +446,13 @@ public class FilterShaders {
             "uniform sampler2D sTexture;" +
             "void main() {" +
                 "gl_FragColor = texture2D(sTexture, vTextureCoord);" +
+            "}";
+
+    public static final String simpleHdrToSdrFragmentShaderCode =
+            "%1$s\n" +
+            "varying highp vec2 vTextureCoord;" +
+            "void main() {" +
+                "gl_FragColor = TEX(vTextureCoord);" +
             "}";
 
     private static final String sharpenVertexShaderCode =
@@ -1396,12 +1377,12 @@ public class FilterShaders {
     }
 
     private boolean setupExternalShaders() {
-        String yuvProcessor = "";
+        String hdrProcessor = "";
         int hdrType = hdrInfo != null ? hdrInfo.getHDRType() : 0;
         if (hdrType == 1) {
-            yuvProcessor = RLottieDrawable.readRes(null, R.raw.yuv_hlg2rgb);
+            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_hlg);
         } else if (hdrType == 2) {
-            yuvProcessor = RLottieDrawable.readRes(null, R.raw.yuv_pq2rgb);
+            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_pq);
         }
         String extension = isVideo ? "#extension GL_OES_EGL_image_external : require" : "";
         String sampler2D = isVideo ? "samplerExternalOES" : "sampler2D";
@@ -1411,8 +1392,8 @@ public class FilterShaders {
         for (int a = 0; a < (isVideo ? 2 : 1); a++) {
             if (a == 1 && isVideo) {
                 if (hdrType != 0) {
-                    vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode_300);
-                    fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, yuvToHsvFragmentShaderCode_300, yuvProcessor));
+                    vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
+                    fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, HDRRgbToHsvFragmentShaderCode, hdrProcessor));
                 } else {
                     vertexShader = fragmentShader = 0;
                 }
@@ -1453,8 +1434,8 @@ public class FilterShaders {
 
         if (isVideo) {
             if (hdrType != 0) {
-                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode_300);
-                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, greenAndBlueChannelOverlayFragmentShaderCode_300, yuvProcessor));
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, HDRGreenAndBlueChannelOverlayFragmentShaderCode, hdrProcessor));
             } else {
                 vertexShader = fragmentShader = 0;
             }
@@ -1494,8 +1475,8 @@ public class FilterShaders {
 
         if (isVideo) {
             if (hdrType != 0) {
-                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexVideoShaderCode_300);
-                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, yuv_highpassSkinSmoothingCompositingFilterFragmentShaderString_300, yuvProcessor));
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexVideoShaderCode);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, HDRHighpassSkinSmoothingCompositingFilterFragmentShaderString, hdrProcessor));
             } else {
                 vertexShader = fragmentShader = 0;
             }

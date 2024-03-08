@@ -16,6 +16,7 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.media.MediaFormat;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Surface;
@@ -877,6 +878,18 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             if (byteBuffer.get() == 0) {
                 hdrInfo.maxlum = byteBuffer.getShort(17);
                 hdrInfo.minlum = byteBuffer.getShort(19) * 0.0001f;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (mediaFormat.containsKey(MediaFormat.KEY_COLOR_TRANSFER)) {
+                    hdrInfo.colorTransfer = mediaFormat.getInteger(MediaFormat.KEY_COLOR_TRANSFER);
+                }
+                if (mediaFormat.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
+                    hdrInfo.colorStandard = mediaFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD);
+                }
+                if (mediaFormat.containsKey(MediaFormat.KEY_COLOR_RANGE)) {
+                    hdrInfo.colorRange = mediaFormat.getInteger(MediaFormat.KEY_COLOR_RANGE);
+                }
             }
         } catch (Exception ignore) {
             hdrInfo.maxlum = hdrInfo.minlum = 0;

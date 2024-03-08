@@ -264,6 +264,7 @@ import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -8722,6 +8723,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                         aspectRatioFrameLayout.setAspectRatio(height == 0 ? 1 : (width * pixelWidthHeightRatio) / height, unappliedRotationDegrees);
                         if (videoTextureView instanceof VideoEditTextureView) {
+                            StoryEntry.HDRInfo hdrInfo = videoPlayer.getHDRStaticInfo(null);
+                            ((VideoEditTextureView) videoTextureView).setHDRInfo(hdrInfo);
                             ((VideoEditTextureView) videoTextureView).setVideoSize((int) (width * pixelWidthHeightRatio), height);
                             if (sendPhotoType == SELECT_TYPE_AVATAR) {
                                 setCropBitmap();

@@ -492,8 +492,7 @@ public class MediaCodecVideoConvertor {
                             inputSurface.makeCurrent();
                             encoder.start();
 
-                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
-                            if (hdrInfo == null && outputSurface.supportsEXTYUV() && hasHDR) {
+                            if (hdrInfo == null && hasHDR) {
                                 hdrInfo = new StoryEntry.HDRInfo();
                                 hdrInfo.colorTransfer = colorTransfer;
                                 hdrInfo.colorStandard = colorStandard;
@@ -502,11 +501,13 @@ public class MediaCodecVideoConvertor {
                                     outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
                                 }
                             }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0 && outputSurface.supportsEXTYUV()) {
+
+                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0) {
                                 outputSurface.changeFragmentShader(
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, hdrInfo),
-                                        true
+                                        false
                                 );
                             } else if (!isRound && Math.max(resultHeight, resultHeight) / (float) Math.max(originalHeight, originalWidth) < 0.9f) {
                                 outputSurface.changeFragmentShader(
@@ -1201,27 +1202,24 @@ public class MediaCodecVideoConvertor {
         if (external) {
             String shaderCode;
             if (hdrInfo.getHDRType() == 1) {
-                shaderCode = RLottieDrawable.readRes(null, R.raw.yuv_hlg2rgb);
+                shaderCode = RLottieDrawable.readRes(null, R.raw.hdr2sdr_hlg);
             } else {
-                shaderCode = RLottieDrawable.readRes(null, R.raw.yuv_pq2rgb);
+                shaderCode = RLottieDrawable.readRes(null, R.raw.hdr2sdr_pq);
             }
             shaderCode = shaderCode.replace("$dstWidth", dstWidth + ".0");
             shaderCode = shaderCode.replace("$dstHeight", dstHeight + ".0");
             // TODO(@dkaraush): use minlum/maxlum
             return shaderCode + "\n" +
-                    "in vec2 vTextureCoord;\n" +
-                    "out vec4 fragColor;\n" +
+                    "varying vec2 vTextureCoord;\n" +
                     "void main() {\n" +
-                    "    fragColor = TEX(vTextureCoord);\n" +
+                    "    gl_FragColor = TEX(vTextureCoord);\n" +
                     "}";
         } else {
-            return "#version 320 es\n" +
-                    "precision mediump float;\n" +
+            return "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
                     "uniform sampler2D sTexture;\n" +
-                    "out vec4 fragColor;\n" +
                     "void main() {\n" +
-                    "fragColor = texture(sTexture, vTextureCoord);\n" +
+                    "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
                     "}\n";
         }
     }

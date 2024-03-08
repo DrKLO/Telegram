@@ -13,12 +13,14 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -148,12 +150,61 @@ public class FilterGLThread extends DispatchQueue {
     public void updateHDRInfo(StoryEntry.HDRInfo hdrInfo) {
         postRunnable(() -> {
             makeCurrentContext();
+            setupVideoShader(hdrInfo);
             filterShaders.updateHDRInfo(hdrInfo);
         });
     }
 
     public void setFilterGLThreadDelegate(FilterShaders.FilterShadersDelegate filterShadersDelegate) {
         postRunnable(() -> filterShaders.setDelegate(filterShadersDelegate));
+    }
+
+    private boolean setupVideoShader(StoryEntry.HDRInfo hdrInfo) {
+        String hdrProcessor = "";
+        int hdrType = hdrInfo != null ? hdrInfo.getHDRType() : 0;
+        if (hdrType == 1) {
+            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_hlg);
+        } else if (hdrType == 2) {
+            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_pq);
+        }
+
+        int vertexShader;
+        int fragmentShader;
+        if (hdrType != 0) {
+            vertexShader = FilterShaders.loadShader(GLES20.GL_VERTEX_SHADER, FilterShaders.simpleVertexVideoShaderCode);
+            fragmentShader = FilterShaders.loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, FilterShaders.simpleHdrToSdrFragmentShaderCode, hdrProcessor));
+        } else {
+            vertexShader = FilterShaders.loadShader(GLES20.GL_VERTEX_SHADER, FilterShaders.simpleVertexVideoShaderCode);
+            fragmentShader = FilterShaders.loadShader(GLES20.GL_FRAGMENT_SHADER, "#extension GL_OES_EGL_image_external : require\n" + FilterShaders.simpleFragmentShaderCode.replace("sampler2D", "samplerExternalOES"));
+        }
+
+        if (vertexShader != 0 && fragmentShader != 0) {
+            if (simpleOESShaderProgram != 0) {
+                GLES20.glDeleteProgram(simpleOESShaderProgram);
+            }
+            simpleOESShaderProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(simpleOESShaderProgram, vertexShader);
+            GLES20.glAttachShader(simpleOESShaderProgram, fragmentShader);
+            GLES20.glBindAttribLocation(simpleOESShaderProgram, 0, "position");
+            GLES20.glBindAttribLocation(simpleOESShaderProgram, 1, "inputTexCoord");
+
+            GLES20.glLinkProgram(simpleOESShaderProgram);
+            int[] linkStatus = new int[1];
+            GLES20.glGetProgramiv(simpleOESShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+            if (linkStatus[0] == 0) {
+                GLES20.glDeleteProgram(simpleOESShaderProgram);
+                simpleOESShaderProgram = 0;
+            } else {
+                simpleOESPositionHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "position");
+                simpleOESInputTexCoordHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "inputTexCoord");
+                simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sourceImage");
+                simpleOESMatrixHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "videoMatrix");
+            }
+        } else {
+            return false;
+        }
+
+        return true;
     }
 
     private boolean initGL() {
@@ -266,28 +317,7 @@ public class FilterGLThread extends DispatchQueue {
             return false;
         }
 
-        vertexShader = FilterShaders.loadShader(GLES20.GL_VERTEX_SHADER, FilterShaders.simpleVertexVideoShaderCode);
-        fragmentShader = FilterShaders.loadShader(GLES20.GL_FRAGMENT_SHADER, "#extension GL_OES_EGL_image_external : require\n" + FilterShaders.simpleFragmentShaderCode.replace("sampler2D", "samplerExternalOES"));
-        if (vertexShader != 0 && fragmentShader != 0) {
-            simpleOESShaderProgram = GLES20.glCreateProgram();
-            GLES20.glAttachShader(simpleOESShaderProgram, vertexShader);
-            GLES20.glAttachShader(simpleOESShaderProgram, fragmentShader);
-            GLES20.glBindAttribLocation(simpleOESShaderProgram, 0, "position");
-            GLES20.glBindAttribLocation(simpleOESShaderProgram, 1, "inputTexCoord");
-
-            GLES20.glLinkProgram(simpleOESShaderProgram);
-            int[] linkStatus = new int[1];
-            GLES20.glGetProgramiv(simpleOESShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
-            if (linkStatus[0] == 0) {
-                GLES20.glDeleteProgram(simpleOESShaderProgram);
-                simpleOESShaderProgram = 0;
-            } else {
-                simpleOESPositionHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "position");
-                simpleOESInputTexCoordHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "inputTexCoord");
-                simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sourceImage");
-                simpleOESMatrixHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "videoMatrix");
-            }
-        } else {
+        if (!setupVideoShader(null)) {
             return false;
         }
 
