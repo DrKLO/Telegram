@@ -33,16 +33,6 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.google.guava:guava:31.1-android'
 
-    implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
-    constraints {
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
-            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
-        }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
-            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
-        }
-    }
-
     implementation 'org.osmdroid:osmdroid-android:6.1.14'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
