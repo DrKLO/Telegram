@@ -81,36 +81,12 @@ public class ApplicationLoader extends Application {
     public static volatile long mainInterfacePausedStageQueueTime;
 
     private static PushListenerController.IPushListenerServiceProvider pushProvider;
-    private static IMapsProvider mapsProvider;
     private static ILocationServiceProvider locationServiceProvider;
 
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         MultiDex.install(this);
-    }
-
-    public static ILocationServiceProvider getLocationServiceProvider() {
-        if (locationServiceProvider == null) {
-            locationServiceProvider = applicationLoaderInstance.onCreateLocationServiceProvider();
-            locationServiceProvider.init(applicationContext);
-        }
-        return locationServiceProvider;
-    }
-
-    protected ILocationServiceProvider onCreateLocationServiceProvider() {
-        return new GoogleLocationProvider();
-    }
-
-    public static IMapsProvider getMapsProvider() {
-        if (mapsProvider == null) {
-            mapsProvider = applicationLoaderInstance.onCreateMapsProvider();
-        }
-        return mapsProvider;
-    }
-
-    protected IMapsProvider onCreateMapsProvider() {
-        return new GoogleMapsProvider();
     }
 
     public static PushListenerController.IPushListenerServiceProvider getPushProvider() {

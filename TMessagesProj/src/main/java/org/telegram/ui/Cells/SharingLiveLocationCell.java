@@ -29,12 +29,12 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import org.osmdroid.util.GeoPoint;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.IMapsProvider;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
@@ -352,9 +352,9 @@ public class SharingLiveLocationCell extends FrameLayout {
             }
         }
 
-        IMapsProvider.LatLng position = info.marker.getPosition();
-        location.setLatitude(position.latitude);
-        location.setLongitude(position.longitude);
+        GeoPoint position = info.marker.getPosition();
+        location.setLatitude(position.getLatitude());
+        location.setLongitude(position.getLongitude());
 
         String time = LocaleController.formatLocationUpdateDate(info.object.edit_date != 0 ? info.object.edit_date : info.object.date);
         if (userLocation != null) {
