@@ -1,7 +1,6 @@
 package org.telegram.ui.Stories;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.TextPaint;
 import android.text.style.ReplacementSpan;

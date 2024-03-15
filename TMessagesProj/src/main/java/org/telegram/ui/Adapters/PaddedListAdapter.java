@@ -2,11 +2,8 @@ package org.telegram.ui.Adapters;
 
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListAdapter;
-import android.widget.WrapperListAdapter;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.ui.Components.RecyclerListView;

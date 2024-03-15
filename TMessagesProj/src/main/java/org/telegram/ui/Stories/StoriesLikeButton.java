@@ -16,8 +16,6 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
-import java.util.Objects;
-
 public class StoriesLikeButton extends View {
 
     PeerStoriesView.SharedResources sharedResources;

@@ -5,16 +5,14 @@ import static org.telegram.messenger.SharedConfig.getDevicePerformanceClass;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.ImageReceiver;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
 
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarsImageView;
 
