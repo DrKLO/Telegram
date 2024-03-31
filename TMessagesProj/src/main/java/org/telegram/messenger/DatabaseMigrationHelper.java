@@ -1475,6 +1475,21 @@ public class DatabaseMigrationHelper {
             version = 149;
         }
 
+        if (version == 149) {
+            database.executeFast("ALTER TABLE stickersets2 ADD COLUMN short_name TEXT;").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS stickersets2_id_short_name ON stickersets2(id, short_name);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 150").stepThis().dispose();
+            version = 150;
+        }
+
+        if (version == 150) {
+            database.executeFast("CREATE TABLE business_links(data BLOB, order_value INTEGER);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 151").stepThis().dispose();
+            version = 151;
+        }
+
         return version;
     }
 

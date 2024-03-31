@@ -539,10 +539,12 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 actionBar.setTitle(LocaleController.getString("PaymentShippingMethod", R.string.PaymentShippingMethod));
                 break;
             case STEP_PAYMENT_INFO:
-                actionBar.setTitle(LocaleController.getString("PaymentCardInfo", R.string.PaymentCardInfo));
-                break;
             case STEP_CONFIRM_PASSWORD:
-                actionBar.setTitle(LocaleController.getString("PaymentCardInfo", R.string.PaymentCardInfo));
+                if (paymentFormMethod != null && !TextUtils.isEmpty(paymentFormMethod.title)) {
+                    actionBar.setTitle(paymentFormMethod.title);
+                } else {
+                    actionBar.setTitle(LocaleController.getString("PaymentCardInfo", R.string.PaymentCardInfo));
+                }
                 break;
             case STEP_CHECKOUT:
                 if (paymentForm.invoice.test) {

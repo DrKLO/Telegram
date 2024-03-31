@@ -218,6 +218,7 @@ public class WebviewActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         if (Build.VERSION.SDK_INT >= 19) {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            webView.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING);
         }
 
         if (Build.VERSION.SDK_INT >= 17) {

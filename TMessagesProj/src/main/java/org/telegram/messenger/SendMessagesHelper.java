@@ -66,7 +66,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
-import org.telegram.ui.Components.BotWebViewSheet;
+import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
@@ -378,6 +378,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public boolean animated;
         public TLRPC.TL_inputStickerSetItem item;
 
+        public VideoEditedInfo videoEditedInfo;
         public void uploadMedia(int account, TLRPC.InputFile inputFile, Runnable onFinish) {
             TLRPC.TL_messages_uploadMedia req = new TLRPC.TL_messages_uploadMedia();
             req.peer = new TLRPC.TL_inputPeerSelf();
@@ -501,7 +502,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             req.user_id = new TLRPC.TL_inputUserSelf();
             req.title = title;
             req.short_name = shortName;
-            req.animated = uploadMedia.get(0).animated;
             if (software != null) {
                 req.software = software;
                 req.flags |= 8;
@@ -2174,7 +2174,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                 if (arr.size() == 100 || a == messages.size() - 1 || a != messages.size() - 1 && messages.get(a + 1).getDialogId() != msgObj.getDialogId()) {
                     getMessagesStorage().putMessages(new ArrayList<>(arr), false, true, false, 0, scheduleDate != 0 ? 1 : 0, 0);
-                    getMessagesController().updateInterfaceWithMessages(peer, objArr, 0);
+                    getMessagesController().updateInterfaceWithMessages(peer, objArr, scheduleDate != 0 ? 1 : 0);
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
                     getUserConfig().saveConfig(false);
 
@@ -3207,7 +3207,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BotOwnershipTransferReadyAlertText", R.string.BotOwnershipTransferReadyAlertText)));
                         builder.setPositiveButton(LocaleController.getString("BotOwnershipTransferChangeOwner", R.string.BotOwnershipTransferChangeOwner), (dialogInterface, i) -> {
                             TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
-                            fragment.setDelegate(password -> sendCallback(cache, messageObject, button, password, fragment, parentFragment));
+                            fragment.setDelegate(0, password -> sendCallback(cache, messageObject, button, password, fragment, parentFragment));
                             parentFragment.presentFragment(fragment);
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -3748,7 +3748,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     newMsg.media.document = document;
                     if (params != null && params.containsKey("query_id")) {
                         type = 9;
-                    } else if (!MessageObject.isVideoSticker(document) && (MessageObject.isVideoDocument(document) || MessageObject.isRoundVideoDocument(document) || videoEditedInfo != null)) {
+                    } else if ((!MessageObject.isVideoSticker(document) || videoEditedInfo != null) && (MessageObject.isVideoDocument(document) || MessageObject.isRoundVideoDocument(document) || videoEditedInfo != null)) {
                         type = 3;
                     } else if (MessageObject.isVoiceDocument(document)) {
                         type = 8;
@@ -5121,7 +5121,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 String location = message.obj.messageOwner.attachPath;
                 TLRPC.Document document = message.obj.getDocument();
                 if (location == null) {
-                    location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + document.id + ".mp4";
+                    location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + document.id + "." + (message.videoEditedInfo.isSticker ? "webm" : "mp4");
                 }
                 putToDelayedMessages(location, message);
                 if (!message.videoEditedInfo.alreadyScheduledConverting) {
@@ -6952,6 +6952,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     attributeImageSize.w = bmOptions.outWidth;
                     attributeImageSize.h = bmOptions.outHeight;
                     document.attributes.add(attributeImageSize);
+
+                    Bitmap bitmap = ImageLoader.loadBitmap(f.getAbsolutePath(), null, 400, 400, true);
+                    TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(null, bitmap, Bitmap.CompressFormat.PNG, false, 400, 400, 100, isEncrypted, 0, 0, false);
+                    if (thumb != null) {
+                        document.thumbs.add(thumb);
+                        document.flags |= 1;
+                    }
                 }
             }
         }
@@ -8166,8 +8173,23 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     document.thumbs.add(size);
                                     document.flags |= 1;
                                 }
-                                document.mime_type = "video/mp4";
+                                if (info.videoEditedInfo != null && info.videoEditedInfo.isSticker) {
+                                    document.mime_type = "video/webm";
+                                } else {
+                                    document.mime_type = "video/mp4";
+                                }
                                 accountInstance.getUserConfig().saveConfig(false);
+                                if (info.videoEditedInfo != null && info.videoEditedInfo.isSticker) {
+                                    document.attributes.add(new TLRPC.TL_documentAttributeAnimated());
+                                    TLRPC.TL_documentAttributeSticker sticker = new TLRPC.TL_documentAttributeSticker();
+                                    sticker.alt = "👍";
+                                    sticker.stickerset = new TLRPC.TL_inputStickerSetEmpty();
+                                    document.attributes.add(sticker);
+//                                    document.size = videoEditedInfo.estimatedSize;
+                                    if (size != null && size.location != null) {
+                                        thumbKey = String.format(Locale.US, "%d_%d@b1", size.location.volume_id, size.location.local_id);
+                                    }
+                                }
                                 TLRPC.TL_documentAttributeVideo attributeVideo;
                                 if (isEncrypted) {
                                     attributeVideo = new TLRPC.TL_documentAttributeVideo_layer159();
@@ -8221,7 +8243,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 }
                             }
                             if (videoEditedInfo != null && (videoEditedInfo.needConvert() || !info.isVideo)) {
-                                String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + ".mp4";
+                                String ext = videoEditedInfo.isSticker ? "webm" : "mp4";
+                                String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + "." + ext;
                                 File cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                                 SharedConfig.saveConfig();
                                 path = cacheFile.getAbsolutePath();
@@ -8247,7 +8270,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     lastGroupId = 0;
                                 }
                             }
-                            if (!isEncrypted && info.masks != null && !info.masks.isEmpty()) {
+                            if (!isEncrypted && (videoEditedInfo == null || !videoEditedInfo.isSticker) && info.masks != null && !info.masks.isEmpty()) {
                                 document.attributes.add(new TLRPC.TL_documentAttributeHasStickers());
                                 SerializedData serializedData = new SerializedData(4 + info.masks.size() * 20);
                                 serializedData.writeInt32(info.masks.size());

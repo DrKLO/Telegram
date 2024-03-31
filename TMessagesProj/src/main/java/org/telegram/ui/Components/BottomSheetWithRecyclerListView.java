@@ -136,7 +136,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
         if (hasFixedSize) {
             recyclerListView.setHasFixedSize(true);
-            recyclerListView.setAdapter(createAdapter());
+            recyclerListView.setAdapter(createAdapter(recyclerListView));
             setCustomView(containerView);
             containerView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
@@ -190,7 +190,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     protected void resetAdapter(Context context) {
-        RecyclerListView.SelectionAdapter adapter = createAdapter();
+        RecyclerListView.SelectionAdapter adapter = createAdapter(recyclerListView);
         recyclerListView.setAdapter(new RecyclerListView.SelectionAdapter() {
 
             @Override
@@ -308,7 +308,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     protected abstract CharSequence getTitle();
 
-    protected abstract RecyclerListView.SelectionAdapter createAdapter();
+    protected abstract RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView);
 
     public void notifyDataSetChanged() {
         recyclerListView.getAdapter().notifyDataSetChanged();

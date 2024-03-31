@@ -56,6 +56,7 @@ public class AvatarsDrawable {
     public int count;
     public int height;
     public int width;
+    public int strokeWidth = AndroidUtilities.dp(1.67f);
 
     View parent;
     private int overrideSize;
@@ -264,12 +265,14 @@ public class AvatarsDrawable {
         for (int a = 0; a < 3; a++) {
             currentStates[a] = new DrawingState();
             currentStates[a].imageReceiver = new ImageReceiver(parent);
+            currentStates[a].imageReceiver.setInvalidateAll(true);
             currentStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             currentStates[a].avatarDrawable = new AvatarDrawable();
             currentStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
 
             animatingStates[a] = new DrawingState();
             animatingStates[a].imageReceiver = new ImageReceiver(parent);
+            animatingStates[a].imageReceiver.setInvalidateAll(true);
             animatingStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             animatingStates[a].avatarDrawable = new AvatarDrawable();
             animatingStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
@@ -588,7 +591,7 @@ public class AvatarsDrawable {
                         states[a].wavesDrawable.draw(canvas, imageReceiver.getCenterX(), imageReceiver.getCenterY(), parent);
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
                     } else {
-                        float rad = getSize() / 2f + AndroidUtilities.dp(2);
+                        float rad = getSize() / 2f + strokeWidth;
                         if (useAlphaLayer) {
                             canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), rad, xRefP);
                         } else {

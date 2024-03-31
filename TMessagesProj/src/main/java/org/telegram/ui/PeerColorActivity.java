@@ -28,8 +28,12 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -1332,6 +1336,18 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         public int getIntrinsicHeight() {
             return dp(18.33f);
         }
+    }
+
+    public static CharSequence withLevelLock(CharSequence text, int lvl) {
+        if (lvl <= 0) return text;
+        final Context context = ApplicationLoader.applicationContext;
+        SpannableStringBuilder ssb = new SpannableStringBuilder(text);
+        ssb.append("  L");
+        LevelLock drawable = new LevelLock(context, lvl, null);
+        ColoredImageSpan span = new ColoredImageSpan(drawable);
+        span.setTranslateY(dp(1));
+        ssb.setSpan(span, ssb.length() - 1, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return ssb;
     }
 
     public static class ChangeNameColorCell extends View {

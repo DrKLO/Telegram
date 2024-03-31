@@ -66,6 +66,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TextStyleSpan;
+import org.telegram.ui.bots.BotBiometry;
+import org.telegram.ui.bots.BotBiometrySettings;
 
 import java.util.ArrayList;
 
@@ -85,6 +87,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int lastSeenRow;
     private int profilePhotoRow;
     private int bioRow;
+    private int birthdayRow;
     private int forwardsRow;
     private int callsRow;
     private int voicesRow;
@@ -109,6 +112,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int passportRow;
     private int paymentsClearRow;
     private int webSessionsRow;
+    private int botsBiometryRow;
     private int botsDetailRow;
     private int botsAndWebsitesShadowRow;
     private int contactsSectionRow;
@@ -121,6 +125,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int secretWebpageRow;
     private int secretDetailRow;
     private int rowCount;
+
+    private final ArrayList<BotBiometry.Bot> biometryBots = new ArrayList<>();
 
     private boolean deleteAccountUpdate;
     private boolean secretMapUpdate;
@@ -361,6 +367,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_PHOTO));
             } else if (position == bioRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIO));
+            } else if (position == birthdayRow) {
+                presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY));
             } else if (position == forwardsRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_FORWARDS));
             } else if (position == voicesRow) {
@@ -582,7 +590,15 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 }
             } else if (position == passportRow) {
                 presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null, null));
+            } else if (position == botsBiometryRow) {
+                presentFragment(new BotBiometrySettings());
             }
+        });
+
+        BotBiometry.getBots(getContext(), currentAccount, bots -> {
+            biometryBots.clear();
+            biometryBots.addAll(bots);
+            updateRows(true);
         });
 
         return fragmentView;
@@ -650,10 +666,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         phoneNumberRow = rowCount++;
         lastSeenRow = rowCount++;
         profilePhotoRow = rowCount++;
-        bioRow = rowCount++;
         forwardsRow = rowCount++;
         callsRow = rowCount++;
-        groupsRow = rowCount++;
         groupsDetailRow = -1;
         if (!getMessagesController().premiumFeaturesBlocked() || getUserConfig().isPremium()) {
             voicesRow = rowCount++;
@@ -662,6 +676,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             voicesRow = -1;
             noncontactsRow = -1;
         }
+        birthdayRow = rowCount++;
+        bioRow = rowCount++;
+        groupsRow = rowCount++;
         privacyShadowRow = rowCount++;
 
         if (getMessagesController().autoarchiveAvailable || getUserConfig().isPremium()) {
@@ -683,6 +700,11 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             passportRow = -1;
         }
         paymentsClearRow = rowCount++;
+        if (!biometryBots.isEmpty()) {
+            botsBiometryRow = rowCount++;
+        } else {
+            botsBiometryRow = -1;
+        }
         if (webSessionsActivityPreload != null && webSessionsActivityPreload.getSessionsCount() > 0) {
             webSessionsRow = rowCount++;
             botsDetailRow = rowCount++;
@@ -770,6 +792,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         int type = -1;
         int plus = 0;
         int minus = 0;
+        boolean premium = false;
         for (int a = 0; a < privacyRules.size(); a++) {
             TLRPC.PrivacyRule rule = privacyRules.get(a);
             if (rule instanceof TLRPC.TL_privacyValueAllowChatParticipants) {
@@ -796,6 +819,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             } else if (rule instanceof TLRPC.TL_privacyValueDisallowUsers) {
                 TLRPC.TL_privacyValueDisallowUsers privacyValueDisallowUsers = (TLRPC.TL_privacyValueDisallowUsers) rule;
                 minus += privacyValueDisallowUsers.users.size();
+            } else if (rule instanceof TLRPC.TL_privacyValueAllowPremium) {
+                premium = true;
             } else if (type == -1) {
                 if (rule instanceof TLRPC.TL_privacyValueAllowAll) {
                     type = 0;
@@ -821,33 +846,33 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 }
             }
         } else if (type == 2 || type == -1 && minus > 0 && plus > 0) {
-            if (rulesType == 3) {
+            if (rulesType == PrivacyControlActivity.PRIVACY_RULES_TYPE_P2P) {
                 if (plus == 0 && minus == 0) {
                     return LocaleController.getString("P2PContacts", R.string.P2PContacts);
                 } else {
                     if (plus != 0 && minus != 0) {
-                        return LocaleController.formatString("P2PContactsMinusPlus", R.string.P2PContactsMinusPlus, minus, plus);
+                        return LocaleController.formatString(R.string.P2PContactsMinusPlus, minus, plus);
                     } else if (minus != 0) {
-                        return LocaleController.formatString("P2PContactsMinus", R.string.P2PContactsMinus, minus);
+                        return LocaleController.formatString(R.string.P2PContactsMinus, minus);
                     } else {
-                        return LocaleController.formatString("P2PContactsPlus", R.string.P2PContactsPlus, plus);
+                        return LocaleController.formatString(R.string.P2PContactsPlus, plus);
                     }
                 }
             } else {
                 if (plus == 0 && minus == 0) {
-                    return LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts);
+                    return LocaleController.getString(premium ? R.string.LastSeenContactsPremium : R.string.LastSeenContacts);
                 } else {
                     if (plus != 0 && minus != 0) {
-                        return LocaleController.formatString("LastSeenContactsMinusPlus", R.string.LastSeenContactsMinusPlus, minus, plus);
+                        return LocaleController.formatString(premium ? R.string.LastSeenContactsPremiumMinusPlus : R.string.LastSeenContactsMinusPlus, minus, plus);
                     } else if (minus != 0) {
-                        return LocaleController.formatString("LastSeenContactsMinus", R.string.LastSeenContactsMinus, minus);
+                        return LocaleController.formatString(premium ? R.string.LastSeenContactsPremiumMinus : R.string.LastSeenContactsMinus, minus);
                     } else {
-                        return LocaleController.formatString("LastSeenContactsPlus", R.string.LastSeenContactsPlus, plus);
+                        return LocaleController.formatString(premium ? R.string.LastSeenContactsPremiumPlus : R.string.LastSeenContactsPlus, plus);
                     }
                 }
             }
         } else if (type == 1 || plus > 0) {
-            if (rulesType == 3) {
+            if (rulesType == PrivacyControlActivity.PRIVACY_RULES_TYPE_P2P) {
                 if (plus == 0) {
                     return LocaleController.getString("P2PNobody", R.string.P2PNobody);
                 } else {
@@ -855,9 +880,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 }
             } else {
                 if (plus == 0) {
-                    return LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
+                    return LocaleController.getString(premium ? R.string.LastSeenNobodyPremium : R.string.LastSeenNobody);
                 } else {
-                    return LocaleController.formatString("LastSeenNobodyPlus", R.string.LastSeenNobodyPlus, plus);
+                    return LocaleController.formatString(premium ? R.string.LastSeenNobodyPremiumPlus : R.string.LastSeenNobodyPlus, plus);
                 }
             }
         }
@@ -889,6 +914,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == callsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_CALLS) ||
                     position == profilePhotoRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_PHOTO) ||
                     position == bioRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIO) ||
+                    position == birthdayRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY) ||
                     position == forwardsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_FORWARDS) ||
                     position == phoneNumberRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_PHONE) ||
                     position == voicesRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES) ||
@@ -896,7 +922,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == deleteAccountRow && !getContactsController().getLoadingDeleteInfo() ||
                     position == newChatsRow && !getContactsController().getLoadingGlobalSettings() ||
                     position == emailLoginRow || position == paymentsClearRow || position == secretMapRow ||
-                    position == contactsSyncRow || position == passportRow || position == contactsDeleteRow || position == contactsSuggestRow || position == autoDeleteMesages;
+                    position == contactsSyncRow || position == passportRow || position == contactsDeleteRow ||
+                    position == contactsSuggestRow || position == autoDeleteMesages || position == botsBiometryRow;
         }
 
         @Override
@@ -970,7 +997,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_INVITE);
                         }
-                        textCell.setTextAndValue(LocaleController.getString("GroupsAndChannels", R.string.GroupsAndChannels), value, true);
+                        textCell.setTextAndValue(LocaleController.getString(R.string.PrivacyInvites), value, false);
                     } else if (position == callsRow) {
                         if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_CALLS)) {
                             showLoading = true;
@@ -995,6 +1022,14 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_BIO);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyBio", R.string.PrivacyBio), value, true);
+                    } else if (position == birthdayRow) {
+                        if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY)) {
+                            showLoading = true;
+                            loadingLen = 30;
+                        } else {
+                            value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString(R.string.PrivacyBirthday), value, true);
                     } else if (position == forwardsRow) {
                         if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_FORWARDS)) {
                             showLoading = true;
@@ -1017,7 +1052,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
                     } else if (position == noncontactsRow) {
                         value = LocaleController.getString(noncontactsValue ? R.string.ContactsAndPremium : R.string.P2PEverybody);
-                        textCell.setTextAndValue(addPremiumStar(LocaleController.getString(R.string.PrivacyMessages)), value, false);
+                        textCell.setTextAndValue(getMessagesController().newNoncontactPeersRequirePremiumWithoutOwnpremium ? LocaleController.getString(R.string.PrivacyMessages) : addPremiumStar(LocaleController.getString(R.string.PrivacyMessages)), value, bioRow != -1);
                     } else if (position == passportRow) {
                         textCell.setText(LocaleController.getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {
@@ -1037,6 +1072,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         deleteAccountUpdate = false;
                     } else if (position == paymentsClearRow) {
                         textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), true);
+                    } else if (position == botsBiometryRow) {
+                        textCell.setText(LocaleController.getString(R.string.PrivacyBiometryBotsButton), true);
                     } else if (position == secretMapRow) {
                         switch (SharedConfig.mapPreviewType) {
                             case 0:
@@ -1074,6 +1111,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         privacyCell.setText(LocaleController.getString("SecretWebPageInfo", R.string.SecretWebPageInfo));
                     } else if (position == botsDetailRow) {
                         privacyCell.setText(LocaleController.getString("PrivacyBotsInfo", R.string.PrivacyBotsInfo));
+                    } else if (position == privacyShadowRow) {
+                        privacyCell.setText(LocaleController.getString(R.string.PrivacyInvitesInfo));
                     } else if (position == contactsDetailRow) {
                         /*if (newSync) {
                             privacyCell.setText(LocaleController.getString("SyncContactsInfoOn", R.string.SyncContactsInfoOn));
@@ -1206,15 +1245,15 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         public int getItemViewType(int position) {
             if (position == passportRow || position == lastSeenRow || position == phoneNumberRow ||
                     position == deleteAccountRow || position == webSessionsRow || position == groupsRow || position == paymentsClearRow ||
-                    position == secretMapRow || position == contactsDeleteRow) {
+                    position == secretMapRow || position == contactsDeleteRow || position == botsBiometryRow) {
                 return 0;
-            } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == contactsDetailRow || position == newChatsSectionRow) {
+            } else if (position == privacyShadowRow || position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == contactsDetailRow || position == newChatsSectionRow) {
                 return 1;
             } else if (position == securitySectionRow || position == advancedSectionRow || position == privacySectionRow || position == secretSectionRow || position == botsSectionRow || position == contactsSectionRow || position == newChatsHeaderRow) {
                 return 2;
             } else if (position == secretWebpageRow || position == contactsSyncRow || position == contactsSuggestRow || position == newChatsRow) {
                 return 3;
-            } else if (position == privacyShadowRow || position == botsAndWebsitesShadowRow) {
+            } else if (position == botsAndWebsitesShadowRow) {
                 return 4;
             } else if (position == autoDeleteMesages || position == sessionsRow || position == emailLoginRow || position == passwordRow || position == passcodeRow || position == blockedRow) {
                 return 5;
@@ -1225,9 +1264,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
     private SpannableString premiumStar;
     private CharSequence addPremiumStar(String text) {
-        if (!getUserConfig().isPremium()) {
-            return text;
-        }
+//        if (getUserConfig().isPremium()) {
+//            return text;
+//        }
         if (premiumStar == null) {
             premiumStar = new SpannableString("★");
             Drawable drawable = new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().premiumStarMenuDrawable, dp(18), dp(18));

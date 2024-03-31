@@ -429,13 +429,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW) {
             return;
         }
-        try {
-            performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-        } catch (Exception ignore) {}
+        AndroidUtilities.vibrateCursor(this);
         AndroidUtilities.runOnUIThread(() -> {
-            try {
-                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-            } catch (Exception ignore2) {}
+            AndroidUtilities.vibrateCursor(this);
         }, 180);
     }
 

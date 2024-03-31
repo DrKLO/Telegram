@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 import android.text.style.ReplacementSpan;
 
 import androidx.annotation.NonNull;
@@ -21,6 +22,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     Drawable drawable;
 
     boolean usePaintColor = true;
+    public boolean useLinkPaintColor = false;
     int colorKey;
     private int topOffset = 0;
     private float translateX, translateY;
@@ -95,6 +97,8 @@ public class ColoredImageSpan extends ReplacementSpan {
         } else {
             if (overrideColor != 0) {
                 color = overrideColor;
+            } else if (useLinkPaintColor && paint instanceof TextPaint) {
+                color = ((TextPaint) paint).linkColor;
             } else if (usePaintColor) {
                 color = paint.getColor();
             } else {
@@ -123,8 +127,8 @@ public class ColoredImageSpan extends ReplacementSpan {
             if (scaleX != 1f || scaleY != 1f) {
                 canvas.scale(scaleX, scaleY, 0, drawable.getBounds().centerY());
             }
-            if (alpha != 1f) {
-                drawable.setAlpha((int) (alpha * 255));
+            if (alpha != 1f || paint.getAlpha() != 0xFF) {
+                drawable.setAlpha((int) (alpha * paint.getAlpha()));
             }
             drawable.draw(canvas);
         }

@@ -177,7 +177,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private TextureView textureView;
     private BackupImageView textureOverlayView;
     private final boolean useCamera2 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.useCamera2;
-    private final boolean supportHotSwap = useCamera2 && DualCameraView.dualAvailableStatic(ApplicationLoader.applicationContext);
     private CameraSession cameraSession;
     private boolean bothCameras;
     private Camera2Session[] camera2Sessions = new Camera2Session[2];
@@ -701,7 +700,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
 
         if (useCamera2) {
-            bothCameras = DualCameraView.dualAvailableStatic(getContext());
+            bothCameras = DualCameraView.roundDualAvailableStatic(getContext());
             if (bothCameras) {
                 for (int a = 0; a < 2; ++a) {
                     if (camera2Sessions[a] == null) {

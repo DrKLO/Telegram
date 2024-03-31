@@ -27,9 +27,12 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
@@ -60,6 +63,8 @@ public class TextCell extends FrameLayout {
     private boolean measureDelay;
     private float loadingProgress;
     private float drawLoadingProgress;
+
+    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiDrawable;
 
     private int lastWidth;
 
@@ -209,6 +214,16 @@ public class TextCell extends FrameLayout {
         }
     }
 
+    public void updateEmojiBounds() {
+        if (emojiDrawable == null) return;
+        emojiDrawable.setBounds(
+            getWidth() - emojiDrawable.getIntrinsicWidth() - AndroidUtilities.dp(18),
+            (getHeight() - emojiDrawable.getIntrinsicHeight()) / 2,
+            getWidth() - AndroidUtilities.dp(18),
+            (getHeight() + emojiDrawable.getIntrinsicHeight()) / 2
+        );
+    }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         int height = bottom - top;
@@ -266,9 +281,18 @@ public class TextCell extends FrameLayout {
 
     public void updateColors() {
         int textKey = textView.getTag() instanceof Integer ? (int) textView.getTag() : Theme.key_windowBackgroundWhiteBlackText;
-        textView.setTextColor(processColor(Theme.getColor(textKey, resourcesProvider)));
+        int textColor = Theme.getColor(textKey, resourcesProvider);
+        if (textKey != Theme.key_dialogTextBlack && textKey != Theme.key_windowBackgroundWhiteBlackText) {
+            textColor = processColor(textColor);
+        }
+        textView.setTextColor(textColor);
         if (imageView.getTag() instanceof Integer) {
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor((int) imageView.getTag(), resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            int colorKey = (int) imageView.getTag();
+            int color = Theme.getColor(colorKey, resourcesProvider);
+            if (colorKey != Theme.key_dialogIcon && colorKey != Theme.key_windowBackgroundWhiteGrayIcon) {
+                color = processColor(color);
+            }
+            imageView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
         subtitleView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)));
         valueTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
@@ -276,12 +300,13 @@ public class TextCell extends FrameLayout {
     }
 
     public void setColors(int icon, int text) {
-        textView.setTextColor(processColor(Theme.getColor(text, resourcesProvider)));
+        textView.setTextColor(Theme.getColor(text, resourcesProvider));
         textView.setTag(text);
         if (icon >= 0) {
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }
+        updateColors();
     }
 
     private CharSequence valueText;
@@ -297,6 +322,9 @@ public class TextCell extends FrameLayout {
         valueImageView.setVisibility(GONE);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setLockLevel(boolean plus, int level) {
@@ -322,6 +350,9 @@ public class TextCell extends FrameLayout {
         imageView.setPadding(0, dp(7), 0, 0);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndColorfulIcon(CharSequence text, int resId, int color, boolean divider) {
@@ -335,6 +366,9 @@ public class TextCell extends FrameLayout {
         valueImageView.setVisibility(GONE);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndIcon(String text, Drawable drawable, boolean divider) {
@@ -355,6 +389,9 @@ public class TextCell extends FrameLayout {
         imageView.setPadding(0, dp(6), 0, 0);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setOffsetFromImage(int value) {
@@ -384,6 +421,9 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setValue(String value, boolean animated) {
@@ -404,6 +444,9 @@ public class TextCell extends FrameLayout {
         setWillNotDraw(!needDivider);
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
+        }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
         }
     }
 
@@ -426,6 +469,9 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndSpoilersValueAndColorfulIcon(String text, CharSequence value, int resId, int color, boolean divider) {
@@ -442,6 +488,9 @@ public class TextCell extends FrameLayout {
         setWillNotDraw(!needDivider);
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
+        }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
         }
     }
 
@@ -467,6 +516,9 @@ public class TextCell extends FrameLayout {
         setWillNotDraw(!needDivider);
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
+        }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
         }
     }
 
@@ -502,6 +554,9 @@ public class TextCell extends FrameLayout {
             checkBox.setChecked(checked, false);
         }
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndCheckAndIcon(CharSequence text, boolean checked, int resId, boolean divider) {
@@ -521,6 +576,9 @@ public class TextCell extends FrameLayout {
         imageView.setImageResource(resId);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndCheckAndIcon(String text, boolean checked, Drawable resDrawable, boolean divider) {
@@ -540,6 +598,9 @@ public class TextCell extends FrameLayout {
         imageView.setImageDrawable(resDrawable);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
     }
 
     public void setTextAndValueDrawable(String text, Drawable drawable, boolean divider) {
@@ -559,6 +620,39 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
+    }
+
+    public void setTextAndSticker(CharSequence text, TLRPC.Document document, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = getOffsetFromImage(false);
+        textView.setText(text);
+        textView.setRightDrawable(null);
+        valueTextView.setText(valueText = null, false);
+        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(GONE);
+        valueSpoilersTextView.setVisibility(GONE);
+        imageView.setVisibility(GONE);
+        imageView.setPadding(0, dp(7), 0, 0);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
+        setValueSticker(document);
+    }
+
+    public void setValueSticker(TLRPC.Document document) {
+        if (emojiDrawable == null) {
+            emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(30));
+            if (attached) {
+                emojiDrawable.attach();
+            }
+        }
+        emojiDrawable.set(document, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, true);
+        invalidate();
     }
 
     protected int getOffsetFromImage(boolean colourful) {
@@ -658,12 +752,18 @@ public class TextCell extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attached = true;
+        if (emojiDrawable != null) {
+            emojiDrawable.attach();
+        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attached = false;
+        if (emojiDrawable != null) {
+            emojiDrawable.detach();
+        }
     }
 
     public void setDrawLoading(boolean drawLoading, int size, boolean animated) {
@@ -734,9 +834,13 @@ public class TextCell extends FrameLayout {
             canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(3), dp(3), paint);
             invalidate();
         }
-        valueTextView.setAlpha(1f - drawLoadingProgress);
-        valueSpoilersTextView.setAlpha(1f - drawLoadingProgress);
+        valueTextView.setAlpha((1f - drawLoadingProgress) * (emojiDrawable == null ? 1f : 1f - emojiDrawable.isNotEmpty()));
+        valueSpoilersTextView.setAlpha((1f - drawLoadingProgress) * (emojiDrawable == null ? 1f : 1f - emojiDrawable.isNotEmpty()));
         super.dispatchDraw(canvas);
+        if (emojiDrawable != null) {
+            updateEmojiBounds();
+            emojiDrawable.draw(canvas);
+        }
     }
 
     public void setSubtitle(CharSequence charSequence) {

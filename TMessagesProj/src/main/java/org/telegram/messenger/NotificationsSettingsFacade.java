@@ -256,8 +256,7 @@ public class NotificationsSettingsFacade {
         }
     }
 
-    public void setSettingsForDialog(TLRPC.Dialog dialog, TLRPC.PeerNotifySettings notify_settings) {
-        SharedPreferences.Editor editor = getPreferences().edit();
+    public void setSettingsForDialog(SharedPreferences.Editor editor, TLRPC.Dialog dialog, TLRPC.PeerNotifySettings notify_settings) {
         long dialogId = MessageObject.getPeerId(dialog.peer);
 
         if ((dialog.notify_settings.flags & 2) != 0) {
@@ -281,7 +280,5 @@ public class NotificationsSettingsFacade {
         } else {
             editor.remove(PROPERTY_NOTIFY + dialogId);
         }
-
-        editor.apply();
     }
 }

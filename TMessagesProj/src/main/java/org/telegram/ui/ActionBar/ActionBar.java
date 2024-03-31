@@ -76,7 +76,7 @@ public class ActionBar extends FrameLayout {
     }
 
     private INavigationLayout.BackButtonState backButtonState = INavigationLayout.BackButtonState.BACK;
-    private ImageView backButtonImageView;
+    public ImageView backButtonImageView;
     private BackupImageView avatarSearchImageView;
     private Drawable backButtonDrawable;
     private SimpleTextView[] titleTextView = new SimpleTextView[2];
@@ -719,6 +719,9 @@ public class ActionBar extends FrameLayout {
             if (occupyStatusBar && actionModeTop != null && !SharedConfig.noStatusBar) {
                 animators.add(ObjectAnimator.ofFloat(actionModeTop, View.ALPHA, 0.0f, 1.0f));
             }
+            if (actionModeExtraView != null) {
+                animators.add(ObjectAnimator.ofFloat(actionModeExtraView, View.TRANSLATION_Y, 0));
+            }
             if (SharedConfig.noStatusBar) {
                 if (ColorUtils.calculateLuminance(actionModeColor) < 0.7f) {
                     AndroidUtilities.setLightStatusBar(((Activity) getContext()).getWindow(), false);
@@ -807,6 +810,9 @@ public class ActionBar extends FrameLayout {
                 actionModeTranslationView = translationView;
             }
             actionModeExtraView = extraView;
+            if (actionModeExtraView != null) {
+                actionModeExtraView.setTranslationY(0);
+            }
             actionModeShowingView = showingView;
             actionModeHidingViews = hidingViews;
             if (occupyStatusBar && actionModeTop != null && !SharedConfig.noStatusBar) {
@@ -876,6 +882,9 @@ public class ActionBar extends FrameLayout {
         }
         if (occupyStatusBar && actionModeTop != null && !SharedConfig.noStatusBar) {
             animators.add(ObjectAnimator.ofFloat(actionModeTop, View.ALPHA, 0.0f));
+        }
+        if (actionModeExtraView != null) {
+            animators.add(ObjectAnimator.ofFloat(actionModeExtraView, View.TRANSLATION_Y, actionModeExtraView.getMeasuredHeight()));
         }
         if (SharedConfig.noStatusBar) {
             if (actionBarColor == 0) {

@@ -214,6 +214,7 @@ public class MessageObject {
     public TLRPC.TL_sponsoredWebPage sponsoredWebPage;
     public TLRPC.BotApp sponsoredBotApp;
     public String sponsoredButtonText;
+    public boolean sponsoredCanReport;
     public boolean replyTextEllipsized;
     public boolean replyTextRevealed;
     public int overrideLinkColor = -1;
@@ -3673,7 +3674,7 @@ public class MessageObject {
         boolean notReadyYet = videoEditedInfo != null && videoEditedInfo.notReadyYet;
         if (messageOwner.message != null && (messageOwner.id < 0 || isEditing()) && messageOwner.params != null) {
             String param;
-            if ((param = messageOwner.params.get("ve")) != null && (isVideo() || isNewGif() || isRoundVideo())) {
+            if ((param = messageOwner.params.get("ve")) != null && (isVideo() || isNewGif() || isRoundVideo() || isVideoSticker())) {
                 videoEditedInfo = new VideoEditedInfo();
                 if (!videoEditedInfo.parseString(param)) {
                     videoEditedInfo = null;
@@ -5068,6 +5069,10 @@ public class MessageObject {
         return document != null && document.mime_type.equals("video/webm");
     }
 
+    public static boolean isStaticStickerDocument(TLRPC.Document document) {
+        return document != null && document.mime_type.equals("image/webp");
+    }
+
     public static boolean isGifDocument(WebFile document) {
         return document != null && (document.mime_type.equals("image/gif") || isNewGifDocument(document));
     }
@@ -5978,13 +5983,20 @@ public class MessageObject {
             return;
         }
         for (int i = 0; i < spans.length; ++i) {
-            TLRPC.Document lottieDocument = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(spans[i].emoji);
+            CharSequence emoji = spans[i].emoji;
+            boolean invert = false;
+            if (Emoji.endsWithRightArrow(emoji)) {
+                emoji = emoji.subSequence(0, emoji.length() - 2);
+                invert = true;
+            }
+            TLRPC.Document lottieDocument = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(emoji);
             if (lottieDocument != null) {
                 int start = spannable.getSpanStart(spans[i]);
                 int end = spannable.getSpanEnd(spans[i]);
                 spannable.removeSpan(spans[i]);
                 AnimatedEmojiSpan span = new AnimatedEmojiSpan(lottieDocument, spans[i].fontMetrics);
                 span.standard = true;
+                span.invert = invert;
                 spannable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
@@ -8926,7 +8938,7 @@ public class MessageObject {
             if (fromId >= 0) {
                 fromId = DialogObject.getPeerDialogId(messageOwner.fwd_from.from_id);
             }
-            if (fromId == 0) return savedId != UserObject.ANONYMOUS;
+            if (fromId == 0) return savedId >= 0 && savedId != UserObject.ANONYMOUS;
             return savedId != fromId && fromId != selfId;
         }
         return (messageOwner.flags & TLRPC.MESSAGE_FLAG_FWD) != 0 && messageOwner.fwd_from != null && !messageOwner.fwd_from.imported && (messageOwner.fwd_from.saved_from_peer == null || !(messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChannel) || messageOwner.fwd_from.saved_from_peer.channel_id != messageOwner.fwd_from.from_id.channel_id) && UserConfig.getInstance(currentAccount).getClientUserId() != getDialogId();

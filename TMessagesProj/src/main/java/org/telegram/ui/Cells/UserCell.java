@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -61,6 +62,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     private ImageView imageView;
     private CheckBox2 checkBox;
     private CheckBoxSquare checkBoxBig;
+    private ImageView checkBox3;
     private TextView adminTextView;
     private TextView addButton;
     private Drawable premiumDrawable;
@@ -196,6 +198,13 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             checkBox.setDrawBackgroundAsArc(3);
             checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
             addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 36, LocaleController.isRTL ? 37 + padding : 0, 0));
+        } else if (checkbox == 3) {
+            checkBox3 = new ImageView(context);
+            checkBox3.setScaleType(ImageView.ScaleType.CENTER);
+            checkBox3.setImageResource(R.drawable.account_check);
+            checkBox3.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            checkBox3.setVisibility(View.GONE);
+            addView(checkBox3, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 10 + padding : 0, 0, LocaleController.isRTL ? 0 : 10 + padding, 0));
         }
 
         if (admin) {
@@ -390,6 +399,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 checkBoxBig.setVisibility(VISIBLE);
             }
             checkBoxBig.setChecked(checked, animated);
+        } else if (checkBox3 != null) {
+            checkBox3.setVisibility(checked ? View.VISIBLE : View.GONE);
         }
     }
 

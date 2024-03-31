@@ -368,7 +368,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView impl
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         return new RecyclerListView.SelectionAdapter() {
             private final static int VIEW_TYPE_HEADER = 0,
                     VIEW_TYPE_TIER = 1,

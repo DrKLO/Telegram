@@ -174,9 +174,6 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getColorIndex(long id) {
-        if (id >= 0 && id < Theme.keys_avatar_background.length) {
-            return (int) id;
-        }
         return (int) Math.abs(id % Theme.keys_avatar_background.length);
     }
 

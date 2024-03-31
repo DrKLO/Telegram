@@ -89,7 +89,7 @@ public class TimezoneSelector extends BaseFragment implements NotificationCenter
         FrameLayout contentView = new FrameLayout(context);
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new UniversalRecyclerView(context, currentAccount, this::fillItems, this::onClick, null, getResourceProvider());
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {

@@ -32,11 +32,6 @@ public class TopViewCell extends LinearLayout {
         imageView.getImageReceiver().setAutoRepeatCount(1);
         imageView.getImageReceiver().setAutoRepeat(1);
         imageView.setOnClickListener(v -> {
-            RLottieDrawable lottie = imageView.getImageReceiver().getLottieAnimation();
-            if (lottie != null) {
-                if (lottie.getCurrentFrame() < lottie.getFramesCount() - 20) return;
-                lottie.setProgress(0f);
-            }
             imageView.getImageReceiver().startAnimation();
         });
         addView(imageView, LayoutHelper.createLinear(90, 90, Gravity.CENTER, 0, 9, 0, 9));
@@ -68,6 +63,7 @@ public class TopViewCell extends LinearLayout {
     public void setEmoji(int iconResId) {
         if (lastIconResId != iconResId) {
             imageView.setImageDrawable(new RLottieDrawable(lastIconResId = iconResId, "" + iconResId, dp(90), dp(90)));
+            imageView.getImageReceiver().setAutoRepeat(2);
         }
     }
 

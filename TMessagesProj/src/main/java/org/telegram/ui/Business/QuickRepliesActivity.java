@@ -156,7 +156,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
         };
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new UniversalRecyclerView(context, currentAccount, this::fillItems, this::onClick, this::onLongClick, getResourceProvider());
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
         listView.listenReorder(this::whenReordered);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 

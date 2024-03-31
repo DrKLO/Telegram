@@ -1,7 +1,13 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,11 +15,18 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -23,6 +36,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -54,7 +68,9 @@ public class ChatGreetingsView extends LinearLayout {
 
     private final int currentAccount;
 
+    public FrameLayout stickerContainer;
     public BackupImageView stickerToSendView;
+    public BackupImageView nextStickerToSendView;
     private final Theme.ResourcesProvider resourcesProvider;
     boolean wasDraw;
 
@@ -64,9 +80,11 @@ public class ChatGreetingsView extends LinearLayout {
         this.currentAccount = currentAccount;
         this.resourcesProvider = resourcesProvider;
 
+        setPadding(0, dp(8), 0, 0);
+
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         titleView.setGravity(Gravity.CENTER);
 
@@ -75,18 +93,29 @@ public class ChatGreetingsView extends LinearLayout {
         descriptionView.setGravity(Gravity.CENTER);
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         descriptionView.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        stickerContainer = new FrameLayout(context);
         stickerToSendView = new BackupImageView(context);
+        stickerToSendView.getImageReceiver().setAspectFit(true);
+        stickerContainer.addView(stickerToSendView, LayoutHelper.createFrame(112, 112));
         ScaleStateListAnimator.apply(stickerToSendView);
+
+        nextStickerToSendView = new BackupImageView(context);
+        nextStickerToSendView.getImageReceiver().setAspectFit(true);
+        stickerContainer.addView(nextStickerToSendView, LayoutHelper.createFrame(112, 112));
+        nextStickerToSendView.setVisibility(View.GONE);
+        nextStickerToSendView.setAlpha(0f);
+        ScaleStateListAnimator.apply(nextStickerToSendView);
         updateLayout();
 
         updateColors();
 
         if (distance <= 0) {
-            titleView.setText(LocaleController.getString("NoMessages", R.string.NoMessages));
-            descriptionView.setText(LocaleController.getString("NoMessagesGreetingsDescription", R.string.NoMessagesGreetingsDescription));
+            titleView.setText(getString(R.string.NoMessages));
+            descriptionView.setText(getString(R.string.NoMessagesGreetingsDescription));
         } else {
-            titleView.setText(LocaleController.formatString("NearbyPeopleGreetingsMessage", R.string.NearbyPeopleGreetingsMessage, user.first_name, LocaleController.formatDistance(distance, 1)));
-            descriptionView.setText(LocaleController.getString("NearbyPeopleGreetingsDescription", R.string.NearbyPeopleGreetingsDescription));
+            titleView.setText(formatString("NearbyPeopleGreetingsMessage", R.string.NearbyPeopleGreetingsMessage, user.first_name, LocaleController.formatDistance(distance, 1)));
+            descriptionView.setText(getString(R.string.NearbyPeopleGreetingsDescription));
         }
         descriptionView.setMaxWidth(HintView2.cutInFancyHalf(descriptionView.getText(), descriptionView.getPaint()));
         stickerToSendView.setContentDescription(descriptionView.getText());
@@ -133,9 +162,9 @@ public class ChatGreetingsView extends LinearLayout {
             }
             String text;
             if (MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
-                text = LocaleController.formatString(R.string.MessageLockedPremiumLocked, username);
+                text = formatString(R.string.MessageLockedPremiumLocked, username);
             } else {
-                text = LocaleController.formatString(R.string.MessageLockedPremium, username);
+                text = formatString(R.string.MessageLockedPremium, username);
             }
             premiumTextView.setText(AndroidUtilities.replaceTags(text));
             premiumTextView.setMaxWidth(HintView2.cutInFancyHalf(premiumTextView.getText(), premiumTextView.getPaint()));
@@ -209,23 +238,25 @@ public class ChatGreetingsView extends LinearLayout {
     private void updateLayout() {
         removeAllViews();
         if (premiumLock) {
-            addView(premiumIconView, LayoutHelper.createLinear(78, 78, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 17, 20, 9));
+            addView(premiumIconView, LayoutHelper.createLinear(78, 78, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 9, 20, 9));
             final boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
             addView(premiumTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 0, 20, premiumLocked ? 13 : 9));
             if (!premiumLocked) {
                 addView(premiumButtonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 2, 20, 13));
             }
         } else {
-            addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 14, 20, 6));
-            addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 6, 20, 0));
-            addView(stickerToSendView, LayoutHelper.createLinear(112, 112, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
+            addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 6, 20, 6));
+            addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 6, 20, 6));
+            addView(stickerContainer, LayoutHelper.createLinear(112, 112, Gravity.CENTER_HORIZONTAL, 16, 10, 16, 16));
         }
     }
 
-    private void setSticker(TLRPC.Document sticker) {
+    public void setSticker(TLRPC.Document sticker) {
         if (sticker == null) {
             return;
         }
+        wasDraw = true;
+        nextStickerToSendView.clearImage();
         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(sticker, Theme.key_chat_serviceBackground, 1.0f);
         if (svgThumb != null) {
             stickerToSendView.setImage(ImageLocation.getForDocument(sticker), createFilter(sticker), svgThumb, 0, sticker);
@@ -238,6 +269,102 @@ public class ChatGreetingsView extends LinearLayout {
                 listener.onGreetings(sticker);
             }
         });
+    }
+
+    public void setNextSticker(TLRPC.Document sticker, Runnable whenDone) {
+        if (sticker == null) {
+            return;
+        }
+        if (togglingStickersAnimator != null) {
+            togglingStickersAnimator.cancel();
+        }
+        nextStickerToSendView.getImageReceiver().setDelegate(new ImageReceiver.ImageReceiverDelegate() {
+            private boolean waited;
+            @Override
+            public void didSetImageBitmap(int type, String key, Drawable drawable) {
+                if (waited) {
+                    return;
+                }
+                if ((type == ImageReceiver.TYPE_IMAGE || type == ImageReceiver.TYPE_MEDIA) && drawable != null) {
+                    waited = true;
+                    if (drawable instanceof RLottieDrawable && ((RLottieDrawable) drawable).bitmapsCache != null && ((RLottieDrawable) drawable).bitmapsCache.needGenCache()) {
+                        ((RLottieDrawable) drawable).whenCacheDone = () -> {
+                            toggleToNextSticker();
+                            if (whenDone != null) {
+                                whenDone.run();
+                            }
+                        };
+                    } else {
+                        toggleToNextSticker();
+                        if (whenDone != null) {
+                            whenDone.run();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache) {}
+        });
+        SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(sticker, Theme.key_chat_serviceBackground, 1.0f);
+        if (svgThumb != null) {
+            nextStickerToSendView.setImage(ImageLocation.getForDocument(sticker), createFilter(sticker), svgThumb, 0, sticker);
+        } else {
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+            nextStickerToSendView.setImage(ImageLocation.getForDocument(sticker), createFilter(sticker), ImageLocation.getForDocument(thumb, sticker), null, 0, sticker);
+        }
+        nextStickerToSendView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onGreetings(sticker);
+            }
+        });
+    }
+
+    private AnimatorSet togglingStickersAnimator;
+    private void toggleToNextSticker() {
+        if (togglingStickersAnimator != null) {
+            togglingStickersAnimator.cancel();
+        }
+
+        nextStickerToSendView.setVisibility(View.VISIBLE);
+        stickerToSendView.setVisibility(View.VISIBLE);
+
+        togglingStickersAnimator = new AnimatorSet();
+        togglingStickersAnimator.setDuration(420);
+        togglingStickersAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        togglingStickersAnimator.addListener(new AnimatorListenerAdapter() {
+            private boolean cancelled;
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (cancelled) return;
+
+                BackupImageView temp = stickerToSendView;
+                stickerToSendView = nextStickerToSendView;
+                nextStickerToSendView = temp;
+
+                nextStickerToSendView.setVisibility(View.GONE);
+                nextStickerToSendView.setAlpha(0f);
+                stickerToSendView.setVisibility(View.VISIBLE);
+                stickerToSendView.setAlpha(1f);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                cancelled = true;
+            }
+        });
+        togglingStickersAnimator.playTogether(
+            ObjectAnimator.ofFloat(nextStickerToSendView, View.ALPHA, 0f, 1f),
+            ObjectAnimator.ofFloat(nextStickerToSendView, View.SCALE_X, .7f, 1f),
+            ObjectAnimator.ofFloat(nextStickerToSendView, View.SCALE_Y, .7f, 1f),
+            ObjectAnimator.ofFloat(nextStickerToSendView, View.TRANSLATION_Y, -dp(24), 0),
+
+            ObjectAnimator.ofFloat(stickerToSendView, View.ALPHA, 1f, 0f),
+            ObjectAnimator.ofFloat(stickerToSendView, View.SCALE_X, 1f, .7f),
+            ObjectAnimator.ofFloat(stickerToSendView, View.SCALE_Y, 1f, .7f),
+            ObjectAnimator.ofFloat(stickerToSendView, View.TRANSLATION_Y, 0, dp(24))
+        );
+        togglingStickersAnimator.start();
     }
 
     public static String createFilter(TLRPC.Document document) {
@@ -296,22 +423,62 @@ public class ChatGreetingsView extends LinearLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         ignoreLayot = true;
-        descriptionView.setVisibility(View.VISIBLE);
+        if (!preview) {
+            descriptionView.setVisibility(View.VISIBLE);
+        }
         stickerToSendView.setVisibility(View.VISIBLE);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (getMeasuredHeight() > MeasureSpec.getSize(heightMeasureSpec)) {
+        if (getMeasuredHeight() > MeasureSpec.getSize(heightMeasureSpec) && !preview) {
             descriptionView.setVisibility(View.GONE);
             stickerToSendView.setVisibility(View.GONE);
         } else {
-            descriptionView.setVisibility(View.VISIBLE);
+            if (!preview) {
+                descriptionView.setVisibility(View.VISIBLE);
+            }
             stickerToSendView.setVisibility(View.VISIBLE);
         }
         ignoreLayot = false;
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
+    public boolean preview;
+    public void setPreview(CharSequence title, CharSequence message) {
+        preview = true;
+        titleView.setText(TextUtils.isEmpty(title == null ? null : title.toString().trim()) ? getString(R.string.NoMessages) : title);
+        descriptionView.setText(TextUtils.isEmpty(message == null ? null : message.toString().trim()) ? getString(R.string.NoMessagesGreetingsDescription) : message);
+        descriptionView.setMaxWidth(
+            descriptionView.getText().length() > 60 ?
+                Math.min((int) (AndroidUtilities.displaySize.x * .5f), HintView2.cutInFancyHalf(descriptionView.getText(), descriptionView.getPaint())) :
+                (int) (AndroidUtilities.displaySize.x * .5f)
+        );
+    }
+
+    private float viewTop;
+    private float viewTranslationX;
+    private int backgroundHeight;
+    private boolean visiblePartSet;
+
+    public void setVisiblePart(float visibleTop, int parentH) {
+        visiblePartSet = true;
+        backgroundHeight = parentH;
+        viewTop = visibleTop;
+        viewTranslationX = 0;
+    }
+
+    private boolean disableBackground;
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (!disableBackground) {
+            if (resourcesProvider != null) {
+                resourcesProvider.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            } else {
+                Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                canvas.drawRoundRect(0, 0, getWidth(), getHeight(), dp(16), dp(16), Theme.getThemePaint(Theme.key_paint_chatActionBackground, resourcesProvider));
+            }
+        }
         if (!wasDraw) {
             wasDraw = true;
             setSticker(preloadedGreetingsSticker);
@@ -345,6 +512,12 @@ public class ChatGreetingsView extends LinearLayout {
                 setSticker(preloadedGreetingsSticker);
             }
         }
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        super.setBackground(background);
+        disableBackground = true;
     }
 
     private int getThemedColor(int key) {
@@ -386,7 +559,7 @@ public class ChatGreetingsView extends LinearLayout {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
             username = UserObject.getFirstName(user);
         }
-        descriptionView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(premiumLocked ? R.string.PremiumMessageTextLocked : R.string.PremiumMessageText, username, username)));
+        descriptionView.setText(AndroidUtilities.replaceTags(formatString(premiumLocked ? R.string.PremiumMessageTextLocked : R.string.PremiumMessageText, username, username)));
         layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 9, 12, 19));
 
         if (!premiumLocked) {

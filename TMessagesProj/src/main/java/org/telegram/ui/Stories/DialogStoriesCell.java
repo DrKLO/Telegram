@@ -1125,14 +1125,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         private void createTextView() {
             textView = new SimpleTextView(getContext());
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             textView.setGravity(Gravity.CENTER);
             textView.setTextSize(11);
             textView.setTextColor(getTextColor());
             NotificationCenter.listenEmojiLoading(textView);
-           // textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setMaxLines(1);
-            //textView.setSingleLine(true);
 
             textViewContainer.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 1, 0, 1, 0));
             avatarImage.setRoundRadius(AndroidUtilities.dp(48) / 2);
@@ -1173,12 +1171,15 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             }
             textView.setRightDrawable(null);
             if (storiesController.isLastUploadingFailed(dialogId)) {
-                textView.setText(LocaleController.getString("FailedStory", R.string.FailedStory));
+                textView.setTextSize(10);
+                textView.setText(LocaleController.getString(R.string.FailedStory));
                 isUploadingState = false;
             } else if (!Utilities.isNullOrEmpty(storiesController.getUploadingStories(dialogId))) {
+                textView.setTextSize(10);
                 StoriesUtilities.applyUploadingStr(textView, true, false);
                 isUploadingState = true;
             } else if (storiesController.getEditingStory(dialogId) != null) {
+                textView.setTextSize(10);
                 StoriesUtilities.applyUploadingStr(textView, true, false);
                 isUploadingState = true;
             } else {
@@ -1222,8 +1223,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     }
                     AndroidUtilities.runOnUIThread(animationRunnable, 500);
                     isUploadingState = false;
-                    textView.setText(LocaleController.getString("MyStory", R.string.MyStory));//, animated);
+                    textView.setTextSize(10);
+                    textView.setText(LocaleController.getString(R.string.MyStory));
                 } else if (user != null) {
+                    textView.setTextSize(11);
                     String name = user.first_name == null ? "" : user.first_name.trim();
                     int index = name.indexOf(" ");
                     if (index > 0) {
@@ -1244,6 +1247,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         textView.setRightDrawable(null);
                     }//, false);
                 } else {
+                    textView.setTextSize(11);
                     CharSequence text = chat.title;
                     text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
                     textView.setText(text);//, false);

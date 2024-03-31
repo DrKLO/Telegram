@@ -84,7 +84,7 @@ public class AudioRecoder {
         }
     }
 
-    public boolean step(MP4Builder muxer, int audioTrackIndex) throws Exception {
+    public boolean step(MediaCodecVideoConvertor.Muxer muxer, int audioTrackIndex) throws Exception {
         if (!encoderInputDone) {
             int encoderBufferIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
             if (encoderBufferIndex >= 0) {

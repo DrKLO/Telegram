@@ -52,7 +52,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     public final static float HORIZONTAL_PADDING = AndroidUtilities.dpf2(16f);
     private final static float LINE_WIDTH = 1;
     private final static float SELECTED_LINE_WIDTH = AndroidUtilities.dpf2(1.5f);
-    private final static float SIGNATURE_TEXT_SIZE = AndroidUtilities.dpf2(12f);
+    public final static float SIGNATURE_TEXT_SIZE = AndroidUtilities.dpf2(12f);
     public final static int SIGNATURE_TEXT_HEIGHT = AndroidUtilities.dp(18f);
     private final static int BOTTOM_SIGNATURE_TEXT_HEIGHT = AndroidUtilities.dp(14f);
     public final static int BOTTOM_SIGNATURE_START_ALPHA = AndroidUtilities.dp(10f);
@@ -101,8 +101,8 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
     Paint linePaint = new Paint();
     Paint selectedLinePaint = new Paint();
-    Paint signaturePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-    Paint signaturePaint2 = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+    TextPaint signaturePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+    TextPaint signaturePaint2 = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
     Paint bottomSignaturePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
     Paint pickerSelectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint unactiveBottomChartPaint = new Paint();
@@ -270,11 +270,8 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     }
 
     public void updateColors() {
-        if (useAlphaSignature) {
-            signaturePaint.setColor(Theme.getColor(Theme.key_statisticChartSignatureAlpha, resourcesProvider));
-        } else {
-            signaturePaint.setColor(Theme.getColor(Theme.key_statisticChartSignature, resourcesProvider));
-        }
+        signaturePaint.setColor(Theme.getColor(useAlphaSignature ? Theme.key_statisticChartSignatureAlpha : Theme.key_statisticChartSignature, resourcesProvider));
+        signaturePaint2.setColor(Theme.getColor(useAlphaSignature ? Theme.key_statisticChartSignatureAlpha : Theme.key_statisticChartSignature, resourcesProvider));
 
         bottomSignaturePaint.setColor(Theme.getColor(Theme.key_statisticChartSignature, resourcesProvider));
         linePaint.setColor(Theme.getColor(Theme.key_statisticChartHintLine, resourcesProvider));
@@ -296,7 +293,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         }
 
         if (legendShowing && selectedIndex < chartData.x.length) {
-            legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, false);
+            legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, false, chartData.yTooltipFormatter);
         }
 
         invalidatePickerChart = true;
@@ -503,6 +500,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
         linePaint.setAlpha((int) (hintLinePaintAlpha * transitionAlpha));
         signaturePaint.setAlpha((int) (255 * signaturePaintAlpha * transitionAlpha));
+        signaturePaint2.setAlpha((int) (255 * signaturePaintAlpha * transitionAlpha));
         int textOffset = (int) (SIGNATURE_TEXT_HEIGHT - signaturePaint.getTextSize());
         int y = (getMeasuredHeight() - chartBottom - 1);
         canvas.drawLine(
@@ -576,6 +574,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         }
         linePaint.setAlpha((int) (a.alpha * (hintLinePaintAlpha / 255f) * transitionAlpha * additionalOutAlpha));
         signaturePaint.setAlpha((int) (a.alpha * signaturePaintAlpha * transitionAlpha * additionalOutAlpha));
+        signaturePaint2.setAlpha((int) (a.alpha * signaturePaintAlpha * transitionAlpha * additionalOutAlpha));
         int chartHeight = getMeasuredHeight() - chartBottom - SIGNATURE_TEXT_HEIGHT;
         for (int i = useMinHeight ? 0 : 1; i < n; i++) {
             int y = (int) ((getMeasuredHeight() - chartBottom) - chartHeight * ((a.values[i] - currentMinHeight) / (currentMaxHeight - currentMinHeight)));
@@ -604,12 +603,16 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         }
         linePaint.setAlpha((int) (a.alpha * (hintLinePaintAlpha / 255f) * transitionAlpha * additionalOutAlpha));
         signaturePaint.setAlpha((int) (a.alpha * signaturePaintAlpha * transitionAlpha * additionalOutAlpha));
+        signaturePaint2.setAlpha((int) (a.alpha * signaturePaintAlpha * transitionAlpha * additionalOutAlpha));
         int chartHeight = getMeasuredHeight() - chartBottom - SIGNATURE_TEXT_HEIGHT;
 
         int textOffset = (int) (SIGNATURE_TEXT_HEIGHT - signaturePaint.getTextSize());
         for (int i = useMinHeight ? 0 : 1; i < n; i++) {
             int y = (int) ((getMeasuredHeight() - chartBottom) - chartHeight * ((a.values[i] - currentMinHeight) / (currentMaxHeight - currentMinHeight)));
-            canvas.drawText(a.valuesStr[i], HORIZONTAL_PADDING, y - textOffset, signaturePaint);
+            a.drawText(canvas, 0, i, HORIZONTAL_PADDING, y - textOffset, signaturePaint);
+            if (a.valuesStr2 != null) {
+                a.drawText(canvas, 1, i, getMeasuredWidth() - HORIZONTAL_PADDING, y - textOffset, signaturePaint2);
+            }
         }
     }
 
@@ -807,7 +810,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         }
 
         if (!heightChanged && newMaxHeight == animateToMinHeight) return;
-        final ChartHorizontalLinesData newData = createHorizontalLinesData(newMaxHeight, newMinHeight);
+        final ChartHorizontalLinesData newData = createHorizontalLinesData(newMaxHeight, newMinHeight, chartData.yTickFormatter);
         newMaxHeight = newData.values[newData.values.length - 1];
         newMinHeight = newData.values[0];
 
@@ -915,8 +918,8 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         alphaAnimator.start();
     }
 
-    protected ChartHorizontalLinesData createHorizontalLinesData(int newMaxHeight, int newMinHeight) {
-        return new ChartHorizontalLinesData(newMaxHeight, newMinHeight, useMinHeight);
+    protected ChartHorizontalLinesData createHorizontalLinesData(int newMaxHeight, int newMinHeight, int formatter) {
+        return new ChartHorizontalLinesData(newMaxHeight, newMinHeight, useMinHeight, chartData.yRate, formatter, signaturePaint, signaturePaint2);
     }
 
     ValueAnimator createAnimator(float f1, float f2, ValueAnimator.AnimatorUpdateListener l) {
@@ -1114,7 +1117,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
     public void moveLegend(float offset) {
         if (chartData == null || selectedIndex == -1 || !legendShowing) return;
-        legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, false);
+        legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, false, chartData.yTooltipFormatter);
         legendSignatureView.setVisibility(VISIBLE);
         legendSignatureView.measure(
                 MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.AT_MOST),
@@ -1419,7 +1422,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
         updatePickerMinMaxHeight();
         if (legendShowing)
-            legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, true);
+            legendSignatureView.setData(selectedIndex, chartData.x[selectedIndex], (ArrayList<LineViewData>) lines, true, chartData.yTooltipFormatter);
     }
 
     protected void updatePickerMinMaxHeight() {

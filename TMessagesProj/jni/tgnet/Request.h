@@ -35,6 +35,7 @@ public:
     uint32_t retryCount = 0;
     bool failedBySalt = false;
     int32_t failedByFloodWait = 0;
+    bool premiumFloodWait = false;
     ConnectionType connectionType;
     uint32_t requestFlags;
     bool completedSent = false;

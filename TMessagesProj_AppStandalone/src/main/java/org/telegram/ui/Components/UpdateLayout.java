@@ -197,14 +197,18 @@ public class UpdateLayout extends IUpdateLayout {
                 updateLayout.animate().translationY(0).setInterpolator(CubicBezierInterpolator.EASE_OUT).setListener(null).setDuration(180).withEndAction(() -> {
                     if (prevUpdateLayout != null) {
                         ViewGroup parent = (ViewGroup) prevUpdateLayout.getParent();
-                        parent.removeView(prevUpdateLayout);
+                        if (parent != null) {
+                            parent.removeView(prevUpdateLayout);
+                        }
                     }
                 }).start();
             } else {
                 updateLayout.setTranslationY(0);
                 if (prevUpdateLayout != null) {
                     ViewGroup parent = (ViewGroup) prevUpdateLayout.getParent();
-                    parent.removeView(prevUpdateLayout);
+                    if (parent != null) {
+                        parent.removeView(prevUpdateLayout);
+                    }
                 }
             }
             sideMenu.setPadding(0, 0, 0, AndroidUtilities.dp(44));

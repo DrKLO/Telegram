@@ -187,7 +187,7 @@ public class VideoPlayerHolderBase {
                 triesCount--;
                 if (triesCount > 0) {
                     dispatchQueue.postRunnable(initRunnable = () -> {
-                        if (released) {
+                        if (released || uri == null) {
                             return;
                         }
                         videoPlayer.preparePlayer(uri, "other");

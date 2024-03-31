@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -21,10 +23,13 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.ColorSpanUnderline;
@@ -38,6 +43,7 @@ public class StickerSetNameCell extends FrameLayout {
 
     private TextView textView;
     private TextView urlTextView;
+    private TextView editView;
     private ImageView buttonView;
     private boolean empty;
     private boolean isEmoji;
@@ -62,10 +68,14 @@ public class StickerSetNameCell extends FrameLayout {
 
         LayoutParams lp;
 
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+        layout.setGravity(Gravity.CENTER);
+
         textView = new TextView(context);
         textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setSingleLine(true);
         if (emoji) {
@@ -79,7 +89,23 @@ public class StickerSetNameCell extends FrameLayout {
         } else {
             lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, emoji ? 5 : 15, 5, emoji ? 15 : 25, 0);
         }
-        addView(textView, lp);
+        addView(layout, lp);
+        layout.addView(textView);
+
+        editView = new TextView(context);
+        editView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
+        editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        editView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        editView.setEllipsize(TextUtils.TruncateAt.END);
+        editView.setPadding(dp(6.33f), 0, dp(6.33f), 0);
+        editView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(9),
+            Theme.multAlpha(getThemedColor(Theme.key_chat_emojiPanelStickerSetName), .10f),
+            Theme.multAlpha(getThemedColor(Theme.key_chat_emojiPanelStickerSetName), .24f)
+        ));
+        editView.setGravity(Gravity.CENTER);
+        editView.setSingleLine(true);
+        layout.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 5.33f, .66f, 0, 0));
+        editView.setVisibility(View.GONE);
 
         urlTextView = new TextView(context);
         urlTextView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
@@ -103,7 +129,7 @@ public class StickerSetNameCell extends FrameLayout {
         } else {
             lp = LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.RIGHT, 0, 0, isEmoji ? 0 : 10, 0);
         }
-        buttonView.setTranslationY(AndroidUtilities.dp(4));
+        buttonView.setTranslationY(dp(4));
         addView(buttonView, lp);
     }
 
@@ -155,7 +181,7 @@ public class StickerSetNameCell extends FrameLayout {
             if (searchLength != 0) {
                 updateTextSearchSpan();
             } else {
-                textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), dp(14), false));
             }
             if (resId != 0) {
                 buttonView.setImageResource(resId);
@@ -165,6 +191,13 @@ public class StickerSetNameCell extends FrameLayout {
                 buttonView.setVisibility(INVISIBLE);
             }
         }
+        editView.setVisibility(View.GONE);
+    }
+
+    public void setEdit(View.OnClickListener whenClickedEdit) {
+        editView.setVisibility(View.VISIBLE);
+        editView.setText(LocaleController.getString(R.string.EditPack));
+        editView.setOnClickListener(whenClickedEdit);
     }
 
     private void updateTextSearchSpan() {
@@ -174,7 +207,7 @@ public class StickerSetNameCell extends FrameLayout {
                 builder.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_chat_emojiPanelStickerSetNameHighlight)), stickerSetNameSearchIndex, stickerSetNameSearchIndex + stickerSetNameSearchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } catch (Exception ignore) {
             }
-            textView.setText(Emoji.replaceEmoji(builder, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+            textView.setText(Emoji.replaceEmoji(builder, textView.getPaint().getFontMetricsInt(), dp(14), false));
         }
     }
 
@@ -193,14 +226,14 @@ public class StickerSetNameCell extends FrameLayout {
         if (empty) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(1, MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(27), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(27), MeasureSpec.EXACTLY));
         }
     }
 
     @Override
     protected void measureChildWithMargins(View child, int parentWidthMeasureSpec, int widthUsed, int parentHeightMeasureSpec, int heightUsed) {
         if (child == urlTextView) {
-            widthUsed += textView.getMeasuredWidth() + AndroidUtilities.dp(16);
+            widthUsed += textView.getMeasuredWidth() + dp(16);
         }
         super.measureChildWithMargins(child, parentWidthMeasureSpec, widthUsed, parentHeightMeasureSpec, heightUsed);
     }

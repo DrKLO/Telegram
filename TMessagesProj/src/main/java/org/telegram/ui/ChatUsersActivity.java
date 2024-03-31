@@ -892,7 +892,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         GroupCreateActivity fragment = new GroupCreateActivity(args);
                         fragment.setInfo(info);
                         fragment.setIgnoreUsers(contactsMap != null && contactsMap.size() != 0 ? contactsMap : participantsMap);
-                        fragment.setDelegate(new GroupCreateActivity.ContactsAddActivityDelegate() {
+                        fragment.setDelegate2(new GroupCreateActivity.ContactsAddActivityDelegate() {
                             @Override
                             public void didSelectUsers(ArrayList<TLRPC.User> users, int fwdCount) {
                                 if (fragment.getParentActivity() == null) {

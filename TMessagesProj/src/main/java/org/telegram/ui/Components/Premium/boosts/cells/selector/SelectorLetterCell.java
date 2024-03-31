@@ -32,7 +32,7 @@ public class SelectorLetterCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
     }
 
-    public void setLetter(String letter) {
+    public void setLetter(CharSequence letter) {
         textView.setText(letter);
     }
 

@@ -4,7 +4,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.TLRPC.TL_statsPercentValue;
+import org.telegram.tgnet.tl.TL_stats.TL_statsPercentValue;
 import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 
 import java.util.ArrayList;
@@ -1621,7 +1621,7 @@ public class TL_stories {
                 next_level_boosts = stream.readInt32(exception);
             }
             if ((flags & 2) != 0) {
-                premium_audience = TL_statsPercentValue.TLdeserialize(stream, stream.readInt32(exception), exception);
+                premium_audience = TL_stats.TL_statsPercentValue.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             boost_url = stream.readString(exception);
             if ((flags & 8) != 0) {
@@ -2166,7 +2166,7 @@ public class TL_stories {
         }
     }
 
-    public static class TL_publicForwardStory extends TLRPC.PublicForward {
+    public static class TL_publicForwardStory extends TL_stats.PublicForward {
         public static final int constructor = 0xedf3add0;
 
         public TLRPC.Peer peer;
@@ -3050,8 +3050,8 @@ public class TL_stories {
     public static class TL_stats_storyStats extends TLObject {
         public final static int constructor = 0x50cd067c;
 
-        public TLRPC.StatsGraph views_graph;
-        public TLRPC.StatsGraph reactions_by_emotion_graph;
+        public TL_stats.StatsGraph views_graph;
+        public TL_stats.StatsGraph reactions_by_emotion_graph;
 
         public static TL_stats_storyStats TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_stats_storyStats.constructor != constructor) {
@@ -3067,8 +3067,8 @@ public class TL_stories {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            views_graph = TLRPC.StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
-            reactions_by_emotion_graph = TLRPC.StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
+            views_graph = TL_stats.StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
+            reactions_by_emotion_graph = TL_stats.StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {

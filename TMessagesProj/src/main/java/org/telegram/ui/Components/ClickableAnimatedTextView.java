@@ -21,23 +21,25 @@ public class ClickableAnimatedTextView extends AnimatedTextView {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        bounds.set(getDrawable().getBounds());
-        int w = (int) Math.ceil(getDrawable().getCurrentWidth());
-        if (getDrawable().getGravity() == Gravity.LEFT) {
-            bounds.right = bounds.left + w;
-        } else if (getDrawable().getGravity() == Gravity.RIGHT) {
-            bounds.left = bounds.right - w;
-        } else if (getDrawable().getGravity() == Gravity.CENTER) {
-            int cx = (bounds.left + bounds.right) / 2;
-            bounds.left = cx - w / 2;
-            bounds.right = cx + w / 2;
+        if (backgroundDrawable != null) {
+            bounds.set(getDrawable().getBounds());
+            int w = (int) Math.ceil(getDrawable().getCurrentWidth());
+            if (getDrawable().getGravity() == Gravity.LEFT) {
+                bounds.right = bounds.left + w;
+            } else if (getDrawable().getGravity() == Gravity.RIGHT) {
+                bounds.left = bounds.right - w;
+            } else if (getDrawable().getGravity() == Gravity.CENTER) {
+                int cx = (bounds.left + bounds.right) / 2;
+                bounds.left = cx - w / 2;
+                bounds.right = cx + w / 2;
+            }
+            bounds.left -= getPaddingLeft();
+            bounds.top -= getPaddingTop();
+            bounds.right += getPaddingRight();
+            bounds.bottom += getPaddingBottom();
+            backgroundDrawable.setBounds(bounds);
+            backgroundDrawable.draw(canvas);
         }
-        bounds.left -= getPaddingLeft();
-        bounds.top -= getPaddingTop();
-        bounds.right += getPaddingRight();
-        bounds.bottom += getPaddingBottom();
-        backgroundDrawable.setBounds(bounds);
-        backgroundDrawable.draw(canvas);
         super.onDraw(canvas);
     }
 

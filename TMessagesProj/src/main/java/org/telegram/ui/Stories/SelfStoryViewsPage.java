@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;
-import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -243,17 +242,11 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             if (item.view instanceof TL_stories.TL_storyView) {
                 storyViewer.presentFragment(ProfileActivity.of(item.view.user_id));
             } else if (item.view instanceof TL_stories.TL_storyViewPublicRepost) {
-                if (storyViewer.fragment.getOrCreateOverlayStoryViewer().isShowing) {
-                    return;
-                }
-                storyViewer.fragment.getOrCreateOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyViewPublicRepost) item.view).story, StoriesListPlaceProvider.of(recyclerListView));
+                storyViewer.fragment.createOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyViewPublicRepost) item.view).story, StoriesListPlaceProvider.of(recyclerListView));
             } else if (item.reaction instanceof TL_stories.TL_storyReaction) {
                 storyViewer.presentFragment(ProfileActivity.of(DialogObject.getPeerDialogId(item.reaction.peer_id)));
             } else if (item.reaction instanceof TL_stories.TL_storyReactionPublicRepost) {
-                if (storyViewer.fragment.getOrCreateOverlayStoryViewer().isShowing) {
-                    return;
-                }
-                storyViewer.fragment.getOrCreateOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyReactionPublicRepost) item.reaction).story, StoriesListPlaceProvider.of(recyclerListView));
+                storyViewer.fragment.createOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyReactionPublicRepost) item.reaction).story, StoriesListPlaceProvider.of(recyclerListView));
             } else if (item.reaction instanceof TL_stories.TL_storyReactionPublicForward || item.view instanceof TL_stories.TL_storyViewPublicForward) {
                 TLRPC.Message message;
                 if (item.reaction instanceof TL_stories.TL_storyReactionPublicForward) {
@@ -794,11 +787,9 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                             if (lastFragment == null) {
                                 return;
                             }
-                            if (lastFragment.getOrCreateOverlayStoryViewer().isShowing) {
-                                return;
-                            }
-                            lastFragment.getOrCreateOverlayStoryViewer().doOnAnimationReady(onDone);
-                            lastFragment.getOrCreateOverlayStoryViewer().open(getContext(), dialogId, StoriesListPlaceProvider.of(recyclerListView));
+                            StoryViewer storyViewer1 = lastFragment.createOverlayStoryViewer();
+                            storyViewer1.doOnAnimationReady(onDone);
+                            storyViewer1.open(getContext(), dialogId, StoriesListPlaceProvider.of(recyclerListView));
                         }
                     };
                     break;
@@ -1326,9 +1317,13 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             if (state.contactsOnly || !TextUtils.isEmpty(state.searchQuery)) {
                 String search1 = null;
                 String search2 = null;
+                String search3 = null;
+                String search4 = null;
                 if (!TextUtils.isEmpty(state.searchQuery)) {
                     search1 = state.searchQuery.trim().toLowerCase();
                     search2 = LocaleController.getInstance().getTranslitString(search1);
+                    search3 = " " + search1;
+                    search4 = " " + search2;
                 }
                 for (int i = 0; i < originalViews.size(); i++) {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(originalViews.get(i).user_id);
@@ -1339,7 +1334,13 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     if (canAdd && search1 != null) {
                         String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
                         String username = UserObject.getPublicUsername(user);
-                        if (!(name.contains(search1) || name.contains(search2) || (username != null && (username.contains(search1) || username.contains(search2))))) {
+                        String translitName = AndroidUtilities.translitSafe(name);
+                        boolean hit = (
+                            name != null && (name.startsWith(search1) || name.contains(search3)) ||
+                            translitName != null && (translitName.startsWith(search2) || translitName.contains(search4)) ||
+                            username != null && (username.startsWith(search2) || username.contains(search4))
+                        );
+                        if (!hit) {
                             canAdd = false;
                         }
                     }
@@ -1635,6 +1636,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         boolean sortByReactions = true; // converts to sortByForwards when showing channel reactions
         boolean contactsOnly;
         String searchQuery;
+        String q;
 
         public boolean isDefault() {
             return sortByReactions && !contactsOnly && TextUtils.isEmpty(searchQuery);

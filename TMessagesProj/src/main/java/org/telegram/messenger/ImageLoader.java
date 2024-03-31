@@ -4139,7 +4139,16 @@ public class ImageLoader {
             location = (TLRPC.TL_fileLocationToBeDeprecated) photoSize.location;
         }
 
-        String fileName = location.volume_id + "_" + location.local_id + ".jpg";
+        String external = ".jpg";
+        switch (compressFormat) {
+            case WEBP:
+            case WEBP_LOSSY:
+            case WEBP_LOSSLESS:
+                external = ".webp";
+                break;
+        }
+
+        String fileName = location.volume_id + "_" + location.local_id + external;
         File fileDir;
         if (forceCacheDir) {
             fileDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);

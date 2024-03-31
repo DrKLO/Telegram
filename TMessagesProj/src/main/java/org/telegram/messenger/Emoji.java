@@ -28,6 +28,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.checkerframework.checker.units.qual.A;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 
 import java.io.InputStream;
@@ -201,12 +204,21 @@ public class Emoji {
             }
             return null;
         }
-        EmojiDrawable ed = new SimpleEmojiDrawable(info);
+        EmojiDrawable ed = new SimpleEmojiDrawable(info, endsWithRightArrow(code));
         ed.setBounds(0, 0, drawImgSize, drawImgSize);
         return ed;
     }
 
+    public static boolean endsWithRightArrow(CharSequence code) {
+        return code != null && code.length() > 2 &&
+            code.charAt(code.length() - 2) == '‍' &&
+            code.charAt(code.length() - 1) == '➡';
+    }
+
     private static DrawableInfo getDrawableInfo(CharSequence code) {
+        if (endsWithRightArrow(code)) {
+            code = code.subSequence(0, code.length() - 2);
+        }
         DrawableInfo info = rects.get(code);
         if (info == null) {
             CharSequence newCode = EmojiData.emojiAliasMap.get(code);
@@ -269,9 +281,11 @@ public class Emoji {
         private DrawableInfo info;
         private static Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private static Rect rect = new Rect();
+        private boolean invert;
 
-        public SimpleEmojiDrawable(DrawableInfo i) {
+        public SimpleEmojiDrawable(DrawableInfo i, boolean invert) {
             info = i;
+            this.invert = invert;
         }
 
         public DrawableInfo getDrawableInfo() {
@@ -306,7 +320,14 @@ public class Emoji {
             }
 
             if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
+                if (invert) {
+                    canvas.save();
+                    canvas.scale(-1, 1, b.centerX(), b.centerY());
+                }
                 canvas.drawBitmap(emojiBmp[info.page][info.page2], null, b, paint);
+                if (invert) {
+                    canvas.restore();
+                }
             }
         }
 
@@ -589,6 +610,79 @@ public class Emoji {
                     span.emoji = emojiRange.code == null ? null : emojiRange.code.toString();
                     s.setSpan(span, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            if ((Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29)/* && !BuildVars.DEBUG_PRIVATE_VERSION*/ && (i + 1) >= limitCount) {
+                break;
+            }
+        }
+        return s;
+    }
+
+    public static CharSequence replaceWithRestrictedEmoji(CharSequence cs, TextView textView, Runnable update) {
+        return replaceWithRestrictedEmoji(cs, textView.getPaint().getFontMetricsInt(), update);
+    }
+
+    public static CharSequence replaceWithRestrictedEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, Runnable update) {
+        if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
+            return cs;
+        }
+
+        final int currentAccount = UserConfig.selectedAccount;
+        TLRPC.InputStickerSet inputStickerSet = new TLRPC.TL_inputStickerSetShortName();
+        inputStickerSet.short_name = "RestrictedEmoji";
+        TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSet, 0, false, true, update == null ? null : s -> update.run());
+
+        Spannable s;
+        if (cs instanceof Spannable) {
+            s = (Spannable) cs;
+        } else {
+            s = Spannable.Factory.getInstance().newSpannable(cs.toString());
+        }
+        ArrayList<EmojiSpanRange> emojis = parseEmojis(s, null);
+        if (emojis.isEmpty()) {
+            return cs;
+        }
+
+        AnimatedEmojiSpan[] animatedEmojiSpans = s.getSpans(0, s.length(), AnimatedEmojiSpan.class);
+        EmojiSpan span;
+        Drawable drawable;
+        int limitCount = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50;
+        for (int i = 0; i < emojis.size(); ++i) {
+            try {
+                EmojiSpanRange emojiRange = emojis.get(i);
+                if (animatedEmojiSpans != null) {
+                    boolean hasAnimated = false;
+                    for (int j = 0; j < animatedEmojiSpans.length; ++j) {
+                        AnimatedEmojiSpan animatedSpan = animatedEmojiSpans[j];
+                        if (animatedSpan != null && s.getSpanStart(animatedSpan) == emojiRange.start && s.getSpanEnd(animatedSpan) == emojiRange.end) {
+                            hasAnimated = true;
+                            break;
+                        }
+                    }
+                    if (hasAnimated) {
+                        continue;
+                    }
+                }
+                TLRPC.Document document = null;
+                if (set != null) {
+                    for (TLRPC.Document d : set.documents) {
+                        if (MessageObject.findAnimatedEmojiEmoticon(d, null).contains(emojiRange.code)) {
+                            document = d;
+                            break;
+                        }
+                    }
+                }
+                AnimatedEmojiSpan animatedSpan;
+                if (document != null) {
+                    animatedSpan = new AnimatedEmojiSpan(document, fontMetrics);
+                } else {
+                    animatedSpan = new AnimatedEmojiSpan(0, fontMetrics);
+                }
+                animatedSpan.emoji = (emojiRange.code).toString();
+                animatedSpan.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_STANDARD_EMOJI;
+                s.setSpan(animatedSpan, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } catch (Exception e) {
                 FileLog.e(e);
             }

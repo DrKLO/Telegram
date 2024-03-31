@@ -1,12 +1,19 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLObject;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Premium.PremiumGradient;
 
 public class AvatarsImageView extends View {
 
@@ -30,10 +37,28 @@ public class AvatarsImageView extends View {
         avatarsDrawable.onAttachedToWindow();
     }
 
+    private PremiumGradient.PremiumGradientTools premiumGradient;
+    private Text plusText;
+    private Paint plusBgPaint;
+
+    public void setPlus(int n, int bgColor) {
+        premiumGradient = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, null);
+        plusText = new Text("+" + n, 12, AndroidUtilities.getTypeface("fonts/num.otf"));
+        plusBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        plusBgPaint.setColor(bgColor);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         avatarsDrawable.onDraw(canvas);
+        if (plusText != null) {
+            AndroidUtilities.rectTmp.set(getWidth() - dp(22), getHeight() - dp(22), getWidth() - dp(0), getHeight() - dp(0));
+            premiumGradient.gradientMatrix(AndroidUtilities.rectTmp);
+            canvas.drawCircle(AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY(), AndroidUtilities.rectTmp.width() / 2f + dp(1.33f), plusBgPaint);
+            canvas.drawCircle(AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY(), AndroidUtilities.rectTmp.width() / 2f, premiumGradient.paint);
+            plusText.draw(canvas, AndroidUtilities.rectTmp.centerX() - plusText.getCurrentWidth() / 2f, AndroidUtilities.rectTmp.centerY(), Color.WHITE, 1f);
+        }
     }
 
     @Override

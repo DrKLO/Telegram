@@ -607,7 +607,7 @@ public class BlurringShader {
         }
 
         public Bitmap getBitmap(Bitmap bitmap, String key, int orientation, int invert, boolean recycleAfter) {
-            if (bitmap == null) {
+            if (bitmap == null || bitmap.isRecycled()) {
                 return null;
             }
             if (TextUtils.equals(thumbKey, key)) {
@@ -622,6 +622,9 @@ public class BlurringShader {
             }
             thumbKey = key;
             Utilities.globalQueue.postRunnable(generate = () -> {
+                if (bitmap == null || bitmap.isRecycled()) {
+                    return;
+                }
                 final float aspectRatio = bitmap.getWidth() / (float) bitmap.getHeight();
                 final float scale = 1.5f;
                 final float density = 9 * scale * 16 * scale;

@@ -12,11 +12,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
@@ -134,6 +136,10 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private ImageView curveItem;
 
     private Bitmap bitmapToEdit;
+    private Bitmap bitmapMask;
+    private final Rect maskRect = new Rect();
+    private final Matrix maskMatrix = new Matrix();
+    private final Paint maskPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private int orientation;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -317,6 +323,10 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     }
 
     public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, boolean ownLayout, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider) {
+        this(context, videoTextureView, bitmap, null, rotation, state, overlay, hasFaces, mirror, ownLayout, blurManager, resourcesProvider);
+    }
+
+    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, Bitmap mask, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, boolean ownLayout, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.ownLayout = ownLayout;
         this.resourcesProvider = resourcesProvider;
@@ -384,6 +394,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             filtersEmpty = true;
         }
         bitmapToEdit = bitmap;
+        bitmapMask = mask;
         orientation = rotation;
 
         if (videoTextureView != null) {
@@ -1007,6 +1018,19 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         if (paintingOverlay != null && child == textureView) {
             canvas.save();
             canvas.translate(textureView.getLeft(), textureView.getTop());
+            if (bitmapMask != null && textureView.getVisibility() == View.VISIBLE) {
+                maskRect.set(0, 0, textureView.getMeasuredWidth(), textureView.getMeasuredHeight());
+                if (orientation != 0) {
+                    maskMatrix.reset();
+                    maskMatrix.postRotate(orientation, bitmapMask.getWidth() / 2f, bitmapMask.getHeight() / 2f);
+                    float dxy = (bitmapMask.getHeight() - bitmapMask.getWidth()) / 2f;
+                    maskMatrix.postTranslate(dxy, -dxy);
+                    maskMatrix.postScale(maskRect.width() / (float) bitmapMask.getHeight(), maskRect.height() / (float) bitmapMask.getWidth());
+                    canvas.drawBitmap(bitmapMask, maskMatrix, maskPaint);
+                } else {
+                    canvas.drawBitmap(bitmapMask, null, maskRect, maskPaint);
+                }
+            }
             float scale = textureView.getMeasuredWidth() / (float) paintingOverlay.getMeasuredWidth();
             canvas.scale(scale, scale);
             paintingOverlay.draw(canvas);
@@ -1438,9 +1462,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                             } catch (Exception ignore) {}
                             lastVibrateValue = newValue;
                         } else if (Math.abs(newValueInt - lastVibrateValueInt) > (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH ? 5 : 10)) {
-                            try {
-                                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                            } catch (Exception ignore) {}
+                            AndroidUtilities.vibrateCursor(this);
                             lastVibrateValue = newValue;
                         }
                         filterView.setEnhanceValue(newValue);

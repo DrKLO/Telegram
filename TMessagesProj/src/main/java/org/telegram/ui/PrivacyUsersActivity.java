@@ -66,6 +66,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
     private boolean isGroup;
     private ArrayList<Long> uidArray;
     private boolean isAlwaysShare;
+    public int rulesType;
 
     private PrivacyActivityDelegate delegate;
     
@@ -83,6 +84,11 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         super();
         currentType = TYPE_BLOCKED;
         blockedUsersActivity = true;
+    }
+
+    public PrivacyUsersActivity loadBlocked() {
+        getMessagesController().getBlockedPeers(true);
+        return this;
     }
 
     public PrivacyUsersActivity(int type, ArrayList<Long> users, boolean group, boolean always) {
@@ -199,8 +205,11 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     } else if (currentType == TYPE_FILTER) {
                         args.putInt("chatAddType", 2);
                     }
+                    if (isAlwaysShare && rulesType == PrivacyControlActivity.PRIVACY_RULES_TYPE_INVITE) {
+                        args.putBoolean("allowPremium", true);
+                    }
                     GroupCreateActivity fragment = new GroupCreateActivity(args);
-                    fragment.setDelegate(ids -> {
+                    fragment.setDelegate((premium, ids) -> {
                         for (Long id1 : ids) {
                             if (uidArray.contains(id1)) {
                                 continue;

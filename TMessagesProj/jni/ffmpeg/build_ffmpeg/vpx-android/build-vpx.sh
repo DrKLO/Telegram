@@ -68,6 +68,8 @@ fi
     --disable-examples \
     --disable-tools \
     --disable-debug \
+    --disable-neon-asm \
+    --disable-neon-dotprod \
     --disable-unit-tests || exit 1
 
   make -j${HOST_NUM_CORES} install

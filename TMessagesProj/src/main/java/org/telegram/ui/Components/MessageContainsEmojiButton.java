@@ -58,6 +58,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     public final static int REACTIONS_TYPE = 1;
     public final static int EMOJI_STICKER_TYPE = 2;
     public final static int SINGLE_REACTION_TYPE = 3;
+    public final static int STICKERS_BOT_TYPE = 4;
     int type;
 
     private class BoldAndAccent extends CharacterStyle {
@@ -161,6 +162,13 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                     loadingDrawable.colorKey2 = Theme.key_listSelector;
                     loadingDrawable.setRadiiDp(4);
                 }
+            }
+        } else {
+            if (type == STICKERS_BOT_TYPE) {
+                mainText = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.StickersCheckStickersBotForMoreOptions),
+                        Theme.key_chat_messageLinkIn, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
+                        null,
+                        resourcesProvider);
             }
         }
     }

@@ -140,6 +140,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
         fixedSize = size;
     }
 
+    public CharSequence getText() {
+        return textView.getText();
+    }
+
     public void setText(CharSequence text) {
         if (!TextUtils.equals(text, this.text)) {
             this.text = text;

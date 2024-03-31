@@ -981,7 +981,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("EditAdminTransferReadyAlertText", R.string.EditAdminTransferReadyAlertText, currentChat.title, UserObject.getFirstName(currentUser))));
                         builder.setPositiveButton(LocaleController.getString("EditAdminTransferChangeOwner", R.string.EditAdminTransferChangeOwner), (dialogInterface, i) -> {
                             TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
-                            fragment.setDelegate(password -> initTransfer(password, fragment));
+                            fragment.setDelegate(0, password -> initTransfer(password, fragment));
                             presentFragment(fragment);
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1181,11 +1181,13 @@ public class ChatRightsEditActivity extends BaseFragment {
                 banUsersRow = rowCount++;
                 addUsersRow = rowCount++;
                 pinMessagesRow = rowCount++;
-                channelStoriesRow = rowCount++;
-                if (channelStoriesExpanded) {
-                    channelPostStoriesRow = rowCount++;
-                    channelEditStoriesRow = rowCount++;
-                    channelDeleteStoriesRow = rowCount++;
+                if (ChatObject.isChannel(currentChat)) {
+                    channelStoriesRow = rowCount++;
+                    if (channelStoriesExpanded) {
+                        channelPostStoriesRow = rowCount++;
+                        channelEditStoriesRow = rowCount++;
+                        channelDeleteStoriesRow = rowCount++;
+                    }
                 }
                 startVoiceChatRow = rowCount++;
                 addAdminsRow = rowCount++;
@@ -1334,7 +1336,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(ChatRightsEditActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, getResourceProvider());
                     ArrayList<TLRPC.User> arrayList = new ArrayList<>();
                     arrayList.add(currentUser);
-                    restrictedUsersBottomSheet.setRestrictedUsers(currentChat, arrayList);
+                    restrictedUsersBottomSheet.setRestrictedUsers(currentChat, arrayList, null, null);
                     restrictedUsersBottomSheet.show();
                     return false;
                 }

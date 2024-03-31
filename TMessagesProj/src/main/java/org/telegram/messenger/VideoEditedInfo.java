@@ -10,6 +10,8 @@ package org.telegram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -49,6 +51,7 @@ public class VideoEditedInfo {
     public long estimatedDuration;
     public boolean roundVideo;
     public boolean muted;
+    public float volume = 1f;
     public long originalDuration;
     public TLRPC.InputFile file;
     public TLRPC.InputEncryptedFile encryptedFile;
@@ -61,6 +64,8 @@ public class VideoEditedInfo {
     public boolean isPhoto;
     public boolean isStory;
     public StoryEntry.HDRInfo hdrInfo;
+
+    public boolean isSticker;
 
     public Bitmap thumb;
     public boolean notReadyYet;
@@ -157,6 +162,7 @@ public class VideoEditedInfo {
         public float currentFrame;
         public float framesPerDraw;
         public Bitmap bitmap;
+        public Matrix matrix;
 
         public View view;
         public Canvas canvas;
@@ -387,7 +393,7 @@ public class VideoEditedInfo {
                 blurPathBytes = null;
             }
             SerializedData serializedData = new SerializedData(len);
-            serializedData.writeInt32(8);
+            serializedData.writeInt32(10);
             serializedData.writeInt64(avatarStartTime);
             serializedData.writeInt32(originalBitrate);
             if (filterState != null) {
@@ -478,6 +484,8 @@ public class VideoEditedInfo {
             } else {
                 serializedData.writeByte(0);
             }
+            serializedData.writeFloat(volume);
+            serializedData.writeBool(isSticker);
             filters = Utilities.bytesToHex(serializedData.toByteArray());
             serializedData.cleanup();
         } else {
@@ -604,6 +612,12 @@ public class VideoEditedInfo {
                                 byte[] bytes = serializedData.readByteArray(false);
                                 blurPath = new String(bytes);
                             }
+                        }
+                        if (version >= 9) {
+                            volume = serializedData.readFloat(false);
+                        }
+                        if (version >= 10) {
+                            isSticker = serializedData.readBool(false);
                         }
                         serializedData.cleanup();
                     }

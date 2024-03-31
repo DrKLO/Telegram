@@ -682,7 +682,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         return selectorAdapter = new SelectorAdapter(getContext(), resourcesProvider);
     }
 }

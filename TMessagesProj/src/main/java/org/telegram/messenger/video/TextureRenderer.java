@@ -1207,179 +1207,187 @@ public class TextureRenderer {
                     ) {
                         initStickerEntity(entity);
                     } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_TEXT) {
-                        EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext);
-                        editText.getPaint().setAntiAlias(true);
-                        editText.drawAnimatedEmojiDrawables = false;
-                        editText.setBackgroundColor(Color.TRANSPARENT);
-                        editText.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
-                        Typeface typeface;
-                        if (entity.textTypeface != null && (typeface = entity.textTypeface.getTypeface()) != null) {
-                            editText.setTypeface(typeface);
-                        }
-                        editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, entity.fontSize);
-                        SpannableString text = new SpannableString(entity.text);
-                        for (VideoEditedInfo.EmojiEntity e : entity.entities) {
-                            if (e.documentAbsolutePath == null) {
-                                continue;
-                            }
-                            e.entity = new VideoEditedInfo.MediaEntity();
-                            e.entity.text = e.documentAbsolutePath;
-                            e.entity.subType = e.subType;
-                            AnimatedEmojiSpan span = new AnimatedEmojiSpan(0L, 1f, editText.getPaint().getFontMetricsInt()) {
-                                @Override
-                                public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-                                    super.draw(canvas, charSequence, start, end, x, top, y, bottom, paint);
-
-                                    float tcx = entity.x + (editText.getPaddingLeft() + x + measuredSize / 2f) / entity.viewWidth * entity.width;
-                                    float tcy = entity.y + (editText.getPaddingTop() + top + (bottom - top) / 2f) / entity.viewHeight * entity.height;
-
-                                    if (entity.rotation != 0) {
-                                        float mx = entity.x + entity.width / 2f;
-                                        float my = entity.y + entity.height / 2f;
-                                        float ratio = transformedWidth / (float) transformedHeight;
-                                        float x1 = tcx - mx;
-                                        float y1 = (tcy - my) / ratio;
-                                        tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
-                                        tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
-                                    }
-
-                                    e.entity.width =  (float) measuredSize / entity.viewWidth * entity.width;
-                                    e.entity.height = (float) measuredSize / entity.viewHeight * entity.height;
-                                    e.entity.x = tcx - e.entity.width / 2f;
-                                    e.entity.y = tcy - e.entity.height / 2f;
-                                    e.entity.rotation = entity.rotation;
-
-                                    if (e.entity.bitmap == null)
-                                        initStickerEntity(e.entity);
-                                }
-                            };
-                            text.setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                        editText.setText(Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
-                        editText.setTextColor(entity.color);
-                        CharSequence text2 = editText.getText();
-                        if (text2 instanceof Spanned) {
-                            Emoji.EmojiSpan[] spans = ((Spanned) text2).getSpans(0, text2.length(), Emoji.EmojiSpan.class);
-                            for (int i = 0; i < spans.length; ++i) {
-                                spans[i].scale = .85f;
-                            }
-                        }
-
-
-                        int gravity;
-                        switch (entity.textAlign) {
-                            default:
-                            case PaintTextOptionsView.ALIGN_LEFT:
-                                gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
-                                break;
-                            case PaintTextOptionsView.ALIGN_CENTER:
-                                gravity = Gravity.CENTER;
-                                break;
-                            case PaintTextOptionsView.ALIGN_RIGHT:
-                                gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
-                                break;
-                        }
-
-                        editText.setGravity(gravity);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                            int textAlign;
-                            switch (entity.textAlign) {
-                                default:
-                                case PaintTextOptionsView.ALIGN_LEFT:
-                                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_END : View.TEXT_ALIGNMENT_TEXT_START;
-                                    break;
-                                case PaintTextOptionsView.ALIGN_CENTER:
-                                    textAlign = View.TEXT_ALIGNMENT_CENTER;
-                                    break;
-                                case PaintTextOptionsView.ALIGN_RIGHT:
-                                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_START : View.TEXT_ALIGNMENT_TEXT_END;
-                                    break;
-                            }
-                            editText.setTextAlignment(textAlign);
-                        }
-
-                        editText.setHorizontallyScrolling(false);
-                        editText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                        editText.setFocusableInTouchMode(true);
-                        editText.setInputType(editText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
-                        if (Build.VERSION.SDK_INT >= 23) {
-                            setBreakStrategy(editText);
-                        }
-                        if (entity.subType == 0) {
-                            editText.setFrameColor(entity.color);
-                            editText.setTextColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .721f ? Color.BLACK : Color.WHITE);
-                        } else if (entity.subType == 1) {
-                            editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? 0x99000000 : 0x99ffffff);
-                            editText.setTextColor(entity.color);
-                        } else if (entity.subType == 2) {
-                            editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? Color.BLACK : Color.WHITE);
-                            editText.setTextColor(entity.color);
-                        } else if (entity.subType == 3) {
-                            editText.setFrameColor(0);
-                            editText.setTextColor(entity.color);
-                        }
-
-                        editText.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
-                        editText.layout(0, 0, entity.viewWidth, entity.viewHeight);
-                        entity.bitmap = Bitmap.createBitmap(entity.viewWidth, entity.viewHeight, Bitmap.Config.ARGB_8888);
-                        Canvas canvas = new Canvas(entity.bitmap);
-                        editText.draw(canvas);
+                        initTextEntity(entity);
                     } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_LOCATION) {
-                        LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, entity.density);
-                        marker.setText(entity.text);
-                        marker.setType(entity.subType, entity.color);
-                        marker.setMaxWidth(entity.viewWidth);
-                        if (entity.entities.size() == 1) {
-                            marker.forceEmoji();
-                        }
-                        marker.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
-                        marker.layout(0, 0, entity.viewWidth, entity.viewHeight);
-                        float scale = entity.width * transformedWidth / entity.viewWidth;
-                        int w = (int) (entity.viewWidth * scale), h = (int) (entity.viewHeight * scale), pad = 8;
-                        entity.bitmap = Bitmap.createBitmap(w + pad + pad, h + pad + pad, Bitmap.Config.ARGB_8888);
-                        Canvas canvas = new Canvas(entity.bitmap);
-                        canvas.translate(pad, pad);
-                        canvas.scale(scale, scale);
-                        marker.draw(canvas);
-                        entity.additionalWidth = (2 * pad) * scale / transformedWidth;
-                        entity.additionalHeight = (2 * pad) * scale / transformedHeight;
-                        if (entity.entities.size() == 1) {
-                            VideoEditedInfo.EmojiEntity e = entity.entities.get(0);
-                            e.entity = new VideoEditedInfo.MediaEntity();
-                            e.entity.text = e.documentAbsolutePath;
-                            e.entity.subType = e.subType;
-
-                            RectF bounds = new RectF();
-                            marker.getEmojiBounds(bounds);
-
-                            float tcx = entity.x + (bounds.centerX()) / entity.viewWidth * entity.width;
-                            float tcy = entity.y + (bounds.centerY()) / entity.viewHeight * entity.height;
-
-                            if (entity.rotation != 0) {
-                                float mx = entity.x + entity.width / 2f;
-                                float my = entity.y + entity.height / 2f;
-                                float ratio = transformedWidth / (float) transformedHeight;
-                                float x1 = tcx - mx;
-                                float y1 = (tcy - my) / ratio;
-                                tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
-                                tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
-                            }
-
-                            e.entity.width =  (float) bounds.width() / entity.viewWidth * entity.width;
-                            e.entity.height = (float) bounds.height() / entity.viewHeight * entity.height;
-                            e.entity.width *= LocationMarker.SCALE;
-                            e.entity.height *= LocationMarker.SCALE;
-                            e.entity.x = tcx - e.entity.width / 2f;
-                            e.entity.y = tcy - e.entity.height / 2f;
-                            e.entity.rotation = entity.rotation;
-
-                            initStickerEntity(e.entity);
-                        }
+                        initLocationEntity(entity);
                     }
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
             }
+        }
+    }
+
+    private void initTextEntity(VideoEditedInfo.MediaEntity entity) {
+        EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext);
+        editText.getPaint().setAntiAlias(true);
+        editText.drawAnimatedEmojiDrawables = false;
+        editText.setBackgroundColor(Color.TRANSPARENT);
+        editText.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+        Typeface typeface;
+        if (entity.textTypeface != null && (typeface = entity.textTypeface.getTypeface()) != null) {
+            editText.setTypeface(typeface);
+        }
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, entity.fontSize);
+        SpannableString text = new SpannableString(entity.text);
+        for (VideoEditedInfo.EmojiEntity e : entity.entities) {
+            if (e.documentAbsolutePath == null) {
+                continue;
+            }
+            e.entity = new VideoEditedInfo.MediaEntity();
+            e.entity.text = e.documentAbsolutePath;
+            e.entity.subType = e.subType;
+            AnimatedEmojiSpan span = new AnimatedEmojiSpan(0L, 1f, editText.getPaint().getFontMetricsInt()) {
+                @Override
+                public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+                    super.draw(canvas, charSequence, start, end, x, top, y, bottom, paint);
+
+                    float tcx = entity.x + (editText.getPaddingLeft() + x + measuredSize / 2f) / entity.viewWidth * entity.width;
+                    float tcy = entity.y + (editText.getPaddingTop() + top + (bottom - top) / 2f) / entity.viewHeight * entity.height;
+
+                    if (entity.rotation != 0) {
+                        float mx = entity.x + entity.width / 2f;
+                        float my = entity.y + entity.height / 2f;
+                        float ratio = transformedWidth / (float) transformedHeight;
+                        float x1 = tcx - mx;
+                        float y1 = (tcy - my) / ratio;
+                        tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
+                        tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
+                    }
+
+                    e.entity.width =  (float) measuredSize / entity.viewWidth * entity.width;
+                    e.entity.height = (float) measuredSize / entity.viewHeight * entity.height;
+                    e.entity.x = tcx - e.entity.width / 2f;
+                    e.entity.y = tcy - e.entity.height / 2f;
+                    e.entity.rotation = entity.rotation;
+
+                    if (e.entity.bitmap == null)
+                        initStickerEntity(e.entity);
+                }
+            };
+            text.setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        editText.setText(Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
+        editText.setTextColor(entity.color);
+        CharSequence text2 = editText.getText();
+        if (text2 instanceof Spanned) {
+            Emoji.EmojiSpan[] spans = ((Spanned) text2).getSpans(0, text2.length(), Emoji.EmojiSpan.class);
+            for (int i = 0; i < spans.length; ++i) {
+                spans[i].scale = .85f;
+            }
+        }
+
+
+        int gravity;
+        switch (entity.textAlign) {
+            default:
+            case PaintTextOptionsView.ALIGN_LEFT:
+                gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
+                break;
+            case PaintTextOptionsView.ALIGN_CENTER:
+                gravity = Gravity.CENTER;
+                break;
+            case PaintTextOptionsView.ALIGN_RIGHT:
+                gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+                break;
+        }
+
+        editText.setGravity(gravity);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            int textAlign;
+            switch (entity.textAlign) {
+                default:
+                case PaintTextOptionsView.ALIGN_LEFT:
+                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_END : View.TEXT_ALIGNMENT_TEXT_START;
+                    break;
+                case PaintTextOptionsView.ALIGN_CENTER:
+                    textAlign = View.TEXT_ALIGNMENT_CENTER;
+                    break;
+                case PaintTextOptionsView.ALIGN_RIGHT:
+                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_START : View.TEXT_ALIGNMENT_TEXT_END;
+                    break;
+            }
+            editText.setTextAlignment(textAlign);
+        }
+
+        editText.setHorizontallyScrolling(false);
+        editText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        editText.setFocusableInTouchMode(true);
+        editText.setInputType(editText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        if (Build.VERSION.SDK_INT >= 23) {
+            setBreakStrategy(editText);
+        }
+        if (entity.subType == 0) {
+            editText.setFrameColor(entity.color);
+            editText.setTextColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .721f ? Color.BLACK : Color.WHITE);
+        } else if (entity.subType == 1) {
+            editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? 0x99000000 : 0x99ffffff);
+            editText.setTextColor(entity.color);
+        } else if (entity.subType == 2) {
+            editText.setFrameColor(AndroidUtilities.computePerceivedBrightness(entity.color) >= .25f ? Color.BLACK : Color.WHITE);
+            editText.setTextColor(entity.color);
+        } else if (entity.subType == 3) {
+            editText.setFrameColor(0);
+            editText.setTextColor(entity.color);
+        }
+
+        editText.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
+        editText.layout(0, 0, entity.viewWidth, entity.viewHeight);
+        entity.bitmap = Bitmap.createBitmap(entity.viewWidth, entity.viewHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(entity.bitmap);
+        editText.draw(canvas);
+    }
+
+    private void initLocationEntity(VideoEditedInfo.MediaEntity entity) {
+        LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, entity.density);
+        marker.setText(entity.text);
+        marker.setType(entity.subType, entity.color);
+        marker.setMaxWidth(entity.viewWidth);
+        if (entity.entities.size() == 1) {
+            marker.forceEmoji();
+        }
+        marker.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
+        marker.layout(0, 0, entity.viewWidth, entity.viewHeight);
+        float scale = entity.width * transformedWidth / entity.viewWidth;
+        int w = (int) (entity.viewWidth * scale), h = (int) (entity.viewHeight * scale), pad = 8;
+        entity.bitmap = Bitmap.createBitmap(w + pad + pad, h + pad + pad, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(entity.bitmap);
+        canvas.translate(pad, pad);
+        canvas.scale(scale, scale);
+        marker.draw(canvas);
+        entity.additionalWidth = (2 * pad) * scale / transformedWidth;
+        entity.additionalHeight = (2 * pad) * scale / transformedHeight;
+        if (entity.entities.size() == 1) {
+            VideoEditedInfo.EmojiEntity e = entity.entities.get(0);
+            e.entity = new VideoEditedInfo.MediaEntity();
+            e.entity.text = e.documentAbsolutePath;
+            e.entity.subType = e.subType;
+
+            RectF bounds = new RectF();
+            marker.getEmojiBounds(bounds);
+
+            float tcx = entity.x + (bounds.centerX()) / entity.viewWidth * entity.width;
+            float tcy = entity.y + (bounds.centerY()) / entity.viewHeight * entity.height;
+
+            if (entity.rotation != 0) {
+                float mx = entity.x + entity.width / 2f;
+                float my = entity.y + entity.height / 2f;
+                float ratio = transformedWidth / (float) transformedHeight;
+                float x1 = tcx - mx;
+                float y1 = (tcy - my) / ratio;
+                tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
+                tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
+            }
+
+            e.entity.width =  (float) bounds.width() / entity.viewWidth * entity.width;
+            e.entity.height = (float) bounds.height() / entity.viewHeight * entity.height;
+            e.entity.width *= LocationMarker.SCALE;
+            e.entity.height *= LocationMarker.SCALE;
+            e.entity.x = tcx - e.entity.width / 2f;
+            e.entity.y = tcy - e.entity.height / 2f;
+            e.entity.rotation = entity.rotation;
+
+            initStickerEntity(e.entity);
         }
     }
 

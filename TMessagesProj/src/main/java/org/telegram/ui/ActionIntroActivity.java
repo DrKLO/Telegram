@@ -70,7 +70,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     private TextView titleTextView;
     private TextView descriptionText;
     private LinearLayout descriptionLayout;
-    private TextView[] desctiptionLines = new TextView[6];
+    private TextView[] descriptionLines = new TextView[6];
     private TextView descriptionText2;
     private Drawable drawable1;
     private Drawable drawable2;
@@ -521,43 +521,43 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 linearLayout.setOrientation(LinearLayout.HORIZONTAL);
                 descriptionLayout.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, a != 2 ? 7 : 0));
 
-                desctiptionLines[a * 2] = new TextView(context);
-                desctiptionLines[a * 2].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                desctiptionLines[a * 2].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-                desctiptionLines[a * 2].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                desctiptionLines[a * 2].setText(String.format(LocaleController.isRTL ? ".%d" : "%d.", a + 1));
-                desctiptionLines[a * 2].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                descriptionLines[a * 2] = new TextView(context);
+                descriptionLines[a * 2].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                descriptionLines[a * 2].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+                descriptionLines[a * 2].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                descriptionLines[a * 2].setText(String.format(LocaleController.isRTL ? ".%d" : "%d.", a + 1));
+                descriptionLines[a * 2].setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
 
-                desctiptionLines[a * 2 + 1] = new TextView(context);
-                desctiptionLines[a * 2 + 1].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                desctiptionLines[a * 2 + 1].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-                desctiptionLines[a * 2 + 1].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                descriptionLines[a * 2 + 1] = new TextView(context);
+                descriptionLines[a * 2 + 1].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                descriptionLines[a * 2 + 1].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+                descriptionLines[a * 2 + 1].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 if (a == 0) {
-                    desctiptionLines[a * 2 + 1].setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-                    desctiptionLines[a * 2 + 1].setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+                    descriptionLines[a * 2 + 1].setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+                    descriptionLines[a * 2 + 1].setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
                     String text = LocaleController.getString("AuthAnotherClientInfo1", R.string.AuthAnotherClientInfo1);
                     SpannableStringBuilder spanned = new SpannableStringBuilder(text);
                     int index1 = text.indexOf('*');
                     int index2 = text.lastIndexOf('*');
                     if (index1 != -1 && index2 != -1 && index1 != index2) {
-                        desctiptionLines[a * 2 + 1].setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
+                        descriptionLines[a * 2 + 1].setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
                         spanned.replace(index2, index2 + 1, "");
                         spanned.replace(index1, index1 + 1, "");
                         spanned.setSpan(new URLSpanNoUnderline(LocaleController.getString("AuthAnotherClientDownloadClientUrl", R.string.AuthAnotherClientDownloadClientUrl)), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
-                    desctiptionLines[a * 2 + 1].setText(spanned);
+                    descriptionLines[a * 2 + 1].setText(spanned);
                 } else if (a == 1) {
-                    desctiptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo2", R.string.AuthAnotherClientInfo2));
+                    descriptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo2", R.string.AuthAnotherClientInfo2));
                 } else {
-                    desctiptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo3", R.string.AuthAnotherClientInfo3));
+                    descriptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo3", R.string.AuthAnotherClientInfo3));
                 }
                 if (LocaleController.isRTL) {
                     linearLayout.setGravity(Gravity.RIGHT);
-                    linearLayout.addView(desctiptionLines[a * 2 + 1], LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
-                    linearLayout.addView(desctiptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 4, 0, 0, 0));
+                    linearLayout.addView(descriptionLines[a * 2 + 1], LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+                    linearLayout.addView(descriptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 4, 0, 0, 0));
                 } else {
-                    linearLayout.addView(desctiptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, 0));
-                    linearLayout.addView(desctiptionLines[a * 2 + 1], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                    linearLayout.addView(descriptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, 0));
+                    linearLayout.addView(descriptionLines[a * 2 + 1], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
                 }
             }
 
@@ -912,13 +912,13 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         themeDescriptions.add(new ThemeDescription(buttonTextView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, delegate, Theme.key_featuredStickers_addButton));
         themeDescriptions.add(new ThemeDescription(buttonTextView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_featuredStickers_addButtonPressed));
 
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[0], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[1], ThemeDescription.FLAG_LINKCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[2], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[3], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[4], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(desctiptionLines[5], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[0], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[1], ThemeDescription.FLAG_LINKCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[2], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[3], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[4], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(descriptionLines[5], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
 
         themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_TEXTCOLOR, null, null, new Drawable[]{drawable2}, null, Theme.key_changephoneinfo_image2));
 

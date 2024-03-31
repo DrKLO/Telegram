@@ -281,17 +281,18 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         currentSpeed = speed;
         if (playerHolder != null) {
             playerHolder.setSpeed(speed);
-            StoryViewer otherStoryViewer = null;
-            if (fragment != null) {
-                if (fragment.overlayStoryViewer != this) {
-                    otherStoryViewer = fragment.overlayStoryViewer;
-                } else if (fragment.storyViewer != this) {
-                    otherStoryViewer = fragment.storyViewer;
-                }
-            }
-            if (otherStoryViewer != null && otherStoryViewer.playerHolder != null) {
-                otherStoryViewer.playerHolder.setSpeed(speed);
-            }
+            // TODO: storyViewerStack
+//            StoryViewer otherStoryViewer = null;
+//            if (fragment != null) {
+//                if (fragment.overlayStoryViewer != this) {
+//                    otherStoryViewer = fragment.overlayStoryViewer;
+//                } else if (fragment.storyViewer != this) {
+//                    otherStoryViewer = fragment.storyViewer;
+//                }
+//            }
+//            if (otherStoryViewer != null && otherStoryViewer.playerHolder != null) {
+//                otherStoryViewer.playerHolder.setSpeed(speed);
+//            }
         }
     }
 
@@ -2021,7 +2022,29 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public boolean isPaused() {
-        return isPopupVisible || isTranslating || isBulletinVisible || isCaption || isWaiting || isInTouchMode || keyboardVisible || currentDialog != null || allowTouchesByViewpager || isClosed || isRecording || progressToOpen != 1f || selfStoriesViewsOffset != 0 || isHintVisible || (isSwiping && USE_SURFACE_VIEW) || isOverlayVisible || isInTextSelectionMode || isLikesReactions || progressToDismiss != 0 || storiesIntro != null;
+        return (
+            isPopupVisible ||
+            isTranslating ||
+            isBulletinVisible ||
+            isCaption ||
+            isWaiting ||
+            isInTouchMode ||
+            keyboardVisible ||
+            currentDialog != null ||
+            allowTouchesByViewpager ||
+            isClosed ||
+            isRecording ||
+            progressToOpen != 1f ||
+            selfStoriesViewsOffset != 0 ||
+            isHintVisible ||
+            (isSwiping && USE_SURFACE_VIEW) ||
+            isOverlayVisible ||
+            isInTextSelectionMode ||
+            isLikesReactions ||
+            progressToDismiss != 0 ||
+            storiesIntro != null ||
+            ATTACH_TO_FRAGMENT && fragment != null && fragment.getLastStoryViewer() != this
+        );
     }
 
     public void updatePlayingMode() {
@@ -2372,6 +2395,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         MessagesController.getInstance(currentAccount).getStoriesController().stopAllPollers();
         if (ATTACH_TO_FRAGMENT) {
             lockOrientation(false);
+            if (fragment != null && fragment.storyViewerStack != null) {
+                fragment.storyViewerStack.remove(this);
+            }
         }
 
         globalInstances.remove(this);

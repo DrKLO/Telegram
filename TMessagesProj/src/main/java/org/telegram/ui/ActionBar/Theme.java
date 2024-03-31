@@ -3238,6 +3238,7 @@ public class Theme {
     public static TextPaint chat_replyNamePaint;
     public static TextPaint chat_replyTextPaint;
     public static TextPaint chat_quoteTextPaint;
+    public static TextPaint chat_titleLabelTextPaint;
     public static TextPaint chat_topicTextPaint;
     public static TextPaint chat_commentTextPaint;
     public static TextPaint chat_contextResult_titleTextPaint;
@@ -3309,6 +3310,7 @@ public class Theme {
     public static Drawable chat_shareIconDrawable;
     public static Drawable chat_replyIconDrawable;
     public static Drawable chat_closeIconDrawable;
+    public static Drawable chat_moreIconDrawable;
     public static Drawable chat_goIconDrawable;
     public static Drawable chat_botLinkDrawable;
     public static Drawable chat_botCardDrawable;
@@ -4195,6 +4197,7 @@ public class Theme {
     public static final String key_drawable_replyIcon = "drawableReplyIcon";
     public static final String key_drawable_shareIcon = "drawableShareIcon";
     public static final String key_drawable_closeIcon = "drawableCloseIcon";
+    public static final String key_drawable_moreIcon = "drawableMoreIcon";
     public static final String key_drawable_muteIconDrawable = "drawableMuteIcon";
     public static final String key_drawable_lockIconDrawable = "drawableLockIcon";
     public static final String key_drawable_chat_pollHintDrawableOut = "drawable_chat_pollHintDrawableOut";
@@ -6017,6 +6020,27 @@ public class Theme {
             return stateListDrawable;
         }
     }
+
+    public static Drawable createRadSelectorDrawable(int color, int rippleColor, int topRad, int bottomRad) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            maskPaint.setColor(0xffffffff);
+            Drawable maskDrawable = new RippleRadMaskDrawable(topRad, bottomRad);
+            ColorStateList colorStateList = new ColorStateList(
+                    new int[][]{StateSet.WILD_CARD},
+                    new int[]{rippleColor}
+            );
+            return new RippleDrawable(colorStateList, createRoundRectDrawable(dp(topRad), dp(bottomRad), color), maskDrawable);
+        } else {
+            Drawable backgroundDrawable = createRoundRectDrawable(dp(topRad), dp(bottomRad), color);
+            Drawable pressedDrawable = new LayerDrawable(new Drawable[]{backgroundDrawable, createRoundRectDrawable(dp(topRad), dp(bottomRad), rippleColor)});
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressedDrawable);
+            stateListDrawable.addState(new int[]{android.R.attr.state_selected}, pressedDrawable);
+            stateListDrawable.addState(StateSet.WILD_CARD, backgroundDrawable);
+            return stateListDrawable;
+        }
+    }
+
     public static Drawable createRadSelectorDrawable(int color, int topLeftRad, int topRightRad, int bottomRightRad, int bottomLeftRad) {
         if (Build.VERSION.SDK_INT >= 21) {
             maskPaint.setColor(0xffffffff);
@@ -8447,6 +8471,7 @@ public class Theme {
                 chat_replyNamePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_quoteTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                chat_titleLabelTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_topicTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_topicTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 chat_forwardNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -8478,6 +8503,7 @@ public class Theme {
             chat_replyTextPaint.setTextSize(dp(smallerDp));
             chat_quoteTextPaint.setTextSize(dp(smallerDp - 1));
             chat_topicTextPaint.setTextSize(dp(smallerDp - 1));
+            chat_titleLabelTextPaint.setTextSize(dp(smallerDp - 2));
             chat_forwardNamePaint.setTextSize(dp(smallerDp));
             chat_adminPaint.setTextSize(dp(smallerDp - 1));
             chat_msgTextCodePaint.setTextSize(dp(Math.max(Math.min(10, SharedConfig.fontSize - 1), SharedConfig.fontSize - 2)));
@@ -8542,6 +8568,7 @@ public class Theme {
             chat_replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_topicTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_topicTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            chat_titleLabelTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_commentTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_instantViewPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_instantViewPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
@@ -8708,6 +8735,7 @@ public class Theme {
             chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_button_share).mutate();
             chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_button_reply);
             chat_closeIconDrawable = resources.getDrawable(R.drawable.msg_voiceclose).mutate();
+            chat_moreIconDrawable = resources.getDrawable(R.drawable.media_more).mutate();
             chat_goIconDrawable = resources.getDrawable(R.drawable.filled_open_message);
 
             int rad = dp(2);
@@ -8803,6 +8831,7 @@ public class Theme {
             addChatDrawable(key_drawable_msgStickerViews, chat_msgStickerViewsDrawable, key_chat_serviceText);
             addChatDrawable(key_drawable_replyIcon, chat_replyIconDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_closeIcon, chat_closeIconDrawable, key_chat_serviceIcon);
+            addChatDrawable(key_drawable_moreIcon, chat_moreIconDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_shareIcon, chat_shareIconDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_muteIconDrawable, chat_muteIconDrawable, key_chat_muteIcon);
             addChatDrawable(key_drawable_lockIconDrawable, chat_lockIconDrawable, key_chat_lockIcon);

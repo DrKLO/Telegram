@@ -9300,4 +9300,37 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
         return addPostButton;
     }
+
+    public void showPremiumFloodWaitBulletin(final boolean isUpload) {
+        if (profileActivity == null) return;
+
+//        final long now = System.currentTimeMillis();
+//        if (now - ConnectionsManager.lastPremiumFloodWaitShown < 1000L * MessagesController.getInstance(currentAccount).uploadPremiumSpeedupNotifyPeriod) {
+//            return;
+//        }
+//        ConnectionsManager.lastPremiumFloodWaitShown = now;
+//        if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
+//            return;
+//        }
+
+        final int currentAccount = profileActivity.getCurrentAccount();
+
+        final float n;
+        if (isUpload) {
+            n = MessagesController.getInstance(currentAccount).uploadPremiumSpeedupUpload;
+        } else {
+            n = MessagesController.getInstance(currentAccount).uploadPremiumSpeedupDownload;
+        }
+        SpannableString boldN = new SpannableString(Double.toString(Math.round(n * 10) / 10.0).replaceAll("\\.0$", ""));
+        boldN.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, boldN.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        if (profileActivity.hasStoryViewer()) return;
+        BulletinFactory.of(profileActivity).createSimpleBulletin(
+            R.raw.speed_limit,
+            LocaleController.getString(isUpload ? R.string.UploadSpeedLimited : R.string.DownloadSpeedLimited),
+            AndroidUtilities.replaceCharSequence("%d", AndroidUtilities.premiumText(LocaleController.getString(isUpload ? R.string.UploadSpeedLimitedMessage : R.string.DownloadSpeedLimitedMessage), () -> {
+                profileActivity.presentFragment(new PremiumPreviewFragment(isUpload ? "upload_speed" : "download_speed"));
+            }), boldN)
+        ).setDuration(8000).show(true);
+    }
 }

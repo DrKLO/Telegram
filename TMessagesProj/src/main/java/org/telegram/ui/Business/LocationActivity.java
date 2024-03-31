@@ -33,6 +33,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
@@ -40,6 +41,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -116,8 +118,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         FrameLayout contentView = new FrameLayout(context);
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        LinearLayout content = new LinearLayout(getContext());
-        content.setOrientation(LinearLayout.HORIZONTAL);
         editText = new EditTextBoldCursor(getContext()) {
             AnimatedColor limitColor = new AnimatedColor(this);
             private int limitCount;
@@ -194,8 +194,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         editTextContainer.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 21, 15, 21, 15));
         editTextContainer.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         if (editText != null) {
+            ignoreEditText = true;
             editText.setText(address);
             editText.setSelection(editText.getText().length());
+            ignoreEditText = false;
         }
 
 //        mapLoadingDrawable = new LoadingDrawable(resourceProvider);
@@ -261,7 +263,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         mapPreviewContainer.addView(mapMarker, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, -31, 0, 0));
         updateMapPreview();
 
-        listView = new UniversalRecyclerView(context, currentAccount, this::fillItems, this::onClick, null, getResourceProvider());
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         setValue();
@@ -309,8 +311,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
 
         if (editText != null) {
+            ignoreEditText = true;
             editText.setText(address);
             editText.setSelection(editText.getText().length());
+            ignoreEditText = false;
         }
         updateMapPreview();
         if (listView != null && listView.adapter != null) {
@@ -326,8 +330,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             mapMarker.setTranslationY(-dp(12));
             final int w = (int) ((mapPreview.getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : mapPreview.getMeasuredWidth()) / AndroidUtilities.density);
             final int h = 240;
-            String url = AndroidUtilities.formapMapUrl(currentAccount, geo.lat, geo._long, w, h, false, 15, -1);
-            mapPreview.setImage(url, w + "_" + h, mapLoadingDrawable);
+            final int scale = Math.min(2, (int) Math.ceil(AndroidUtilities.density));
+            mapPreview.setImage(ImageLocation.getForWebFile(WebFile.createWithGeoPoint(geo.lat, geo._long, 0, scale * w, scale * h, 15, scale)), w + "_" + h, mapLoadingDrawable, 0, null);
         } else {
             mapPreview.setImageBitmap(null);
         }

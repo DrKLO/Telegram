@@ -105,6 +105,8 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
       //  sparseIntArray.put(Theme.key_windowBackgroundGray, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_windowBackgroundGray, Color.BLACK);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueHeader, 0xFF1A9CFF);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputFieldActivated, -10177041);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputField, -10177041);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText3, ColorUtils.blendARGB(Color.WHITE, Color.BLACK, 0.3f));
         sparseIntArray.put(Theme.key_undo_background, 0xFF212426);
         sparseIntArray.put(Theme.key_undo_cancelColor, 0xFF8BC8F5);

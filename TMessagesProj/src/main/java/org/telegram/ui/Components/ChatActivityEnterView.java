@@ -113,6 +113,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
@@ -152,10 +153,13 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
+import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.Premium.boosts.BoostRepository;
+import org.telegram.ui.Components.Premium.boosts.PremiumPreviewGiftToUsersBottomSheet;
 import org.telegram.ui.ContentPreviewViewer;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -167,11 +171,18 @@ import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.StickersActivity;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.bots.BotCommandsMenuContainer;
+import org.telegram.ui.bots.BotCommandsMenuView;
+import org.telegram.ui.bots.BotKeyboardView;
+import org.telegram.ui.bots.BotWebViewMenuContainer;
+import org.telegram.ui.bots.BotWebViewSheet;
+import org.telegram.ui.bots.ChatActivityBotWebViewButton;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -199,6 +210,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private float horizontalPadding = 0;
     private boolean sendButtonEnabled = true;
     private TLRPC.UserFull userInfo;
+    public HintView2 birthdayHint;
 
     public boolean voiceOnce;
     public boolean onceVisible;
@@ -649,6 +661,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
     private MessageObject editingMessageObject;
     private boolean editingCaption;
+
+    private TLRPC.TL_businessChatLink editingBusinessLink;
+
+    private BusinessLinkPresetMessage lastSavedBusinessLinkMessage;
 
     private TLRPC.ChatFull info;
 
@@ -1650,6 +1666,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                         }
                         delegate.toggleVideoRecordingPause();
                     } else {
+                        if (sendButtonVisible) {
+                            calledRecordRunnable = true;
+                        }
                         MediaController.getInstance().toggleRecordingPause(voiceOnce);
                         delegate.needStartRecordAudio(0);
                         if (slideText != null) {
@@ -3347,7 +3366,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return;
         }
 
-        giftButton = new ImageView(getContext());
+        giftButton = new ImageView(getContext()) {
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                post(ChatActivityEnterView.this::checkBirthdayHint);
+            }
+        };
         giftButton.setImageResource(R.drawable.msg_input_gift);
         giftButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
         giftButton.setVisibility(GONE);
@@ -3358,9 +3383,41 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
         attachLayout.addView(giftButton, 0, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
         giftButton.setOnClickListener(v -> {
-            MessagesController.getInstance(currentAccount).getMainSettings().edit().putBoolean("show_gift_for_" + parentFragment.getDialogId(), false).apply();
+            SharedPreferences.Editor edit = MessagesController.getInstance(currentAccount).getMainSettings().edit();
+            if (BirthdayController.isToday(parentFragment.getCurrentUserInfo())) {
+                edit.putBoolean(Calendar.getInstance().get(Calendar.YEAR) + "show_gift_for_" + parentFragment.getDialogId(), false);
+            } else {
+                edit.putBoolean("show_gift_for_" + parentFragment.getDialogId(), false);
+            }
+            if (MessagesController.getInstance(currentAccount).giftAttachMenuIcon &&
+                MessagesController.getInstance(currentAccount).giftTextFieldIcon &&
+                !getParentFragment().getCurrentUserInfo().premium_gifts.isEmpty()) {
+                edit.putBoolean("show_gift_for_" + parentFragment.getDialogId(), false);
+            }
+            edit.apply();
+
             AndroidUtilities.updateViewVisibilityAnimated(giftButton, false);
-            new GiftPremiumBottomSheet(getParentFragment(), getParentFragment().getCurrentUser()).show();
+
+            TLRPC.User user = getParentFragment().getCurrentUser();
+            if (user == null) return;
+            ArrayList<TLRPC.TL_premiumGiftOption> options = new ArrayList<>(getParentFragment().getCurrentUserInfo().premium_gifts);
+            if (options.isEmpty()) {
+                final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+                final int reqId = BoostRepository.loadGiftOptions(null, loadedOptions -> {
+                    progressDialog.dismiss();
+                    loadedOptions = BoostRepository.filterGiftOptions(loadedOptions, 1);
+                    loadedOptions = BoostRepository.filterGiftOptionsByBilling(loadedOptions);
+                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                    users.add(user);
+                    PremiumPreviewGiftToUsersBottomSheet.show(users, loadedOptions);
+                });
+                progressDialog.setOnCancelListener(di -> {
+                    parentFragment.getConnectionsManager().cancelRequest(reqId, true);
+                });
+                progressDialog.showDelayed(200);
+            } else {
+                new GiftPremiumBottomSheet(getParentFragment(), getParentFragment().getCurrentUser()).show();
+            }
         });
     }
 
@@ -3410,7 +3467,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         });
     }
 
-    private void createDoneButton() {
+    private void createDoneButton(boolean bounceable) {
         if (doneButtonContainer != null) {
             return;
         }
@@ -3418,7 +3475,6 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         doneButtonContainer = new FrameLayout(getContext());
         doneButtonContainer.setVisibility(GONE);
         textFieldContainer.addView(doneButtonContainer, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT));
-        doneButtonContainer.setOnClickListener(view -> doneEditingMessage());
 
         Drawable doneCircleDrawable = Theme.createCircleDrawable(dp(16), getThemedColor(Theme.key_chat_messagePanelSend));
         doneCheckDrawable = getContext().getResources().getDrawable(R.drawable.input_done).mutate();
@@ -3426,7 +3482,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         CombinedDrawable combinedDrawable = new CombinedDrawable(doneCircleDrawable, doneCheckDrawable, 0, dp(1));
         combinedDrawable.setCustomSize(dp(32), dp(32));
 
-        doneButtonImage = new ImageView(getContext());
+        if (bounceable) {
+            doneButtonImage = new CaptionContainerView.BounceableImageView(getContext());
+        } else {
+            doneButtonImage = new ImageView(getContext());
+        }
         doneButtonImage.setScaleType(ImageView.ScaleType.CENTER);
         doneButtonImage.setImageDrawable(combinedDrawable);
         doneButtonImage.setContentDescription(LocaleController.getString("Done", R.string.Done));
@@ -4542,7 +4602,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 return null;
             }
             try {
-                EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"});
+                if (isEditingBusinessLink()) {
+                    EditorInfoCompat.setContentMimeTypes(editorInfo, null);
+                } else {
+                    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"});
+                }
                 final InputConnectionCompat.OnCommitContentListener callback = (inputContentInfo, flags, opts) -> {
                     if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
                         try {
@@ -4660,7 +4724,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clipData = clipboard.getPrimaryClip();
                 if (clipData != null) {
-                    if (clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("image/*")) {
+                    if (clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("image/*") && !isEditingBusinessLink()) {
                         editPhoto(clipData.getItemAt(0).getUri(), clipData.getDescription().getMimeType(0));
                     }
                 }
@@ -5021,7 +5085,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 if (innerTextChange == 1) {
                     return;
                 }
-                if (sendByEnter && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
+                if (sendByEnter && !ignoreTextChange && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
                     nextChangeIsSend = true;
                 }
                 isPaste = false;
@@ -5961,6 +6025,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             } else {
                 messageEditText.setHintText(LocaleController.getString(R.string.BusinessRepliesEnter));
             }
+        } else if (isEditingBusinessLink()) {
+            messageEditText.setHintText(LocaleController.getString(R.string.BusinessLinksEnter));
         } else if (replyingMessageObject != null && replyingMessageObject.messageOwner.reply_markup != null && !TextUtils.isEmpty(replyingMessageObject.messageOwner.reply_markup.placeholder)) {
             messageEditText.setHintText(replyingMessageObject.messageOwner.reply_markup.placeholder, animated);
         } else if (editingMessageObject != null) {
@@ -6550,6 +6616,67 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 parentFragment.presentFragment(new PremiumPreviewFragment("caption_limit"));
             }
         }).show();
+    }
+
+    private static class BusinessLinkPresetMessage {
+        public String text;
+        public ArrayList<TLRPC.MessageEntity> entities;
+    }
+
+    private BusinessLinkPresetMessage calculateBusinessLinkPresetMessage() {
+        CharSequence text = messageEditText == null ? "" : messageEditText.getText();
+        text = AndroidUtilities.getTrimmedString(text);
+
+        CharSequence[] message = new CharSequence[]{text};
+        ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, true);
+        text = message[0];
+        for (int a = 0, N = entities.size(); a < N; a++) {
+            TLRPC.MessageEntity entity = entities.get(a);
+            if (entity.offset + entity.length > text.length()) {
+                entity.length = text.length() - entity.offset;
+            }
+        }
+
+        BusinessLinkPresetMessage presetMessage = new BusinessLinkPresetMessage();
+        presetMessage.text = text.toString();
+        presetMessage.entities = entities;
+        return presetMessage;
+    }
+
+    public boolean businessLinkHasChanges() {
+        BusinessLinkPresetMessage currentMessage = calculateBusinessLinkPresetMessage();
+        if (!TextUtils.equals(currentMessage.text, lastSavedBusinessLinkMessage.text)) {
+            return true;
+        }
+
+        if (!MediaDataController.entitiesEqual(lastSavedBusinessLinkMessage.entities, currentMessage.entities)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void saveBusinessLink() {
+        if (!isEditingBusinessLink()) {
+            return;
+        }
+
+        if (currentLimit - codePointCount < 0) {
+            if (captionLimitView != null) {
+                AndroidUtilities.shakeViewSpring(captionLimitView, 3.5f);
+                try {
+                    captionLimitView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                } catch (Exception ignored) {
+                }
+            }
+            return;
+        }
+
+        BusinessLinkPresetMessage message = calculateBusinessLinkPresetMessage();
+        lastSavedBusinessLinkMessage = message;
+        BusinessLinksController.getInstance(currentAccount).editLinkMessage(editingBusinessLink.link, message.text, message.entities, () -> {
+            BulletinFactory.of(parentFragment).createSuccessBulletin(LocaleController.getString(R.string.BusinessLinkSaved)).show();
+        });
     }
 
     public void doneEditingMessage() {
@@ -8434,6 +8561,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         if (recordingAudioVideo) {
             getParent().requestDisallowInterceptTouchEvent(true);
         }
+        if (ev.getAction() == MotionEvent.ACTION_DOWN && AndroidUtilities.findChildViewUnder(this, ev.getX(), ev.getY()) != birthdayHint) {
+            hideHints();
+        }
         return super.onInterceptTouchEvent(ev);
     }
 
@@ -8484,6 +8614,59 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
 
+    public void setEditingBusinessLink(TLRPC.TL_businessChatLink businessLink) {
+        editingBusinessLink = businessLink;
+        updateFieldHint(false);
+        if (editingBusinessLink != null) {
+            if (doneButtonAnimation != null) {
+                doneButtonAnimation.cancel();
+                doneButtonAnimation = null;
+            }
+            createDoneButton(true);
+            doneButtonContainer.setOnClickListener(view -> saveBusinessLink());
+
+            doneButtonContainer.setVisibility(View.VISIBLE);
+            doneButtonImage.setScaleX(0.1f);
+            doneButtonImage.setScaleY(0.1f);
+            doneButtonImage.setAlpha(0.0f);
+            doneButtonImage.animate().alpha(1f).scaleX(1).scaleY(1).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+
+            currentLimit = accountInstance.getMessagesController().maxMessageLength;
+            final Paint.FontMetricsInt fontMetricsInt;
+            Paint paint = null;
+            if (messageEditText != null) {
+                paint = messageEditText.getPaint();
+            }
+            if (paint == null) {
+                paint = new TextPaint();
+                paint.setTextSize(dp(18));
+            }
+            fontMetricsInt = paint.getFontMetricsInt();
+
+            ArrayList<TLRPC.MessageEntity> entities = editingBusinessLink.entities;
+            if (entities != null && businessLink.message != null) {
+                CharSequence spannableText = applyMessageEntities(entities, businessLink.message, fontMetricsInt);
+                setFieldText(spannableText);
+            } else if (businessLink.message != null) {
+                setFieldText(businessLink.message);
+            }
+            lastSavedBusinessLinkMessage = calculateBusinessLinkPresetMessage();
+
+            setAllowStickersAndGifs(true, false, false);
+            sendButton.setVisibility(GONE);
+            setSlowModeButtonVisible(false);
+            cancelBotButton.setVisibility(GONE);
+            audioVideoButtonContainer.setVisibility(GONE);
+            if (attachLayout != null) {
+                attachLayout.setVisibility(GONE);
+            }
+            sendButtonContainer.setVisibility(GONE);
+            if (scheduledButton != null) {
+                scheduledButton.setVisibility(GONE);
+            }
+        }
+    }
+
     public void setEditingMessageObject(MessageObject messageObject, boolean caption) {
         if (audioToSend != null || videoToSendMessageObject != null || editingMessageObject == messageObject) {
             return;
@@ -8498,7 +8681,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 doneButtonAnimation.cancel();
                 doneButtonAnimation = null;
             }
-            createDoneButton();
+            createDoneButton(false);
+            doneButtonContainer.setOnClickListener(view -> doneEditingMessage());
+
             doneButtonContainer.setVisibility(View.VISIBLE);
             doneButtonImage.setScaleX(0.1f);
             doneButtonImage.setScaleY(0.1f);
@@ -8526,92 +8711,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 fontMetricsInt = paint.getFontMetricsInt();
 
                 ArrayList<TLRPC.MessageEntity> entities = editingMessageObject.messageOwner.entities;
-                MediaDataController.sortEntities(entities);
-                SpannableStringBuilder stringBuilder = new SpannableStringBuilder(editingText);
-                Object[] spansToRemove = stringBuilder.getSpans(0, stringBuilder.length(), Object.class);
-                if (spansToRemove != null && spansToRemove.length > 0) {
-                    for (int a = 0; a < spansToRemove.length; a++) {
-                        stringBuilder.removeSpan(spansToRemove[a]);
-                    }
-                }
-                if (entities != null) {
-                    try {
-                        for (int a = 0; a < entities.size(); a++) {
-                            TLRPC.MessageEntity entity = entities.get(a);
-                            if (entity.offset + entity.length > stringBuilder.length()) {
-                                continue;
-                            }
-                            if (entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
-                                if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
-                                    entity.length++;
-                                }
-                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_inputMessageEntityMentionName) entity).user_id.user_id, 3), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            } else if (entity instanceof TLRPC.TL_messageEntityMentionName) {
-                                if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
-                                    entity.length++;
-                                }
-                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id, 3), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            } else if (entity instanceof TLRPC.TL_messageEntityCode) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_MONO;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityPre) {
-                                continue;
-                            } else if (entity instanceof TLRPC.TL_messageEntityBold) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_BOLD;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_ITALIC;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_STRIKE;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_UNDERLINE;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
-                                stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            } else if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
-                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
-                            } else if (entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
-                                TLRPC.TL_messageEntityCustomEmoji emojiEntity = (TLRPC.TL_messageEntityCustomEmoji) entity;
-                                AnimatedEmojiSpan span;
-                                if (emojiEntity.document != null) {
-                                    span = new AnimatedEmojiSpan(emojiEntity.document, fontMetricsInt);
-                                } else {
-                                    span = new AnimatedEmojiSpan(emojiEntity.document_id, fontMetricsInt);
-                                }
-                                stringBuilder.setSpan(span, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            }
-                        }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
-                QuoteSpan.mergeQuotes(stringBuilder, entities);
-                textToSetWithKeyboard = Emoji.replaceEmoji(new SpannableStringBuilder(stringBuilder), fontMetricsInt, false, null);
-                if (entities != null) {
-                    try {
-                        for (int a = entities.size() - 1; a >= 0; --a) {
-                            TLRPC.MessageEntity entity = entities.get(a);
-                            if (entity instanceof TLRPC.TL_messageEntityPre && entity.offset + entity.length <= textToSetWithKeyboard.length()) {
-                                if (!(textToSetWithKeyboard instanceof Spannable)) {
-                                    textToSetWithKeyboard = new SpannableStringBuilder(textToSetWithKeyboard);
-                                }
-                                ((SpannableStringBuilder) textToSetWithKeyboard).insert(entity.offset + entity.length, "```\n");
-                                ((SpannableStringBuilder) textToSetWithKeyboard).insert(entity.offset, "```"+(entity.language == null ? "" : entity.language)+"\n");
-                            }
-                        }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
+                textToSetWithKeyboard = applyMessageEntities(entities, editingText, fontMetricsInt);
             } else {
                 textToSetWithKeyboard = "";
             }
@@ -8742,6 +8842,98 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
         updateFieldHint(true);
         updateSendAsButton(true);
+    }
+
+    @Nullable
+    public static CharSequence applyMessageEntities(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, Paint.FontMetricsInt fontMetricsInt) {
+        CharSequence result;
+        MediaDataController.sortEntities(entities);
+        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
+        Object[] spansToRemove = stringBuilder.getSpans(0, stringBuilder.length(), Object.class);
+        if (spansToRemove != null && spansToRemove.length > 0) {
+            for (int a = 0; a < spansToRemove.length; a++) {
+                stringBuilder.removeSpan(spansToRemove[a]);
+            }
+        }
+        if (entities != null) {
+            try {
+                for (int a = 0; a < entities.size(); a++) {
+                    TLRPC.MessageEntity entity = entities.get(a);
+                    if (entity.offset + entity.length > stringBuilder.length()) {
+                        continue;
+                    }
+                    if (entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
+                        if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
+                            entity.length++;
+                        }
+                        stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_inputMessageEntityMentionName) entity).user_id.user_id, 3), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityMentionName) {
+                        if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
+                            entity.length++;
+                        }
+                        stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id, 3), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityCode) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_MONO;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityPre) {
+                        continue;
+                    } else if (entity instanceof TLRPC.TL_messageEntityBold) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_BOLD;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_ITALIC;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_STRIKE;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_UNDERLINE;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
+                        stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                        MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                    } else if (entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
+                        TLRPC.TL_messageEntityCustomEmoji emojiEntity = (TLRPC.TL_messageEntityCustomEmoji) entity;
+                        AnimatedEmojiSpan span;
+                        if (emojiEntity.document != null) {
+                            span = new AnimatedEmojiSpan(emojiEntity.document, fontMetricsInt);
+                        } else {
+                            span = new AnimatedEmojiSpan(emojiEntity.document_id, fontMetricsInt);
+                        }
+                        stringBuilder.setSpan(span, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        QuoteSpan.mergeQuotes(stringBuilder, entities);
+        result = Emoji.replaceEmoji(new SpannableStringBuilder(stringBuilder), fontMetricsInt, false, null);
+        if (entities != null) {
+            try {
+                for (int a = entities.size() - 1; a >= 0; --a) {
+                    TLRPC.MessageEntity entity = entities.get(a);
+                    if (entity instanceof TLRPC.TL_messageEntityPre && entity.offset + entity.length <= result.length()) {
+                        if (!(result instanceof Spannable)) {
+                            result = new SpannableStringBuilder(result);
+                        }
+                        ((SpannableStringBuilder) result).insert(entity.offset + entity.length, "```\n");
+                        ((SpannableStringBuilder) result).insert(entity.offset, "```" + (entity.language == null ? "" : entity.language) + "\n");
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        return result;
     }
 
     public ImageView getAttachButton() {
@@ -9000,12 +9192,29 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     }
 
     public void updateGiftButton(boolean animated) {
-        boolean visible = !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && MessagesController.getInstance(currentAccount).giftAttachMenuIcon &&
-                MessagesController.getInstance(currentAccount).giftTextFieldIcon && getParentFragment() != null && getParentFragment().getCurrentUser() != null &&
-                !BuildVars.IS_BILLING_UNAVAILABLE && !getParentFragment().getCurrentUser().self && !getParentFragment().getCurrentUser().premium &&
-                getParentFragment().getCurrentUserInfo() != null && !getParentFragment().getCurrentUserInfo().premium_gifts.isEmpty() && !isInScheduleMode() &&
-                MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("show_gift_for_" + parentFragment.getDialogId(), true);
 
+        boolean visible =
+                !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() &&
+                getParentFragment() != null && getParentFragment().getCurrentUser() != null &&
+                !BuildVars.IS_BILLING_UNAVAILABLE && !getParentFragment().getCurrentUser().self &&
+                getParentFragment().getCurrentUserInfo() != null &&
+                (
+                    (
+                        !getParentFragment().getCurrentUserInfo().premium_gifts.isEmpty() &&
+                        !getParentFragment().getCurrentUser().premium &&
+                        MessagesController.getInstance(currentAccount).giftAttachMenuIcon &&
+                        MessagesController.getInstance(currentAccount).giftTextFieldIcon &&
+                        MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("show_gift_for_" + parentFragment.getDialogId(), true)
+                    ) || (
+                        BirthdayController.isToday(getParentFragment().getCurrentUserInfo().birthday) &&
+                        MessagesController.getInstance(currentAccount).getMainSettings().getBoolean(Calendar.getInstance().get(Calendar.YEAR) + "show_gift_for_" + parentFragment.getDialogId(), true)
+                    )
+                ) &&
+                parentFragment != null && parentFragment.getChatMode() == 0;
+
+        if (!visible && birthdayHint != null) {
+            birthdayHint.hide();
+        }
         if (!visible && giftButton == null) {
             return;
         }
@@ -9019,6 +9228,42 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             } else {
                 scheduledButton.setTranslationX(tX);
             }
+        }
+        if (visible) {
+            checkBirthdayHint();
+        }
+    }
+
+    private void checkBirthdayHint() {
+        if (
+            birthdayHint == null && giftButton != null && giftButton.getRight() != 0 &&
+            parentFragment != null && BirthdayController.isToday(parentFragment.getCurrentUserInfo()) &&
+            MessagesController.getInstance(currentAccount).getMainSettings().getBoolean(Calendar.getInstance().get(Calendar.YEAR) + "bdayhint_" + parentFragment.getDialogId(), true)
+        ) {
+            MessagesController.getInstance(currentAccount).getMainSettings().edit().putBoolean(Calendar.getInstance().get(Calendar.YEAR) + "bdayhint_" + parentFragment.getDialogId(), false).apply();
+
+            birthdayHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+            birthdayHint.setRounding(13);
+            birthdayHint.setMultilineText(true);
+            setBirthdayHintText();
+            birthdayHint.setPadding(dp(12), 0, dp(12), 0);
+            birthdayHint.setJointPx(1f, -(getWidth() - dp(12) - (messageEditTextContainer.getX() + attachLayout.getX() + giftButton.getX() + giftButton.getMeasuredWidth() / 2f)));
+            addView(birthdayHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP, 0, -200 + 8, 0, 0));
+            birthdayHint.setOnHiddenListener(() -> removeView(birthdayHint));
+            birthdayHint.setDuration(8000);
+            birthdayHint.show();
+        }
+    }
+
+    private void setBirthdayHintText() {
+        if (birthdayHint == null) return;
+        birthdayHint.setText(Emoji.replaceWithRestrictedEmoji(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserBirthdayHint, UserObject.getFirstName(parentFragment.getCurrentUser()))), birthdayHint.getTextPaint().getFontMetricsInt(), this::setBirthdayHintText));
+        birthdayHint.setMaxWidthPx(HintView2.cutInFancyHalf(birthdayHint.getText(), birthdayHint.getTextPaint()));
+    }
+
+    public void hideHints() {
+        if (birthdayHint != null) {
+            birthdayHint.hide();
         }
     }
 
@@ -10152,6 +10397,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     @Override
     public boolean isInScheduleMode() {
         return parentFragment != null && parentFragment.isInScheduleMode();
+    }
+
+    private boolean isEditingBusinessLink() {
+        return editingBusinessLink != null;
     }
 
     public void addStickerToRecent(TLRPC.Document sticker) {

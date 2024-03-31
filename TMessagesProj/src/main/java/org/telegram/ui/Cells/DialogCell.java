@@ -139,6 +139,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     public static final int SENT_STATE_SENT = 1;
     public static final int SENT_STATE_READ = 2;
     public boolean drawAvatar = true;
+    public int avatarStart = 10;
     public int messagePaddingStart = 72;
     public int heightDefault = 72;
     public int heightThreeLines = 78;
@@ -2030,11 +2031,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
             if (LocaleController.isRTL) {
                 buttonLeft = typingLeft = messageLeft = messageNameLeft = dp(16);
-                avatarLeft = getMeasuredWidth() - dp(66);
+                avatarLeft = getMeasuredWidth() - dp(56 + avatarStart);
                 thumbLeft = avatarLeft - dp(13 + 18);
             } else {
                 buttonLeft = typingLeft = messageLeft = messageNameLeft = dp(messagePaddingStart + 6);
-                avatarLeft = dp(10);
+                avatarLeft = dp(avatarStart);
                 thumbLeft = avatarLeft + dp(56 + 13);
             }
             storyParams.originalAvatarRect.set(avatarLeft, avatarTop, avatarLeft + dp(56), avatarTop + dp(56));
@@ -2053,11 +2054,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
             if (LocaleController.isRTL) {
                 buttonLeft = typingLeft = messageLeft = messageNameLeft = dp(22);
-                avatarLeft = getMeasuredWidth() - dp(64);
+                avatarLeft = getMeasuredWidth() - dp(54 + avatarStart);
                 thumbLeft = avatarLeft - dp(11 + (thumbsCount * (thumbSize + 2) - 2));
             } else {
                 buttonLeft = typingLeft = messageLeft = messageNameLeft = dp(messagePaddingStart + 4);
-                avatarLeft = dp(10);
+                avatarLeft = dp(avatarStart);
                 thumbLeft = avatarLeft + dp(56 + 11);
             }
             storyParams.originalAvatarRect.set(avatarLeft, avatarTop, avatarLeft + dp(54), avatarTop + dp(54));

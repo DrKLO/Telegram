@@ -9,6 +9,8 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatDateOnline;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -45,7 +47,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.URLSpan;
 import android.util.Base64;
-import android.util.Pair;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -117,30 +119,23 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LoginActivity;
 import org.telegram.ui.NotificationsCustomSettingsActivity;
 import org.telegram.ui.NotificationsSettingsActivity;
+import org.telegram.ui.PrivacyControlActivity;
 import org.telegram.ui.ProfileNotificationsActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.TooManyCommunitiesActivity;
 
 import java.net.IDN;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalField;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -2500,39 +2495,53 @@ public class AlertsCreator {
         return popupWindow;
     }
 
-    public static void checkRestrictedInviteUsers(int currentAccount, TLRPC.Chat currentChat, TLRPC.Updates updates) {
-        if (updates == null || updates.updates == null || currentChat == null) {
+    public static void checkRestrictedInviteUsers(int currentAccount, TLRPC.Chat currentChat, TLRPC.TL_messages_invitedUsers invitedUsers) {
+        if (invitedUsers == null || invitedUsers.missing_invitees.isEmpty() || currentChat == null) {
             return;
         }
-        ArrayList<TLRPC.User> arrayList = null;
-        for (int i = 0; i < updates.updates.size(); i++) {
-            if (updates.updates.get(i) instanceof TLRPC.TL_updateGroupInvitePrivacyForbidden) {
-                TLRPC.TL_updateGroupInvitePrivacyForbidden restrictedUpdate = (TLRPC.TL_updateGroupInvitePrivacyForbidden) updates.updates.get(i);
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(restrictedUpdate.user_id);
-                if (user != null) {
-                    if (arrayList == null) {
-                        arrayList = new ArrayList<>();
+        ArrayList<TLRPC.User> users = new ArrayList<>();
+        ArrayList<Long> pmLockedUsers = new ArrayList<>();
+        ArrayList<Long> inviteLockedUsers = new ArrayList<>();
+        for (TLRPC.TL_missingInvitee missing_invitee : invitedUsers.missing_invitees) {
+            TLRPC.User user = null;
+            if (invitedUsers.updates != null) {
+                for (int i = 0; i < invitedUsers.updates.users.size(); ++i) {
+                    TLRPC.User u = invitedUsers.updates.users.get(i);
+                    if (u.id == missing_invitee.user_id) {
+                        user = u;
+                        break;
                     }
-                    arrayList.add(user);
                 }
             }
+            if (user == null) {
+                user = MessagesController.getInstance(currentAccount).getUser(missing_invitee.user_id);
+            }
+            if (user == null) {
+                continue;
+            }
+            users.add(user);
+            if (missing_invitee.premium_required_for_pm) {
+                pmLockedUsers.add(user.id);
+            }
+            if (missing_invitee.premium_would_allow_invite) {
+                inviteLockedUsers.add(user.id);
+            }
         }
-        if (arrayList != null) {
-            ArrayList<TLRPC.User> finalArrayList = arrayList;
-            AndroidUtilities.runOnUIThread(() -> {
-                BaseFragment lastFragment = LaunchActivity.getLastFragment();
-                if (lastFragment != null && lastFragment.getParentActivity() != null) {
-                    LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, null);
-                    restrictedUsersBottomSheet.setRestrictedUsers(currentChat, finalArrayList);
-                    restrictedUsersBottomSheet.show();
-                }
-            }, 200);
-        }
+        if (users.isEmpty())
+            return;
+        AndroidUtilities.runOnUIThread(() -> {
+            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+            if (lastFragment != null && lastFragment.getParentActivity() != null) {
+                LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, null);
+                restrictedUsersBottomSheet.setRestrictedUsers(currentChat, users, pmLockedUsers, inviteLockedUsers);
+                restrictedUsersBottomSheet.show();
+            }
+        }, 200);
     }
 
     public interface BlockDialogCallback {
         void run(boolean report, boolean delete);
-    }
+    };
 
     public static void createBlockDialogAlert(BaseFragment fragment, int count, boolean reportSpam, TLRPC.User user, BlockDialogCallback onProcessRunnable) {
         if (fragment == null || fragment.getParentActivity() == null || count == 1 && user == null) {
@@ -2746,13 +2755,6 @@ public class AlertsCreator {
         minutePicker.setGravity(Gravity.LEFT);
         minutePicker.setTextOffset(dp(12));
         final Utilities.Callback<Boolean> checkValue = (byChange) -> {
-            if (byChange) {
-                try {
-                    linearLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                } catch (Exception ignore) {
-                }
-            }
-
             int minTimeMinutes = minTime % 60;
             int minTimeHours = (minTime - minTimeMinutes) / 60;
             int maxTimeMinutes = maxTime % 60;
@@ -3302,11 +3304,6 @@ public class AlertsCreator {
             }
         });
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
-
-            }
             checkScheduleDate(buttonTextView, null, selfUserId == dialogId ? 1 : 0, dayPicker, hourPicker, minutePicker);
         };
         dayPicker.setOnValueChangedListener(onValueChangeListener);
@@ -3488,11 +3485,6 @@ public class AlertsCreator {
             }
         });
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
-
-            }
             checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
         };
         dayPicker.setOnValueChangedListener(onValueChangeListener);
@@ -3554,6 +3546,254 @@ public class AlertsCreator {
         bottomSheet.fixNavigationBar(datePickerColors.backgroundColor);
         return builder;
     }
+
+    public static BottomSheet.Builder createBirthdayPickerDialog(Context context, String title, String button, TLRPC.TL_birthday currentBirthday, final Utilities.Callback<TLRPC.TL_birthday> whenSelectedBirthday, Runnable addPrivacyText, Theme.ResourcesProvider resourcesProvider) {
+        if (context == null) {
+            return null;
+        }
+
+        BottomSheet.Builder builder = new BottomSheet.Builder(context, false, resourcesProvider);
+        builder.setApplyBottomPadding(false);
+
+        final NumberPicker dayPicker = new NumberPicker(context, resourcesProvider);
+        dayPicker.setTextOffset(dp(10));
+        dayPicker.setItemCount(5);
+        final NumberPicker monthPicker = new NumberPicker(context, resourcesProvider);
+        monthPicker.setItemCount(5);
+        monthPicker.setTextOffset(-dp(10));
+        final NumberPicker yearPicker = new NumberPicker(context, resourcesProvider);
+        yearPicker.setItemCount(5);
+        yearPicker.setTextOffset(-dp(24));
+
+        LinearLayout container = new LinearLayout(context) {
+
+            boolean ignoreLayout = false;
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                ignoreLayout = true;
+                int count;
+                if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+                    count = 3;
+                } else {
+                    count = 5;
+                }
+                dayPicker.setItemCount(count);
+                monthPicker.setItemCount(count);
+                yearPicker.setItemCount(count);
+                dayPicker.getLayoutParams().height = dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                monthPicker.getLayoutParams().height = dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                yearPicker.getLayoutParams().height = dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                ignoreLayout = false;
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
+            }
+        };
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        FrameLayout titleLayout = new FrameLayout(context);
+        container.addView(titleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 22, 0, 0, 4));
+
+        TextView titleView = new TextView(context);
+        titleView.setText(title);
+        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
+        titleView.setOnTouchListener((v, event) -> true);
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setGravity(Gravity.CENTER);
+        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+        linearLayout.setWeightSum(1.0f);
+        container.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 12, 0, 12));
+
+        Calendar calendar = Calendar.getInstance();
+        int minYear = calendar.get(Calendar.YEAR) - 149;
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        int thisDay = calendar.get(Calendar.DAY_OF_MONTH);
+        int thisMonth = calendar.get(Calendar.MONTH);
+        int thisYear = calendar.get(Calendar.YEAR);
+        final int undefinedYear = thisYear + 1;
+
+        Runnable check = () -> {
+            if (yearPicker.getValue() == undefinedYear) {
+                dayPicker.setMinValue(1);
+                try {
+                    dayPicker.setMaxValue(YearMonth.of(2024, 1 + monthPicker.getValue()).lengthOfMonth());
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    dayPicker.setMaxValue(31);
+                }
+                monthPicker.setMinValue(0);
+                monthPicker.setMaxValue(11);
+            } else if (yearPicker.getValue() == thisYear) {
+                monthPicker.setMinValue(0);
+                monthPicker.setMaxValue(thisMonth);
+                if (monthPicker.getValue() == thisMonth) {
+                    dayPicker.setMinValue(1);
+                    dayPicker.setMaxValue(1 + thisDay - 1);
+                } else {
+                    dayPicker.setMinValue(1);
+                    try {
+                        dayPicker.setMaxValue(YearMonth.of(yearPicker.getValue(), 1 + monthPicker.getValue()).lengthOfMonth());
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        dayPicker.setMaxValue(31);
+                    }
+                }
+            } else {
+                dayPicker.setMinValue(1);
+                try {
+                    dayPicker.setMaxValue(YearMonth.of(yearPicker.getValue(), 1 + monthPicker.getValue()).lengthOfMonth());
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    dayPicker.setMaxValue(31);
+                }
+                monthPicker.setMinValue(0);
+                monthPicker.setMaxValue(11);
+            }
+        };
+
+        long currentTime = System.currentTimeMillis();
+
+        TextView buttonTextView = new TextView(context) {
+            @Override
+            public CharSequence getAccessibilityClassName() {
+                return Button.class.getName();
+            }
+        };
+
+        linearLayout.addView(dayPicker, LayoutHelper.createLinear(0, 54 * 5, 0.25f));
+        dayPicker.setMinValue(1);
+        dayPicker.setMaxValue(31);
+        dayPicker.setWrapSelectorWheel(false);
+        dayPicker.setFormatter(value -> "" + value);
+        final NumberPicker.OnScrollListener onScrollListener = (view, state) -> {
+            if (state == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE) check.run();
+        };
+        dayPicker.setOnScrollListener(onScrollListener);
+
+        monthPicker.setMinValue(0);
+        monthPicker.setMaxValue(11);
+        monthPicker.setWrapSelectorWheel(false);
+        linearLayout.addView(monthPicker, LayoutHelper.createLinear(0, 54 * 5, 0.5f));
+        monthPicker.setFormatter(value -> {
+            switch (value) {
+                case 0: return LocaleController.getString(R.string.January);
+                case 1: return LocaleController.getString(R.string.February);
+                case 2: return LocaleController.getString(R.string.March);
+                case 3: return LocaleController.getString(R.string.April);
+                case 4: return LocaleController.getString(R.string.May);
+                case 5: return LocaleController.getString(R.string.June);
+                case 6: return LocaleController.getString(R.string.July);
+                case 7: return LocaleController.getString(R.string.August);
+                case 8: return LocaleController.getString(R.string.September);
+                case 9: return LocaleController.getString(R.string.October);
+                case 10: return LocaleController.getString(R.string.November);
+                case 11:
+                default: {
+                    return LocaleController.getString(R.string.December);
+                }
+            }
+        });
+        monthPicker.setOnScrollListener(onScrollListener);
+
+        yearPicker.setMinValue(minYear);
+        yearPicker.setMaxValue(undefinedYear);
+        yearPicker.setWrapSelectorWheel(false);
+        yearPicker.setFormatter(value -> value == undefinedYear ? "—" : String.format("%02d", value));
+        linearLayout.addView(yearPicker, LayoutHelper.createLinear(0, 54 * 5, 0.25f));
+        yearPicker.setOnScrollListener(onScrollListener);
+
+        if (currentBirthday != null) {
+            dayPicker.setValue(currentBirthday.day);
+            monthPicker.setValue(currentBirthday.month - 1);
+            if ((currentBirthday.flags & 1) != 0) {
+                yearPicker.setValue(currentBirthday.year);
+            } else {
+                yearPicker.setValue(undefinedYear);
+            }
+        } else {
+            dayPicker.setValue(calendar.get(Calendar.DAY_OF_MONTH));
+            monthPicker.setValue(calendar.get(Calendar.MONTH));
+            yearPicker.setValue(undefinedYear);
+        }
+
+        check.run();
+
+        if (addPrivacyText != null) {
+            FrameLayout frameLayout = new FrameLayout(context);
+            LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(context);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            textView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
+            textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+            textView.setGravity(Gravity.CENTER);
+            frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));;
+            container.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            final int currentAccount = UserConfig.selectedAccount;
+            Runnable setText = () -> {
+                ArrayList<TLRPC.PrivacyRule> rules = ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
+                String string = getString(R.string.EditProfileBirthdayInfoContacts);
+                if (rules != null && !rules.isEmpty()) {
+                    for (int i = 0; i < rules.size(); ++i) {
+                        if (rules.get(i) instanceof TLRPC.TL_privacyValueAllowContacts) {
+                            string = getString(R.string.EditProfileBirthdayInfoContacts);
+                            break;
+                        }
+                        if (rules.get(i) instanceof TLRPC.TL_privacyValueAllowAll || rules.get(i) instanceof TLRPC.TL_privacyValueDisallowAll) {
+                            string = getString(R.string.EditProfileBirthdayInfo);
+                        }
+                    }
+                }
+                textView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(string, () -> {
+                    if (rules == null) return;
+                    BaseFragment fragment = LaunchActivity.getLastFragment();
+                    if (fragment == null) return;
+                    BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                    bottomSheetParams.transitionFromLeft = true;
+                    bottomSheetParams.allowNestedScroll = false;
+                    fragment.showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), bottomSheetParams);
+                }), true));
+            };
+            setText.run();
+
+            NotificationCenter.getInstance(currentAccount).listen(frameLayout, NotificationCenter.privacyRulesUpdated, args -> setText.run());
+            ContactsController.getInstance(currentAccount).loadPrivacySettings();
+        }
+
+        buttonTextView.setPadding(dp(34), 0, dp(34), 0);
+        buttonTextView.setGravity(Gravity.CENTER);
+        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        buttonTextView.setText(button);
+        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
+        container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
+        buttonTextView.setOnClickListener(v -> {
+            TLRPC.TL_birthday b = new TLRPC.TL_birthday();
+            b.day   = dayPicker.getValue();
+            b.month = 1 + monthPicker.getValue();
+            if (yearPicker.getValue() != undefinedYear) {
+                b.flags |= 1;
+                b.year = yearPicker.getValue();
+            }
+            builder.getDismissRunnable().run();
+            whenSelectedBirthday.run(b);
+        });
+
+        builder.setCustomView(container);
+        return builder;
+    }
+
 
     public interface StatusUntilDatePickerDelegate {
         void didSelectDate(int date);
@@ -3632,7 +3872,7 @@ public class AlertsCreator {
 
         titleView.setTextColor(datePickerColors.textColor);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         titleLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
         titleView.setOnTouchListener((v, event) -> true);
 
@@ -3676,11 +3916,6 @@ public class AlertsCreator {
             }
         });
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
-
-            }
             checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
         };
         dayPicker.setOnValueChangedListener(onValueChangeListener);
@@ -3877,7 +4112,6 @@ public class AlertsCreator {
                 } else {
                     buttonTextView.setText(LocaleController.getString("SetAutoDeleteTimer", R.string.SetAutoDeleteTimer));
                 }
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {
 
             }
@@ -4015,11 +4249,7 @@ public class AlertsCreator {
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
 
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
 
-            }
         };
         times.setOnValueChangedListener(onValueChangeListener);
         minutes.setOnValueChangedListener(onValueChangeListener);
@@ -4167,11 +4397,7 @@ public class AlertsCreator {
 
         linearLayout.addView(numberPicker, LayoutHelper.createLinear(0, 54 * 5, 1f));
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
 
-            }
         };
         numberPicker.setOnValueChangedListener(onValueChangeListener);
 
@@ -4342,11 +4568,6 @@ public class AlertsCreator {
         dayPicker.setWrapSelectorWheel(false);
         dayPicker.setFormatter(value -> "" + value);
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            try {
-                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {
-
-            }
             checkCalendarDate(minDate, dayPicker, monthPicker, yearPicker);
         };
         dayPicker.setOnValueChangedListener(onValueChangeListener);

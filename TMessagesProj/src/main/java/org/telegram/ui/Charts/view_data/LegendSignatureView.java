@@ -20,11 +20,15 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.Charts.data.ChartData;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -130,7 +134,13 @@ public class LegendSignatureView extends FrameLayout {
     }
 
 
-    public void setData(int index, long date, ArrayList<LineViewData> lines, boolean animateChanges) {
+    public void setData(
+        int index,
+        long date,
+        ArrayList<LineViewData> lines,
+        boolean animateChanges,
+        int formatter
+    ) {
         int n = holdes.length;
         if (animateChanges) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -172,7 +182,7 @@ public class LegendSignatureView extends FrameLayout {
                     h.root.requestLayout();
                 }
                 h.root.setVisibility(View.VISIBLE);
-                h.value.setText(formatWholeNumber(l.y[index]));
+                h.value.setText(formatWholeNumber(l.y[index], formatter, h.value));
                 h.signature.setText(l.name);
                 if (l.colorKey >= 0 && Theme.hasThemeKey(l.colorKey)) {
                     h.value.setTextColor(Theme.getColor(l.colorKey, resourcesProvider));
@@ -215,13 +225,26 @@ public class LegendSignatureView extends FrameLayout {
     }
 
 
-    public String formatWholeNumber(int v) {
+    private DecimalFormat formatterTON;
+    public CharSequence formatWholeNumber(int v, int formatter, TextView textView) {
+        if (formatter == ChartData.FORMATTER_TON) {
+            if (formatterTON == null) {
+                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                symbols.setDecimalSeparator('.');
+                formatterTON = new DecimalFormat("#.##", symbols);
+                formatterTON.setMinimumFractionDigits(2);
+                formatterTON.setMaximumFractionDigits(6);
+                formatterTON.setGroupingUsed(false);
+            }
+            formatterTON.setMaximumFractionDigits(v > 1_000_000_000 ? 2 : 6);
+            return ChannelMonetizationLayout.replaceTON("TON " + formatterTON.format(v / 1_000_000_000.), textView.getPaint(), false);
+        }
         float num_ = v;
         int count = 0;
         if (v < 10_000) {
             return String.format("%d", v);
         }
-        while (num_ >= 10_000 && count < AndroidUtilities.numbersSignatureArray.length - 1) {
+        while (num_ >= 1_000 && count < AndroidUtilities.numbersSignatureArray.length - 1) {
             num_ /= 1000;
             count++;
         }
@@ -255,7 +278,7 @@ public class LegendSignatureView extends FrameLayout {
     }
 
     class Holder {
-        final TextView value;
+        final AnimatedEmojiSpan.TextViewEmojis value;
         final TextView signature;
         TextView percentage;
         final LinearLayout root;
@@ -268,21 +291,21 @@ public class LegendSignatureView extends FrameLayout {
                 root.addView(percentage = new TextView(getContext()));
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
-                percentage.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                percentage.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
                 percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
-            root.addView(signature = new TextView(getContext()));
-            signature.getLayoutParams().width = showPercentage ? AndroidUtilities.dp(80) : AndroidUtilities.dp(96);
-            root.addView(value = new TextView(getContext()), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            root.addView(signature = new TextView(getContext()), LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 20, 0));
+//            signature.getLayoutParams().width = showPercentage ? AndroidUtilities.dp(80) : AndroidUtilities.dp(96);
+            root.addView(value = new AnimatedEmojiSpan.TextViewEmojis(getContext()), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             signature.setGravity(Gravity.START);
             value.setGravity(Gravity.END);
 
-            value.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            value.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            value.setMinEms(4);
-            value.setMaxEms(4);
+//            value.setMinEms(4);
+//            value.setMaxEms(4);
             signature.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         }
     }

@@ -239,8 +239,10 @@ public class ImageLocation {
             return null;
         }
         ImageLocation imageLocation = getForPhoto(photoSize.location, photoSize.size, null, null, null, TYPE_SMALL, sticker.dc_id, stickerSet, photoSize.type);
-        if (MessageObject.isAnimatedStickerDocument(sticker, true)) {
+        if (photoSize.type.equalsIgnoreCase("a")) {
             imageLocation.imageType = FileLoader.IMAGE_TYPE_LOTTIE;
+        } else if (photoSize.type.equalsIgnoreCase("v")) {
+            imageLocation.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
         }
         imageLocation.thumbVersion = thumbVersion;
         return imageLocation;

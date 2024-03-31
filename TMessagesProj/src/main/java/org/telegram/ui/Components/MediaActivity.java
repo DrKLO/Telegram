@@ -1058,7 +1058,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
     @Override
     public boolean isLightStatusBar() {
-        if (storyViewer != null && storyViewer.isShown()) {
+        if (getLastStoryViewer() != null && getLastStoryViewer().isShown()) {
             return false;
         }
         int color = Theme.getColor(Theme.key_windowBackgroundWhite);
@@ -1087,11 +1087,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         @Override
         public Tab[] createTabs() {
             Tab[] tabs = new Tab[] {
-                    new Tab(0, R.raw.msg_stories_saved, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab)),
-                    new Tab(1, R.raw.msg_stories_archive, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab))
+                new Tab(0, R.raw.msg_stories_saved, 20, 40, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab)),
+                new Tab(1, R.raw.msg_stories_archive, 0, 0, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab))
             };
-            tabs[0].customEndFrameMid = 20;
-            tabs[0].customEndFrameEnd = 40;
             return tabs;
         }
     }
@@ -1099,8 +1097,8 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     @Override
     public int getNavigationBarColor() {
         int color = getThemedColor(Theme.key_windowBackgroundWhite);
-        if (storyViewer != null && storyViewer.attachedToParent()) {
-            return storyViewer.getNavigationBarColor(color);
+        if (getLastStoryViewer() != null && getLastStoryViewer().attachedToParent()) {
+            return getLastStoryViewer().getNavigationBarColor(color);
         }
         return color;
     }

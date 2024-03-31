@@ -63,6 +63,7 @@ typedef struct {
     ogg_int64_t last_granulepos;
     opus_int32 min_bytes;
     int max_frame_bytes;
+    int serialno;
 } resume_data;
 
 static int write_uint32(Packet *p, ogg_uint32_t val) {
@@ -261,6 +262,7 @@ ogg_int64_t enc_granulepos;
 ogg_int64_t last_granulepos;
 int size_segments;
 int last_segments;
+int serialno;
 
 void cleanupRecorder() {
     
@@ -381,7 +383,7 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     header.preskip = (int)(inopt.skip * (48000.0 / coding_rate));
     inopt.extraout = (int)(header.preskip * (rate / 48000.0));
     
-    if (ogg_stream_init(&os, rand()) == -1) {
+    if (ogg_stream_init(&os, serialno = rand()) == -1) {
         LOGE("Error: stream init failed");
         return 0;
     }
@@ -465,6 +467,7 @@ void saveResumeData() {
     data.last_granulepos = last_granulepos;
     data.min_bytes = min_bytes;
     data.max_frame_bytes = max_frame_bytes;
+    data.serialno = serialno;
 
     if (fwrite(&data, sizeof(resume_data), 1, resumeFile) != 1) {
         LOGE("error writing resume data to file: %s", _resumeFilePath);
@@ -527,6 +530,7 @@ int resumeRecorder(const char *path, opus_int32 sampleRate) {
     last_granulepos = resumeData.last_granulepos;
     min_bytes = resumeData.min_bytes;
     max_frame_bytes = resumeData.max_frame_bytes;
+    serialno = resumeData.serialno;
 
     _fileOs = fopen(path, "a");
     if (!_fileOs) {
@@ -557,7 +561,7 @@ int resumeRecorder(const char *path, opus_int32 sampleRate) {
     }
 #endif
 
-    if (ogg_stream_init(&os, rand()) == -1) {
+    if (ogg_stream_init(&os, serialno) == -1) {
         LOGE("Error: stream init failed");
         return 0;
     }

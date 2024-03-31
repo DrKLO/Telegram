@@ -89,7 +89,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
         FrameLayout contentView = new FrameLayout(context);
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new UniversalRecyclerView(context, currentAccount, this::fillItems, this::onClick, null, getResourceProvider());
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         setValue();
@@ -184,6 +184,9 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
             value = new ArrayList[7];
             for (int i = 0; i < value.length; ++i) {
                 value[i] = new ArrayList<>();
+                if (i >= 0 && i < 5) {
+                    value[i].add(new Period(0, 24 * 60 - 1));
+                }
             }
         }
 
@@ -424,6 +427,17 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
             }
             return str;
         }
+    }
+
+    public static boolean is24x7(TLRPC.TL_businessWorkHours hours) {
+        if (hours == null || hours.weekly_open.isEmpty()) return false;
+        int last = 0;
+        for (int i = 0; i < hours.weekly_open.size(); ++i) {
+            TLRPC.TL_businessWeeklyOpen period = hours.weekly_open.get(i);
+            if (period.start_minute > last + 1) return false;
+            last = period.end_minute;
+        }
+        return last >= 24 * 60 * 7 - 1;
     }
 
     public static boolean isFull(ArrayList<Period> periods) {

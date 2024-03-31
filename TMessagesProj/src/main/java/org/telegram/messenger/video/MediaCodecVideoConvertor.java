@@ -3,8 +3,10 @@ package org.telegram.messenger.video;
 import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.MediaMuxer;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
@@ -24,13 +26,14 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class MediaCodecVideoConvertor {
 
-    private MP4Builder mediaMuxer;
+    private Muxer muxer;
     private MediaExtractor extractor;
 
     private long endPresentationTime;
@@ -48,9 +51,12 @@ public class MediaCodecVideoConvertor {
     private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
     private String outputMimeType;
 
-    public boolean convertVideo(ConvertVideoParams convertStoryVideoParams) {
-        this.callback = convertStoryVideoParams.callback;
-        return convertVideoInternal(convertStoryVideoParams, false, 0);
+    public boolean convertVideo(ConvertVideoParams convertVideoParams) {
+        if (convertVideoParams.isSticker) {
+            return WebmEncoder.convert(convertVideoParams);
+        }
+        this.callback = convertVideoParams.callback;
+        return convertVideoInternal(convertVideoParams, false, 0);
     }
 
     public long getLastFrameTimestamp() {
@@ -87,6 +93,7 @@ public class MediaCodecVideoConvertor {
         Integer gradientTopColor = convertVideoParams.gradientTopColor;
         Integer gradientBottomColor = convertVideoParams.gradientBottomColor;
         boolean muted = convertVideoParams.muted;
+        float volume = convertVideoParams.volume;
         boolean isStory = convertVideoParams.isStory;
         StoryEntry.HDRInfo hdrInfo = convertVideoParams.hdrInfo;
 
@@ -98,21 +105,18 @@ public class MediaCodecVideoConvertor {
         int videoTrackIndex = -5;
         String selectedEncoderName = null;
 
+        final boolean isWebm = convertVideoParams.isSticker;
         boolean shouldUseHevc = isStory;
-        outputMimeType = shouldUseHevc ? "video/hevc" : "video/avc";
+        outputMimeType = isWebm ? "video/x-vnd.on2.vp9" : shouldUseHevc ? "video/hevc" : "video/avc";
 
         boolean canBeBrokenEncoder = false;
         MediaCodec encoder = null;
         MediaCodec decoder = null;
         InputSurface inputSurface = null;
         OutputSurface outputSurface = null;
+        MediaCodec.BufferInfo info = null;
         try {
-            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-            Mp4Movie movie = new Mp4Movie();
-            movie.setCacheFile(cacheFile);
-            movie.setRotation(0);
-            movie.setSize(resultWidth, resultHeight);
-
+            info = new MediaCodec.BufferInfo();
 
             long currentPts = 0;
             float durationS = duration / 1000f;
@@ -189,7 +193,15 @@ public class MediaCodecVideoConvertor {
 
                     checkConversionCanceled();
 
-                    mediaMuxer = new MP4Builder().createMovie(movie, isSecret, outputMimeType.equals("video/hevc"));
+                    if (isWebm) {
+                        muxer = new Muxer(new MediaMuxer(cacheFile.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM));
+                    } else {
+                        Mp4Movie movie = new Mp4Movie();
+                        movie.setCacheFile(cacheFile);
+                        movie.setRotation(0);
+                        movie.setSize(resultWidth, resultHeight);
+                        muxer = new Muxer(new MP4Builder().createMovie(movie, isSecret, outputMimeType.equals("video/hevc")));
+                    }
 
                     int audioTrackIndex = -1;
                     boolean audioEncoderDone = true;
@@ -202,13 +214,13 @@ public class MediaCodecVideoConvertor {
                         applyAudioInputs(convertVideoParams.soundInfos, audioInputs);
 
                         audioRecoder = new AudioRecoder(audioInputs, totalDuration);
-                        audioTrackIndex = mediaMuxer.addTrack(audioRecoder.format, true);
+                        audioTrackIndex = muxer.addTrack(audioRecoder.format, true);
                     }
                     while (!outputDone || !audioEncoderDone) {
                         checkConversionCanceled();
 
                         if (audioRecoder != null) {
-                            audioEncoderDone = audioRecoder.step(mediaMuxer, audioTrackIndex);
+                            audioEncoderDone = audioRecoder.step(muxer, audioTrackIndex);
                         }
 
                         boolean decoderOutputAvailable = !decoderDone;
@@ -228,7 +240,7 @@ public class MediaCodecVideoConvertor {
                                     FileLog.d("photo encoder new format " + newFormat);
                                 }
                                 if (videoTrackIndex == -5 && newFormat != null) {
-                                    videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
+                                    videoTrackIndex = muxer.addTrack(newFormat, false);
                                     if (newFormat.containsKey(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) && newFormat.getInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) == 1) {
                                         ByteBuffer spsBuff = newFormat.getByteBuffer("csd-0");
                                         ByteBuffer ppsBuff = newFormat.getByteBuffer("csd-1");
@@ -257,7 +269,7 @@ public class MediaCodecVideoConvertor {
                                             cutOfNalData(outputMimeType, encodedData, info);
                                             firstEncode = false;
                                         }
-                                        long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, true);
+                                        long availableSize = muxer.writeSampleData(videoTrackIndex, encodedData, info, true);
                                         if (availableSize != 0) {
                                             if (callback != null) {
                                                 if (info.presentationTimeUs > currentPts) {
@@ -295,7 +307,7 @@ public class MediaCodecVideoConvertor {
                                             newFormat.setByteBuffer("csd-0", sps);
                                             newFormat.setByteBuffer("csd-1", pps);
                                         }
-                                        videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
+                                        videoTrackIndex = muxer.addTrack(newFormat, false);
                                     }
                                 }
                                 outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -354,7 +366,7 @@ public class MediaCodecVideoConvertor {
                 extractor.setDataSource(videoPath);
 
                 int videoIndex = MediaController.findTrack(extractor, false);
-                int audioIndex = bitrate != -1 && !muted ? MediaController.findTrack(extractor, true) : -1;
+                int audioIndex = bitrate != -1 && !muted && volume > 0 ? MediaController.findTrack(extractor, true) : -1;
                 boolean needConvertVideo = false;
                 if (videoIndex >= 0 && !extractor.getTrackFormat(videoIndex).getString(MediaFormat.KEY_MIME).equals(MediaController.VIDEO_MIME_TYPE)) {
                     needConvertVideo = true;
@@ -492,8 +504,7 @@ public class MediaCodecVideoConvertor {
                             inputSurface.makeCurrent();
                             encoder.start();
 
-                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
-                            if (hdrInfo == null && outputSurface.supportsEXTYUV() && hasHDR) {
+                            if (hdrInfo == null && hasHDR) {
                                 hdrInfo = new StoryEntry.HDRInfo();
                                 hdrInfo.colorTransfer = colorTransfer;
                                 hdrInfo.colorStandard = colorStandard;
@@ -502,11 +513,13 @@ public class MediaCodecVideoConvertor {
                                     outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
                                 }
                             }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0 && outputSurface.supportsEXTYUV()) {
+
+                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0) {
                                 outputSurface.changeFragmentShader(
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, hdrInfo),
-                                        true
+                                        false
                                 );
                             } else if (!isRound && Math.max(resultHeight, resultHeight) / (float) Math.max(originalHeight, originalWidth) < 0.9f) {
                                 outputSurface.changeFragmentShader(
@@ -528,10 +541,20 @@ public class MediaCodecVideoConvertor {
                             }
 
                             int maxBufferSize = 0;
-                            mediaMuxer = new MP4Builder().createMovie(movie, isSecret, outputMimeType.equals("video/hevc"));
+
+                            if (isWebm) {
+                                muxer = new Muxer(new MediaMuxer(cacheFile.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM));
+                            } else {
+                                Mp4Movie movie = new Mp4Movie();
+                                movie.setCacheFile(cacheFile);
+                                movie.setRotation(0);
+                                movie.setSize(resultWidth, resultHeight);
+                                muxer = new Muxer(new MP4Builder().createMovie(movie, isSecret, outputMimeType.equals("video/hevc")));
+                            }
+
                             if (audioIndex >= 0) {
                                 MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
-                                copyAudioBuffer = convertVideoParams.soundInfos.isEmpty() && audioFormat.getString(MediaFormat.KEY_MIME).equals(MediaController.AUDIO_MIME_TYPE) || audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/mpeg");
+                                copyAudioBuffer = Math.abs(volume - 1f) < 0.001f && (convertVideoParams.soundInfos.isEmpty() && audioFormat.getString(MediaFormat.KEY_MIME).equals(MediaController.AUDIO_MIME_TYPE) || audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/mpeg"));
 
                                 if (audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/unknown")) {
                                     audioIndex = -1;
@@ -539,7 +562,7 @@ public class MediaCodecVideoConvertor {
 
                                 if (audioIndex >= 0) {
                                     if (copyAudioBuffer) {
-                                        audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
+                                        audioTrackIndex = muxer.addTrack(audioFormat, true);
                                         extractor.selectTrack(audioIndex);
                                         try {
                                             maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
@@ -565,11 +588,12 @@ public class MediaCodecVideoConvertor {
                                         if (startTime > 0) {
                                             mainInput.setStartTimeUs(startTime);
                                         }
+                                        mainInput.setVolume(volume);
                                         audioInputs.add(mainInput);
                                         applyAudioInputs(convertVideoParams.soundInfos, audioInputs);
 
                                         audioRecoder = new AudioRecoder(audioInputs, duration);
-                                        audioTrackIndex = mediaMuxer.addTrack(audioRecoder.format, true);
+                                        audioTrackIndex = muxer.addTrack(audioRecoder.format, true);
                                     }
                                 }
                             } else if (!convertVideoParams.soundInfos.isEmpty()) {
@@ -580,7 +604,7 @@ public class MediaCodecVideoConvertor {
                                 applyAudioInputs(convertVideoParams.soundInfos, audioInputs);
 
                                 audioRecoder = new AudioRecoder(audioInputs, duration);
-                                audioTrackIndex = mediaMuxer.addTrack(audioRecoder.format, true);
+                                audioTrackIndex = muxer.addTrack(audioRecoder.format, true);
                             }
 
                             boolean audioEncoderDone = audioRecoder == null;
@@ -589,12 +613,11 @@ public class MediaCodecVideoConvertor {
 
                             checkConversionCanceled();
 
-
                             while (!outputDone || (!copyAudioBuffer && !audioEncoderDone)) {
                                 checkConversionCanceled();
 
                                 if (audioRecoder != null) {
-                                    audioEncoderDone = audioRecoder.step(mediaMuxer, audioTrackIndex);
+                                    audioEncoderDone = audioRecoder.step(muxer, audioTrackIndex);
                                 }
 
                                 if (!inputDone) {
@@ -641,7 +664,7 @@ public class MediaCodecVideoConvertor {
                                         if (info.size > 0 && (endTime < 0 || info.presentationTimeUs < endTime)) {
                                             info.offset = 0;
                                             info.flags = extractor.getSampleFlags();
-                                            long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, audioBuffer, info, false);
+                                            long availableSize = muxer.writeSampleData(audioTrackIndex, audioBuffer, info, false);
                                             if (availableSize != 0) {
                                                 if (callback != null) {
                                                     if (info.presentationTimeUs - startTime > currentPts) {
@@ -677,7 +700,7 @@ public class MediaCodecVideoConvertor {
                                     } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                                         MediaFormat newFormat = encoder.getOutputFormat();
                                         if (videoTrackIndex == -5 && newFormat != null) {
-                                            videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
+                                            videoTrackIndex = muxer.addTrack(newFormat, false);
                                             if (newFormat.containsKey(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) && newFormat.getInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) == 1) {
                                                 ByteBuffer spsBuff = newFormat.getByteBuffer("csd-0");
                                                 ByteBuffer ppsBuff = newFormat.getByteBuffer("csd-1");
@@ -706,7 +729,7 @@ public class MediaCodecVideoConvertor {
                                                     cutOfNalData(outputMimeType, encodedData, info);
                                                     firstEncode = false;
                                                 }
-                                                long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, true);
+                                                long availableSize = muxer.writeSampleData(videoTrackIndex, encodedData, info, true);
                                                 if (availableSize != 0) {
                                                     if (callback != null) {
                                                         if (info.presentationTimeUs - startTime > currentPts) {
@@ -741,7 +764,7 @@ public class MediaCodecVideoConvertor {
                                                     newFormat.setByteBuffer("csd-0", sps);
                                                     newFormat.setByteBuffer("csd-1", pps);
                                                 }
-                                                videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
+                                                videoTrackIndex = muxer.addTrack(newFormat, false);
                                             }
                                         }
                                         outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -881,8 +904,12 @@ public class MediaCodecVideoConvertor {
                     }
                     checkConversionCanceled();
                 } else {
-                    mediaMuxer = new MP4Builder().createMovie(movie, isSecret, false);
-                    readAndWriteTracks(extractor, mediaMuxer, info, startTime, endTime, duration, cacheFile, bitrate != -1 && !muted);
+                    Mp4Movie movie = new Mp4Movie();
+                    movie.setCacheFile(cacheFile);
+                    movie.setRotation(0);
+                    movie.setSize(resultWidth, resultHeight);
+                    muxer = new Muxer(new MP4Builder().createMovie(movie, isSecret, false));
+                    readAndWriteTracks(extractor, muxer, info, startTime, endTime, duration, cacheFile, bitrate != -1 && !muted);
                 }
             }
         } catch (Throwable e) {
@@ -893,10 +920,10 @@ public class MediaCodecVideoConvertor {
             if (extractor != null) {
                 extractor.release();
             }
-            if (mediaMuxer != null) {
+            if (muxer != null) {
                 try {
-                    mediaMuxer.finishMovie();
-                    endPresentationTime = mediaMuxer.getLastFrameTimestamp(videoTrackIndex);
+                    muxer.finishMovie();
+                    endPresentationTime = muxer.getLastFrameTimestamp(videoTrackIndex, info);
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
@@ -974,7 +1001,9 @@ public class MediaCodecVideoConvertor {
                 encoder = MediaCodec.createByCodecName(encoderName);
             }
         } else {
-            outputMimeType = "video/avc";
+            if (outputMimeType.equals("video/hevc")) {
+                outputMimeType = "video/avc";
+            }
             encoder = MediaCodec.createEncoderByType(outputMimeType);
         }
 //        if (encoder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && "c2.qti.avc.encoder".equals(encoder.getName())) {
@@ -1033,8 +1062,77 @@ public class MediaCodecVideoConvertor {
         return encoder.getName().equals("c2.mtk.avc.encoder");
     }
 
-    private long readAndWriteTracks(MediaExtractor extractor, MP4Builder mediaMuxer,
-                                    MediaCodec.BufferInfo info, long start, long end, long duration, File file, boolean needAudio) throws Exception {
+    public static class Muxer {
+
+        public final MP4Builder mp4Builder;
+        public final MediaMuxer mediaMuxer;
+
+        private boolean started = false;
+
+        public Muxer(MP4Builder mp4Builder) {
+            this.mp4Builder = mp4Builder;
+            this.mediaMuxer = null;
+        }
+        public Muxer(MediaMuxer mediaMuxer) {
+            this.mp4Builder = null;
+            this.mediaMuxer = mediaMuxer;
+        }
+
+        public int addTrack(MediaFormat format, boolean isAudio) {
+            if (mediaMuxer != null) {
+                return mediaMuxer.addTrack(format);
+            } else if (mp4Builder != null) {
+                return mp4Builder.addTrack(format, isAudio);
+            }
+            return 0;
+        }
+
+        public long writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
+            if (mediaMuxer != null) {
+                if (!started) {
+                    mediaMuxer.start();
+                    started = true;
+                }
+                mediaMuxer.writeSampleData(trackIndex, byteBuf, bufferInfo);
+                return 0;
+            } else if (mp4Builder != null) {
+                return mp4Builder.writeSampleData(trackIndex, byteBuf, bufferInfo, writeLength);
+            }
+            return 0;
+        }
+
+        public long getLastFrameTimestamp(int trackIndex, MediaCodec.BufferInfo bufferInfo) {
+            if (mediaMuxer != null) {
+                return bufferInfo.presentationTimeUs;
+            } else if (mp4Builder != null) {
+                return mp4Builder.getLastFrameTimestamp(trackIndex);
+            }
+            return 0;
+        }
+
+        public void start() {
+            if (mediaMuxer != null) {
+                mediaMuxer.start();
+            } else if (mp4Builder != null) {
+
+            }
+        }
+
+        public void finishMovie() throws Exception {
+            if (mediaMuxer != null) {
+                mediaMuxer.stop();
+                mediaMuxer.release();
+            } else if (mp4Builder != null) {
+                mp4Builder.finishMovie();
+            }
+        }
+
+    }
+
+    private long readAndWriteTracks(
+        MediaExtractor extractor, Muxer mediaMuxer,
+        MediaCodec.BufferInfo info, long start, long end, long duration, File file, boolean needAudio
+    ) throws Exception {
         int videoTrackIndex = MediaController.findTrack(extractor, false);
         int audioTrackIndex = needAudio ? MediaController.findTrack(extractor, true) : -1;
         int muxerVideoTrackIndex = -1;
@@ -1201,27 +1299,24 @@ public class MediaCodecVideoConvertor {
         if (external) {
             String shaderCode;
             if (hdrInfo.getHDRType() == 1) {
-                shaderCode = RLottieDrawable.readRes(null, R.raw.yuv_hlg2rgb);
+                shaderCode = RLottieDrawable.readRes(null, R.raw.hdr2sdr_hlg);
             } else {
-                shaderCode = RLottieDrawable.readRes(null, R.raw.yuv_pq2rgb);
+                shaderCode = RLottieDrawable.readRes(null, R.raw.hdr2sdr_pq);
             }
             shaderCode = shaderCode.replace("$dstWidth", dstWidth + ".0");
             shaderCode = shaderCode.replace("$dstHeight", dstHeight + ".0");
             // TODO(@dkaraush): use minlum/maxlum
             return shaderCode + "\n" +
-                    "in vec2 vTextureCoord;\n" +
-                    "out vec4 fragColor;\n" +
+                    "varying vec2 vTextureCoord;\n" +
                     "void main() {\n" +
-                    "    fragColor = TEX(vTextureCoord);\n" +
+                    "    gl_FragColor = TEX(vTextureCoord);\n" +
                     "}";
         } else {
-            return "#version 320 es\n" +
-                    "precision mediump float;\n" +
+            return "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
                     "uniform sampler2D sTexture;\n" +
-                    "out vec4 fragColor;\n" +
                     "void main() {\n" +
-                    "fragColor = texture(sTexture, vTextureCoord);\n" +
+                    "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
                     "}\n";
         }
     }
@@ -1343,12 +1438,14 @@ public class MediaCodecVideoConvertor {
         Integer gradientTopColor;
         Integer gradientBottomColor;
         boolean muted;
+        float volume;
         boolean isStory;
         StoryEntry.HDRInfo hdrInfo;
         public ArrayList<MixedSoundInfo> soundInfos = new ArrayList<MixedSoundInfo>();
         int account;
         boolean isDark;
         long wallpaperPeerId;
+        boolean isSticker;
 
         private ConvertVideoParams() {
 
@@ -1391,6 +1488,7 @@ public class MediaCodecVideoConvertor {
             params.gradientTopColor = info.gradientTopColor;
             params.gradientBottomColor = info.gradientBottomColor;
             params.muted = info.muted;
+            params.volume = info.volume;
             params.isStory = info.isStory;
             params.hdrInfo = info.hdrInfo;
             params.isDark = info.isDark;
@@ -1399,6 +1497,7 @@ public class MediaCodecVideoConvertor {
             params.messagePath = info.messagePath;
             params.messageVideoMaskPath = info.messageVideoMaskPath;
             params.backgroundPath = info.backgroundPath;
+            params.isSticker = info.isSticker;
             return params;
         }
     }
@@ -1415,4 +1514,5 @@ public class MediaCodecVideoConvertor {
             this.audioFile = file;
         }
     }
+
 }

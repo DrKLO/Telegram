@@ -1021,10 +1021,18 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
     }
 
+    private int overriddenMaxWidth;
+    public void setOverrideTextMaxWidth(int width) {
+        overriddenMaxWidth = width;
+    }
+
     private void createLayout(CharSequence text, int width) {
         int maxWidth = width - dp(30);
         if (maxWidth < 0) {
             return;
+        }
+        if (overriddenMaxWidth > 0) {
+            maxWidth = Math.min(overriddenMaxWidth, maxWidth);
         }
         invalidatePath = true;
         TextPaint paint;

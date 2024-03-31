@@ -30,6 +30,7 @@ jmethodID jclass_ConnectionsManager_onRequestNewServerIpAndPort;
 jmethodID jclass_ConnectionsManager_onProxyError;
 jmethodID jclass_ConnectionsManager_getHostByName;
 jmethodID jclass_ConnectionsManager_getInitFlags;
+jmethodID jclass_ConnectionsManager_onPremiumFloodWait;
 
 bool check_utf8(const char *data, size_t len);
 
@@ -319,6 +320,10 @@ class Delegate : public ConnectiosManagerDelegate {
     int32_t getInitFlags(int32_t instanceNum) {
         return (int32_t) jniEnv[instanceNum]->CallStaticIntMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getInitFlags);
     }
+
+    void onPremiumFloodWait(int32_t instanceNum, int32_t requestToken, bool isUpload) {
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onPremiumFloodWait, instanceNum, requestToken, isUpload);
+    }
 };
 
 void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstring ip) {
@@ -566,6 +571,10 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_ConnectionsManager_getInitFlags = env->GetStaticMethodID(jclass_ConnectionsManager, "getInitFlags", "()I");
     if (jclass_ConnectionsManager_getInitFlags == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onPremiumFloodWait = env->GetStaticMethodID(jclass_ConnectionsManager, "onPremiumFloodWait", "(IIZ)V");
+    if (jclass_ConnectionsManager_onPremiumFloodWait == 0) {
         return JNI_FALSE;
     }
 

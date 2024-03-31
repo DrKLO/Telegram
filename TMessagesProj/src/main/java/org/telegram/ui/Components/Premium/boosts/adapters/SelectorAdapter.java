@@ -2,6 +2,7 @@ package org.telegram.ui.Components.Premium.boosts.adapters;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Paint;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,8 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -25,6 +28,7 @@ import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorLetterCe
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickerEmptyView;
+import org.telegram.ui.DialogsActivity;
 
 import java.util.HashMap;
 import java.util.List;
@@ -149,7 +153,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             }
             userCell.setChecked(item.checked, false);
             userCell.setCheckboxAlpha(1f, false);
-            userCell.setDivider(position < items.size() - 2);
+            userCell.setDivider(position + 1 >= items.size() || items.get(position + 1).viewType == viewType);
             if ((position + 1 < items.size()) && items.get(position + 1).viewType == VIEW_TYPE_LETTER) {
                 userCell.setDivider(false);
             }
@@ -176,11 +180,13 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             }
         } else if (viewType == VIEW_TYPE_TOP_SECTION) {
             GraySectionCell cell = (GraySectionCell) holder.itemView;
-            cell.setText(item.text);
-            if (topSectionClickListener == null) {
-                cell.setRightText(null, null);
+            if (TextUtils.equals(cell.getText(), item.text)) {
+                cell.setRightText(item.subtext == null ? "" : item.subtext, true, item.callback);
             } else {
-                cell.setRightText(LocaleController.getString(R.string.UsersDeselectAll), topSectionClickListener);
+                cell.setText(Emoji.replaceWithRestrictedEmoji(item.text, cell.getTextView(), null));
+                if (!TextUtils.isEmpty(item.subtext)) {
+                    cell.setRightText(item.subtext, item.callback);
+                }
             }
             topSectionCell = cell;
         }
@@ -266,10 +272,11 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         public TLRPC.InputPeer peer;
         public TLRPC.Chat chat;
         public TLRPC.TL_help_country country;
-        public String text;
+        public CharSequence text, subtext;
         public int type;
         public boolean checked;
         public int padHeight = -1;
+        public View.OnClickListener callback;
 
         private Item(int viewType, boolean selectable) {
             super(viewType, selectable);
@@ -296,10 +303,16 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             return item;
         }
 
-        public static Item asTopSection(String text) {
+        public static Item asTopSection(CharSequence text) {
             Item item = new Item(VIEW_TYPE_TOP_SECTION, false);
             item.text = text;
             return item;
+        }
+
+        public Item withRightText(String rightText, View.OnClickListener whenRightTextClicked) {
+            subtext = rightText;
+            callback = whenRightTextClicked;
+            return this;
         }
 
         public static Item asCountry(TLRPC.TL_help_country tlHelpCountry, boolean checked) {
@@ -327,6 +340,13 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             return item;
         }
 
+        public long getDialogId() {
+            if (user != null) return user.id;
+            if (chat != null) return -chat.id;
+            if (peer != null) return DialogObject.getPeerDialogId(peer);
+            return 0;
+        }
+
         public static Item asNoUsers() {
             return new Item(VIEW_TYPE_NO_USERS, false);
         }
@@ -341,14 +361,28 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             }
             if (viewType == VIEW_TYPE_PAD && (padHeight != i.padHeight)) {
                 return false;
-            } else if (viewType == VIEW_TYPE_USER && (user != i.user || chat != i.chat || peer != i.peer || type != i.type || checked != i.checked)) {
+            } else if (viewType == VIEW_TYPE_USER && (getDialogId() != i.getDialogId() || type != i.type)) {
                 return false;
-            } else if (viewType == VIEW_TYPE_COUNTRY && (country != i.country || checked != i.checked)) {
+            } else if (viewType == VIEW_TYPE_COUNTRY && (country != i.country)) {
                 return false;
             } else if (viewType == VIEW_TYPE_LETTER && (!TextUtils.equals(text, i.text))) {
                 return false;
-            } else if (viewType == VIEW_TYPE_TOP_SECTION && (!TextUtils.equals(text, i.text) || checked != i.checked)) {
+            } else if (viewType == VIEW_TYPE_TOP_SECTION && (!TextUtils.equals(text, i.text))) {
                 return false;
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean contentsEquals(AdapterWithDiffUtils.Item o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Item i = (Item) o;
+            if (checked != i.checked) {
+                return false;
+            }
+            if (viewType == VIEW_TYPE_TOP_SECTION) {
+                return TextUtils.equals(subtext, i.subtext) && (callback == null) == (i.callback == null);
             }
             return true;
         }

@@ -53,7 +53,7 @@ public class FileUploadOperation {
     private int state;
     private byte[] readBuffer;
     private FileUploadOperationDelegate delegate;
-    private SparseIntArray requestTokens = new SparseIntArray();
+    public final SparseIntArray requestTokens = new SparseIntArray();
     private int currentPartNum;
     private long currentFileId;
     private long totalFileSize;
@@ -82,6 +82,8 @@ public class FileUploadOperation {
     private SparseArray<UploadCachedResult> cachedResults = new SparseArray<>();
     private boolean[] recalculatedEstimatedSize = {false, false};
     protected long lastProgressUpdateTime;
+
+    public volatile boolean caughtPremiumFloodWait;
 
     public interface FileUploadOperationDelegate {
         void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv);

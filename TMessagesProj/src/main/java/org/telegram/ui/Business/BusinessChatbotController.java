@@ -72,8 +72,10 @@ public class BusinessChatbotController {
         }
     }
 
-    public void invalidate() {
+    public void invalidate(boolean reload) {
         loaded = false;
-        load(null);
+        if (reload) {
+            load(null);
+        }
     }
 }

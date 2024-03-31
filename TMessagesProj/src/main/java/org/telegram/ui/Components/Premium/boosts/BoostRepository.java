@@ -19,7 +19,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -28,7 +27,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.BotWebViewSheet;
+import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 
@@ -512,7 +511,7 @@ public class BoostRepository {
         });
     }
 
-    public static void loadGiftOptions(TLRPC.Chat chat, Utilities.Callback<List<TLRPC.TL_premiumGiftCodeOption>> onDone) {
+    public static int loadGiftOptions(TLRPC.Chat chat, Utilities.Callback<List<TLRPC.TL_premiumGiftCodeOption>> onDone) {
         MessagesController controller = MessagesController.getInstance(UserConfig.selectedAccount);
         ConnectionsManager connection = ConnectionsManager.getInstance(UserConfig.selectedAccount);
         TLRPC.TL_payments_getPremiumGiftCodeOptions req = new TLRPC.TL_payments_getPremiumGiftCodeOptions();
@@ -521,7 +520,7 @@ public class BoostRepository {
             req.boost_peer = controller.getInputPeer(-chat.id);
         }
 
-        int reqId = connection.sendRequest(req, (response, error) -> {
+        return connection.sendRequest(req, (response, error) -> {
             if (response != null) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
                 List<TLRPC.TL_premiumGiftCodeOption> result = new ArrayList<>();

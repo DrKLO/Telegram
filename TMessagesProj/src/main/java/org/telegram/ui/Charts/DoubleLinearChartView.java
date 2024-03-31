@@ -251,12 +251,12 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
                     signaturePaint.setAlpha((int) (a.alpha * lines.get(leftIndex).alpha * transitionAlpha * additionalOutAlpha));
                 }
 
-                canvas.drawText(a.valuesStr[i], HORIZONTAL_PADDING, y - textOffset, signaturePaint);
+                a.drawText(canvas, 0, i, HORIZONTAL_PADDING, y - textOffset, signaturePaint);
             }
             if (a.valuesStr2 != null && lines.size() > 1) {
                 signaturePaint2.setColor(lines.get(rightIndex).lineColor);
                 signaturePaint2.setAlpha((int) (a.alpha * lines.get(rightIndex).alpha * transitionAlpha * additionalOutAlpha));
-                canvas.drawText(a.valuesStr2[i], getMeasuredWidth() - HORIZONTAL_PADDING, y - textOffset, signaturePaint2);
+                a.drawText(canvas, 1, i, getMeasuredWidth() - HORIZONTAL_PADDING, y - textOffset, signaturePaint2);
             }
         }
     }
@@ -323,7 +323,8 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
         }
     }
 
-    protected ChartHorizontalLinesData createHorizontalLinesData(int newMaxHeight, int newMinHeight) {
+    @Override
+    protected ChartHorizontalLinesData createHorizontalLinesData(int newMaxHeight, int newMinHeight, int formatter) {
         float k;
         if (chartData.linesK.length < 2) {
             k = 1;
@@ -331,6 +332,6 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
             int rightIndex = chartData.linesK[0] == 1 ? 1 : 0;
             k = chartData.linesK[rightIndex];
         }
-        return new ChartHorizontalLinesData(newMaxHeight, newMinHeight, useMinHeight, k);
+        return new ChartHorizontalLinesData(newMaxHeight, newMinHeight, useMinHeight, k, formatter, signaturePaint, signaturePaint2);
     }
 }

@@ -122,10 +122,10 @@ public class ProfileHoursCell extends LinearLayout {
                 switchText = new ClickableAnimatedTextView(context);
                 switchText.getDrawable().updateAll = true;
                 switchText.setTextSize(dp(13));
-                switchText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider));
                 switchText.setPadding(dp(6), 0, dp(6), 0);
                 switchText.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
-                switchText.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider), .10f), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider), .22f)));
+                switchText.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.multAlpha(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)), .10f), Theme.multAlpha(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)), .22f)));
+                switchText.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)));
                 switchText.getDrawable().setScaleProperty(.6f);
                 switchText.setVisibility(View.GONE);
                 todayTimeTextContainer2.addView(switchText, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, 17, Gravity.END, 0, 4, 20 - 2, 0));
@@ -169,6 +169,15 @@ public class ProfileHoursCell extends LinearLayout {
         setWillNotDraw(false);
     }
 
+    protected int processColor(int color) {
+        return color;
+    }
+
+    public void updateColors() {
+        switchText.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.multAlpha(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)), .10f), Theme.multAlpha(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)), .22f)));
+        switchText.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)));
+    }
+
     public void setOnTimezoneSwitchClick(View.OnClickListener onClickListener) {
         if (switchText != null) {
             switchText.setOnClickListener(onClickListener);
@@ -184,6 +193,13 @@ public class ProfileHoursCell extends LinearLayout {
 
         if (value == null) return;
 
+        final boolean is24x7 = OpeningHoursActivity.is24x7(value);
+        if (is24x7) {
+            this.expanded = expanded = false;
+        }
+        arrowView.setVisibility(is24x7 ? View.GONE : View.VISIBLE);
+        todayTimeTextContainer2.setTranslationX(is24x7 ? dp(11) : 0);
+
         TimezonesController timezonesController = TimezonesController.getInstance(UserConfig.selectedAccount);
         TLRPC.TL_timezone timezone = timezonesController.findTimezone(value.timezone_id);
 
@@ -191,7 +207,7 @@ public class ProfileHoursCell extends LinearLayout {
         int currentUtcOffset = calendar.getTimeZone().getRawOffset() / 1000;
         int valueUtcOffset = timezone == null ? 0 : timezone.utc_offset;
         int utcOffset = (currentUtcOffset - valueUtcOffset) / 60;
-        switchText.setVisibility(utcOffset != 0 ? View.VISIBLE : View.GONE);
+        switchText.setVisibility(utcOffset != 0 && !is24x7 ? View.VISIBLE : View.GONE);
         if (utcOffset == 0) showInMyTimezone = false;
 
         invalidate();
@@ -294,7 +310,9 @@ public class ProfileHoursCell extends LinearLayout {
                             }
                         }
                     } else {
-                        if (days[weekday].isEmpty()) {
+                        if (is24x7) {
+                            textView.setText(getString(R.string.BusinessHoursProfileFullOpen));
+                        } else if (days[weekday].isEmpty()) {
                             textView.setText(getString(R.string.BusinessHoursProfileClose));
                         } else if (OpeningHoursActivity.isFull(days[weekday])) {
                             textView.setText(getString(R.string.BusinessHoursProfileOpen));

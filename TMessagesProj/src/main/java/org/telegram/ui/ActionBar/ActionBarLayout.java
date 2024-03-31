@@ -55,7 +55,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.BackButtonMenu;
-import org.telegram.ui.Components.BotWebViewSheet;
+import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -64,7 +64,6 @@ import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.LogoutActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
 import java.util.ArrayList;
@@ -88,7 +87,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (!fragmentsStack.isEmpty()) {
             lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
         }
-        return lastFragment != null && lastFragment.storyViewer != null && lastFragment.storyViewer.attachedToParent();
+        return lastFragment != null && lastFragment.getLastStoryViewer() != null && lastFragment.getLastStoryViewer().attachedToParent();
     }
 
     public class LayoutContainer extends FrameLayout {
@@ -113,7 +112,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             if (!fragmentsStack.isEmpty()) {
                 lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             }
-            if (storyViewerAttached() && lastFragment.storyViewer.isFullyVisible() && !lastFragment.isStoryViewer(child)) {
+            if (storyViewerAttached() && lastFragment != null && lastFragment.getLastStoryViewer() != null && lastFragment.getLastStoryViewer().isFullyVisible() && lastFragment.getLastStoryViewer().windowView != child) {
                 return true;
             }
             if (child instanceof ActionBar) {
@@ -295,9 +294,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                                     if (shouldBeEnabled != enabled) {
                                         ripple.setState(shouldBeEnabled ? new int[]{android.R.attr.state_pressed, android.R.attr.state_enabled} : new int[]{});
                                         if (shouldBeEnabled) {
-                                            try {
-                                                button.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                                            } catch (Exception ignore) {}
+                                            AndroidUtilities.vibrateCursor(button);
                                         }
                                     }
                                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -2606,11 +2603,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (getLastFragment() != null && getLastFragment().overlayStoryViewer != null && getLastFragment().overlayStoryViewer.attachedToParent()) {
-            return getLastFragment().overlayStoryViewer.windowView.dispatchTouchEvent(ev);
-        }
-        if (getLastFragment() != null && getLastFragment().storyViewer != null && getLastFragment().storyViewer.attachedToParent()) {
-            return getLastFragment().storyViewer.windowView.dispatchTouchEvent(ev);
+        if (getLastFragment() != null && getLastFragment().getLastStoryViewer() != null && getLastFragment().getLastStoryViewer().attachedToParent()) {
+            return getLastFragment().getLastStoryViewer().windowView.dispatchTouchEvent(ev);
         }
         return super.dispatchTouchEvent(ev);
     }

@@ -53,7 +53,7 @@ public class ChartHeaderView extends FrameLayout {
 
         title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         addView(title, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 16, 0, textMargin, 0));
 
         back = new TextView(context);
@@ -64,13 +64,13 @@ public class ChartHeaderView extends FrameLayout {
 
         dates = new TextView(context);
         dates.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        dates.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        dates.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         dates.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(dates, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
         datesTmp = new TextView(context);
         datesTmp.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        datesTmp.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        datesTmp.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         datesTmp.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(datesTmp, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         datesTmp.setVisibility(View.GONE);

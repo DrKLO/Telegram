@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -45,6 +46,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
@@ -92,6 +94,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
@@ -169,7 +172,7 @@ import org.telegram.ui.Components.ArchiveHelp;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurredRecyclerView;
-import org.telegram.ui.Components.BotWebViewSheet;
+import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatActivityEnterView;
@@ -185,6 +188,7 @@ import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.FolderBottomSheet;
 import org.telegram.ui.Components.FolderDrawable;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.ItemOptions;
@@ -2728,6 +2732,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (getMessagesController().savedViewAsChats) {
             getMessagesController().getSavedMessagesController().preloadDialogs(true);
         }
+
+        BirthdayController.getInstance(currentAccount).check();
 
         return true;
     }
@@ -5696,6 +5702,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (dialogsHintCell == null || fragmentView == null || getContext() == null) {
             return;
         }
+        if (dialogsHintCell != null) {
+            dialogsHintCell.setCompact(false);
+            dialogsHintCell.setAvatars(currentAccount, null);
+        }
         if (isInPreviewMode()) {
             dialogsHintCellVisible = false;
             dialogsHintCell.setVisibility(View.GONE);
@@ -5709,9 +5719,120 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             authHintCell.set(DialogsActivity.this, currentAccount);
             updateAuthHintCellVisibility(true);
+        } else if (folderId == 0 && !getMessagesController().premiumPurchaseBlocked() && BirthdayController.getInstance(currentAccount).contains()) {
+            BirthdayController.BirthdayState state = BirthdayController.getInstance(currentAccount).getState();
+            ArrayList<TLRPC.User> users = state.today;
+            dialogsHintCellVisible = true;
+            dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(true);
+            dialogsHintCell.setOnClickListener(v -> UserSelectorBottomSheet.open(0, state));
+            dialogsHintCell.setAvatars(currentAccount, users);
+            dialogsHintCell.setText(Emoji.replaceWithRestrictedEmoji(AndroidUtilities.replaceSingleTag(
+                users.size() == 1 ?
+                    LocaleController.formatString(R.string.BirthdayTodaySingleTitle, UserObject.getForcedFirstName(users.get(0))) :
+                    LocaleController.formatPluralString("BirthdayTodayMultipleTitle", users.size()),
+                Theme.key_windowBackgroundWhiteValueText,
+                AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
+                null
+            ), dialogsHintCell.titleView, this::updateDialogsHint),
+                LocaleController.formatString(users.size() == 1 ? R.string.BirthdayTodaySingleMessage : R.string.BirthdayTodayMultipleMessage)
+            );
+            dialogsHintCell.setOnCloseListener(v -> {
+                BirthdayController.getInstance(currentAccount).hide();
+                ChangeBounds transition = new ChangeBounds();
+                transition.setDuration(200);
+                TransitionManager.beginDelayedTransition((ViewGroup) dialogsHintCell.getParent(), transition);
+                updateDialogsHint();
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("BoostingPremiumChristmasToast", R.string.BoostingPremiumChristmasToast), 4)
+                        .setDuration(Bulletin.DURATION_PROLONG)
+                        .show();
+            });
+            updateAuthHintCellVisibility(false);
+        } else if (
+            folderId == 0 &&
+            MessagesController.getInstance(currentAccount).pendingSuggestions.contains("BIRTHDAY_SETUP") &&
+            getMessagesController().getUserFull(getUserConfig().getClientUserId()) != null &&
+            getMessagesController().getUserFull(getUserConfig().getClientUserId()).birthday == null
+        ) {
+            ContactsController.getInstance(currentAccount).loadPrivacySettings();
+            dialogsHintCellVisible = true;
+            dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(true);
+            dialogsHintCell.setOnClickListener(v -> {
+                showDialog(AlertsCreator.createBirthdayPickerDialog(getContext(), getString(R.string.EditProfileBirthdayTitle), getString(R.string.EditProfileBirthdayButton), null, birthday -> {
+                    TLRPC.TL_account_updateBirthday req = new TLRPC.TL_account_updateBirthday();
+                    req.flags |= 1;
+                    req.birthday = birthday;
+                    TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
+                    TLRPC.TL_birthday oldBirthday = userFull != null ? userFull.birthday : null;
+                    if (userFull != null) {
+                        userFull.flags2 |= 32;
+                        userFull.birthday = birthday;
+                    }
+                    getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (res instanceof TLRPC.TL_boolTrue) {
+                            BulletinFactory.of(DialogsActivity.this)
+                                .createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.PrivacyBirthdaySetDone))
+                                .setDuration(Bulletin.DURATION_PROLONG).show();
+                        } else {
+                            if (userFull != null) {
+                                if (oldBirthday == null) {
+                                    userFull.flags2 &=~ 32;
+                                } else {
+                                    userFull.flags2 |= 32;
+                                }
+                                userFull.birthday = oldBirthday;
+                                getMessagesStorage().updateUserInfo(userFull, false);
+                            }
+                            if (err != null && err.text != null && err.text.startsWith("FLOOD_WAIT_")) {
+                                if (getContext() != null) {
+                                    showDialog(
+                                        new AlertDialog.Builder(getContext(), resourceProvider)
+                                            .setTitle(getString(R.string.PrivacyBirthdayTooOftenTitle))
+                                            .setMessage(getString(R.string.PrivacyBirthdayTooOftenMessage))
+                                            .setPositiveButton(getString(R.string.OK), null)
+                                            .create()
+                                    );
+                                }
+                            } else {
+                                BulletinFactory.of(DialogsActivity.this)
+                                    .createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.UnknownError))
+                                    .show();
+                            }
+                        }
+                    }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);
+
+                    MessagesController.getInstance(currentAccount).removeSuggestion(0, "BIRTHDAY_SETUP");
+
+                    updateDialogsHint();
+                }, () -> {
+                    BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                    params.transitionFromLeft = true;
+                    params.allowNestedScroll = false;
+                    showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), params);
+                }, getResourceProvider()).create());
+            });
+            dialogsHintCell.setText(Emoji.replaceWithRestrictedEmoji(LocaleController.getString(R.string.BirthdaySetupTitle), dialogsHintCell.titleView, this::updateDialogsHint), LocaleController.formatString(R.string.BirthdaySetupMessage));
+            dialogsHintCell.setOnCloseListener(v -> {
+                MessagesController.getInstance(currentAccount).removeSuggestion(0, "BIRTHDAY_SETUP");
+                ChangeBounds transition = new ChangeBounds();
+                transition.setDuration(200);
+                TransitionManager.beginDelayedTransition((ViewGroup) dialogsHintCell.getParent(), transition);
+                updateDialogsHint();
+
+                BulletinFactory.of(this)
+                    .createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString(R.string.BirthdaySetupLater), LocaleController.getString(R.string.Settings), () -> {
+                        presentFragment(new UserInfoActivity());
+                    })
+                    .setDuration(Bulletin.DURATION_PROLONG)
+                    .show();
+            });
+            updateAuthHintCellVisibility(false);
         } else if (isPremiumChristmasHintVisible()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(false);
             dialogsHintCell.setOnClickListener(v -> UserSelectorBottomSheet.open());
             dialogsHintCell.setText(Emoji.replaceEmoji(AndroidUtilities.replaceSingleTag(
                     LocaleController.getString("GiftPremiumEventAdsTitle", R.string.GiftPremiumEventAdsTitle),
@@ -5734,6 +5855,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (isPremiumRestoreHintVisible()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(false);
             dialogsHintCell.setOnClickListener(v -> {
                 presentFragment(new PremiumPreviewFragment("dialogs_hint").setSelectAnnualByDefault());
                 AndroidUtilities.runOnUIThread(() -> {
@@ -5754,6 +5876,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (isPremiumHintVisible()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(false);
             dialogsHintCell.setOnClickListener(v -> {
                 presentFragment(new PremiumPreviewFragment("dialogs_hint").setSelectAnnualByDefault());
                 AndroidUtilities.runOnUIThread(() -> {
@@ -5774,6 +5897,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (isCacheHintVisible()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(false);
             dialogsHintCell.setOnClickListener(v -> {
                 presentFragment(new CacheControlActivity());
                 AndroidUtilities.runOnUIThread(() -> {
@@ -5813,6 +5937,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     final String finalSuggestion = foundSuggestion;
                     dialogsHintCellVisible = true;
                     dialogsHintCell.setVisibility(View.VISIBLE);
+                    dialogsHintCell.setCompact(false);
                     dialogsHintCell.setOnClickListener(v -> {
                         if (ApplicationLoader.applicationLoaderInstance != null) {
                             ApplicationLoader.applicationLoaderInstance.onSuggestionClick(finalSuggestion);
@@ -7713,6 +7838,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         long dialogId = 0;
         long topicId = 0;
         int message_id = 0;
+        MessageObject msg = null;
         boolean isGlobalSearch = false;
         int folderId = 0;
         int filterId = 0;
@@ -7800,7 +7926,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     searchObject = (TLRPC.EncryptedChat) obj;
                 }
             } else if (obj instanceof MessageObject) {
-                MessageObject messageObject = (MessageObject) obj;
+                MessageObject messageObject = msg = (MessageObject) obj;
                 dialogId = messageObject.getDialogId();
                 message_id = messageObject.getId();
                 TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
@@ -7934,7 +8060,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else if (searchString != null) {
                 if (getMessagesController().checkCanOpenChat(args, DialogsActivity.this)) {
                     getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
-                    presentFragment(new ChatActivity(args));
+                    presentFragment(highlightFoundQuote(new ChatActivity(args), msg));
                 }
             } else {
                 slowedReloadAfterDialogClick = true;
@@ -7945,20 +8071,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (chat != null && chat.forum && topicId == 0) {
                         if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN)) {
                             if (needOpenChatActivity) {
-                                presentFragment(new ChatActivity(args));
+                                presentFragment(highlightFoundQuote(new ChatActivity(args), msg));
                             } else {
                                 presentFragment(new TopicsFragment(args));
                             }
                         } else {
                             if (!canOpenInRightSlidingView) {
                                 if (needOpenChatActivity) {
-                                    presentFragment(new ChatActivity(args));
+                                    presentFragment(highlightFoundQuote(new ChatActivity(args), msg));
                                 } else {
                                     presentFragment(new TopicsFragment(args));
                                 }
                             } else if (!searching) {
                                 if (needOpenChatActivity) {
-                                    presentFragment(new ChatActivity(args));
+                                    presentFragment(highlightFoundQuote(new ChatActivity(args), msg));
                                 } else {
                                     if (rightSlidingDialogContainer.currentFragment != null && ((TopicsFragment) rightSlidingDialogContainer.currentFragment).getDialogId() == dialogId) {
                                         rightSlidingDialogContainer.finishPreview();
@@ -7988,11 +8114,55 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 rightSlidingDialogContainer.finishPreview();
                             }
                         }
-                        presentFragment(chatActivity);
+                        presentFragment(highlightFoundQuote(chatActivity, msg));
                     }
                 }
             }
         }
+    }
+
+    public ChatActivity highlightFoundQuote(ChatActivity chatActivity, MessageObject message) {
+        if (message != null && message.hasHighlightedWords()) {
+            try {
+                CharSequence text = null;
+                if (!TextUtils.isEmpty(message.caption)) {
+                    text = message.caption;
+                } else {
+                    text = message.messageText;
+                }
+                CharSequence highlighted = AndroidUtilities.highlightText(text, message.highlightedWords, null);
+                if (highlighted instanceof SpannableStringBuilder) {
+                    SpannableStringBuilder spannedHighlighted = (SpannableStringBuilder) highlighted;
+                    ForegroundColorSpanThemable[] spans = spannedHighlighted.getSpans(0, spannedHighlighted.length(), ForegroundColorSpanThemable.class);
+                    if (spans.length > 0) {
+                        int start = spannedHighlighted.getSpanStart(spans[0]);
+                        int end = spannedHighlighted.getSpanEnd(spans[0]);
+                        for (int i = 1; i < spans.length; ++i) {
+                            int sstart = spannedHighlighted.getSpanStart(spans[i]);
+                            int send = spannedHighlighted.getSpanStart(spans[i]);
+                            if (sstart == end) {
+                                end = send;
+                            } else if (sstart > end) {
+                                boolean whitespace = true;
+                                for (int j = end; j <= sstart; ++j) {
+                                    if (!Character.isWhitespace(spannedHighlighted.charAt(j))) {
+                                        whitespace = false;
+                                        break;
+                                    }
+                                }
+                                if (whitespace) {
+                                    end = send;
+                                }
+                            }
+                        }
+                        chatActivity.setHighlightQuote(message.getId(), text.subSequence(start, end).toString(), start);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        return chatActivity;
     }
 
     public void setOpenedDialogId(long dialogId, long topicId) {
@@ -12325,7 +12495,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (dialogStoriesCell == null || storiesVisibilityAnimator != null || rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment() || searchIsShowed || actionBar.isActionModeShowed() || onlySelect) {
             return;
         }
-        if (StoryRecorder.isVisible() || (storyViewer != null && storyViewer.isFullyVisible())) {
+        if (StoryRecorder.isVisible() || (getLastStoryViewer() != null && getLastStoryViewer().isFullyVisible())) {
             animated = false;
         }
         boolean onlySelfStories = !isArchive() && getStoriesController().hasOnlySelfStories();

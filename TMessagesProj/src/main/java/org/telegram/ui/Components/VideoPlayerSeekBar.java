@@ -598,9 +598,7 @@ public class VideoPlayerSeekBar {
         if (timestampIndex != currentTimestamp) {
             timestampLabel[1] = timestampLabel[0];
             if (pressed) {
-                try {
-                    parentView.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                } catch (Exception ignore) {}
+                AndroidUtilities.vibrateCursor(parentView);
             }
             if (timestampIndex >= 0 && timestampIndex < timestamps.size()) {
                 CharSequence label = timestamps.get(timestampIndex).second;

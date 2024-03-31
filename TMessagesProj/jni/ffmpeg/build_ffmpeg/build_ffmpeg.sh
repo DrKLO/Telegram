@@ -76,6 +76,10 @@ LIBS=" -L${PREFIX}/lib"
 \
 --enable-libvpx \
 --enable-decoder=libvpx_vp9 \
+--enable-encoder=libvpx_vp9 \
+--enable-muxer=matroska \
+--enable-bsf=vp9_superframe \
+--enable-bsf=vp9_raw_reorder \
 --enable-runtime-cpudetect \
 --enable-pthreads \
 --enable-avresample \

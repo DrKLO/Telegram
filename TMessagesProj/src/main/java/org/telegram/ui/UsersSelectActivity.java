@@ -1114,17 +1114,15 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
 
-            if (type == TYPE_PRIVATE) {
+            if (noChatTypes) {
+                usersStartRow = 0;
+            } else if (type == TYPE_PRIVATE) {
                 usersStartRow = 5 + (doNotNewChats ? 0 : 1);
             } else if (type == TYPE_FILTER) {
-                if (!noChatTypes) {
-                    if (isInclude) {
-                        usersStartRow = 7;
-                    } else {
-                        usersStartRow = 5;
-                    }
+                if (isInclude) {
+                    usersStartRow = 7;
                 } else {
-                    usersStartRow = 0;
+                    usersStartRow = 5;
                 }
             } else {
                 usersStartRow = 0;
@@ -1200,12 +1198,12 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 count += localServerCount + globalCount;
                 return count;
             } else {
-                if (type == TYPE_PRIVATE) {
+                if (noChatTypes) {
+                    count = 0;
+                } else if (type == TYPE_PRIVATE) {
                     count = 3 + (doNotNewChats ? 0 : 1);
                 } else if (type == TYPE_FILTER) {
-                    if (noChatTypes) {
-                        count = 0;
-                    } else if (isInclude) {
+                    if (isInclude) {
                         count = 7;
                     } else {
                         count = 5;
@@ -1441,16 +1439,16 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             if (searching) {
                 return 1;
             } else {
-                if (type == TYPE_PRIVATE) {
+                if (noChatTypes) {
+                    if (position == 0) {
+                        return 2;
+                    }
+                } else if (type == TYPE_PRIVATE) {
                     if (position == 0 || position == 4 + (doNotNewChats ? 0 : 1)) {
                         return 2;
                     }
                 } else if (type == TYPE_FILTER) {
-                    if (noChatTypes) {
-                        if (position == 0) {
-                            return 2;
-                        }
-                    } else if (isInclude) {
+                    if (isInclude) {
                         if (position == 0 || position == 6) {
                             return 2;
                         }

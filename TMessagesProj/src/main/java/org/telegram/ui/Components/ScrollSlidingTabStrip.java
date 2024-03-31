@@ -623,22 +623,29 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                         tabView.imageView.setImageDrawable(thumbDrawable);
                     }
                 } else {
-                    Object object = child.getTag();
+                    Object thumbObject = child.getTag();
                     Object parentObject = child.getTag(R.id.parent_tag);
                     TLRPC.Document sticker = (TLRPC.Document) child.getTag(R.id.object_tag);
                     ImageLocation imageLocation;
 
-                    if (object instanceof TLRPC.Document) {
+                    String thumbType = null;
+                    if (thumbObject instanceof TLRPC.Document) {
+                        //no thumb, using first sticker from set
                         if (!tabView.inited) {
-                            tabView.svgThumb = DocumentObject.getSvgThumb((TLRPC.Document) object, Theme.key_emptyListPlaceholder, 0.2f);
+                            tabView.svgThumb = DocumentObject.getSvgThumb((TLRPC.Document) thumbObject, Theme.key_emptyListPlaceholder, 0.2f);
                         }
                         imageLocation = ImageLocation.getForDocument(sticker);
-                    } else if (object instanceof TLRPC.PhotoSize) {
-                        TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
+                    } else if (thumbObject instanceof TLRPC.PhotoSize) {
+                        TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) thumbObject;
                         int thumbVersion = 0;
                         if (parentObject instanceof TLRPC.TL_messages_stickerSet) {
+                            TLRPC.TL_messages_stickerSet stickerSet = ((TLRPC.TL_messages_stickerSet) parentObject);
                             thumbVersion = ((TLRPC.TL_messages_stickerSet) parentObject).set.thumb_version;
+                            if (!tabView.inited) {
+                                tabView.svgThumb = DocumentObject.getSvgThumb(stickerSet.set.thumbs, Theme.key_emptyListPlaceholder, 0.2f);
+                            }
                         }
+                        thumbType = thumb.type;
                         imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
                     } else {
                         continue;
@@ -656,16 +663,24 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     BackupImageView imageView = tabView.imageView;
                     final boolean lite = !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD);
                     String imageFilter = lite ? "40_40_firstframe" : "40_40";
-                    if (MessageObject.isVideoSticker(sticker) && sticker.thumbs != null && sticker.thumbs.size() > 0) {
-                        if (lite) {
-                            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
-                            imageView.setImage(ImageLocation.getForDocument(thumb, sticker), "40_40", svgThumb, 0, parentObject);
-                        } else if (svgThumb != null) {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, svgThumb, 0, parentObject);
+                    if ((thumbType == null && MessageObject.isVideoSticker(sticker) && sticker.thumbs != null && sticker.thumbs.size() > 0) || (thumbType != null && thumbType.equalsIgnoreCase("v"))) {
+                        if (thumbType == null) {
+                            if (lite) {
+                                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                                imageView.setImage(ImageLocation.getForDocument(thumb, sticker), "40_40", svgThumb, 0, parentObject);
+                            } else if (svgThumb != null) {
+                                imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, svgThumb, 0, parentObject);
+                            } else {
+                                imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, imageLocation, null, 0, parentObject);
+                            }
                         } else {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, imageLocation, null, 0, parentObject);
+                            if (svgThumb != null) {
+                                imageView.setImage(imageLocation, imageFilter, svgThumb, 0, parentObject);
+                            } else {
+                                imageView.setImage(imageLocation, imageFilter, null, null, 0, parentObject);
+                            }
                         }
-                    } else if (MessageObject.isAnimatedStickerDocument(sticker, true)) {
+                    } else if ((thumbType == null && MessageObject.isAnimatedStickerDocument(sticker, true)) || (thumbType != null && thumbType.equalsIgnoreCase("a"))) {
                         if (svgThumb != null) {
                             imageView.setImage(imageLocation, imageFilter, svgThumb, 0, parentObject);
                         } else {

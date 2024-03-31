@@ -114,7 +114,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
             }
 
-            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true) || MessageObject.isVideoSticker(sticker) || MessageObject.isGifDocument(sticker)) {
+            if (object instanceof TLRPC.Document && (MessageObject.isAnimatedStickerDocument(sticker, true) || MessageObject.isVideoSticker(sticker) || MessageObject.isGifDocument(sticker))) {
                 imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, setObject);
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "50_50", "tgs", null, setObject);
@@ -205,9 +205,9 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 break;
             case TYPE_REPLACED_TO_FAVORITES_GIFS:
                 final boolean isPremium = UserConfig.getInstance(UserConfig.selectedAccount).isPremium();
-                if (!MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked() || !isPremium) {
-                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifs", R.string.LimitReachedFavoriteGifs, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
-                    CharSequence str = AndroidUtilities.premiumText(LocaleController.formatString("LimitReachedFavoriteGifsSubtitle", R.string.LimitReachedFavoriteGifsSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium), () -> {
+                if (!MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked() && !isPremium) {
+                    titleTextView.setText(LocaleController.formatString(R.string.LimitReachedFavoriteGifs, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
+                    CharSequence str = AndroidUtilities.premiumText(LocaleController.formatString(R.string.LimitReachedFavoriteGifsSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium), () -> {
                         Activity activity = AndroidUtilities.findActivity(context);
                         if (activity instanceof LaunchActivity) {
                             ((LaunchActivity) activity).presentFragment(new PremiumPreviewFragment(LimitReachedBottomSheet.limitTypeToServerString(LimitReachedBottomSheet.TYPE_GIFS)));
@@ -215,8 +215,8 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                     });
                     subtitleTextView.setText(str);
                 } else {
-                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifs", R.string.LimitReachedFavoriteGifs, isPremium ? MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium : MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
-                    subtitleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifsSubtitlePremium", R.string.LimitReachedFavoriteGifsSubtitlePremium));
+                    titleTextView.setText(LocaleController.formatString(R.string.LimitReachedFavoriteGifs, isPremium ? MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium : MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
+                    subtitleTextView.setText(LocaleController.getString(R.string.LimitReachedFavoriteGifsSubtitlePremium));
                 }
                 break;
             case TYPE_REMOVED_FROM_RECENT:

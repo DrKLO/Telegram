@@ -117,6 +117,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         counterDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
     }
 
+    public void setTextColor(int color) {
+        text.setTextColor(color);
+    }
+
     private boolean countFilled = true;
     public void setCountFilled(boolean filled) {
         countFilled = filled;
@@ -350,6 +354,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
             });
             enabledAnimator.start();
         }
+        super.setEnabled(enabled);
     }
 
     @Override

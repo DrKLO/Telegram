@@ -679,6 +679,50 @@ public class FileLoader extends BaseController {
         }
     }
 
+    public FileUploadOperation findUploadOperationByRequestToken(final int requestToken) {
+        for (FileUploadOperation operation : uploadOperationPaths.values()) {
+            if (operation == null) continue;
+            for (int i = 0; i < operation.requestTokens.size(); ++i) {
+                if (operation.requestTokens.valueAt(i) == requestToken) {
+                    return operation;
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean checkUploadCaughtPremiumFloodWait(final String filename) {
+        if (filename == null) return false;
+        FileUploadOperation operation = uploadOperationPaths.get(filename);
+        if (operation != null && operation.caughtPremiumFloodWait) {
+            operation.caughtPremiumFloodWait = false;
+            return true;
+        }
+        return false;
+    }
+
+    public FileLoadOperation findLoadOperationByRequestToken(final int requestToken) {
+        for (FileLoadOperation operation : loadOperationPaths.values()) {
+            if (operation == null || operation.requestInfos == null) continue;
+            for (FileLoadOperation.RequestInfo requestInfo : operation.requestInfos) {
+                if (requestInfo.requestToken == requestToken) {
+                    return operation;
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean checkLoadCaughtPremiumFloodWait(final String filename) {
+        if (filename == null) return false;
+        FileLoadOperation operation = loadOperationPaths.get(filename);
+        if (operation != null && operation.caughtPremiumFloodWait) {
+            operation.caughtPremiumFloodWait = false;
+            return true;
+        }
+        return false;
+    }
+
     public boolean isLoadingFile(final String fileName) {
         return fileName != null && loadOperationPathsUI.containsKey(fileName);
     }

@@ -1758,7 +1758,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 detectFaces();
             }
         }, 350);
-        EmojiBottomSheet alert = emojiPopup = new EmojiBottomSheet(getContext(), isVideo, resourcesProvider) {
+        EmojiBottomSheet alert = emojiPopup = new EmojiBottomSheet(getContext(), false, resourcesProvider) {
             @Override
             public void onDismissAnimationStart() {
                 super.onDismissAnimationStart();

@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Region;
 import android.view.View;
+import android.view.ViewGroup;
 
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -17,6 +18,7 @@ import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.ManageChatUserCell;
+import org.telegram.ui.Cells.ProfileChannelCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
@@ -28,6 +30,7 @@ import org.telegram.ui.Components.RecyclerListView;
 public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
     private final RecyclerListView recyclerListView;
+    private final ProfileChannelCell profileChannelCell;
     int[] clipPoint = new int[2];
     private boolean isHiddenArchive;
     LoadNextInterface loadNextInterface;
@@ -45,6 +48,10 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         return new StoriesListPlaceProvider(recyclerListView, hiddenArchive);
     }
 
+    public static StoriesListPlaceProvider of(ProfileChannelCell profileChannelCell) {
+        return new StoriesListPlaceProvider(profileChannelCell);
+    }
+
     public StoriesListPlaceProvider with(LoadNextInterface loadNextInterface) {
         this.loadNextInterface = loadNextInterface;
         return this;
@@ -53,6 +60,12 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
     public StoriesListPlaceProvider(RecyclerListView recyclerListView, boolean hiddenArchive) {
         this.recyclerListView = recyclerListView;
         this.isHiddenArchive = hiddenArchive;
+        this.profileChannelCell = null;
+    }
+
+    public StoriesListPlaceProvider(ProfileChannelCell profileChannelCell) {
+        this.profileChannelCell = profileChannelCell;
+        this.recyclerListView = null;
     }
 
     @Override
@@ -78,18 +91,19 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         holder.storyImage = null;
         holder.drawAbove = null;
 
-        if (recyclerListView == null) {
-            return false;
-        }
-
         DialogStoriesCell dialogStoriesCell = null;
-        if (recyclerListView.getParent() instanceof DialogStoriesCell) {
+        if (recyclerListView != null && recyclerListView.getParent() instanceof DialogStoriesCell) {
             dialogStoriesCell = (DialogStoriesCell) recyclerListView.getParent();
         }
-        RecyclerListView listView = recyclerListView;
+        ViewGroup listView = recyclerListView;
         if (dialogStoriesCell != null && !dialogStoriesCell.isExpanded()) {
             listView = dialogStoriesCell.listViewMini;
         }
+        if (profileChannelCell != null) {
+            listView = profileChannelCell;
+        }
+        if (listView == null) return false;
+
         for (int i = 0; i < listView.getChildCount(); i++) {
             View child = listView.getChildAt(i);
 
@@ -163,14 +177,14 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     updateClip(holder);
                     return true;
                 }
-            } else if (child instanceof SharedPhotoVideoCell2) {
+            } else if (child instanceof SharedPhotoVideoCell2 && recyclerListView != null) {
                 SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) child;
                 MessageObject msg = cell.getMessageObject();
                 if (
                     cell.getStyle() == SharedPhotoVideoCell2.STYLE_CACHE && cell.storyId == storyId ||
                     msg != null && msg.isStory() && msg.getId() == storyId && msg.storyItem.dialogId == dialogId
                 ) {
-                    final RecyclerListView.FastScroll fastScroll = listView.getFastScroll();
+                    final RecyclerListView.FastScroll fastScroll = recyclerListView.getFastScroll();
                     final int[] loc = new int[2];
                     if (fastScroll != null) {
                         fastScroll.getLocationInWindow(loc);

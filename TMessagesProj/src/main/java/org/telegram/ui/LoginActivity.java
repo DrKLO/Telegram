@@ -125,6 +125,7 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -195,7 +196,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private final static int MODE_LOGIN = 0,
             MODE_CANCEL_ACCOUNT_DELETION = 1,
             MODE_CHANGE_PHONE_NUMBER = 2,
-            MODE_CHANGE_LOGIN_EMAIL = 3;
+            MODE_CHANGE_LOGIN_EMAIL = 3,
+            MODE_BALANCE_PASSWORD = 4;
 
     private final static int VIEW_PHONE_INPUT = 0,
             VIEW_CODE_MESSAGE = 1,
@@ -234,7 +236,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             MODE_LOGIN,
             MODE_CANCEL_ACCOUNT_DELETION,
             MODE_CHANGE_PHONE_NUMBER,
-            MODE_CHANGE_LOGIN_EMAIL
+            MODE_CHANGE_LOGIN_EMAIL,
+            MODE_BALANCE_PASSWORD
     })
     public @interface ActivityMode {}
 
@@ -429,6 +432,19 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         cancelDeletionParams = params;
         cancelDeletionCode = sentCode;
         activityMode = MODE_CANCEL_ACCOUNT_DELETION;
+        return this;
+    }
+
+    private TLRPC.InputChannel channel;
+    private TLRPC.TL_account_password currentPassword;
+    private Utilities.Callback2<TL_stats.TL_broadcastRevenueWithdrawalUrl, TLRPC.TL_error> passwordFinishCallback;
+
+    public LoginActivity promptPassword(TLRPC.TL_account_password currentPassword, TLRPC.InputChannel channel, Utilities.Callback2<TL_stats.TL_broadcastRevenueWithdrawalUrl, TLRPC.TL_error> callback) {
+        activityMode = MODE_BALANCE_PASSWORD;
+        currentViewNum = VIEW_PASSWORD;
+        this.channel = channel;
+        this.currentPassword = currentPassword;
+        passwordFinishCallback = callback;
         return this;
     }
 
@@ -996,7 +1012,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public boolean onBackPressed() {
-        if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
+        if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL || activityMode == MODE_BALANCE_PASSWORD && currentViewNum == VIEW_PASSWORD) {
             for (int a = 0; a < views.length; a++) {
                 if (views[a] != null) {
                     views[a].onDestroyActivity();
@@ -4815,7 +4831,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             titleView.setText(LocaleController.getString(R.string.YourPasswordHeader));
             titleView.setGravity(Gravity.CENTER);
             titleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
@@ -4857,7 +4873,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             cancelButton = new TextView(context);
             cancelButton.setGravity(Gravity.CENTER | Gravity.LEFT);
-            cancelButton.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
+            cancelButton.setText(LocaleController.getString(R.string.ForgotPassword));
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             cancelButton.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
@@ -4867,73 +4883,83 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
             VerticalPositionAutoAnimator.attach(cancelButton);
 
-            cancelButton.setOnClickListener(view -> {
-                if (radialProgressView.getTag() != null) {
-                    return;
-                }
-                if (currentPassword.has_recovery) {
-                    needShowProgress(0);
-                    TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        needHideProgress(false);
-                        if (error == null) {
-                            final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                            String rawPattern = res.email_pattern;
-                            SpannableStringBuilder emailPattern = SpannableStringBuilder.valueOf(rawPattern);
-                            int startIndex = rawPattern.indexOf('*'), endIndex = rawPattern.lastIndexOf('*');
-                            if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
-                                run.start = startIndex;
-                                run.end = endIndex + 1;
-                                emailPattern.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
-                            }
-                            builder.setMessage(AndroidUtilities.formatSpannable(LocaleController.getString(R.string.RestoreEmailSent), emailPattern));
-                            builder.setTitle(LocaleController.getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
-                            builder.setPositiveButton(LocaleController.getString(R.string.Continue), (dialogInterface, i) -> {
-                                Bundle bundle = new Bundle();
-                                bundle.putString("email_unconfirmed_pattern", res.email_pattern);
-                                bundle.putString("password", passwordString);
-                                bundle.putString("requestPhone", requestPhone);
-                                bundle.putString("phoneHash", phoneHash);
-                                bundle.putString("phoneCode", phoneCode);
-                                setPage(VIEW_RECOVER, true, bundle, false);
-                            });
-                            Dialog dialog = showDialog(builder.create());
-                            if (dialog != null) {
-                                dialog.setCanceledOnTouchOutside(false);
-                                dialog.setCancelable(false);
-                            }
-                        } else {
-                            if (error.text.startsWith("FLOOD_WAIT")) {
-                                int time = Utilities.parseInt(error.text);
-                                String timeString;
-                                if (time < 60) {
-                                    timeString = LocaleController.formatPluralString("Seconds", time);
-                                } else {
-                                    timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                }
-                                needShowAlert(LocaleController.getString(R.string.WrongCodeTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                            } else {
-                                needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            if (activityMode == MODE_BALANCE_PASSWORD) {
+                cancelButton.setVisibility(View.GONE);
+                currentPassword = LoginActivity.this.currentPassword;
+                if (currentPassword != null && !TextUtils.isEmpty(currentPassword.hint)) {
+                    codeField.setHint(currentPassword.hint);
                 } else {
-                    AndroidUtilities.hideKeyboard(codeField);
-                    new AlertDialog.Builder(context)
-                            .setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle))
-                            .setMessage(LocaleController.getString(R.string.RestorePasswordNoEmailText))
-                            .setPositiveButton(LocaleController.getString(R.string.Close), null)
-                            .setNegativeButton(LocaleController.getString(R.string.ResetAccount), (dialog, which) -> tryResetAccount(requestPhone, phoneHash, phoneCode))
-                            .show();
+                    codeField.setHint(null);
                 }
-            });
+            } else {
+                cancelButton.setOnClickListener(view -> {
+                    if (radialProgressView.getTag() != null) {
+                        return;
+                    }
+                    if (currentPassword.has_recovery) {
+                        needShowProgress(0);
+                        TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            needHideProgress(false);
+                            if (error == null) {
+                                final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
+                                if (getParentActivity() == null) {
+                                    return;
+                                }
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+
+                                String rawPattern = res.email_pattern;
+                                SpannableStringBuilder emailPattern = SpannableStringBuilder.valueOf(rawPattern);
+                                int startIndex = rawPattern.indexOf('*'), endIndex = rawPattern.lastIndexOf('*');
+                                if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
+                                    TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                    run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                                    run.start = startIndex;
+                                    run.end = endIndex + 1;
+                                    emailPattern.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
+                                }
+                                builder.setMessage(AndroidUtilities.formatSpannable(LocaleController.getString(R.string.RestoreEmailSent), emailPattern));
+                                builder.setTitle(LocaleController.getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
+                                builder.setPositiveButton(LocaleController.getString(R.string.Continue), (dialogInterface, i) -> {
+                                    Bundle bundle = new Bundle();
+                                    bundle.putString("email_unconfirmed_pattern", res.email_pattern);
+                                    bundle.putString("password", passwordString);
+                                    bundle.putString("requestPhone", requestPhone);
+                                    bundle.putString("phoneHash", phoneHash);
+                                    bundle.putString("phoneCode", phoneCode);
+                                    setPage(VIEW_RECOVER, true, bundle, false);
+                                });
+                                Dialog dialog = showDialog(builder.create());
+                                if (dialog != null) {
+                                    dialog.setCanceledOnTouchOutside(false);
+                                    dialog.setCancelable(false);
+                                }
+                            } else {
+                                if (error.text.startsWith("FLOOD_WAIT")) {
+                                    int time = Utilities.parseInt(error.text);
+                                    String timeString;
+                                    if (time < 60) {
+                                        timeString = LocaleController.formatPluralString("Seconds", time);
+                                    } else {
+                                        timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                                    }
+                                    needShowAlert(LocaleController.getString(R.string.WrongCodeTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                } else {
+                                    needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), error.text);
+                                }
+                            }
+                        }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    } else {
+                        AndroidUtilities.hideKeyboard(codeField);
+                        new AlertDialog.Builder(context)
+                                .setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle))
+                                .setMessage(LocaleController.getString(R.string.RestorePasswordNoEmailText))
+                                .setPositiveButton(LocaleController.getString(R.string.Close), null)
+                                .setNegativeButton(LocaleController.getString(R.string.ResetAccount), (dialog, which) -> tryResetAccount(requestPhone, phoneHash, phoneCode))
+                                .show();
+                    }
+                });
+            }
         }
 
         @Override
@@ -5001,6 +5027,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
 
+            if (currentPassword == null) {
+                return;
+            }
+
             String oldPassword = codeField.getText().toString();
             if (oldPassword.length() == 0) {
                 onPasscodeError(false);
@@ -5022,8 +5052,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
 
 
-                final TLRPC.TL_auth_checkPassword req = new TLRPC.TL_auth_checkPassword();
-
                 RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     nextPressed = false;
                     if (error != null && "SRP_ID_INVALID".equals(error.text)) {
@@ -5037,7 +5065,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         return;
                     }
 
-                    if (response instanceof TLRPC.TL_auth_authorization) {
+                    if (response instanceof TL_stats.TL_broadcastRevenueWithdrawalUrl) {
+                        passwordFinishCallback.run((TL_stats.TL_broadcastRevenueWithdrawalUrl) response, null);
+                        finishFragment();
+                    } else if (response instanceof TLRPC.TL_auth_authorization) {
                         showDoneButton(false, true);
                         postDelayed(() -> {
                             needHideProgress(false, false);
@@ -5064,14 +5095,23 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 });
 
                 if (current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
-                    req.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) current_algo);
-                    if (req.password == null) {
+                    TLRPC.TL_inputCheckPasswordSRP password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) current_algo);
+                    if (password == null) {
                         TLRPC.TL_error error = new TLRPC.TL_error();
                         error.text = "PASSWORD_HASH_INVALID";
                         requestDelegate.run(null, error);
                         return;
                     }
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    if (activityMode == MODE_BALANCE_PASSWORD) {
+                        final TL_stats.TL_getBroadcastRevenueWithdrawalUrl req = new TL_stats.TL_getBroadcastRevenueWithdrawalUrl();
+                        req.channel = channel;
+                        req.password = password;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    } else {
+                        final TLRPC.TL_auth_checkPassword req = new TLRPC.TL_auth_checkPassword();
+                        req.password = password;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    }
                 }
             });
         }

@@ -153,6 +153,7 @@ typedef struct ConnectiosManagerDelegate {
     virtual void onProxyError(int32_t instanceNum) = 0;
     virtual void getHostByName(std::string domain, int32_t instanceNum, ConnectionSocket *socket) = 0;
     virtual int32_t getInitFlags(int32_t instanceNum) = 0;
+    virtual void onPremiumFloodWait(int32_t instanceNum, int32_t requestToken, bool isUpload) = 0;
 } ConnectiosManagerDelegate;
 
 typedef struct HandshakeDelegate {

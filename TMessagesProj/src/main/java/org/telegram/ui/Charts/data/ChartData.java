@@ -29,6 +29,14 @@ public class ChartData {
 
     public float oneDayPercentage = 0f;
 
+    public static final int FORMATTER_TON = 1;
+
+    public int xTickFormatter = 0;
+    public int xTooltipFormatter = 0;
+    public float yRate = 0;
+    public int yTickFormatter = 0;
+    public int yTooltipFormatter = 0;
+
     protected ChartData() {
     }
 
@@ -70,6 +78,13 @@ public class ChartData {
         JSONObject colors = jsonObject.optJSONObject("colors");
         JSONObject names = jsonObject.optJSONObject("names");
 
+        try {
+            xTickFormatter = getFormatter(jsonObject.getString("xTickFormatter"));
+            yTickFormatter = getFormatter(jsonObject.getString("yTickFormatter"));
+            xTooltipFormatter = getFormatter(jsonObject.getString("xTooltipFormatter"));
+            yTooltipFormatter = getFormatter(jsonObject.getString("yTooltipFormatter"));
+        } catch (Exception ignore) {}
+
         Pattern colorPattern = Pattern.compile("(.*)(#.*)");
         for (int i = 0; i < lines.size(); i++) {
             ChartData.Line line = lines.get(i);
@@ -92,6 +107,12 @@ public class ChartData {
             }
 
         }
+    }
+
+    public int getFormatter(String value) {
+        if (TextUtils.isEmpty(value)) return 0;
+        if (value.contains("TON")) return FORMATTER_TON;
+        return 0;
     }
 
 

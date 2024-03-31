@@ -14,11 +14,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.FiltersSetupActivity;
 
 import java.util.ArrayList;
+
+import kotlinx.coroutines.android.AndroidDispatcherFactory;
 
 public class UniversalRecyclerView extends RecyclerListView {
 
@@ -26,17 +29,47 @@ public class UniversalRecyclerView extends RecyclerListView {
     public final UniversalAdapter adapter;
     private ItemTouchHelper itemTouchHelper;
 
+    private boolean doNotDetachViews;
+    public void doNotDetachViews() {
+        doNotDetachViews = true;
+    }
+
+    public UniversalRecyclerView(
+        BaseFragment fragment,
+        Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems,
+        Utilities.Callback5<UItem, View, Integer, Float, Float> onClick,
+        Utilities.Callback5Return<UItem, View, Integer, Float, Float, Boolean> onLongClick
+    ) {
+        this(
+            fragment.getContext(),
+            fragment.getCurrentAccount(),
+            fragment.getClassGuid(),
+            fillItems,
+            onClick,
+            onLongClick,
+            fragment.getResourceProvider()
+        );
+    }
+
     public UniversalRecyclerView(
         Context context,
         int currentAccount,
+        int classGuid,
         Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems,
         Utilities.Callback5<UItem, View, Integer, Float, Float> onClick,
         Utilities.Callback5Return<UItem, View, Integer, Float, Float, Boolean> onLongClick,
         Theme.ResourcesProvider resourcesProvider
     ) {
         super(context, resourcesProvider);
-        setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
-        setAdapter(adapter = new UniversalAdapter(context, currentAccount, fillItems, resourcesProvider));
+
+        setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            protected int getExtraLayoutSpace(State state) {
+                if (doNotDetachViews) return AndroidUtilities.displaySize.y;
+                return super.getExtraLayoutSpace(state);
+            }
+        });
+        setAdapter(adapter = new UniversalAdapter(this, context, currentAccount, classGuid, fillItems, resourcesProvider));
 
         if (onClick != null) {
             setOnItemClickListener((view, position, x, y) -> {
@@ -66,8 +99,6 @@ public class UniversalRecyclerView extends RecyclerListView {
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDurations(350);
         setItemAnimator(itemAnimator);
-
-        setTranslateSelector(true);
     }
 
     private boolean reorderingAllowed;
@@ -108,6 +139,18 @@ public class UniversalRecyclerView extends RecyclerListView {
         for (int i = 0; i < adapter.getItemCount(); ++i) {
             UItem item = adapter.getItem(i);
             if (item != null && item.id == itemId) {
+                position = i;
+                break;
+            }
+        }
+        return findViewByPosition(position);
+    }
+
+    public View findViewByItemObject(Object object) {
+        int position = -1;
+        for (int i = 0; i < adapter.getItemCount(); ++i) {
+            UItem item = adapter.getItem(i);
+            if (item != null && item.object == object) {
                 position = i;
                 break;
             }

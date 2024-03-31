@@ -3,6 +3,7 @@ package org.telegram.ui.Stories;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 import android.webkit.MimeTypeMap;
 
@@ -1692,8 +1693,19 @@ public class StoriesController {
             return;
         }
         FileLog.d("StoriesController update stories from full peer " + dialogId);
-        peerStories.stories.clear();
-        peerStories.stories.addAll(stories.stories);
+//        peerStories.stories.clear();
+//        peerStories.stories.addAll(stories.stories);
+        for (int i = 0; i < peerStories.stories.size(); ++i) {
+            if (peerStories.stories.get(i) instanceof TL_stories.TL_storyItemSkipped) {
+                int storyId = peerStories.stories.get(i).id;
+                for (int j = 0; j < stories.stories.size(); ++j) {
+                    if (stories.stories.get(j).id == storyId && stories.stories.get(j) instanceof TL_stories.TL_storyItem) {
+                        peerStories.stories.set(i, stories.stories.get(j));
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public class UploadingStory implements NotificationCenter.NotificationCenterDelegate {

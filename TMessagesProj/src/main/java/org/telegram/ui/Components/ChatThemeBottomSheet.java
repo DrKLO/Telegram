@@ -1330,45 +1330,6 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         chatAttachAlert.init();
         chatAttachAlert.getPhotoLayout().loadGalleryPhotos();
         chatAttachAlert.show();
-
-        FrameLayout chatAttachButton = new FrameLayout(activity) {
-
-            Paint paint = new Paint();
-
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
-            }
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                paint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
-                canvas.drawRect(0, 0, getMeasuredWidth(), 1, paint);
-            }
-        };
-        AnimatedTextView chatAttachButtonText = new AnimatedTextView(activity, true, true, true);
-        chatAttachButtonText.setTextSize(dp(14));
-        chatAttachButtonText.setText(LocaleController.getString(R.string.SetColorAsBackground));
-        chatAttachButtonText.setGravity(Gravity.CENTER);
-        chatAttachButtonText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        chatAttachButton.addView(chatAttachButtonText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-        chatAttachButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(0), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), (int) (0.3f * 255))));
-        chatAttachButton.setOnClickListener(v -> {
-            if (chatAttachAlert.getCurrentAttachLayout() == chatAttachAlert.getPhotoLayout()) {
-                chatAttachButtonText.setText(LocaleController.getString(R.string.ChooseBackgroundFromGallery));
-                chatAttachAlert.openColorsLayout();
-//                chatAttachAlert.colorsLayout.updateColors(forceDark);
-            } else {
-                chatAttachButtonText.setText(LocaleController.getString(R.string.SetColorAsBackground));
-                chatAttachAlert.showLayout(chatAttachAlert.getPhotoLayout());
-            }
-//            WallpapersListActivity wallpapersListActivity = new WallpapersListActivity(WallpapersListActivity.TYPE_ALL, chatActivity.getDialogId());
-//            chatActivity.presentFragment(wallpapersListActivity);
-//            chatAttachAlert.dismiss();
-//            dismiss();
-        });
-        chatAttachAlert.sizeNotifierFrameLayout.addView(chatAttachButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
     }
 
 

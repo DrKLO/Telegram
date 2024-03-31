@@ -1324,12 +1324,24 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 request->startTime = 0;
                                 request->startTimeMillis = 0;
                                 request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 2);
-                            } else if (error->error_code == 420 && (request->requestFlags & RequestFlagIgnoreFloodWait) == 0 && error->error_message.find("STORY_SEND_FLOOD") == std::string::npos) {
+                            } else if (
+                                error->error_code == 420 && (request->requestFlags & RequestFlagIgnoreFloodWait) == 0 &&
+                                error->error_message.find("STORY_SEND_FLOOD") == std::string::npos
+                            ) {
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
+                                static std::string premiumFloodWait = "FLOOD_PREMIUM_WAIT_";
                                 static std::string slowmodeWait = "SLOWMODE_WAIT_";
+                                bool isPremiumFloodWait = false;
                                 discardResponse = true;
-                                if (error->error_message.find(floodWait) != std::string::npos) {
+                                if (error->error_message.find(premiumFloodWait) != std::string::npos) {
+                                    isPremiumFloodWait = true;
+                                    std::string num = error->error_message.substr(premiumFloodWait.size(), error->error_message.size() - premiumFloodWait.size());
+                                    waitTime = atoi(num.c_str());
+                                    if (waitTime <= 0) {
+                                        waitTime = 2;
+                                    }
+                                } else if (error->error_message.find(floodWait) != std::string::npos) {
                                     std::string num = error->error_message.substr(floodWait.size(), error->error_message.size() - floodWait.size());
                                     waitTime = atoi(num.c_str());
                                     if (waitTime <= 0) {
@@ -1343,10 +1355,14 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                     }
                                     discardResponse = false;
                                 }
+                                request->premiumFloodWait = isPremiumFloodWait;
                                 request->failedByFloodWait = waitTime;
                                 request->startTime = 0;
                                 request->startTimeMillis = 0;
                                 request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + waitTime);
+                                if (isPremiumFloodWait && delegate != nullptr) {
+                                    delegate->onPremiumFloodWait(instanceNum, request->requestToken, (request->connectionType & ConnectionTypeUpload) != 0);
+                                }
                             } else if (error->error_code == 400) {
                                 static std::string waitFailed = "MSG_WAIT_FAILED";
                                 static std::string bindFailed = "ENCRYPTED_MESSAGE_INVALID";
@@ -2496,7 +2512,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                             retryMax = 6;
                         }
                     }
-                    if (request->retryCount >= retryMax) {
+                    if (request->retryCount >= retryMax && !request->premiumFloodWait) {
                         if (LOGS_ENABLED) DEBUG_E("timed out %s, message_id = 0x%" PRIx64, typeInfo.name(), request->messageId);
                         auto error = new TL_error();
                         error->code = -123;

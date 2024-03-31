@@ -68,7 +68,8 @@ public class PremiumPreviewGiftToUsersBottomSheet extends PremiumPreviewBottomSh
         if (fragment == null) {
             return;
         }
-        new PremiumPreviewGiftToUsersBottomSheet(fragment, UserConfig.selectedAccount, selectedUsers, giftCodeOptions, fragment.getResourceProvider()).show();
+        PremiumPreviewGiftToUsersBottomSheet sheet = new PremiumPreviewGiftToUsersBottomSheet(fragment, UserConfig.selectedAccount, selectedUsers, giftCodeOptions, fragment.getResourceProvider());
+        fragment.showDialog(sheet);
     }
 
     public PremiumPreviewGiftToUsersBottomSheet(BaseFragment fragment, int currentAccount, List<TLRPC.User> selectedUsers, List<TLRPC.TL_premiumGiftCodeOption> giftCodeOptions, Theme.ResourcesProvider resourcesProvider) {

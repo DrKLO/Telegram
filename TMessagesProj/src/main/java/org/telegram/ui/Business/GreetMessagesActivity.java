@@ -90,7 +90,7 @@ public class GreetMessagesActivity extends BaseFragment implements NotificationC
         recipientsHelper.doNotExcludeNewChats();
         recipientsHelper.setValue(currentValue == null ? null : currentValue.recipients);
 
-        listView = new UniversalRecyclerView(context, currentAccount, this::fillItems, this::onClick, null, getResourceProvider());
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         setValue();
 

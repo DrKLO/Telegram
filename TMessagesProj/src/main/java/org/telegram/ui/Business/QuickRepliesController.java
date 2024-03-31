@@ -19,6 +19,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.ChatActivityInterface;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -185,8 +186,8 @@ public class QuickRepliesController {
 
                 AndroidUtilities.runOnUIThread(() -> {
                     loading = false;
-                    MessagesController.getInstance(currentAccount).putUsers(users, false);
-                    MessagesController.getInstance(currentAccount).putChats(chats, false);
+                    MessagesController.getInstance(currentAccount).putUsers(users, true);
+                    MessagesController.getInstance(currentAccount).putChats(chats, true);
                     replies.clear();
                     replies.addAll(result);
                     if (whenLoaded != null) {
@@ -534,8 +535,8 @@ public class QuickRepliesController {
                 }
                 final MessageObject finalMessageObject = messageObject;
                 AndroidUtilities.runOnUIThread(() -> {
-                    MessagesController.getInstance(currentAccount).putUsers(users, false);
-                    MessagesController.getInstance(currentAccount).putChats(chats, false);
+                    MessagesController.getInstance(currentAccount).putUsers(users, true);
+                    MessagesController.getInstance(currentAccount).putChats(chats, true);
                     reply.topMessage = finalMessageObject;
                     if (reply.topMessage != null) {
                         reply.topMessage.applyQuickReply(reply.name, reply.id);
@@ -572,7 +573,7 @@ public class QuickRepliesController {
                         }
                         newReply.topMessage.applyQuickReply(quick_reply_shortcut, quick_reply_shortcut_id);
                         newReply.messagesCount = 1;
-                        replies.add(0, newReply);
+                        replies.add(newReply);
                         updateOrder();
                         addReply(newReply);
                     } else if (reply.topMessageId == message.id) {
@@ -652,7 +653,7 @@ public class QuickRepliesController {
                     quickReply.messagesCount = tlreply.count;
                     quickReply.topMessageId = tlreply.top_message;
                     updateOrder();
-                    replies.add(0, quickReply);
+                    replies.add(quickReply);
                     deleteLocalReply(quickReply.name);
                 }
                 saveToCache();
@@ -763,6 +764,62 @@ public class QuickRepliesController {
 
     public boolean hasReplies() {
         return !replies.isEmpty();
+    }
+
+    public void sendQuickReplyTo(long dialogId, QuickRepliesController.QuickReply reply) {
+        if (reply == null) return;
+
+        TLRPC.TL_messages_sendQuickReplyMessages req = new TLRPC.TL_messages_sendQuickReplyMessages();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+        if (req.peer == null) return;
+        req.shortcut_id = reply.id;
+
+        MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
+        storage.getStorageQueue().postRunnable(() -> {
+            ArrayList<Integer> ids = new ArrayList<>();
+            SQLiteCursor cursor = null;
+            try {
+                cursor = storage.getDatabase().queryFinalized("SELECT id FROM quick_replies_messages WHERE topic_id = ?", reply.id);
+                while (cursor.next()) {
+                    ids.add(cursor.intValue(0));
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (ids.isEmpty() || ids.size() < reply.getMessagesCount()) {
+                    TLRPC.TL_messages_getQuickReplyMessages req2 = new TLRPC.TL_messages_getQuickReplyMessages();
+                    req2.shortcut_id = reply.id;
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (res instanceof TLRPC.TL_messages_messages) {
+                            ArrayList<TLRPC.Message> messages = ((TLRPC.TL_messages_messages) res).messages;
+                            ids.clear();
+                            for (TLRPC.Message m : messages) {
+                                ids.add(m.id);
+                            }
+
+                            req.id = ids;
+                            for (int i = 0; i < ids.size(); ++i) {
+                                req.random_id.add(Utilities.random.nextLong());
+                            }
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, null);
+                        } else {
+                            FileLog.e("received " + res + " " + err + " on getQuickReplyMessages when trying to send quick reply");
+                        }
+                    }));
+                } else {
+                    req.id = ids;
+                    for (int i = 0; i < ids.size(); ++i) {
+                        req.random_id.add(Utilities.random.nextLong());
+                    }
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                }
+            });
+        });
     }
 
 }

@@ -133,6 +133,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
     private RadialProgressView radialProgressView;
 
+    private int delegateType;
     private TwoStepVerificationActivityDelegate delegate;
 
     public interface TwoStepVerificationActivityDelegate {
@@ -434,7 +435,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         }
         if (delegate != null) {
             titleTextView.setText(LocaleController.getString(R.string.YourPassword));
-            subtitleTextView.setText(LocaleController.getString(R.string.PleaseEnterCurrentPasswordTransfer));
+            subtitleTextView.setText(LocaleController.getString(delegateType == 1 ? R.string.PleaseEnterCurrentPasswordWithdraw : R.string.PleaseEnterCurrentPasswordTransfer));
             subtitleTextView.setVisibility(View.VISIBLE);
         } else {
             titleTextView.setText(LocaleController.getString(R.string.YourPassword));
@@ -664,7 +665,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         currentPassword = password;
     }
 
-    public void setDelegate(TwoStepVerificationActivityDelegate twoStepVerificationActivityDelegate) {
+    public void setDelegate(int a, TwoStepVerificationActivityDelegate twoStepVerificationActivityDelegate) {
+        delegateType = a;
         delegate = twoStepVerificationActivityDelegate;
     }
 

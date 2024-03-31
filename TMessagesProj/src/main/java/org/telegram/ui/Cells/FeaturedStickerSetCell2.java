@@ -270,7 +270,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
                     imageLocation = ImageLocation.getForSticker(thumb, sticker, set.set.thumb_version);
                 }
 
-                if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
+                if (object instanceof TLRPC.Document && (MessageObject.isAnimatedStickerDocument(sticker, true) || MessageObject.isVideoSticker(sticker))) {
                     if (svgThumb != null) {
                         imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", svgThumb, 0, set);
                     } else {

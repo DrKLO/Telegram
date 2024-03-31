@@ -155,7 +155,7 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         adapter = new Adapter(currentAccount, false, resourcesProvider);
         adapter.containerView = containerView;
         return adapter;

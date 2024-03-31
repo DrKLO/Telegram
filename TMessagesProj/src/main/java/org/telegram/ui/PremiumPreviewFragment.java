@@ -72,6 +72,9 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Business.AwayMessagesActivity;
 import org.telegram.ui.Business.BusinessChatbotController;
+import org.telegram.ui.Business.BusinessIntroActivity;
+import org.telegram.ui.Business.BusinessLinksActivity;
+import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.Business.ChatbotsActivity;
 import org.telegram.ui.Business.GreetMessagesActivity;
 import org.telegram.ui.Business.LocationActivity;
@@ -197,6 +200,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_BUSINESS_AWAY_MESSAGES = 33;
     public final static int PREMIUM_FEATURE_BUSINESS_CHATBOTS = 34;
     public final static int PREMIUM_FEATURE_FOLDER_TAGS = 35;
+    public final static int PREMIUM_FEATURE_BUSINESS_INTRO = 36;
+    public final static int PREMIUM_FEATURE_BUSINESS_CHAT_LINKS = 37;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -294,6 +299,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_BUSINESS_QUICK_REPLIES;
             case "business_bots":
                 return PREMIUM_FEATURE_BUSINESS_CHATBOTS;
+            case "business_intro":
+                return PREMIUM_FEATURE_BUSINESS_INTRO;
+            case "business_links":
+                return PREMIUM_FEATURE_BUSINESS_CHAT_LINKS;
             case "business_hours":
                 return PREMIUM_FEATURE_BUSINESS_OPENING_HOURS;
             case "business_location":
@@ -373,6 +382,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "quick_replies";
             case PREMIUM_FEATURE_BUSINESS_CHATBOTS:
                 return "business_bots";
+            case PREMIUM_FEATURE_BUSINESS_INTRO:
+                return "business_intro";
+            case PREMIUM_FEATURE_BUSINESS_CHAT_LINKS:
+                return "business_links";
             case PREMIUM_FEATURE_BUSINESS_OPENING_HOURS:
                 return "business_hours";
             case PREMIUM_FEATURE_BUSINESS_LOCATION:
@@ -452,6 +465,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 if (getMessagesController().suggestedFilters.isEmpty()) {
                     getMessagesController().loadSuggestedFilters();
                 }
+                BusinessLinksController.getInstance(currentAccount).load(false);
             }
         }
 
@@ -736,6 +750,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                         });
                     } else if (cell.data.type == PREMIUM_FEATURE_FOLDER_TAGS) {
                         presentFragment(new FiltersSetupActivity().highlightTags());
+                    } else if (cell.data.type == PREMIUM_FEATURE_BUSINESS_INTRO) {
+                        presentFragment(new BusinessIntroActivity());
+                    } else if (cell.data.type == PREMIUM_FEATURE_BUSINESS_CHAT_LINKS) {
+                        presentFragment(new BusinessLinksActivity());
                     }
                     return;
                 }
@@ -813,14 +831,14 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.menu_premium_tools, LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, LocaleController.getString(R.string.PremiumPreviewProfileBadge), LocaleController.getString(R.string.PremiumPreviewProfileBadgeDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, LocaleController.getString(R.string.PremiumPreviewAnimatedProfiles), LocaleController.getString(R.string.PremiumPreviewAnimatedProfilesDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SAVED_TAGS, R.drawable.premium_tags, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewTags2)), LocaleController.getString(R.string.PremiumPreviewTagsDescription2)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SAVED_TAGS, R.drawable.premium_tags, LocaleController.getString(R.string.PremiumPreviewTags2), LocaleController.getString(R.string.PremiumPreviewTagsDescription2)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_APPLICATION_ICONS, R.drawable.msg_premium_icons, LocaleController.getString(R.string.PremiumPreviewAppIcon), LocaleController.getString(R.string.PremiumPreviewAppIconDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.premium_status, LocaleController.getString(R.string.PremiumPreviewEmojiStatus), LocaleController.getString(R.string.PremiumPreviewEmojiStatusDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TRANSLATIONS, R.drawable.msg_premium_translate, LocaleController.getString(R.string.PremiumPreviewTranslations), LocaleController.getString(R.string.PremiumPreviewTranslationsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_WALLPAPER, R.drawable.premium_wallpaper, LocaleController.getString(R.string.PremiumPreviewWallpaper), LocaleController.getString(R.string.PremiumPreviewWallpaperDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_NAME_COLOR, R.drawable.premium_colors, LocaleController.getString(R.string.PremiumPreviewProfileColor), LocaleController.getString(R.string.PremiumPreviewProfileColorDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LAST_SEEN, R.drawable.menu_premium_seen, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewLastSeen)), LocaleController.getString(R.string.PremiumPreviewLastSeenDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_PRIVACY, R.drawable.menu_premium_privacy, applyNewSpan(LocaleController.getString(R.string.PremiumPreviewMessagePrivacy)), LocaleController.getString(R.string.PremiumPreviewMessagePrivacyDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LAST_SEEN, R.drawable.menu_premium_seen, LocaleController.getString(R.string.PremiumPreviewLastSeen), LocaleController.getString(R.string.PremiumPreviewLastSeenDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_PRIVACY, R.drawable.menu_premium_privacy, LocaleController.getString(R.string.PremiumPreviewMessagePrivacy), LocaleController.getString(R.string.PremiumPreviewMessagePrivacyDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS, R.drawable.filled_premium_business, applyNewSpan(LocaleController.getString(R.string.TelegramBusiness)), LocaleController.getString(R.string.PremiumPreviewBusinessDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
@@ -848,7 +866,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_QUICK_REPLIES, R.drawable.filled_open_message, LocaleController.getString(R.string.PremiumBusinessQuickReplies), LocaleController.getString(R.string.PremiumBusinessQuickRepliesDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_GREETING_MESSAGES, R.drawable.premium_status, LocaleController.getString(R.string.PremiumBusinessGreetingMessages), LocaleController.getString(R.string.PremiumBusinessGreetingMessagesDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_AWAY_MESSAGES, R.drawable.filled_premium_away, LocaleController.getString(R.string.PremiumBusinessAwayMessages), LocaleController.getString(R.string.PremiumBusinessAwayMessagesDescription)));
-            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHATBOTS, R.drawable.filled_premium_bots, LocaleController.getString(R.string.PremiumBusinessChatbots), LocaleController.getString(R.string.PremiumBusinessChatbotsDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHATBOTS, R.drawable.filled_premium_bots, applyNewSpan(LocaleController.getString(R.string.PremiumBusinessChatbots2)), LocaleController.getString(R.string.PremiumBusinessChatbotsDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHAT_LINKS, R.drawable.filled_premium_chatlink, applyNewSpan(LocaleController.getString(R.string.PremiumBusinessChatLinks)), LocaleController.getString(R.string.PremiumBusinessChatLinksDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_INTRO, R.drawable.filled_premium_intro, applyNewSpan(LocaleController.getString(R.string.PremiumBusinessIntro)), LocaleController.getString(R.string.PremiumBusinessIntroDescription)));
         } else {
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.filled_premium_status2, LocaleController.getString(R.string.PremiumPreviewBusinessEmojiStatus), LocaleController.getString(R.string.PremiumPreviewBusinessEmojiStatusDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_FOLDER_TAGS, R.drawable.premium_tags, LocaleController.getString(R.string.PremiumPreviewFolderTags), LocaleController.getString(R.string.PremiumPreviewFolderTagsDescription)));
@@ -857,7 +877,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
         if (messagesController.businessFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
-                if (messagesController.businessFeaturesTypesToPosition.get(premiumFeatures.get(i).type, -1) == -1 && !BuildVars.DEBUG_PRIVATE_VERSION) {
+                if (messagesController.businessFeaturesTypesToPosition.get(premiumFeatures.get(i).type, -1) == -1 && !BuildVars.DEBUG_VERSION) {
                     premiumFeatures.remove(i);
                     i--;
                 }
@@ -1463,7 +1483,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 @Override
                 public void onLongPress() {
                     super.onLongPress();
-                    if (settingsView != null && !BuildVars.DEBUG_PRIVATE_VERSION) {
+                    if (settingsView != null || !BuildVars.DEBUG_PRIVATE_VERSION) {
                         return;
                     }
 

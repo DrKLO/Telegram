@@ -21,7 +21,7 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
     }
 
     public static abstract class Item {
-        public final int viewType;
+        public int viewType;
         public boolean selectable;
 
         public Item(int viewType, boolean selectable) {
@@ -33,9 +33,17 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
             if (viewType != item.viewType) {
                 return false;
             }
-            if (this.equals(item)) {
-                return true;
+            return this.equals(item);
+        }
+
+        boolean compareContents(Item item) {
+            if (viewType != item.viewType) {
+                return false;
             }
+            return this.contentsEquals(item);
+        }
+
+        protected boolean contentsEquals(Item item) {
             return false;
         }
     }
@@ -67,7 +75,7 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
 
         @Override
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return false;
+            return oldItems.get(oldItemPosition).compareContents(newItems.get(newItemPosition));
         }
     }
 }

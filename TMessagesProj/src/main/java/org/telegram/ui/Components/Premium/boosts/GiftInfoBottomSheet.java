@@ -146,7 +146,7 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         return adapter = new GiftInfoAdapter(resourcesProvider) {
             @Override
             protected void dismiss() {

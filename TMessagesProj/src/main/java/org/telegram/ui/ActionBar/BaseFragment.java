@@ -22,7 +22,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -54,7 +53,6 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
@@ -64,7 +62,7 @@ public abstract class BaseFragment {
 
     protected boolean isFinished;
     protected boolean finishing;
-    protected Dialog visibleDialog;
+    public Dialog visibleDialog;
     protected int currentAccount = UserConfig.selectedAccount;
 
     public View fragmentView;
@@ -83,8 +81,31 @@ public abstract class BaseFragment {
     private boolean removingFromStack;
     private PreviewDelegate previewDelegate;
     protected Theme.ResourcesProvider resourceProvider;
-    public StoryViewer storyViewer;
-    public StoryViewer overlayStoryViewer;
+    public ArrayList<StoryViewer> storyViewerStack;
+
+    public StoryViewer getLastStoryViewer() {
+        if (storyViewerStack == null || storyViewerStack.isEmpty())
+            return null;
+        for (int i = storyViewerStack.size() - 1; i >= 0; --i) {
+            if (storyViewerStack.get(i).isShown()) {
+                return storyViewerStack.get(i);
+            }
+        }
+        return null;
+    }
+
+    public boolean hasStoryViewer() {
+        return storyViewerStack != null && !storyViewerStack.isEmpty();
+    }
+
+    public void clearStoryViewers() {
+        if (storyViewerStack == null || storyViewerStack.isEmpty())
+            return;
+        for (int i = storyViewerStack.size() - 1; i >= 0; --i) {
+            storyViewerStack.get(i).release();
+        }
+        storyViewerStack.clear();
+    }
 
     public BaseFragment() {
         classGuid = ConnectionsManager.generateClassGuid();
@@ -216,14 +237,7 @@ public abstract class BaseFragment {
             }
             actionBar = null;
         }
-        if (storyViewer != null) {
-            storyViewer.release();
-            storyViewer = null;
-        }
-        if (overlayStoryViewer != null) {
-            overlayStoryViewer.release();
-            overlayStoryViewer = null;
-        }
+        clearStoryViewers();
         parentLayout = null;
     }
 
@@ -252,14 +266,7 @@ public abstract class BaseFragment {
                 }
                 if (parentLayout != null && parentLayout.getView().getContext() != fragmentView.getContext()) {
                     fragmentView = null;
-                    if (storyViewer != null) {
-                        storyViewer.release();
-                        storyViewer = null;
-                    }
-                    if (overlayStoryViewer != null) {
-                        overlayStoryViewer.release();
-                        overlayStoryViewer = null;
-                    }
+                    clearStoryViewers();
                 }
             }
             if (actionBar != null) {
@@ -394,12 +401,9 @@ public abstract class BaseFragment {
         if (actionBar != null) {
             actionBar.onResume();
         }
-        if (storyViewer != null) {
-            storyViewer.onResume();
-            storyViewer.updatePlayingMode();
-        }
-        if (overlayStoryViewer != null) {
-            overlayStoryViewer.updatePlayingMode();
+        if (getLastStoryViewer() != null) {
+            getLastStoryViewer().onResume();
+            getLastStoryViewer().updatePlayingMode();
         }
     }
 
@@ -417,12 +421,9 @@ public abstract class BaseFragment {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        if (storyViewer != null) {
-            storyViewer.onPause();
-            storyViewer.updatePlayingMode();
-        }
-        if (overlayStoryViewer != null) {
-            overlayStoryViewer.updatePlayingMode();
+        if (getLastStoryViewer() != null) {
+            getLastStoryViewer().onPause();
+            getLastStoryViewer().updatePlayingMode();
         }
     }
 
@@ -461,11 +462,12 @@ public abstract class BaseFragment {
     }
 
     public boolean closeStoryViewer() {
-        if (overlayStoryViewer != null && overlayStoryViewer.isShown()) {
-            return overlayStoryViewer.onBackPressed();
-        }
-        if (storyViewer != null && storyViewer.isShown()) {
-            return storyViewer.onBackPressed();
+        if (storyViewerStack != null) {
+            for (int i = storyViewerStack.size() - 1; i >= 0; --i) {
+                if (storyViewerStack.get(i).isShown()) {
+                    return storyViewerStack.get(i).onBackPressed();
+                }
+            }
         }
         return false;
     }
@@ -650,13 +652,13 @@ public abstract class BaseFragment {
         if (dialog == null || parentLayout == null || parentLayout.isTransitionAnimationInProgress() || parentLayout.isSwipeInProgress() || !allowInTransition && parentLayout.checkTransitionAnimation()) {
             return null;
         }
-        if (overlayStoryViewer != null && overlayStoryViewer.isShown()) {
-            overlayStoryViewer.showDialog(dialog);
-            return dialog;
-        }
-        if (storyViewer != null && storyViewer.isShown()) {
-            storyViewer.showDialog(dialog);
-            return dialog;
+        if (storyViewerStack != null) {
+            for (int i = storyViewerStack.size() - 1; i >= 0; --i) {
+                if (storyViewerStack.get(i).isShown()) {
+                    storyViewerStack.get(i).showDialog(dialog);
+                    return dialog;
+                }
+            }
         }
         try {
             if (visibleDialog != null) {
@@ -946,8 +948,13 @@ public abstract class BaseFragment {
 
     public int getNavigationBarColor() {
         int color = Theme.getColor(Theme.key_windowBackgroundGray, getResourceProvider());
-        if (storyViewer != null && storyViewer.attachedToParent()) {
-            return storyViewer.getNavigationBarColor(color);
+        if (storyViewerStack != null) {
+            for (int i = storyViewerStack.size() - 1; i >= 0; --i) {
+                StoryViewer storyViewer = storyViewerStack.get(i);
+                if (storyViewer.attachedToParent()) {
+                    color = storyViewer.getNavigationBarColor(color);
+                }
+            }
         }
         return color;
     }
@@ -994,7 +1001,7 @@ public abstract class BaseFragment {
     }
 
     public boolean isLightStatusBar() {
-        if (storyViewer != null && storyViewer.isShown()) {
+        if (getLastStoryViewer() != null && getLastStoryViewer().isShown()) {
             return false;
         }
         if (hasForceLightStatusBar() && !Theme.getCurrentTheme().isDark()) {
@@ -1051,41 +1058,48 @@ public abstract class BaseFragment {
     }
 
     public void attachStoryViewer(ActionBarLayout.LayoutContainer parentLayout) {
-        if (storyViewer != null && storyViewer.attachedToParent()) {
-            AndroidUtilities.removeFromParent(storyViewer.windowView);
-            parentLayout.addView(storyViewer.windowView);
-        }
-        if (overlayStoryViewer != null && overlayStoryViewer.attachedToParent()) {
-            AndroidUtilities.removeFromParent(overlayStoryViewer.windowView);
-            parentLayout.addView(overlayStoryViewer.windowView);
+        if (storyViewerStack != null) {
+            for (int i = 0; i < storyViewerStack.size(); ++i) {
+                StoryViewer storyViewer = storyViewerStack.get(i);
+                if (storyViewer != null && storyViewer.attachedToParent()) {
+                    AndroidUtilities.removeFromParent(storyViewer.windowView);
+                    parentLayout.addView(storyViewer.windowView);
+                }
+            }
         }
     }
 
     public void detachStoryViewer() {
-        if (storyViewer != null && storyViewer.attachedToParent()) {
-            AndroidUtilities.removeFromParent(storyViewer.windowView);
-        }
-        if (overlayStoryViewer != null && overlayStoryViewer.attachedToParent()) {
-            AndroidUtilities.removeFromParent(overlayStoryViewer.windowView);
+        if (storyViewerStack != null) {
+            for (int i = 0; i < storyViewerStack.size(); ++i) {
+                StoryViewer storyViewer = storyViewerStack.get(i);
+                if (storyViewer != null && storyViewer.attachedToParent()) {
+                    AndroidUtilities.removeFromParent(storyViewer.windowView);
+                }
+            }
         }
     }
 
     public boolean isStoryViewer(View child) {
-        if (storyViewer != null && child == storyViewer.windowView) {
-            return true;
-        }
-        if (overlayStoryViewer != null && child == overlayStoryViewer.windowView) {
-            return true;
+        if (storyViewerStack != null) {
+            for (int i = 0; i < storyViewerStack.size(); ++i) {
+                StoryViewer storyViewer = storyViewerStack.get(i);
+                if (storyViewer != null && child == storyViewer.windowView) {
+                    return true;
+                }
+            }
         }
         return false;
     }
 
     public void setKeyboardHeightFromParent(int keyboardHeight) {
-        if (storyViewer != null) {
-            storyViewer.setKeyboardHeightFromParent(keyboardHeight);
-        }
-        if (overlayStoryViewer != null) {
-            overlayStoryViewer.setKeyboardHeightFromParent(keyboardHeight);
+        if (storyViewerStack != null) {
+            for (int i = 0; i < storyViewerStack.size(); ++i) {
+                StoryViewer storyViewer = storyViewerStack.get(i);
+                if (storyViewer != null) {
+                    storyViewer.setKeyboardHeightFromParent(keyboardHeight);
+                }
+            }
         }
     }
 
@@ -1094,20 +1108,29 @@ public abstract class BaseFragment {
     }
 
     public StoryViewer getOrCreateStoryViewer() {
-        if (storyViewer == null) {
-            storyViewer = new StoryViewer(this);
+        if (storyViewerStack == null) {
+            storyViewerStack = new ArrayList<>();
+        }
+        if (storyViewerStack.isEmpty()) {
+            StoryViewer storyViewer = new StoryViewer(this);
             if (parentLayout != null && parentLayout.isSheet()) {
                 storyViewer.fromBottomSheet = true;
             }
+            storyViewerStack.add(storyViewer);
         }
-        return storyViewer;
+        return storyViewerStack.get(0);
     }
 
-    public StoryViewer getOrCreateOverlayStoryViewer() {
-        if (overlayStoryViewer == null) {
-            overlayStoryViewer = new StoryViewer(this);
+    public StoryViewer createOverlayStoryViewer() {
+        if (storyViewerStack == null) {
+            storyViewerStack = new ArrayList<>();
         }
-        return overlayStoryViewer;
+        StoryViewer storyViewer = new StoryViewer(this);
+        if (parentLayout != null && parentLayout.isSheet()) {
+            storyViewer.fromBottomSheet = true;
+        }
+        storyViewerStack.add(storyViewer);
+        return storyViewer;
     }
 
     public void onBottomSheetCreated() {

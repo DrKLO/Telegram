@@ -218,10 +218,7 @@ public class SliderView extends View {
                     } catch (Exception ignore) {
                     }
                 } else if (Math.floor(pastVolume * 5) != Math.floor(volume * 5)) {
-                    try {
-                        performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                    } catch (Exception ignore) {
-                    }
+                    AndroidUtilities.vibrateCursor(this);
                 }
             }
             updateText(volume);

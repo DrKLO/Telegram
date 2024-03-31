@@ -49,6 +49,7 @@ public class FileLoadOperation {
     private Runnable fileWriteRunnable;
     public boolean isStory;
 
+    public volatile boolean caughtPremiumFloodWait;
     public void setStream(FileLoadOperationStream stream, boolean streamPriority, long streamOffset) {
         FileLog.e("FileLoadOperation " + getFileName() + " setStream(" + stream + ")");
         this.stream = stream;
@@ -95,10 +96,10 @@ public class FileLoadOperation {
     }
 
     protected static class RequestInfo {
+        public int requestToken;
         public long requestStartTime;
         public int chunkSize;
         public int connectionType;
-        private int requestToken;
         private long offset;
         private TLRPC.TL_upload_file response;
         private TLRPC.TL_upload_webFile responseWeb;
@@ -239,7 +240,7 @@ public class FileLoadOperation {
     private byte[] cdnCheckBytes;
     private boolean requestingCdnOffsets;
 
-    private ArrayList<RequestInfo> requestInfos;
+    public ArrayList<RequestInfo> requestInfos;
     private ArrayList<RequestInfo> cancelledRequestInfos;
     private ArrayList<RequestInfo> delayedRequestInfos;
 

@@ -321,10 +321,7 @@ public class DualCameraView extends CameraView {
                             allowRotation = Math.round(angle / 90f) * 90f - angle > 20f;
                         }
                         if (!snappedRotation) {
-                            try {
-                                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                            } catch (Exception ignore) {
-                            }
+                            AndroidUtilities.vibrateCursor(this);
                             snappedRotation = true;
                         }
                     }
@@ -340,10 +337,7 @@ public class DualCameraView extends CameraView {
                     if (Math.abs(rotDiff) < 5f) {
                         finalMatrix.postRotate(rotDiff, cx, cy);
                         if (!snappedRotation) {
-                            try {
-                                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                            } catch (Exception ignore) {
-                            }
+                            AndroidUtilities.vibrateCursor(this);
                             snappedRotation = true;
                         }
                     } else {
@@ -583,6 +577,19 @@ public class DualCameraView extends CameraView {
 
     public static boolean dualAvailableStatic(Context context) {
         return MessagesController.getGlobalMainSettings().getBoolean("dual_available", dualAvailableDefault(context, true));
+    }
+
+    public static boolean roundDualAvailableStatic(Context context) {
+        return MessagesController.getGlobalMainSettings().getBoolean("rounddual_available", roundDualAvailableDefault(context));
+    }
+
+    public static boolean roundDualAvailableDefault(Context context) {
+        return (
+            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH &&
+            Camera.getNumberOfCameras() > 1 &&
+            SharedConfig.allowPreparingHevcPlayers() &&
+            context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent")
+        );
     }
 
 

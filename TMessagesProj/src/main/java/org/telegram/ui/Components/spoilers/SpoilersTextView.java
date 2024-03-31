@@ -11,13 +11,12 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.text.Layout;
-import android.text.Spannable;
 import android.text.Spanned;
-import android.text.StaticLayout;
 import android.view.MotionEvent;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -37,6 +36,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
 
     public int cacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
     private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmoji;
+    private boolean useAlphaForEmoji = true;
 
     public SpoilersTextView(Context context) {
         this(context, true);
@@ -72,6 +72,10 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         super.setText(text, type);
     }
 
+    public void setUseAlphaForEmoji(boolean useAlphaForEmoji) {
+        this.useAlphaForEmoji = useAlphaForEmoji;
+    }
+
     @Override
     protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter);
@@ -103,7 +107,9 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
             path.addRect(bounds.left + pl, bounds.top + pt, bounds.right + pl, bounds.bottom + pt, Path.Direction.CW);
         }
         canvas.clipPath(path, Region.Op.DIFFERENCE);
+        Emoji.emojiDrawingUseAlpha = useAlphaForEmoji;
         super.onDraw(canvas);
+        Emoji.emojiDrawingUseAlpha = true;
         canvas.restore();
 
         canvas.save();

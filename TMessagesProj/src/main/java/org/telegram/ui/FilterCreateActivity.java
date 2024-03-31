@@ -28,7 +28,6 @@ import android.text.TextWatcher;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -2256,7 +2255,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
 
         @Override
-        protected RecyclerListView.SelectionAdapter createAdapter() {
+        protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
             return adapter = new AdapterWithDiffUtils() {
 
                 private RecyclerListView.Adapter realAdapter() {

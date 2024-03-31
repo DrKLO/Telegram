@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.LayoutTransition;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
@@ -23,9 +24,9 @@ import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 import android.text.Layout;
 import android.text.StaticLayout;
+import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.Property;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -33,7 +34,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
@@ -65,7 +65,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.LongSparseLongArray;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -105,6 +104,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     public final static int TYPE_STORY = 1;
     public static final int TYPE_STORY_LIKES = 2;
     public static final int TYPE_TAGS = 3;
+    public static final int TYPE_STICKER_SET_EMOJI = 4;
 
     private final static int ALPHA_DURATION = 150;
     private final static float SIDE_SCALE = 0.6f;
@@ -221,6 +221,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     public TextView hintView;
     public int hintViewWidth, hintViewHeight;
     public float bubblesOffset;
+    private float miniBubblesOffset;
 
     public ReactionsContainerLayout(int type, BaseFragment fragment, @NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -384,7 +385,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                         customEmojiReactionsIconView = new InternalImageView(context);
                         customEmojiReactionsIconView.setImageResource(R.drawable.msg_reactions_expand);
                         customEmojiReactionsIconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                        if (type == TYPE_STORY || type == TYPE_STORY_LIKES) {
+                        if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                             customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
                         } else {
                             customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
@@ -523,7 +524,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         nextRecentReaction.getLayoutParams().width = size - dp(12);
         nextRecentReaction.getLayoutParams().height = size;
 
-        if (type == TYPE_STORY_LIKES) {
+        if (type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
             bgPaint.setColor(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.13f));
         } else {
             bgPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
@@ -535,7 +536,14 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         return showExpandableReactions;
     }
 
+    public List<ReactionsLayoutInBubble.VisibleReaction> getVisibleReactionsList() {
+        return visibleReactionsList;
+    }
+
     public int getWindowType() {
+        if (type == TYPE_STICKER_SET_EMOJI) {
+            return SelectAnimatedEmojiDialog.TYPE_STICKER_SET_EMOJI;
+        }
         if (type == TYPE_TAGS) {
             return SelectAnimatedEmojiDialog.TYPE_TAGS;
         }
@@ -591,11 +599,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         //animatePullingBack();
     }
 
-    protected void onShownCustomEmojiReactionDialog(){
+    protected void onShownCustomEmojiReactionDialog() {
 
     }
 
-    private void invalidateLoopViews() {
+    public void invalidateLoopViews() {
         for (int i = 0; i < recyclerListView.getChildCount(); i++) {
             View child = recyclerListView.getChildAt(i);
             if (child instanceof ReactionHolderView) {
@@ -942,7 +950,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
 
         cx = LocaleController.isRTL || mirrorX ? bigCircleOffset - bigCircleRadius : getWidth() - bigCircleOffset + bigCircleRadius;
-        cx += bubblesOffset;
+        cx += bubblesOffset + miniBubblesOffset;
         cy = isTop ? getPaddingTop() - expandSize() - dp(16) : getHeight() - smallCircleRadius - sPad + expandSize();
         cy = AndroidUtilities.lerp(cy, smallCircleRadius + sPad - expandSize(), CubicBezierInterpolator.DEFAULT.getInterpolation(flipVerticalProgress));
         sPad = -dp(1);
@@ -958,6 +966,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         shadow.setAlpha(255);
         bgPaint.setAlpha(255);
+    }
+
+    public void setMiniBubblesOffset(float miniBubblesOffset) {
+        this.miniBubblesOffset = miniBubblesOffset;
     }
 
     private void checkPressedProgressForOtherViews(View view) {
@@ -1130,6 +1142,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (type == TYPE_TAGS && !UserConfig.getInstance(currentAccount).isPremium()) {
             showExpandableReactions = false;
         }
+        if (type == TYPE_STICKER_SET_EMOJI) {
+            showExpandableReactions = true;
+        }
         setVisibleReactionsList(visibleReactions);
 
         if (message != null && message.messageOwner.reactions != null && message.messageOwner.reactions.results != null) {
@@ -1177,6 +1192,27 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         return selectedReactions;
     }
 
+    public String getSelectedEmoji() {
+        if (selectedReactions.isEmpty()) {
+            return "";
+        }
+        String result = null;
+        ReactionsLayoutInBubble.VisibleReaction visibleReaction = selectedReactions.iterator().next();
+        if (visibleReaction.documentId != 0) {
+            TLRPC.Document document = AnimatedEmojiDrawable.findDocument(currentAccount, visibleReaction.documentId);
+            if (document != null) {
+                result = MessageObject.findAnimatedEmojiEmoticon(document, null);
+            }
+        }
+        if (TextUtils.isEmpty(result)) {
+            result = visibleReaction.emojicon;
+        }
+        if (TextUtils.isEmpty(result)) {
+            result = "👍";
+        }
+        return result;
+    }
+
     public static HashSet<ReactionsLayoutInBubble.VisibleReaction> getInclusiveReactions(ArrayList<MessageObject> messages) {
         LongSparseArray<ReactionsLayoutInBubble.VisibleReaction> arr = new LongSparseArray<>();
         HashSet<Long> messageReactions = new HashSet<>();
@@ -1216,6 +1252,12 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         updateSelected();
     }
 
+    public void setSelectedReactionInclusive(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
+        selectedReactions.clear();
+        selectedReactions.add(visibleReaction);
+        updateSelected();
+    }
+
     private void updateSelected() {
         AndroidUtilities.forEachViews(recyclerListView, child -> {
             int position = recyclerListView.getChildAdapterPosition(child);
@@ -1238,7 +1280,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     private void fillRecentReactionsList(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions) {
-        if (!allReactionsAvailable) {
+        if (!allReactionsAvailable || type == TYPE_STICKER_SET_EMOJI) {
             if (type == TYPE_TAGS) {
                 ArrayList<TLRPC.Reaction> topReactions = MediaDataController.getInstance(currentAccount).getSavedReactions();
                 HashSet<ReactionsLayoutInBubble.VisibleReaction> hashSet = new HashSet<>();
@@ -1537,7 +1579,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             hintView.setPadding(dp(8), 0, dp(8), 0);
             hintView.setClickable(true);
             hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            if (type == TYPE_STORY || type == TYPE_STORY_LIKES) {
+            if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                 hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 hintView.setAlpha(0.5f);
             } else {
@@ -1820,6 +1862,12 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             addView(enterImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
             addView(pressedBackupImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
             addView(loopImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
+            if (type == TYPE_STICKER_SET_EMOJI) {
+                LayoutTransition layoutTransition = new LayoutTransition();
+                layoutTransition.setDuration(100);
+                layoutTransition.enableTransitionType(LayoutTransition.CHANGING);
+                setLayoutTransition(layoutTransition);
+            }
             enterImageView.setLayerNum(Integer.MAX_VALUE);
             loopImageView.setLayerNum(Integer.MAX_VALUE);
             loopImageView.imageReceiver.setAutoRepeat(0);
@@ -1870,6 +1918,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             currentReaction = react;
             selected = selectedReactions.contains(react);
             hasEnterAnimation = currentReaction.emojicon != null && (showCustomEmojiReaction() || allReactionsIsDefault) && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
+            if (type == TYPE_STICKER_SET_EMOJI) {
+                hasEnterAnimation = false;
+            }
             if (currentReaction.emojicon != null) {
                 updateImage(react);
 
@@ -1885,7 +1936,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 loopImageView.getImageReceiver().clearImage();
                 AnimatedEmojiDrawable pressedDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE, currentAccount, currentReaction.documentId);
                 AnimatedEmojiDrawable loopDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, currentAccount, currentReaction.documentId);
-                if (type == TYPE_STORY || type == TYPE_STORY_LIKES) {
+                if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                     pressedDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                     loopDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 } else {
@@ -1923,8 +1974,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 TLRPC.TL_availableReaction defaultReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
                 if (defaultReaction != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(defaultReaction.activate_animation, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                    if (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) {
-                        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW) {
+                    if (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS) || type == TYPE_STICKER_SET_EMOJI) {
+                        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW || type == TYPE_STICKER_SET_EMOJI) {
                             loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), "60_60_firstframe", null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
                         } else {
                             enterImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
@@ -2058,7 +2109,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 pressed = true;
                 pressedX = event.getX();
                 pressedY = event.getY();
-                if (sideScale == 1f && !isLocked && type != TYPE_TAGS) {
+                if (sideScale == 1f && !isLocked && type != TYPE_TAGS && type != TYPE_STICKER_SET_EMOJI) {
                     AndroidUtilities.runOnUIThread(longPressRunnable, ViewConfiguration.getLongPressTimeout());
                 }
             }
@@ -2275,7 +2326,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         @Override
         protected void dispatchDraw(Canvas canvas) {
             int color;
-            if (type == TYPE_STORY || type == TYPE_STORY_LIKES) {
+            if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                 color = ColorUtils.setAlphaComponent(Color.WHITE, 30);
             } else {
                 color = ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 0.7f);

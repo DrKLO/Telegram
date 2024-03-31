@@ -15,6 +15,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
@@ -33,8 +34,10 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import org.checkerframework.checker.units.qual.A;
+import org.checkerframework.checker.units.qual.C;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -65,7 +68,9 @@ public class AnimatedTextView extends View {
             splitByWords = b;
         }
 
-        private static class Part {
+        private class Part {
+
+            AnimatedEmojiSpan.EmojiGroupedSpans emoji;
             StaticLayout layout;
             float offset;
             int toOppositeIndex;
@@ -75,6 +80,18 @@ public class AnimatedTextView extends View {
                 this.layout = layout;
                 this.toOppositeIndex = toOppositeIndex;
                 layout(offset);
+
+                if (getCallback() instanceof View) {
+                    View view = (View) getCallback();
+                    emoji = AnimatedEmojiSpan.update(emojiCacheType, view, emoji, layout);
+                }
+            }
+
+            public void detach() {
+                if (getCallback() instanceof View) {
+                    View view = (View) getCallback();
+                    AnimatedEmojiSpan.release(view, emoji);
+                }
             }
 
             public void layout(float offset) {
@@ -82,6 +99,16 @@ public class AnimatedTextView extends View {
                 this.left = layout == null || layout.getLineCount() <= 0 ? 0 : layout.getLineLeft(0);
                 this.width = layout == null || layout.getLineCount() <= 0 ? 0 : layout.getLineWidth(0);
             }
+
+            public void draw(Canvas canvas, float alpha) {
+                layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, emoji, 0, null, 0, 0, 0, alpha, emojiColorFilter);
+            }
+        }
+
+        private int emojiCacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+        public void setEmojiCacheType(int cacheType) {
+            this.emojiCacheType = cacheType;
         }
 
         private float t = 0;
@@ -206,7 +233,7 @@ public class AnimatedTextView extends View {
                         final float s = lerp(1f - scaleAmplitude, 1f, t);
                         canvas.scale(s, s, current.width / 2f, current.layout.getHeight() / 2f);
                     }
-                    current.layout.draw(canvas);
+                    current.draw(canvas, j >= 0 ? 1f : t);
                     canvas.restore();
                 }
                 for (int i = 0; i < oldParts.length; ++i) {
@@ -237,7 +264,7 @@ public class AnimatedTextView extends View {
                         final float s = lerp(1f, 1f - scaleAmplitude, t);
                         canvas.scale(s, s, old.width / 2f, old.layout.getHeight() / 2f);
                     }
-                    old.layout.draw(canvas);
+                    old.draw(canvas, 1f - t);
                     canvas.restore();
                 }
             } else {
@@ -262,7 +289,7 @@ public class AnimatedTextView extends View {
                             }
                         }
                         canvas.translate(x, 0);
-                        current.layout.draw(canvas);
+                        current.draw(canvas, 1f);
                         canvas.restore();
                     }
                 }
@@ -378,10 +405,12 @@ public class AnimatedTextView extends View {
                 diff(from, to, onEqualRegion, onNewPart, onOldPart);
 //                betterDiff(from, to, onEqualRegion, onNewPart, onOldPart);
 
+                clearCurrentParts();
                 if (this.currentParts == null || this.currentParts.length != currentParts.size()) {
                     this.currentParts = new Part[currentParts.size()];
                 }
                 currentParts.toArray(this.currentParts);
+                clearOldParts();
                 if (this.oldParts == null || this.oldParts.length != oldParts.size()) {
                     this.oldParts = new Part[oldParts.size()];
                 }
@@ -392,19 +421,28 @@ public class AnimatedTextView extends View {
 
                 this.moveDown = moveDown;
                 animator = ValueAnimator.ofFloat(t = 0f, 1f);
+                if (widthUpdatedListener != null) {
+                    widthUpdatedListener.run();
+                }
                 animator.addUpdateListener(anm -> {
                     t = (float) anm.getAnimatedValue();
                     invalidateSelf();
+                    if (widthUpdatedListener != null) {
+                        widthUpdatedListener.run();
+                    }
                 });
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         super.onAnimationEnd(animation);
-                        AnimatedTextDrawable.this.oldParts = null;
+                        clearOldParts();
                         oldText = null;
                         oldWidth = 0;
                         t = 0;
                         invalidateSelf();
+                        if (widthUpdatedListener != null) {
+                            widthUpdatedListener.run();
+                        }
                         animator = null;
 
                         if (toSetText != null) {
@@ -430,6 +468,7 @@ public class AnimatedTextView extends View {
                 t = 0;
 
                 if (!text.equals(currentText)) {
+                    clearCurrentParts();
                     currentParts = new Part[1];
                     currentParts[0] = new Part(makeLayout(currentText = text, width), 0, -1);
                     currentWidth = currentParts[0].width;
@@ -437,13 +476,34 @@ public class AnimatedTextView extends View {
                     isRTL = AndroidUtilities.isRTL(currentText);
                 }
 
-                oldParts = null;
+                clearOldParts();
                 oldText = null;
                 oldWidth = 0;
                 oldHeight = 0;
 
                 invalidateSelf();
+                if (widthUpdatedListener != null) {
+                    widthUpdatedListener.run();
+                }
             }
+        }
+
+        private void clearOldParts() {
+            if (oldParts != null) {
+                for (int i = 0; i < oldParts.length; ++i) {
+                    oldParts[i].detach();
+                }
+            }
+            oldParts = null;
+        }
+
+        private void clearCurrentParts() {
+            if (oldParts != null) {
+                for (int i = 0; i < oldParts.length; ++i) {
+                    oldParts[i].detach();
+                }
+            }
+            oldParts = null;
         }
 
         public CharSequence getText() {
@@ -861,6 +921,75 @@ public class AnimatedTextView extends View {
             return textPaint.getColor();
         }
 
+        private ValueAnimator colorAnimator;
+        public void setTextColor(int color, boolean animated) {
+            if (colorAnimator != null) {
+                colorAnimator.cancel();
+                colorAnimator = null;
+            }
+            if (!animated) {
+                setTextColor(color);
+            } else {
+                final int from = getTextColor();
+                final int to = color;
+                colorAnimator = ValueAnimator.ofFloat(0, 1);
+                colorAnimator.addUpdateListener(anm -> {
+                    setTextColor(ColorUtils.blendARGB(from, to, (float) anm.getAnimatedValue()));
+                    invalidateSelf();
+                });
+                colorAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        setTextColor(to);
+                    }
+                });
+                colorAnimator.setDuration(240);
+                colorAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                colorAnimator.start();
+            }
+        }
+
+        private int emojiColor;
+        private ColorFilter emojiColorFilter;
+
+        public void setEmojiColorFilter(ColorFilter colorFilter) {
+            emojiColorFilter = colorFilter;
+        }
+
+        public void setEmojiColor(int emojiColor) {
+            if (this.emojiColor != emojiColor) {
+                emojiColorFilter = new PorterDuffColorFilter(this.emojiColor = emojiColor, PorterDuff.Mode.MULTIPLY);
+            }
+        }
+
+        private ValueAnimator emojiColorAnimator;
+        public void setEmojiColor(int color, boolean animated) {
+            if (emojiColorAnimator != null) {
+                emojiColorAnimator.cancel();
+                emojiColorAnimator = null;
+            }
+            if (!animated) {
+                setEmojiColor(color);
+            } else if (emojiColor != color) {
+                final int from = getTextColor();
+                final int to = color;
+                emojiColorAnimator = ValueAnimator.ofFloat(0, 1);
+                emojiColorAnimator.addUpdateListener(anm -> {
+                    setEmojiColor(ColorUtils.blendARGB(from, to, (float) anm.getAnimatedValue()));
+                    invalidateSelf();
+                });
+                emojiColorAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        setTextColor(to);
+                    }
+                });
+                emojiColorAnimator.setDuration(240);
+                emojiColorAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                emojiColorAnimator.start();
+            }
+        }
+
         public void setTypeface(Typeface typeface) {
             textPaint.setTypeface(typeface);
         }
@@ -937,6 +1066,11 @@ public class AnimatedTextView extends View {
                 currentText == null || currentText.length() <= 0 ? 0f : 1f,
                 oldText == null ? 1f : t
             );
+        }
+
+        private Runnable widthUpdatedListener;
+        public void setOnWidthUpdatedListener(Runnable listener) {
+            widthUpdatedListener = listener;
         }
     }
 
@@ -1058,6 +1192,28 @@ public class AnimatedTextView extends View {
         invalidate();
     }
 
+    public void setTextColor(int color, boolean animated) {
+        drawable.setTextColor(color, animated);
+        invalidate();
+    }
+
+    public void setEmojiCacheType(int cacheType) {
+        drawable.setEmojiCacheType(cacheType);
+    }
+
+    public void setEmojiColor(int color) {
+        drawable.setEmojiColor(color);
+        invalidate();
+    }
+
+    public void setEmojiColor(int color, boolean animated) {
+        drawable.setEmojiColor(color, animated);
+        invalidate();
+    }
+    public void setEmojiColorFilter(ColorFilter emojiColorFilter) {
+        drawable.setEmojiColorFilter(emojiColorFilter);
+        invalidate();
+    }
     public int getTextColor() {
         return drawable.getTextColor();
     }
@@ -1105,5 +1261,10 @@ public class AnimatedTextView extends View {
 
     public void setRightPadding(float rightPadding) {
         drawable.setRightPadding(rightPadding);
+    }
+
+    private Runnable widthUpdatedListener;
+    public void setOnWidthUpdatedListener(Runnable listener) {
+        drawable.setOnWidthUpdatedListener(listener);
     }
 }

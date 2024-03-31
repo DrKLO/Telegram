@@ -38,6 +38,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -241,8 +242,17 @@ public class HintView2 extends View {
         }
         Spanned spanned = (Spanned) text;
         TypefaceSpan[] spans = spanned.getSpans(0, text.length(), TypefaceSpan.class);
+        AnimatedEmojiSpan[] animatedSpans = spanned.getSpans(0, text.length(), AnimatedEmojiSpan.class);
+        Emoji.EmojiSpan[] emojiSpans = spanned.getSpans(0, text.length(), Emoji.EmojiSpan.class);
+        int add = 0;
+        for (int i = 0; i < emojiSpans.length; ++i) {
+            add += emojiSpans[i].size;
+        }
+        for (int i = 0; i < animatedSpans.length; ++i) {
+            add += animatedSpans[i].size;
+        }
         if (spans == null || spans.length == 0) {
-            return paint.measureText(text.toString());
+            return paint.measureText(text.toString()) + add;
         }
         float len = 0;
         int s = 0, e;
@@ -268,7 +278,7 @@ public class HintView2 extends View {
         if (e - s > 0) {
             len += paint.measureText(spanned, s, e);
         }
-        return len;
+        return len + add;
     }
 
     // returns max width

@@ -18,6 +18,7 @@ configurations.all {
 
 dependencies {
     implementation project(':TMessagesProj')
+    implementation 'androidx.fragment:fragment:1.2.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')

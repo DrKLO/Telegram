@@ -55,8 +55,16 @@ public class OutlineTextContainerView extends FrameLayout {
     private EditText attachedEditText;
     private boolean forceUseCenter;
 
+    private final Theme.ResourcesProvider resourcesProvider;
+
     public OutlineTextContainerView(Context context) {
+        this(context, null);
+    }
+
+    public OutlineTextContainerView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
+
         setWillNotDraw(false);
         textPaint.setTextSize(AndroidUtilities.dp(16));
         outlinePaint.setStyle(Paint.Style.STROKE);
@@ -92,10 +100,10 @@ public class OutlineTextContainerView extends FrameLayout {
     }
 
     public void updateColor() {
-        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText), Theme.getColor(Theme.key_windowBackgroundWhiteValueText), forceUseCenter ? 0f : selectionProgress);
-        textPaint.setColor(ColorUtils.blendARGB(textSelectionColor, Theme.getColor(Theme.key_text_RedBold), errorProgress));
-        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), forceUseCenter ? 0f : selectionProgress);
-        setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold), errorProgress));
+        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider), forceUseCenter ? 0f : selectionProgress);
+        textPaint.setColor(ColorUtils.blendARGB(textSelectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
+        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter ? 0f : selectionProgress);
+        setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
     }
 
     public void animateSelection(float newValue) {

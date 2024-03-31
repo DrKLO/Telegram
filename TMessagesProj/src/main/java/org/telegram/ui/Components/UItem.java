@@ -4,10 +4,15 @@ package org.telegram.ui.Components;
 import android.text.TextUtils;
 import android.view.View;
 
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stats;
+import org.telegram.ui.Business.BusinessLinksActivity;
 import org.telegram.ui.Business.QuickRepliesController;
+import org.telegram.ui.Cells.SlideIntChooseView;
+import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.telegram.ui.StatisticActivity;
 
 import java.util.Objects;
 
@@ -17,10 +22,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public int id;
     public boolean checked;
     public boolean enabled = true;
+    public boolean hideDivider;
     public int iconResId;
+    public int backgroundKey;
     public CharSequence text, subtext, textValue;
     public String[] texts;
-    public boolean accent, red;
+    public boolean accent, red, transparent;
 
     public boolean include;
     public long dialogId;
@@ -47,6 +54,18 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public static UItem asHeader(CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_HEADER, false);
+        i.text = text;
+        return i;
+    }
+
+    public static UItem asLargeHeader(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_LARGE_HEADER, false);
+        i.text = text;
+        return i;
+    }
+
+    public static UItem asBlackHeader(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_BLACK_HEADER, false);
         i.text = text;
         return i;
     }
@@ -98,6 +117,14 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asButton(int id, CharSequence text, TLRPC.Document sticker) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
+        i.id = id;
+        i.text = text;
+        i.object = sticker;
+        return i;
+    }
+
     public static UItem asRippleCheck(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECKRIPPLE, false);
         i.id = id;
@@ -141,6 +168,25 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asLargeShadow(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_LARGE_SHADOW, false);
+        i.text = text;
+        return i;
+    }
+
+    public static UItem asCenterShadow(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_SHADOW, false);
+        i.text = text;
+        i.accent = true;
+        return i;
+    }
+
+    public static UItem asProceedOverview(ChannelMonetizationLayout.ProceedOverview value) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_PROCEED_OVERVIEW, false);
+        i.object = value;
+        return i;
+    }
+
     public static UItem asShadow(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_SHADOW, false);
         i.id = id;
@@ -178,6 +224,20 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public static UItem asIntSlideView(
+        int style,
+        int minStringResId, int min,
+        int valueMinStringResId, int valueStringResId, int valueMaxStringResId, int value,
+        int maxStringResId, int max,
+        Utilities.Callback<Integer> whenChose
+    ) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_INTSLIDE, false);
+        item.intValue = value;
+        item.intCallback = whenChose;
+        item.object = SlideIntChooseView.Options.make(style, min, minStringResId, valueMinStringResId, valueStringResId, valueMaxStringResId, max, maxStringResId);
+        return item;
+    }
+
     public static UItem asQuickReply(QuickRepliesController.QuickReply quickReply) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_QUICK_REPLY, false);
         item.object = quickReply;
@@ -190,6 +250,37 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public static UItem asBusinessChatLink(BusinessLinksActivity.BusinessLinkWrapper businessLink) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_BUSINESS_LINK, false);
+        item.object = businessLink;
+        return item;
+    }
+
+    public static UItem asChart(int type, int stats_dc, StatisticActivity.ChartViewData data) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_CHART0 + type, false);
+        item.intValue = stats_dc;
+        item.object = data;
+        return item;
+    }
+
+    public static UItem asTransaction(TL_stats.BroadcastRevenueTransaction transaction) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_TRANSACTION, false);
+        item.object = transaction;
+        return item;
+    }
+
+    public static UItem asRadioUser(Object object) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_RADIO_USER, false);
+        item.object = object;
+        return item;
+    }
+
+    public static UItem asSpace(int height) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
+        item.intValue = height;
+        return item;
+    }
+
     public UItem setCloseIcon(Runnable onCloseClick) {
         clickCallback = onCloseClick;
         return this;
@@ -197,6 +288,9 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public UItem setChecked(boolean checked) {
         this.checked = checked;
+        if (viewType == UniversalAdapter.VIEW_TYPE_FILTER_CHAT) {
+            viewType = UniversalAdapter.VIEW_TYPE_FILTER_CHAT_CHECK;
+        }
         return this;
     }
 
@@ -223,7 +317,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return (
             viewType == item.viewType &&
             id == item.id &&
+            dialogId == item.dialogId &&
             iconResId == item.iconResId &&
+            backgroundKey == item.backgroundKey &&
+            hideDivider == item.hideDivider &&
+            transparent == item.transparent &&
             red == item.red &&
             accent == item.accent &&
             TextUtils.equals(text, item.text) &&

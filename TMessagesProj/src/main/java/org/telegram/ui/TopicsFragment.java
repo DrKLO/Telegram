@@ -572,11 +572,22 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                             bottomSheet.setDelegate((users1, fwdCount) -> {
                                 int N = users1.size();
                                 int[] finished = new int[1];
+                                TLRPC.TL_messages_invitedUsers totalInvitedUsers = new TLRPC.TL_messages_invitedUsers();
+                                totalInvitedUsers.updates = new TLRPC.TL_updates();
                                 for (int a = 0; a < N; a++) {
                                     TLRPC.User user = users1.get(a);
-                                    getMessagesController().addUserToChat(chatId, user, fwdCount, null, TopicsFragment.this, () -> {
-                                        if (++finished[0] == N) {
-                                            BulletinFactory.of(TopicsFragment.this).createUsersAddedBulletin(users1, getMessagesController().getChat(chatId)).show();
+                                    getMessagesController().addUserToChat(chatId, user, fwdCount, null, TopicsFragment.this, false, () -> {}, null, invitedUsers -> {
+                                        if (invitedUsers != null) {
+                                            totalInvitedUsers.missing_invitees.addAll(invitedUsers.missing_invitees);
+                                        }
+                                        finished[0]++;
+                                        if (finished[0] == N) {
+                                            if (totalInvitedUsers.missing_invitees.isEmpty()) {
+                                                BulletinFactory.of(TopicsFragment.this).createUsersAddedBulletin(users1, getMessagesController().getChat(chatId)).show();
+                                            } else {
+                                                TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                                                AlertsCreator.checkRestrictedInviteUsers(currentAccount, chat, totalInvitedUsers);
+                                            }
                                         }
                                     });
                                 }

@@ -620,7 +620,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         } else if (delivered) {
             pending.whenDelivered(success, reason);
         }
-        if (pending.received[0] && pending.received[1]) {
+        if (pending.received[0] || pending.received[1]) {
             SMSJobController.pending.remove(id);
             savePending();
         }

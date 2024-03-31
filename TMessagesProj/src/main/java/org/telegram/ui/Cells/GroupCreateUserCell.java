@@ -16,7 +16,9 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -24,6 +26,9 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -43,9 +48,12 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumGradient;
+
+import java.util.Locale;
 
 public class GroupCreateUserCell extends FrameLayout {
 
@@ -57,6 +65,7 @@ public class GroupCreateUserCell extends FrameLayout {
     private Object currentObject;
     private CharSequence currentName;
     private CharSequence currentStatus;
+    public boolean currentPremium;
 
     private int checkBoxType;
 
@@ -81,6 +90,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
     private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean premiumBlocked;
+    private Boolean premiumBlockedOverriden;
     private boolean showPremiumBlocked;
 
     public boolean isBlocked() {
@@ -98,13 +108,19 @@ public class GroupCreateUserCell extends FrameLayout {
 
     private void updatePremiumBlocked(boolean animated) {
         final boolean wasPremiumBlocked = premiumBlocked;
-        premiumBlocked = showPremiumBlocked && currentObject instanceof TLRPC.User && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(((TLRPC.User) currentObject).id);
+        premiumBlocked = showPremiumBlocked && (premiumBlockedOverriden != null ? premiumBlockedOverriden : currentObject instanceof TLRPC.User && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(((TLRPC.User) currentObject).id));
         if (wasPremiumBlocked != premiumBlocked) {
             if (!animated) {
                 premiumBlockedT.set(premiumBlocked, true);
             }
             invalidate();
         }
+    }
+
+    public void overridePremiumBlocked(boolean premiumBlocked, boolean animated) {
+        showPremiumBlocked = true;
+        premiumBlockedOverriden = premiumBlocked;
+        updatePremiumBlocked(animated);
     }
 
     public GroupCreateUserCell(Context context, int checkBoxType, int pad, boolean selfAsSaved) {
@@ -170,7 +186,48 @@ public class GroupCreateUserCell extends FrameLayout {
         currentStatus = status;
         currentName = name;
         drawDivider = false;
+        currentPremium = false;
         update(0);
+    }
+
+    public void setPremium() {
+        currentPremium = true;
+        currentObject = "premium";
+        avatarImageView.setImageDrawable(makePremiumUsersDrawable(getContext(), false));
+        nameTextView.setText(LocaleController.getString(R.string.PrivacyPremium));
+        statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
+        statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        statusTextView.setText(LocaleController.getString(R.string.PrivacyPremiumText));
+    }
+
+    public static Drawable makePremiumUsersDrawable(Context context, boolean small) {
+        PremiumGradient.PremiumGradientTools gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient2, Theme.key_premiumGradient1, -1, -1, -1, null);
+        Drawable backgroundDrawable = new Drawable() {
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                gradientTools.gradientMatrix(getBounds());
+                canvas.drawCircle(
+                        getBounds().centerX(),
+                        getBounds().centerY(),
+                        Math.min(getBounds().width(), getBounds().height()) / 2f,
+                        gradientTools.paint
+                );
+            }
+            @Override
+            public void setAlpha(int alpha) {}
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+        };
+        Drawable starDrawable = context.getResources().getDrawable(R.drawable.msg_settings_premium);
+        CombinedDrawable drawable = new CombinedDrawable(backgroundDrawable, starDrawable, 0, 0);
+        if (small) {
+            drawable.setIconSize(dp(18), dp(18));
+        }
+        return drawable;
     }
 
     public void setForbiddenCheck(boolean forbidden) {
@@ -244,7 +301,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String ? 50 : 58), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String && !"premium".equalsIgnoreCase((String) currentObject) ? 50 : 58), MeasureSpec.EXACTLY));
     }
 
     public void recycle() {
@@ -252,7 +309,7 @@ public class GroupCreateUserCell extends FrameLayout {
     }
 
     public void update(int mask) {
-        if (currentObject == null) {
+        if (currentObject == null || currentPremium) {
             return;
         }
         TLRPC.FileLocation photo = null;
@@ -468,6 +525,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
     private PremiumGradient.PremiumGradientTools premiumGradient;
     private Drawable lockDrawable;
+    private Paint lockBackgroundPaint;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -505,11 +563,21 @@ public class GroupCreateUserCell extends FrameLayout {
             canvas.save();
             Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             canvas.drawCircle(left, top, dp(10 + 1.33f) * lockT, Theme.dialogs_onlineCirclePaint);
-            if (premiumGradient == null) {
-                premiumGradient = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
+            Paint paint;
+            if (premiumBlockedOverriden == null) {
+                if (premiumGradient == null) {
+                    premiumGradient = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
+                }
+                premiumGradient.gradientMatrix((int) (left - dp(10)), (int) (top - dp(10)), (int) (left + dp(10)), (int) (top + dp(10)), 0, 0);
+                paint = premiumGradient.paint;
+            } else {
+                if (lockBackgroundPaint == null) {
+                    lockBackgroundPaint = new Paint();
+                }
+                lockBackgroundPaint.setColor(Theme.getColor(Theme.key_avatar_backgroundGray, resourcesProvider));
+                paint = lockBackgroundPaint;
             }
-            premiumGradient.gradientMatrix((int) (left - dp(10)), (int) (top - dp(10)), (int) (left + dp(10)), (int) (top + dp(10)), 0, 0);
-            canvas.drawCircle(left, top, dp(10) * lockT, premiumGradient.paint);
+            canvas.drawCircle(left, top, dp(10) * lockT, paint);
             if (lockDrawable == null) {
                 lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock2).mutate();
                 lockDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));

@@ -130,8 +130,11 @@ public class OKLCH {
         double[] hueoklch = rgb2oklch(rgb(hueColor));
         double[] oklch = rgb2oklch(rgb(baseColor));
         oklch[2] = hueoklch[2];
-        if (Double.isNaN(hueoklch[2])) {
+        if (Double.isNaN(hueoklch[2]) || hueoklch[1] < .08f) {
             oklch[1] = hueoklch[1];
+            if (!Theme.isCurrentThemeDark() && oklch[0] < .8f) {
+                oklch[0] = Utilities.clamp(oklch[0] - .1, 1, 0);
+            }
         }
         return ColorUtils.setAlphaComponent(rgb(oklch2rgb(oklch)), Color.alpha(baseColor));
     }
