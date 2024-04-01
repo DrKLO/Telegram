@@ -1128,6 +1128,28 @@ public class TL_stories {
         }
     }
 
+    public static class TL_stories_incrementStoryViews extends TLObject {
+        public static final int constructor = 0xb2028afb;
+
+        public TLRPC.InputPeer peer;
+        public ArrayList<Integer> id = new ArrayList<>();
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeInt32(0x1cb5c415);
+            int count = id.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                stream.writeInt32(id.get(a));
+            }
+        }
+    }
+
     public static class TL_stories_getStoryViewsList extends TLObject {
         public static final int constructor = 0x7ed23c57;
 

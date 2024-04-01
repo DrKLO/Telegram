@@ -5,6 +5,11 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.style.CharacterStyle;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
@@ -18,6 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BillingController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChannelMonetizationLayout;
@@ -38,7 +45,7 @@ public class LegendSignatureView extends FrameLayout {
 
     public boolean isTopHourChart;
     LinearLayout content;
-    Holder[] holdes;
+    Holder[] holders;
     TextView time;
     TextView hourTime;
     Drawable background;
@@ -126,10 +133,10 @@ public class LegendSignatureView extends FrameLayout {
 
     public void setSize(int n) {
         content.removeAllViews();
-        holdes = new Holder[n];
+        holders = new Holder[n];
         for (int i = 0; i < n; i++) {
-            holdes[i] = new Holder();
-            content.addView(holdes[i].root);
+            holders[i] = new Holder();
+            content.addView(holders[i].root);
         }
     }
 
@@ -139,9 +146,10 @@ public class LegendSignatureView extends FrameLayout {
         long date,
         ArrayList<LineViewData> lines,
         boolean animateChanges,
-        int formatter
+        int formatter,
+        float k
     ) {
-        int n = holdes.length;
+        int n = holders.length;
         if (animateChanges) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 TransitionSet transition = new TransitionSet();
@@ -165,29 +173,34 @@ public class LegendSignatureView extends FrameLayout {
             if (useHour) hourTime.setText(hourFormat.format(date));
         }
 
-        int sum = 0;
+        long sum = 0;
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < lines.size(); i++) {
             if (lines.get(i).enabled) sum += lines.get(i).line.y[index];
         }
 
         for (int i = 0; i < n; i++) {
-            Holder h = holdes[i];
+            Holder h = holders[i];
+            int formatterIndex = i % 2;
+            LineViewData l = lines.get(formatter == ChartData.FORMATTER_TON ? i / 2 : i);
 
-            if (!lines.get(i).enabled) {
+            if (!l.enabled) {
                 h.root.setVisibility(View.GONE);
             } else {
-                ChartData.Line l = lines.get(i).line;
                 if (h.root.getMeasuredHeight() == 0) {
                     h.root.requestLayout();
                 }
                 h.root.setVisibility(View.VISIBLE);
-                h.value.setText(formatWholeNumber(l.y[index], formatter, h.value));
-                h.signature.setText(l.name);
-                if (l.colorKey >= 0 && Theme.hasThemeKey(l.colorKey)) {
-                    h.value.setTextColor(Theme.getColor(l.colorKey, resourcesProvider));
+                h.value.setText(formatWholeNumber(l.line.y[index], formatter, formatterIndex, h.value, k));
+                if (formatter == ChartData.FORMATTER_TON) {
+                    h.signature.setText(LocaleController.formatString(formatterIndex == 0 ? R.string.MonetizationChartInTON : R.string.MonetizationChartInUSD, l.line.name));
                 } else {
-                    h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.colorDark : l.color);
+                    h.signature.setText(l.line.name);
+                }
+                if (l.line.colorKey >= 0 && Theme.hasThemeKey(l.line.colorKey)) {
+                    h.value.setTextColor(Theme.getColor(l.line.colorKey, resourcesProvider));
+                } else {
+                    h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.line.colorDark : l.line.color);
                 }
                 h.signature.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
 
@@ -224,20 +237,23 @@ public class LegendSignatureView extends FrameLayout {
         return s;
     }
 
-
     private DecimalFormat formatterTON;
-    public CharSequence formatWholeNumber(int v, int formatter, TextView textView) {
+    public CharSequence formatWholeNumber(long v, int formatter, int formatterIndex, TextView textView, float k) {
         if (formatter == ChartData.FORMATTER_TON) {
-            if (formatterTON == null) {
-                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-                symbols.setDecimalSeparator('.');
-                formatterTON = new DecimalFormat("#.##", symbols);
-                formatterTON.setMinimumFractionDigits(2);
-                formatterTON.setMaximumFractionDigits(6);
-                formatterTON.setGroupingUsed(false);
+            if (formatterIndex == 0) {
+                if (formatterTON == null) {
+                    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                    symbols.setDecimalSeparator('.');
+                    formatterTON = new DecimalFormat("#.##", symbols);
+                    formatterTON.setMinimumFractionDigits(2);
+                    formatterTON.setMaximumFractionDigits(6);
+                    formatterTON.setGroupingUsed(false);
+                }
+                formatterTON.setMaximumFractionDigits(v > 1_000_000_000 ? 2 : 6);
+                return ChannelMonetizationLayout.replaceTON("TON " + formatterTON.format(v / 1_000_000_000.), textView.getPaint(), .82f, false);
+            } else {
+                return "~" + BillingController.getInstance().formatCurrency((long) (v / k), "USD");
             }
-            formatterTON.setMaximumFractionDigits(v > 1_000_000_000 ? 2 : 6);
-            return ChannelMonetizationLayout.replaceTON("TON " + formatterTON.format(v / 1_000_000_000.), textView.getPaint(), false);
         }
         float num_ = v;
         int count = 0;

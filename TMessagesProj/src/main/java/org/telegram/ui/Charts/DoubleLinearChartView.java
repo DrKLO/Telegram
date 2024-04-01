@@ -63,7 +63,7 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
 
                 int j = 0;
 
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 line.chartPath.reset();
                 boolean first = true;
@@ -137,7 +137,7 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
                 int n = chartData.xPercentage.length;
                 int j = 0;
 
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 line.chartPath.reset();
                 for (int i = 0; i < n; i++) {
@@ -263,30 +263,30 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
 
     @Override
     public LineViewData createLineViewData(ChartData.Line line) {
-        return new LineViewData(line, resourcesProvider);
+        return new LineViewData(line, false, resourcesProvider);
     }
 
-    public int findMaxValue(int startXIndex, int endXIndex) {
+    public long findMaxValue(int startXIndex, int endXIndex) {
         if (lines.isEmpty()) {
             return 0;
         }
-        int n = lines.size();
-        int max = 0;
+        final int n = lines.size();
+        long max = 0;
         for (int i = 0; i < n; i++) {
-            int localMax = lines.get(i).enabled ? (int) (chartData.lines.get(i).segmentTree.rMaxQ(startXIndex, endXIndex) * chartData.linesK[i]) : 0;
+            long localMax = lines.get(i).enabled ? (long) (chartData.lines.get(i).segmentTree.rMaxQ(startXIndex, endXIndex) * chartData.linesK[i]) : 0;
             if (localMax > max) max = localMax;
         }
         return max;
     }
 
-    public int findMinValue(int startXIndex, int endXIndex) {
+    public long findMinValue(int startXIndex, int endXIndex) {
         if (lines.isEmpty()) {
             return 0;
         }
-        int n = lines.size();
-        int min = Integer.MAX_VALUE;
+        final int n = lines.size();
+        long min = Long.MAX_VALUE;
         for (int i = 0; i < n; i++) {
-            int localMin = lines.get(i).enabled ? (int) (chartData.lines.get(i).segmentTree.rMinQ(startXIndex, endXIndex) * chartData.linesK[i]) : Integer.MAX_VALUE;
+            long localMin = lines.get(i).enabled ? (int) (chartData.lines.get(i).segmentTree.rMinQ(startXIndex, endXIndex) * chartData.linesK[i]) : Integer.MAX_VALUE;
             if (localMin < min) min = localMin;
         }
         return min;
@@ -299,12 +299,12 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
             return;
         }
 
-        int max = 0;
+        long max = 0;
         for (LineViewData l : lines) {
             if (l.enabled && l.line.maxValue > max) max = l.line.maxValue;
         }
         if (lines.size() > 1) {
-            max = (int) (max * chartData.linesK[1]);
+            max = (long) (max * chartData.linesK[1]);
         }
 
         if (max > 0 && max != animatedToPickerMaxHeight) {
@@ -324,7 +324,7 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
     }
 
     @Override
-    protected ChartHorizontalLinesData createHorizontalLinesData(int newMaxHeight, int newMinHeight, int formatter) {
+    protected ChartHorizontalLinesData createHorizontalLinesData(long newMaxHeight, long newMinHeight, int formatter) {
         float k;
         if (chartData.linesK.length < 2) {
             k = 1;

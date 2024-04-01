@@ -11,7 +11,7 @@
 
     <!--THEMES-->
 
-    <style name="Theme.TMessages.Start" parent="@android:style/Theme.Material">
+    <style name="Theme.TMessages.Start" parent="Theme.AppCompat.DayNight">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>

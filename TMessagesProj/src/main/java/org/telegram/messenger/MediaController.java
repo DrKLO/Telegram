@@ -3836,8 +3836,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    public void prepareResumedRecording(int currentAccount, MediaDataController.DraftVoice draft, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, TL_stories.StoryItem replyStory, int guid, boolean manual, String query_shortcut, int query_shortcut_id) {
-        manualRecording = manual;
+    public void prepareResumedRecording(int currentAccount, MediaDataController.DraftVoice draft, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, TL_stories.StoryItem replyStory, int guid, String query_shortcut, int query_shortcut_id) {
+        manualRecording = false;
         requestAudioFocus(true);
         recordQueue.cancelRunnable(recordStartRunnable);
         recordQueue.postRunnable(() -> {
@@ -4149,6 +4149,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             });
         });
+    }
+
+    public void cleanRecording(boolean delete) {
+        recordingAudio = null;
+        AutoDeleteMediaTask.unlockFile(recordingAudioFile);
+        if (delete && recordingAudioFile != null) {
+            try {
+                recordingAudioFile.delete();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        recordingAudioFile = null;
+        manualRecording = false;
+        raiseToEarRecord = false;
+        ignoreOnPause = false;
     }
 
     private void stopRecordingInternal(final int send, boolean notify, int scheduleDate, boolean once) {

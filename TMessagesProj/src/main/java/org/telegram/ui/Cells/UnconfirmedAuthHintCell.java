@@ -167,7 +167,8 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         noButton.setOnClickListener(v -> {
             noButton.setLoading(true);
             MessagesController.getInstance(currentAccount).getUnconfirmedAuthController().deny(auths, success -> {
-                showLoginPreventedSheet(success);
+                if (LaunchActivity.isActive)
+                    showLoginPreventedSheet(success);
                 noButton.setLoading(false);
                 MessagesController.getInstance(currentAccount).getUnconfirmedAuthController().cleanup();
             });

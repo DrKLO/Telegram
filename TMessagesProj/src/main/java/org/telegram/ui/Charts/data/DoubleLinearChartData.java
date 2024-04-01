@@ -16,16 +16,16 @@ public class DoubleLinearChartData extends ChartData {
     protected void measure() {
         super.measure();
         int n = lines.size();
-        int max = 0;
+        long max = 0;
         for (int i = 0; i < n; i++) {
-            int m = lines.get(i).maxValue;
+            final long m = lines.get(i).maxValue;
             if (m > max) max = m;
         }
 
         linesK = new float[n];
 
         for (int i = 0; i < n; i++) {
-            int m = lines.get(i).maxValue;
+            final long m = lines.get(i).maxValue;
             if (max == m) {
                 linesK[i] = 1;
                 continue;

@@ -106,8 +106,8 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         textViewDescription4.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
         linearLayout.addView(textViewDescription4, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 0, 22, 0));
 
-        SpannableStringBuilder bottomSubtitle1 = AndroidUtilities.replaceTags(LocaleController.getString("RevenueSharingAdsInfo4Subtitle", R.string.RevenueSharingAdsInfo4Subtitle));
-        String bottomSubtitle2 = getString("RevenueSharingAdsInfo4Subtitle", R.string.RevenueSharingAdsInfo4SubtitleLearnMore);
+        SpannableStringBuilder bottomSubtitle1 = AndroidUtilities.replaceTags(LocaleController.getString(R.string.RevenueSharingAdsInfo4Subtitle2));
+        String bottomSubtitle2 = getString(R.string.RevenueSharingAdsInfo4SubtitleLearnMore);
         SpannableStringBuilder stringBuilder2 = AndroidUtilities.replaceSingleTag(bottomSubtitle2, Theme.key_chat_messageLinkIn, 0, () -> Browser.openUrl(getContext(), LocaleController.getString("PromoteUrl", R.string.PromoteUrl)));
         SpannableString arrowStr = new SpannableString(">");
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.attach_arrow_right);
@@ -133,7 +133,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setText(LocaleController.getString("RevenueSharingAdsAlertButton", R.string.RevenueSharingAdsUnderstood));
+        buttonTextView.setText(LocaleController.getString("RevenueSharingAdsAlertButton", R.string.RevenueSharingAdsAlertButton));
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 6));
         buttonTextView.setOnClickListener(e -> dismiss());
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 14, 22, 14, 14));

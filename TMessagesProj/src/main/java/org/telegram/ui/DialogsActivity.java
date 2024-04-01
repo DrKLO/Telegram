@@ -12304,13 +12304,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 fragmentView.requestLayout();
             }
         } else {
-            for (int i = 0; i < viewPages.length; i++) {
-                ViewPage page = viewPages[i];
-                if (page != null) {
-                    page.setLayerType(View.LAYER_TYPE_NONE, null);
-                    page.setClipChildren(true);
-                    page.setClipToPadding(true);
-                    page.listView.setClipChildren(true);
+            if (viewPages != null) {
+                for (int i = 0; i < viewPages.length; i++) {
+                    ViewPage page = viewPages[i];
+                    if (page != null) {
+                        page.setLayerType(View.LAYER_TYPE_NONE, null);
+                        page.setClipChildren(true);
+                        page.setClipToPadding(true);
+                        page.listView.setClipChildren(true);
+                    }
                 }
             }
             if (actionBar != null) {

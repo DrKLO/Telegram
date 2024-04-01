@@ -66,7 +66,7 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
                 } else {
                     p = chartData.xPercentage[1] * fullWidth;
                 }
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
                 int j = 0;
 
                 float selectedX = 0f;
@@ -148,7 +148,7 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
                 } else {
                     p = chartData.xPercentage[1] * pickerWidth;
                 }
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 float a = line.alpha;
 

@@ -1602,6 +1602,14 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
     private Utilities.Callback<Integer> onWidgetSelected;
     public EmojiBottomSheet whenWidgetSelected(Utilities.Callback<Integer> listener) {
         this.onWidgetSelected = listener;
+        View[] pages = viewPager.getViewPages();
+        for (int i = 0; i < pages.length; ++i) {
+            View view = pages[i];
+            if (view instanceof Page) {
+                Page page = (Page) view;
+                page.adapter.update();
+            }
+        }
         return this;
     }
 

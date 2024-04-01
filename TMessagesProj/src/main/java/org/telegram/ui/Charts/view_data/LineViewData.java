@@ -37,11 +37,11 @@ public class LineViewData {
 
     private Theme.ResourcesProvider resourcesProvider;
 
-    public LineViewData(ChartData.Line line) {
-        this(line, null);
+    public LineViewData(ChartData.Line line, boolean bar) {
+        this(line, bar, null);
     }
 
-    public LineViewData(ChartData.Line line, Theme.ResourcesProvider resourcesProvider) {
+    public LineViewData(ChartData.Line line, boolean bar, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         this.line = line;
 
@@ -62,8 +62,8 @@ public class LineViewData {
         selectionPaint.setColor(line.color);
 
 
-        linesPath = new float[line.y.length << 2];
-        linesPathBottom = new float[line.y.length << 2];
+        linesPath = new float[bar ? (8 * line.y.length) : line.y.length << 2];
+        linesPathBottom = new float[bar ? (8 * line.y.length) : line.y.length << 2];
     }
 
     public void updateColors() {

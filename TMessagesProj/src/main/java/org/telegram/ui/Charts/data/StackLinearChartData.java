@@ -9,10 +9,10 @@ import java.util.Arrays;
 
 public class StackLinearChartData extends ChartData {
 
-    int[] ySum;
+    long[] ySum;
     SegmentTree ySumSegmentTree;
 
-    public int[][] simplifiedY;
+    public long[][] simplifiedY;
     public int simplifiedSize;
 
 
@@ -26,7 +26,7 @@ public class StackLinearChartData extends ChartData {
             for (int k = 0; k < lines.size(); k++) {
                 int n = x.length;
                 for (int i = 0; i < n; i++) {
-                    int v = lines.get(k).y[i];
+                    long v = lines.get(k).y[i];
                     totalCount[k] += v;
                     if (v == 0) {
                         emptyCount[k]++;
@@ -49,7 +49,7 @@ public class StackLinearChartData extends ChartData {
         int n = lines.get(0).y.length;
         int k = lines.size();
 
-        ySum = new int[n];
+        ySum = new long[n];
         for (int i = 0; i < n; i++) {
             ySum[i] = 0;
             for (int j = 0; j < k; j++) {
@@ -85,7 +85,7 @@ public class StackLinearChartData extends ChartData {
 
         for (int i = 0; i < data.lines.size(); i++) {
             Line line = new Line();
-            line.y = new int[n];
+            line.y = new long[n];
             line.id = data.lines.get(i).id;
             line.name = data.lines.get(i).name;
             line.colorKey = data.lines.get(i).colorKey;
@@ -116,9 +116,9 @@ public class StackLinearChartData extends ChartData {
         int nl = lines.size();
         int step = Math.max(1, Math.round(n / 140f));
         int maxSize = n / step;
-        simplifiedY = new int[nl][maxSize];
+        simplifiedY = new long[nl][maxSize];
 
-        int[] max = new int[nl];
+        long[] max = new long[nl];
 
         for (int i = 0; i < n; i++) {
            for(int k = 0; k < nl; k++) {

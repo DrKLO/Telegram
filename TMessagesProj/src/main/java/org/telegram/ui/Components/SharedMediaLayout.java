@@ -1618,7 +1618,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
                 searchItem.setVisibility(View.GONE);
                 searchWas = text.length() != 0 || searchingReaction != null;
-                switchToCurrentSelectedMode(false);
+                post(() -> switchToCurrentSelectedMode(false));
                 if (mediaPages[0].selectedType == TAB_FILES) {
                     if (documentsSearchAdapter == null) {
                         return;

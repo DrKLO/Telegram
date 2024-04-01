@@ -1121,6 +1121,7 @@
     <string name="SponsoredMessageAd">Ad</string>
     <string name="SponsoredMessageAdWhatIsThis">what\'s this?</string>
     <string name="SponsoredMessageSponsor">Advertiser Info</string>
+    <string name="SponsoredMessageSponsorReportable">Sponsor Info</string>
     <string name="SponsoredMessageInfo">What are sponsored\nmessages?</string>
     <string name="SponsoredMessageInfo2Description1">Unlike other apps, Telegram never uses your private data to target ads. [Learn more in the Privacy Policy](https://telegram.org/privacy#5-6-no-ads-based-on-user-data)</string>
     <string name="SponsoredMessageInfo2Description2">Unlike other apps, Telegram doesn\'t track whether you tapped on a sponsored message and doesn\'t profile you based on your activity. We also prevent external links in sponsored messages to ensure that third parties can’t spy on our users. We believe that everyone has the right to privacy, and technological platforms should respect that.</string>
@@ -1138,9 +1139,9 @@
     <string name="RevenueSharingAdsInfo3Title">Can Be Removed</string>
     <string name="RevenueSharingAdsInfo3Subtitle">You can turn off ads by subscribing to **Telegram Premium**, and Level %1$s channels can remove them for their subscribers.</string>
     <string name="RevenueSharingAdsInfo4Title">Can I Launch an Ad?</string>
-    <string name="RevenueSharingAdsInfo4Subtitle">Anyone can create an ad to display in this channel — with minimal budgets. Check out the **Telegram Ad Platform** for details. %1$s</string>
+    <string name="RevenueSharingAdsInfo4Subtitle2">Anyone can create an ad to display in this channel — with minimal budgets. Check out the **Telegram Ad Platform** for details. %1$s</string>
     <string name="RevenueSharingAdsInfo4SubtitleLearnMore">**Learn More >**</string>
-    <string name="RevenueSharingAdsUnderstood">Understood</string>
+    <string name="RevenueSharingAdsAlertButton">Understood</string>
     <string name="PromoteUrl">https://ads.telegram.org</string>
     <string name="InstantViewNightMode">The dark theme will turn automatically during night time</string>
     <string name="InstantViewReference">Reference</string>
@@ -8585,6 +8586,8 @@
     <string name="MonetizationGraphImpressions">Ad impressions</string>
     <string name="MonetizationGraphRevenue">Ad revenue</string>
     <string name="MonetizationWithdraw">Withdraw via Fragment</string>
+    <string name="MonetizationChartInTON">%s in TON</string>
+    <string name="MonetizationChartInUSD">%s in USD</string>
     <string name="BotAllowBiometryTitle">Allow biometry</string>
     <string name="BotAllowBiometryMessage">Do you want to allow **%s** to use biometry?</string>
     <string name="DownloadSpeedLimited">Download speed limited</string>

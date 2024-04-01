@@ -25,7 +25,7 @@ public class StackBarViewData extends LineViewData {
     }
 
     public StackBarViewData(ChartData.Line line, Theme.ResourcesProvider resourcesProvider) {
-        super(line);
+        super(line, false);
         this.resourcesProvider = resourcesProvider;
         paint.setStrokeWidth(AndroidUtilities.dpf2(1));
         paint.setStyle(Paint.Style.STROKE);

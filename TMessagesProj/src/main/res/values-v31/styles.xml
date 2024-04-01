@@ -16,7 +16,7 @@
 
 <resources>
 
-    <style name="Theme.TMessages.Start" parent="@android:style/Theme.Material">
+    <style name="Theme.TMessages.Start" parent="Theme.AppCompat.Light">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
@@ -33,7 +33,7 @@
         <item name="android:windowSplashScreenBackground">?android:windowBackground</item>
     </style>
 
-    <style name="Theme.TMessages" parent="@android:style/Theme.Material.Light">
+    <style name="Theme.TMessages" parent="Theme.AppCompat.Light">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBarOverlay">false</item>
@@ -60,7 +60,7 @@
         <item name="android:forceDarkAllowed">false</item>
     </style>
 
-    <style name="Theme.TMessages.Dark" parent="@android:style/Theme.Material">
+    <style name="Theme.TMessages.Dark" parent="Theme.AppCompat.DayNight">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBarOverlay">false</item>

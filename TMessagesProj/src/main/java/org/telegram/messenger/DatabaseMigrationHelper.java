@@ -1490,6 +1490,13 @@ public class DatabaseMigrationHelper {
             version = 151;
         }
 
+        if (version == 151) {
+            database.executeFast("ALTER TABLE profile_stories ADD COLUMN seen INTEGER default 0;").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 152").stepThis().dispose();
+            version = 152;
+        }
+
         return version;
     }
 

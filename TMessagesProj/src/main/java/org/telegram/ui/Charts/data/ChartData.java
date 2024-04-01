@@ -24,8 +24,8 @@ public class ChartData {
     public float[] xPercentage;
     public String[] daysLookup;
     public ArrayList<Line> lines = new ArrayList<>();
-    public int maxValue = 0;
-    public int minValue = Integer.MAX_VALUE;
+    public long maxValue = 0;
+    public long minValue = Long.MAX_VALUE;
 
     public float oneDayPercentage = 0f;
 
@@ -59,9 +59,9 @@ public class ChartData {
                 lines.add(l);
                 int len = a.length() - 1;
                 l.id = a.getString(0);
-                l.y = new int[len];
+                l.y = new long[len];
                 for (int j = 0; j < len; j++) {
-                    l.y[j] = a.getInt(j + 1);
+                    l.y[j] = a.getLong(j + 1);
                     if (l.y[j] > l.maxValue) l.maxValue = l.y[j];
                     if (l.y[j] < l.minValue) l.minValue = l.y[j];
                 }
@@ -247,13 +247,13 @@ public class ChartData {
     }
 
     public class Line {
-        public int[] y;
+        public long[] y;
 
         public SegmentTree segmentTree;
         public String id;
         public String name;
-        public int maxValue = 0;
-        public int minValue = Integer.MAX_VALUE;
+        public long maxValue = 0;
+        public long minValue = Long.MAX_VALUE;
         public int colorKey;
         public int color = Color.BLACK;
         public int colorDark = Color.WHITE;

@@ -5672,6 +5672,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         storyViewer.unreadStateChanged = true;
                     }
                 }
+            } else if (isActive && this.storyItem != null && storyViewer.storiesList != null) {
+                if (storyViewer.storiesList.markAsRead(this.storyItem.id)) {
+                    storyViewer.unreadStateChanged = true;
+                }
             }
         }
 

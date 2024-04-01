@@ -149,7 +149,7 @@ public class GroupCreateSpan extends View {
                 case "premium":
                     isFlag = true;
                     avatarDrawable.setColor(Theme.getColor(Theme.key_premiumGradientBackground2, resourcesProvider));
-                    firstName = "Premium Users";
+                    firstName = LocaleController.getString(R.string.PrivacyPremium);
                     break;
                 case "archived":
                 default:

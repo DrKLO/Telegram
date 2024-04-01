@@ -3705,6 +3705,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
             new File(audioToSendPath).delete();
         }
+        MediaController.getInstance().cleanRecording(true);
         MediaDataController.getInstance(currentAccount).pushDraftVoiceMessage(dialog_id, parentFragment != null && parentFragment.isTopic ? parentFragment.getTopicId() : 0, null);
         MediaController.getInstance().stopRecording(0, false, 0, false);
         millisecondsRecorded = 0;
@@ -6432,6 +6433,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             if (playing != null && playing == audioToSendMessageObject) {
                 MediaController.getInstance().cleanupPlayer(true, true);
             }
+            MediaController.getInstance().cleanRecording(false);
             MediaDataController.getInstance(currentAccount).pushDraftVoiceMessage(dialog_id, parentFragment != null && parentFragment.isTopic ? parentFragment.getTopicId() : 0, null);
             SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(audioToSend, null, audioToSendPath, dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, null, notify, scheduleDate, voiceOnce ? 0x7FFFFFFF : 0, null, null, false);
             params.quick_reply_shortcut = parentFragment != null ? parentFragment.quickReplyShortcut : null;
@@ -9064,7 +9066,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             controlsView.periodDrawable.setValue(1, voiceOnce, true);
         }
         TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
-        MediaController.getInstance().prepareResumedRecording(currentAccount, draft, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, true, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0);
+        MediaController.getInstance().prepareResumedRecording(currentAccount, draft, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0);
     }
 
     public void setSelection(int start) {

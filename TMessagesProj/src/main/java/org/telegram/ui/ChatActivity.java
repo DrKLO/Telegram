@@ -7974,7 +7974,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (child instanceof ChatMessageCell) {
                 ChatMessageCell messageCell = ((ChatMessageCell) child);
                 MessageObject msg = messageCell.getPrimaryMessageObject();
-                if (msg.messageOwner != null && msg.messageOwner.via_business_bot_id != 0) {
+                if (msg != null && msg.messageOwner != null && msg.messageOwner.via_business_bot_id != 0) {
                     cell = messageCell;
                 }
             }
@@ -27952,7 +27952,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     popupLayout.addView(rateTranscriptionLayout, rateTranscriptionLayoutParams);
                 }
 
-                if (selectedObject != null && selectedObject.isSponsored() && !selectedObject.sponsoredCanReport) {
+                if (selectedObject != null && selectedObject.isSponsored()) {
                     if (selectedObject.sponsoredInfo != null || selectedObject.sponsoredAdditionalInfo != null || selectedObject.sponsoredWebPage != null) {
                         LinearLayout linearLayout = new LinearLayout(getParentActivity());
                         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -28043,7 +28043,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         final int foregroundIndex = popupLayout.addViewToSwipeBack(linearLayout);
 
                         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), true, true, themeDelegate);
-                        cell.setTextAndIcon(LocaleController.getString("SponsoredMessageSponsor", R.string.SponsoredMessageSponsor), R.drawable.msg_channel);
+                        cell.setTextAndIcon(LocaleController.getString(selectedObject.sponsoredCanReport ? R.string.SponsoredMessageSponsorReportable : R.string.SponsoredMessageSponsor), R.drawable.msg_channel);
                         popupLayout.addView(cell);
                         cell.setOnClickListener(v1 -> {
                             if (contentView == null || getParentActivity() == null) {
@@ -28053,57 +28053,58 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         });
                         popupLayout.addView(new ActionBarPopupWindow.GapView(contentView.getContext(), themeDelegate), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
                     }
-
-                    FrameLayout sponsoredAbout = new FrameLayout(getParentActivity()) {
-                        @Override
-                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                        }
-                    };
-                    sponsoredAbout.setMinimumHeight(AndroidUtilities.dp(56));
-                    sponsoredAbout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), popupLayout.getItemsCount() <= 0 ? 6 : 0, 0));
-                    sponsoredAbout.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-
-                    ImageView infoImage = new ImageView(getParentActivity());
-                    infoImage.setScaleType(ImageView.ScaleType.CENTER);
-                    infoImage.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.MULTIPLY));
-                    infoImage.setImageResource(R.drawable.msg_info);
-                    sponsoredAbout.addView(infoImage, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
-
-                    TextView infoText = new TextView(getParentActivity()) {
-                        @Override
-                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                            if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST && getLayout() != null) {
-                                Layout layout = getLayout();
-                                int width = 0;
-                                for (int i = 0; i < layout.getLineCount(); ++i) {
-                                    width = Math.max(width, (int) Math.ceil(layout.getLineWidth(i)));
-                                }
-                                widthMeasureSpec = MeasureSpec.makeMeasureSpec(getPaddingLeft() + width + getPaddingRight(), MeasureSpec.EXACTLY);
+                    if (!selectedObject.sponsoredCanReport) {
+                        FrameLayout sponsoredAbout = new FrameLayout(getParentActivity()) {
+                            @Override
+                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                             }
-                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                        }
-                    };
-                    infoText.setMaxLines(3);
-                    infoText.setGravity(Gravity.LEFT);
-                    infoText.setEllipsize(TextUtils.TruncateAt.END);
-                    infoText.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
-                    infoText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    infoText.setMaxWidth(AndroidUtilities.dp(240));
-                    infoText.setText(LocaleController.getString("SponsoredMessageInfo", R.string.SponsoredMessageInfo));
-                    infoText.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);
-                    sponsoredAbout.addView(infoText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
+                        };
+                        sponsoredAbout.setMinimumHeight(AndroidUtilities.dp(56));
+                        sponsoredAbout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), popupLayout.getItemsCount() <= 0 ? 6 : 0, 0));
+                        sponsoredAbout.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
 
-                    popupLayout.addView(sponsoredAbout);
-                    sponsoredAbout.setOnClickListener(v1 -> {
-                        if (contentView == null || getParentActivity() == null) {
-                            return;
-                        }
-                        BottomSheet.Builder builder = new BottomSheet.Builder(contentView.getContext());
-                        builder.setCustomView(new SponsoredMessageInfoView(getParentActivity(), themeDelegate));
-                        builder.show();
-                    });
-                    popupLayout.addView(new ActionBarPopupWindow.GapView(contentView.getContext(), themeDelegate), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                        ImageView infoImage = new ImageView(getParentActivity());
+                        infoImage.setScaleType(ImageView.ScaleType.CENTER);
+                        infoImage.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.MULTIPLY));
+                        infoImage.setImageResource(R.drawable.msg_info);
+                        sponsoredAbout.addView(infoImage, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+
+                        TextView infoText = new TextView(getParentActivity()) {
+                            @Override
+                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST && getLayout() != null) {
+                                    Layout layout = getLayout();
+                                    int width = 0;
+                                    for (int i = 0; i < layout.getLineCount(); ++i) {
+                                        width = Math.max(width, (int) Math.ceil(layout.getLineWidth(i)));
+                                    }
+                                    widthMeasureSpec = MeasureSpec.makeMeasureSpec(getPaddingLeft() + width + getPaddingRight(), MeasureSpec.EXACTLY);
+                                }
+                                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                            }
+                        };
+                        infoText.setMaxLines(3);
+                        infoText.setGravity(Gravity.LEFT);
+                        infoText.setEllipsize(TextUtils.TruncateAt.END);
+                        infoText.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                        infoText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        infoText.setMaxWidth(AndroidUtilities.dp(240));
+                        infoText.setText(LocaleController.getString("SponsoredMessageInfo", R.string.SponsoredMessageInfo));
+                        infoText.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);
+                        sponsoredAbout.addView(infoText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
+
+                        popupLayout.addView(sponsoredAbout);
+                        sponsoredAbout.setOnClickListener(v1 -> {
+                            if (contentView == null || getParentActivity() == null) {
+                                return;
+                            }
+                            BottomSheet.Builder builder = new BottomSheet.Builder(contentView.getContext());
+                            builder.setCustomView(new SponsoredMessageInfoView(getParentActivity(), themeDelegate));
+                            builder.show();
+                        });
+                        popupLayout.addView(new ActionBarPopupWindow.GapView(contentView.getContext(), themeDelegate), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                    }
                 }
                 scrimPopupWindowItems = new ActionBarMenuSubItem[items.size()];
                 for (int a = 0, N = items.size(); a < N; a++) {

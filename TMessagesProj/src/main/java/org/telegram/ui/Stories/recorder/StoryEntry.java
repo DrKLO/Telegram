@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -212,6 +213,9 @@ public class StoryEntry {
         if (drawable == null) {
             return;
         }
+        Rect rect = new Rect(drawable.getBounds());
+        Drawable.Callback callback = drawable.getCallback();
+        drawable.setCallback(null);
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bd = (BitmapDrawable) drawable;
             int bw = bd.getBitmap().getWidth();
@@ -223,6 +227,8 @@ public class StoryEntry {
             drawable.setBounds(0, 0, w, h);
             drawable.draw(canvas);
         }
+        drawable.setBounds(rect);
+        drawable.setCallback(callback);
     }
 
     public Bitmap buildBitmap(float scale, Bitmap mainFileBitmap) {

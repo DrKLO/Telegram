@@ -2530,6 +2530,7 @@ public class AlertsCreator {
         if (users.isEmpty())
             return;
         AndroidUtilities.runOnUIThread(() -> {
+            if (!LaunchActivity.isActive) return;
             BaseFragment lastFragment = LaunchActivity.getLastFragment();
             if (lastFragment != null && lastFragment.getParentActivity() != null) {
                 LimitReachedBottomSheet restrictedUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount, null);

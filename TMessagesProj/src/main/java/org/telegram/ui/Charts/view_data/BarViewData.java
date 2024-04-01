@@ -12,7 +12,7 @@ public class BarViewData extends LineViewData {
     public int blendColor = 0;
 
     public BarViewData(ChartData.Line line) {
-        super(line);
+        super(line, false);
         paint.setStyle(Paint.Style.STROKE);
         unselectedPaint.setStyle(Paint.Style.STROKE);
         paint.setAntiAlias(false);

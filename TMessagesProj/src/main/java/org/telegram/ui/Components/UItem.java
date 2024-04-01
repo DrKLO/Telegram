@@ -257,7 +257,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     }
 
     public static UItem asChart(int type, int stats_dc, StatisticActivity.ChartViewData data) {
-        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_CHART0 + type, false);
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_CHART_LINEAR + type, false);
         item.intValue = stats_dc;
         item.object = data;
         return item;

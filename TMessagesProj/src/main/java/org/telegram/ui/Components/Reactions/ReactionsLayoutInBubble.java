@@ -1264,6 +1264,17 @@ public class ReactionsLayoutInBubble {
             return false;
         }
 
+        public VisibleReaction flatten() {
+            if (documentId != 0) {
+                TLRPC.Document document = AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, documentId);
+                String emoji = MessageObject.findAnimatedEmojiEmoticon(document, null);
+                if (emoji != null) {
+                    return VisibleReaction.fromEmojicon(emoji);
+                }
+            }
+            return this;
+        }
+
         @NonNull
         @Override
         public String toString() {

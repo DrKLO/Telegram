@@ -1587,7 +1587,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         } else if (rulesType == PRIVACY_RULES_TYPE_MESSAGES) {
                             headerCell.setText(LocaleController.getString(R.string.PrivacyMessagesTitle));
                         } else if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
-                            headerCell.setText(LocaleController.getString(R.string.PrivacyBirthday));
+                            headerCell.setText(LocaleController.getString(R.string.PrivacyBirthdayTitle));
                         } else {
                             headerCell.setText(LocaleController.getString("LastSeenTitle", R.string.LastSeenTitle));
                         }

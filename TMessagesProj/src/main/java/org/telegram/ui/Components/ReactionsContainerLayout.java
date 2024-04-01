@@ -174,6 +174,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     RectF rectF = new RectF();
 
     HashSet<ReactionsLayoutInBubble.VisibleReaction> selectedReactions = new HashSet<>();
+    HashSet<ReactionsLayoutInBubble.VisibleReaction> alwaysSelectedReactions = new HashSet<>();
 
     private int[] location = new int[2];
 
@@ -1250,12 +1251,20 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         selectedReactions.clear();
         selectedReactions.addAll(getInclusiveReactions(messages));
         updateSelected();
+        if (type == TYPE_STICKER_SET_EMOJI) {
+            alwaysSelectedReactions.addAll(selectedReactions);
+            setMessage(messageObject, null);
+        }
     }
 
     public void setSelectedReactionInclusive(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
         selectedReactions.clear();
         selectedReactions.add(visibleReaction);
         updateSelected();
+        if (type == TYPE_STICKER_SET_EMOJI) {
+            alwaysSelectedReactions.addAll(selectedReactions);
+            setMessage(messageObject, null);
+        }
     }
 
     private void updateSelected() {
@@ -1280,11 +1289,20 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     private void fillRecentReactionsList(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions) {
+        HashSet<ReactionsLayoutInBubble.VisibleReaction> hashSet = new HashSet<>();
+        int added = 0;
+        if (type == TYPE_STICKER_SET_EMOJI) {
+            for (ReactionsLayoutInBubble.VisibleReaction visibleReaction : alwaysSelectedReactions) {
+                if (!hashSet.contains(visibleReaction)) {
+                    hashSet.add(visibleReaction);
+                    visibleReactions.add(visibleReaction);
+                    added++;
+                }
+            }
+        }
         if (!allReactionsAvailable || type == TYPE_STICKER_SET_EMOJI) {
             if (type == TYPE_TAGS) {
                 ArrayList<TLRPC.Reaction> topReactions = MediaDataController.getInstance(currentAccount).getSavedReactions();
-                HashSet<ReactionsLayoutInBubble.VisibleReaction> hashSet = new HashSet<>();
-                int added = 0;
                 for (int i = 0; i < topReactions.size(); i++) {
                     ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(topReactions.get(i));
                     if (!hashSet.contains(visibleReaction)) {
@@ -1313,8 +1331,6 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         } else {
             topReactions = MediaDataController.getInstance(currentAccount).getTopReactions();
         }
-        HashSet<ReactionsLayoutInBubble.VisibleReaction> hashSet = new HashSet<>();
-        int added = 0;
         if (type == TYPE_TAGS) {
             TLRPC.TL_messages_savedReactionsTags savedTags = MessagesController.getInstance(currentAccount).getSavedReactionTags(0);
             if (savedTags != null) {

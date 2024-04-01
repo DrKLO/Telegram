@@ -243,7 +243,7 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
                     LineViewData line = lines.get(k);
                     if (!line.enabled && line.alpha == 0) continue;
 
-                    int[] y = line.line.y;
+                    final long[] y = line.line.y;
 
                     float yPercentage;
                     if (drawingLinesCount == 1) {

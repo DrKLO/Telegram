@@ -26,6 +26,7 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -498,7 +499,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         }
 
         private boolean isCustomLinkCollector;
-        private LinkCollector links;
+        private final LinkCollector links;
         private Theme.ResourcesProvider resourcesProvider;
 
         AnimatedEmojiSpan.EmojiGroupedSpans stack;
@@ -646,6 +647,8 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             return pressedLink != null || super.onTouchEvent(event);
         }
 
+        private boolean loggedError = false;
+
         @Override
         protected void onDraw(Canvas canvas) {
             if (!isCustomLinkCollector) {
@@ -653,21 +656,29 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                 if (!disablePaddingsOffset) {
                     canvas.translate(disablePaddingsOffsetX ? 0 : getPaddingLeft(), disablePaddingsOffsetY ? 0 : getPaddingTop());
                 }
-                if (links.draw(canvas)) {
+                if (links != null && links.draw(canvas)) {
                     invalidate();
                 }
                 canvas.restore();
             }
-            super.onDraw(canvas);
-            float offset = (getGravity() & Gravity.CENTER_VERTICAL) != 0 && getLayout() != null ? getPaddingTop() + (getHeight() - getPaddingTop() - getPaddingBottom() - getLayout().getHeight()) / 2f : 0;
-            if (offset != 0 || getPaddingLeft() != 0) {
-                canvas.save();
-                canvas.translate(getPaddingLeft(), offset);
+            boolean restore = false;
+            try {
+                Layout layout = getLayout();
+                float offset = (getGravity() & Gravity.CENTER_VERTICAL) != 0 && layout != null ? getPaddingTop() + (getHeight() - getPaddingTop() - getPaddingBottom() - layout.getHeight()) / 2f : 0;
+                if (offset != 0 || getPaddingLeft() != 0) {
+                    canvas.save();
+                    restore = true;
+                    canvas.translate(getPaddingLeft(), offset);
+                }
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, stack, 0, null, 0, 0, 0, 1f);
+            } catch (Exception e) {
+                if (!loggedError) FileLog.e(e, true);
+                loggedError = true;
             }
-            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f);
-            if (offset != 0 || getPaddingLeft() != 0) {
+            if (restore) {
                 canvas.restore();
             }
+            super.onDraw(canvas);
         }
 
         @Override

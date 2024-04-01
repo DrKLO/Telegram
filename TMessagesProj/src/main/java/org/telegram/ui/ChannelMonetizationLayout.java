@@ -374,7 +374,7 @@ public class ChannelMonetizationLayout extends FrameLayout {
             formatter.setGroupingUsed(false);
         }
         formatter.setMaximumFractionDigits(crypto_amount / 1_000_000_000.0 > 1.5 ? 2 : 6);
-        SpannableStringBuilder ssb = new SpannableStringBuilder(replaceTON("TON " + formatter.format(crypto_amount / 1_000_000_000.0), balanceTitle.getPaint()));
+        SpannableStringBuilder ssb = new SpannableStringBuilder(replaceTON("TON " + formatter.format(crypto_amount / 1_000_000_000.0), balanceTitle.getPaint(), .9f, true));
         int index = TextUtils.indexOf(ssb, ".");
         if (index >= 0) {
             ssb.setSpan(balanceTitleSizeSpan, index, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -491,7 +491,7 @@ public class ChannelMonetizationLayout extends FrameLayout {
         }
         items.add(UItem.asCenterShadow(titleInfo));
         if (impressionsChart != null && !impressionsChart.isEmpty) {
-            items.add(UItem.asChart(StatisticActivity.VIEW_TYPE_LINEAR, stats_dc, impressionsChart));
+            items.add(UItem.asChart(StatisticActivity.VIEW_TYPE_BAR_LINEAR, stats_dc, impressionsChart));
             items.add(UItem.asShadow(-1, null));
         }
         if (revenueChart != null && !revenueChart.isEmpty) {
@@ -557,10 +557,10 @@ public class ChannelMonetizationLayout extends FrameLayout {
     private void loadTransactions() {
         if (loadingTransactions) return;
         if (transactions.size() >= transactionsTotalCount && transactionsTotalCount != 0) return;
-        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-        if (chat == null || !chat.creator) {
-            return;
-        }
+//        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+//        if (chat == null || !chat.creator) {
+//            return;
+//        }
 
         loadingTransactions = true;
         TL_stats.TL_getBroadcastRevenueTransactions req = new TL_stats.TL_getBroadcastRevenueTransactions();
@@ -608,25 +608,33 @@ public class ChannelMonetizationLayout extends FrameLayout {
     public static CharSequence replaceTON(CharSequence text, TextPaint textPaint) {
         return replaceTON(text, textPaint, 1f, true);
     }
-    public static CharSequence replaceTON(CharSequence text, TextPaint textPaint, boolean animated) {
-        return replaceTON(text, textPaint, 1f, animated);
+    public static CharSequence replaceTON(CharSequence text, TextPaint textPaint, boolean large) {
+        return replaceTON(text, textPaint, 1f, large);
     }
-    public static CharSequence replaceTON(CharSequence text, TextPaint textPaint, float scale, boolean animated) {
+
+    public static CharSequence replaceTON(CharSequence text, TextPaint textPaint, float scale, boolean large) {
+        return replaceTON(text, textPaint, scale, 0, large);
+    }
+
+    public static CharSequence replaceTON(CharSequence text, TextPaint textPaint, float scale, float translateY, boolean large) {
         if (ChannelMonetizationLayout.tonString == null) {
             ChannelMonetizationLayout.tonString = new HashMap<>();
         }
-        final int key = textPaint.getFontMetricsInt().bottom * (animated ? 1 : -1);
+        final int key = textPaint.getFontMetricsInt().bottom * (large ? 1 : -1) * (int) (100 * scale);
         SpannableString tonString = ChannelMonetizationLayout.tonString.get(key);
         if (tonString == null) {
             tonString = new SpannableString("T");
-            if (animated) {
-                AnimatedEmojiSpan span = new AnimatedEmojiSpan(DIAMOND_EMOJI, scale, textPaint.getFontMetricsInt());
-                span.emoji = "💎";
-                span.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_STANDARD_EMOJI;
+            if (large) {
+                ColoredImageSpan span = new ColoredImageSpan(R.drawable.ton);
+                span.setScale(scale, scale);
+                span.setColorKey(Theme.key_windowBackgroundWhiteBlueText2);
+                span.setRelativeSize(textPaint.getFontMetricsInt());
+                span.spaceScaleX = .9f;
                 tonString.setSpan(span, 0, tonString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
                 ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_ton);
-                span.setTranslateY(-dp(.66f));
+                span.setScale(scale, scale);
+                span.setTranslateY(translateY);
                 span.spaceScaleX = .95f;
                 tonString.setSpan(span, 0, tonString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
@@ -1088,9 +1096,11 @@ public class ChannelMonetizationLayout extends FrameLayout {
         textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         SpannableString animatedDiamond = new SpannableString("💎");
-        AnimatedEmojiSpan span = new AnimatedEmojiSpan(DIAMOND_EMOJI, .98f, textView.getPaint().getFontMetricsInt());
-        span.emoji = "💎";
-        span.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_ALERT_STANDARD_EMOJI;
+        ColoredImageSpan span = new ColoredImageSpan(R.drawable.ton);
+        span.setScale(.9f, .9f);
+        span.setColorKey(Theme.key_windowBackgroundWhiteBlueText2);
+        span.setRelativeSize(textView.getPaint().getFontMetricsInt());
+        span.spaceScaleX = .9f;
         animatedDiamond.setSpan(span, 0, animatedDiamond.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         textView.setText(AndroidUtilities.replaceCharSequence("💎", getString(R.string.MonetizationInfoTONTitle), animatedDiamond));
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 20, 8, 0));

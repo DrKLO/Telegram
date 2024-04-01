@@ -3,9 +3,9 @@ package org.telegram.messenger;
 public class SegmentTree {
 
     private Node[] heap;
-    private int[] array;
+    private long[] array;
 
-    public SegmentTree(int[] array) {
+    public SegmentTree(long[] array) {
         this.array = array;
         if (array.length < 30) {
             return;
@@ -37,9 +37,9 @@ public class SegmentTree {
         }
     }
 
-    public int rMaxQ(int from, int to) {
+    public long rMaxQ(int from, int to) {
         if (array.length < 30) {
-            int max = Integer.MIN_VALUE;
+            long max = Long.MIN_VALUE;
             if (from < 0) from = 0;
             if (to > array.length - 1) to = array.length - 1;
             for (int i = from; i <= to; i++) {
@@ -50,7 +50,7 @@ public class SegmentTree {
         return rMaxQ(1, from, to);
     }
 
-    private int rMaxQ(int v, int from, int to) {
+    private long rMaxQ(int v, int from, int to) {
         Node n = heap[v];
         //If you did a range update that contained this node, you can infer the Min value without going down the tree
         if (n.pendingVal != null && contains(n.from, n.to, from, to)) {
@@ -63,8 +63,8 @@ public class SegmentTree {
 
         if (intersects(from, to, n.from, n.to)) {
             propagate(v);
-            int leftMin = rMaxQ(2 * v, from, to);
-            int rightMin = rMaxQ(2 * v + 1, from, to);
+            final long leftMin = rMaxQ(2 * v, from, to);
+            final long rightMin = rMaxQ(2 * v + 1, from, to);
 
             return Math.max(leftMin, rightMin);
         }
@@ -72,9 +72,9 @@ public class SegmentTree {
         return 0;
     }
 
-    public int rMinQ(int from, int to) {
+    public long rMinQ(int from, int to) {
         if (array.length < 30) {
-            int min = Integer.MAX_VALUE;
+            long min = Long.MAX_VALUE;
             if (from < 0) from = 0;
             if (to > array.length - 1) to = array.length - 1;
             for (int i = from; i <= to; i++) {
@@ -85,7 +85,7 @@ public class SegmentTree {
         return rMinQ(1, from, to);
     }
 
-    private int rMinQ(int v, int from, int to) {
+    private long rMinQ(int v, int from, int to) {
         Node n = heap[v];
         //If you did a range update that contained this node, you can infer the Min value without going down the tree
         if (n.pendingVal != null && contains(n.from, n.to, from, to)) {
@@ -98,8 +98,8 @@ public class SegmentTree {
 
         if (intersects(from, to, n.from, n.to)) {
             propagate(v);
-            int leftMin = rMinQ(2 * v, from, to);
-            int rightMin = rMinQ(2 * v + 1, from, to);
+            long leftMin = rMinQ(2 * v, from, to);
+            long rightMin = rMinQ(2 * v + 1, from, to);
 
             return Math.min(leftMin, rightMin);
         }
@@ -136,9 +136,9 @@ public class SegmentTree {
     }
 
     static class Node {
-        int sum;
-        int max;
-        int min;
+        long sum;
+        long max;
+        long min;
 
         Integer pendingVal = null;
         int from;

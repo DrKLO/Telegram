@@ -16,13 +16,11 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
-import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -33,7 +31,6 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.core.graphics.ColorUtils;
 
 import com.google.mlkit.common.MlKitException;
 import com.google.mlkit.vision.common.InputImage;
@@ -806,7 +803,9 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
         sourceBitmap = null;
         if (objects != null) {
             for (int i = 0; i < objects.length; ++i) {
-                objects[i].recycle();
+                if (objects[i] != null) {
+                    objects[i].recycle();
+                }
             }
             objects = null;
         }

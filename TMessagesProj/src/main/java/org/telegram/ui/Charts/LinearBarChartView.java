@@ -7,8 +7,8 @@ import android.graphics.Paint;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.view_data.LineViewData;
 
-public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
-    public LinearChartView(Context context) {
+public class LinearBarChartView extends BaseChartView<ChartData, LineViewData> {
+    public LinearBarChartView(Context context) {
         super(context);
     }
 
@@ -24,7 +24,6 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
         if (chartData != null) {
             float fullWidth = (chartWidth / (pickerDelegate.pickerEnd - pickerDelegate.pickerStart));
             float offset = fullWidth * (pickerDelegate.pickerStart) - HORIZONTAL_PADDING;
-
 
             for (int k = 0; k < lines.size(); k++) {
                 LineViewData line = lines.get(k);
@@ -55,21 +54,41 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
 
                     if (USE_LINES) {
                         if (j == 0) {
-                            line.linesPath[j++] = xPoint;
+                            line.linesPath[j++] = xPoint - p / 2f;
                             line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = yPoint;
+                        } else if (i == localEnd) {
+                            line.linesPath[j++] = xPoint - p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint - p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = getMeasuredHeight() - chartBottom - padding;
                         } else {
-                            line.linesPath[j++] = xPoint;
+                            line.linesPath[j++] = xPoint - p / 2f;
                             line.linesPath[j++] = yPoint;
-                            line.linesPath[j++] = xPoint;
+                            line.linesPath[j++] = xPoint - p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
+                            line.linesPath[j++] = yPoint;
+                            line.linesPath[j++] = xPoint + p / 2f;
                             line.linesPath[j++] = yPoint;
                         }
                     } else {
                         if (first) {
                             first = false;
-                            line.chartPath.moveTo(xPoint, yPoint);
+                            line.chartPath.moveTo(xPoint - p / 2f, yPoint);
                         } else {
-                            line.chartPath.lineTo(xPoint, yPoint);
+                            line.chartPath.lineTo(xPoint - p / 2f, yPoint);
                         }
+                        line.chartPath.lineTo(xPoint + p / 2f, yPoint);
                     }
                 }
 
@@ -113,6 +132,12 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
         int nl = lines.size();
 
         if (chartData != null) {
+            float p;
+            if (chartData.xPercentage.length < 2) {
+                p = 1f;
+            } else {
+                p = chartData.xPercentage[1] * pickerWidth;
+            }
             for (int k = 0; k < nl; k++) {
                 LineViewData line = lines.get(k);
                 if (!line.enabled && line.alpha == 0) continue;
@@ -135,20 +160,40 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
 
                     if (USE_LINES) {
                         if (j == 0) {
-                            line.linesPathBottom[j++] = xPoint;
+                            line.linesPathBottom[j++] = xPoint - p / 2f;
                             line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                        } else if (i == n - 1) {
+                            line.linesPathBottom[j++] = xPoint - p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint - p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = 0;
                         } else {
-                            line.linesPathBottom[j++] = xPoint;
+                            line.linesPathBottom[j++] = xPoint - p / 2f;
                             line.linesPathBottom[j++] = yPoint;
-                            line.linesPathBottom[j++] = xPoint;
+                            line.linesPathBottom[j++] = xPoint - p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
+                            line.linesPathBottom[j++] = yPoint;
+                            line.linesPathBottom[j++] = xPoint + p / 2f;
                             line.linesPathBottom[j++] = yPoint;
                         }
                     } else {
                         if (i == 0) {
-                            line.bottomLinePath.moveTo(xPoint, yPoint);
+                            line.bottomLinePath.moveTo(xPoint - p / 2f, yPoint);
                         } else {
-                            line.bottomLinePath.lineTo(xPoint, yPoint);
+                            line.bottomLinePath.lineTo(xPoint - p / 2f, yPoint);
                         }
+                        line.bottomLinePath.lineTo(xPoint + p / 2f, yPoint);
                     }
                 }
 
@@ -166,6 +211,6 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
 
     @Override
     public LineViewData createLineViewData(ChartData.Line line) {
-        return new LineViewData(line, false);
+        return new LineViewData(line, true);
     }
 }

@@ -64,21 +64,23 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     public static final int VIEW_TYPE_QUICK_REPLY = 16;
     public static final int VIEW_TYPE_LARGE_QUICK_REPLY = 17;
 
-    public static final int VIEW_TYPE_CHART0 = 18;
-    public static final int VIEW_TYPE_CHART1 = 19;
-    public static final int VIEW_TYPE_CHART2 = 20;
-    public static final int VIEW_TYPE_CHART3 = 21;
+    public static final int VIEW_TYPE_CHART_LINEAR = 18;
+    public static final int VIEW_TYPE_CHART_DOUBLE_LINEAR = 19;
+    public static final int VIEW_TYPE_CHART_STACK_BAR = 20;
+    public static final int VIEW_TYPE_CHART_BAR = 21;
+    public static final int VIEW_TYPE_CHART_STACK_LINEAR = 22;
+    public static final int VIEW_TYPE_CHART_LINEAR_BAR = 23;
 
-    public static final int VIEW_TYPE_PROCEED_OVERVIEW = 22;
-    public static final int VIEW_TYPE_TRANSACTION = 23;
+    public static final int VIEW_TYPE_PROCEED_OVERVIEW = 24;
+    public static final int VIEW_TYPE_TRANSACTION = 25;
 
-    public static final int VIEW_TYPE_LARGE_HEADER = 24;
-    public static final int VIEW_TYPE_RADIO_USER = 25;
-    public static final int VIEW_TYPE_SPACE = 26;
+    public static final int VIEW_TYPE_LARGE_HEADER = 26;
+    public static final int VIEW_TYPE_RADIO_USER = 27;
+    public static final int VIEW_TYPE_SPACE = 28;
 
-    public static final int VIEW_TYPE_BUSINESS_LINK = 27;
+    public static final int VIEW_TYPE_BUSINESS_LINK = 29;
 
-    public static final int VIEW_TYPE_RIGHT_ICON_TEXT = 28;
+    public static final int VIEW_TYPE_RIGHT_ICON_TEXT = 30;
 
     private final RecyclerListView listView;
     private final Context context;
@@ -319,14 +321,16 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 view = new QuickRepliesActivity.LargeQuickReplyView(context, resourcesProvider);
                 view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 break;
-            case VIEW_TYPE_CHART0:
-            case VIEW_TYPE_CHART1:
-            case VIEW_TYPE_CHART2:
-            case VIEW_TYPE_CHART3:
+            case VIEW_TYPE_CHART_LINEAR:
+            case VIEW_TYPE_CHART_DOUBLE_LINEAR:
+            case VIEW_TYPE_CHART_STACK_BAR:
+            case VIEW_TYPE_CHART_BAR:
+            case VIEW_TYPE_CHART_STACK_LINEAR:
+            case VIEW_TYPE_CHART_LINEAR_BAR:
                 if (chartSharedUI == null) {
                     chartSharedUI = new BaseChartView.SharedUiComponents();
                 }
-                view = new StatisticActivity.UniversalChartCell(context, currentAccount, viewType - VIEW_TYPE_CHART0, chartSharedUI, classGuid);
+                view = new StatisticActivity.UniversalChartCell(context, currentAccount, viewType - VIEW_TYPE_CHART_LINEAR, chartSharedUI, classGuid);
                 view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 break;
             case VIEW_TYPE_TRANSACTION:
@@ -554,10 +558,12 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     replyView2.set((QuickRepliesController.QuickReply) item.object, divider);
                 }
                 break;
-            case VIEW_TYPE_CHART0:
-            case VIEW_TYPE_CHART1:
-            case VIEW_TYPE_CHART2:
-            case VIEW_TYPE_CHART3:
+            case VIEW_TYPE_CHART_LINEAR:
+            case VIEW_TYPE_CHART_DOUBLE_LINEAR:
+            case VIEW_TYPE_CHART_STACK_BAR:
+            case VIEW_TYPE_CHART_BAR:
+            case VIEW_TYPE_CHART_STACK_LINEAR:
+            case VIEW_TYPE_CHART_LINEAR_BAR:
                 ((StatisticActivity.UniversalChartCell) holder.itemView).set(
                     item.intValue,
                     (StatisticActivity.ChartViewData) item.object,

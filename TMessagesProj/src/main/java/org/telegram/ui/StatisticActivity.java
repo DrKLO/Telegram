@@ -72,6 +72,7 @@ import org.telegram.ui.Cells.StatisticPostInfoCell;
 import org.telegram.ui.Charts.BarChartView;
 import org.telegram.ui.Charts.BaseChartView;
 import org.telegram.ui.Charts.DoubleLinearChartView;
+import org.telegram.ui.Charts.LinearBarChartView;
 import org.telegram.ui.Charts.LinearChartView;
 import org.telegram.ui.Charts.PieChartView;
 import org.telegram.ui.Charts.StackBarChartView;
@@ -924,7 +925,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     public static final int VIEW_TYPE_LINEAR = 0;
     public static final int VIEW_TYPE_DOUBLE_LINEAR = 1;
     public static final int VIEW_TYPE_STACKBAR = 2;
+    public static final int VIEW_TYPE_BAR = 3;
     public static final int VIEW_TYPE_STACKLINEAR = 4;
+    public static final int VIEW_TYPE_BAR_LINEAR = 5;
 
     class Adapter extends RecyclerListView.SelectionAdapter {
 
@@ -1620,13 +1623,14 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             checkboxContainer = new FrameLayout(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                    final int width = MeasureSpec.getSize(widthMeasureSpec);
+                    super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
                     int currentW = 0;
                     int currentH = 0;
                     int n = getChildCount();
                     int firstH = n > 0 ? getChildAt(0).getMeasuredHeight() : 0;
                     for (int i = 0; i < n; i++) {
-                        if (currentW + getChildAt(i).getMeasuredWidth() > getMeasuredWidth()) {
+                        if (currentW + getChildAt(i).getMeasuredWidth() > width) {
                             currentW = 0;
                             currentH += getChildAt(i).getMeasuredHeight();
                         }
@@ -1678,6 +1682,12 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     chartView.legendSignatureView.showPercentage = true;
                     zoomedChartView = new PieChartView(getContext());
                     break;
+                case 5:
+                    chartView = new LinearBarChartView(getContext());
+                    zoomedChartView = new LinearBarChartView(getContext());
+                    zoomedChartView.legendSignatureView.useHour = true;
+                    break;
+                case 0:
                 default:
                     chartView = new LinearChartView(getContext());
                     zoomedChartView = new LinearChartView(getContext());
@@ -1719,7 +1729,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             linearLayout.addView(chartHeaderView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52));
             linearLayout.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.NO_GRAVITY, 16, 0, 16, 0));
+            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
 
             if (chartType == 4) {
                 frameLayout.setClipChildren(false);
@@ -1913,8 +1923,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             zoomedChartView.transitionParams = params;
             chartView.transitionParams = params;
 
-            int max = 0;
-            int min = Integer.MAX_VALUE;
+            long max = 0;
+            long min = Integer.MAX_VALUE;
             for (int i = 0; i < data.chartData.lines.size(); i++) {
                 if (data.chartData.lines.get(i).y[dateIndex] > max)
                     max = data.chartData.lines.get(i).y[dateIndex];

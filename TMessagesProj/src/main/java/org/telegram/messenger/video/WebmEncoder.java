@@ -445,6 +445,9 @@ public class WebmEncoder {
             if (bitmap != null) {
                 entity.matrix.postScale(1f / bitmap.getWidth(), 1f / bitmap.getHeight());
             }
+            if ((entity.subType & 2) != 0) {
+                entity.matrix.postScale(-1, 1, .5f, .5f);
+            }
             entity.matrix.postScale(entity.width * W, entity.height * H);
             entity.matrix.postTranslate(entity.x * W, entity.y * H);
             entity.matrix.postRotate((float) (-entity.rotation / Math.PI * 180), (entity.x + entity.width) * W, (entity.x + entity.height) * H);
