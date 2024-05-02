@@ -207,7 +207,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -265,9 +271,11 @@ public class AndroidUtilities {
 
     public static final RectF rectTmp = new RectF();
     public static final Rect rectTmp2 = new Rect();
+    public static final int[] pointTmp2 = new int[2];
 
     public static Pattern WEB_URL = null;
     public static Pattern BAD_CHARS_PATTERN = null;
+    public static Pattern LONG_BAD_CHARS_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
     private static Pattern singleTagPatter = null;
@@ -276,6 +284,7 @@ public class AndroidUtilities {
         try {
             final String GOOD_IRI_CHAR = "a-zA-Z0-9\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
             BAD_CHARS_PATTERN = Pattern.compile("[\u2500-\u25ff]");
+            LONG_BAD_CHARS_PATTERN = Pattern.compile("[\u4e00-\u9fff]");
             BAD_CHARS_MESSAGE_LONG_PATTERN = Pattern.compile("[\u0300-\u036f\u2066-\u2067]+");
             BAD_CHARS_MESSAGE_PATTERN = Pattern.compile("[\u2066-\u2067]+");
             final Pattern IP_ADDRESS = Pattern.compile(
@@ -565,9 +574,13 @@ public class AndroidUtilities {
     }
 
     public static CharSequence replaceArrows(CharSequence text, boolean link) {
+        return replaceArrows(text, link, dp(8f / 3f), 0);
+    }
+
+    public static CharSequence replaceArrows(CharSequence text, boolean link, float translateX, float translateY) {
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
         span.setScale(.88f, .88f);
-        span.translate(-dp(8f / 3f), 0);
+        span.translate(-translateX, translateY);
         span.spaceScaleX = .8f;
         if (link) {
             span.useLinkPaintColor = link;
@@ -580,6 +593,23 @@ public class AndroidUtilities {
         rightArrow = new SpannableString(">");
         rightArrow.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         text = AndroidUtilities.replaceMultipleCharSequence(">", text, rightArrow);
+
+        span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
+        span.setScale(.88f, .88f);
+        span.translate(translateX, translateY);
+        span.rotate(180f);
+        span.spaceScaleX = .8f;
+        if (link) {
+            span.useLinkPaintColor = link;
+        }
+
+//        SpannableString leftArrow = new SpannableString("< ");
+//        leftArrow.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        text = AndroidUtilities.replaceMultipleCharSequence("< ", text, leftArrow);
+
+        SpannableString leftArrow = new SpannableString("<");
+        leftArrow.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text = AndroidUtilities.replaceMultipleCharSequence("<", text, leftArrow);
 
         return text;
     }
@@ -938,14 +968,56 @@ public class AndroidUtilities {
         return true;
     };
 
+    @Deprecated // use addLinksSafe
     public static boolean addLinks(Spannable text, int mask) {
         return addLinks(text, mask, false);
     }
 
+    @Deprecated // use addLinksSafe
     public static boolean addLinks(Spannable text, int mask, boolean internalOnly) {
         return addLinks(text, mask, internalOnly, true);
     }
 
+    public static boolean addLinksSafe(Spannable text, int mask, boolean internalOnly, boolean removeOldReplacements) {
+        SpannableStringBuilder newText = new SpannableStringBuilder(text);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Callable<Boolean> task = () -> {
+            try {
+                return addLinks(newText, mask, internalOnly, removeOldReplacements);
+            } catch (Exception e) {
+                FileLog.e(e);
+                return false;
+            }
+        };
+        boolean success = false;
+        Future<Boolean> future = null;
+        try {
+            future = executor.submit(task);
+            success = future.get(200, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException ex) {
+            if (future != null) {
+                future.cancel(true);
+            }
+        } catch (Exception ex) {
+            FileLog.e(ex);
+        } finally {
+            executor.shutdownNow();
+        }
+        if (success && text != null) {
+            URLSpan[] oldSpans = text.getSpans(0, text.length(), URLSpan.class);
+            for (int i = 0; i < oldSpans.length; ++i) {
+                text.removeSpan(oldSpans[i]);
+            }
+            URLSpan[] newSpans = newText.getSpans(0, newText.length(), URLSpan.class);
+            for (int i = 0; i < newSpans.length; ++i) {
+                text.setSpan(newSpans[i], newText.getSpanStart(newSpans[i]), newText.getSpanEnd(newSpans[i]), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Deprecated // use addLinksSafe
     public static boolean addLinks(Spannable text, int mask, boolean internalOnly, boolean removeOldReplacements) {
         if (text == null || containsUnsupportedCharacters(text.toString()) || mask == 0) {
             return false;

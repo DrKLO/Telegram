@@ -2,6 +2,7 @@ package org.telegram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;

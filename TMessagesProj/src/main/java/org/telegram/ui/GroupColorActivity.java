@@ -90,6 +90,14 @@ public class GroupColorActivity extends ChannelColorActivity {
         packEmojiHintRow = rowsCount++;
         statusEmojiRow = rowsCount++;
         statusHintRow = rowsCount++;
+        TLRPC.ChatFull chatFull = getMessagesController().getChatFull(-dialogId);
+        if (chatFull != null && chatFull.can_set_stickers) {
+            packStickerRow = rowsCount++;
+            packStickerHintRow = rowsCount++;
+        } else {
+            packStickerRow = -1;
+            packStickerHintRow = -1;
+        }
         messagesPreviewRow = rowsCount++;
         wallpaperThemesRow = rowsCount++;
         wallpaperRow = rowsCount++;
@@ -112,6 +120,16 @@ public class GroupColorActivity extends ChannelColorActivity {
     @Override
     protected int getEmojiPackInfoStrRes() {
         return R.string.GroupEmojiPackInfo;
+    }
+
+    @Override
+    protected int getStickerPackStrRes() {
+        return R.string.GroupStickerPack;
+    }
+
+    @Override
+    protected int getStickerPackInfoStrRes() {
+        return R.string.GroupStickerPackInfo;
     }
 
     @Override

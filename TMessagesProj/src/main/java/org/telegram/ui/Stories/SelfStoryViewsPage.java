@@ -41,6 +41,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -520,6 +521,9 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         this.storyItem = storyItem;
         updateViewsVisibility();
         updateViewState(false);
+        if (storyItem != null && storyItem.storyItem != null) {
+            NotificationsController.getInstance(currentAccount).processSeenStoryReactions(dialogId, storyItem.storyItem.id);
+        }
     }
 
     private void updateViewsVisibility() {

@@ -17,6 +17,8 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -33,6 +35,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ContentPreviewViewer;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.EmojiBottomSheet;
 
 import java.util.ArrayList;
@@ -42,7 +45,7 @@ public class StickersDialogs {
         return Theme.getColor(key, resourcesProvider);
     }
 
-    public static void showNameEditorDialog(TLRPC.StickerSet set, Theme.ResourcesProvider resourcesProvider, Context context, Utilities.Callback<CharSequence> callback) {
+    public static void showNameEditorDialog(TLRPC.StickerSet set, Theme.ResourcesProvider resourcesProvider, Context context, Utilities.Callback2<CharSequence, Utilities.Callback<Boolean>> callback) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         boolean editMode = set != null;
         builder.setTitle(LocaleController.getString(editMode ? R.string.EditStickerPack : R.string.NewStickerPack));
@@ -101,6 +104,7 @@ public class StickersDialogs {
             @Override
             public void afterTextChanged(Editable s) {
                 checkTextView.setNumber(maxLength - Character.codePointCount(s, 0, s.length()), true);
+                editText.setErrorText(null);
             }
         });
         if (editMode) {
@@ -111,20 +115,27 @@ public class StickersDialogs {
         builder.setCustomViewOffset(4);
         builder.setPositiveButton(LocaleController.getString(editMode ? R.string.Done : R.string.Create), (dialog, i) -> {
             CharSequence text = editText.getText().toString().trim();
-            if (!TextUtils.isEmpty(text)) {
+            if (TextUtils.isEmpty(text) || TextUtils.isEmpty(AndroidUtilities.translitSafe(text.toString()))) {
+                editText.setErrorText(".");
+                AndroidUtilities.shakeViewSpring(editText, -6);
+                BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                AndroidUtilities.showKeyboard(editText);
+            } else {
                 AndroidUtilities.hideKeyboard(editText);
-                dialog.dismiss();
-                callback.run(text);
-                if (editMode) {
-                    TLRPC.TL_stickers_renameStickerSet req = new TLRPC.TL_stickers_renameStickerSet();
-                    req.stickerset = MediaDataController.getInputStickerSet(set);
-                    req.title = text.toString();
-                    ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        if (response instanceof TLRPC.TL_messages_stickerSet) {
-                            MediaDataController.getInstance(UserConfig.selectedAccount).toggleStickerSet(null, response, 2, null, false, false);
-                        }
-                    }));
-                }
+                if (callback == null) return;
+                AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER, editMode ? null : new DarkThemeResourceProvider());
+                progressDialog.showDelayed(250);
+                callback.run(text, success -> {
+                    progressDialog.dismiss();
+                    if (success) {
+                        dialog.dismiss();
+                    } else {
+                        editText.setErrorText(".");
+                        AndroidUtilities.shakeViewSpring(editText, -6);
+                        BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                        AndroidUtilities.showKeyboard(editText);
+                    }
+                });
             }
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialog, which) -> {
@@ -165,23 +176,52 @@ public class StickersDialogs {
     }
 
     private static void openStickerPickerDialog(TLRPC.TL_messages_stickerSet stickerSet, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider) {
-        EmojiBottomSheet sheet = new EmojiBottomSheet(fragment.getContext(), true, resourcesProvider);
+        final int currentAccount = UserConfig.selectedAccount;
+        Context context = fragment.getContext();
+        EmojiBottomSheet sheet = new EmojiBottomSheet(context, true, resourcesProvider, false);
         sheet.whenDocumentSelected((parentObject, document, a) -> {
-            String emoji = MessageObject.findAnimatedEmojiEmoticon(document, "\uD83D\uDE00", UserConfig.selectedAccount);
+//            if (stickerSet != null) {
+//                boolean found = false;
+//                for (int i = 0; i < stickerSet.documents.size(); ++i) {
+//                    if (stickerSet.documents.get(i).id == document.id) {
+//                        found = true;
+//                        break;
+//                    }
+//                }
+//                if (found) {
+//                    BulletinFactory.of(sheet.getContainer(), resourcesProvider).createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.StickersStickerAlreadyThere, stickerSet.set.title)).show(true);
+//                    return false;
+//                }
+//            }
+            String emoji = MessageObject.findAnimatedEmojiEmoticon(document, "\uD83D\uDE00", currentAccount);
             if (TextUtils.isEmpty(emoji)) {
                 emoji = "\uD83D\uDE00";
             }
+            AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
             TLRPC.TL_stickers_addStickerToSet req = new TLRPC.TL_stickers_addStickerToSet();
             req.stickerset = MediaDataController.getInputStickerSet(stickerSet.set);
             req.sticker = MediaDataController.getInputStickerSetItem(document, emoji);
             ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                progressDialog.dismiss();
                 if (response instanceof TLRPC.TL_messages_stickerSet) {
-                    MediaDataController.getInstance(UserConfig.selectedAccount).toggleStickerSet(null, response, 1, null, false, false);
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationNameOnUIThread(NotificationCenter.customStickerCreated, false, response, document), 250);
+                    TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) response;
+                    MediaDataController.getInstance(currentAccount).putStickerSet(set);
+                    if (!MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
+                        MediaDataController.getInstance(currentAccount).toggleStickerSet(null, response, 2, null, false, false);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationNameOnUIThread(NotificationCenter.customStickerCreated, false, response, document, null, false), 250);
                 } else if (error != null) {
-                    BulletinFactory.showError(error);
+                    if (FileRefController.isFileRefError(error.text)) {
+                        FileRefController.getInstance(currentAccount).requestReference(parentObject, req);
+                    } else {
+                        BulletinFactory.showError(error);
+                    }
                 }
             }));
+            try {
+                progressDialog.showDelayed(350);
+            } catch (Exception e) {}
+            return true;
         });
         if (fragment.visibleDialog != null) {
             sheet.show();

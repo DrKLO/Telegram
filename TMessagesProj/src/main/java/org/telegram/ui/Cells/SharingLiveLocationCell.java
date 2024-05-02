@@ -114,7 +114,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             distanceTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
             distanceTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
-            addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 37, LocaleController.isRTL ? 73 : padding, 0));
+            addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 33, LocaleController.isRTL ? 73 : padding, 0));
         } else {
             addView(avatarImageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 6, LocaleController.isRTL ? 15 : 0, 0));
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 74, 17, LocaleController.isRTL ? 74 : padding, 0));
@@ -385,6 +385,9 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
     }
 
+    private Drawable foreverDrawable;
+    private int foreverDrawableColor;
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentInfo == null && liveLocation == null) {
@@ -399,11 +402,12 @@ public class SharingLiveLocationCell extends FrameLayout {
             stopTime = liveLocation.object.date + liveLocation.object.media.period;
             period = liveLocation.object.media.period;
         }
+        boolean forever = period == 0x7FFFFFFF;
         int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
-        if (stopTime < currentTime) {
+        if (stopTime < currentTime && !forever) {
             return;
         }
-        float progress = Math.abs(stopTime - currentTime) / (float) period;
+        float progress = forever ? 1 : Math.abs(stopTime - currentTime) / (float) period;
         if (LocaleController.isRTL) {
             rect.set(dp(13), dp(distanceTextView != null ? 18 : 12), dp(43), dp(distanceTextView != null ? 48 : 42));
         } else {
@@ -419,13 +423,32 @@ public class SharingLiveLocationCell extends FrameLayout {
         Theme.chat_radialProgress2Paint.setColor(color);
         Theme.chat_livePaint.setColor(color);
 
+        int a = Theme.chat_radialProgress2Paint.getAlpha();
+        Theme.chat_radialProgress2Paint.setAlpha((int) (.20f * a));
+        canvas.drawArc(rect, -90, 360, false, Theme.chat_radialProgress2Paint);
+        Theme.chat_radialProgress2Paint.setAlpha((int) (a));
         canvas.drawArc(rect, -90, -360 * progress, false, Theme.chat_radialProgress2Paint);
+        Theme.chat_radialProgress2Paint.setAlpha(a);
 
-        String text = LocaleController.formatLocationLeftTime(stopTime - currentTime);
-
-        float size = Theme.chat_livePaint.measureText(text);
-
-        canvas.drawText(text, rect.centerX() - size / 2, dp(distanceTextView != null ? 37 : 31), Theme.chat_livePaint);
+        if (forever) {
+            if (foreverDrawable == null) {
+                foreverDrawable = getContext().getResources().getDrawable(R.drawable.filled_location_forever).mutate();
+            }
+            if (Theme.chat_livePaint.getColor() != foreverDrawableColor) {
+                foreverDrawable.setColorFilter(new PorterDuffColorFilter(foreverDrawableColor = Theme.chat_livePaint.getColor(), PorterDuff.Mode.SRC_IN));
+            }
+            foreverDrawable.setBounds(
+                    (int) rect.centerX() - foreverDrawable.getIntrinsicWidth() / 2,
+                    (int) rect.centerY() - foreverDrawable.getIntrinsicHeight() / 2,
+                    (int) rect.centerX() + foreverDrawable.getIntrinsicWidth() / 2,
+                    (int) rect.centerY() + foreverDrawable.getIntrinsicHeight() / 2
+            );
+            foreverDrawable.draw(canvas);
+        } else {
+            String text = LocaleController.formatLocationLeftTime(stopTime - currentTime);
+            float size = Theme.chat_livePaint.measureText(text);
+            canvas.drawText(text, rect.centerX() - size / 2, dp(distanceTextView != null ? 37 : 31), Theme.chat_livePaint);
+        }
     }
 
     private int getThemedColor(int key) {

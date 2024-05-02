@@ -58,6 +58,14 @@ public class PaintingOverlay extends FrameLayout {
         }
     }
 
+    public boolean drawChildren = true;
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (!drawChildren) return false;
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         ignoreLayout = true;
@@ -73,9 +81,14 @@ public class PaintingOverlay extends FrameLayout {
                 }
                 if (child instanceof EditTextOutline) {
                     child.measure(MeasureSpec.makeMeasureSpec(entity.viewWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-                    float sc = entity.textViewWidth * width / entity.viewWidth;
-                    child.setScaleX(entity.scale * sc);
-                    child.setScaleY(entity.scale * sc);
+                    float scale;
+                    if (entity.customTextView) {
+                        scale = entity.width * getMeasuredWidth() / entity.viewWidth;
+                    } else {
+                        scale = entity.scale * (entity.textViewWidth * width / entity.viewWidth);
+                    }
+                    child.setScaleX(scale);
+                    child.setScaleY(scale);
                 } else {
                     child.measure(MeasureSpec.makeMeasureSpec((int) (width * entity.width), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * entity.height), MeasureSpec.EXACTLY));
                 }
@@ -118,15 +131,20 @@ public class PaintingOverlay extends FrameLayout {
                 if (entity == null) {
                     continue;
                 }
-                int x, y;
+                int x, y, w = child.getMeasuredWidth(), h = child.getMeasuredHeight();
                 if (child instanceof EditTextOutline) {
-                    x = (int) (width * entity.textViewX) - child.getMeasuredWidth() / 2;
-                    y = (int) (height * entity.textViewY) - child.getMeasuredHeight() / 2;
+                    if (entity.customTextView) {
+                        x = (int) (width * (entity.x + entity.width / 2f)) - child.getMeasuredWidth() / 2;
+                        y = (int) (height * (entity.y + entity.height / 2f)) - child.getMeasuredHeight() / 2;
+                    } else {
+                        x = (int) (width * entity.textViewX) - child.getMeasuredWidth() / 2;
+                        y = (int) (height * entity.textViewY) - child.getMeasuredHeight() / 2;
+                    }
                 } else {
                     x = (int) (width * entity.x);
                     y = (int) (height * entity.y);
                 }
-                child.layout(x, y, x + child.getMeasuredWidth(), y + child.getMeasuredHeight());
+                child.layout(x, y, x + w, y + h);
             }
         }
     }
@@ -169,7 +187,7 @@ public class PaintingOverlay extends FrameLayout {
                 View child = null;
                 if (entity.type == 0) {
                     BackupImageView imageView = new BackupImageView(getContext());
-                    imageView.setLayerNum(8);
+                    imageView.setLayerNum(4 | 8);
                     imageView.setAspectFit(true);
                     ImageReceiver imageReceiver = imageView.getImageReceiver();
                     if (isVideo) {
@@ -187,7 +205,7 @@ public class PaintingOverlay extends FrameLayout {
                         }
                     }
                     TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(entity.document.thumbs, 90);
-                    imageReceiver.setImage(ImageLocation.getForDocument(entity.document), null, ImageLocation.getForDocument(thumb, entity.document), null, "webp", entity.parentObject, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(entity.document), null, null, null, ImageLocation.getForDocument(thumb, entity.document), null, null, 0, "webp", entity.parentObject, 1);
                     if ((entity.subType & 2) != 0) {
                         imageView.setScaleX(-1);
                     }
@@ -211,6 +229,14 @@ public class PaintingOverlay extends FrameLayout {
                     SpannableString text = new SpannableString(Emoji.replaceEmoji(entity.text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
                     for (VideoEditedInfo.EmojiEntity e : entity.entities) {
                         text.setSpan(new AnimatedEmojiSpan(e.document_id, editText.getPaint().getFontMetricsInt()), e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    if (text instanceof Spanned) {
+                        Emoji.EmojiSpan[] spans = ((Spanned) text).getSpans(0, text.length(), Emoji.EmojiSpan.class);
+                        if (spans != null) {
+                            for (int i = 0; i < spans.length; ++i) {
+                                spans[i].scale = .85f;
+                            }
+                        }
                     }
                     editText.setText(text);
                     editText.setGravity(Gravity.CENTER);

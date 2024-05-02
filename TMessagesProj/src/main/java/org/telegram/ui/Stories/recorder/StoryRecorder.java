@@ -186,6 +186,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     private boolean wasSend;
     private long wasSendPeer = 0;
     private ClosingViewProvider closingSourceProvider;
+    private Runnable closeListener;
 
     public static StoryRecorder getInstance(Activity activity, int currentAccount) {
         if (instance != null && (instance.activity != activity || instance.currentAccount != currentAccount)) {
@@ -431,6 +432,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             src.rounding = Math.max(src.screenRect.width(), src.screenRect.height()) / 2f;
             return src;
         }
+    }
+
+    public StoryRecorder whenSent(Runnable listener) {
+        closeListener = listener;
+        return this;
     }
 
     public StoryRecorder closeToWhenSent(ClosingViewProvider closingSourceProvider) {
@@ -2736,6 +2742,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     fromSourceView.show();
                     fromSourceView = null;
                 }
+                if (closeListener != null) {
+                    closeListener.run();
+                    closeListener = null;
+                }
                 fromSourceView = closingSourceProvider != null ? closingSourceProvider.getView(finalSendAsDialogId) : null;
                 if (fromSourceView != null) {
                     openType = fromSourceView.type;
@@ -3044,6 +3054,9 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         private void startRecording(boolean byLongPress, Runnable whenStarted) {
+            if (cameraView == null) {
+                return;
+            }
             CameraController.getInstance().recordVideo(cameraView.getCameraSessionObject(), outputFile, false, (thumbPath, duration) -> {
                 if (recordControl != null) {
                     recordControl.stopRecordingLoading(true);

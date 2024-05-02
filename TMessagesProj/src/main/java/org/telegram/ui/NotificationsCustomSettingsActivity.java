@@ -8,9 +8,13 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.NotificationsController.TYPE_CHANNEL;
 import static org.telegram.messenger.NotificationsController.TYPE_GROUP;
 import static org.telegram.messenger.NotificationsController.TYPE_PRIVATE;
+import static org.telegram.messenger.NotificationsController.TYPE_REACTIONS_MESSAGES;
+import static org.telegram.messenger.NotificationsController.TYPE_REACTIONS_STORIES;
 import static org.telegram.messenger.NotificationsController.TYPE_STORIES;
 
 import android.animation.Animator;
@@ -22,6 +26,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -30,11 +36,14 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -53,6 +62,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
@@ -68,6 +78,7 @@ import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -107,6 +118,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
 
     private final static int search_button = 0;
 
+    private int settingsStart, settingsEnd;
     private int exceptionsStart, exceptionsEnd;
 
     private boolean showAutoExceptions = true;
@@ -260,6 +272,8 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             case TYPE_GROUP:   color = getNotificationsSettings().getInt("GroupLed", color); break;
             case TYPE_STORIES: color = getNotificationsSettings().getInt("StoriesLed", color); break;
             case TYPE_CHANNEL: color = getNotificationsSettings().getInt("ChannelLed", color); break;
+            case TYPE_REACTIONS_MESSAGES:
+            case TYPE_REACTIONS_STORIES: color = getNotificationsSettings().getInt("ReactionsLed", color); break;
         }
         for (int a = 0; a < 9; a++) {
             if (TextColorCell.colorsToSave[a] == color) {
@@ -277,12 +291,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             case TYPE_GROUP:   option = getNotificationsSettings().getInt("popupGroup", 0); break;
             case TYPE_CHANNEL: option = getNotificationsSettings().getInt("popupChannel", 0); break;
         }
-        return LocaleController.getString(popupOptions[Utilities.clamp(option, popupOptions.length - 1, 0)]);
+        return getString(popupOptions[Utilities.clamp(option, popupOptions.length - 1, 0)]);
     }
 
     private String getSound() {
         final SharedPreferences prefs = getNotificationsSettings();
-        String value = LocaleController.getString("SoundDefault", R.string.SoundDefault);
+        String value = getString("SoundDefault", R.string.SoundDefault);
         long documentId;
         switch (currentType) {
             case TYPE_PRIVATE:
@@ -292,6 +306,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             case TYPE_GROUP:
                 value = prefs.getString("GroupSound", value);
                 documentId = prefs.getLong("GroupSoundDocId", 0);
+                break;
+            case TYPE_REACTIONS_MESSAGES:
+            case TYPE_REACTIONS_STORIES:
+                value = prefs.getString("ReactionSound", value);
+                documentId = prefs.getLong("ReactionSoundDocId", 0);
                 break;
             case TYPE_STORIES:
                 value = prefs.getString("StoriesSound", value);
@@ -305,14 +324,14 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         if (documentId != 0) {
             TLRPC.Document document = getMediaDataController().ringtoneDataStore.getDocument(documentId);
             if (document == null) {
-                return LocaleController.getString("CustomSound", R.string.CustomSound);
+                return getString("CustomSound", R.string.CustomSound);
             } else {
                 return NotificationsSoundActivity.trimTitle(document, FileLoader.getDocumentFileName(document));
             }
         } else if (value.equals("NoSound")) {
-            return LocaleController.getString("NoSound", R.string.NoSound);
+            return getString("NoSound", R.string.NoSound);
         } else if (value.equals("Default")) {
-            return LocaleController.getString("SoundDefault", R.string.SoundDefault);
+            return getString("SoundDefault", R.string.SoundDefault);
         }
         return value;
     }
@@ -324,8 +343,10 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             case TYPE_GROUP:   option = getNotificationsSettings().getInt("priority_group", 1); break;
             case TYPE_STORIES: option = getNotificationsSettings().getInt("priority_stories", 1); break;
             case TYPE_CHANNEL: option = getNotificationsSettings().getInt("priority_channel", 1); break;
+            case TYPE_REACTIONS_MESSAGES:
+            case TYPE_REACTIONS_STORIES: option = getNotificationsSettings().getInt("priority_react", 1); break;
         }
-        return LocaleController.getString(priorityOptions[Utilities.clamp(option, priorityOptions.length - 1, 0)]);
+        return getString(priorityOptions[Utilities.clamp(option, priorityOptions.length - 1, 0)]);
     }
 
     @Override
@@ -336,9 +357,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (currentType == -1) {
-            actionBar.setTitle(LocaleController.getString("NotificationsExceptions", R.string.NotificationsExceptions));
+            actionBar.setTitle(getString("NotificationsExceptions", R.string.NotificationsExceptions));
         } else {
-            actionBar.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
+            actionBar.setTitle(getString("Notifications", R.string.Notifications));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -362,7 +383,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     searchAdapter.searchDialogs(null);
                     searching = false;
                     searchWas = false;
-                    emptyView.setText(LocaleController.getString("NoExceptions", R.string.NoExceptions));
+                    emptyView.setText(getString("NoExceptions", R.string.NoExceptions));
                     listView.setAdapter(adapter);
                     adapter.notifyDataSetChanged();
                     listView.setFastScrollVisible(true);
@@ -379,7 +400,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     if (text.length() != 0) {
                         searchWas = true;
                         if (listView != null) {
-                            emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                            emptyView.setText(getString("NoResult", R.string.NoResult));
                             emptyView.showProgress();
                             listView.setAdapter(searchAdapter);
                             searchAdapter.notifyDataSetChanged();
@@ -390,7 +411,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     searchAdapter.searchDialogs(text);
                 }
             });
-            searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
+            searchItem.setSearchFieldHint(getString("Search", R.string.Search));
         }
 
         searchAdapter = new SearchAdapter(context);
@@ -401,7 +422,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
 
         emptyView = new EmptyTextProgressView(context);
         emptyView.setTextSize(18);
-        emptyView.setText(LocaleController.getString("NoExceptions", R.string.NoExceptions));
+        emptyView.setText(getString("NoExceptions", R.string.NoExceptions));
         emptyView.showTextView();
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -409,12 +430,17 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 if (currentType != -1) {
-                    drawSectionBackground(canvas, exceptionsStart, exceptionsEnd, getThemedColor(Theme.key_windowBackgroundWhite));
+                    if (exceptionsStart >= 0) {
+                        drawSectionBackground(canvas, exceptionsStart, exceptionsEnd, getThemedColor(Theme.key_windowBackgroundWhite));
+                    }
+                    if (currentType != TYPE_REACTIONS_MESSAGES && currentType != TYPE_REACTIONS_STORIES) {
+                        drawSectionBackground(canvas, settingsStart, settingsEnd, getThemedColor(Theme.key_windowBackgroundWhite));
+                    }
                 }
                 super.dispatchDraw(canvas);
             }
         };
-        listView.setTranslateSelector(true);
+//        listView.setTranslateSelector(true);
         listView.setEmptyView(emptyView);
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setVerticalScrollBarEnabled(false);
@@ -429,16 +455,22 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             if (listView.getAdapter() == adapter && position >= 0 && position < items.size()) {
                 item = items.get(position);
             }
+            if (item != null && item.viewType == VIEW_TYPE_EXPAND) {
+                expanded = !expanded;
+                updateRows(true);
+                return;
+            }
             if (currentType == TYPE_STORIES && item != null && item.exception != null) {
                 NotificationsSettingsActivity.NotificationException exception = item.exception;
                 ItemOptions.makeOptions(NotificationsCustomSettingsActivity.this, view)
-                    .addIf(exception.notify <= 0 || exception.auto, R.drawable.msg_mute, LocaleController.getString(R.string.NotificationsStoryMute), false, () -> {
+                    .setGravity(Gravity.LEFT)
+                    .addIf(exception.notify <= 0 || exception.auto, R.drawable.msg_mute, getString(R.string.NotificationsStoryMute), false, () -> {
                         updateMute(exception, view, position, false, true);
                     })
-                    .addIf(exception.notify > 0 || exception.auto, R.drawable.msg_unmute, LocaleController.getString(R.string.NotificationsStoryUnmute), false, () -> {
+                    .addIf(exception.notify > 0 || exception.auto, R.drawable.msg_unmute, getString(R.string.NotificationsStoryUnmute), false, () -> {
                         updateMute(exception, view, position, false, false);
                     })
-                    .addIf(!exception.auto, R.drawable.msg_delete, LocaleController.getString("DeleteException", R.string.DeleteException), true, () -> {
+                    .addIf(!exception.auto, R.drawable.msg_delete, getString("DeleteException", R.string.DeleteException), true, () -> {
                         deleteException(exception, view, position);
                     })
                     .show();
@@ -482,15 +514,16 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 }
 
                 ItemOptions.makeOptions(NotificationsCustomSettingsActivity.this, view)
-                    .addIf(exception.notify <= 0 || exception.auto, R.drawable.msg_mute, LocaleController.getString(R.string.NotificationsStoryMute), false, () -> {
+                    .setGravity(Gravity.LEFT)
+                    .addIf(exception.notify <= 0 || exception.auto, R.drawable.msg_mute, getString(R.string.NotificationsStoryMute), false, () -> {
                         actionBar.closeSearchField();
                         updateMute(exception, view, -1, newException, true);
                     })
-                    .addIf(exception.notify > 0 || exception.auto, R.drawable.msg_unmute, LocaleController.getString(R.string.NotificationsStoryUnmute), false, () -> {
+                    .addIf(exception.notify > 0 || exception.auto, R.drawable.msg_unmute, getString(R.string.NotificationsStoryUnmute), false, () -> {
                         actionBar.closeSearchField();
                         updateMute(exception, view, -1, newException, false);
                     })
-                    .addIf(!newException && !exception.auto, R.drawable.msg_delete, LocaleController.getString("DeleteException", R.string.DeleteException), true, () -> {
+                    .addIf(!newException && !exception.auto, R.drawable.msg_delete, getString("DeleteException", R.string.DeleteException), true, () -> {
                         deleteException(exception, view, position);
                     })
                     .show();
@@ -545,7 +578,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 }
 
                 long did = exception.did;
-                boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(did);
+                boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(did, false, false);
                 ChatNotificationsPopupWrapper chatNotificationsPopupWrapper = new ChatNotificationsPopupWrapper(context, currentAccount, null, true, true, new ChatNotificationsPopupWrapper.Callback() {
                     @Override
                     public void toggleSound() {
@@ -719,9 +752,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 presentFragment(activity);
             } else if (item.id == 7) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("NotificationsDeleteAllExceptionTitle", R.string.NotificationsDeleteAllExceptionTitle));
-                builder.setMessage(LocaleController.getString("NotificationsDeleteAllExceptionAlert", R.string.NotificationsDeleteAllExceptionAlert));
-                builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+                builder.setTitle(getString("NotificationsDeleteAllExceptionTitle", R.string.NotificationsDeleteAllExceptionTitle));
+                builder.setMessage(getString("NotificationsDeleteAllExceptionAlert", R.string.NotificationsDeleteAllExceptionAlert));
+                builder.setPositiveButton(getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     SharedPreferences preferences = getNotificationsSettings();
                     SharedPreferences.Editor editor = preferences.edit();
                     for (int a = 0, N = exceptions.size(); a < N; a++) {
@@ -748,16 +781,16 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     updateRows(true);
                     getNotificationCenter().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
                 });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(getString("Cancel", R.string.Cancel), null);
                 AlertDialog alertDialog = builder.create();
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
                     button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
-            } else if (item.viewType == VIEW_TYPE_CHECK2) {
+            } else if (item.id == BUTTON_ENABLE || item.id == BUTTON_NEW_STORIES) {
                 enabled = getNotificationsController().isGlobalNotificationsEnabled(currentType);
-                NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
+                TextCheckCell checkCell = (TextCheckCell) view;
                 RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
 
                 if (currentType == TYPE_STORIES) {
@@ -771,24 +804,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         editor.putBoolean("EnableAllStories", !enabled);
                         storiesEnabled = !enabled;
                     }
-                    editor.commit();
+                    editor.apply();
                     getNotificationsController().updateServerNotificationsSettings(currentType);
-                    checkCell.setChecked(!enabled);
-                    if (holder != null) {
-                        adapter.onBindViewHolder(holder, position);
-                    }
-                    for (int i = 0; i < items.size(); ++i) {
-                        ItemInner item2 = items.get(i);
-                        if (item2.id == 5) {
-                            item2.checked = storiesAuto && (storiesEnabled == null || !storiesEnabled);
-                            RecyclerView.ViewHolder holder2 = listView.findViewHolderForAdapterPosition(i);
-                            if (holder2 != null && holder2.itemView instanceof TextCheckCell) {
-                                TextCheckCell checkCell1 = (TextCheckCell) holder2.itemView;
-                                checkCell1.setChecked(item2.checked);
-                            }
-                            break;
-                        }
-                    }
+                    updateRows(true);
                     if (showAutoExceptions != (storiesEnabled == null)) {
                         toggleShowAutoExceptions();
                     }
@@ -798,36 +816,10 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
 
                 if (!enabled) {
                     getNotificationsController().setGlobalNotificationsEnabled(currentType, 0);
-                    checkCell.setChecked(true);
-                    if (holder != null) {
-                        adapter.onBindViewHolder(holder, position);
-                    }
-                    checkRowsEnabled();
+                    updateRows(true);
                 } else {
                     AlertsCreator.showCustomNotificationsDialog(NotificationsCustomSettingsActivity.this, 0, 0, currentType, exceptions, autoExceptions, currentAccount, param -> {
-                        int offUntil;
-                        SharedPreferences preferences = getNotificationsSettings();
-                        if (currentType == TYPE_PRIVATE) {
-                            offUntil = preferences.getInt("EnableAll2", 0);
-                        } else if (currentType == TYPE_GROUP) {
-                            offUntil = preferences.getInt("EnableGroup2", 0);
-                        } else {
-                            offUntil = preferences.getInt("EnableChannel2", 0);
-                        }
-                        int currentTime = getConnectionsManager().getCurrentTime();
-                        int iconType;
-                        if (offUntil < currentTime) {
-                            iconType = 0;
-                        } else if (offUntil - 60 * 60 * 24 * 365 >= currentTime) {
-                            iconType = 0;
-                        } else {
-                            iconType = 2;
-                        }
-                        checkCell.setChecked(getNotificationsController().isGlobalNotificationsEnabled(currentType), iconType);
-                        if (holder != null) {
-                            adapter.onBindViewHolder(holder, position);
-                        }
-                        checkRowsEnabled();
+                        updateRows(true);
                     });
                 }
             } else if (item.id == 3) {
@@ -850,7 +842,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         if (position >= 0 && position < items.size()) {
                             items.get(position).color = getLedColor();
                         }
-                        ((TextColorCell) view).setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), getLedColor(), true);
+                        ((TextColorCell) view).setTextAndColor(getString("LedColor", R.string.LedColor), getLedColor(), true);
                     } else {
                         updateRows(true);
                     }
@@ -864,7 +856,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         if (position >= 0 && position < items.size()) {
                             items.get(position).text2 = getPopupOption();
                         }
-                        ((TextSettingsCell) view).setTextAndValue(LocaleController.getString("PopupNotification", R.string.PopupNotification), getPopupOption(), true, ((TextSettingsCell) view).needDivider);
+                        ((TextSettingsCell) view).setTextAndValue(getString("PopupNotification", R.string.PopupNotification), getPopupOption(), true, ((TextSettingsCell) view).needDivider);
                     } else {
                         updateRows(true);
                     }
@@ -880,16 +872,18 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     key = "vibrate_group";
                 } else if (currentType == TYPE_STORIES) {
                     key = "vibrate_stories";
+                } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                    key = "vibrate_react";
                 } else {
                     key = "vibrate_channel";
                 }
                 showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), 0, 0, key, () -> {
                     if (view instanceof TextSettingsCell) {
-                        String value = LocaleController.getString(vibrateLabels[Utilities.clamp(getNotificationsSettings().getInt(key, 0), vibrateLabels.length - 1, 0)]);
+                        String value = getString(vibrateLabels[Utilities.clamp(getNotificationsSettings().getInt(key, 0), vibrateLabels.length - 1, 0)]);
                         if (position >= 0 && position < items.size()) {
                             items.get(position).text2 = value;
                         }
-                        ((TextSettingsCell) view).setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), value, true, true);
+                        ((TextSettingsCell) view).setTextAndValue(getString("Vibrate", R.string.Vibrate), value, true, true);
                     } else {
                         updateRows(true);
                     }
@@ -903,12 +897,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         if (position >= 0 && position < items.size()) {
                             items.get(position).text2 = getPriorityOption();
                         }
-                        ((TextSettingsCell) view).setTextAndValue(LocaleController.getString("NotificationsImportance", R.string.NotificationsImportance), getPriorityOption(), true, ((TextSettingsCell) view).needDivider);
+                        ((TextSettingsCell) view).setTextAndValue(getString("NotificationsImportance", R.string.NotificationsImportance), getPriorityOption(), true, ((TextSettingsCell) view).needDivider);
                     } else {
                         updateRows(true);
                     }
                 }));
-            } else if (item.id == 5) {
+            } else if (item.id == BUTTON_IMPORTANT_STORIES) {
                 if (!view.isEnabled()) {
                     return;
                 }
@@ -950,6 +944,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 } else if (currentType == TYPE_STORIES) {
                     enabled = !preferences.getBoolean("EnableHideStoriesSenders", false);
                     editor.putBoolean("EnableHideStoriesSenders", enabled);
+                } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                    enabled = preferences.getBoolean("EnableReactionsPreview", true);
+                    editor.putBoolean("EnableReactionsPreview", !enabled);
                 } else {
                     enabled = preferences.getBoolean("EnablePreviewChannel", true);
                     editor.putBoolean("EnablePreviewChannel", !enabled);
@@ -958,6 +955,56 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 getNotificationsController().updateServerNotificationsSettings(currentType);
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(!enabled);
+                }
+            } else if (item != null && (item.id == BUTTON_MESSAGES_REACTIONS || item.id == BUTTON_STORIES_REACTIONS)) {
+                final boolean check = LocaleController.isRTL ? x < dp(76) : x > view.getMeasuredWidth() - dp(76);
+
+                SharedPreferences prefs = getNotificationsSettings();
+                if (check) {
+                    final String key = item.id == BUTTON_MESSAGES_REACTIONS ? "EnableReactionsMessages" : "EnableReactionsStories";
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putBoolean(key, !prefs.getBoolean(key, true));
+                    editor.apply();
+                    updateRows(true);
+                    getNotificationsController().updateServerNotificationsSettings(currentType);
+                } else {
+                    final String key = item.id == BUTTON_MESSAGES_REACTIONS ? "EnableReactionsMessagesContacts" : "EnableReactionsStoriesContacts";
+                    final LinearLayout linearLayout = new LinearLayout(context);
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+                    boolean[] contacts = new boolean[] { prefs.getBoolean(key, false) };
+
+                    RadioColorCell[] cells = new RadioColorCell[2];
+                    for (int a = 0; a < cells.length; ++a) {
+                        cells[a] = new RadioColorCell(context, getResourceProvider());
+                        cells[a].setPadding(dp(4), 0, dp(4), 0);
+                        cells[a].setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+                        cells[a].setTextAndValue(getString(a == 0 ? R.string.NotifyAboutReactionsFromEveryone : R.string.NotifyAboutReactionsFromContacts), a == 0 ? !contacts[0] : contacts[0]);
+                        cells[a].setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
+                        linearLayout.addView(cells[a]);
+                        final int finalA = a;
+                        cells[a].setOnClickListener(v -> {
+                            contacts[0] = finalA == 1;
+                            for (int i = 0; i < cells.length; ++i) {
+                                cells[i].setChecked(contacts[0] == (i == 1), true);
+                            }
+                        });
+                    }
+
+                    showDialog(
+                        new AlertDialog.Builder(getContext(), resourceProvider)
+                            .setTitle(getString(R.string.NotifyAboutReactionsFrom))
+                            .setView(linearLayout)
+                            .setNegativeButton(getString(R.string.Cancel), null)
+                            .setPositiveButton(getString(R.string.Save), (di, w) -> {
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putBoolean(key, contacts[0]);
+                                editor.apply();
+                                updateRows(true);
+                                getNotificationsController().updateServerNotificationsSettings(currentType);
+                            })
+                            .create()
+                    );
                 }
             }
         });
@@ -1015,8 +1062,8 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 item = items.get(position);
             }
             final boolean enabled;
-            if (item != null && item.id == 5) {
-                enabled = storiesEnabled == null || !storiesEnabled;
+            if (item != null && (item.id == BUTTON_IMPORTANT_STORIES || item.id == BUTTON_NEW_STORIES || item.id == BUTTON_ENABLE)) {
+                enabled = true;
             } else {
                 enabled = globalEnabled;
             }
@@ -1296,6 +1343,14 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         R.string.NotificationsPriorityMedium
     };
 
+    private static final int BUTTON_ENABLE = 100;
+    private static final int BUTTON_NEW_STORIES = 101;
+    private static final int BUTTON_IMPORTANT_STORIES = 102;
+    private static final int BUTTON_MESSAGES_REACTIONS = 103;
+    private static final int BUTTON_STORIES_REACTIONS = 104;
+
+    boolean expanded;
+
     private void updateRows(boolean animated) {
         oldItems.clear();
         oldItems.addAll(items);
@@ -1303,68 +1358,137 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         SharedPreferences prefs = getNotificationsSettings();
         boolean enabled = false;
         if (currentType != -1) {
-            items.add(ItemInner.asCheck2());
-            items.add(ItemInner.asShadow(null));
-            items.add(ItemInner.asHeader(LocaleController.getString(R.string.SETTINGS)));
+            items.add(ItemInner.asHeader(getString(R.string.NotifyMeAbout)));
+            if (currentType == TYPE_STORIES) {
+                items.add(ItemInner.asCheck(BUTTON_NEW_STORIES, getString(R.string.NotifyMeAboutNewStories), prefs.getBoolean("EnableAllStories", false)));
+                if (!prefs.getBoolean("EnableAllStories", false)) {
+                    items.add(ItemInner.asCheck(BUTTON_IMPORTANT_STORIES, getString(R.string.NotifyMeAboutImportantStories), storiesAuto && (storiesEnabled == null || !storiesEnabled)));
+                }
+                items.add(ItemInner.asShadow(-1, getString(R.string.StoryAutoExceptionsInfo)));
+            } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                items.add(ItemInner.asCheck2(
+                    BUTTON_MESSAGES_REACTIONS,
+                    R.drawable.msg_markunread,
+                    getString(R.string.NotifyMeAboutMessagesReactions),
+                    getString(
+                        !prefs.getBoolean("EnableReactionsMessages", true) ?
+                            R.string.NotifyFromNobody :
+                        prefs.getBoolean("EnableReactionsMessagesContacts", false) ?
+                            R.string.NotifyFromContacts :
+                            R.string.NotifyFromEveryone
+                    ),
+                    prefs.getBoolean("EnableReactionsMessages", true)
+                ));
+                items.add(ItemInner.asCheck2(
+                    BUTTON_STORIES_REACTIONS,
+                    R.drawable.msg_stories_saved,
+                    getString(R.string.NotifyMeAboutStoriesReactions),
+                    getString(
+                        !prefs.getBoolean("EnableReactionsStories", true) ?
+                            R.string.NotifyFromNobody :
+                        prefs.getBoolean("EnableReactionsStoriesContacts", false) ?
+                            R.string.NotifyFromContacts :
+                            R.string.NotifyFromEveryone
+                    ),
+                    prefs.getBoolean("EnableReactionsStories", true)
+                ));
+                items.add(ItemInner.asShadow(-1, null));
+            } else {
+                int text;
+                if (currentType == TYPE_PRIVATE) {
+                    text = R.string.NotifyMeAboutPrivate;
+                } else if (currentType == TYPE_GROUP) {
+                    text = R.string.NotifyMeAboutGroups;
+                } else {
+                    text = R.string.NotifyMeAboutChannels;
+                }
+                items.add(ItemInner.asCheck(BUTTON_ENABLE, getString(text), getNotificationsController().isGlobalNotificationsEnabled(currentType)));
+                items.add(ItemInner.asShadow(-1, null));
+            }
+            items.add(ItemInner.asHeader(getString(R.string.SETTINGS)));
+            settingsStart = items.size() - 1;
 
             if (currentType == TYPE_STORIES) {
-                items.add(ItemInner.asCheck(0, LocaleController.getString(R.string.NotificationShowSenderNames), !prefs.getBoolean("EnableHideStoriesSenders", false)));
+                items.add(ItemInner.asCheck(0, getString(R.string.NotificationShowSenderNames), !prefs.getBoolean("EnableHideStoriesSenders", false)));
+            } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                items.add(ItemInner.asCheck(0, getString(R.string.NotificationShowSenderNames), prefs.getBoolean("EnableReactionsPreview", true)));
             } else {
                 switch (currentType) {
                     case TYPE_PRIVATE: enabled = prefs.getBoolean("EnablePreviewAll", true); break;
                     case TYPE_GROUP:   enabled = prefs.getBoolean("EnablePreviewGroup", true); break;
                     case TYPE_CHANNEL: enabled = prefs.getBoolean("EnablePreviewChannel", true); break;
                 }
-                items.add(ItemInner.asCheck(0, LocaleController.getString(R.string.MessagePreview), enabled));
+                items.add(ItemInner.asCheck(0, getString(R.string.MessagePreview), enabled));
             }
 
-            items.add(ItemInner.asColor(LocaleController.getString("LedColor", R.string.LedColor), getLedColor()));
+            items.add(ItemInner.asSetting(3, getString("Sound", R.string.Sound), getSound()));
 
-            int vibrate = 0;
-            switch (currentType) {
-                case TYPE_PRIVATE: vibrate = prefs.getInt("vibrate_messages", 0); break;
-                case TYPE_GROUP:   vibrate = prefs.getInt("vibrate_group", 0); break;
-                case TYPE_STORIES: vibrate = prefs.getInt("vibrate_stories", 0); break;
-                case TYPE_CHANNEL: vibrate = prefs.getInt("vibrate_channel", 0); break;
-            }
-            items.add(ItemInner.asSetting(1, LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString(vibrateLabels[Utilities.clamp(vibrate, vibrateLabels.length - 1, 0)])));
+            if (expanded) {
 
-            if (currentType == TYPE_PRIVATE || currentType == TYPE_GROUP) {
-                items.add(ItemInner.asSetting(2, LocaleController.getString("PopupNotification", R.string.PopupNotification), getPopupOption()));
-            }
+                items.add(ItemInner.asColor(getString("LedColor", R.string.LedColor), getLedColor()));
 
-            items.add(ItemInner.asSetting(3, LocaleController.getString("Sound", R.string.Sound), getSound()));
+                int vibrate = 0;
+                switch (currentType) {
+                    case TYPE_PRIVATE:
+                        vibrate = prefs.getInt("vibrate_messages", 0);
+                        break;
+                    case TYPE_GROUP:
+                        vibrate = prefs.getInt("vibrate_group", 0);
+                        break;
+                    case TYPE_STORIES:
+                        vibrate = prefs.getInt("vibrate_stories", 0);
+                        break;
+                    case TYPE_CHANNEL:
+                        vibrate = prefs.getInt("vibrate_channel", 0);
+                        break;
+                    case TYPE_REACTIONS_MESSAGES:
+                    case TYPE_REACTIONS_STORIES:
+                        vibrate = prefs.getInt("vibrate_react", 0);
+                        break;
+                }
+                items.add(ItemInner.asSetting(1, getString("Vibrate", R.string.Vibrate), getString(vibrateLabels[Utilities.clamp(vibrate, vibrateLabels.length - 1, 0)])));
 
-            if (Build.VERSION.SDK_INT >= 21) {
-                items.add(ItemInner.asSetting(4, LocaleController.getString("NotificationsImportance", R.string.NotificationsImportance), getPriorityOption()));
-            }
+                if (currentType == TYPE_PRIVATE || currentType == TYPE_GROUP) {
+                    items.add(ItemInner.asSetting(2, getString("PopupNotification", R.string.PopupNotification), getPopupOption()));
+                }
 
-            if (currentType == TYPE_STORIES) {
-                items.add(ItemInner.asCheck(5, LocaleController.getString(R.string.StoryAutoExceptions), storiesAuto && (storiesEnabled == null || !storiesEnabled)));
-                items.add(ItemInner.asShadow(LocaleController.getString(R.string.StoryAutoExceptionsInfo)));
+                if (Build.VERSION.SDK_INT >= 21) {
+                    items.add(ItemInner.asSetting(4, getString("NotificationsImportance", R.string.NotificationsImportance), getPriorityOption()));
+                }
+
+                items.add(ItemInner.asExpand(getString(R.string.NotifyLessOptions), false));
             } else {
-                items.add(ItemInner.asShadow(null));
+                items.add(ItemInner.asExpand(getString(R.string.NotifyMoreOptions), true));
             }
+            settingsEnd = items.size() - 1;
 
-            items.add(ItemInner.asButton(6, R.drawable.msg_contact_add, LocaleController.getString("NotificationsAddAnException", R.string.NotificationsAddAnException)));
+            items.add(ItemInner.asShadow(-2, null));
         }
-        exceptionsStart = items.size() - 1;
-        if (autoExceptions != null && showAutoExceptions) {
-            for (int i = 0; i < autoExceptions.size(); ++i) {
-                items.add(ItemInner.asException(autoExceptions.get(i)));
+        if (currentType != TYPE_REACTIONS_MESSAGES && currentType != TYPE_REACTIONS_STORIES) {
+            if (currentType != -1) {
+                items.add(ItemInner.asButton(6, R.drawable.msg_contact_add, getString("NotificationsAddAnException", R.string.NotificationsAddAnException)));
             }
-        }
-        if (exceptions != null) {
-            for (int i = 0; i < exceptions.size(); ++i) {
-                items.add(ItemInner.asException(exceptions.get(i)));
+            exceptionsStart = items.size() - 1;
+            if (autoExceptions != null && showAutoExceptions) {
+                for (int i = 0; i < autoExceptions.size(); ++i) {
+                    items.add(ItemInner.asException(autoExceptions.get(i)));
+                }
             }
-        }
-        exceptionsEnd = items.size() - 1;
-        if (currentType != -1 || exceptions != null && !exceptions.isEmpty()) {
-            items.add(ItemInner.asShadow(null));
-        }
-        if (exceptions != null && !exceptions.isEmpty()) {
-            items.add(ItemInner.asButton(7, 0, LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException)));
+            if (exceptions != null) {
+                for (int i = 0; i < exceptions.size(); ++i) {
+                    items.add(ItemInner.asException(exceptions.get(i)));
+                }
+            }
+            exceptionsEnd = items.size() - 1;
+            if (currentType != -1 || exceptions != null && !exceptions.isEmpty()) {
+                items.add(ItemInner.asShadow(-3, null));
+            }
+            if (exceptions != null && !exceptions.isEmpty()) {
+                items.add(ItemInner.asButton(7, 0, getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException)));
+            }
+        } else {
+            exceptionsStart = -1;
+            exceptionsEnd = -1;
         }
         if (adapter != null) {
             if (animated) {
@@ -1390,7 +1514,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 Ringtone rng = RingtoneManager.getRingtone(getParentActivity(), ringtone);
                 if (rng != null) {
                     if (ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
-                        name = LocaleController.getString("SoundDefault", R.string.SoundDefault);
+                        name = getString("SoundDefault", R.string.SoundDefault);
                     } else {
                         name = rng.getTitle(getParentActivity());
                     }
@@ -1676,14 +1800,14 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         position -= searchResult.size() + 1;
                         ArrayList<TLObject> globalSearch = searchAdapterHelper.getGlobalSearch();
                         TLObject object = globalSearch.get(position);
-                        cell.setData(object, null, LocaleController.getString("NotificationsOn", R.string.NotificationsOn), 0, position != globalSearch.size() - 1);
+                        cell.setData(object, null, getString("NotificationsOn", R.string.NotificationsOn), 0, position != globalSearch.size() - 1);
                         cell.setAddButtonVisible(true);
                     }
                     break;
                 }
                 case 1: {
                     GraySectionCell cell = (GraySectionCell) holder.itemView;
-                    cell.setText(LocaleController.getString("AddToExceptions", R.string.AddToExceptions));
+                    cell.setText(getString("AddToExceptions", R.string.AddToExceptions));
                     break;
                 }
             }
@@ -1706,6 +1830,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
     private static final int VIEW_TYPE_SETTING = 5;
     private static final int VIEW_TYPE_CHECK2 = 6;
     private static final int VIEW_TYPE_BUTTON = 7;
+    private static final int VIEW_TYPE_EXPAND = 8;
 
     private static class ItemInner extends AdapterWithDiffUtils.Item {
 
@@ -1732,6 +1857,15 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             item.checked = checked;
             return item;
         }
+        public static ItemInner asCheck2(int id, int icon, CharSequence text, CharSequence subtext, boolean checked) {
+            ItemInner item = new ItemInner(VIEW_TYPE_CHECK2);
+            item.id = id;
+            item.resId = icon;
+            item.text = text;
+            item.text2 = subtext;
+            item.checked = checked;
+            return item;
+        }
         public static ItemInner asException(NotificationsSettingsActivity.NotificationException exception) {
             ItemInner item = new ItemInner(VIEW_TYPE_USER);
             item.exception = exception;
@@ -1743,8 +1877,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             item.color = color;
             return item;
         }
-        public static ItemInner asShadow(CharSequence text) {
+        public static ItemInner asShadow(int id, CharSequence text) {
             ItemInner item = new ItemInner(VIEW_TYPE_SHADOW);
+            item.id = id;
             item.text = text;
             return item;
         }
@@ -1755,9 +1890,6 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             item.text2 = value;
             return item;
         }
-        public static ItemInner asCheck2() {
-            return new ItemInner(VIEW_TYPE_CHECK2);
-        }
         public static ItemInner asButton(int id, int resId, CharSequence text) {
             ItemInner item = new ItemInner(VIEW_TYPE_BUTTON);
             item.id = id;
@@ -1765,9 +1897,23 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             item.text = text;
             return item;
         }
+        public static ItemInner asExpand(CharSequence text, boolean expand) {
+            ItemInner item = new ItemInner(VIEW_TYPE_EXPAND);
+            item.text = text;
+            item.resId = expand ? 1 : 0;
+            return item;
+        }
 
         @Override
         public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ItemInner itemInner = (ItemInner) o;
+            return id == itemInner.id && color == itemInner.color && (viewType == VIEW_TYPE_EXPAND || resId == itemInner.resId && Objects.equals(text, itemInner.text) && (viewType == VIEW_TYPE_CHECK2 || Objects.equals(text2, itemInner.text2))) && exception == itemInner.exception;
+        }
+
+        @Override
+        protected boolean contentsEquals(AdapterWithDiffUtils.Item o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ItemInner itemInner = (ItemInner) o;
@@ -1825,12 +1971,16 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case VIEW_TYPE_CHECK2:
-                    view = new NotificationsCheckCell(mContext);
+                    view = new NotificationsCheckCell(mContext, 21, 64, true, resourceProvider);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case VIEW_TYPE_BUTTON:
                 default:
                     view = new TextCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case VIEW_TYPE_EXPAND:
+                    view = new ExpandView(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
             }
@@ -1888,39 +2038,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 }
                 case VIEW_TYPE_CHECK2: {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) holder.itemView;
-                    checkCell.setDrawLine(false);
-                    String text;
-                    StringBuilder builder = new StringBuilder();
-                    int offUntil;
-                    SharedPreferences preferences = getNotificationsSettings();
-
-                    if (currentType == TYPE_PRIVATE) {
-                        text = LocaleController.getString("NotificationsForPrivateChats", R.string.NotificationsForPrivateChats);
-                        offUntil = preferences.getInt("EnableAll2", 0);
-                    } else if (currentType == TYPE_GROUP) {
-                        text = LocaleController.getString("NotificationsForGroups", R.string.NotificationsForGroups);
-                        offUntil = preferences.getInt("EnableGroup2", 0);
-                    } else if (currentType == TYPE_STORIES) {
-                        text = LocaleController.getString("NotificationsForStories", R.string.NotificationsForStories);
-                        offUntil = preferences.getBoolean("EnableAllStories", false) ? 0 : Integer.MAX_VALUE;
-                    } else {
-                        text = LocaleController.getString("NotificationsForChannels", R.string.NotificationsForChannels);
-                        offUntil = preferences.getInt("EnableChannel2", 0);
-                    }
-                    int currentTime = getConnectionsManager().getCurrentTime();
-                    boolean enabled;
-                    int iconType;
-                    if (enabled = offUntil < currentTime) {
-                        builder.append(LocaleController.getString("NotificationsOn", R.string.NotificationsOn));
-                        iconType = 0;
-                    } else if (offUntil - 60 * 60 * 24 * 365 >= currentTime) {
-                        builder.append(LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
-                        iconType = 0;
-                    } else {
-                        builder.append(LocaleController.formatString("NotificationsOffUntil", R.string.NotificationsOffUntil, LocaleController.stringForMessageListDate(offUntil)));
-                        iconType = 2;
-                    }
-                    checkCell.setTextAndValueAndCheck(text, builder, enabled, iconType, false);
+                    checkCell.setDrawLine(true);
+                    checkCell.setChecked(item.checked);
+                    checkCell.setTextAndValueAndIconAndCheck(item.text, item.text2, item.resId, item.checked, 0, false, divider, true);
                     break;
                 }
                 case VIEW_TYPE_BUTTON: {
@@ -1932,6 +2052,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                         textCell.setTextAndIcon("" + item.text, item.resId, divider);
                     }
+                    break;
+                }
+                case VIEW_TYPE_EXPAND: {
+                    ExpandView textCell = (ExpandView) holder.itemView;
+                    textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
+                    textCell.set(item.text, item.resId == 1, divider);
                     break;
                 }
             }
@@ -1954,8 +2080,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 item = items.get(position);
             }
             final boolean enabled;
-            if (item != null && item.id == 5) {
-                enabled = storiesEnabled == null || !storiesEnabled;
+            if (item != null && item.id == BUTTON_IMPORTANT_STORIES) {
+                return;
+//                enabled = storiesEnabled == null || !storiesEnabled;
             } else {
                 enabled = globalEnabled;
             }
@@ -1990,6 +2117,49 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             }
             return items.get(position).viewType;
         }
+    }
+
+    public class ExpandView extends TextCell {
+        public ImageView imageView;
+        public ExpandView(Context context) {
+            super(context);
+
+            imageView = new ImageView(context);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon), PorterDuff.Mode.SRC_IN));
+            imageView.setImageResource(R.drawable.msg_expand);
+            addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 17, 0, 17,0));
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            imageView.measure(widthMeasureSpec, heightMeasureSpec);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+
+            int w = right - left;
+            int l = LocaleController.isRTL ? dp(17) : w - dp(17 + 24);
+            int t = (bottom - top - dp(24)) / 2;
+            imageView.layout(l, t, l + dp(24), t + dp(24));
+        }
+
+        public void set(CharSequence text, boolean expand, boolean divider) {
+            setArrow(expand, true);
+            setText(text, divider);
+        }
+
+        public void setArrow(boolean expand, boolean animated) {
+            if (animated) {
+                imageView.animate().rotation(expand ? 0 : 180).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).start();
+            } else {
+                imageView.setRotation(expand ? 0 : 180);
+            }
+        }
+
     }
 
     @Override

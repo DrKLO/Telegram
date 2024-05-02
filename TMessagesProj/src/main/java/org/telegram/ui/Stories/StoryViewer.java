@@ -1710,7 +1710,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    private void checkSelfStoriesView() {
+    public void checkSelfStoriesView() {
         if (selfStoryViewsView == null) {
             selfStoryViewsView = new SelfStoryViewsView(containerView.getContext(), this);
             containerView.addView(selfStoryViewsView, 0);
@@ -2140,6 +2140,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    private boolean showViewsAfterOpening;
+    public void showViewsAfterOpening() {
+        showViewsAfterOpening = true;
+    }
+
     private void startOpenAnimation() {
         updateTransitionParams();
         progressToOpen = 0f;
@@ -2189,7 +2194,10 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     peerStoriesView.updatePosition();
                 }
 
-                if (!SharedConfig.storiesIntroShown) {
+                if (showViewsAfterOpening) {
+                    showViewsAfterOpening = false;
+                    openViews();
+                } else if (!SharedConfig.storiesIntroShown) {
                     if (storiesIntro == null) {
                         storiesIntro = new StoriesIntro(containerView.getContext(), windowView);
                         storiesIntro.setAlpha(0f);

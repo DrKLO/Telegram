@@ -1187,7 +1187,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         if (DialogObject.isUserDialog(dialogId)) {
             user = parentAlert.baseFragment.getMessagesController().getUser(dialogId);
         }
-        AlertsCreator.createLocationUpdateDialog(getParentActivity(), user, param -> {
+        AlertsCreator.createLocationUpdateDialog(getParentActivity(), false, user, param -> {
             TLRPC.TL_messageMediaGeoLive location = new TLRPC.TL_messageMediaGeoLive();
             location.geo = new TLRPC.TL_geoPoint();
             location.geo.lat = AndroidUtilities.fixLocationCoord(myLocation.getLatitude());

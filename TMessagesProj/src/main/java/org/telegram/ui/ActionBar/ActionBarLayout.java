@@ -54,6 +54,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.BackButtonMenu;
 import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
@@ -1622,6 +1623,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
             onFragmentStackChanged("addFragmentToStack " + position);
         } else {
+            if (position == INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST) {
+                position = 0;
+                attachViewTo(fragment, position);
+            }
             fragmentsStack.add(position, fragment);
             onFragmentStackChanged("addFragmentToStack");
         }
@@ -1649,6 +1654,35 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         }
         containerView.addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (fragment.actionBar != null && fragment.actionBar.shouldAddToContainer()) {
+            if (removeActionBarExtraHeight) {
+                fragment.actionBar.setOccupyStatusBar(false);
+            }
+            ViewGroup parent = (ViewGroup) fragment.actionBar.getParent();
+            if (parent != null) {
+                parent.removeView(fragment.actionBar);
+            }
+            containerView.addView(fragment.actionBar);
+            fragment.actionBar.setTitleOverlayText(titleOverlayText, titleOverlayTextId, overlayAction);
+        }
+        fragment.attachStoryViewer(containerView);
+    }
+
+    private void attachViewTo(BaseFragment fragment, int position) {
+        View fragmentView = fragment.fragmentView;
+        if (fragmentView == null) {
+            fragmentView = fragment.createView(parentActivity);
+        } else {
+            ViewGroup parent = (ViewGroup) fragmentView.getParent();
+            if (parent != null) {
+                fragment.onRemoveFromParent();
+                parent.removeView(fragmentView);
+            }
+        }
+        if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        }
+        containerView.addView(fragmentView, Utilities.clamp(position, containerView.getChildCount(), 0), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         if (fragment.actionBar != null && fragment.actionBar.shouldAddToContainer()) {
             if (removeActionBarExtraHeight) {
                 fragment.actionBar.setOccupyStatusBar(false);

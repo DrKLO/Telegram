@@ -486,7 +486,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
             View child = recyclerListView.getChildAt(i);
             if (child instanceof SelectorUserCell) {
                 int position = recyclerListView.getChildAdapterPosition(child);
-                if (position < 0) {
+                if (position - 1 < 0 || position - 1 >= items.size()) {
                     continue;
                 }
                 Item item = items.get(position - 1);

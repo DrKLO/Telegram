@@ -3584,6 +3584,8 @@ public class ImageLoader {
                 }
                 url = url + docExt;
                 saveImageToCache = !MessageObject.isVideoDocument(object.document) && !MessageObject.isGifDocument(object.document) && !MessageObject.isRoundVideoDocument(object.document) && !MessageObject.canPreviewDocument(object.document);
+            } else if (parentObject instanceof TLRPC.StickerSet) {
+                url = url + "." + ext;
             }
             if (a == 0) {
                 imageKey = key;

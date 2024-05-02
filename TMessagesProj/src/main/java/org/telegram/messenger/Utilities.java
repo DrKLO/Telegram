@@ -581,6 +581,10 @@ public class Utilities {
         public ReturnType run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
     }
 
+    public static interface IndexedConsumer<T> {
+        void accept(T t, int index);
+    }
+
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
         Value v = map.get(key);
         if (v == null) {

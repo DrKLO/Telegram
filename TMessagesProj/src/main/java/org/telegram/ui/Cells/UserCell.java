@@ -738,7 +738,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
     }
 
-    public void setCloseIcon(Runnable onClick) {
+    public void setCloseIcon(View.OnClickListener onClick) {
         if (onClick == null) {
             if (closeView != null) {
                 removeView(closeView);
@@ -754,7 +754,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO));
                 addView(closeView, LayoutHelper.createFrame(30, 30, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 0));
             }
-            closeView.setOnClickListener(v -> onClick.run());
+            closeView.setOnClickListener(onClick);
         }
     }
 }

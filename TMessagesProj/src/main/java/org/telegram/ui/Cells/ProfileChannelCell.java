@@ -25,6 +25,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -53,7 +54,7 @@ public class ProfileChannelCell extends FrameLayout {
     private final TextView headerView;
     private final AnimatedTextView subscribersView;
 
-    private final DialogCell dialogCell;
+    public final DialogCell dialogCell;
 
     public ProfileChannelCell(BaseFragment fragment) {
         super(fragment.getContext());
@@ -67,7 +68,7 @@ public class ProfileChannelCell extends FrameLayout {
         headerView = new TextView(context);
         headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        headerView.setText("Channel");
+        headerView.setText(LocaleController.getString(R.string.ProfileChannel));
         headerLayout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
         subscribersView = new ClickableAnimatedTextView(context);
@@ -80,6 +81,7 @@ public class ProfileChannelCell extends FrameLayout {
         headerLayout.addView(subscribersView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17, Gravity.LEFT | Gravity.TOP, 4, 2, 4, 0));
 
         dialogCell = new DialogCell(null, context, false, true, UserConfig.selectedAccount, resourcesProvider);
+        dialogCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         dialogCell.setDialogCellDelegate(new DialogCell.DialogCellDelegate() {
             @Override
             public void onButtonClicked(DialogCell dialogCell) {
@@ -149,8 +151,8 @@ public class ProfileChannelCell extends FrameLayout {
     private final LoadingDrawable loadingDrawable;
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
 
         float loading = loadingAlpha.set(this.loading);
         if (loading > 0) {

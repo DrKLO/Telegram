@@ -153,6 +153,7 @@ public class VideoEditedInfo {
         public float textViewHeight;
         public float textViewX;
         public float textViewY;
+        public boolean customTextView;
 
         public TLRPC.Document document;
         public Object parentObject;

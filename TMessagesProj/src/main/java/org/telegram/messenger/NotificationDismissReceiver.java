@@ -27,6 +27,8 @@ public class NotificationDismissReceiver extends BroadcastReceiver {
         int date = intent.getIntExtra("messageDate", 0);
         if (intent.hasExtra("story") && intent.getBooleanExtra("story", false)) {
             NotificationsController.getInstance(currentAccount).processIgnoreStories();
+        } else if (intent.hasExtra("storyReaction") && intent.getBooleanExtra("storyReaction", false)) {
+            NotificationsController.getInstance(currentAccount).processIgnoreStoryReactions();
         } else if (dialogId == 0) {
             MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate", date).commit();
         } else {

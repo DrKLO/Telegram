@@ -23,14 +23,10 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -627,6 +623,10 @@ public class Bulletin {
             return 0;
         }
 
+        default boolean bottomOffsetAnimated() {
+            return true;
+        }
+
         default int getLeftPadding() {
             return 0;
         }
@@ -875,7 +875,7 @@ public class Bulletin {
         }
 
         public float getBottomOffset() {
-            if (bulletin != null && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
+            if (bulletin != null && (delegate == null || delegate.bottomOffsetAnimated()) && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
                 return bulletin.lastBottomOffset;
             }
             return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
@@ -1445,7 +1445,7 @@ public class Bulletin {
             reactionsContainerLayout.setBubbleOffset(-AndroidUtilities.dp(80));
             reactionsContainerLayout.setHint(LocaleController.getString(R.string.SavedTagReactionsHint));
             addView(reactionsContainerLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 92.5f, Gravity.CENTER_HORIZONTAL, 0, 36, 0, 0));
-            reactionsContainerLayout.setMessage(null, null);
+            reactionsContainerLayout.setMessage(null, null, true);
         }
 
         @Override

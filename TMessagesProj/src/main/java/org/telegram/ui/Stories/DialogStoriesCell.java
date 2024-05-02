@@ -317,6 +317,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     }
 
+    public void openStoryForCell(StoryCell cell) {
+        openStoryForCell(cell, false);
+    }
+
     private void openStoryForCell(StoryCell cell, boolean overscroll) {
         if (cell == null) {
             return;

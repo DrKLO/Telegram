@@ -8,13 +8,19 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
+import android.os.Build;
+import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -27,19 +33,28 @@ import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.ChatActivityEnterViewAnimatedIconView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SuggestEmojiView;
 
 import java.util.ArrayList;
 
-public class PollEditTextCell extends FrameLayout {
+public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.AnchorViewDelegate {
+
+    public static final int TYPE_DEFAULT = 0;
+    public static final int TYPE_EMOJI = 1;
 
     private EditTextBoldCursor textView;
     private ImageView deleteImageView;
@@ -50,89 +65,79 @@ public class PollEditTextCell extends FrameLayout {
     private boolean needDivider;
     private AnimatorSet checkBoxAnimation;
     private boolean alwaysShowText2;
+    private ChatActivityEnterViewAnimatedIconView emojiButton;
+    private ValueAnimator valueAnimator;
 
     public PollEditTextCell(Context context, OnClickListener onDelete) {
-        this(context, false, onDelete);
+        this(context, false, TYPE_DEFAULT, onDelete);
     }
 
-    public PollEditTextCell(Context context, boolean caption, OnClickListener onDelete) {
+    public PollEditTextCell(Context context, boolean caption, int type, OnClickListener onDelete) {
         super(context);
 
-        if (caption) {
-            textView = new EditTextCaption(context, null) {
-                @Override
-                public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-                    InputConnection conn = super.onCreateInputConnection(outAttrs);
-                    if (showNextButton) {
-                        outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
-                    }
-                    return conn;
-                }
+        textView = new EditTextCaption(context, null) {
+            @Override
+            protected int emojiCacheType() {
+                return AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW;
+            }
 
-                @Override
-                protected void onDraw(Canvas canvas) {
-                    super.onDraw(canvas);
-                    onEditTextDraw(this, canvas);
+            @Override
+            public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+                InputConnection conn = super.onCreateInputConnection(outAttrs);
+                if (showNextButton) {
+                    outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
                 }
+                return conn;
+            }
 
-                @Override
-                public boolean onTouchEvent(MotionEvent event) {
-                    if (!isEnabled()) {
-                        return false;
-                    }
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        onFieldTouchUp(this);
-                    }
-                    return super.onTouchEvent(event);
-                }
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                onEditTextDraw(this, canvas);
+            }
 
-                @Override
-                public ActionMode startActionMode(ActionMode.Callback callback, int type) {
-                    ActionMode actionMode = super.startActionMode(callback, type);
-                    onActionModeStart(this, actionMode);
-                    return actionMode;
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (!isEnabled()) {
+                    return false;
                 }
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    onFieldTouchUp(this);
+                }
+                return super.onTouchEvent(event);
+            }
 
-                @Override
-                public ActionMode startActionMode(ActionMode.Callback callback) {
-                    ActionMode actionMode = super.startActionMode(callback);
-                    onActionModeStart(this, actionMode);
-                    return actionMode;
-                }
-            };
-            ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
-        } else {
-            textView = new EditTextBoldCursor(context) {
-                @Override
-                public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-                    InputConnection conn = super.onCreateInputConnection(outAttrs);
-                    if (showNextButton) {
-                        outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+            @Override
+            protected void onFocusChanged(boolean focused, int direction, Rect previouslyFocusedRect) {
+                super.onFocusChanged(focused, direction, previouslyFocusedRect);
+                if (type == TYPE_EMOJI) {
+                    if (focused && emojiButton.getVisibility() == View.GONE) {
+                        setEmojiButtonVisibility(true);
+                    } else if (!focused && emojiButton.getVisibility() == View.VISIBLE) {
+                        setEmojiButtonVisibility(false);
                     }
-                    return conn;
                 }
+            }
 
-                @Override
-                protected void onDraw(Canvas canvas) {
-                    super.onDraw(canvas);
-                    onEditTextDraw(this, canvas);
-                }
+            @Override
+            public ActionMode startActionMode(ActionMode.Callback callback, int type) {
+                ActionMode actionMode = super.startActionMode(callback, type);
+                onActionModeStart(this, actionMode);
+                return actionMode;
+            }
 
-                @Override
-                public boolean onTouchEvent(MotionEvent event) {
-                    if (!isEnabled()) {
-                        return false;
-                    }
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        onFieldTouchUp(this);
-                    }
-                    return super.onTouchEvent(event);
-                }
-            };
-        }
+            @Override
+            public ActionMode startActionMode(ActionMode.Callback callback) {
+                ActionMode actionMode = super.startActionMode(callback);
+                onActionModeStart(this, actionMode);
+                return actionMode;
+            }
+        };
+        ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setMaxLines(type == TYPE_EMOJI ? 4 : Integer.MAX_VALUE);
 //        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setBackgroundDrawable(null);
         textView.setImeOptions(textView.getImeOptions() | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -140,7 +145,8 @@ public class PollEditTextCell extends FrameLayout {
         textView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(11));
 
         if (onDelete != null) {
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 58 : 64, 0, !LocaleController.isRTL ? 58 : 64, 0));
+            int endMargin = type == TYPE_EMOJI ? 102: 58;
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? endMargin : 64, 0, !LocaleController.isRTL ? endMargin : 64, 0));
 
             moveImageView = new ImageView(context);
             moveImageView.setFocusable(false);
@@ -179,7 +185,27 @@ public class PollEditTextCell extends FrameLayout {
                 onCheckBoxClick(PollEditTextCell.this, !checkBox.isChecked());
             });
         } else {
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 19, 0, 19, 0));
+            int endMargin = type == TYPE_EMOJI ? 80: 19;
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL,  LocaleController.isRTL ? endMargin : 19, 0, LocaleController.isRTL ? 19 : endMargin, 0));
+        }
+
+        if (type == TYPE_EMOJI) {
+            emojiButton = new ChatActivityEnterViewAnimatedIconView(context);
+            emojiButton.setAlpha(0.80f);
+            emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+            emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
+            int padding = dp(9.5f);
+            emojiButton.setPadding(padding, padding, padding, padding);
+            emojiButton.setVisibility(View.GONE);
+            int endMargin = deleteImageView == null ? 3 : 48;
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? endMargin : 0, 0, LocaleController.isRTL ? 0 : endMargin, 0));
+            if (Build.VERSION.SDK_INT >= 21) {
+                emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            }
+            emojiButton.setOnClickListener(view -> {
+                onEmojiButtonClicked(this);
+            });
+            emojiButton.setContentDescription(LocaleController.getString("Emoji", R.string.Emoji));
         }
     }
 
@@ -197,6 +223,9 @@ public class PollEditTextCell extends FrameLayout {
         if (deleteImageView != null) {
             deleteImageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
         }
+        if (emojiButton != null) {
+            emojiButton.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        }
         if (moveImageView != null) {
             moveImageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
         }
@@ -212,7 +241,11 @@ public class PollEditTextCell extends FrameLayout {
         } else if (deleteImageView == null) {
             right = 70;
         } else {
-            right = 122;
+            if (emojiButton != null) {
+                right = 174;
+            } else {
+                right = 122;
+            }
         }
         textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(right), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         int h = textView.getMeasuredHeight();
@@ -335,11 +368,19 @@ public class PollEditTextCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    public ChatActivityEnterViewAnimatedIconView getEmojiButton() {
+        return emojiButton;
+    }
+
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         setEnabled(value);
     }
 
     protected void onFieldTouchUp(EditTextBoldCursor editText) {
+
+    }
+
+    protected void onEmojiButtonClicked(PollEditTextCell cell) {
 
     }
 
@@ -354,10 +395,94 @@ public class PollEditTextCell extends FrameLayout {
         return textView2;
     }
 
+    private void setEmojiButtonVisibility(boolean visible) {
+        if (valueAnimator != null) {
+            valueAnimator.cancel();
+        }
+        if (visible) {
+            emojiButton.setVisibility(View.VISIBLE);
+            emojiButton.setScaleX(0f);
+            emojiButton.setScaleY(0f);
+            emojiButton.setAlpha(0f);
+        }
+        valueAnimator = ValueAnimator.ofFloat(visible ? 0 : 1, visible ? 1 : 0);
+        valueAnimator.addUpdateListener(animation -> {
+            float value = (Float) animation.getAnimatedValue();
+            emojiButton.setScaleX(value);
+            emojiButton.setScaleY(value);
+            emojiButton.setAlpha(Math.max(value, 0.80f));
+            if (textView2 != null && deleteImageView == null && textView2.getVisibility() == View.VISIBLE) {
+                textView2.setTranslationY(AndroidUtilities.dp(26) * value);
+            }
+        });
+        valueAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(@NonNull Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(@NonNull Animator animation) {
+                if (!visible) {
+                    emojiButton.setVisibility(View.GONE);
+                } else {
+                    emojiButton.setScaleX(1f);
+                    emojiButton.setScaleY(1f);
+                    emojiButton.setAlpha(0.80f);
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(@NonNull Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(@NonNull Animator animation) {
+
+            }
+        });
+        valueAnimator.setDuration(200L);
+        valueAnimator.start();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider && drawDivider()) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(moveImageView != null ? 63 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(moveImageView != null ? 63 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
+    }
+
+    @Override
+    public BaseFragment getParentFragment() {
+        return null;
+    }
+
+    @Override
+    public void setFieldText(CharSequence text) {
+        textView.setText(text);
+    }
+
+    @Override
+    public void addTextChangedListener(TextWatcher watcher) {
+        textView.addTextChangedListener(watcher);
+    }
+
+    @Override
+    public EditTextBoldCursor getEditField() {
+        return textView;
+    }
+
+    @Override
+    public CharSequence getFieldText() {
+        if (textView.length() > 0) {
+            return textView.getText();
+        }
+        return null;
+    }
+
+    @Override
+    public Editable getEditText() {
+        return textView.getText();
     }
 }

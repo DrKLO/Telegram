@@ -4,7 +4,9 @@ package org.telegram.ui.Components;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.ui.Business.BusinessLinksActivity;
@@ -21,13 +23,15 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public View view;
     public int id;
     public boolean checked;
+    public boolean collapsed;
     public boolean enabled = true;
+    public int pad;
     public boolean hideDivider;
     public int iconResId;
-    public int backgroundKey;
     public CharSequence text, subtext, textValue;
+    public CharSequence animatedText;
     public String[] texts;
-    public boolean accent, red, transparent;
+    public boolean accent, red, transparent, locked;
 
     public boolean include;
     public long dialogId;
@@ -37,9 +41,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public int intValue;
     public Utilities.Callback<Integer> intCallback;
 
-    public Runnable clickCallback;
+    public View.OnClickListener clickCallback;
 
     public Object object;
+
+    public boolean withUsername = true;
 
 
     public UItem(int viewType, boolean selectable) {
@@ -55,6 +61,13 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static UItem asHeader(CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_HEADER, false);
         i.text = text;
+        return i;
+    }
+
+    public static UItem asAnimatedHeader(int id, CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_ANIMATED_HEADER, false);
+        i.id = id;
+        i.animatedText = text;
         return i;
     }
 
@@ -117,11 +130,18 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
-    public static UItem asButton(int id, CharSequence text, TLRPC.Document sticker) {
+    public static UItem asStickerButton(int id, CharSequence text, TLRPC.Document sticker) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
         i.id = id;
         i.text = text;
         i.object = sticker;
+        return i;
+    }
+    public static UItem asStickerButton(int id, CharSequence text, String stickerPath) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
+        i.id = id;
+        i.text = text;
+        i.object = stickerPath;
         return i;
     }
 
@@ -281,8 +301,103 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
-    public UItem setCloseIcon(Runnable onCloseClick) {
+    public static UItem asRoundCheckbox(int id, CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX, false);
+        item.id = id;
+        item.text = text;
+        return item;
+    }
+
+    public static UItem asRoundGroupCheckbox(int id, CharSequence text, CharSequence subtext) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_ROUND_GROUP_CHECKBOX, false);
+        item.id = id;
+        item.text = text;
+        item.animatedText = subtext;
+        return item;
+    }
+
+    public static UItem asUserGroupCheckbox(int id, CharSequence text, CharSequence subtext) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_USER_GROUP_CHECKBOX, false);
+        item.id = id;
+        item.text = text;
+        item.animatedText = subtext;
+        return item;
+    }
+
+    public static UItem asUserCheckbox(int id, TLObject user) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_USER_CHECKBOX, false);
+        item.id = id;
+        item.object = user;
+        return item;
+    }
+
+    public static UItem asShadowCollapseButton(int id, CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SHADOW_COLLAPSE_BUTTON, false);
+        item.id = id;
+        item.animatedText = text;
+        return item;
+    }
+
+    public static UItem asSwitch(int id, CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SWITCH, false);
+        item.id = id;
+        item.text = text;
+        return item;
+    }
+
+    public static UItem asExpandableSwitch(int id, CharSequence text, CharSequence subText) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_EXPANDABLE_SWITCH, false);
+        item.id = id;
+        item.text = text;
+        item.animatedText = subText;
+        return item;
+    }
+
+    public static UItem asGraySection(CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_GRAY_SECTION, false);
+        item.text = text;
+        return item;
+    }
+
+    public static UItem asGraySection(CharSequence text, CharSequence button, View.OnClickListener onClickListener) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_GRAY_SECTION, false);
+        item.text = text;
+        item.subtext = button;
+        item.clickCallback = onClickListener;
+        return item;
+    }
+
+    public static UItem asProfileCell(TLObject obj) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_PROFILE_CELL, false);
+        item.object = obj;
+        return item;
+    }
+
+    public static UItem asSearchMessage(MessageObject messageObject) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SEARCH_MESSAGE, false);
+        item.object = messageObject;
+        return item;
+    }
+
+    public static UItem asFlicker(int type) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_FLICKER, false);
+        item.intValue = type;
+        return item;
+    }
+
+
+    public UItem withUsername(boolean value) {
+        withUsername = value;
+        return this;
+    }
+
+    public UItem setCloseIcon(View.OnClickListener onCloseClick) {
         clickCallback = onCloseClick;
+        return this;
+    }
+
+    public UItem setClickCallback(View.OnClickListener clickCallback) {
+        this.clickCallback = clickCallback;
         return this;
     }
 
@@ -294,8 +409,33 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return this;
     }
 
+    public UItem setCollapsed(boolean collapsed) {
+        this.collapsed = collapsed;
+        return this;
+    }
+
+    public UItem setPad(int pad) {
+        this.pad = pad;
+        return this;
+    }
+
+    public UItem pad() {
+        this.pad = 1;
+        return this;
+    }
+
     public UItem setEnabled(boolean enabled) {
         this.enabled = enabled;
+        return this;
+    }
+
+    public UItem setLocked(boolean locked) {
+        this.locked = locked;
+        return this;
+    }
+
+    public UItem locked() {
+        this.locked = true;
         return this;
     }
 
@@ -314,15 +454,24 @@ public class UItem extends AdapterWithDiffUtils.Item {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UItem item = (UItem) o;
+        if (viewType != item.viewType)
+            return false;
+        if (viewType == UniversalAdapter.VIEW_TYPE_USER_GROUP_CHECKBOX ||
+                viewType == UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX) {
+            return id == item.id;
+        }
+        if (viewType == UniversalAdapter.VIEW_TYPE_GRAY_SECTION) {
+            return TextUtils.equals(text, item.text);
+        }
         return (
-            viewType == item.viewType &&
             id == item.id &&
+            pad == item.pad &&
             dialogId == item.dialogId &&
             iconResId == item.iconResId &&
-            backgroundKey == item.backgroundKey &&
             hideDivider == item.hideDivider &&
             transparent == item.transparent &&
             red == item.red &&
+            locked == item.locked &&
             accent == item.accent &&
             TextUtils.equals(text, item.text) &&
             TextUtils.equals(subtext, item.subtext) &&
@@ -331,5 +480,22 @@ public class UItem extends AdapterWithDiffUtils.Item {
             intValue == item.intValue &&
             Objects.equals(object, item.object)
         );
+    }
+
+    @Override
+    protected boolean contentsEquals(AdapterWithDiffUtils.Item o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UItem item = (UItem) o;
+        if (viewType != item.viewType)
+            return false;
+        if (viewType == UniversalAdapter.VIEW_TYPE_GRAY_SECTION) {
+            return TextUtils.equals(text, item.text) && TextUtils.equals(subtext, item.subtext);
+        }
+        if (viewType == UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX ||
+            viewType == UniversalAdapter.VIEW_TYPE_USER_CHECKBOX) {
+            return id == item.id && TextUtils.equals(text, item.text) && checked == item.checked;
+        }
+        return super.contentsEquals(o);
     }
 }

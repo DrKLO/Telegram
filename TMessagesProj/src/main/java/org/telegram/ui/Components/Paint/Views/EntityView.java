@@ -187,7 +187,7 @@ public class EntityView extends FrameLayout {
                     scale(d / pd);
                 }
                 double angleDiff = Math.atan2(y1 - y2, x1 - x2) - Math.atan2(previousLocationY - previousLocationY2, previousLocationX - previousLocationX2);
-                rotate(this.angle + (float) Math.toDegrees(angleDiff) - delegate.getCropRotation());
+                rotate(this.angle + (float) Math.toDegrees(angleDiff));
             }
 
             previousLocationX = x1;
@@ -936,7 +936,7 @@ public class EntityView extends FrameLayout {
                                 angle = (float) Math.atan2(y - pos[1], x - pos[0]);
                             }
 
-                            rotate((float) Math.toDegrees(angle) - delegate.getCropRotation());
+                            rotate((float) Math.toDegrees(angle));
 
                             previousLocationX = x;
                             previousLocationY = y;

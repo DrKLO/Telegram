@@ -455,6 +455,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public boolean isMuted;
         public boolean canDeleteAfter;
         public boolean hasSpoiler;
+        public String emoji;
 
         public boolean isChatPreviewSpoilerRevealed;
         public boolean isAttachSpoilerRevealed;
@@ -526,6 +527,39 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
             hasSpoiler = false;
             super.reset();
+        }
+
+        public void deleteAll() {
+            if (path != null) {
+                try {
+                    new File(path).delete();
+                } catch (Exception ignore) {}
+            }
+            if (fullPaintPath != null) {
+                try {
+                    new File(fullPaintPath).delete();
+                } catch (Exception ignore) {}
+            }
+            if (paintPath != null) {
+                try {
+                    new File(paintPath).delete();
+                } catch (Exception ignore) {}
+            }
+            if (imagePath != null) {
+                try {
+                    new File(imagePath).delete();
+                } catch (Exception ignore) {}
+            }
+            if (filterPath != null) {
+                try {
+                    new File(filterPath).delete();
+                } catch (Exception ignore) {}
+            }
+            if (croppedPaintPath != null) {
+                try {
+                    new File(croppedPaintPath).delete();
+                } catch (Exception ignore) {}
+            }
         }
     }
 

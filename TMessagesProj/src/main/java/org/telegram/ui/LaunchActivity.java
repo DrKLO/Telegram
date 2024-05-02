@@ -644,10 +644,16 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else if (id == 15) {
                     showSelectStatusDialog();
                 } else if (id == 16) {
+                    drawerLayoutContainer.closeDrawer(true);
+                    Bundle args = new Bundle();
+                    args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                    args.putBoolean("my_profile", true);
+                    presentFragment(new ProfileActivity(args, null));
+                } else if (id == 17) {
+                    drawerLayoutContainer.closeDrawer(true);
                     Bundle args = new Bundle();
                     args.putLong("dialog_id", UserConfig.getInstance(currentAccount).getClientUserId());
                     args.putInt("type", MediaActivity.TYPE_STORIES);
-                    drawerLayoutContainer.closeDrawer(true);
                     presentFragment(new MediaActivity(args, null));
                 }
             }
@@ -1357,7 +1363,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         DialogsActivity dialogsActivity = dialogsActivityProvider.provide(null);
         dialogsActivity.setSideMenu(sideMenu);
-        actionBarLayout.addFragmentToStack(dialogsActivity, 0);
+        actionBarLayout.addFragmentToStack(dialogsActivity, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
         drawerLayoutContainer.setAllowOpenDrawer(true, false);
         actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
         if (AndroidUtilities.isTablet()) {
@@ -1711,7 +1717,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         long push_user_id = 0;
         long push_chat_id = 0;
         long[] push_story_dids = null;
-        int push_story_id = 0;
+        int push_story_id = -1;
         long push_topic_id = 0;
         int push_enc_id = 0;
         int push_msg_id = 0;
@@ -2794,6 +2800,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     long chatId = intent.getLongExtra("chatId", 0);
 //                    Integer userIdInt = intent.getIntExtra("userId", 0);
                     long[] storyDialogIds = intent.getLongArrayExtra("storyDialogIds");
+                    int storyId = intent.getIntExtra("storyId", -1);
                     long userId = intent.getLongExtra("userId", 0);
                     int encId = intent.getIntExtra("encId", 0);
                     int widgetId = intent.getIntExtra("appWidgetId", 0);
@@ -2806,7 +2813,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         if (push_msg_id == 0) {
                             push_msg_id = intent.getIntExtra("message_id", 0);
                         }
-                        if (storyDialogIds != null) {
+                        if (storyId != -1) {
+                            NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
+                            push_story_id = storyId;
+                        } else if (storyDialogIds != null) {
                             NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
                             push_story_dids = storyDialogIds;
 //                            push_story_id = intent.getIntExtra("storyId", 0);
@@ -2856,7 +2866,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
             }
 
-            if (push_story_dids != null) {
+            if (push_story_id > 0) {
+                NotificationsController.getInstance(intentAccount[0]).processSeenStoryReactions(UserConfig.getInstance(intentAccount[0]).getClientUserId(), push_story_id);
+                openMyStory(push_story_id, true);
+            } else if (push_story_dids != null) {
                 NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
                 openStories(push_story_dids, true);
             } else if (push_user_id != 0) {
@@ -4184,6 +4197,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             } else {
                                 args.putLong("user_id", peerId);
                                 dialog_id = peerId;
+                                if (text != null) {
+                                    String textToSet = text;
+                                    if (textToSet.startsWith("@")) {
+                                        textToSet = " " + textToSet;
+                                    }
+                                    args.putString("start_text", textToSet);
+                                }
                             }
                             if (botUser != null && user != null && user.bot) {
                                 args.putString("botUser", botUser);
@@ -4210,9 +4230,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                             if (setAsAttachBot != null) {
                                 args.putString("attach_bot_start_command", setAsAttachBot);
-                            }
-                            if (text != null) {
-                                args.putString("start_text", text);
                             }
                             BaseFragment lastFragment = !mainFragmentsStack.isEmpty() && voicechat == null ? mainFragmentsStack.get(mainFragmentsStack.size() - 1) : null;
                             if (lastFragment == null || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, lastFragment)) {
@@ -7889,6 +7906,119 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     public boolean isLightNavigationBar() {
         return AndroidUtilities.getLightNavigationBar(getWindow());
+    }
+
+    private void openMyStory(final int storyId, boolean openViews) {
+        final long dialogId = UserConfig.getInstance(currentAccount).getClientUserId();
+        StoriesController storiesController = MessagesController.getInstance(currentAccount).getStoriesController();
+        TL_stories.PeerStories peerStories = storiesController.getStories(dialogId);
+        TL_stories.StoryItem storyItem = null;
+        if (peerStories != null) {
+            for (int i = 0; i < peerStories.stories.size(); ++i) {
+                if (peerStories.stories.get(i).id == storyId) {
+                    storyItem = peerStories.stories.get(i);
+                    break;
+                }
+            }
+            if (storyItem != null) {
+                BaseFragment lastFragment = getLastFragment();
+                if (lastFragment == null) {
+                    return;
+                }
+                StoryViewer.PlaceProvider placeProvider = null;
+                if (lastFragment instanceof DialogsActivity) {
+                    try {
+                        placeProvider = StoriesListPlaceProvider.of(((DialogsActivity) lastFragment).dialogStoriesCell.recyclerListView);
+                    } catch (Exception ignore) {}
+                }
+                lastFragment.getOrCreateStoryViewer().instantClose();
+                ArrayList<Long> dialogIds = new ArrayList<>();
+                dialogIds.add(storyItem.dialogId);
+                if (openViews) {
+                    lastFragment.getOrCreateStoryViewer().showViewsAfterOpening();
+                }
+                lastFragment.getOrCreateStoryViewer().open(this, storyItem, dialogIds, 0, null, peerStories, placeProvider, false);
+                return;
+            }
+        }
+        if (storyItem == null) {
+            StoriesController.StoriesList list = null;
+            StoriesController.StoriesList profileList = storiesController.getStoriesList(dialogId, StoriesController.StoriesList.TYPE_PINNED);
+            if (profileList != null) {
+                MessageObject msg = profileList.findMessageObject(storyId);
+                if (msg != null) {
+                    storyItem = msg.storyItem;
+                    list = profileList;
+                }
+            }
+            if (storyItem == null) {
+                StoriesController.StoriesList archiveList = storiesController.getStoriesList(dialogId, StoriesController.StoriesList.TYPE_ARCHIVE);
+                if (archiveList != null) {
+                    MessageObject msg = archiveList.findMessageObject(storyId);
+                    if (msg != null) {
+                        storyItem = msg.storyItem;
+                        list = archiveList;
+                    }
+                }
+            }
+            if (storyItem != null && list != null) {
+                BaseFragment lastFragment = getLastFragment();
+                if (lastFragment == null) {
+                    return;
+                }
+                StoryViewer.PlaceProvider placeProvider = null;
+                if (lastFragment instanceof DialogsActivity) {
+                    try {
+                        placeProvider = StoriesListPlaceProvider.of(((DialogsActivity) lastFragment).dialogStoriesCell.recyclerListView);
+                    } catch (Exception ignore) {}
+                }
+                lastFragment.getOrCreateStoryViewer().instantClose();
+                ArrayList<Long> dialogIds = new ArrayList<>();
+                dialogIds.add(storyItem.dialogId);
+                if (openViews) {
+                    lastFragment.getOrCreateStoryViewer().showViewsAfterOpening();
+                }
+                lastFragment.getOrCreateStoryViewer().open(this, storyItem, dialogIds, 0, list, null, placeProvider, false);
+                return;
+            }
+        }
+        TL_stories.TL_stories_getStoriesByID req = new TL_stories.TL_stories_getStoriesByID();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+        req.id.add(storyId);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            if (res instanceof TL_stories.TL_stories_stories) {
+                TL_stories.TL_stories_stories response = (TL_stories.TL_stories_stories) res;
+                TL_stories.StoryItem storyItem1 = null;
+                for (int i = 0; i < response.stories.size(); ++i) {
+                    if (response.stories.get(i).id == storyId) {
+                        storyItem1 = response.stories.get(i);
+                        break;
+                    }
+                }
+                if (storyItem1 != null) {
+                    storyItem1.dialogId = dialogId;
+                    BaseFragment lastFragment = getLastFragment();
+                    if (lastFragment == null) {
+                        return;
+                    }
+                    StoryViewer.PlaceProvider placeProvider = null;
+                    if (lastFragment instanceof DialogsActivity) {
+                        try {
+                            placeProvider = StoriesListPlaceProvider.of(((DialogsActivity) lastFragment).dialogStoriesCell.recyclerListView);
+                        } catch (Exception ignore) {}
+                    }
+                    lastFragment.getOrCreateStoryViewer().instantClose();
+                    ArrayList<Long> dialogIds = new ArrayList<>();
+                    dialogIds.add(dialogId);
+                    if (openViews) {
+                        lastFragment.getOrCreateStoryViewer().showViewsAfterOpening();
+                    }
+                    lastFragment.getOrCreateStoryViewer().open(this, storyItem1, dialogIds, 0, null, null, placeProvider, false);
+                    return;
+                }
+            }
+            BulletinFactory.global().createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.StoryNotFound)).show(false);
+        }));
     }
 
     private void openStories(long[] dialogIds, boolean requestWhenNeeded) {

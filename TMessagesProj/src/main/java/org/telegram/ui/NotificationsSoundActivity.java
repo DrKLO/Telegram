@@ -152,6 +152,9 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             } else if (currentType == NotificationsController.TYPE_STORIES) {
                 prefPath = "StoriesSoundPath";
                 prefDocId = "StoriesSoundDocId";
+            } else if (currentType == NotificationsController.TYPE_REACTIONS_MESSAGES || currentType == NotificationsController.TYPE_REACTIONS_STORIES) {
+                prefPath = "ReactionSoundPath";
+                prefDocId = "ReactionSoundDocId";
             } else {
                 throw new RuntimeException("Unsupported type");
             }
@@ -294,7 +297,9 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             } else if (currentType == NotificationsController.TYPE_CHANNEL) {
                 actionBar.setTitle(LocaleController.getString("NotificationsSoundChannels", R.string.NotificationsSoundChannels));
             } else if (currentType == NotificationsController.TYPE_STORIES) {
-                actionBar.setTitle(LocaleController.getString("NotificationsSoundStories", R.string.NotificationsSoundStories));
+                actionBar.setTitle(LocaleController.getString(R.string.NotificationsSoundStories));
+            } else if (currentType == NotificationsController.TYPE_REACTIONS_STORIES || currentType == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+                actionBar.setTitle(LocaleController.getString(R.string.NotificationsSoundReactions));
             }
         } else {
             avatarContainer = new ChatAvatarContainer(context, null, false, resourcesProvider);
@@ -885,6 +890,10 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                     prefName = "StoriesSound";
                     prefPath = "StoriesSoundPath";
                     prefDocId = "StoriesSoundDocId";
+                } else if (currentType == NotificationsController.TYPE_REACTIONS_STORIES || currentType == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+                    prefName = "ReactionSound";
+                    prefPath = "ReactionSoundPath";
+                    prefDocId = "ReactionSoundDocId";
                 } else {
                     throw new RuntimeException("Unsupported type");
                 }

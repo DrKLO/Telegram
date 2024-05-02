@@ -76,6 +76,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChannelAdminLogActivity;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -89,16 +90,19 @@ import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.UploadingDotsSpannable;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.PreviewView;
 
+import java.nio.channels.Channel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -458,6 +462,17 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         imageReceiver.clearDecorators();
         if (messageObject.type != MessageObject.TYPE_ACTION_WALLPAPER) {
             wallpaperPreviewDrawable = null;
+        }
+        if (messageObject.actionDeleteGroupEventId != -1) {
+            ScaleStateListAnimator.apply(this, .02f, 1.2f);
+            overriddenMaxWidth = Math.max(dp(250), HintView2.cutInFancyHalf(messageObject.messageText, (TextPaint) getThemedPaint(Theme.key_paint_chatActionText)));
+            ProfileActivity.ShowDrawable showDrawable = ChannelAdminLogActivity.findDrawable(messageObject.messageText);
+            if (showDrawable != null) {
+                showDrawable.setView(this);
+            }
+        } else {
+            ScaleStateListAnimator.reset(this);
+            overriddenMaxWidth = 0;
         }
         if (messageObject.isStoryMention()) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(messageObject.messageOwner.media.user_id);
@@ -1804,7 +1819,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 int lineWidth = (int) Math.ceil(textLayout.getLineWidth(a));
                 if (a != 0) {
                     int diff = prevLineWidth - lineWidth;
-                    if (diff > 0 && diff <= corner + cornerIn) {
+                    if (diff > 0 && diff <= 1.5f * corner + cornerIn) {
                         lineWidth = prevLineWidth;
                     }
                 }
@@ -1814,7 +1829,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             for (int a = count - 2; a >= 0; a--) {
                 int lineWidth = lineWidths.get(a);
                 int diff = prevLineWidth - lineWidth;
-                if (diff > 0 && diff <= corner + cornerIn) {
+                if (diff > 0 && diff <= 1.5f * corner + cornerIn) {
                     lineWidth = prevLineWidth;
                 }
                 lineWidths.set(a, lineWidth);

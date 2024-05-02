@@ -201,11 +201,20 @@ public class ForumUtilities {
     }
 
     public static void openTopic(BaseFragment baseFragment, long chatId, TLRPC.TL_forumTopic topic, int fromMessageId) {
+        ChatActivity chatActivity = getChatActivityForTopic(baseFragment, chatId, topic, fromMessageId, new Bundle());
+        if (chatActivity != null) {
+            baseFragment.presentFragment(chatActivity);
+        }
+    }
+
+    public static ChatActivity getChatActivityForTopic(BaseFragment baseFragment, long chatId, TLRPC.TL_forumTopic topic, int fromMessageId, Bundle args) {
         if (baseFragment == null || topic == null) {
-            return;
+            return null;
         }
         TLRPC.Chat chatLocal = baseFragment.getMessagesController().getChat(chatId);
-        Bundle args = new Bundle();
+        if (args == null) {
+            args = new Bundle();
+        }
         args.putLong("chat_id", chatId);
 
         if (fromMessageId != 0) {
@@ -226,7 +235,7 @@ public class ForumUtilities {
             }
         }
         if (message == null) {
-            return;
+            return null;
         }
         ArrayList<MessageObject> messageObjects = new ArrayList<>();
         messageObjects.add(new MessageObject(baseFragment.getCurrentAccount(), message, false, false));
@@ -234,7 +243,7 @@ public class ForumUtilities {
         if (fromMessageId != 0) {
             chatActivity.highlightMessageId = fromMessageId;
         }
-        baseFragment.presentFragment(chatActivity);
+        return chatActivity;
     }
 
     public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint, boolean isDialog) {

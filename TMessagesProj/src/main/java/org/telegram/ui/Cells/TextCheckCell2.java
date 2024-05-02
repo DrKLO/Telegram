@@ -33,6 +33,7 @@ import org.telegram.ui.Components.Switch;
 
 public class TextCheckCell2 extends FrameLayout {
 
+    public int id;
     private TextView textView;
     private TextView valueTextView;
     private Switch checkBox;

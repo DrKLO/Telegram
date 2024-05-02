@@ -91,7 +91,7 @@ public class FileRefController extends BaseController {
         } else if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             long channelId = messageObject.getChannelId();
-            return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled;
+            return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled + "_" + messageObject.getQuickReplyId();
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
             long channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
@@ -210,6 +210,11 @@ public class FileRefController extends BaseController {
             locationKey = "file_" + req.id.id;
             location = new TLRPC.TL_inputDocumentFileLocation();
             location.id = req.id.id;
+        } else if (args[0] instanceof TLRPC.TL_stickers_addStickerToSet) {
+            TLRPC.TL_stickers_addStickerToSet req = (TLRPC.TL_stickers_addStickerToSet) args[0];
+            locationKey = "file_" + req.sticker.document.id;
+            location = new TLRPC.TL_inputDocumentFileLocation();
+            location.id = req.sticker.document.id;
         } else if (args[0] instanceof TLRPC.TL_messages_faveSticker) {
             TLRPC.TL_messages_faveSticker req = (TLRPC.TL_messages_faveSticker) args[0];
             locationKey = "file_" + req.id.id;
@@ -388,6 +393,12 @@ public class FileRefController extends BaseController {
             if (messageObject.scheduled) {
                 TLRPC.TL_messages_getScheduledMessages req = new TLRPC.TL_messages_getScheduledMessages();
                 req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
+                req.id.add(messageObject.getRealId());
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
+            } else if (messageObject.isQuickReply()) {
+                TLRPC.TL_messages_getQuickReplyMessages req = new TLRPC.TL_messages_getQuickReplyMessages();
+                req.shortcut_id = messageObject.getQuickReplyId();
+                req.flags |= 1;
                 req.id.add(messageObject.getRealId());
                 getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
             } else if (channelId != 0) {
@@ -639,6 +650,15 @@ public class FileRefController extends BaseController {
             getConnectionsManager().sendRequest(req, (response, error) -> {
 
             });
+        } else if (requester.args[0] instanceof TLRPC.TL_stickers_addStickerToSet) {
+            TLRPC.TL_stickers_addStickerToSet req = (TLRPC.TL_stickers_addStickerToSet) requester.args[0];
+            if (fromCache && isSameReference(req.sticker.document.file_reference, file_reference)) {
+                return false;
+            }
+            req.sticker.document.file_reference = file_reference;
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+
+            });
         } else if (requester.args[0] instanceof TLRPC.TL_messages_faveSticker) {
             TLRPC.TL_messages_faveSticker req = (TLRPC.TL_messages_faveSticker) requester.args[0];
             if (fromCache && isSameReference(req.id.file_reference, file_reference)) {
@@ -717,6 +737,9 @@ public class FileRefController extends BaseController {
         } else if (args[0] instanceof TLRPC.TL_messages_saveRecentSticker) {
             TLRPC.TL_messages_saveRecentSticker req = (TLRPC.TL_messages_saveRecentSticker) args[0];
             //do nothing
+        } else if (args[0] instanceof TLRPC.TL_stickers_addStickerToSet) {
+            TLRPC.TL_stickers_addStickerToSet req = (TLRPC.TL_stickers_addStickerToSet) args[0];
+            //do nothing
         } else if (args[0] instanceof TLRPC.TL_messages_faveSticker) {
             TLRPC.TL_messages_faveSticker req = (TLRPC.TL_messages_faveSticker) args[0];
             //do nothing
@@ -779,11 +802,10 @@ public class FileRefController extends BaseController {
                 continue;
             }
             if (error != null && BuildVars.LOGS_ENABLED) {
-                if (requester.args[1] instanceof FileLoadOperation) {
+                if (requester.args.length > 1 && requester.args[1] instanceof FileLoadOperation) {
                     FileLoadOperation operation = (FileLoadOperation) requester.args[1];
                     FileLog.e("debug_loading: " + operation.getCacheFileFinal().getName() + " can't update file reference: " + error.code + " " + error.text);
                 }
-
             }
             if (requester.location instanceof TLRPC.TL_inputFileLocation || requester.location instanceof TLRPC.TL_inputPeerPhotoFileLocation) {
                 locationReplacement = new TLRPC.InputFileLocation[1];

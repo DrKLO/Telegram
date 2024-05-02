@@ -471,7 +471,7 @@ public class Switch extends View {
                 colorProgress = progress;
             }
 
-            color1 = processColor(Theme.getColor(thumbColorKey, resourcesProvider));
+            color1 = Theme.getColor(thumbColorKey, resourcesProvider);
             color2 = processColor(Theme.getColor(thumbCheckedColorKey, resourcesProvider));
             r1 = Color.red(color1);
             r2 = Color.red(color2);

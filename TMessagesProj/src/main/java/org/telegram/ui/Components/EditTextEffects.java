@@ -361,10 +361,14 @@ public class EditTextEffects extends EditText {
         }
         int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
         if (force || lastLayout != getLayout() || lastTextLength != newTextLength) {
-            animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.getCacheTypeForEnterView(), this, animatedEmojiDrawables, getLayout());
+            animatedEmojiDrawables = AnimatedEmojiSpan.update(emojiCacheType(), this, animatedEmojiDrawables, getLayout());
             lastLayout = getLayout();
             lastTextLength = newTextLength;
         }
+    }
+
+    protected int emojiCacheType() {
+        return AnimatedEmojiDrawable.getCacheTypeForEnterView();
     }
 
     private int lastText2Length;

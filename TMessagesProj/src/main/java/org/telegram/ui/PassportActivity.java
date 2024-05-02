@@ -6319,6 +6319,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         req.settings.allow_flashcall = false;
                     }
                 } else {
+                    req.settings.unknown_number = true;
                     req.settings.current_number = false;
                 }
             } catch (Exception e) {

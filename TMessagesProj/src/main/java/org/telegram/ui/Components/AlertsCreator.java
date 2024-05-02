@@ -9,7 +9,6 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.formatDateOnline;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -47,11 +46,9 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.URLSpan;
 import android.util.Base64;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -136,8 +133,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class AlertsCreator {
     public final static int PERMISSIONS_REQUEST_TOP_ICON_SIZE = 72;
@@ -973,7 +975,7 @@ public class AlertsCreator {
             return;
         }
         boolean enabled;
-        boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(did);
+        boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(did, false, false);
 
         String[] descriptions = new String[]{
                 LocaleController.getString("NotificationsTurnOn", R.string.NotificationsTurnOn),
@@ -3733,6 +3735,7 @@ public class AlertsCreator {
         if (addPrivacyText != null) {
             FrameLayout frameLayout = new FrameLayout(context);
             LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(context);
+            textView.setPadding(dp(8), 0, dp(8), 0);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
             textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
@@ -3763,7 +3766,7 @@ public class AlertsCreator {
                     bottomSheetParams.transitionFromLeft = true;
                     bottomSheetParams.allowNestedScroll = false;
                     fragment.showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), bottomSheetParams);
-                }), true));
+                }), true, dp(8f / 3f), dp(.66f)));
             };
             setText.run();
 
@@ -5182,6 +5185,8 @@ public class AlertsCreator {
             currentColor = preferences.getInt("GroupLed", 0xff0000ff);
         } else if (globalType == NotificationsController.TYPE_STORIES) {
             currentColor = preferences.getInt("StoriesLed", 0xff0000ff);
+        } else if (globalType == NotificationsController.TYPE_REACTIONS_STORIES || globalType == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+            currentColor = preferences.getInt("ReactionsLed", 0xff0000ff);
         } else {
             currentColor = preferences.getInt("ChannelLed", 0xff0000ff);
         }
@@ -5229,6 +5234,8 @@ public class AlertsCreator {
                     editor.putInt("GroupLed", selectedColor[0]);
                 } else if (globalType == NotificationsController.TYPE_STORIES) {
                     editor.putInt("StoriesLed", selectedColor[0]);
+                } else if (globalType == NotificationsController.TYPE_REACTIONS_STORIES || globalType == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+                    editor.putInt("ReactionLed", selectedColor[0]);
                 } else {
                     editor.putInt("ChannelLed", selectedColor[0]);
                 }
@@ -5250,6 +5257,8 @@ public class AlertsCreator {
                 editor.putInt("GroupLed", 0);
             } else if (globalType == NotificationsController.TYPE_STORIES) {
                 editor.putInt("StoriesLed", 0);
+            } else if (globalType == NotificationsController.TYPE_REACTIONS_STORIES || globalType == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+                editor.putInt("ReactionsLed", 0);
             } else {
                 editor.putInt("ChannelLed", 0);
             }
@@ -5368,6 +5377,8 @@ public class AlertsCreator {
                         NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(NotificationsController.TYPE_CHANNEL);
                     } else if (prefKeyPrefix.equals("vibrate_group")) {
                         NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(NotificationsController.TYPE_GROUP);
+                    } else if (prefKeyPrefix.equals("vibrate_react")) {
+                        NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(NotificationsController.TYPE_REACTIONS_MESSAGES);
                     } else {
                         NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(NotificationsController.TYPE_PRIVATE);
                     }
@@ -5385,32 +5396,37 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static Dialog createLocationUpdateDialog(final Activity parentActivity, TLRPC.User user, final MessagesStorage.IntCallback callback, Theme.ResourcesProvider resourcesProvider) {
+    public static Dialog createLocationUpdateDialog(final Activity parentActivity, boolean expand, TLRPC.User user, final MessagesStorage.IntCallback callback, Theme.ResourcesProvider resourcesProvider) {
         final int[] selected = new int[1];
 
         String[] descriptions = new String[]{
-                LocaleController.getString("SendLiveLocationFor15m", R.string.SendLiveLocationFor15m),
-                LocaleController.getString("SendLiveLocationFor1h", R.string.SendLiveLocationFor1h),
-                LocaleController.getString("SendLiveLocationFor8h", R.string.SendLiveLocationFor8h),
+                getString(R.string.SendLiveLocationFor15m),
+                getString(R.string.SendLiveLocationFor1h),
+                getString(R.string.SendLiveLocationFor8h),
+                getString(R.string.SendLiveLocationForever)
         };
 
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.setPadding(0, 0, 0, dp(4));
 
         TextView titleTextView = new TextView(parentActivity);
-        if (user != null) {
-            titleTextView.setText(LocaleController.formatString("LiveLocationAlertPrivate", R.string.LiveLocationAlertPrivate, UserObject.getFirstName(user)));
+        if (expand) {
+            titleTextView.setText(LocaleController.getString(R.string.LiveLocationAlertExpandMessage));
+        } else if (user != null) {
+            titleTextView.setText(LocaleController.formatString(R.string.LiveLocationAlertPrivate, UserObject.getFirstName(user)));
         } else {
-            titleTextView.setText(LocaleController.getString("LiveLocationAlertGroup", R.string.LiveLocationAlertGroup));
+            titleTextView.setText(LocaleController.getString(R.string.LiveLocationAlertGroup));
         }
         int textColor = resourcesProvider != null ? resourcesProvider.getColorOrDefault(Theme.key_dialogTextBlack) : Theme.getColor(Theme.key_dialogTextBlack);
         titleTextView.setTextColor(textColor);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         titleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 0, 24, 8));
+        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, (expand ? 4 : 0), 24, 8));
 
         for (int a = 0; a < descriptions.length; a++) {
             RadioColorCell cell = new RadioColorCell(parentActivity, resourcesProvider);
+            cell.heightDp = 42;
             cell.setPadding(dp(4), 0, dp(4), 0);
             cell.setTag(a);
             int color1 = resourcesProvider != null ? resourcesProvider.getColorOrDefault(Theme.key_radioBackground) : Theme.getColor(Theme.key_radioBackground);
@@ -5431,8 +5447,12 @@ public class AlertsCreator {
             });
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity, resourcesProvider);
-        int topImageColor = resourcesProvider != null ? resourcesProvider.getColorOrDefault(Theme.key_dialogTopBackground) : Theme.getColor(Theme.key_dialogTopBackground);
-        builder.setTopImage(new ShareLocationDrawable(parentActivity, 0), topImageColor);
+        if (expand) {
+            builder.setTitle(getString(R.string.LiveLocationAlertExpandTitle));
+        } else {
+            int topImageColor = resourcesProvider != null ? resourcesProvider.getColorOrDefault(Theme.key_dialogTopBackground) : Theme.getColor(Theme.key_dialogTopBackground);
+            builder.setTopImage(new ShareLocationDrawable(parentActivity, 0), topImageColor);
+        }
         builder.setView(linearLayout);
         builder.setPositiveButton(LocaleController.getString("ShareFile", R.string.ShareFile), (dialog, which) -> {
             int time;
@@ -5440,8 +5460,10 @@ public class AlertsCreator {
                 time = 15 * 60;
             } else if (selected[0] == 1) {
                 time = 60 * 60;
-            } else {
+            } else if (selected[0] == 2) {
                 time = 8 * 60 * 60;
+            } else {
+                time = 0x7FFFFFFF;
             }
             callback.run(time);
         });
@@ -5672,6 +5694,8 @@ public class AlertsCreator {
                 selected[0] = preferences.getInt("priority_channel", 1);
             } else if (globalType == NotificationsController.TYPE_STORIES) {
                 selected[0] = preferences.getInt("priority_stories", 1);
+            } else if (globalType == NotificationsController.TYPE_REACTIONS_MESSAGES || globalType == NotificationsController.TYPE_REACTIONS_STORIES) {
+                selected[0] = preferences.getInt("priority_react", 1);
             }
             if (selected[0] == 4) {
                 selected[0] = 0;
@@ -5744,6 +5768,9 @@ public class AlertsCreator {
                     } else if (globalType == NotificationsController.TYPE_STORIES) {
                         editor.putInt("priority_stories", option);
                         selected[0] = preferences.getInt("priority_stories", 1);
+                    } else if (globalType == NotificationsController.TYPE_REACTIONS_MESSAGES || globalType == NotificationsController.TYPE_REACTIONS_STORIES) {
+                        editor.putInt("priority_react", option);
+                        selected[0] = preferences.getInt("priority_react", 1);
                     }
                     NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(globalType);
                 }
@@ -5945,7 +5972,7 @@ public class AlertsCreator {
         void didPressedNewCard();
     }
 
-    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, int topicId, int mode, int loadParticipant, Runnable onDelete, Runnable hideDim, Theme.ResourcesProvider resourcesProvider) {
+    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, int topicId, int mode, TLRPC.ChannelParticipant[] channelParticipants, Runnable onDelete, Runnable hideDim, Theme.ResourcesProvider resourcesProvider) {
         final boolean scheduled = mode == ChatActivity.MODE_SCHEDULED;
         final boolean isSavedMessages = mode == ChatActivity.MODE_SAVED;
         final boolean quickReplies = mode == ChatActivity.MODE_QUICK_REPLIES;
@@ -5994,10 +6021,7 @@ public class AlertsCreator {
             }
         }
 
-        final boolean[] checks = new boolean[3];
         final boolean[] deleteForAll = new boolean[1];
-        TLRPC.User actionUser = null;
-        TLRPC.Chat actionChat = null;
         boolean canRevokeInbox = user != null && MessagesController.getInstance(currentAccount).canRevokePmInbox;
         int revokeTimeLimit;
         if (user != null) {
@@ -6010,18 +6034,16 @@ public class AlertsCreator {
         int myMessagesCount = 0;
         boolean canDeleteInbox = encryptedChat == null && user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
         if (chat != null && chat.megagroup && !scheduled && !isSavedMessages) {
-            boolean canBan = ChatObject.canBlockUsers(chat);
+            ArrayList<MessageObject> messages = new ArrayList<>();
             if (selectedMessage != null) {
                 if (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
                         selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionChatDeleteUser ||
                         selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByLink ||
                         selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionChatAddUser) {
-                    if (selectedMessage.messageOwner.from_id.user_id != 0) {
-                        actionUser = MessagesController.getInstance(currentAccount).getUser(selectedMessage.messageOwner.from_id.user_id);
-                    } else if (selectedMessage.messageOwner.from_id.channel_id != 0) {
-                        actionChat = MessagesController.getInstance(currentAccount).getChat(selectedMessage.messageOwner.from_id.channel_id);
-                    } else if (selectedMessage.messageOwner.from_id.chat_id != 0) {
-                        actionChat = MessagesController.getInstance(currentAccount).getChat(selectedMessage.messageOwner.from_id.chat_id);
+                    if (selectedGroup != null) {
+                        messages.addAll(selectedGroup.messages);
+                    } else {
+                        messages.add(selectedMessage);
                     }
                 }
                 boolean hasOutgoing = !selectedMessage.isSendError() && selectedMessage.getDialogId() == mergeDialogId && (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && selectedMessage.isOut() && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
@@ -6029,23 +6051,6 @@ public class AlertsCreator {
                     myMessagesCount++;
                 }
             } else {
-                long from_id = -1;
-                for (int a = 1; a >= 0; a--) {
-                    long channelId = 0;
-                    for (int b = 0; b < selectedMessages[a].size(); b++) {
-                        MessageObject msg = selectedMessages[a].valueAt(b);
-                        if (from_id == -1) {
-                            from_id = msg.getFromChatId();
-                        }
-                        if (from_id < 0 || from_id != msg.getSenderId()) {
-                            from_id = -2;
-                            break;
-                        }
-                    }
-                    if (from_id == -2) {
-                        break;
-                    }
-                }
                 for (int a = 1; a >= 0; a--) {
                     for (int b = 0; b < selectedMessages[a].size(); b++) {
                         MessageObject msg = selectedMessages[a].valueAt(b);
@@ -6056,77 +6061,97 @@ public class AlertsCreator {
                                 }
                             }
                         }
+                        messages.add(msg);
                     }
                 }
-                if (from_id != -1) {
-                    actionUser = MessagesController.getInstance(currentAccount).getUser(from_id);
-                }
             }
-            if ((actionUser != null && actionUser.id != UserConfig.getInstance(currentAccount).getClientUserId()) || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
-                if (loadParticipant == 1 && !chat.creator && actionUser != null) {
+
+            long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+            ArrayList<TLObject> actionParticipants = messages
+                    .stream()
+                    .mapToLong(MessageObject::getFromChatId)
+                    .distinct()
+                    .mapToObj(fromId -> {
+                        if (fromId > 0) {
+                            return MessagesController.getInstance(currentAccount).getUser(fromId);
+                        } else {
+                            return MessagesController.getInstance(currentAccount).getChat(-fromId);
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .filter(userOrChat -> {
+                        if (userOrChat instanceof TLRPC.User) {
+                            TLRPC.User user1 = (TLRPC.User) userOrChat;
+                            return user1.id != clientUserId;
+                        } else if (userOrChat instanceof TLRPC.Chat) {
+                            TLRPC.Chat chat1 = (TLRPC.Chat) userOrChat;
+                            return !ChatObject.hasAdminRights(chat1);
+                        }
+                        return false;
+                    })
+                    .collect(Collectors.toCollection(ArrayList::new));
+
+            if (!actionParticipants.isEmpty()) {
+                if (channelParticipants == null) {
                     final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER)};
 
-                    TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
-                    req.channel = MessagesController.getInputChannel(chat);
-                    req.participant = MessagesController.getInputPeer(actionUser);
-                    int requestId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        try {
-                            progressDialog[0].dismiss();
-                        } catch (Throwable ignore) {
+                    final int participantCount = actionParticipants.size();
+                    TLRPC.ChannelParticipant[] channelParticipantsLoad = new TLRPC.ChannelParticipant[participantCount];
+                    int[] requestIds = new int[participantCount];
+                    int[] responseCounter = new int[1];
 
-                        }
-                        progressDialog[0] = null;
-                        int loadType = 2;
-                        if (response != null) {
-                            TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
-                            if (!(participant.participant instanceof TLRPC.TL_channelParticipantAdmin || participant.participant instanceof TLRPC.TL_channelParticipantCreator)) {
-                                loadType = 0;
+                    for (int i = 0; i < participantCount; i++) {
+                        TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
+                        req.channel = MessagesController.getInputChannel(chat);
+                        req.participant = MessagesController.getInputPeer(actionParticipants.get(i));
+                        final int index = i;
+                        requestIds[i] = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            responseCounter[0]++;
+                            requestIds[index] = 0;
+
+                            if (response != null) {
+                                TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
+                                channelParticipantsLoad[index] = participant.participant;
                             }
-                        } else if (error != null && "USER_NOT_PARTICIPANT".equals(error.text)) {
-                            loadType = 0;
-                        }
-                        createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, topicId, mode, loadType, onDelete, hideDim, resourcesProvider);
-                    }));
+
+                            if (responseCounter[0] == participantCount) {
+                                try {
+                                    progressDialog[0].dismiss();
+                                } catch (Throwable ignore) {
+                                }
+                                progressDialog[0] = null;
+
+                                createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, topicId, mode, channelParticipantsLoad, onDelete, hideDim, resourcesProvider);
+                            }
+                        }));
+                    }
+
                     AndroidUtilities.runOnUIThread(() -> {
                         if (progressDialog[0] == null) {
                             return;
                         }
-                        progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(requestId, true));
+                        progressDialog[0].setOnCancelListener(dialog -> {
+                            for (int requestId : requestIds) {
+                                if (requestId != 0) {
+                                    ConnectionsManager.getInstance(currentAccount).cancelRequest(requestId, true);
+                                }
+                            }
+                            if (hideDim != null) {
+                                hideDim.run();
+                            }
+                        });
                         fragment.showDialog(progressDialog[0]);
                     }, 1000);
                     return;
                 }
-                FrameLayout frameLayout = new FrameLayout(activity);
-                int num = 0;
-                String name = actionUser != null ? ContactsController.formatName(actionUser.first_name, actionUser.last_name) : actionChat.title;
-                for (int a = 0; a < 3; a++) {
-                    if ((loadParticipant == 2 || !canBan) && a == 0) {
-                        continue;
-                    }
-                    CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
-                    cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                    cell.setTag(a);
-                    if (a == 0) {
-                        cell.setText(LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser), "", false, false);
-                    } else if (a == 1) {
-                        cell.setText(LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam), "", false, false);
-                    } else {
-                        cell.setText(LocaleController.formatString("DeleteAllFrom", R.string.DeleteAllFrom, name), "", false, false);
-                    }
-                    cell.setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
-                    frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 48 * num, 0, 0));
-                    cell.setOnClickListener(v -> {
-                        if (!v.isEnabled()) {
-                            return;
-                        }
-                        CheckBoxCell cell13 = (CheckBoxCell) v;
-                        Integer num1 = (Integer) cell13.getTag();
-                        checks[num1] = !checks[num1];
-                        cell13.setChecked(checks[num1], true);
+                DeleteMessagesBottomSheet deleteMessagesBottomSheet = new DeleteMessagesBottomSheet(fragment, chat, messages, actionParticipants, channelParticipants, mergeDialogId, topicId, mode, onDelete);
+                if (hideDim != null) {
+                    deleteMessagesBottomSheet.setOnHideListener(i -> {
+                        hideDim.run();
                     });
-                    num++;
                 }
-                builder.setView(frameLayout);
+                deleteMessagesBottomSheet.show();
+                return;
             } else if (!hasNotOut && myMessagesCount > 0 && hasNonDiceMessages) {
                 hasDeleteForAllCheck = true;
                 FrameLayout frameLayout = new FrameLayout(activity);
@@ -6146,8 +6171,6 @@ public class AlertsCreator {
                 });
                 builder.setView(frameLayout);
                 builder.setCustomViewOffset(9);
-            } else {
-                actionUser = null;
             }
         } else if (!scheduled && !isSavedMessages && !ChatObject.isChannel(chat) && encryptedChat == null) {
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && (!user.bot || user.support) || chat != null) {
@@ -6209,8 +6232,6 @@ public class AlertsCreator {
                 builder.setCustomViewOffset(9);
             }
         }
-        final TLRPC.User userFinal = actionUser;
-        final TLRPC.Chat chatFinal = actionChat;
 
         DialogInterface.OnClickListener deleteAction = (dialogInterface, i) -> {
             ArrayList<Integer> ids = null;
@@ -6239,6 +6260,9 @@ public class AlertsCreator {
                         random_ids.add(selectedMessage.messageOwner.random_id);
                     }
                 }
+                if (mergeDialogId != 0 && selectedMessage.messageOwner.peer_id != null && selectedMessage.messageOwner.peer_id.chat_id == -mergeDialogId) {
+                    thisDialogId = mergeDialogId;
+                }
                 MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, thisDialogId, topicId, deleteForAll[0], mode);
             } else {
                 for (int a = 1; a >= 0; a--) {
@@ -6256,29 +6280,8 @@ public class AlertsCreator {
                             }
                         }
                     }
-                    MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, thisDialogId, topicId, deleteForAll[0], mode);
+                    MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, (a == 1 && mergeDialogId != 0) ? mergeDialogId : thisDialogId, topicId, deleteForAll[0], mode);
                     selectedMessages[a].clear();
-                }
-            }
-            if (userFinal != null || chatFinal != null) {
-                if (checks[0]) {
-                    MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatFinal, false, false);
-                }
-                if (checks[1]) {
-                    TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();
-                    req.channel = MessagesController.getInputChannel(chat);
-                    if (userFinal != null) {
-                        req.participant = MessagesController.getInputPeer(userFinal);
-                    } else {
-                        req.participant = MessagesController.getInputPeer(chatFinal);
-                    }
-                    req.id = ids;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-
-                    });
-                }
-                if (checks[2]) {
-                    MessagesController.getInstance(currentAccount).deleteUserChannelHistory(chat, userFinal, chatFinal, 0);
                 }
             }
             if (onDelete != null) {
@@ -6839,11 +6842,7 @@ public class AlertsCreator {
     public static ActionBarPopupWindow showPopupMenu(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, View anchorView, int offsetX, int offsetY) {
         Rect rect = new Rect();
         ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-        if (Build.VERSION.SDK_INT >= 19) {
-            popupWindow.setAnimationStyle(0);
-        } else {
-            popupWindow.setAnimationStyle(R.style.PopupAnimation);
-        }
+        popupWindow.setAnimationStyle(R.style.PopupAnimation);
 
         popupWindow.setAnimationEnabled(true);
 
@@ -6866,7 +6865,8 @@ public class AlertsCreator {
         popupWindow.showAsDropDown(anchorView, offsetX, offsetY);
 
         popupLayout.updateRadialSelectors();
-        popupWindow.startAnimation();
+//        popupWindow.startAnimation();
+        ActionBarPopupWindow.startAnimation(popupLayout);
 
         popupLayout.setOnTouchListener((v, event) -> {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {

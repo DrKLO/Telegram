@@ -146,6 +146,11 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         getNotificationCenter().removeObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         getNotificationCenter().removeObserver(this, NotificationCenter.storiesEnabledUpdate);
+        if (applyBulletin != null) {
+            Runnable runnable = applyBulletin;
+            applyBulletin = null;
+            AndroidUtilities.runOnUIThread(runnable);
+        }
     }
 
     @Override
@@ -437,7 +442,6 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                     }
                 }
                 sharedMediaLayout.closeActionMode(false);
-                sharedMediaLayout.disableScroll(false);
                 if (pin) {
                     sharedMediaLayout.scrollToPage(SharedMediaLayout.TAB_STORIES);
                 }
@@ -558,6 +562,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             protected boolean isStoriesView() {
+                return type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES;
+            }
+
+            protected boolean customTabs() {
                 return type == TYPE_STORIES || type == TYPE_ARCHIVED_CHANNEL_STORIES;
             }
 

@@ -132,7 +132,7 @@ public class OpeningHoursDayActivity extends BaseFragment {
         if (periods.size() >= maxPeriodsCount) {
             return false;
         }
-        return periods.isEmpty() || is24() || periods.get(periods.size() - 1).end < max - 2;
+        return periods.isEmpty() || is24() || periods.get(periods.size() - 1).end < Math.min(24 * 60 - 2, max - 2);
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {

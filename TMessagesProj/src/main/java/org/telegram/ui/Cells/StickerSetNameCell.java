@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.ColorSpanUnderline;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 
 import java.util.List;
 
@@ -90,21 +91,22 @@ public class StickerSetNameCell extends FrameLayout {
             lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, emoji ? 5 : 15, 5, emoji ? 15 : 25, 0);
         }
         addView(layout, lp);
-        layout.addView(textView);
+        layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL));
 
         editView = new TextView(context);
         editView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
         editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         editView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         editView.setEllipsize(TextUtils.TruncateAt.END);
-        editView.setPadding(dp(6.33f), 0, dp(6.33f), 0);
+        editView.setPadding(dp(6), 0, dp(6.33f), 0);
         editView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(9),
             Theme.multAlpha(getThemedColor(Theme.key_chat_emojiPanelStickerSetName), .10f),
             Theme.multAlpha(getThemedColor(Theme.key_chat_emojiPanelStickerSetName), .24f)
         ));
         editView.setGravity(Gravity.CENTER);
         editView.setSingleLine(true);
-        layout.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 5.33f, .66f, 0, 0));
+        ScaleStateListAnimator.apply(editView);
+        layout.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 5, 1, 0, 0));
         editView.setVisibility(View.GONE);
 
         urlTextView = new TextView(context);
@@ -198,6 +200,10 @@ public class StickerSetNameCell extends FrameLayout {
         editView.setVisibility(View.VISIBLE);
         editView.setText(LocaleController.getString(R.string.EditPack));
         editView.setOnClickListener(whenClickedEdit);
+    }
+
+    public void setHeaderOnClick(View.OnClickListener listener) {
+        textView.setOnClickListener(listener);
     }
 
     private void updateTextSearchSpan() {

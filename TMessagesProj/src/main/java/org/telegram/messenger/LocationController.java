@@ -577,7 +577,11 @@ public class LocationController extends BaseController implements NotificationCe
         info.lastSentProximityMeters = info.proximityMeters = message.media.proximity_notification_radius;
         info.account = currentAccount;
         info.messageObject = new MessageObject(currentAccount, message, false, false);
-        info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        if (info.period == 0x7FFFFFFF) {
+            info.stopTime = Integer.MAX_VALUE;
+        } else {
+            info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        }
         final SharingLocationInfo old = sharingLocationsMap.get(info.did);
         sharingLocationsMap.put(info.did, info);
         if (old != null) {

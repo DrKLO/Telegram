@@ -44,32 +44,6 @@ public abstract class UniversalFragment extends BaseFragment {
         });
 
         FrameLayout contentView = new SizeNotifierFrameLayout(context) {
-//            private AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
-//                @Override
-//                protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {}
-//                @Override
-//                protected void onTransitionEnd() {}
-//                @Override
-//                protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
-//                    if (getParentLayout() != null && getParentLayout().isPreviewOpenAnimationInProgress()) {
-//                        return;
-//                    }
-//                    actionBar.setTranslationY(y);
-//                }
-//            };
-//
-//            @Override
-//            protected void onAttachedToWindow() {
-//                super.onAttachedToWindow();
-//                adjustPanLayoutHelper.onAttach();
-//            }
-//
-//            @Override
-//            protected void onDetachedFromWindow() {
-//                super.onDetachedFromWindow();
-//                adjustPanLayoutHelper.onDetach();
-//            }
-
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(

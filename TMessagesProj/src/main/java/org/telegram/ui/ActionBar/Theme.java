@@ -4125,8 +4125,10 @@ public class Theme {
     public static final int key_premiumGradientBackground4 = colorsCount++;
     public static final int key_premiumGradientBackgroundOverlay = colorsCount++;
     public static final int key_premiumStartSmallStarsColor = colorsCount++;
-    public static final int key_premiumStartGradient1 = colorsCount++;
-    public static final int key_premiumStartGradient2 = colorsCount++;
+    public static final int key_premiumStarGradient1 = colorsCount++;
+    public static final int key_premiumStarGradient2 = colorsCount++;
+    public static final int key_premiumCoinGradient1 = colorsCount++;
+    public static final int key_premiumCoinGradient2 = colorsCount++;
     public static final int key_premiumStartSmallStarsColor2 = colorsCount++;
     public static final int key_premiumGradientBottomSheet1 = colorsCount++;
     public static final int key_premiumGradientBottomSheet2 = colorsCount++;
@@ -4503,8 +4505,8 @@ public class Theme {
         themeAccentExclusionKeys.add(key_premiumGradientBackground3);
         themeAccentExclusionKeys.add(key_premiumGradientBackground4);
         themeAccentExclusionKeys.add(key_premiumStartSmallStarsColor);
-        themeAccentExclusionKeys.add(key_premiumStartGradient1);
-        themeAccentExclusionKeys.add(key_premiumStartGradient2);
+        themeAccentExclusionKeys.add(key_premiumStarGradient1);
+        themeAccentExclusionKeys.add(key_premiumStarGradient2);
         themeAccentExclusionKeys.add(key_stories_circle1);
         themeAccentExclusionKeys.add(key_stories_circle2);
         themeAccentExclusionKeys.add(key_stories_circle_dialog1);
@@ -8545,7 +8547,7 @@ public class Theme {
             chat_radialProgress2Paint.setStyle(Paint.Style.STROKE);
             chat_audioTimePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_livePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_livePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            chat_livePaint.setTypeface(Typeface.DEFAULT_BOLD);
             chat_audioTitlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_audioTitlePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             chat_audioPerformerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -8876,7 +8878,7 @@ public class Theme {
             chat_contextResult_titleTextPaint.setTextSize(dp(15));
             chat_contextResult_descriptionTextPaint.setTextSize(dp(13));
             chat_radialProgressPaint.setStrokeWidth(dp(3));
-            chat_radialProgress2Paint.setStrokeWidth(dp(2));
+            chat_radialProgress2Paint.setStrokeWidth(dp(2.33f));
             chat_commentTextPaint.setTextSize(dp(14));
             chat_commentTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         }

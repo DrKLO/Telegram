@@ -202,7 +202,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
         p.updateAnimation = false;
         p.setBackScaleX(w / p.getMeasuredWidth());
         if (applyBackScaleY) {
-            p.setBackScaleY(h / p.getMeasuredHeight());
+            p.setBackScaleY(Math.min(1, h / p.getMeasuredHeight()));
         }
         p.updateAnimation = true;
 

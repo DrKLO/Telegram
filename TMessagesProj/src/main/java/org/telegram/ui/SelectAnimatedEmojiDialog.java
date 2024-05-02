@@ -8,6 +8,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.Notification;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Configuration;
@@ -72,6 +73,7 @@ import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -209,6 +211,22 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     public void setSelectedReaction(ReactionsLayoutInBubble.VisibleReaction reaction) {
         selectedReactions.clear();
         selectedReactions.add(reaction);
+        if (emojiGridView != null) {
+            for (int i = 0; i < emojiGridView.getChildCount(); i++) {
+                if (emojiGridView.getChildAt(i) instanceof ImageViewEmoji) {
+                    ImageViewEmoji imageViewEmoji = (ImageViewEmoji) emojiGridView.getChildAt(i);
+                    imageViewEmoji.setViewSelected(selectedReactions.contains(imageViewEmoji.reaction), true);
+                }
+            }
+            emojiGridView.invalidate();
+        }
+    }
+
+    public void setSelectedReactions(ArrayList<String> emojis) {
+        selectedReactions.clear();
+        for (String emoji : emojis) {
+            selectedReactions.add(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoji));
+        }
         if (emojiGridView != null) {
             for (int i = 0; i < emojiGridView.getChildCount(); i++) {
                 if (emojiGridView.getChildAt(i) instanceof ImageViewEmoji) {
@@ -402,7 +420,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     private boolean recentExpanded = false;
     private ArrayList<AnimatedEmojiSpan> recent = new ArrayList<>();
     private ArrayList<TLRPC.Document> recentStickers = new ArrayList<>();
-    private ArrayList<TLRPC.Document> standardEmojis = new ArrayList<>();
+    private ArrayList<String> standardEmojis = new ArrayList<>();
     private ArrayList<ReactionsLayoutInBubble.VisibleReaction> topReactions = new ArrayList<>();
     private ArrayList<ReactionsLayoutInBubble.VisibleReaction> recentReactions = new ArrayList<>();
     private ArrayList<AnimatedEmojiSpan> defaultStatuses = new ArrayList<>();
@@ -545,7 +563,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             }
         };
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && type != TYPE_AVATAR_CONSTRUCTOR) {
             contentView.setOutlineProvider(new ViewOutlineProvider() {
                 private final Rect rect = new Rect();
 
@@ -838,7 +856,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         TextView emptyViewText = new TextView(context);
         if (type == TYPE_AVATAR_CONSTRUCTOR) {
             emptyViewText.setText(LocaleController.getString("NoEmojiOrStickersFound", R.string.NoEmojiOrStickersFound));
-        } else if (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_TAGS || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP) {
+        } else if (type == TYPE_EMOJI_STATUS || type == TYPE_STICKER_SET_EMOJI || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_TAGS || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP) {
             emptyViewText.setText(LocaleController.getString("NoEmojiFound", R.string.NoEmojiFound));
         } else if (type == TYPE_REACTIONS || type == TYPE_SET_DEFAULT_REACTION) {
             emptyViewText.setText(LocaleController.getString("NoReactionsFound", R.string.NoReactionsFound));
@@ -1010,7 +1028,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         RecyclerListView.OnItemClickListener onItemClick = (view, position) -> {
             if (view instanceof ImageViewEmoji) {
                 ImageViewEmoji viewEmoji = (ImageViewEmoji) view;
-                if (viewEmoji.isDefaultReaction) {
+                if (viewEmoji.isDefaultReaction || type == TYPE_STICKER_SET_EMOJI) {
                     incrementHintUse();
                     onReactionClick(viewEmoji, viewEmoji.reaction);
                 } else if (viewEmoji.isStaticIcon && viewEmoji.document != null) {
@@ -1674,6 +1692,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             lastSearchKeyboardLanguage = newLanguage;
             AndroidUtilities.runOnUIThread(searchRunnable = () -> {
                 final LinkedHashSet<Long> documentIds = new LinkedHashSet<>();
+                final LinkedHashSet<String> emojis = new LinkedHashSet<>();
                 final HashMap<String, TLRPC.TL_availableReaction> availableReactions = MediaDataController.getInstance(currentAccount).getReactionsMap();
                 final ArrayList<ReactionsLayoutInBubble.VisibleReaction> reactions = new ArrayList<>();
                 final boolean queryFullyConsistsOfEmojis = Emoji.fullyConsistsOfEmojis(query);
@@ -1723,6 +1742,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     for (long documentId : documentIds) {
                         searchResult.add(ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId));
                     }
+                    for (String emoji : emojis) {
+                        searchResult.add(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoji));
+                    }
                     searchSets.addAll(sets);
                     for (ArrayList<TLRPC.Document> array : emojiArrays) {
                         stickersSearchResult.addAll(array);
@@ -1731,24 +1753,6 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 });
 
                 if (type == TYPE_STICKER_SET_EMOJI) {
-                    final TLRPC.TL_messages_stickerSet[] restrictedSet = new TLRPC.TL_messages_stickerSet[] { null };
-                    final TLRPC.TL_messages_stickerSet[] staticSet =     new TLRPC.TL_messages_stickerSet[] { null };
-
-                    final Utilities.Callback<Runnable> loadSets = next -> {
-//                        TLRPC.TL_inputStickerSetShortName inputStickerSetShortName = new TLRPC.TL_inputStickerSetShortName();
-//                        inputStickerSetShortName.short_name = "RestrictedEmoji";
-//                        MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSetShortName, 0, false, set -> {
-//                            restrictedSet[0] = set;
-//                            if (staticSet[0] != null) next.run();
-//                        });
-                        TLRPC.TL_inputStickerSetShortName inputStickerSetShortName2 = new TLRPC.TL_inputStickerSetShortName();
-                        inputStickerSetShortName2.short_name = "StaticEmoji";
-                        MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSetShortName2, 0, false, set -> {
-                            staticSet[0] = set;
-//                            if (restrictedSet[0] != null)
-                                next.run();
-                        });
-                    };
                     final Utilities.Callback<Runnable> search = next -> {
                         MediaDataController.getInstance(currentAccount).getEmojiSuggestions(
                             lastSearchKeyboardLanguage, query, false,
@@ -1758,26 +1762,19 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                                         if (result.get(i).emoji.startsWith("animated_")) {
                                             continue;
                                         }
-                                        String emoji = result.get(i).emoji;
-                                        TLRPC.Document document;
-                                        document = findSticker(restrictedSet[0], emoji);
-                                        if (document == null) {
-                                            document = findSticker(staticSet[0], emoji);
+                                        String emoji = Emoji.fixEmoji(result.get(i).emoji);
+                                        if (Emoji.getEmojiDrawable(emoji) == null) {
+                                            continue;
                                         }
-                                        if (document != null) {
-                                            AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocument(document);
-                                            documentIds.add(document.id);
-                                        }
+                                        emojis.add(emoji);
                                     }
-                                } catch (Exception ignore) {
-                                }
+                                } catch (Exception ignore) {}
                                 next.run();
                             },
                             null, false, false, false, 0
                         );
                     };
-
-                    Utilities.doCallbacks(loadSets, search, applySearch);
+                    Utilities.doCallbacks(search, applySearch);
                 } else {
                     final Utilities.Callback<Runnable> searchCategories = next -> {
                         if (queryFullyConsistsOfEmojis) {
@@ -2044,7 +2041,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 return VIEW_TYPE_EMOJI;
             }
             if (position > emojiStartRow && position - emojiStartRow - 1 < searchResult.size()) {
-                if (searchResult.get(position - emojiStartRow - 1).documentId != 0) {
+                if (type == TYPE_STICKER_SET_EMOJI || searchResult.get(position - emojiStartRow - 1).documentId != 0) {
                     return VIEW_TYPE_EMOJI;
                 }
             }
@@ -2097,10 +2094,13 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 }
                 imageView.imageReceiver.setParentView(emojiSearchGridView);
                 imageView.reaction = currentReaction;
+                imageView.isFirstReactions = false;
                 imageView.setViewSelected(selectedReactions.contains(currentReaction), false);
                 imageView.notDraw = false;
                 imageView.invalidate();
-                if (currentReaction.emojicon != null) {
+                if (type == TYPE_STICKER_SET_EMOJI) {
+                    imageView.setDrawable(Emoji.getEmojiDrawable(currentReaction.emojicon));
+                } else if (currentReaction.emojicon != null) {
                     imageView.isDefaultReaction = true;
                     TLRPC.TL_availableReaction reaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
                     if (reaction != null) {
@@ -2151,7 +2151,17 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 Long documentId = null;
                 TLRPC.Document document = null;
                 if (searchResult != null && position >= 0 && position < searchResult.size()) {
-                    documentId = searchResult.get(position).documentId;
+                    ReactionsLayoutInBubble.VisibleReaction visibleReaction = searchResult.get(position);
+                    if (visibleReaction.documentId == 0) {
+                        selected = selectedReactions.contains(visibleReaction);
+                        imageView.reaction = visibleReaction;
+                        imageView.isFirstReactions = true;
+                        imageView.setDrawable(Emoji.getEmojiDrawable(visibleReaction.emojicon));
+                        imageView.setViewSelected(selected, false);
+                        return;
+                    } else {
+                        documentId = visibleReaction.documentId;
+                    }
                 } else if (searchSets != null && (position - setsStartRow) >= 0 && (position - setsStartRow) < searchSets.size()) {
                     document = searchSets.get(position - setsStartRow);
                     if (document instanceof SetTitleDocument) {
@@ -2389,14 +2399,14 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 }
                 if (position == recentReactionsSectionRow) {
                     header.setText(LocaleController.getString("RecentlyUsed", R.string.RecentlyUsed), false);
-                    if (type == TYPE_AVATAR_CONSTRUCTOR) {
+//                    if (type == TYPE_AVATAR_CONSTRUCTOR) {
                         header.closeIcon.setVisibility(View.GONE);
-                    } else {
-                        header.closeIcon.setVisibility(View.VISIBLE);
-                        header.closeIcon.setOnClickListener((view) -> {
-                            clearRecent();
-                        });
-                    }
+//                    } else {
+//                        header.closeIcon.setVisibility(View.VISIBLE);
+//                        header.closeIcon.setOnClickListener((view) -> {
+//                            clearRecent();
+//                        });
+//                    }
                     return;
                 }
                 header.closeIcon.setVisibility(View.GONE);
@@ -2424,7 +2434,17 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     currentReaction = topReactions.get(index);
                 }
 
+                if (type == TYPE_STICKER_SET_EMOJI) {
+                    imageView.notDraw = false;
+                    imageView.isFirstReactions = true;
+                    imageView.reaction = currentReaction;
+                    imageView.setDrawable(Emoji.getEmojiDrawable(currentReaction.emojicon));
+                    imageView.setViewSelected(selectedReactions.contains(currentReaction), false);
+                    return;
+                }
+
                 imageView.createImageReceiver(emojiGridView);
+                imageView.isFirstReactions = true;
                 imageView.reaction = currentReaction;
                 imageView.setViewSelected(selectedReactions.contains(currentReaction), false);
                 imageView.notDraw = false;
@@ -2540,7 +2560,6 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     recentSize = recent.size() > recentmaxlen && !recentExpanded ? recentmaxlen : recent.size() + (includeEmpty ? 1 : 0);
                 }
                 boolean selected = false;
-                imageView.setDrawable(null);
                 if (includeEmpty && position == (searchRow != -1 ? 1 : 0) + (longtapHintRow != -1 ? 1 : 0)) {
                     selected = selectedDocumentIds.contains(null);
                     imageView.empty = true;
@@ -2553,8 +2572,14 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                 } else if (type == TYPE_STICKER_SET_EMOJI && position - (searchRow != -1 ? 1 : 0) - (longtapHintRow != -1 ? 1 : 0) < standardEmojis.size()) {
                     int pos = position - (searchRow != -1 ? 1 : 0) - (longtapHintRow != -1 ? 1 : 0) - (includeEmpty ? 1 : 0);
-                    TLRPC.Document document = standardEmojis.get(pos);
-                    imageView.setSticker(document, emojiGridView);
+                    String emoji = standardEmojis.get(pos);
+                    imageView.notDraw = false;
+                    imageView.isFirstReactions = false;
+                    imageView.reaction = ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoji);
+                    imageView.setDrawable(Emoji.getEmojiDrawable(emoji));
+                    selected = selectedReactions.contains(imageView.reaction);
+                    imageView.setViewSelected(selected, false);
+                    return;
                 } else if (position - (searchRow != -1 ? 1 : 0) - (longtapHintRow != -1 ? 1 : 0) < recentSize) {
                     int resentPosition = position - (searchRow != -1 ? 1 : 0) - (longtapHintRow != -1 ? 1 : 0) - (includeEmpty ? 1 : 0);
                     if (type == TYPE_AVATAR_CONSTRUCTOR && showStickers) {
@@ -2923,6 +2948,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         public ImageReceiver imageReceiverToDraw;
         public boolean isDefaultReaction;
         public ReactionsLayoutInBubble.VisibleReaction reaction;
+        public boolean isFirstReactions;
         public Drawable drawable;
         public Rect drawableBounds;
         public float bigReactionSelectedProgress;
@@ -3584,20 +3610,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             }
         }
         if (type == TYPE_STICKER_SET_EMOJI) {
-//            TLRPC.TL_inputStickerSetShortName inputStickerSetShortName = new TLRPC.TL_inputStickerSetShortName();
-//            inputStickerSetShortName.short_name = "RestrictedEmoji";
-//            TLRPC.TL_messages_stickerSet restrictedSet = mediaDataController.getStickerSet(inputStickerSetShortName, 0, false);
-
-            TLRPC.TL_inputStickerSetShortName inputStickerSetShortName2 = new TLRPC.TL_inputStickerSetShortName();
-            inputStickerSetShortName2.short_name = "StaticEmoji";
-            TLRPC.TL_messages_stickerSet staticSet = mediaDataController.getStickerSet(inputStickerSetShortName2, 0, false);
-
-            TLRPC.TL_messages_stickerSet baseSet = staticSet; // staticSet != null ? staticSet : restrictedSet;
-
-            if (baseSet != null) {
-                for (TLRPC.Document d : baseSet.documents) {
-                    standardEmojis.add(d);
-                    rowHashCodes.add(43223 + 13L * d.id);
+            for (String[] section : EmojiData.dataColored) {
+                for (String emoji : section) {
+                    standardEmojis.add(emoji);
+                    rowHashCodes.add(13334 + 322L * emoji.hashCode());
                     totalCount++;
                 }
             }
@@ -4099,7 +4115,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         skewAlpha = .25f + .75f * skewAlpha;
                     }
                 }
-                boolean drawInUi = skewAlpha < 1 || isAnimating() || imageViewEmojis.size() <= 4 || !lite || enterAnimationInProgress() || type == TYPE_AVATAR_CONSTRUCTOR || type == TYPE_CHAT_REACTIONS;
+                boolean drawInUi = type == TYPE_STICKER_SET_EMOJI || skewAlpha < 1 || isAnimating() || imageViewEmojis.size() <= 4 || !lite || enterAnimationInProgress() || type == TYPE_AVATAR_CONSTRUCTOR || type == TYPE_CHAT_REACTIONS;
                 if (!drawInUi) {
                     boolean animatedExpandIn = animateExpandStartTime > 0 && (SystemClock.elapsedRealtime() - animateExpandStartTime) < animateExpandDuration();
                     for (int i = 0; i < imageViewEmojis.size(); i++) {
@@ -4308,6 +4324,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         }
 
                         float scale = imageView.getScaleX();
+                        if (type == TYPE_STICKER_SET_EMOJI) {
+                            scale *= .87f;
+                        }
                         if (imageView.pressedProgress != 0 || imageView.selected) {
                             scale *= 0.8f + 0.2f * (1f - ((imageView.selected && type != TYPE_TOPIC_ICON && type != TYPE_AVATAR_CONSTRUCTOR) ? 0.7f : imageView.pressedProgress));
                         }
@@ -4343,7 +4362,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                             drawable.setAlpha(255);
                         } else if (!imageView.isDefaultReaction && !imageView.isStaticIcon) {
                             AnimatedEmojiSpan span = imageView.span;
-                            if (span == null || imageView.notDraw) {
+                            if (span == null && type != TYPE_STICKER_SET_EMOJI || imageView.notDraw) {
                                 continue;
                             }
                             drawable = imageView.drawable;
@@ -4366,7 +4385,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                                 //scale here only selected emoji
                                 canvas.scale(0.85f, 0.85f, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
                             }
-                            if (type == TYPE_CHAT_REACTIONS) {
+                            if (type == TYPE_CHAT_REACTIONS || type == TYPE_STICKER_SET_EMOJI) {
                                 canvas.scale(scale, scale, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
                             } else {
                                 skew(canvas, i, imageView.getHeight());
@@ -4484,6 +4503,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
 
         if (scrimDrawable != null) {
             scrimDrawable.setSecondParent(this);
@@ -4499,6 +4519,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
 
         if (scrimDrawable != null) {
             scrimDrawable.setSecondParent(null);
@@ -4528,6 +4549,11 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             updateRowsDelayed();
         } else if (id == NotificationCenter.groupStickersDidLoad) {
             updateRowsDelayed();
+        } else if (id == NotificationCenter.emojiLoaded) {
+            AndroidUtilities.forEachViews(emojiGridView, View::invalidate);
+            if (emojiGridView != null) {
+                emojiGridView.invalidate();
+            }
         }
     }
 

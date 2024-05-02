@@ -4,15 +4,19 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -29,9 +33,14 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.Forum.ForumUtilities;
+import org.telegram.ui.Components.LetterDrawable;
+import org.telegram.ui.Components.StaticLayoutEx;
 
 import java.util.ArrayList;
 
@@ -56,8 +65,10 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     int layout1Width;
     int layout2Width;
 
-    ImageReceiver imageReceiver = new ImageReceiver();
+    private final ImageReceiver imageReceiver;
     TLRPC.Chat nextChat;
+    TLRPC.TL_forumTopic nextTopic;
+    private long lastWidthTopicId = 0L;
 
     AnimatorSet showReleaseAnimator;
 
@@ -74,26 +85,34 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     private final View fragmentView;
     public long lastShowingReleaseTime;
 
+    boolean recommendedChannel;
     boolean drawFolderBackground;
+    private final boolean isTopic;
     Runnable onAnimationFinishRunnable;
     public long nextDialogId;
     View parentView;
 
+    private boolean visibleCounterDrawable = true;
     CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(null, true, null);
     int params[] = new int[3];
     private final int currentAccount;
     private final int folderId;
     private final int filterId;
+    private final long topicId;
     private final long currentDialog;
     private final Theme.ResourcesProvider resourcesProvider;
+    private AnimatedEmojiDrawable animatedEmojiDrawable;
 
-    public ChatPullingDownDrawable(int currentAccount, View fragmentView, long currentDialog, int folderId, int filterId, Theme.ResourcesProvider resourcesProvider) {
+    public ChatPullingDownDrawable(int currentAccount, View fragmentView, long currentDialog, int folderId, int filterId, long topicId, Theme.ResourcesProvider resourcesProvider) {
         this.fragmentView = fragmentView;
         this.currentAccount = currentAccount;
         this.currentDialog = currentDialog;
         this.folderId = folderId;
         this.filterId = filterId;
+        this.topicId = topicId;
+        this.isTopic = MessagesController.getInstance(currentAccount).isForum(currentDialog);
         this.resourcesProvider = resourcesProvider;
+        this.imageReceiver = new ImageReceiver(fragmentView);
 
         arrowPaint.setStrokeWidth(AndroidUtilities.dpf2(2.8f));
         arrowPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -109,11 +128,37 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
 
         xRefPaint.setColor(0xff000000);
         xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+    }
 
-        updateDialog();
+    public void updateDialog(TLRPC.Chat chat) {
+        if (chat == null) {
+            updateDialog();
+            return;
+        }
+
+        nextDialogId = -chat.id;
+        drawFolderBackground = params[0] == 1;
+        dialogFolderId = params[1];
+        dialogFilterId = params[2];
+        emptyStub = false;
+        nextChat = chat;
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setInfo(currentAccount, nextChat);
+        imageReceiver.setImage(ImageLocation.getForChat(nextChat, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, null, UserConfig.getInstance(0).getCurrentUser(), 0);
+        MessagesController.getInstance(currentAccount).ensureMessagesLoaded(-chat.id, 0, null);
+
+        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).getDialog(-chat.id);
+        final int count = dialog == null ? 0 : dialog.unread_count;
+        counterDrawable.setCount(count, false);
+        visibleCounterDrawable = count > 0;
+
+        recommendedChannel = true;
+        nextTopic = null;
     }
 
     public void updateDialog() {
+        recommendedChannel = false;
+        nextTopic = null;
         TLRPC.Dialog dialog = getNextUnreadDialog(currentDialog, folderId, filterId, true, params);
         if (dialog != null) {
             nextDialogId = dialog.id;
@@ -123,13 +168,15 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             emptyStub = false;
             nextChat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
             if (nextChat == null) {
-                MessagesController.getInstance(currentAccount).getChat(dialog.id);
+                nextChat = MessagesController.getInstance(currentAccount).getChat(dialog.id);
             }
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setInfo(currentAccount, nextChat);
             imageReceiver.setImage(ImageLocation.getForChat(nextChat, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, null, UserConfig.getInstance(0).getCurrentUser(), 0);
             MessagesController.getInstance(currentAccount).ensureMessagesLoaded(dialog.id, 0, null);
-            counterDrawable.setCount(dialog.unread_count, false);
+            final int count = dialog.unread_count;
+            counterDrawable.setCount(count, false);
+            visibleCounterDrawable = count > 0;
         } else {
             nextChat = null;
             drawFolderBackground = false;
@@ -137,28 +184,92 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
     }
 
+    public void updateTopic() {
+        recommendedChannel = false;
+        drawFolderBackground = false;
+        nextChat = null;
+        nextDialogId = 0;
+        imageReceiver.clearImage();
+
+        TLRPC.TL_forumTopic topic = getNextUnreadTopic(-currentDialog);
+        if (topic != null) {
+            emptyStub = false;
+            nextTopic = topic;
+            Drawable forumIcon;
+            if (topic.id == 1) {
+                if (parentView != null && animatedEmojiDrawable != null) {
+                    animatedEmojiDrawable.removeView(parentView);
+                }
+                animatedEmojiDrawable = null;
+                forumIcon = ForumUtilities.createGeneralTopicDrawable(fragmentView.getContext(), 1f, getThemedColor(Theme.key_chat_inMenu), false);
+                imageReceiver.setImageBitmap(forumIcon);
+            } else if (topic.icon_emoji_id != 0) {
+                if (animatedEmojiDrawable == null || animatedEmojiDrawable.getDocumentId() != topic.icon_emoji_id) {
+                    if (animatedEmojiDrawable != null && parentView != null) {
+                        animatedEmojiDrawable.removeView(parentView);
+                    }
+                    animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC_LARGE, currentAccount, topic.icon_emoji_id);
+                    animatedEmojiDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_serviceText), PorterDuff.Mode.SRC_IN));
+                }
+                if (animatedEmojiDrawable != null && parentView != null) {
+                    animatedEmojiDrawable.addView(parentView);
+                }
+                imageReceiver.setImageBitmap((Bitmap) null);
+            } else {
+                if (parentView != null && animatedEmojiDrawable != null) {
+                    animatedEmojiDrawable.removeView(parentView);
+                }
+                animatedEmojiDrawable = null;
+                forumIcon = ForumUtilities.createTopicDrawable(topic, false);
+                imageReceiver.setImageBitmap(forumIcon);
+            }
+            final int count = topic.unread_count;
+            counterDrawable.setCount(count, false);
+            visibleCounterDrawable = count > 0;
+        } else {
+            nextTopic = null;
+            emptyStub = true;
+        }
+    }
+
     public void setWidth(int width) {
-        if (width != lastWidth) {
+        if (width != lastWidth || (isTopic && nextTopic != null && lastWidthTopicId != nextTopic.id)) {
             circleRadius = AndroidUtilities.dp(56) / 2f;
             lastWidth = width;
 
-            String nameStr = nextChat != null ? nextChat.title : LocaleController.getString("SwipeToGoNextChannelEnd", R.string.SwipeToGoNextChannelEnd);
-            chatNameWidth = (int) textPaint.measureText(nameStr);
+            CharSequence nameStr;
+            if (nextChat != null) {
+                nameStr = nextChat.title;
+            } else if (nextTopic != null) {
+                nameStr = nextTopic.title;
+            } else if (isTopic) {
+                String forumName = MessagesController.getInstance(currentAccount).getChat(-currentDialog).title;
+                nameStr = LocaleController.formatString(R.string.SwipeToGoNextTopicEnd, forumName);
+            } else {
+                nameStr = LocaleController.getString(R.string.SwipeToGoNextChannelEnd);
+            }
+            chatNameWidth = (int) textPaint.measureText(nameStr, 0, nameStr.length());
             chatNameWidth = Math.min(chatNameWidth, lastWidth - AndroidUtilities.dp(60));
-            chatNameLayout = new StaticLayout(nameStr, textPaint, chatNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            chatNameLayout = StaticLayoutEx.createStaticLayout(nameStr, textPaint, chatNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, chatNameWidth, 1);
 
             String str1 = null;
             String str2 = null;
 
-            if (drawFolderBackground && dialogFolderId != folderId && dialogFolderId != 0) {
-                str1 = LocaleController.getString("SwipeToGoNextArchive", R.string.SwipeToGoNextArchive);
-                str2 = LocaleController.getString("ReleaseToGoNextArchive", R.string.ReleaseToGoNextArchive);
+            if (recommendedChannel) {
+                str1 = LocaleController.getString(R.string.SwipeToGoNextRecommendedChannel);
+                str2 = LocaleController.getString(R.string.ReleaseToGoNextRecommendedChannel);
+            } else if (isTopic) {
+                str1 = LocaleController.getString(R.string.SwipeToGoNextUnreadTopic);
+                str2 = LocaleController.getString(R.string.ReleaseToGoNextUnreadTopic);
+            } else if (drawFolderBackground && dialogFolderId != folderId && dialogFolderId != 0) {
+                str1 = LocaleController.getString(R.string.SwipeToGoNextArchive);
+                str2 = LocaleController.getString(R.string.ReleaseToGoNextArchive);
             } else if (drawFolderBackground) {
-                str1 = LocaleController.getString("SwipeToGoNextFolder", R.string.SwipeToGoNextFolder);
-                str2 = LocaleController.getString("ReleaseToGoNextFolder", R.string.ReleaseToGoNextFolder);
+                str1 = LocaleController.getString(R.string.SwipeToGoNextFolder);
+                str2 = LocaleController.getString(R.string.ReleaseToGoNextFolder);
             } else {
-                str1 = LocaleController.getString("SwipeToGoNextChannel", R.string.SwipeToGoNextChannel);
-                str2 = LocaleController.getString("ReleaseToGoNextChannel", R.string.ReleaseToGoNextChannel);
+                str1 = LocaleController.getString(R.string.SwipeToGoNextChannel);
+                str2 = LocaleController.getString(R.string.ReleaseToGoNextChannel);
             }
             layout1Width = (int) textPaint2.measureText(str1);
             layout1Width = Math.min(layout1Width, lastWidth - AndroidUtilities.dp(60));
@@ -176,12 +287,20 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             imageReceiver.setRoundRadius((int) (AndroidUtilities.dp(40) / 2f));
 
             counterDrawable.setSize(AndroidUtilities.dp(28), AndroidUtilities.dp(100));
+            if (isTopic) {
+                lastWidthTopicId = nextTopic == null ? 0 : nextTopic.id;
+            }
         }
 
     }
 
     public void draw(Canvas canvas, View parent, float progress, float alpha) {
-        this.parentView = parent;
+        if (this.parentView != parent) {
+            this.parentView = parent;
+            if (animatedEmojiDrawable != null) {
+                animatedEmojiDrawable.addView(parent);
+            }
+        }
         counterDrawable.setParent(parent);
         int oldAlpha, oldAlpha1, oldAlpha2, oldAlpha3;
         float offset = AndroidUtilities.dp(110) * progress;
@@ -287,12 +406,21 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
 
         if (!emptyStub && size > 0) {
             float top = (-AndroidUtilities.dp(8) - AndroidUtilities.dp2(8) * progress - size) * (1f - swipeToReleaseProgress) + (-offset + AndroidUtilities.dp(4)) * swipeToReleaseProgress + bounceOffset;
-            imageReceiver.setRoundRadius((int) (size / 2f));
-            imageReceiver.setImageCoords(cx - size / 2f, top, size, size);
+            ImageReceiver finalImageReceiver;
+            if (animatedEmojiDrawable != null && animatedEmojiDrawable.getImageReceiver() != null) {
+                finalImageReceiver = animatedEmojiDrawable.getImageReceiver();
+            } else {
+                finalImageReceiver = imageReceiver;
+            }
+            finalImageReceiver.setRoundRadius((int) (size / 2f));
+            finalImageReceiver.setImageCoords(cx - size / 2f, top, size, size);
+            if (isTopic && finalImageReceiver.getDrawable() != null && finalImageReceiver.getDrawable() instanceof CombinedDrawable && ((CombinedDrawable) finalImageReceiver.getDrawable()).getIcon() instanceof LetterDrawable) {
+                ((LetterDrawable) ((CombinedDrawable) finalImageReceiver.getDrawable()).getIcon()).scale = progress;
+            }
 
-            if (swipeToReleaseProgress > 0) {
-                canvas.saveLayerAlpha(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX() + imageReceiver.getImageWidth(), imageReceiver.getImageY() + imageReceiver.getImageHeight(), 255, Canvas.ALL_SAVE_FLAG);
-                imageReceiver.draw(canvas);
+            if (swipeToReleaseProgress > 0 && visibleCounterDrawable) {
+                canvas.saveLayerAlpha(finalImageReceiver.getImageX(), finalImageReceiver.getImageY(), finalImageReceiver.getImageX() + finalImageReceiver.getImageWidth(), finalImageReceiver.getImageY() + finalImageReceiver.getImageHeight(), 255, Canvas.ALL_SAVE_FLAG);
+                finalImageReceiver.draw(canvas);
                 canvas.scale(swipeToReleaseProgress, swipeToReleaseProgress, cx + AndroidUtilities.dp(12) + counterDrawable.getCenterX(), top - AndroidUtilities.dp(6) + AndroidUtilities.dp(14));
                 canvas.translate(cx + AndroidUtilities.dp(12), top - AndroidUtilities.dp(6));
                 counterDrawable.updateBackgroundRect();
@@ -306,8 +434,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 counterDrawable.draw(canvas);
                 canvas.restore();
             } else {
-
-                imageReceiver.draw(canvas);
+                finalImageReceiver.draw(canvas);
             }
         }
 
@@ -476,12 +603,18 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
 
     public void onAttach() {
         imageReceiver.onAttachedToWindow();
+        if (animatedEmojiDrawable != null && parentView != null) {
+            animatedEmojiDrawable.addView(parentView);
+        }
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
     }
 
     public void onDetach() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         imageReceiver.onDetachedFromWindow();
+        if (animatedEmojiDrawable != null && parentView != null) {
+            animatedEmojiDrawable.removeView(parentView);
+        }
         lastProgress = 0;
         lastHapticTime = 0;
     }
@@ -491,7 +624,9 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         if (nextDialogId != 0) {
             TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(nextDialogId);
             if (dialog != null) {
-                counterDrawable.setCount(dialog.unread_count, true);
+                final int count = dialog.unread_count;
+                counterDrawable.setCount(count, true);
+                visibleCounterDrawable = count > 0;
                 if (parentView != null) {
                     parentView.invalidate();
                 }
@@ -568,8 +703,26 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         return null;
     }
 
+    private TLRPC.TL_forumTopic getNextUnreadTopic(long currentDialogId) {
+        ArrayList<TLRPC.TL_forumTopic> topics = MessagesController.getInstance(currentAccount).getTopicsController().getTopics(currentDialogId);
+        TLRPC.TL_forumTopic nextUnreadTopic = null;
+        if (topics != null && topics.size() > 1) {
+            for (int i = 0; i < topics.size(); i++) {
+                TLRPC.TL_forumTopic topic = topics.get(i);
+                if (topic.id != topicId && !topic.hidden && topic.unread_count > 0 && (nextUnreadTopic == null || topic.topMessage.date > nextUnreadTopic.topMessage.date)) {
+                    nextUnreadTopic = topic;
+                }
+            }
+        }
+        return nextUnreadTopic;
+    }
+
     public long getChatId() {
         return nextChat.id;
+    }
+
+    public TLRPC.TL_forumTopic getTopic() {
+        return nextTopic;
     }
 
     public void drawBottomPanel(Canvas canvas, int top, int bottom, int width) {

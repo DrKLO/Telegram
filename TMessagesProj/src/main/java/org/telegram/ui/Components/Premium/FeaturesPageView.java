@@ -335,7 +335,7 @@ public class FeaturesPageView extends BaseListPageView {
                 Canvas canvas = new Canvas(bitmap);
                 canvas.drawColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2, resourcesProvider), Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 0.5f));
                 iconTextureView.setBackgroundBitmap(bitmap);
-                iconTextureView.mRenderer.forceNight = true;
+//                iconTextureView.mRenderer.forceNight = true;
                 iconTextureView.mRenderer.colorKey1 = Theme.key_premiumGradient2;
                 iconTextureView.mRenderer.colorKey2 = Theme.key_premiumGradient1;
                 iconTextureView.mRenderer.updateColors();

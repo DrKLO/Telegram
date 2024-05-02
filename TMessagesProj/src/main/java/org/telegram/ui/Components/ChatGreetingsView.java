@@ -271,6 +271,15 @@ public class ChatGreetingsView extends LinearLayout {
         });
     }
 
+    public void setSticker(String stickerPath) {
+        if (stickerPath == null) {
+            return;
+        }
+        wasDraw = true;
+        nextStickerToSendView.clearImage();
+        stickerToSendView.setImage(ImageLocation.getForPath(stickerPath), "256_256", null, null, 0, null);
+    }
+
     public void setNextSticker(TLRPC.Document sticker, Runnable whenDone) {
         if (sticker == null) {
             return;

@@ -28,6 +28,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.TopicsFragment;
@@ -43,6 +44,7 @@ public class BackButtonMenu {
         int stackIndex;
         TLRPC.Chat chat;
         TLRPC.User user;
+        TLRPC.TL_forumTopic topic;
         long dialogId;
         int folderId;
         int filterId;
@@ -60,7 +62,6 @@ public class BackButtonMenu {
         }
         ArrayList<PulledDialog> dialogs;
         if (topicId != 0) {
-          new ArrayList<>();
             dialogs = getStackedHistoryForTopic(thisFragment, currentDialogId, topicId);
         } else {
             dialogs = getStackedHistoryDialogs(thisFragment, currentDialogId);
@@ -82,6 +83,7 @@ public class BackButtonMenu {
             final PulledDialog pDialog = dialogs.get(i);
             final TLRPC.Chat chat = pDialog.chat;
             final TLRPC.User user = pDialog.user;
+            final TLRPC.TL_forumTopic topic = pDialog.topic;
             FrameLayout cell = new FrameLayout(context);
             cell.setMinimumWidth(AndroidUtilities.dp(200));
 
@@ -104,7 +106,19 @@ public class BackButtonMenu {
             avatarDrawable.setScaleSize(.8f);
             Drawable thumb = avatarDrawable;
             boolean addDivider = false;
-            if (chat != null) {
+            if (topic != null) {
+                if (topic.id == 1) {
+                    thumb = ForumUtilities.createGeneralTopicDrawable(fragmentView.getContext(), 1f, Theme.getColor(Theme.key_chat_inMenu, resourcesProvider), false);
+                    imageView.setImageDrawable(thumb);
+                } else if (topic.icon_emoji_id != 0) {
+                    AnimatedEmojiDrawable animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, thisFragment.getCurrentAccount(), topic.icon_emoji_id);
+                    imageView.setAnimatedEmojiDrawable(animatedEmojiDrawable);
+                } else {
+                    thumb = ForumUtilities.createTopicDrawable(topic, false);
+                    imageView.setImageDrawable(thumb);
+                }
+                titleView.setText(topic.title);
+            } else if (chat != null) {
                 avatarDrawable.setInfo(thisFragment.getCurrentAccount(), chat);
                 if (chat.photo != null && chat.photo.strippedBitmap != null) {
                     thumb = chat.photo.strippedBitmap;
@@ -150,17 +164,21 @@ public class BackButtonMenu {
                 }
                 if (pDialog.stackIndex >= 0) {
                     Long nextFragmentDialogId = null;
+                    Long nextFragmentTopicId = null;
                     if (parentLayout == null || parentLayout.getFragmentStack() == null || pDialog.stackIndex >= parentLayout.getFragmentStack().size()) {
                         nextFragmentDialogId = null;
+                        nextFragmentTopicId = null;
                     } else {
                         BaseFragment nextFragment = parentLayout.getFragmentStack().get(pDialog.stackIndex);
                         if (nextFragment instanceof ChatActivity) {
                             nextFragmentDialogId = ((ChatActivity) nextFragment).getDialogId();
+                            nextFragmentTopicId = ((ChatActivity) nextFragment).getTopicId();
                         } else if (nextFragment instanceof ProfileActivity) {
                             nextFragmentDialogId = ((ProfileActivity) nextFragment).getDialogId();
+                            nextFragmentTopicId = ((ProfileActivity) nextFragment).getTopicId();
                         }
                     }
-                    if (nextFragmentDialogId != null && nextFragmentDialogId != pDialog.dialogId) {
+                    if (nextFragmentDialogId != null && nextFragmentDialogId != pDialog.dialogId || topic != null && nextFragmentTopicId != null && topic.id != nextFragmentTopicId) {
                         for (int j = parentLayout.getFragmentStack().size() - 2; j > pDialog.stackIndex; --j) {
                             parentLayout.removeFragmentFromStack(j);
                         }
@@ -221,7 +239,14 @@ public class BackButtonMenu {
 
     private static ArrayList<PulledDialog> getStackedHistoryForTopic(BaseFragment thisFragment, long currentDialogId, long topicId) {
         ArrayList<PulledDialog> dialogs = new ArrayList<>();
-        if (thisFragment.getParentLayout().getFragmentStack().size() > 1 && thisFragment.getParentLayout().getFragmentStack().get(thisFragment.getParentLayout().getFragmentStack().size() - 2) instanceof TopicsFragment) {
+        if (thisFragment == null) {
+            return dialogs;
+        }
+        final INavigationLayout parentLayout = thisFragment.getParentLayout();
+        if (parentLayout == null) {
+            return dialogs;
+        }
+        if (parentLayout.getFragmentStack().size() > 1 && parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) instanceof TopicsFragment) {
             PulledDialog pulledDialog = new PulledDialog();
             dialogs.add(pulledDialog);
             pulledDialog.stackIndex = 0;
@@ -229,18 +254,28 @@ public class BackButtonMenu {
 
             pulledDialog = new PulledDialog();
             dialogs.add(pulledDialog);
-            pulledDialog.stackIndex = thisFragment.getParentLayout().getFragmentStack().size() - 2;
+            pulledDialog.stackIndex = parentLayout.getFragmentStack().size() - 2;
             pulledDialog.activity = TopicsFragment.class;
             pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
-            return dialogs;
         } else {
             PulledDialog pulledDialog = new PulledDialog();
             dialogs.add(pulledDialog);
             pulledDialog.stackIndex = -1;
             pulledDialog.activity = TopicsFragment.class;
             pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
-            return dialogs;
         }
+        List<PulledDialog> pulledDialogs = parentLayout.getPulledDialogs();
+        if (pulledDialogs != null) {
+            for (int i = 0; i < pulledDialogs.size(); i++) {
+                PulledDialog pulledDialog = pulledDialogs.get(i);
+                if (pulledDialog.topic == null || pulledDialog.topic.id == topicId) {
+                    continue;
+                }
+                dialogs.add(pulledDialog);
+            }
+        }
+        Collections.sort(dialogs, (d1, d2) -> d2.stackIndex - d1.stackIndex);
+        return dialogs;
     }
 
     public static void goToPulledDialog(BaseFragment fragment, PulledDialog dialog) {
@@ -256,7 +291,12 @@ public class BackButtonMenu {
             }
             bundle.putInt("dialog_folder_id", dialog.folderId);
             bundle.putInt("dialog_filter_id", dialog.filterId);
-            fragment.presentFragment(new ChatActivity(bundle), true);
+            if (dialog.topic != null) {
+                ChatActivity chatActivity = ForumUtilities.getChatActivityForTopic(fragment, dialog.chat.id, dialog.topic, 0, bundle);
+                fragment.presentFragment(chatActivity, true);
+            } else {
+                fragment.presentFragment(new ChatActivity(bundle), true);
+            }
         } else if (dialog.activity == ProfileActivity.class) {
             Bundle bundle = new Bundle();
             bundle.putLong("dialog_id", dialog.dialogId);
@@ -360,7 +400,7 @@ public class BackButtonMenu {
         return dialogs;
     }
 
-    public static void addToPulledDialogs(BaseFragment thisFragment, int stackIndex, TLRPC.Chat chat, TLRPC.User user, long dialogId, int folderId, int filterId) {
+    public static void addToPulledDialogs(BaseFragment thisFragment, int stackIndex, TLRPC.Chat chat, TLRPC.User user, TLRPC.TL_forumTopic topic, long dialogId, int folderId, int filterId) {
         if (chat == null && user == null) {
             return;
         }
@@ -376,7 +416,7 @@ public class BackButtonMenu {
         }
         boolean alreadyAdded = false;
         for (PulledDialog d : parentLayout.getPulledDialogs()) {
-            if (d.dialogId == dialogId) {
+            if (topic == null && d.dialogId == dialogId || topic != null && d.topic.id == topic.id) {
                 alreadyAdded = true;
                 break;
             }
@@ -391,6 +431,7 @@ public class BackButtonMenu {
             d.folderId = folderId;
             d.chat = chat;
             d.user = user;
+            d.topic = topic;
             parentLayout.getPulledDialogs().add(d);
         }
     }

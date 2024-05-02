@@ -63,4 +63,8 @@ public class SlideView extends LinearLayout {
     public boolean needBackButton() {
         return false;
     }
+
+    public void onResume() {
+
+    }
 }

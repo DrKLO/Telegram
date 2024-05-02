@@ -233,7 +233,7 @@ public class ProfileBirthdayEffect extends View {
                 return null;
             }
             final int age;
-            if ((userInfo.birthday.flags & 1) != 0) {
+            if (userInfo != null && userInfo.birthday != null && (userInfo.birthday.flags & 1) != 0) {
                 age = Period.between(LocalDate.of(userInfo.birthday.year, userInfo.birthday.month, userInfo.birthday.day), LocalDate.now()).getYears();
             } else {
                 age = 0;

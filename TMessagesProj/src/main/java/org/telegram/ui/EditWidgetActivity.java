@@ -390,9 +390,9 @@ public class EditWidgetActivity extends BaseFragment {
                                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                                         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
                                         if (Build.VERSION.SDK_INT >= 18) {
-                                            innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question);
+                                            innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question.text);
                                         } else {
-                                            innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question);
+                                            innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question.text);
                                         }
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         if (Build.VERSION.SDK_INT >= 18) {
@@ -454,7 +454,7 @@ public class EditWidgetActivity extends BaseFragment {
                                 } else {
                                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                                         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
-                                        messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
+                                        messageString = "\uD83D\uDCCA " + mediaPoll.poll.question.text;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
                                     } else if (message.type == MessageObject.TYPE_MUSIC) {

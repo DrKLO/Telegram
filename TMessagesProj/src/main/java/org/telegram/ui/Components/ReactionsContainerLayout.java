@@ -51,6 +51,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
@@ -151,7 +152,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     private float bigCircleRadius = dp(8);
     private float smallCircleRadius = bigCircleRadius / 2;
     public int bigCircleOffset = dp(36);
-    private MessageObject messageObject;
+    public MessageObject messageObject;
+    public boolean hitLimit;
     private int currentAccount;
     private long waitingLoadingChatId;
     private boolean isTop;
@@ -167,10 +169,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     private List<ReactionsLayoutInBubble.VisibleReaction> visibleReactionsList = new ArrayList<>(20);
     private List<TLRPC.TL_availableReaction> premiumLockedReactions = new ArrayList<>(10);
-    private List<ReactionsLayoutInBubble.VisibleReaction> allReactionsList = new ArrayList<>(20);
+    public List<ReactionsLayoutInBubble.VisibleReaction> allReactionsList = new ArrayList<>(20);
 
     private LinearLayoutManager linearLayoutManager;
-    private RecyclerView.Adapter listAdapter;
+    private Adapter listAdapter;
     RectF rectF = new RectF();
 
     HashSet<ReactionsLayoutInBubble.VisibleReaction> selectedReactions = new HashSet<>();
@@ -348,114 +350,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         });
         recyclerListView.setLayoutManager(linearLayoutManager);
         recyclerListView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        recyclerListView.setAdapter(listAdapter = new AdapterWithDiffUtils() {
-
-            @Override
-            public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                return false;
-            }
-
-            @NonNull
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View view;
-                switch (viewType) {
-                    default:
-                    case VIEW_TYPE_REACTION:
-                    case VIEW_TYPE_CUSTOM_REACTION:
-                        view = new ReactionHolderView(context, true);
-                        break;
-                    case VIEW_TYPE_PREMIUM_BUTTON:
-                        premiumLockContainer = new FrameLayout(context);
-                        premiumLockIconView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_REACTIONS);
-                        premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
-                        premiumLockIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
-                        premiumLockIconView.setScaleX(0f);
-                        premiumLockIconView.setScaleY(0f);
-                        premiumLockIconView.setPadding(dp(1), dp(1), dp(1), dp(1));
-                        premiumLockContainer.addView(premiumLockIconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
-                        premiumLockIconView.setOnClickListener(v -> {
-                            int[] position = new int[2];
-                            v.getLocationOnScreen(position);
-                            showUnlockPremium(position[0] + v.getMeasuredWidth() / 2f, position[1] + v.getMeasuredHeight() / 2f);
-                        });
-                        view = premiumLockContainer;
-                        break;
-                    case VIEW_TYPE_CUSTOM_EMOJI_BUTTON:
-                        customReactionsContainer = new CustomReactionsContainer(context);
-                        customEmojiReactionsIconView = new InternalImageView(context);
-                        customEmojiReactionsIconView.setImageResource(R.drawable.msg_reactions_expand);
-                        customEmojiReactionsIconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                        if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
-                            customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
-                        } else {
-                            customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
-                        }
-                        customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
-                        customEmojiReactionsIconView.setPadding(dp(2), dp(2), dp(2), dp(2));
-                        customEmojiReactionsIconView.setContentDescription(LocaleController.getString(R.string.AccDescrExpandPanel));
-                        customReactionsContainer.addView(customEmojiReactionsIconView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
-                        customEmojiReactionsIconView.setOnClickListener(v -> {
-                            showCustomEmojiReactionDialog();
-                        });
-                        view = customReactionsContainer;
-                        break;
-                }
-
-                int size = getLayoutParams().height - (int) getTopOffset() - getPaddingTop() - getPaddingBottom();
-                view.setLayoutParams(new RecyclerView.LayoutParams(size - dp(12), size));
-                return new RecyclerListView.Holder(view);
-            }
-
-            @Override
-            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (holder.getItemViewType() == VIEW_TYPE_REACTION || holder.getItemViewType() == VIEW_TYPE_CUSTOM_REACTION) {
-                    ReactionHolderView h = (ReactionHolderView) holder.itemView;
-                    h.setScaleX(1);
-                    h.setScaleY(1);
-                    h.setReaction(items.get(position).reaction, position);
-                }
-            }
-
-            @Override
-            public void onViewAttachedToWindow(@NonNull RecyclerView.ViewHolder holder) {
-                if (holder.getItemViewType() == VIEW_TYPE_REACTION || holder.getItemViewType() == VIEW_TYPE_CUSTOM_REACTION) {
-                    int position = holder.getAdapterPosition();
-                    if (position >= 0 && position < items.size()) {
-                        ((ReactionHolderView) holder.itemView).updateSelected(items.get(position).reaction);
-                    }
-                }
-                super.onViewAttachedToWindow(holder);
-            }
-
-            @Override
-            public int getItemCount() {
-                return items.size();
-            }
-
-            @Override
-            public int getItemViewType(int position) {
-                return items.get(position).viewType;
-            }
-
-            @Override
-            public void notifyDataSetChanged() {
-                oldItems.clear();
-                oldItems.addAll(items);
-                items.clear();
-                for (int i = 0; i < visibleReactionsList.size(); i++) {
-                    ReactionsLayoutInBubble.VisibleReaction visibleReaction = visibleReactionsList.get(i);
-                    items.add(new InnerItem(visibleReaction.emojicon == null ? VIEW_TYPE_CUSTOM_REACTION : VIEW_TYPE_REACTION, visibleReaction));
-                }
-                if (showUnlockPremiumButton()) {
-                    items.add(new InnerItem(VIEW_TYPE_PREMIUM_BUTTON, null));
-                }
-                if (showCustomEmojiReaction()) {
-                    items.add(new InnerItem(VIEW_TYPE_CUSTOM_EMOJI_BUTTON, null));
-                }
-                setItems(oldItems, items);
-            }
-        });
+        recyclerListView.setAdapter(listAdapter = new Adapter());
         recyclerListView.addOnScrollListener(new LeftRightShadowsListener());
         recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -556,6 +451,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     private void animatePullingBack() {
         if (pullingLeftOffset != 0) {
+            if (pullingDownBackAnimator != null) {
+                pullingDownBackAnimator.cancel();
+            }
             pullingDownBackAnimator = ValueAnimator.ofFloat(pullingLeftOffset, 0);
             pullingDownBackAnimator.addUpdateListener(animation -> {
                 pullingLeftOffset = (float) pullingDownBackAnimator.getAnimatedValue();
@@ -654,7 +552,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private void setVisibleReactionsList(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactionsList) {
+    private void setVisibleReactionsList(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactionsList, boolean animated) {
         this.visibleReactionsList.clear();
         if (showCustomEmojiReaction()) {
             int i = 0;
@@ -687,9 +585,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (size * visibleReactionsList.size() < dp(200)) {
             getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
         }
-
-        listAdapter.notifyDataSetChanged();
-
+        listAdapter.updateItems(animated);
     }
 
     @Override
@@ -989,6 +885,22 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         view.setScaleY(otherViewsScale);
     }
 
+    private void invalidateEmojis() {
+        if (type != TYPE_STICKER_SET_EMOJI) return;
+        invalidate();
+        recyclerListView.invalidate();
+        recyclerListView.invalidateViews();
+        for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+            View child = recyclerListView.getChildAt(i);
+            if (child instanceof ReactionHolderView) {
+                ((ReactionHolderView) child).enterImageView.invalidate();
+                ((ReactionHolderView) child).loopImageView.invalidate();
+            } else {
+                child.invalidate();
+            }
+        }
+    }
+
     private void checkPressedProgress(Canvas canvas, ReactionHolderView view) {
         float pullingOffsetX = 0;
         if (pullingLeftOffset != 0) {
@@ -1091,8 +1003,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         invalidate();
     }
 
-    public void setMessage(MessageObject message, TLRPC.ChatFull chatFull) {
+    public void setMessage(MessageObject message, TLRPC.ChatFull chatFull, boolean animated) {
         this.messageObject = message;
+        hitLimit = type == TYPE_DEFAULT && messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.reactions != null && messageObject.messageOwner.reactions.results.size() >= MessagesController.getInstance(currentAccount).getChatMaxUniqReactions(messageObject.getDialogId());
         TLRPC.ChatFull reactionsChat = chatFull;
         List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions = new ArrayList<>();
         if (message != null && message.isForwardedChannelPost()) {
@@ -1107,6 +1020,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (type == TYPE_TAGS) {
             allReactionsAvailable = UserConfig.getInstance(currentAccount).isPremium();
             fillRecentReactionsList(visibleReactions);
+        } else if (hitLimit) {
+            allReactionsAvailable = false;
+            for (TLRPC.ReactionCount result : messageObject.messageOwner.reactions.results) {
+                visibleReactions.add(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(result.reaction));
+            }
         } else if (reactionsChat != null) {
             if (reactionsChat.available_reactions instanceof TLRPC.TL_chatReactionsAll) {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(reactionsChat.id);
@@ -1139,14 +1057,14 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             fillRecentReactionsList(visibleReactions);
         }
         filterReactions(visibleReactions);
-        showExpandableReactions = !allReactionsAvailable && visibleReactions.size() > 16 || allReactionsAvailable && !UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
+        showExpandableReactions = !hitLimit && (!allReactionsAvailable && visibleReactions.size() > 16 || allReactionsAvailable && !UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).premiumFeaturesBlocked());
         if (type == TYPE_TAGS && !UserConfig.getInstance(currentAccount).isPremium()) {
             showExpandableReactions = false;
         }
         if (type == TYPE_STICKER_SET_EMOJI) {
             showExpandableReactions = true;
         }
-        setVisibleReactionsList(visibleReactions);
+        setVisibleReactionsList(visibleReactions, animated);
 
         if (message != null && message.messageOwner.reactions != null && message.messageOwner.reactions.results != null) {
             for (int i = 0; i < message.messageOwner.reactions.results.size(); i++) {
@@ -1251,20 +1169,22 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         selectedReactions.clear();
         selectedReactions.addAll(getInclusiveReactions(messages));
         updateSelected();
-        if (type == TYPE_STICKER_SET_EMOJI) {
-            alwaysSelectedReactions.addAll(selectedReactions);
-            setMessage(messageObject, null);
-        }
     }
 
     public void setSelectedReactionInclusive(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
         selectedReactions.clear();
         selectedReactions.add(visibleReaction);
         updateSelected();
-        if (type == TYPE_STICKER_SET_EMOJI) {
-            alwaysSelectedReactions.addAll(selectedReactions);
-            setMessage(messageObject, null);
+    }
+
+    public void setSelectedEmojis(ArrayList<String> emojis) {
+        selectedReactions.clear();
+        for (String emoji : emojis) {
+            ReactionsLayoutInBubble.VisibleReaction reaction = ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoji);
+            selectedReactions.add(reaction);
+            alwaysSelectedReactions.add(reaction);
         }
+        updateSelected();
     }
 
     private void updateSelected() {
@@ -1283,8 +1203,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             if (set.contains(visibleReactions.get(i))) {
                 i--;
                 visibleReactions.remove(i);
+            } else {
+                set.add(visibleReactions.get(i));
             }
-            set.add(visibleReactions.get(i));
         }
     }
 
@@ -1292,13 +1213,25 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         HashSet<ReactionsLayoutInBubble.VisibleReaction> hashSet = new HashSet<>();
         int added = 0;
         if (type == TYPE_STICKER_SET_EMOJI) {
-            for (ReactionsLayoutInBubble.VisibleReaction visibleReaction : alwaysSelectedReactions) {
+            for (ReactionsLayoutInBubble.VisibleReaction visibleReaction : selectedReactions) {
                 if (!hashSet.contains(visibleReaction)) {
                     hashSet.add(visibleReaction);
                     visibleReactions.add(visibleReaction);
                     added++;
+                    if (added >= 8) return;
                 }
             }
+            List<TLRPC.TL_availableReaction> enabledReactions = MediaDataController.getInstance(currentAccount).getEnabledReactionsList();
+            for (int i = 0; i < enabledReactions.size(); i++) {
+                ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(enabledReactions.get(i));
+                if (!hashSet.contains(visibleReaction)) {
+                    hashSet.add(visibleReaction);
+                    visibleReactions.add(visibleReaction);
+                    added++;
+                    if (added >= 8) return;
+                }
+            }
+            return;
         }
         if (!allReactionsAvailable || type == TYPE_STICKER_SET_EMOJI) {
             if (type == TYPE_TAGS) {
@@ -1513,6 +1446,21 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     public void onCustomEmojiWindowOpened() {
+        if (pullingDownBackAnimator != null) {
+            pullingDownBackAnimator.cancel();
+        }
+        pullingLeftOffset = 0f;
+        if (customReactionsContainer != null) {
+            customReactionsContainer.invalidate();
+        }
+        invalidate();
+    }
+
+
+    public void onCustomEmojiWindowClosing() {
+        if (pullingDownBackAnimator != null) {
+            pullingDownBackAnimator.cancel();
+        }
         pullingLeftOffset = 0f;
         if (customReactionsContainer != null) {
             customReactionsContainer.invalidate();
@@ -1528,7 +1476,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     MediaDataController.getInstance(currentAccount).clearRecentReactions();
                     List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions = new ArrayList<>();
                     fillRecentReactionsList(visibleReactions);
-                    setVisibleReactionsList(visibleReactions);
+                    setVisibleReactionsList(visibleReactions, true);
                     lastVisibleViews.clear();
                     reactionsWindow.setRecentReactions(visibleReactions);
                 })
@@ -1912,9 +1860,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
 
         private void setReaction(ReactionsLayoutInBubble.VisibleReaction react, int position) {
+            selected = selectedReactions.contains(react);
             if (currentReaction != null && currentReaction.equals(react)) {
                 this.position = position;
-                selected = selectedReactions.contains(react);
                 updateImage(react);
                 return;
             }
@@ -1932,7 +1880,6 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
             resetAnimation();
             currentReaction = react;
-            selected = selectedReactions.contains(react);
             hasEnterAnimation = currentReaction.emojicon != null && (showCustomEmojiReaction() || allReactionsIsDefault) && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
             if (type == TYPE_STICKER_SET_EMOJI) {
                 hasEnterAnimation = false;
@@ -1986,7 +1933,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
 
         private void updateImage(ReactionsLayoutInBubble.VisibleReaction react) {
-            if (currentReaction.emojicon != null) {
+            if (type == TYPE_STICKER_SET_EMOJI && react != null && react.emojicon != null) {
+                enterImageView.getImageReceiver().setImageBitmap(Emoji.getEmojiDrawable(react.emojicon));
+                loopImageView.getImageReceiver().setImageBitmap(Emoji.getEmojiDrawable(react.emojicon));
+            } else if (currentReaction.emojicon != null) {
                 TLRPC.TL_availableReaction defaultReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
                 if (defaultReaction != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(defaultReaction.activate_animation, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
@@ -2235,12 +2185,14 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
     }
 
@@ -2249,10 +2201,12 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == waitingLoadingChatId && getVisibility() != View.VISIBLE && !(chatFull.available_reactions instanceof TLRPC.TL_chatReactionsNone)) {
-                setMessage(messageObject, null);
+                setMessage(messageObject, null, true);
                 setVisibility(View.VISIBLE);
                 startEnterAnimation(false);
             }
+        } else if (id == NotificationCenter.emojiLoaded) {
+            invalidateEmojis();
         }
     }
 
@@ -2379,5 +2333,117 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public static boolean allowSmoothEnterTransition() {
         return SharedConfig.deviceIsHigh();
+    }
+
+    public class Adapter extends AdapterWithDiffUtils {
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                default:
+                case VIEW_TYPE_REACTION:
+                case VIEW_TYPE_CUSTOM_REACTION:
+                    view = new ReactionHolderView(getContext(), true);
+                    break;
+                case VIEW_TYPE_PREMIUM_BUTTON:
+                    premiumLockContainer = new FrameLayout(getContext());
+                    premiumLockIconView = new PremiumLockIconView(getContext(), PremiumLockIconView.TYPE_REACTIONS);
+                    premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
+                    premiumLockIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                    premiumLockIconView.setScaleX(0f);
+                    premiumLockIconView.setScaleY(0f);
+                    premiumLockIconView.setPadding(dp(1), dp(1), dp(1), dp(1));
+                    premiumLockContainer.addView(premiumLockIconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+                    premiumLockIconView.setOnClickListener(v -> {
+                        int[] position = new int[2];
+                        v.getLocationOnScreen(position);
+                        showUnlockPremium(position[0] + v.getMeasuredWidth() / 2f, position[1] + v.getMeasuredHeight() / 2f);
+                    });
+                    view = premiumLockContainer;
+                    break;
+                case VIEW_TYPE_CUSTOM_EMOJI_BUTTON:
+                    customReactionsContainer = new CustomReactionsContainer(getContext());
+                    customEmojiReactionsIconView = new InternalImageView(getContext());
+                    customEmojiReactionsIconView.setImageResource(R.drawable.msg_reactions_expand);
+                    customEmojiReactionsIconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                    if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
+                        customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
+                    } else {
+                        customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                    }
+                    customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
+                    customEmojiReactionsIconView.setPadding(dp(2), dp(2), dp(2), dp(2));
+                    customEmojiReactionsIconView.setContentDescription(LocaleController.getString(R.string.AccDescrExpandPanel));
+                    customReactionsContainer.addView(customEmojiReactionsIconView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+                    customEmojiReactionsIconView.setOnClickListener(v -> {
+                        showCustomEmojiReactionDialog();
+                    });
+                    view = customReactionsContainer;
+                    break;
+            }
+
+            int size = getLayoutParams().height - (int) getTopOffset() - getPaddingTop() - getPaddingBottom();
+            view.setLayoutParams(new RecyclerView.LayoutParams(size - dp(12), size));
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == VIEW_TYPE_REACTION || holder.getItemViewType() == VIEW_TYPE_CUSTOM_REACTION) {
+                ReactionHolderView h = (ReactionHolderView) holder.itemView;
+                h.setScaleX(1);
+                h.setScaleY(1);
+                h.setReaction(items.get(position).reaction, position);
+            }
+        }
+
+        @Override
+        public void onViewAttachedToWindow(@NonNull RecyclerView.ViewHolder holder) {
+            if (holder.getItemViewType() == VIEW_TYPE_REACTION || holder.getItemViewType() == VIEW_TYPE_CUSTOM_REACTION) {
+                int position = holder.getAdapterPosition();
+                if (position >= 0 && position < items.size()) {
+                    ((ReactionHolderView) holder.itemView).updateSelected(items.get(position).reaction);
+                }
+            }
+            super.onViewAttachedToWindow(holder);
+        }
+
+        @Override
+        public int getItemCount() {
+            return items.size();
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return items.get(position).viewType;
+        }
+
+        public void updateItems(boolean animated) {
+            oldItems.clear();
+            oldItems.addAll(items);
+            items.clear();
+            for (int i = 0; i < visibleReactionsList.size(); i++) {
+                ReactionsLayoutInBubble.VisibleReaction visibleReaction = visibleReactionsList.get(i);
+                items.add(new InnerItem(visibleReaction.emojicon == null ? VIEW_TYPE_CUSTOM_REACTION : VIEW_TYPE_REACTION, visibleReaction));
+            }
+            if (showUnlockPremiumButton()) {
+                items.add(new InnerItem(VIEW_TYPE_PREMIUM_BUTTON, null));
+            }
+            if (showCustomEmojiReaction()) {
+                items.add(new InnerItem(VIEW_TYPE_CUSTOM_EMOJI_BUTTON, null));
+            }
+            if (animated) {
+                setItems(oldItems, items);
+            } else {
+                super.notifyDataSetChanged();
+            }
+        }
     }
 }

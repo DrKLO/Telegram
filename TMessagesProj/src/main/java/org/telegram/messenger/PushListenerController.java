@@ -373,6 +373,8 @@ public class PushListenerController {
                             int msg_id;
                             if (custom.has("msg_id")) {
                                 msg_id = custom.getInt("msg_id");
+                            } else if (custom.has("story_id")) {
+                                msg_id = custom.getInt("story_id");
                             } else {
                                 msg_id = 0;
                             }
@@ -1199,6 +1201,9 @@ public class PushListenerController {
                                 }
                                 if (messageText != null) {
                                     TLRPC.TL_message messageOwner = new TLRPC.TL_message();
+                                    if (loc_key.startsWith("REACT_STORY") && msg_id > 0) {
+                                        msg_id = -msg_id;
+                                    }
                                     messageOwner.id = msg_id;
                                     messageOwner.random_id = random_id;
                                     messageOwner.message = message1 != null ? message1 : messageText;
@@ -1243,7 +1248,8 @@ public class PushListenerController {
                                         messageObject.messageOwner.reply_to.forum_topic = true;
                                         messageObject.messageOwner.reply_to.reply_to_top_id = topicId;
                                     }
-                                    messageObject.isReactionPush = loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_");
+                                    messageObject.isStoryReactionPush = loc_key.startsWith("REACT_STORY");
+                                    messageObject.isReactionPush = !messageObject.isStoryReactionPush && (loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_"));
                                     messageObject.isStoryPush = loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_HIDDEN_AUTHOR");
                                     messageObject.isStoryMentionPush = loc_key.equals("MESSAGE_STORY_MENTION");
                                     messageObject.isStoryPushHidden = loc_key.equals("STORY_HIDDEN_AUTHOR");
@@ -1288,107 +1294,117 @@ public class PushListenerController {
 
     private static String getReactedText(String loc_key, Object[] args) {
         switch (loc_key) {
+            case "REACT_HIDDEN": {
+                return LocaleController.formatString(R.string.PushReactHidden, args);
+            }
             case "REACT_TEXT": {
-                return LocaleController.formatString("PushReactText", R.string.PushReactText, args);
+                return LocaleController.formatString(R.string.PushReactText, args);
             }
             case "REACT_NOTEXT": {
-                return LocaleController.formatString("PushReactNoText", R.string.PushReactNoText, args);
+                return LocaleController.formatString(R.string.PushReactNoText, args);
             }
             case "REACT_PHOTO": {
-                return LocaleController.formatString("PushReactPhoto", R.string.PushReactPhoto, args);
+                return LocaleController.formatString(R.string.PushReactPhoto, args);
             }
             case "REACT_VIDEO": {
-                return LocaleController.formatString("PushReactVideo", R.string.PushReactVideo, args);
+                return LocaleController.formatString(R.string.PushReactVideo, args);
             }
             case "REACT_ROUND": {
-                return LocaleController.formatString("PushReactRound", R.string.PushReactRound, args);
+                return LocaleController.formatString(R.string.PushReactRound, args);
             }
             case "REACT_DOC": {
-                return LocaleController.formatString("PushReactDoc", R.string.PushReactDoc, args);
+                return LocaleController.formatString(R.string.PushReactDoc, args);
             }
             case "REACT_STICKER": {
-                return LocaleController.formatString("PushReactSticker", R.string.PushReactSticker, args);
+                return LocaleController.formatString(R.string.PushReactSticker, args);
             }
             case "REACT_AUDIO": {
-                return LocaleController.formatString("PushReactAudio", R.string.PushReactAudio, args);
+                return LocaleController.formatString(R.string.PushReactAudio, args);
             }
             case "REACT_CONTACT": {
-                return LocaleController.formatString("PushReactContect", R.string.PushReactContect, args);
+                return LocaleController.formatString(R.string.PushReactContect, args);
             }
             case "REACT_GEO": {
-                return LocaleController.formatString("PushReactGeo", R.string.PushReactGeo, args);
+                return LocaleController.formatString(R.string.PushReactGeo, args);
             }
             case "REACT_GEOLIVE": {
-                return LocaleController.formatString("PushReactGeoLocation", R.string.PushReactGeoLocation, args);
+                return LocaleController.formatString(R.string.PushReactGeoLocation, args);
             }
             case "REACT_POLL": {
-                return LocaleController.formatString("PushReactPoll", R.string.PushReactPoll, args);
+                return LocaleController.formatString(R.string.PushReactPoll, args);
             }
             case "REACT_QUIZ": {
-                return LocaleController.formatString("PushReactQuiz", R.string.PushReactQuiz, args);
+                return LocaleController.formatString(R.string.PushReactQuiz, args);
             }
             case "REACT_GAME": {
-                return LocaleController.formatString("PushReactGame", R.string.PushReactGame, args);
+                return LocaleController.formatString(R.string.PushReactGame, args);
             }
             case "REACT_INVOICE": {
-                return LocaleController.formatString("PushReactInvoice", R.string.PushReactInvoice, args);
+                return LocaleController.formatString(R.string.PushReactInvoice, args);
             }
             case "REACT_GIF": {
-                return LocaleController.formatString("PushReactGif", R.string.PushReactGif, args);
+                return LocaleController.formatString(R.string.PushReactGif, args);
             }
             case "REACT_GIVEAWAY": {
-                return LocaleController.formatString("NotificationReactGiveaway", R.string.NotificationReactGiveaway, args);
+                return LocaleController.formatString(R.string.NotificationReactGiveaway, args);
             }
             case "CHAT_REACT_GIVEAWAY": {
-                return LocaleController.formatString("NotificationChatReactGiveaway", R.string.NotificationChatReactGiveaway, args);
+                return LocaleController.formatString(R.string.NotificationChatReactGiveaway, args);
             }
             case "CHAT_REACT_TEXT": {
-                return LocaleController.formatString("PushChatReactText", R.string.PushChatReactText, args);
+                return LocaleController.formatString(R.string.PushChatReactText, args);
             }
             case "CHAT_REACT_NOTEXT": {
-                return LocaleController.formatString("PushChatReactNotext", R.string.PushChatReactNotext, args);
+                return LocaleController.formatString(R.string.PushChatReactNotext, args);
             }
             case "CHAT_REACT_PHOTO": {
-                return LocaleController.formatString("PushChatReactPhoto", R.string.PushChatReactPhoto, args);
+                return LocaleController.formatString(R.string.PushChatReactPhoto, args);
             }
             case "CHAT_REACT_VIDEO": {
-                return LocaleController.formatString("PushChatReactVideo", R.string.PushChatReactVideo, args);
+                return LocaleController.formatString(R.string.PushChatReactVideo, args);
             }
             case "CHAT_REACT_ROUND": {
-                return LocaleController.formatString("PushChatReactRound", R.string.PushChatReactRound, args);
+                return LocaleController.formatString(R.string.PushChatReactRound, args);
             }
             case "CHAT_REACT_DOC": {
-                return LocaleController.formatString("PushChatReactDoc", R.string.PushChatReactDoc, args);
+                return LocaleController.formatString(R.string.PushChatReactDoc, args);
             }
             case "CHAT_REACT_STICKER": {
-                return LocaleController.formatString("PushChatReactSticker", R.string.PushChatReactSticker, args);
+                return LocaleController.formatString(R.string.PushChatReactSticker, args);
             }
             case "CHAT_REACT_AUDIO": {
-                return LocaleController.formatString("PushChatReactAudio", R.string.PushChatReactAudio, args);
+                return LocaleController.formatString(R.string.PushChatReactAudio, args);
             }
             case "CHAT_REACT_CONTACT": {
-                return LocaleController.formatString("PushChatReactContact", R.string.PushChatReactContact, args);
+                return LocaleController.formatString(R.string.PushChatReactContact, args);
             }
             case "CHAT_REACT_GEO": {
-                return LocaleController.formatString("PushChatReactGeo", R.string.PushChatReactGeo, args);
+                return LocaleController.formatString(R.string.PushChatReactGeo, args);
             }
             case "CHAT_REACT_GEOLIVE": {
-                return LocaleController.formatString("PushChatReactGeoLive", R.string.PushChatReactGeoLive, args);
+                return LocaleController.formatString(R.string.PushChatReactGeoLive, args);
             }
             case "CHAT_REACT_POLL": {
-                return LocaleController.formatString("PushChatReactPoll", R.string.PushChatReactPoll, args);
+                return LocaleController.formatString(R.string.PushChatReactPoll, args);
             }
             case "CHAT_REACT_QUIZ": {
-                return LocaleController.formatString("PushChatReactQuiz", R.string.PushChatReactQuiz, args);
+                return LocaleController.formatString(R.string.PushChatReactQuiz, args);
             }
             case "CHAT_REACT_GAME": {
-                return LocaleController.formatString("PushChatReactGame", R.string.PushChatReactGame, args);
+                return LocaleController.formatString(R.string.PushChatReactGame, args);
             }
             case "CHAT_REACT_INVOICE": {
-                return LocaleController.formatString("PushChatReactInvoice", R.string.PushChatReactInvoice, args);
+                return LocaleController.formatString(R.string.PushChatReactInvoice, args);
             }
             case "CHAT_REACT_GIF": {
-                return LocaleController.formatString("PushChatReactGif", R.string.PushChatReactGif, args);
+                return LocaleController.formatString(R.string.PushChatReactGif, args);
+            }
+            /* stories */
+            case "REACT_STORY": {
+                return LocaleController.formatString(R.string.PushReactStory, args);
+            }
+            case "REACT_STORY_HIDDEN": {
+                return LocaleController.formatString(R.string.PushReactStoryHidden, args);
             }
         }
         return null;

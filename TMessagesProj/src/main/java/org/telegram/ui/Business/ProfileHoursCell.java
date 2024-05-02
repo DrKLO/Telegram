@@ -204,7 +204,7 @@ public class ProfileHoursCell extends LinearLayout {
         TLRPC.TL_timezone timezone = timezonesController.findTimezone(value.timezone_id);
 
         Calendar calendar = Calendar.getInstance();
-        int currentUtcOffset = calendar.getTimeZone().getRawOffset() / 1000;
+        int currentUtcOffset = calendar.getTimeZone().getOffset(System.currentTimeMillis()) / 1000;
         int valueUtcOffset = timezone == null ? 0 : timezone.utc_offset;
         int utcOffset = (currentUtcOffset - valueUtcOffset) / 60;
         switchText.setVisibility(utcOffset != 0 && !is24x7 ? View.VISIBLE : View.GONE);
@@ -287,15 +287,15 @@ public class ProfileHoursCell extends LinearLayout {
                     TextView textView = k == 0 ? timeText[i][a] : labelTimeText[a];
                     if (i == 0 && !open_now && k == 1) {
                         int opensPeriodTime = -1;
-                        for (int j = 0; j < weekly_open.size(); ++j) {
-                            TLRPC.TL_businessWeeklyOpen weekly = weekly_open.get(j);
+                        for (int j = 0; j < adapted_weekly_open.size(); ++j) {
+                            TLRPC.TL_businessWeeklyOpen weekly = adapted_weekly_open.get(j);
                             if (nowPeriodTime < weekly.start_minute) {
                                 opensPeriodTime = weekly.start_minute;
                                 break;
                             }
                         }
-                        if (opensPeriodTime == -1 && !weekly_open.isEmpty()) {
-                            opensPeriodTime = weekly_open.get(0).start_minute;
+                        if (opensPeriodTime == -1 && !adapted_weekly_open.isEmpty()) {
+                            opensPeriodTime = adapted_weekly_open.get(0).start_minute;
                         }
                         if (opensPeriodTime == -1) {
                             textView.setText(getString(R.string.BusinessHoursProfileClose));

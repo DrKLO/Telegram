@@ -74,7 +74,7 @@ public class Input {
 
     private ValueAnimator fillAnimator;
     private void fill(Brush brush, boolean registerUndo, Runnable onDone) {
-        if (!canFill || lastLocation == null) {
+        if (!canFill || renderView.getPainting().masking || lastLocation == null) {
             return;
         }
 
@@ -245,11 +245,13 @@ public class Input {
                     }
 
                     points[pointsCount] = location;
-                    if ((System.currentTimeMillis() - drawingStart) > 3000) {
-                        detector.clear();
-                        renderView.getPainting().setHelperShape(null);
-                    } else if (renderView.getCurrentBrush() instanceof Brush.Radial || renderView.getCurrentBrush() instanceof Brush.Elliptical) {
-                        detector.append(location.x, location.y, distance > AndroidUtilities.dp(6) / scale);
+                    if (renderView.getPainting() == null || !renderView.getPainting().masking) {
+                        if ((System.currentTimeMillis() - drawingStart) > 3000) {
+                            detector.clear();
+                            renderView.getPainting().setHelperShape(null);
+                        } else if (renderView.getCurrentBrush() instanceof Brush.Radial || renderView.getCurrentBrush() instanceof Brush.Elliptical) {
+                            detector.append(location.x, location.y, distance > AndroidUtilities.dp(6) / scale);
+                        }
                     }
                     pointsCount++;
                     realPointsCount++;
@@ -337,9 +339,7 @@ public class Input {
                             arrowAnimator.addListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
-                                    if (!renderView.getCurrentBrush().isEraser() || renderView.getUndoStore().canUndo()) {
-                                        renderView.getPainting().commitPath(null, renderView.getCurrentColor());
-                                    }
+                                    renderView.getPainting().commitPath(null, renderView.getCurrentColor());
                                     arrowAnimator = null;
                                 }
                             });
@@ -349,7 +349,7 @@ public class Input {
                         }
                     }
 
-                    if (commit && (!renderView.getCurrentBrush().isEraser() || renderView.getUndoStore().canUndo())) {
+                    if (commit) {
                         renderView.getPainting().commitPath(null, renderView.getCurrentColor(), true, () -> {
                             if (switchedBrushByStylusFrom != null) {
                                 renderView.selectBrush(switchedBrushByStylusFrom);

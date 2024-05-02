@@ -780,13 +780,11 @@ public class TL_stats {
     }
 
     public static class TL_broadcastRevenueStats extends TLObject {
-        public static final int constructor = 0xd07b4bad;
+        public static final int constructor = 0x5407e297;
 
         public StatsGraph top_hours_graph;
         public StatsGraph revenue_graph;
-        public long current_balance;
-        public long available_balance;
-        public long overall_revenue;
+        public TLRPC.TL_broadcastRevenueBalances balances;
         public double usd_rate;
 
         public static TL_broadcastRevenueStats TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -807,9 +805,7 @@ public class TL_stats {
         public void readParams(AbstractSerializedData stream, boolean exception) {
             top_hours_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
             revenue_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
-            current_balance = stream.readInt64(exception);
-            available_balance = stream.readInt64(exception);
-            overall_revenue = stream.readInt64(exception);
+            balances = TLRPC.TL_broadcastRevenueBalances.TLdeserialize(stream, stream.readInt32(exception), exception);
             usd_rate = stream.readDouble(exception);
         }
 
@@ -818,9 +814,7 @@ public class TL_stats {
             stream.writeInt32(constructor);
             top_hours_graph.serializeToStream(stream);
             revenue_graph.serializeToStream(stream);
-            stream.writeInt64(current_balance);
-            stream.writeInt64(available_balance);
-            stream.writeInt64(overall_revenue);
+            balances.serializeToStream(stream);
             stream.writeDouble(usd_rate);
         }
     }

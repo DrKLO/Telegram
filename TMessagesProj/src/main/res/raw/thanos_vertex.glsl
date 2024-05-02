@@ -18,7 +18,6 @@ out float alpha;
 
 uniform mat3 matrix;
 uniform vec2 rectSize;
-// uniform vec2 rectPos;
 
 uniform float reset;
 uniform float time;
@@ -30,6 +29,8 @@ uniform float seed;
 uniform float longevity;
 uniform float dp;
 uniform vec2 offset;
+uniform float scale;
+uniform float uvOffset;
 
 #define noiseScale   12.0
 #define noiseSpeed    0.6
@@ -41,24 +42,6 @@ uniform vec2 offset;
 
 float rand(vec2 n) { 
 	return fract(sin(dot(n,vec2(12.9898,4.1414-seed*.42)))*43758.5453);
-}
-
-float particleEaseInWindowFunction(float t) {
-    return t;
-}
-
-float particleEaseInValueAt(float fraction, float t) {
-    float windowSize = 0.8;
-
-    float effectiveT = t;
-    float windowStartOffset = -windowSize;
-    float windowEndOffset = 1.0;
-
-    float windowPosition = (1.0 - fraction) * windowStartOffset + fraction * windowEndOffset;
-    float windowT = max(0.0, min(windowSize, effectiveT - windowPosition)) / windowSize;
-    float localT = 1.0 - particleEaseInWindowFunction(windowT);
-
-    return localT;
 }
 
 void main() {
@@ -75,15 +58,15 @@ void main() {
     ) / gridSize.xy;
     position = (matrix * vec3(uv + .5 / gridSize.xy, 1.0)).xy;
     float direction = rand(3. * uv) * (3.14159265 * 2.0);
-    velocity = vec2(cos(direction), sin(direction)) * (0.1 + rand(5. * uv) * (0.2 - 0.1)) * 260.0 * dp;
+    velocity = vec2(cos(direction), sin(direction)) * (0.1 + rand(5. * uv) * (0.2 - 0.1)) * 260.0 * scale * dp;
     particleTime = (0.7 + rand(uv) * (1.5 - 0.7)) / 1.15;
   }
 
   float effectFraction =   max(0.0, min(0.35, time)) / 0.35;
-  float particleFraction = max(0.0, min(0.2, .1 + time - uv.x * 0.6)) / 0.2;
+  float particleFraction = max(0.0, min(0.2, .1 + time - uv.x * uvOffset)) / 0.2;
   position += velocity * deltaTime * particleFraction;
   velocity += vec2(19.0 * (velocity.x > 0.0 ? 1.0 : -1.0) * (1.0 - effectFraction), -65.0) * deltaTime * dp * particleFraction;
-  particleTime = max(0.0, particleTime - 1.2 * deltaTime * effectFraction);
+  particleTime = max(0.0, particleTime - 1.2 * deltaTime * particleFraction);
 
   outUV = uv;
   outPosition = position;

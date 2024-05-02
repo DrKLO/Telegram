@@ -70,8 +70,9 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_video_WebmEncoder_createEnco
     ctx->codec_ctx->time_base = (AVRational){ 1, fps };
     ctx->codec_ctx->framerate = (AVRational){ fps, 1 };
     ctx->codec_ctx->bit_rate = bitrate;
-    ctx->codec_ctx->gop_size = 10;
-    ctx->codec_ctx->max_b_frames = 1;
+    ctx->codec_ctx->rc_min_rate = bitrate / 8;
+    ctx->codec_ctx->rc_max_rate = bitrate;
+//    ctx->codec_ctx->rc_buffer_size = 2 * bitrate;
 
     if (ctx->fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
         ctx->codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -185,6 +186,9 @@ JNIEXPORT jboolean JNICALL Java_org_telegram_messenger_video_WebmEncoder_writeFr
         pkt.stream_index = ctx->video_stream->index;
 
         ret = av_interleaved_write_frame(ctx->fmt_ctx, &pkt);
+        if (ret < 0) {
+            LOGE("vp9: failed to av_interleaved_write_frame %d", ret);
+        }
         av_packet_unref(&pkt);
     }
 
@@ -200,13 +204,16 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_video_WebmEncoder_stop(
         return;
     }
 
-    avcodec_send_frame(ctx->codec_ctx, NULL);
+    int ret;
+    ret = avcodec_send_frame(ctx->codec_ctx, NULL);
+    if (ret < 0) {
+        LOGE("vp9: failed to avcodec_send_frame %d", ret);
+    }
     AVPacket pkt;
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
 
-    int ret;
     while (1) {
         ret = avcodec_receive_packet(ctx->codec_ctx, &pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
@@ -220,10 +227,16 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_video_WebmEncoder_stop(
         pkt.stream_index = ctx->video_stream->index;
 
         ret = av_interleaved_write_frame(ctx->fmt_ctx, &pkt);
+        if (ret < 0) {
+            LOGE("vp9: failed to av_interleaved_write_frame %d", ret);
+        }
         av_packet_unref(&pkt);
     }
 
-    av_write_trailer(ctx->fmt_ctx);
+    ret = av_write_trailer(ctx->fmt_ctx);
+    if (ret < 0) {
+        LOGE("vp9: failed to av_write_trailer %d", ret);
+    }
 
     if (ctx->frame) {
         av_frame_free(&ctx->frame);

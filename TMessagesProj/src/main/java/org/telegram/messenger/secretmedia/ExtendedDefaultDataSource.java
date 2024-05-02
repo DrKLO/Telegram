@@ -292,9 +292,12 @@ public final class ExtendedDefaultDataSource implements DataSource {
         return encryptedFileDataSource;
     }
 
+    private FileStreamLoadOperation streamLoadOperation;
     private DataSource getStreamDataSource() {
-        FileStreamLoadOperation streamLoadOperation = new FileStreamLoadOperation();
-        addListenersToDataSource(streamLoadOperation);
+        if (streamLoadOperation == null) {
+            streamLoadOperation = new FileStreamLoadOperation();
+            addListenersToDataSource(streamLoadOperation);
+        }
         return streamLoadOperation;
     }
 

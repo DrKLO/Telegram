@@ -120,4 +120,9 @@ public class AuthTokensHelper {
         preferences.edit().putString("log_out_token_" + count, Utilities.bytesToHex(data.toByteArray())).putInt("count", count + 1).apply();
         BackupAgent.requestBackup(ApplicationLoader.applicationContext);
     }
+
+    public static void clearLogInTokens() {
+        ApplicationLoader.applicationContext.getSharedPreferences("saved_tokens_login", Context.MODE_PRIVATE).edit().clear().apply();
+        ApplicationLoader.applicationContext.getSharedPreferences("saved_tokens", Context.MODE_PRIVATE).edit().clear().apply();
+    }
 }

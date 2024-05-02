@@ -92,6 +92,8 @@ import java.util.Locale;
 
 public class ChannelMonetizationLayout extends FrameLayout {
 
+    public static ChannelMonetizationLayout instance;
+
     private final BaseFragment fragment;
     private final Theme.ResourcesProvider resourcesProvider;
     private final int currentAccount;
@@ -144,7 +146,7 @@ public class ChannelMonetizationLayout extends FrameLayout {
             showLearnSheet();
         }, resourcesProvider), true);
         balanceInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(MessagesController.getInstance(currentAccount).channelRevenueWithdrawalEnabled ? R.string.MonetizationBalanceInfo : R.string.MonetizationBalanceInfoNotAvailable), -1, REPLACING_TAG_TYPE_LINK_NBSP, () -> {
-            showLearnSheet();
+            Browser.openUrl(getContext(), getString(R.string.MonetizationBalanceInfoLink));
         }), true);
 
         setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
@@ -383,6 +385,7 @@ public class ChannelMonetizationLayout extends FrameLayout {
         balanceSubtitle.setText("~" + BillingController.getInstance().formatCurrency(amount, "USD"));
     }
 
+    private double usd_rate;
     private void initLevel() {
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         if (chat != null) {
@@ -427,23 +430,8 @@ public class ChannelMonetizationLayout extends FrameLayout {
                     impressionsChart.useHourFormat = true;
                 }
 
-                availableValue.crypto_amount = stats.available_balance;
-                availableValue.amount = (long) (availableValue.crypto_amount / 1_000_000_000.0 * stats.usd_rate * 100.0);
-                setBalance(availableValue.crypto_amount, availableValue.amount);
-                availableValue.currency = "USD";
-                lastWithdrawalValue.crypto_amount = stats.current_balance;
-                lastWithdrawalValue.amount = (long) (lastWithdrawalValue.crypto_amount / 1_000_000_000.0 * stats.usd_rate * 100.0);
-                lastWithdrawalValue.currency = "USD";
-                lifetimeValue.crypto_amount = stats.overall_revenue;
-                lifetimeValue.amount = (long) (lifetimeValue.crypto_amount / 1_000_000_000.0 * stats.usd_rate * 100.0);
-                lifetimeValue.currency = "USD";
-                proceedsAvailable = true;
-
-                balanceButton.setVisibility(stats.available_balance > 0 || BuildVars.DEBUG_PRIVATE_VERSION ? View.VISIBLE : View.GONE);
-
-                if (listView != null && listView.adapter != null) {
-                    listView.adapter.update(true);
-                }
+                usd_rate = stats.usd_rate;
+                setupBalances(stats.balances);
 
                 progress.animate().alpha(0).setDuration(380).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
                     progress.setVisibility(View.GONE);
@@ -453,11 +441,39 @@ public class ChannelMonetizationLayout extends FrameLayout {
             }
         }), null, null, 0, stats_dc, ConnectionsManager.ConnectionTypeGeneric, true);
     }
+    public void setupBalances(TLRPC.TL_broadcastRevenueBalances balances) {
+        if (usd_rate == 0) {
+            return;
+        }
+        availableValue.crypto_amount = balances.available_balance;
+        availableValue.amount = (long) (availableValue.crypto_amount / 1_000_000_000.0 * usd_rate * 100.0);
+        setBalance(availableValue.crypto_amount, availableValue.amount);
+        availableValue.currency = "USD";
+        lastWithdrawalValue.crypto_amount = balances.current_balance;
+        lastWithdrawalValue.amount = (long) (lastWithdrawalValue.crypto_amount / 1_000_000_000.0 * usd_rate * 100.0);
+        lastWithdrawalValue.currency = "USD";
+        lifetimeValue.crypto_amount = balances.overall_revenue;
+        lifetimeValue.amount = (long) (lifetimeValue.crypto_amount / 1_000_000_000.0 * usd_rate * 100.0);
+        lifetimeValue.currency = "USD";
+        proceedsAvailable = true;
+        balanceButton.setVisibility(balances.available_balance > 0 || BuildVars.DEBUG_PRIVATE_VERSION ? View.VISIBLE : View.GONE);
+
+        if (listView != null && listView.adapter != null) {
+            listView.adapter.update(true);
+        }
+    }
 
     @Override
     protected void onAttachedToWindow() {
+        instance = this;
         super.onAttachedToWindow();
         checkLearnSheet();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        instance = null;
+        super.onDetachedFromWindow();
     }
 
     private void checkLearnSheet() {
@@ -553,14 +569,22 @@ public class ChannelMonetizationLayout extends FrameLayout {
         }
     }
 
+    public void reloadTransactions() {
+        if (loadingTransactions) return;
+        transactions.clear();
+        transactionsTotalCount = 0;
+        loadingTransactions = false;
+        loadTransactions();
+    }
+
     private boolean loadingTransactions = false;
     private void loadTransactions() {
         if (loadingTransactions) return;
         if (transactions.size() >= transactionsTotalCount && transactionsTotalCount != 0) return;
-//        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-//        if (chat == null || !chat.creator) {
-//            return;
-//        }
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        if (chat == null || !chat.creator) {
+            return;
+        }
 
         loadingTransactions = true;
         TL_stats.TL_getBroadcastRevenueTransactions req = new TL_stats.TL_getBroadcastRevenueTransactions();
@@ -620,7 +644,7 @@ public class ChannelMonetizationLayout extends FrameLayout {
         if (ChannelMonetizationLayout.tonString == null) {
             ChannelMonetizationLayout.tonString = new HashMap<>();
         }
-        final int key = textPaint.getFontMetricsInt().bottom * (large ? 1 : -1) * (int) (100 * scale);
+        final int key = textPaint.getFontMetricsInt().bottom * (large ? 1 : -1) * (int) (100 * scale) - (int) (100 * translateY);
         SpannableString tonString = ChannelMonetizationLayout.tonString.get(key);
         if (tonString == null) {
             tonString = new SpannableString("T");
@@ -807,13 +831,13 @@ public class ChannelMonetizationLayout extends FrameLayout {
 
             SpannableStringBuilder value = new SpannableStringBuilder();
             value.append(type < 0 ? "-" : "+");
+            value.append("TON ");
             value.append(formatter.format((Math.abs(amount) / 1_000_000_000.0)));
-            value.append(" TON");
             int index = TextUtils.indexOf(value, ".");
             if (index >= 0) {
                 value.setSpan(new RelativeSizeSpan(1.15f), 0, index + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-            valueText.setText(value);
+            valueText.setText(replaceTON(value, valueText.getPaint(), 1.1f, dp(.33f), false));
             valueText.setTextColor(Theme.getColor(type < 0 ? Theme.key_text_RedBold : Theme.key_avatar_nameInMessageGreen, resourcesProvider));
 
             setWillNotDraw(!(needDivider = divider));

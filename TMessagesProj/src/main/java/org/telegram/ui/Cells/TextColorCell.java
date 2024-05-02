@@ -33,7 +33,6 @@ public class TextColorCell extends FrameLayout {
     private TextView textView;
     private boolean needDivider;
     private int currentColor;
-    private float alpha = 1.0f;
 
     private static Paint colorPaint;
 
@@ -60,19 +59,6 @@ public class TextColorCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 0, 21, 0));
-    }
-
-    @Keep
-    @Override
-    public void setAlpha(float value) {
-        alpha = value;
-        invalidate();
-    }
-
-    @Keep
-    @Override
-    public float getAlpha() {
-        return alpha;
     }
 
     @Override
@@ -106,7 +92,6 @@ public class TextColorCell extends FrameLayout {
         }
         if (currentColor != 0) {
             colorPaint.setColor(currentColor);
-            colorPaint.setAlpha((int) (255 * alpha));
             canvas.drawCircle(LocaleController.isRTL ? AndroidUtilities.dp(33) : getMeasuredWidth() - AndroidUtilities.dp(33), getMeasuredHeight() / 2, AndroidUtilities.dp(10), colorPaint);
         }
     }

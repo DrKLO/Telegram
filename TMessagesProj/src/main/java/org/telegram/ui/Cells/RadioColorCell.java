@@ -29,6 +29,8 @@ public class RadioColorCell extends FrameLayout {
     private RadioButton radioButton;
     private final Theme.ResourcesProvider resourcesProvider;
 
+    public int heightDp = 50;
+
     public RadioColorCell(Context context) {
         this(context, null);
     }
@@ -69,7 +71,7 @@ public class RadioColorCell extends FrameLayout {
         }
         super.onMeasure(
             MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50) + (text2View.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(4) + text2View.getMeasuredHeight() : 0), MeasureSpec.EXACTLY)
+            MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(heightDp) + (text2View.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(4) + text2View.getMeasuredHeight() : 0), MeasureSpec.EXACTLY)
         );
     }
 

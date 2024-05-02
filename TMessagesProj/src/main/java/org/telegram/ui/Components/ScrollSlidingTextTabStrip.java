@@ -441,8 +441,8 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
                     layoutParams.weight = 0.0f;
                     layoutParams.width = LayoutHelper.WRAP_CONTENT;
                 } else {
-                    layoutParams.weight = 1.0f / allTextWidth * positionToWidth.get(a);
-                    layoutParams.width = 0;
+                    layoutParams.weight = AndroidUtilities.lerp(1.0f / count, 1.0f / allTextWidth * positionToWidth.get(a), .5f);
+                    layoutParams.width = LayoutHelper.WRAP_CONTENT;
                 }
             }
         }

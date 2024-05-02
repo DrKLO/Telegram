@@ -73,7 +73,7 @@ public class BottomSheet extends Dialog {
 
     protected int currentAccount = UserConfig.selectedAccount;
     protected ViewGroup containerView;
-    protected ContainerView container;
+    public ContainerView container;
     protected boolean keyboardVisible;
     protected int keyboardHeight;
     private WindowInsets lastInsets;
@@ -584,25 +584,29 @@ public class BottomSheet extends Dialog {
                 if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
                     l += getLeftInset();
                 }
-                if (smoothKeyboardAnimationEnabled && startAnimationRunnable == null && keyboardChanged && !dismissed && containerView.getTop() != t) {
+                if (smoothKeyboardAnimationEnabled && startAnimationRunnable == null && keyboardChanged && !dismissed && containerView.getTop() != t || smoothContainerViewLayoutUntil > 0 && System.currentTimeMillis() < smoothContainerViewLayoutUntil) {
                     containerView.setTranslationY(containerView.getTop() - t);
+                    onSmoothContainerViewLayout(containerView.getTranslationY());
                     if (keyboardContentAnimator != null) {
                         keyboardContentAnimator.cancel();
                     }
                     keyboardContentAnimator = ValueAnimator.ofFloat(containerView.getTranslationY(), 0);
                     keyboardContentAnimator.addUpdateListener(valueAnimator -> {
                         containerView.setTranslationY((Float) valueAnimator.getAnimatedValue());
+                        onSmoothContainerViewLayout(containerView.getTranslationY());
                         invalidate();
                     });
                     keyboardContentAnimator.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
                             containerView.setTranslationY(0);
+                            onSmoothContainerViewLayout(containerView.getTranslationY());
                             invalidate();
                         }
                     });
                     keyboardContentAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
                     keyboardContentAnimator.start();
+                    smoothContainerViewLayoutUntil = -1;
                 }
                 containerView.layout(l, t, l + containerView.getMeasuredWidth(), t + containerView.getMeasuredHeight());
             }
@@ -2092,5 +2096,14 @@ public class BottomSheet extends Dialog {
     public void setImageReceiverNumLevel(int playingImages, int onShowing) {
         this.playingImagesLayerNum = playingImages;
         this.openedLayerNum = onShowing;
+    }
+
+    private long smoothContainerViewLayoutUntil = -1;
+    public void smoothContainerViewLayout() {
+        smoothContainerViewLayoutUntil = System.currentTimeMillis() + 80;
+    }
+
+    protected void onSmoothContainerViewLayout(float ty) {
+
     }
 }

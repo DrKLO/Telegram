@@ -1619,7 +1619,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                         messageString = LocaleController.getString("BoostingGiveawayResults", R.string.BoostingGiveawayResults);
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                                         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
-                                        messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
+                                        if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                                            SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text);
+                                            MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                                            MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                                            messageString = new SpannableStringBuilder("\uD83D\uDCCA ").append(questionText);
+                                        } else {
+                                            messageString = "\uD83D\uDCCA " + mediaPoll.poll.question.text;
+                                        }
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
@@ -5064,14 +5071,28 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else if (message.messageOwner.media != null && !message.isMediaEmpty()) {
             currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
-            String innerMessage;
+            CharSequence innerMessage;
             int colorKey = Theme.key_chats_attachMessage;
             if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                 TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
                 if (Build.VERSION.SDK_INT >= 18) {
-                    innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question);
+                    if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                        SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\uD83D\uDCCA \u2068").append(questionText).append("\u2069");
+                    } else {
+                        innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question.text);
+                    }
                 } else {
-                    innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question);
+                    if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                        SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\uD83D\uDCCA ").append(questionText);
+                    } else {
+                        innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question.text);
+                    }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                 if (Build.VERSION.SDK_INT >= 18) {
@@ -5098,7 +5119,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 innerMessage = msgText.toString();
                 colorKey = Theme.key_chats_actionMessage;
             }
-            innerMessage = innerMessage.replace('\n', ' ');
+            if (innerMessage instanceof String) {
+                innerMessage = ((String) innerMessage).replace('\n', ' ');
+            }
             CharSequence message = innerMessage;
             if (applyThumbs) {
                 message = applyThumbs(innerMessage);

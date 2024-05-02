@@ -88,7 +88,8 @@ public class Icon3D {
     private static final String[] coinModel = new String[] {
         "models/coin_outer.binobj",
         "models/coin_inner.binobj",
-        "models/coin_logo.binobj"
+        "models/coin_logo.binobj",
+        "models/coin_stars.binobj"
     };
 
     public Icon3D(Context context, int type) {

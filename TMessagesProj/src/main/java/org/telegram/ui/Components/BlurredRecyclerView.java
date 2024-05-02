@@ -11,6 +11,7 @@ public class BlurredRecyclerView extends RecyclerListView {
 
     public int blurTopPadding;
     public int topPadding;
+    public int bottomPadding;
     boolean globalIgnoreLayout;
     public int additionalClipBottom;
 
@@ -75,6 +76,7 @@ public class BlurredRecyclerView extends RecyclerListView {
     @Override
     public void setPadding(int left, int top, int right, int bottom) {
         topPadding = top;
-        super.setPadding(left, topPadding + blurTopPadding, right, bottom);
+        bottomPadding = bottom;
+        super.setPadding(left, topPadding + blurTopPadding, right, bottomPadding);
     }
 }

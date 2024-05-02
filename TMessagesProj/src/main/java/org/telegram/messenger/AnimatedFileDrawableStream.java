@@ -51,11 +51,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                 debugCanceledCount++;
                 if (!debugReportSend && debugCanceledCount > 200) {
                     debugReportSend = true;
-                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                        throw new RuntimeException("infinity stream reading!!!");
-                    } else {
-                        FileLog.e(new RuntimeException("infinity stream reading!!!"));
-                    }
+                    FileLog.e(new RuntimeException("infinity stream reading!!!"));
                 }
                 return 0;
             }

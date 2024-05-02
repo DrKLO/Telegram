@@ -71,7 +71,7 @@ public class PhotoView extends EntityView {
     private int anchor = -1;
     private boolean mirrored = false;
     private final AnimatedFloat mirrorT;
-    private Size baseSize;
+    public Size baseSize;
     private boolean overridenSegmented = false;
 
     private int orientation, invert;

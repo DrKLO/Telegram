@@ -1171,6 +1171,33 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         shouldNavigateBack = !url.equals(webViewUrl);
+                        try {
+                            Uri uri = Uri.parse(url);
+                            if ("t.me".equals(uri.getHost())) {
+                                goToNextStep();
+                                return true;
+                            }
+
+                            if (BLACKLISTED_PROTOCOLS.contains(uri.getScheme())) {
+                                return true;
+                            }
+                            if (!WEBVIEW_PROTOCOLS.contains(uri.getScheme())) {
+                                try {
+                                    if (getContext() instanceof Activity) {
+                                        ((Activity) getContext()).startActivityForResult(new Intent(Intent.ACTION_VIEW, uri), BasePermissionsActivity.REQUEST_CODE_PAYMENT_FORM);
+                                    }
+                                } catch (ActivityNotFoundException e) {
+                                    new AlertDialog.Builder(context)
+                                            .setTitle(currentBotName)
+                                            .setMessage(LocaleController.getString(R.string.PaymentAppNotFoundForDeeplink))
+                                            .setPositiveButton(LocaleController.getString(R.string.OK), null)
+                                            .show();
+                                }
+                                return true;
+                            }
+                        } catch (Exception ignore) {
+
+                        }
                         return super.shouldOverrideUrlLoading(view, url);
                     }
 

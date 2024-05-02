@@ -306,6 +306,12 @@ public class VideoSeekPreviewImage extends View {
         });
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        setPivotY(getMeasuredHeight());
+    }
+
     public boolean isReady() {
         return ready;
     }

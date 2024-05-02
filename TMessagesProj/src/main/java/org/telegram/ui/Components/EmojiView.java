@@ -422,7 +422,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet) {
+        default void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet, boolean edit) {
 
         }
 
@@ -619,7 +619,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (set == null) {
                 return;
             }
-            delegate.onShowStickerSet(null, set);
+            delegate.onShowStickerSet(null, set, false);
         }
 
         @Override
@@ -647,6 +647,18 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 return gifGridView.getAdapter() == gifSearchAdapter ? gifSearchAdapter.lastSearchImageString : null;
             }
             return emojiGridView.getAdapter() == emojiSearchAdapter ? emojiSearchAdapter.lastSearchEmojiString : null;
+        }
+
+        @Override
+        public void deleteSticker(TLRPC.Document document) {
+            TLRPC.TL_stickers_removeStickerFromSet req = new TLRPC.TL_stickers_removeStickerFromSet();
+            req.sticker = MediaDataController.getInputStickerSetItem(document, "").document;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response instanceof TLRPC.TL_messages_stickerSet) {
+                    MediaDataController.getInstance(currentAccount).putStickerSet((TLRPC.TL_messages_stickerSet) response);
+                    MediaDataController.getInstance(currentAccount).replaceStickerSet((TLRPC.TL_messages_stickerSet) response);
+                }
+            }));
         }
     };
 
@@ -860,7 +872,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             box.addView(clear, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP));
 
             if (type != 1 || allowAnimatedEmoji && UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
-                categoriesListView = new StickerCategoriesListView(context, null, StickerCategoriesListView.CategoriesType.DEFAULT, resourcesProvider) {
+                categoriesListView = new StickerCategoriesListView(context, null, type == 0 ? StickerCategoriesListView.CategoriesType.STICKERS : StickerCategoriesListView.CategoriesType.DEFAULT, resourcesProvider) {
                     @Override
                     public void selectCategory(int categoryIndex) {
                         super.selectCategory(categoryIndex);
@@ -2176,7 +2188,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     query = stickersSearchGridAdapter.searchQuery;
                     TLRPC.StickerSetCovered pack = stickersSearchGridAdapter.positionsToSets.get(position);
                     if (pack != null) {
-                        delegate.onShowStickerSet(pack.set, null);
+                        delegate.onShowStickerSet(pack.set, null, false);
                         return;
                     }
                 }
@@ -4955,6 +4967,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
+    public void scrollEmojiToTop() {
+        try {
+            emojiTabs.scrollTo(0, 0);
+            emojiTabs.onTabClick(0);
+        } catch (Exception ignore) {}
+    }
+
     private void checkEmojiSearchFieldScroll(boolean isLayout) {
         if (delegate != null && delegate.isSearchOpened()) {
             RecyclerView.ViewHolder holder = emojiGridView.findViewHolderForAdapterPosition(0);
@@ -6543,6 +6562,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
                 case 2: {
                     StickerSetNameCell cell = (StickerSetNameCell) holder.itemView;
+                    cell.setHeaderOnClick(null);
                     if (position == groupStickerPackPosition) {
                         int icon;
                         if (groupStickersHidden && groupStickerSet == null) {
@@ -6560,9 +6580,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                                 cell.setText(set.set.title, 0);
                                 if (set.set.creator && !StickersAlert.DISABLE_STICKER_EDITOR) {
                                     cell.setEdit(v -> {
-                                        delegate.onShowStickerSet(set.set, null);
+                                        delegate.onShowStickerSet(set.set, null, true);
                                     });
                                 }
+                                cell.setHeaderOnClick(v -> delegate.onShowStickerSet(set.set, null, false));
                             }
                         } else if (object == recentStickers) {
                             cell.setText(LocaleController.getString("RecentStickers", R.string.RecentStickers), R.drawable.msg_close, LocaleController.getString(R.string.ClearRecentStickersAlertTitle));
@@ -8606,6 +8627,48 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
             }
 
+            private void addPremiumStickers(Runnable finished) {
+                HashMap<String, ArrayList<TLRPC.Document>> allStickers = MediaDataController.getInstance(currentAccount).getAllStickers();
+
+                HashSet<Long> added = new HashSet<>();
+                ArrayList<TLRPC.Document> stickers = new ArrayList<>();
+                for (ArrayList<TLRPC.Document> documents : allStickers.values()) {
+                    for (TLRPC.Document document : documents) {
+                        if (!added.contains(document.id) && MessageObject.isPremiumSticker(document)) {
+                            added.add(document.id);
+                            stickers.add(document);
+                            emojiStickersMap.put(document.id, document);
+                        }
+                    }
+                }
+
+                ArrayList<TLRPC.StickerSetCovered> covers = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets();
+                for (TLRPC.StickerSetCovered set : covers) {
+                    if (set.cover != null && !added.contains(set.cover.id) && MessageObject.isPremiumSticker(set.cover)) {
+                        added.add(set.cover.id);
+                        stickers.add(set.cover);
+                        emojiStickersMap.put(set.cover.id, set.cover);
+                    }
+                    if (set.covers != null) {
+                        for (TLRPC.Document document : set.covers) {
+                            if (!added.contains(document.id) && MessageObject.isPremiumSticker(document)) {
+                                added.add(document.id);
+                                stickers.add(document);
+                                emojiStickersMap.put(document.id, document);
+                            }
+                        }
+                    }
+                }
+
+                if (!stickers.isEmpty()) {
+                    emojiStickersArray.addAll(stickers);
+                    emojiStickers.put(emojiStickersArray, searchQuery);
+                    emojiArrays.add(emojiStickersArray);
+                }
+
+                finished.run();
+            }
+
             private void addLocalPacks(Runnable finished) {
                 ArrayList<TLRPC.TL_messages_stickerSet> local = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
                 MessagesController.getInstance(currentAccount).filterPremiumStickers(local);
@@ -8724,15 +8787,23 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
                 stickersSearchField.showProgress(true);
 
-                Utilities.raceCallbacks(
-                        this::searchFinish,
+                if ("premium".equalsIgnoreCase(query)) {
+                    Utilities.raceCallbacks(
+                            this::searchFinish,
 
-                        this::addFromAllStickers,
-                        this::addFromSuggestions,
-                        this::addLocalPacks,
-                        this::searchStickerSets,
-                        this::searchStickers
-                );
+                            this::addPremiumStickers
+                    );
+                } else {
+                    Utilities.raceCallbacks(
+                            this::searchFinish,
+
+                            this::addFromAllStickers,
+                            this::addFromSuggestions,
+                            this::addLocalPacks,
+                            this::searchStickerSets,
+                            this::searchStickers
+                    );
+                }
             }
         };
 

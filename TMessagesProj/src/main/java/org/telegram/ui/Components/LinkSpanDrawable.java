@@ -3,11 +3,15 @@ package org.telegram.ui.Components;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.text.Layout;
@@ -28,6 +32,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -661,6 +666,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                 }
                 canvas.restore();
             }
+            super.onDraw(canvas);
             boolean restore = false;
             try {
                 Layout layout = getLayout();
@@ -670,7 +676,11 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                     restore = true;
                     canvas.translate(getPaddingLeft(), offset);
                 }
-                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, stack, 0, null, 0, 0, 0, 1f);
+                stack = AnimatedEmojiSpan.update(emojiCacheType(), this, stack, getLayout());
+                if (emojiColorFilter == null) {
+                    emojiColorFilter = new PorterDuffColorFilter(getPaint().linkColor, PorterDuff.Mode.SRC_IN);
+                }
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, stack, 0, null, 0, 0, 0, 1f, emojiColorFilter);
             } catch (Exception e) {
                 if (!loggedError) FileLog.e(e, true);
                 loggedError = true;
@@ -678,31 +688,48 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             if (restore) {
                 canvas.restore();
             }
-            super.onDraw(canvas);
         }
+
+        protected int emojiCacheType() {
+            return AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+        }
+
+        private ColorFilter emojiColorFilter;
 
         @Override
         public void setText(CharSequence text, TextView.BufferType type) {
             super.setText(text, type);
-            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+            stack = AnimatedEmojiSpan.update(emojiCacheType(), this, stack, getLayout());
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+            stack = AnimatedEmojiSpan.update(emojiCacheType(), this, stack, getLayout());
         }
 
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+            stack = AnimatedEmojiSpan.update(emojiCacheType(), this, stack, getLayout());
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
             AnimatedEmojiSpan.release(this, stack);
+        }
+
+        @Override
+        public void setTextColor(int color) {
+            super.setTextColor(color);
+            emojiColorFilter = new PorterDuffColorFilter(getPaint().linkColor, PorterDuff.Mode.SRC_IN);
+        }
+
+        @Override
+        public void setTextColor(ColorStateList colors) {
+            super.setTextColor(colors);
+            emojiColorFilter = new PorterDuffColorFilter(getPaint().linkColor, PorterDuff.Mode.SRC_IN);
         }
     }
 

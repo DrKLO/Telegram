@@ -4482,4 +4482,5 @@
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+    <string name="ForwardedFrom">ارسلت من</string>
 </resources>

@@ -170,6 +170,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                             }
                         }
                     } else if (response instanceof TLRPC.TL_channels_sponsoredMessageReportResultAdsHidden) {
+                        MessagesController.getInstance(currentAccount).disableAds(false);
                         if (listener != null) {
                             listener.onHidden();
                             dismiss();
@@ -382,7 +383,6 @@ public class ReportAdBottomSheet extends BottomSheet {
                 for (int i = 0; i < option.options.size(); i++) {
                     UItem buttonItem = new UItem(UniversalAdapter.VIEW_TYPE_RIGHT_ICON_TEXT, false);
                     buttonItem.text = option.options.get(i).text;
-                    buttonItem.backgroundKey = Theme.key_dialogBackground;
                     buttonItem.iconResId = R.drawable.msg_arrowright;
                     buttonItem.id = i;
                     items.add(buttonItem);

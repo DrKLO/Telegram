@@ -44,6 +44,7 @@ public class NotificationCenter {
     public static final int loadingMessagesFailed = totalEvents++;
     public static final int messageReceivedByAck = totalEvents++;
     public static final int messageReceivedByServer = totalEvents++;
+    public static final int messageReceivedByServer2 = totalEvents++;
     public static final int messageSendError = totalEvents++;
     public static final int forceImportContactsStart = totalEvents++;
     public static final int contactsDidLoad = totalEvents++;

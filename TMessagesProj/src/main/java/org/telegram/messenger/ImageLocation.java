@@ -297,6 +297,22 @@ public class ImageLocation {
         return imageLocation;
     }
 
+    public static ImageLocation getForStickerSet(TLRPC.StickerSet set) {
+        if (set == null) return null;
+        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(set.thumbs, 90);
+        if (photoSize == null) return null;
+        TLRPC.InputStickerSet inputStickerSet;
+        if (set.access_hash != 0) {
+            inputStickerSet = new TLRPC.TL_inputStickerSetID();
+            inputStickerSet.id = set.id;
+            inputStickerSet.access_hash = set.access_hash;
+        } else {
+            inputStickerSet = new TLRPC.TL_inputStickerSetShortName();
+            inputStickerSet.short_name = set.short_name;
+        }
+        return getForPhoto(photoSize.location, photoSize.size, null, null, null, TYPE_SMALL, photoSize.location.dc_id, inputStickerSet, photoSize.type);
+    }
+
     private static ImageLocation getForPhoto(TLRPC.FileLocation location, int size, TLRPC.Photo photo, TLRPC.Document document, TLRPC.InputPeer photoPeer, int photoPeerType, int dc_id, TLRPC.InputStickerSet stickerSet, String thumbSize) {
         if (location == null || photo == null && photoPeer == null && stickerSet == null && document == null) {
             return null;

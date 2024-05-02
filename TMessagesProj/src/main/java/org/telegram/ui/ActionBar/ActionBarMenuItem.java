@@ -1928,6 +1928,9 @@ public class ActionBarMenuItem extends FrameLayout {
         showSubItem(id, false);
     }
 
+    public View getSubItem(int id) {
+        return popupLayout.findViewWithTag(id);
+    }
     public void showSubItem(int id, boolean animated) {
         Item lazyItem = findLazyItem(id);
         if (lazyItem != null) {

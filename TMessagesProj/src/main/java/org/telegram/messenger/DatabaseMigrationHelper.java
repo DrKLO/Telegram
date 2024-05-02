@@ -1497,6 +1497,13 @@ public class DatabaseMigrationHelper {
             version = 152;
         }
 
+        if (version == 152) {
+            database.executeFast("ALTER TABLE profile_stories ADD COLUMN pin INTEGER default 0;").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 153").stepThis().dispose();
+            version = 153;
+        }
+
         return version;
     }
 

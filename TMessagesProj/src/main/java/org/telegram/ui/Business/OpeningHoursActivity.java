@@ -1,6 +1,7 @@
 package org.telegram.ui.Business;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -20,6 +21,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.TLObject;
@@ -298,8 +300,15 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
                 if (!days[prevDay].isEmpty() && days[prevDay].get(days[prevDay].size() - 1).end >= 24 * 60) {
                     days[prevDay].get(days[prevDay].size() - 1).end = 24 * 60 - 1;
                 }
+
+                int periodEnd = Math.min(m - start - 1, 24 * 60 * 2 - 1);
+                ArrayList<Period> nextDay = days[(7 + i + 1) % 7];
+                if (periodEnd >= 24 * 60 && !nextDay.isEmpty() && nextDay.get(0).start < periodEnd - 24 * 60) {
+                    periodEnd = 24 * 60 + nextDay.get(0).start - 1;
+                }
+
                 days[i].clear();
-                days[i].add(new Period(0, 24 * 60 - 1));
+                days[i].add(new Period(0, periodEnd));
             } else {
                 int nextDay = (i + 1) % 7;
                 if (!days[i].isEmpty() && !days[nextDay].isEmpty()) {
@@ -331,6 +340,44 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
             }
         }
         return hours;
+    }
+
+    public static String toString(int currentAccount, TLRPC.User user, TLRPC.TL_businessWorkHours business_work_hours) {
+        if (business_work_hours == null) return null;
+        ArrayList<OpeningHoursActivity.Period>[] days = OpeningHoursActivity.getDaysHours(business_work_hours.weekly_open);
+        StringBuilder sb = new StringBuilder();
+        if (user != null) {
+            sb.append(formatString(R.string.BusinessHoursCopyHeader, UserObject.getUserName(user))).append("\n");
+        }
+        for (int i = 0; i < days.length; ++i) {
+            ArrayList<OpeningHoursActivity.Period> periods = days[i];
+            String day = DayOfWeek.values()[i].getDisplayName(TextStyle.FULL, LocaleController.getInstance().getCurrentLocale());
+            day = day.substring(0, 1).toUpperCase() + day.substring(1);
+            sb.append(day).append(": ");
+            if (OpeningHoursActivity.isFull(periods)) {
+                sb.append(LocaleController.getString(R.string.BusinessHoursProfileOpen));
+            } else if (periods.isEmpty()) {
+                sb.append(LocaleController.getString(R.string.BusinessHoursProfileClose));
+            } else {
+                for (int j = 0; j < periods.size(); ++j) {
+                    if (j > 0) sb.append(", ");
+                    OpeningHoursActivity.Period p = periods.get(j);
+                    sb.append(OpeningHoursActivity.Period.timeToString(p.start));
+                    sb.append(" - ");
+                    sb.append(OpeningHoursActivity.Period.timeToString(p.end));
+                }
+            }
+            sb.append("\n");
+        }
+        TLRPC.TL_timezone timezone = TimezonesController.getInstance(currentAccount).findTimezone(business_work_hours.timezone_id);
+        Calendar calendar = Calendar.getInstance();
+        int currentUtcOffset = calendar.getTimeZone().getRawOffset() / 1000;
+        int valueUtcOffset = timezone == null ? 0 : timezone.utc_offset;
+        int utcOffset = (currentUtcOffset - valueUtcOffset) / 60;
+        if (utcOffset != 0 && timezone != null) {
+            sb.append(formatString(R.string.BusinessHoursCopyFooter, TimezonesController.getInstance(currentAccount).getTimezoneName(timezone, true)));
+        }
+        return sb.toString();
     }
 
     private void processDone() {

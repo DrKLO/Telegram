@@ -136,18 +136,24 @@ public class RLottieImageView extends ImageView {
             }
         };
         imageReceiver.setAllowLoadingOnAttachedOnly(true);
+        ImageLocation thumbLocation = null;
+        String thumbFilter = null;
+        if (document.localThumbPath != null) {
+            thumbLocation = ImageLocation.getForPath(document.localThumbPath);
+            thumbFilter = w + "_" + h;
+        }
         if (onlyLastFrame) {
-            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + "_lastframe", null, null, null, null, null, 0, null, document, 1);
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + "_lastframe", null, null, thumbLocation, thumbFilter, null, 0, null, document, 1);
         } else if ("video/webm".equals(document.mime_type)) {
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : "") + "_" + ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForDocument(thumb, document), null, null, document.size, null, document, 1);
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : "") + "_" + ImageLoader.AUTOPLAY_FILTER, thumbLocation != null ? thumbLocation : ImageLocation.getForDocument(thumb, document), thumbFilter, null, document.size, null, document, 1);
         } else {
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
             if (svgThumb != null) {
                 svgThumb.overrideWidthAndHeight(512, 512);
             }
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : ""), ImageLocation.getForDocument(thumb, document), null, null, null, svgThumb, 0, null, document, 1);
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : ""), ImageLocation.getForDocument(thumb, document), null, thumbLocation, thumbFilter, svgThumb, 0, null, document, 1);
         }
         imageReceiver.setAspectFit(true);
         imageReceiver.setParentView(this);

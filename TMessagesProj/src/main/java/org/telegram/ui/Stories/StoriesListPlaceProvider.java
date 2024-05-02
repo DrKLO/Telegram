@@ -194,6 +194,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.drawAbove = (canvas, bounds, alpha, opening) -> {
                         cell.drawDuration(canvas, bounds, alpha);
                         cell.drawViews(canvas, bounds, alpha);
+                        cell.drawPrivacy(canvas, bounds, alpha);
                         if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
                             canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
                             canvas.translate(loc[0], loc[1]);

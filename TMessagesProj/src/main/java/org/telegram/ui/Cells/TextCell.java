@@ -13,7 +13,9 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -25,7 +27,12 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -49,7 +56,7 @@ public class TextCell extends FrameLayout {
     public final RLottieImageView imageView;
     private Switch checkBox;
     private ImageView valueImageView;
-    private int leftPadding;
+    public int leftPadding;
     private boolean needDivider;
     public int offsetFromImage = 71;
     public int heightDp = 50;
@@ -644,6 +651,25 @@ public class TextCell extends FrameLayout {
         setValueSticker(document);
     }
 
+    public void setTextAndSticker(CharSequence text, String localPath, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = getOffsetFromImage(false);
+        textView.setText(text);
+        textView.setRightDrawable(null);
+        valueTextView.setText(valueText = null, false);
+        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(GONE);
+        valueSpoilersTextView.setVisibility(GONE);
+        imageView.setVisibility(GONE);
+        imageView.setPadding(0, dp(7), 0, 0);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
+        setValueSticker(localPath);
+    }
+
     public void setValueSticker(TLRPC.Document document) {
         if (emojiDrawable == null) {
             emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(30));
@@ -652,6 +678,64 @@ public class TextCell extends FrameLayout {
             }
         }
         emojiDrawable.set(document, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, true);
+        invalidate();
+    }
+
+    public void setValueSticker(String path) {
+        if (emojiDrawable == null) {
+            emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(30));
+            if (attached) {
+                emojiDrawable.attach();
+            }
+        }
+        ImageReceiver imageReceiver = new ImageReceiver(this);
+        if (isAttachedToWindow()) {
+            imageReceiver.onAttachedToWindow();
+        }
+        addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(@NonNull View v) {
+                imageReceiver.onAttachedToWindow();
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(@NonNull View v) {
+                imageReceiver.onDetachedFromWindow();
+            }
+        });
+        imageReceiver.setImage(path, "30_30", null, null, 0);
+        emojiDrawable.set(new Drawable() {
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                imageReceiver.setImageCoords(getBounds());
+                imageReceiver.draw(canvas);
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+                imageReceiver.setAlpha(alpha / (float) 0xFF);
+            }
+
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {
+                imageReceiver.setColorFilter(colorFilter);
+            }
+
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+
+            @Override
+            public int getIntrinsicWidth() {
+                return dp(30);
+            }
+
+            @Override
+            public int getIntrinsicHeight() {
+                return dp(30);
+            }
+        }, true);
         invalidate();
     }
 

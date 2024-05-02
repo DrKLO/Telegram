@@ -23,6 +23,7 @@ public interface INavigationLayout {
     int REBUILD_FLAG_REBUILD_LAST = 1, REBUILD_FLAG_REBUILD_ONLY_LAST = 2;
 
     int FORCE_NOT_ATTACH_VIEW = -2;
+    int FORCE_ATTACH_VIEW_AS_FIRST = -3;
 
     boolean presentFragment(NavigationParams params);
     boolean checkTransitionAnimation();

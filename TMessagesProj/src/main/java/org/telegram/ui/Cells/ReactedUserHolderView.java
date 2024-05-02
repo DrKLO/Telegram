@@ -185,7 +185,7 @@ public class ReactedUserHolderView extends FrameLayout {
             dialogId = user.id;
             titleView.setText(UserObject.getUserName(user));
         } else {
-            dialogId = chat.id;
+            dialogId = -chat.id;
             titleView.setText(chat.title);
         }
 

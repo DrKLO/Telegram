@@ -573,7 +573,8 @@ public class AnimatedEmojiDrawable extends Drawable {
         if ("video/webm".equals(document.mime_type)) {
             mediaLocation = ImageLocation.getForDocument(document);
             mediaFilter = filter + "_" + ImageLoader.AUTOPLAY_FILTER;
-            thumbDrawable = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f, true);
+            thumbDrawable = svgThumb;
         } else if ("application/x-tgsticker".equals(document.mime_type)) {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
             if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW || (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey))) {
@@ -586,7 +587,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             mediaLocation = ImageLocation.getForDocument(document);
             mediaFilter = filter;
         } else {
-            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f, true);
             if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, true)) {
                 svgThumb.overrideWidthAndHeight(512, 512);
             }

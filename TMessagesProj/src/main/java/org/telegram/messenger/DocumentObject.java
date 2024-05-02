@@ -45,25 +45,40 @@ public class DocumentObject {
         }
     }
 
+    public static boolean containsPhotoSizeType(ArrayList<TLRPC.PhotoSize> sizes, String type) {
+        if (type == null)
+            return false;
+        for (int a = 0, N = sizes.size(); a < N; a++) {
+            TLRPC.PhotoSize photoSize = sizes.get(a);
+            if (type.equalsIgnoreCase(photoSize.type))
+                return true;
+        }
+        return false;
+    }
+
     public static SvgHelper.SvgDrawable getSvgThumb(ArrayList<TLRPC.PhotoSize> sizes, int colorKey, float alpha) {
-        int w = 0;
-        int h = 0;
+        return getSvgThumb(sizes, colorKey, alpha, false);
+    }
+
+    public static SvgHelper.SvgDrawable getSvgThumb(ArrayList<TLRPC.PhotoSize> sizes, int colorKey, float alpha, boolean usePhotoSize) {
+        int w = 512;
+        int h = 512;
         TLRPC.TL_photoPathSize photoPathSize = null;
         for (int a = 0, N = sizes.size(); a < N; a++) {
             TLRPC.PhotoSize photoSize = sizes.get(a);
             if (photoSize instanceof TLRPC.TL_photoPathSize) {
                 photoPathSize = (TLRPC.TL_photoPathSize) photoSize;
-            } else if (photoSize instanceof TLRPC.TL_photoSize) {
+            } else if (photoSize instanceof TLRPC.TL_photoSize && usePhotoSize) {
                 w = photoSize.w;
                 h = photoSize.h;
             }
-            if (photoPathSize != null && w != 0 && h != 0) {
-                SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(photoPathSize.svgPath, w, h);
-                if (pathThumb != null) {
-                    pathThumb.setupGradient(colorKey, alpha, false);
-                }
-                return pathThumb;
+        }
+        if (photoPathSize != null && w != 0 && h != 0) {
+            SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(photoPathSize.svgPath, w, h);
+            if (pathThumb != null) {
+                pathThumb.setupGradient(colorKey, alpha, false);
             }
+            return pathThumb;
         }
         return null;
     }

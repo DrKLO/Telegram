@@ -26,28 +26,35 @@ public class ShareLocationDrawable extends Drawable {
     private Drawable drawableRight;
     private int currentType;
 
+    public static final int TYPE_ADD = 4;
+    public static final int TYPE_DISABLE = 5;
+
     public ShareLocationDrawable(Context context, int type) {
         currentType = type;
-        if (type == 4) {
-            drawable = context.getResources().getDrawable(R.drawable.pin);
-            drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft);
-            drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright);
+        if (type == TYPE_ADD) {
+            drawable = context.getResources().getDrawable(R.drawable.filled_extend_location).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright).mutate();
+        } else if (type == TYPE_DISABLE) {
+            drawable = context.getResources().getDrawable(R.drawable.filled_stop_location).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright).mutate();
         } else if (type == 3) {
-            drawable = context.getResources().getDrawable(R.drawable.nearby_l);
-            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft);
-            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright);
+            drawable = context.getResources().getDrawable(R.drawable.nearby_l).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright).mutate();
         } else if (type == 2) {
-            drawable = context.getResources().getDrawable(R.drawable.nearby_m);
-            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft);
-            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright);
+            drawable = context.getResources().getDrawable(R.drawable.nearby_m).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright).mutate();
         } else if (type == 1) {
-            drawable = context.getResources().getDrawable(R.drawable.smallanimationpin);
-            drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft);
-            drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright);
+            drawable = context.getResources().getDrawable(R.drawable.smallanimationpin).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright).mutate();
         } else {
-            drawable = context.getResources().getDrawable(R.drawable.animationpin);
-            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft);
-            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright);
+            drawable = context.getResources().getDrawable(R.drawable.animationpin).mutate();
+            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft).mutate();
+            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright).mutate();
         }
     }
 
@@ -76,7 +83,7 @@ public class ShareLocationDrawable extends Drawable {
         int drawableW = drawable.getIntrinsicWidth();
         int drawableH = drawable.getIntrinsicHeight();
         
-        if (currentType == 4) {
+        if (currentType == TYPE_ADD || currentType == TYPE_DISABLE) {
             size = AndroidUtilities.dp(24);
         } else if (currentType == 3) {
             size = AndroidUtilities.dp(44);
@@ -104,7 +111,7 @@ public class ShareLocationDrawable extends Drawable {
             int cx;
             int cx2;
             int cy;
-            if (currentType == 4) {
+            if (currentType == TYPE_ADD || currentType == TYPE_DISABLE) {
                 w = AndroidUtilities.dp((2.5f) * scale);
                 h = AndroidUtilities.dp((6.5f) * scale);
                 tx = AndroidUtilities.dp((6.0f) * progress[a]);
@@ -183,7 +190,7 @@ public class ShareLocationDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        if (currentType == 4) {
+        if (currentType == TYPE_ADD || currentType == TYPE_DISABLE) {
             return AndroidUtilities.dp(42);
         } else if (currentType == 3) {
             return AndroidUtilities.dp(100);
@@ -197,7 +204,7 @@ public class ShareLocationDrawable extends Drawable {
 
     @Override
     public int getIntrinsicHeight() {
-        if (currentType == 4) {
+        if (currentType == TYPE_ADD || currentType == TYPE_DISABLE) {
             return AndroidUtilities.dp(42);
         } else if (currentType == 3) {
             return AndroidUtilities.dp(100);

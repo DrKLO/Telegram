@@ -370,7 +370,7 @@ public class ChatbotsActivity extends BaseFragment {
         }
     }
 
-    private void clear() {
+    private void clear(View view) {
         selectedBot = null;
         listView.adapter.update(true);
         checkDone(true);

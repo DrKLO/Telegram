@@ -449,7 +449,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             }
         } else if (type == TYPE_ADMIN) {
             if (ChatObject.isChannel(currentChat) && currentChat.megagroup && !currentChat.gigagroup && (info == null || info.participants_count <= 200 || !isChannel && info.can_set_stickers)) {
-                recentActionsRow = rowCount++;
+//                recentActionsRow = rowCount++;
                 if (ChatObject.hasAdminRights(currentChat)) {
                     antiSpamRow = rowCount++;
                     antiSpamInfoRow = rowCount++;

@@ -71,7 +71,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         flickerDrawable.repeatProgress = 4f;
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        buttonTextView = new AnimatedTextView(context) {
+        buttonTextView = new AnimatedTextView(context, true, true, true) {
             @Override
             protected void onDraw(Canvas canvas) {
                 if (loadingT > 0) {

@@ -961,7 +961,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         } else if (message.type == 1) {
                             if (media.file == null) {
                                 media.file = file;
-                                if (media.thumb == null && message.photoSize != null && message.photoSize.location != null) {
+                                if (media.thumb == null && message.photoSize != null && message.photoSize.location != null && (message.obj == null || message.obj.videoEditedInfo == null || !message.obj.videoEditedInfo.isSticker)) {
                                     performSendDelayedMessage(message);
                                 } else {
                                     performSendMessageRequest(message.sendRequest, message.obj, message.originalPath, null, message.parentObject, null, message.scheduled);
@@ -2322,6 +2322,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                                     newMsgObj1.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                                     getMediaDataController().increasePeerRaiting(peer);
                                                     getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, message.id, message, peer, 0L, existFlags, scheduleDate != 0);
+                                                    getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, oldId, message.id, message, peer, 0L, existFlags, scheduleDate != 0);
                                                     processSentMessage(oldId);
                                                     removeFromSendingMessages(oldId, scheduleDate != 0);
                                                 });
@@ -2748,7 +2749,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         delayedMessage.originalPath = originalPath;
                         delayedMessage.type = 2;
                         delayedMessage.obj = messageObject;
-                        if (!document.thumbs.isEmpty()) {
+                        if (!document.thumbs.isEmpty() && (videoEditedInfo == null || !videoEditedInfo.isSticker)) {
                             TLRPC.PhotoSize photoSize = document.thumbs.get(0);
                             if (!(photoSize instanceof TLRPC.TL_photoStrippedSize)) {
                                 delayedMessage.photoSize = photoSize;
@@ -2966,7 +2967,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return waitingForVote.get(key);
     }
 
-    public int sendVote(final MessageObject messageObject, final ArrayList<TLRPC.TL_pollAnswer> answers, final Runnable finishRunnable) {
+    public int sendVote(final MessageObject messageObject, final ArrayList<TLRPC.PollAnswer> answers, final Runnable finishRunnable) {
         if (messageObject == null) {
             return 0;
         }
@@ -2981,7 +2982,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         if (answers != null) {
             options = new byte[answers.size()];
             for (int a = 0; a < answers.size(); a++) {
-                TLRPC.TL_pollAnswer answer = answers.get(a);
+                TLRPC.PollAnswer answer = answers.get(a);
                 req.options.add(answer.option);
                 options[a] = answer.option[0];
             }
@@ -5172,7 +5173,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         putToUploadingMessages(message.obj);
                     } else {
-                        String location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.photoSize.location.volume_id + "_" + message.photoSize.location.local_id + ".jpg";
+                        String ext = "jpg";
+                        if (message.obj != null && message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.isSticker) {
+                            ext = "webp";
+                        }
+                        String location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.photoSize.location.volume_id + "_" + message.photoSize.location.local_id + "." + ext;
                         putToDelayedMessages(location, message);
                         getFileLoader().uploadFile(location, false, true, ConnectionsManager.FileTypePhoto);
                         putToUploadingMessages(message.obj);
@@ -5860,6 +5865,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             getStatsController().incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, 1);
                             newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                             getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
+                            getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
                             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                                 int mode = scheduled ? ChatActivity.MODE_SCHEDULED : 0;
                                 if (newMsgObj.quick_reply_shortcut_id != 0 || newMsgObj.quick_reply_shortcut != null) {
@@ -5870,6 +5876,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 AndroidUtilities.runOnUIThread(() -> {
                                     getMediaDataController().increasePeerRaiting(newMsgObj.dialog_id);
                                     getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
+                                    getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags, scheduled);
                                     processSentMessage(oldId);
                                     removeFromSendingMessages(oldId, scheduled);
                                 });
@@ -6197,6 +6204,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 });
                             } else {
                                 getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
+                                getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
                                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                                     int mode = scheduled ? ChatActivity.MODE_SCHEDULED : 0;
                                     if (newMsgObj.quick_reply_shortcut_id != 0 || newMsgObj.quick_reply_shortcut != null) {
@@ -6207,6 +6215,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     AndroidUtilities.runOnUIThread(() -> {
                                         getMediaDataController().increasePeerRaiting(newMsgObj.dialog_id);
                                         getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
+                                        getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, scheduled);
                                         processSentMessage(oldId);
                                         removeFromSendingMessages(oldId, scheduled);
                                     });
@@ -6419,7 +6428,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             newMsg.media.document.size = sentMessage.media.document.size;
             newMsg.media.document.mime_type = sentMessage.media.document.mime_type;
 
-            if ((sentMessage.flags & TLRPC.MESSAGE_FLAG_FWD) == 0 && MessageObject.isOut(sentMessage) && !MessageObject.isQuickReply(sentMessage)) {
+            if ((sentMessage.flags & TLRPC.MESSAGE_FLAG_FWD) == 0 && (MessageObject.isOut(sentMessage) || sentMessage.dialog_id == getUserConfig().getClientUserId()) && !MessageObject.isQuickReply(sentMessage)) {
                 if (MessageObject.isNewGifDocument(sentMessage.media.document)) {
                     boolean save;
                     if (MessageObject.isDocumentHasAttachedStickers(sentMessage.media.document)) {
@@ -8162,7 +8171,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 TLRPC.PhotoSize size = null;
                                 if (thumb != null) {
                                     int side = isEncrypted || info.ttl != 0 ? 90 : Math.max(thumb.getWidth(), thumb.getHeight());
-                                    size = ImageLoader.scaleAndSaveImage(thumb, side, side, side > 90 ? 80 : 55, isEncrypted);
+                                    size = ImageLoader.scaleAndSaveImage(null, thumb, videoEditedInfo != null && videoEditedInfo.isSticker ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG, false, side, side, side > 90 ? 80 : 55, isEncrypted, 0, 0, false);
                                     if (size != null && size.location != null) {
                                         thumbKey = getKeyForPhotoSize(accountInstance, size, null, true, false);
                                     }

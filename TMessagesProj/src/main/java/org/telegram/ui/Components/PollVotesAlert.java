@@ -27,6 +27,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -49,8 +50,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -91,7 +94,7 @@ public class PollVotesAlert extends BottomSheet {
 
     private ArrayList<VotesList> voters = new ArrayList<>();
 
-    private TextView titleTextView;
+    private AnimatedEmojiSpan.TextViewEmojis titleTextView;
 
     private int scrollOffsetY;
     private int topBeforeSwitch;
@@ -144,7 +147,7 @@ public class PollVotesAlert extends BottomSheet {
 
     public class SectionCell extends FrameLayout {
 
-        private TextView textView;
+        private AnimatedEmojiSpan.TextViewEmojis textView;
         private TextView middleTextView;
         private AnimatedTextView righTextView;
 
@@ -153,7 +156,7 @@ public class PollVotesAlert extends BottomSheet {
 
             setBackgroundColor(Theme.getColor(Theme.key_graySection));
 
-            textView = new TextView(getContext());
+            textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView.setTextColor(Theme.getColor(Theme.key_graySectionText));
@@ -221,8 +224,17 @@ public class PollVotesAlert extends BottomSheet {
 
         }
 
-        public void setText(String left, int percent, int votesCount, int collapsed, boolean animated) {
-            textView.setText(Emoji.replaceEmoji(left, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+        public void setText(CharSequence left, ArrayList<TLRPC.MessageEntity> entities, int percent, int votesCount, int collapsed, boolean animated) {
+            if (entities != null) {
+                NotificationCenter.listenEmojiLoading(textView);
+                CharSequence answerText = new SpannableStringBuilder(left);
+                MediaDataController.addTextStyleRuns(entities, left, (Spannable) answerText);
+                answerText = Emoji.replaceEmoji(answerText, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                MessageObject.replaceAnimatedEmoji(answerText, entities, textView.getPaint().getFontMetricsInt());
+                textView.setText(answerText);
+            } else {
+                textView.setText(Emoji.replaceEmoji(left, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+            }
             String p = String.format("%d", percent);
             SpannableStringBuilder builder;
             if (LocaleController.isRTL) {
@@ -602,7 +614,7 @@ public class PollVotesAlert extends BottomSheet {
         Collections.sort(voters, new Comparator<VotesList>() {
             private int getIndex(VotesList votesList) {
                 for (int a = 0, N = poll.answers.size(); a < N; a++) {
-                    TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+                    TLRPC.PollAnswer answer = poll.answers.get(a);
                     if (Arrays.equals(answer.option, votesList.option)) {
                         return a;
                     }
@@ -902,13 +914,22 @@ public class PollVotesAlert extends BottomSheet {
             }
         });
 
-        titleTextView = new TextView(context);
+        titleTextView = new AnimatedEmojiSpan.TextViewEmojis(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(21));
         titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         titleTextView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-        titleTextView.setText(Emoji.replaceEmoji(poll.question, titleTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(18), false));
+        if (poll.question != null && poll.question.entities != null) {
+            NotificationCenter.listenEmojiLoading(titleTextView);
+            CharSequence questionText = new SpannableStringBuilder(poll.question.text);
+            MediaDataController.addTextStyleRuns(poll.question.entities, poll.question.text, (Spannable) questionText);
+            questionText = Emoji.replaceEmoji(questionText, titleTextView.getPaint().getFontMetricsInt(), false);
+            MessageObject.replaceAnimatedEmoji(questionText, poll.question.entities, titleTextView.getPaint().getFontMetricsInt());
+            titleTextView.setText(questionText);
+        } else {
+            titleTextView.setText(Emoji.replaceEmoji(poll.question == null ? "" : poll.question.text, titleTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(18), false));
+        }
 
         actionBar = new ActionBar(context) {
             @Override
@@ -1160,13 +1181,13 @@ public class PollVotesAlert extends BottomSheet {
                 view.setAlpha(1.0f);
                 VotesList votesList = voters.get(section);
                 for (int a = 0, N = poll.answers.size(); a < N; a++) {
-                    TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+                    TLRPC.PollAnswer answer = poll.answers.get(a);
                     if (Arrays.equals(answer.option, votesList.option)) {
                         Button button = votesPercents.get(votesList);
                         if (button == null) {
                             continue;
                         }
-                        sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
+                        sectionCell.setText(answer.text == null ? "" : answer.text.text, answer.text == null ? null : answer.text.entities, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
                         sectionCell.setTag(R.id.object_tag, votesList);
                         break;
                     }
@@ -1217,13 +1238,13 @@ public class PollVotesAlert extends BottomSheet {
                     VotesList votesList = voters.get(section);
                     TLRPC.MessagePeerVote vote = votesList.votes.get(0);
                     for (int a = 0, N = poll.answers.size(); a < N; a++) {
-                        TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+                        TLRPC.PollAnswer answer = poll.answers.get(a);
                         if (Arrays.equals(answer.option, votesList.option)) {
                             Button button = votesPercents.get(votesList);
                             if (button == null) {
                                 continue;
                             }
-                            sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
+                            sectionCell.setText(answer.text == null ? "" : answer.text.text, answer.text == null ? null : answer.text.entities, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
                             sectionCell.setTag(R.id.object_tag, votesList);
                             break;
                         }
@@ -1314,13 +1335,13 @@ public class PollVotesAlert extends BottomSheet {
                 SectionCell sectionCell = (SectionCell) child;
                 VotesList votesList = (VotesList) child.getTag(R.id.object_tag);
                 for (int a = 0, N = poll.answers.size(); a < N; a++) {
-                    TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+                    TLRPC.PollAnswer answer = poll.answers.get(a);
                     if (Arrays.equals(answer.option, votesList.option)) {
                         Button button = votesPercents.get(votesList);
                         if (button == null) {
                             continue;
                         }
-                        sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), true);
+                        sectionCell.setText(answer.text == null ? "" : answer.text.text, answer.text == null ? null : answer.text.entities, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), true);
                         sectionCell.setTag(R.id.object_tag, votesList);
                         break;
                     }

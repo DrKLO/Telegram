@@ -53,7 +53,7 @@ public class MediaCodecVideoConvertor {
 
     public boolean convertVideo(ConvertVideoParams convertVideoParams) {
         if (convertVideoParams.isSticker) {
-            return WebmEncoder.convert(convertVideoParams);
+            return WebmEncoder.convert(convertVideoParams, 0);
         }
         this.callback = convertVideoParams.callback;
         return convertVideoInternal(convertVideoParams, false, 0);

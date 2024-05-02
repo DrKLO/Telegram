@@ -100,6 +100,10 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
         }
 
         public void draw(Canvas canvas, ImageReceiver imageReceiver, float alpha) {
+            if (!imageHolder.isLoaded()) {
+                return;
+            }
+
             float x = (float) (imageX + imageW * mediaArea.coordinates.x / 100);
             float y = (float) (imageY + imageH * mediaArea.coordinates.y / 100);
             float w = (float) (imageW * mediaArea.coordinates.w / 100);

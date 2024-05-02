@@ -98,7 +98,7 @@ public class GraySectionCell extends FrameLayout {
         rightTextView.setOnClickListener(null);
     }
 
-    public void setText(String left, String right, OnClickListener onClickListener) {
+    public void setText(CharSequence left, CharSequence right, OnClickListener onClickListener) {
         textView.setText(left);
         rightTextView.setText(right, false);
         rightTextView.setOnClickListener(onClickListener);

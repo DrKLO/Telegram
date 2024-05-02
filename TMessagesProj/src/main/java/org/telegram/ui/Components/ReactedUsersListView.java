@@ -265,10 +265,8 @@ public class ReactedUsersListView extends FrameLayout {
             AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
                 if (response instanceof TLRPC.TL_messages_messageReactionsList) {
                     TLRPC.TL_messages_messageReactionsList res = (TLRPC.TL_messages_messageReactionsList) response;
-
-                    for (TLRPC.User u : res.users) {
-                        MessagesController.getInstance(currentAccount).putUser(u, false);
-                    }
+                    MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(res.chats, false);
 
                     HashSet<ReactionsLayoutInBubble.VisibleReaction> visibleCustomEmojiReactions = new HashSet<>();
                     for (int i = 0; i < res.reactions.size(); i++) {

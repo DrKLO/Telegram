@@ -348,7 +348,7 @@ public class MessagePreviewParams {
             try {
                 Spannable spanned = SpannableString.valueOf(text);
                 try {
-                    AndroidUtilities.addLinks(spanned, Linkify.WEB_URLS);
+                    AndroidUtilities.addLinksSafe(spanned, Linkify.WEB_URLS, false, true);
                 } catch (Exception e2) {
                     FileLog.e(e2);
                 }

@@ -65,6 +65,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private int searchPointer;
     private ArrayList<ContactEntry> allUnregistredContacts;
     private ArrayList<ContactsController.Contact> unregistredContacts = new ArrayList<>();
+    private String lastQuery;
 
 
     public SearchAdapter(Context context, LongSparseArray<TLRPC.User> arg1, LongSparseArray<TLRPC.User> selected, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
@@ -133,6 +134,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private void processSearch(final String query) {
         AndroidUtilities.runOnUIThread(() -> {
+            lastQuery = query;
             if (allowUsernameSearch) {
                 searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, -1, 1);
             }
@@ -260,8 +262,8 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     public int getItemCount() {
         unregistredContactsHeaderRow = -1;
         int count = searchResult.size();
-        unregistredContactsHeaderRow = count;
         if (!unregistredContacts.isEmpty()) {
+            unregistredContactsHeaderRow = count;
             count += unregistredContacts.size() + 1;
         }
 
@@ -359,7 +361,18 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     String un = null;
                     boolean self = false;
                     if (object instanceof TLRPC.User) {
-                        un = ((TLRPC.User) object).username;
+                        TLRPC.User user = (TLRPC.User) object;
+                        un = UserObject.getPublicUsername((TLRPC.User) object);
+                        if (un != null && lastQuery != null && !un.toLowerCase().contains(lastQuery.toLowerCase())) {
+                            if (user.usernames != null) {
+                                for (int i = 0; i < user.usernames.size(); ++i) {
+                                    TLRPC.TL_username u = user.usernames.get(i);
+                                    if (u != null && u.active && u.username.toLowerCase().contains(lastQuery.toLowerCase())) {
+                                        un = u.username;
+                                    }
+                                }
+                            }
+                        }
                         id = ((TLRPC.User) object).id;
                         self = ((TLRPC.User) object).self;
                     } else if (object instanceof TLRPC.Chat) {

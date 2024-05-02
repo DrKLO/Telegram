@@ -229,7 +229,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             customResetShadowRow = -1;
         }
 
-        boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialogId);
+        boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialogId, false, false);
         if (addingException) {
             notificationsEnabled = !defaultEnabled;
         } else {
@@ -242,7 +242,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 if (hasOverride) {
                     notificationsEnabled = true;
                 } else {
-                    notificationsEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialogId);
+                    notificationsEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialogId, false, false);
                 }
             } else if (value == 1) {
                 notificationsEnabled = true;

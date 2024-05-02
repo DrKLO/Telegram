@@ -55,24 +55,47 @@ public class ShaderSet {
         "precision highp float;" +
         "varying vec2 varTexcoord;" +
         "uniform sampler2D texture;" +
-//        "uniform float alpha;" +
         "void main (void) {" +
         "   gl_FragColor = texture2D(texture, varTexcoord.st, 0.0);" +
-//        "   gl_FragColor.a *= alpha;" +
+        "   gl_FragColor.rgb *= gl_FragColor.a;" +
+        "}";
+    private static final String PAINT_MASKING_BLIT_FSH =
+        "precision highp float;" +
+        "varying vec2 varTexcoord;" +
+        "uniform sampler2D texture;" +
+        "uniform sampler2D mask;" +
+        "uniform float preview;" +
+        "void main (void) {" +
+        "   gl_FragColor = texture2D(texture, varTexcoord.st, 0.0) * (preview + (1.0 - preview) * texture2D(mask, varTexcoord.st, 0.0).a);" +
         "   gl_FragColor.rgb *= gl_FragColor.a;" +
         "}";
     private static final String PAINT_BLITWITHMASK_FSH =
         "precision highp float;" +
         "varying vec2 varTexcoord;" +
         "uniform sampler2D texture;" +
+        "uniform sampler2D otexture;" +
         "uniform sampler2D mask;" +
         "uniform vec4 color;" +
         "void main (void) {" +
         "   vec4 dst = texture2D(texture, varTexcoord.st, 0.0);" +
         "   float srcAlpha = color.a * texture2D(mask, varTexcoord.st, 0.0).a;" +
         "   float outAlpha = srcAlpha + dst.a * (1.0 - srcAlpha);" +
-        "   gl_FragColor.rgb = (color.rgb * srcAlpha + dst.rgb * dst.a * (1.0 - srcAlpha)) / outAlpha;" +
+        "   gl_FragColor.rgb = (color.rgb * srcAlpha + dst.rgb * dst.a * (1.0 - srcAlpha));" +
         "   gl_FragColor.a = outAlpha;" +
+        "}";
+    private static final String PAINT_MASKING_BLITWITHMASK_FSH =
+        "precision highp float;" +
+        "varying vec2 varTexcoord;" +
+        "uniform sampler2D texture;" +
+        "uniform sampler2D otexture;" +
+        "uniform sampler2D mask;" +
+        "uniform vec4 color;" +
+        "uniform float preview;" +
+        "void main (void) {" +
+        "   vec4 dst = texture2D(texture, varTexcoord.st, 0.0);" +
+        "   float srcAlpha = color.a * texture2D(mask, varTexcoord.st, 0.0).a;" +
+        "   float outAlpha = srcAlpha + dst.a * (1.0 - srcAlpha);" +
+        "   gl_FragColor = texture2D(otexture, varTexcoord.st, 0.0) * (preview + (1.0 - preview) * outAlpha);" +
         "   gl_FragColor.rgb *= gl_FragColor.a;" +
         "}";
     private static final String PAINT_COMPOSITEWITHMASK_FSH =
@@ -161,6 +184,37 @@ public class ShaderSet {
         "   gl_FragColor.a = outAlpha;" +
         "   gl_FragColor.rgb *= gl_FragColor.a;" +
         "}";
+    private static final String PAINT_MASKING_BLITWITHMASKERASER_FSH =
+        "precision highp float;" +
+        "varying vec2 varTexcoord;" +
+        "uniform sampler2D texture;" +
+        "uniform sampler2D otexture;" +
+        "uniform sampler2D mask;" +
+        "uniform vec4 color;" +
+        "uniform float preview;" +
+        "void main (void) {" +
+        "   vec4 dst = texture2D(texture, varTexcoord.st, 0.0);" +
+        "   float srcAlpha = color.a * texture2D(mask, varTexcoord.st, 0.0).a;" +
+        "   float outAlpha = dst.a * (1. - srcAlpha);" +
+        "   gl_FragColor = texture2D(otexture, varTexcoord.st, 0.0) * (preview + (1.0 - preview) * outAlpha);" +
+        "   gl_FragColor.rgb *= gl_FragColor.a;" +
+        "}";
+//
+//
+//        "precision highp float;" +
+//                "varying vec2 varTexcoord;" +
+//                "uniform sampler2D texture;" +
+//                "uniform sampler2D otexture;" +
+//                "uniform sampler2D mask;" +
+//                "uniform vec4 color;" +
+//                "uniform float preview;" +
+//                "void main (void) {" +
+//                "   vec4 dst = texture2D(texture, varTexcoord.st, 0.0);" +
+//                "   float srcAlpha = color.a * texture2D(mask, varTexcoord.st, 0.0).a;" +
+//                "   float outAlpha = srcAlpha + dst.a * (1.0 - srcAlpha);" +
+//                "   gl_FragColor = texture2D(otexture, varTexcoord.st, 0.0) * (preview + (1.0 - preview) * outAlpha);" +
+//                "   gl_FragColor.rgb *= gl_FragColor.a;" +
+//                "}";
     private static final String PAINT_COMPOSITEWITHMASKERASER_FSH =
         "precision highp float;" +
         "varying vec2 varTexcoord;" +
@@ -346,10 +400,24 @@ public class ShaderSet {
 
         shader = new HashMap<>();
         shader.put(VERTEX, PAINT_BLIT_VSH);
+        shader.put(FRAGMENT, PAINT_MASKING_BLIT_FSH);
+        shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
+        shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "mask", "alpha", "preview"});
+        result.put("maskingBlit", Collections.unmodifiableMap(shader));
+
+        shader = new HashMap<>();
+        shader.put(VERTEX, PAINT_BLIT_VSH);
         shader.put(FRAGMENT, PAINT_BLITWITHMASK_FSH);
         shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
         shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "mask", "color"});
         result.put("blitWithMask", Collections.unmodifiableMap(shader));
+
+        shader = new HashMap<>();
+        shader.put(VERTEX, PAINT_BLIT_VSH);
+        shader.put(FRAGMENT, PAINT_MASKING_BLITWITHMASK_FSH);
+        shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
+        shader.put(UNIFORMS, new String[]{"mvpMatrix", "otexture", "texture", "mask", "color", "preview"});
+        result.put("blitWithMask_masking", Collections.unmodifiableMap(shader));
 
         shader = new HashMap<>();
         shader.put(VERTEX, PAINT_BLIT_VSH);
@@ -409,6 +477,13 @@ public class ShaderSet {
         shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
         shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "mask", "color"});
         result.put("blitWithMaskEraser", Collections.unmodifiableMap(shader));
+
+        shader = new HashMap<>();
+        shader.put(VERTEX, PAINT_BLIT_VSH);
+        shader.put(FRAGMENT, PAINT_MASKING_BLITWITHMASKERASER_FSH);
+        shader.put(ATTRIBUTES, new String[]{"inPosition", "inTexcoord"});
+        shader.put(UNIFORMS, new String[]{"mvpMatrix", "texture", "otexture", "preview", "mask", "color"});
+        result.put("blitWithMaskEraser_masking", Collections.unmodifiableMap(shader));
 
         shader = new HashMap<>();
         shader.put(VERTEX, PAINT_BLIT_VSH);

@@ -19,13 +19,13 @@ import org.telegram.ui.ActionBar.Theme;
 public class ColoredImageSpan extends ReplacementSpan {
 
     int drawableColor;
-    Drawable drawable;
+    public Drawable drawable;
 
     boolean usePaintColor = true;
     public boolean useLinkPaintColor = false;
     int colorKey;
     private int topOffset = 0;
-    private float translateX, translateY;
+    private float translateX, translateY, rotate;
     private float alpha = 1f;
     private int overrideColor;
 
@@ -91,6 +91,10 @@ public class ColoredImageSpan extends ReplacementSpan {
         translateY = ty;
     }
 
+    public void rotate(float r) {
+        rotate = r;
+    }
+
     public void setWidth(int width) {
         sizeWidth = width;
     }
@@ -108,7 +112,7 @@ public class ColoredImageSpan extends ReplacementSpan {
                 fm.top = fontMetrics.top;
                 fm.bottom = fontMetrics.bottom;
             }
-            return (int) (scaleX * Math.abs(spaceScaleX) * size);
+            return (int) (Math.abs(scaleX) * Math.abs(spaceScaleX) * size);
         }
         if (sizeWidth != 0)
             return (int) (Math.abs(scaleX) * sizeWidth);
@@ -152,6 +156,9 @@ public class ColoredImageSpan extends ReplacementSpan {
         if (drawable != null) {
             if (scaleX != 1f || scaleY != 1f) {
                 canvas.scale(scaleX, scaleY, 0, drawable.getBounds().centerY());
+            }
+            if (rotate != 1f) {
+                canvas.rotate(rotate, drawable.getBounds().centerX(), drawable.getBounds().centerY());
             }
             if (alpha != 1f || paint.getAlpha() != 0xFF) {
                 drawable.setAlpha((int) (alpha * paint.getAlpha()));

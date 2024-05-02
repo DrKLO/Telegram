@@ -8,6 +8,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -58,6 +59,9 @@ import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stories.StoryWidgetsImageDecorator;
 import org.telegram.ui.Stories.recorder.DominantColors;
+import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
+
+import java.util.HashMap;
 
 public class SharedPhotoVideoCell2 extends FrameLayout {
 
@@ -77,6 +81,10 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     String videoText;
     boolean drawVideoIcon = true;
 
+    private int privacyType;
+    private Bitmap privacyBitmap;
+    private Paint privacyPaint;
+
     boolean drawViews;
     AnimatedFloat viewsAlpha = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     AnimatedTextView.AnimatedTextDrawable viewsText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
@@ -93,6 +101,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     private boolean gradientDrawableLoading;
 
     public boolean isStory;
+    public boolean isStoryPinned;
 
     static long lastUpdateDownloadSettingsTime;
     static boolean lastAutoDownload;
@@ -169,7 +178,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         if (currentMessageObject == null && messageObject == null) {
             return;
         }
-        if (currentMessageObject != null && messageObject != null && currentMessageObject.getId() == messageObject.getId() && oldParentColumsCount == parentColumnsCount) {
+        if (currentMessageObject != null && messageObject != null && currentMessageObject.getId() == messageObject.getId() && oldParentColumsCount == parentColumnsCount && (privacyType == 100) == isStoryPinned) {
             return;
         }
         currentMessageObject = messageObject;
@@ -186,6 +195,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             showVideoLayout = false;
             gradientDrawableLoading = false;
             gradientDrawable = null;
+            privacyType = -1;
+            privacyBitmap = null;
             return;
         } else {
             if (attached) {
@@ -303,6 +314,35 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             imageReceiver.addDecorator(new StoryWidgetsImageDecorator(messageObject.storyItem));
         }
 
+        if (isStoryPinned) {
+            setPrivacyType(100, R.drawable.msg_pin_mini);
+        } else if (isStory && messageObject.storyItem != null) {
+            if (messageObject.storyItem.parsedPrivacy == null) {
+                messageObject.storyItem.parsedPrivacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, messageObject.storyItem.privacy);
+            }
+            if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CONTACTS) {
+                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_folders_private);
+            } else if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS) {
+                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_stories_closefriends);
+            } else if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS) {
+                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_folders_groups);
+            } else {
+                setPrivacyType(-1, 0);
+            }
+        } else {
+            setPrivacyType(-1, 0);
+        }
+
+        invalidate();
+    }
+
+    private void setPrivacyType(int type, int resId) {
+        if (privacyType == type) return;
+        privacyType = type;
+        privacyBitmap = null;
+        if (resId != 0) {
+            privacyBitmap = sharedResources.getPrivacyBitmap(getContext(), resId);
+        }
         invalidate();
     }
 
@@ -446,6 +486,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         bounds.set(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
         drawDuration(canvas, bounds, 1f);
         drawViews(canvas, bounds, 1f);
+        drawPrivacy(canvas, bounds, 1f);
 
         if (checkBoxBase != null && (style == STYLE_CACHE || checkBoxBase.getProgress() != 0)) {
             canvas.save();
@@ -474,12 +515,16 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             return;
         }
 
+        final float fwidth = bounds.width() + dp(20) * checkBoxProgress;
+        final float scale = bounds.width() / fwidth;
+
         if (alpha < 1) {
             alpha = (float) Math.pow(alpha, 8);
         }
 
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
+        canvas.scale(scale, scale, 0, bounds.height());
         canvas.clipRect(0, 0, bounds.width(), bounds.height());
         if (currentParentColumnsCount != 9 && videoInfoLayot == null && videoText != null) {
             int textWidth = (int) Math.ceil(sharedResources.textPaint.measureText(videoText));
@@ -487,16 +532,9 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         } else if ((currentParentColumnsCount >= 9 || videoText == null) && videoInfoLayot != null) {
             videoInfoLayot = null;
         }
-        int width;
-        if (videoInfoLayot == null) {
-            width = dp(8);
-        } else {
-            width = dp(4) + videoInfoLayot.getWidth() + dp(4);
-        }
-        if (drawVideoIcon) {
-            width += dp(10);
-        }
-        canvas.translate(dp(5), dp(1) + bounds.height() - dp(17) - dp(4));
+        final boolean up = viewsOnLeft(fwidth);
+        int width = dp(8) + (videoInfoLayot != null ? videoInfoLayot.getWidth() : 0) + (drawVideoIcon ? dp(10) : 0);
+        canvas.translate(dp(5), dp(1) + bounds.height() - dp(17) - dp(4) - (up ? dp(17 + 5) : 0));
         AndroidUtilities.rectTmp.set(0, 0, width, dp(17));
         int oldAlpha = Theme.chat_timeBackgroundPaint.getAlpha();
         Theme.chat_timeBackgroundPaint.setAlpha((int) (oldAlpha * alpha));
@@ -529,10 +567,45 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
     }
 
+    public boolean viewsOnLeft(float width) {
+        if (!isStory || currentParentColumnsCount >= 5) {
+            return false;
+        }
+        final int viewsWidth = dp(18 + 8) + (int) viewsText.getCurrentWidth();
+        final int durationWidth = showVideoLayout ? dp(8) + (videoInfoLayot != null ? videoInfoLayot.getWidth() : 0) + (drawVideoIcon ? dp(10) : 0) : 0;
+        final int padding = viewsWidth > 0 && durationWidth > 0 ? dp(8) : 0;
+        final int totalWidth = viewsWidth + padding + durationWidth;
+        return totalWidth > width;
+    }
+
+    public void drawPrivacy(Canvas canvas, RectF bounds, float alpha) {
+        if (!isStory || privacyBitmap == null || privacyBitmap.isRecycled()) {
+            return;
+        }
+
+        final float fwidth = bounds.width() + dp(20) * checkBoxProgress;
+        final float scale = bounds.width() / fwidth;
+
+        final int sz = dp(17.33f * scale);
+        canvas.save();
+        canvas.translate(bounds.right - sz - dp(5.66f), bounds.top + dp(5.66f));
+        if (privacyPaint == null) {
+            privacyPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        }
+        privacyPaint.setAlpha((int) (0xFF * alpha));
+        AndroidUtilities.rectTmp.set(0, 0, sz, sz);
+        canvas.drawBitmap(privacyBitmap, null, AndroidUtilities.rectTmp, privacyPaint);
+        canvas.restore();
+    }
+
     public void drawViews(Canvas canvas, RectF bounds, float alpha) {
         if (!isStory || imageReceiver != null && !imageReceiver.getVisible() || currentParentColumnsCount >= 5) {
             return;
         }
+
+        final float fwidth = bounds.width() + dp(20) * checkBoxProgress;
+        final float scale = bounds.width() / fwidth;
+        final boolean left = viewsOnLeft(fwidth);
 
         float a = viewsAlpha.set(drawViews);
         alpha *= a;
@@ -547,11 +620,12 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
 
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
+        canvas.scale(scale, scale, left ? 0 : bounds.width(), bounds.height());
         canvas.clipRect(0, 0, bounds.width(), bounds.height());
 
         float width = dp(18 + 8) + viewsText.getCurrentWidth();
 
-        canvas.translate(bounds.width() - dp(5) - width, dp(1) + bounds.height() - dp(17) - dp(4));
+        canvas.translate(left ? dp(5) : bounds.width() - dp(5) - width, dp(1) + bounds.height() - dp(17) - dp(4));
         AndroidUtilities.rectTmp.set(0, 0, width, dp(17));
         int oldAlpha = Theme.chat_timeBackgroundPaint.getAlpha();
         Theme.chat_timeBackgroundPaint.setAlpha((int) (oldAlpha * alpha));
@@ -787,6 +861,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         Drawable viewDrawable;
         Paint highlightPaint = new Paint();
         SparseArray<String> imageFilters = new SparseArray<>();
+        private final HashMap<Integer, Bitmap> privacyBitmaps = new HashMap<>();
 
         public SharedResources(Context context, Theme.ResourcesProvider resourcesProvider) {
             textPaint.setTextSize(dp(12));
@@ -806,6 +881,39 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                 imageFilters.put(width, str);
             }
             return str;
+        }
+
+        public void recycleAll() {
+            for (Bitmap bitmap : privacyBitmaps.values()) {
+                AndroidUtilities.recycleBitmap(bitmap);
+            }
+            privacyBitmaps.clear();
+        }
+
+        public Bitmap getPrivacyBitmap(Context context, int resId) {
+            Bitmap bitmap = privacyBitmaps.get(resId);
+            if (bitmap != null) {
+                return bitmap;
+            }
+            bitmap = BitmapFactory.decodeResource(context.getResources(), resId);
+            Bitmap shadowBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(shadowBitmap);
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            paint.setColorFilter(new PorterDuffColorFilter(0xFF606060, PorterDuff.Mode.SRC_IN));
+            canvas.drawBitmap(bitmap, 0, 0, paint);
+            Utilities.stackBlurBitmap(shadowBitmap, dp(1));
+            Bitmap resultBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            canvas = new Canvas(resultBitmap);
+            canvas.drawBitmap(shadowBitmap, 0, 0, paint);
+            canvas.drawBitmap(shadowBitmap, 0, 0, paint);
+            canvas.drawBitmap(shadowBitmap, 0, 0, paint);
+            paint.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            canvas.drawBitmap(bitmap, 0, 0, paint);
+            shadowBitmap.recycle();
+            bitmap.recycle();
+            bitmap = resultBitmap;
+            privacyBitmaps.put(resId, bitmap);
+            return bitmap;
         }
     }
 

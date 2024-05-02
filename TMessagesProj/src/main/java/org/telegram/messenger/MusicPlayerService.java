@@ -706,6 +706,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
         } else if (id == NotificationCenter.messagePlayingDidSeek) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+            if (messageObject == null) {
+                return;
+            }
             long progress = Math.round(messageObject.audioPlayerDuration * (float) args[1]) * 1000L;
             updatePlaybackState(progress);
             if (remoteControlClient != null && Build.VERSION.SDK_INT >= 18) {

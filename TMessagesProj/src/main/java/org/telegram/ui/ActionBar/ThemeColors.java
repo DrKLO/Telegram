@@ -3,7 +3,6 @@ package org.telegram.ui.ActionBar;
 import static org.telegram.ui.ActionBar.Theme.*;
 
 import android.graphics.Color;
-import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
@@ -758,8 +757,10 @@ public class ThemeColors {
         defaultColors[key_premiumGradientBackground3] = 0xffDB5C9D;
         defaultColors[key_premiumGradientBackground4] = 0xffF38926;
         defaultColors[key_premiumGradientBackgroundOverlay] = Color.WHITE;
-        defaultColors[key_premiumStartGradient1] = 0xffFFFFFF;
-        defaultColors[key_premiumStartGradient2] = 0xffE3ECFA;
+        defaultColors[key_premiumStarGradient1] = 0xffFFFFFF;
+        defaultColors[key_premiumStarGradient2] = 0xffE3ECFA;
+        defaultColors[key_premiumCoinGradient1] = -15436801;
+        defaultColors[key_premiumCoinGradient2] = -4167942;
         defaultColors[key_premiumStartSmallStarsColor] = ColorUtils.setAlphaComponent(Color.WHITE, 90);
         defaultColors[key_premiumStartSmallStarsColor2] = ColorUtils.setAlphaComponent(Color.WHITE, 90);
         defaultColors[key_premiumGradientBottomSheet1] = 0xff5B9DE7;
@@ -1505,8 +1506,10 @@ public class ThemeColors {
         colorKeysMap.put(key_premiumGradientBackground4, "premiumGradientBackground4");
         colorKeysMap.put(key_premiumGradientBackgroundOverlay, "premiumGradientBackgroundOverlay");
         colorKeysMap.put(key_premiumStartSmallStarsColor, "premiumStartSmallStarsColor");
-        colorKeysMap.put(key_premiumStartGradient1, "premiumStarGradient1");
-        colorKeysMap.put(key_premiumStartGradient2, "premiumStarGradient2");
+        colorKeysMap.put(key_premiumStarGradient1, "premiumStarGradient1");
+        colorKeysMap.put(key_premiumStarGradient2, "premiumStarGradient2");
+        colorKeysMap.put(key_premiumCoinGradient1, "premiumCoinGradient1");
+        colorKeysMap.put(key_premiumCoinGradient2, "premiumCoinGradient2");
         colorKeysMap.put(key_premiumStartSmallStarsColor2, "premiumStartSmallStarsColor2");
         colorKeysMap.put(key_premiumGradientBottomSheet1, "premiumGradientBottomSheet1");
         colorKeysMap.put(key_premiumGradientBottomSheet2, "premiumGradientBottomSheet2");
