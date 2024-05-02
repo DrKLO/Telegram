@@ -22926,7 +22926,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public SeekBarWaveform getSeekBarWaveform() {
         return seekBarWaveform;
     }
-
+    private boolean canAddOrUseProfileNode() {
+        return isChat && !currentMessageObject.isOut() &&(currentUser !=null ||currentChat!=null &&currentMessageObject.isFromGroup());
+    }
     private class MessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
 
         public static final int PROFILE = 5000;
@@ -22950,17 +22952,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         private Rect rect = new Rect();
 
         private class ProfileSpan extends ClickableSpan {
-            private TLRPC.User user;
-
-            public ProfileSpan(TLRPC.User user) {
-                this.user = user;
-            }
-
+        private Object profile;
+        public ProfileSpan(Object profile) {
+            this.profile = profile;
+        }
             @Override
             public void onClick(@NonNull View view) {
-                if (delegate != null) {
-                    delegate.didPressUserAvatar(ChatMessageCell.this, user, 0, 0, false);
+if (delegate != null) {
+                if(profile instanceof TLRPC.User) {
+                    if(((TLRPC.User) profile).id !=0) delegate.didPressUserAvatar(ChatMessageCell.this, (TLRPC.User) profile, 0, 0,false); else delegate.didPressHiddenForward(ChatMessageCell.this);
                 }
+                else delegate.didPressChannelAvatar(ChatMessageCell.this,(TLRPC.Chat) profile,0,0,0,false);
+            }
             }
         }
 
@@ -22976,9 +22979,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final long fileSize = currentMessageObject != null ? currentMessageObject.loadedFileSize : 0;
                 if (accessibilityText == null || accessibilityTextUnread != unread || accessibilityTextContentUnread != contentUnread || accessibilityTextFileSize != fileSize) {
                     SpannableStringBuilder sb = new SpannableStringBuilder();
-                    if (isChat && currentUser != null && !currentMessageObject.isOut()) {
-                        sb.append(UserObject.getUserName(currentUser));
-                        sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (isChat && !currentMessageObject.isOut()) {
+                if(currentUser !=null) {
+                    sb.append(UserObject.getUserName(currentUser));
+                    sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                else if(currentChat !=null &&currentMessageObject.isFromGroup()) {
+                    sb.append(currentChat.title);
+                    sb.setSpan(new ProfileSpan(currentChat), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
                         sb.append('\n');
                     }
 					            //add information,if something write from channel,but not from user name (it can do,for example,channel creators).
@@ -23231,7 +23240,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 int i;
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                    if (isChat && currentUser != null && !currentMessageObject.isOut()) {
+                    if (canAddOrUseProfileNode()) {
                         info.addChild(ChatMessageCell.this, PROFILE);
                     }
                     if (currentMessageObject.messageText instanceof Spannable) {
@@ -23311,10 +23320,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 info.setParent(ChatMessageCell.this);
                 info.setPackageName(getContext().getPackageName());
                 if (virtualViewId == PROFILE) {
-                    if (currentUser == null) {
+                    if (!canAddOrUseProfileNode()) {
                         return null;
                     }
-                    String content = UserObject.getUserName(currentUser);
+                    String content = currentUser != null ? UserObject.getUserName(currentUser) : currentChat.title;
                     info.setText(content);
                     rect.set((int) nameX, (int) nameY, (int) (nameX + nameWidth), (int) (nameY + (nameLayout != null ? nameLayout.getHeight() : 10)));
                     info.setBoundsInParent(rect);
