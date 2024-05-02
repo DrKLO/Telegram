@@ -22981,6 +22981,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         sb.append('\n');
                     }
+					            //add information,if something write from channel,but not from user name (it can do,for example,channel creators).
+            else if(currentUser ==null && currentMessageObject.customName !=null &&currentMessageObject.customName.length()>0) sb.append(currentMessageObject.customName+"\n");
                     if (drawForwardedName) {
                         for (int a = 0; a < 2; a++) {
                             if (forwardedNameLayout[a] != null && forwardedNameLayout[a].getText() != null) {
@@ -23054,14 +23056,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             sb.append(AndroidUtilities.formatFileSize(documentAttach.size));
                         }
                     }
+            //even if we switch on voice transcription,we should announce caption too.
+            if (currentMessageObject.messageOwner.media != null && !TextUtils.isEmpty(currentMessageObject.caption)) {
+                sb.append("\n");
+                sb.append(currentMessageObject.caption);
+            }
                     if (currentMessageObject.isVoiceTranscriptionOpen()) {
                         sb.append("\n");
                         sb.append(currentMessageObject.getVoiceTranscription());
-                    } else {
-                        if (MessageObject.getMedia(currentMessageObject.messageOwner) != null && !TextUtils.isEmpty(currentMessageObject.caption)) {
-                            sb.append("\n");
-                            sb.append(currentMessageObject.caption);
-                        }
                     }
                     if (currentMessageObject.isOut()) {
                         if (currentMessageObject.isSent()) {
@@ -23084,10 +23086,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             sb.append("\n");
                             sb.append(getString("AccDescrMsgSendingError", R.string.AccDescrMsgSendingError));
                         }
-                    } else {
+                    } else if(currentTimeString.length()>0) {
                         sb.append("\n");
                         sb.append(LocaleController.formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, getString("TodayAt", R.string.TodayAt) + " " + currentTimeString));
                     }
+            if(currentMessageObject.isSponsored()) {
+                sb.append("\n");
+                sb.append(LocaleController.getString("SponsoredMessage",R.string.SponsoredMessage));
+            }
                     if (getRepliesCount() > 0 && !hasCommentLayout()) {
                         sb.append("\n");
                         sb.append(LocaleController.formatPluralString("AccDescrNumberOfReplies", getRepliesCount()));
@@ -23428,11 +23434,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     PollButton button = pollButtons.get(buttonIndex);
                     StringBuilder sb = new StringBuilder(button.title.getText());
-                    if (!pollVoted) {
+if(pollVoted ||pollClosed)                         sb.append(", ").append(button.percent).append("%");
+                    if (!pollVoted &&!pollClosed) {
                         info.setClassName("android.widget.Button");
-                    } else {
+                    } else if (pollVoted) {
                         info.setSelected(button.chosen);
-                        sb.append(", ").append(button.percent).append("%");
                         if (lastPoll != null && lastPoll.quiz && (button.chosen || button.correct)) {
                             sb.append(", ").append(button.correct ? getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer) : getString("AccDescrQuizIncorrectAnswer", R.string.AccDescrQuizIncorrectAnswer));
                         }
