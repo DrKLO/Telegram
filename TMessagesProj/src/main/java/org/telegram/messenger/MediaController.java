@@ -4369,18 +4369,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 }
                             }
                             if (path == null || path.length() == 0) {
-                                path = null;
-                                TLRPC.Document document = message.getDocument();
-                                if (!TextUtils.isEmpty(FileLoader.getDocumentFileName(document)) && !(message.messageOwner instanceof TLRPC.TL_message_secret) && FileLoader.canSaveAsFile(message)) {
-                                    String filename = FileLoader.getDocumentFileName(document);
-                                    File newDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_FILES);
-                                    if (newDir != null) {
-                                        path = new File(newDir, filename).getAbsolutePath();
-                                    }
-                                }
-                                if (path == null) {
+//                                path = null;
+//                                TLRPC.Document document = message.getDocument();
+//                                if (!TextUtils.isEmpty(FileLoader.getDocumentFileName(document)) && !(message.messageOwner instanceof TLRPC.TL_message_secret) && FileLoader.canSaveAsFile(message)) {
+//                                    String filename = FileLoader.getDocumentFileName(document);
+//                                    File newDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_FILES);
+//                                    if (newDir != null) {
+//                                        path = new File(newDir, filename).getAbsolutePath();
+//                                    }
+//                                }
+//                                if (path == null) {
                                     path = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToMessage(message.messageOwner).toString();
-                                }
+//                                }
                             }
                             File sourceFile = new File(path);
                             if (!sourceFile.exists()) {
