@@ -833,7 +833,7 @@ public class ConnectionsManager extends BaseController {
     public static void getHostByName(String hostName, long address) {
         AndroidUtilities.runOnUIThread(() -> {
             ResolvedDomain resolvedDomain = dnsCache.get(hostName);
-            if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
+            if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 1 * 60 * 1000) {
                 native_onHostNameResolved(hostName, address, resolvedDomain.getAddress());
             } else {
                 ResolveHostByNameTask task = resolvingHostnameTasks.get(hostName);
@@ -1060,10 +1060,9 @@ public class ConnectionsManager extends BaseController {
             InputStream httpConnectionStream = null;
             boolean done = false;
             try {
-                URL downloadUrl = new URL("https://www.google.com/resolve?name=" + currentHostName + "&type=A");
+                URL downloadUrl = new URL("https://dns.google.com/resolve?name=" + currentHostName + "&type=A");
                 URLConnection httpConnection = downloadUrl.openConnection();
                 httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-                httpConnection.addRequestProperty("Host", "dns.google.com");
                 httpConnection.setConnectTimeout(1000);
                 httpConnection.setReadTimeout(2000);
                 httpConnection.connect();
