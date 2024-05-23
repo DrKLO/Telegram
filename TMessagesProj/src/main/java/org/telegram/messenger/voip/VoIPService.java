@@ -2740,7 +2740,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void toggleSpeakerphoneOrShowRouteSheet(Context context, boolean fromOverlayWindow, Integer selectedPos) {
-		if (isBluetoothHeadsetConnected() && hasEarpiece()) {
+		if (isBluetoothHeadsetConnected()) {
 			BottomSheet.Builder builder = new BottomSheet.Builder(context)
 					.setTitle(LocaleController.getString("VoipOutputDevices", R.string.VoipOutputDevices), true)
 					.selectedPos(selectedPos)
