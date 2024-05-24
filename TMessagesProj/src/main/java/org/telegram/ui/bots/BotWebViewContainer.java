@@ -23,6 +23,7 @@ import android.os.Build;
 import android.os.Message;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -93,6 +94,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class BotWebViewContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+
+    private static final String TAG = "BotWebViewContainer";
     private final static String DURGER_KING_USERNAME = "DurgerKingBot";
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000, REQUEST_CODE_QR_CAMERA_PERMISSION = 5000;
     private final static int DIALOG_SEQUENTIAL_COOLDOWN_TIME = 3000;
@@ -521,6 +524,26 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         onWebViewCreated();
     }
 
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        boolean isShow = visibility == VISIBLE;
+        int focusability = isShow ? FOCUS_BEFORE_DESCENDANTS : FOCUS_BLOCK_DESCENDANTS;
+        setDescendantFocusability(focusability);
+        setFocusable(isShow);
+        InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        if (webView!= null) {
+            webView.setFocusable(isShow);
+            webView.setDescendantFocusability(focusability);
+            webView.setFocusableInTouchMode(isShow);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                webView.setFocusedByDefault(isShow);
+                webView.setDefaultFocusHighlightEnabled(isShow);
+            }
+        }
+    }
+
     private void onOpenUri(Uri uri) {
         onOpenUri(uri, false, false);
     }
@@ -531,26 +554,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
 
         lastClickMs = 0;
-        boolean[] forceBrowser = {false};
-        boolean internal = Browser.isInternalUri(uri, forceBrowser);
-
-        if (internal && !forceBrowser[0]) {
-            if (delegate != null) {
-                setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
-                BotWebViewContainer.this.setFocusable(false);
-                webView.setFocusable(false);
-                webView.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
-                webView.clearFocus();
-                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-
-                Browser.openUrl(getContext(), uri, true, tryInstantView);
-            } else {
-                Browser.openUrl(getContext(), uri, true, tryInstantView);
-            }
-        } else {
-            Browser.openUrl(getContext(), uri, true, tryInstantView);
-        }
+        Browser.openUrl(getContext(), uri, true, tryInstantView);
     }
 
     public static int getMainButtonRippleColor(int buttonColor) {
