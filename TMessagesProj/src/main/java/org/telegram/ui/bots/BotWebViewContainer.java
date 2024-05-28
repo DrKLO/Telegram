@@ -97,7 +97,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000, REQUEST_CODE_QR_CAMERA_PERMISSION = 5000;
     private final static int DIALOG_SEQUENTIAL_COOLDOWN_TIME = 3000;
 
-    private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https");
+    private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https", "wc");
 
     private WebView webView;
     private String mUrl;
