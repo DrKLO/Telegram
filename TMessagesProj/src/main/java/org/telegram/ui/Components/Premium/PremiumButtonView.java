@@ -102,7 +102,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Color.WHITE);
         buttonTextView.setTextSize(AndroidUtilities.dp(14));
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
 
         iconView = new RLottieImageView(context);
         iconView.setColorFilter(Color.WHITE);
@@ -148,7 +148,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             overlayTextView.setGravity(Gravity.CENTER);
             overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             overlayTextView.setTextSize(AndroidUtilities.dp(14));
-            overlayTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            overlayTextView.setTypeface(AndroidUtilities.bold());
             overlayTextView.getDrawable().setAllowCancel(true);
             overlayTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 120)));
             addView(overlayTextView);

@@ -17,10 +17,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
@@ -41,7 +39,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -53,21 +50,16 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.ResultCallback;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -1160,6 +1152,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                     profilePreview.backgroundView.setColor(currentAccount, selectedProfileColor, false);
                     profilePreview.profileView.setColor(selectedProfileColor, false);
                     profilePreview.profileView.setEmoji(selectedProfileEmoji, false);
+                    profilePreview.profileView.setForum(isForum());
                     profilePreview.profileView.setStatusEmoji(DialogObject.getEmojiStatusDocumentId(selectedStatusEmoji), false);
                     profilePreview.profileView.overrideAvatarColor(selectedReplyColor);
                     break;
@@ -1179,6 +1172,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                 ProfilePreview profilePreview = (ProfilePreview) holder.itemView;
                 profilePreview.profileView.setColor(selectedProfileColor, false);
                 profilePreview.profileView.setEmoji(selectedProfileEmoji, false);
+                profilePreview.profileView.setForum(isForum());
                 profilePreview.profileView.setStatusEmoji(DialogObject.getEmojiStatusDocumentId(selectedStatusEmoji), false);
                 profilePreview.profileView.overrideAvatarColor(selectedReplyColor);
             } else if (holder.itemView instanceof ThemePreviewMessagesCell) {
@@ -1386,7 +1380,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                 title = new SimpleTextView(getContext());
                 title.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                 title.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-                title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                title.setTypeface(AndroidUtilities.bold());
                 title.setText(LocaleController.getString(R.string.ChangeChannelNameColor2));
                 title.setAlpha(0f);
                 setTitleSize();
@@ -2521,4 +2515,9 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             updateButton(true);
         }
     }
+
+    protected boolean isForum() {
+        return false;
+    }
+
 }

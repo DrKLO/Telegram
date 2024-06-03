@@ -112,7 +112,11 @@ public class BotBiometry {
                             token = encrypted_token;
                         }
                     } else if (cryptoObject != null) {
-                        token = new String(cryptoObject.getCipher().doFinal(Utilities.hexToBytes(encrypted_token.split(";")[0])), StandardCharsets.UTF_8);
+                        if (!TextUtils.isEmpty(encrypted_token)) {
+                            token = new String(cryptoObject.getCipher().doFinal(Utilities.hexToBytes(encrypted_token.split(";")[0])), StandardCharsets.UTF_8);
+                        } else {
+                            token = encrypted_token;
+                        }
                     } else {
                         if (!TextUtils.isEmpty(encrypted_token)) {
                             throw new RuntimeException("No cryptoObject found");
@@ -238,7 +242,13 @@ public class BotBiometry {
         final BiometricPrompt.PromptInfo promptInfo = promptInfoBuilder.build();
         if (cryptoObject != null && !decrypt) {
             try {
-                encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8))) + ";" + Utilities.bytesToHex(cryptoObject.getCipher().getIV());
+                if (TextUtils.isEmpty(token)) {
+                    encrypted_token = null;
+                } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    encrypted_token = token;
+                } else {
+                    encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8))) + ";" + Utilities.bytesToHex(cryptoObject.getCipher().getIV());
+                }
                 save();
                 this.callback = null;
                 whenDone.run(null);

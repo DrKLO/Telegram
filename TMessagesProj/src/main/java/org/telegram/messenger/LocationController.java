@@ -682,9 +682,7 @@ public class LocationController extends BaseController implements NotificationCe
                 if (!chatsToLoad.isEmpty()) {
                     getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                 }
-                if (!usersToLoad.isEmpty()) {
-                    getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
-                }
+                getMessagesStorage().getUsersInternal(usersToLoad, users);
             } catch (Exception e) {
                 FileLog.e(e);
             }

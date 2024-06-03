@@ -115,7 +115,7 @@ public class AnimatedFloat {
         this.firstSet = false;
     }
 
-    // get() is not recommended to use (unless minimize System.currentTimeMillis() calls)
+    // get() is not recommended to use (unless to minimize System.currentTimeMillis() calls)
     @Deprecated
     public float get() {
         return value;
@@ -178,6 +178,10 @@ public class AnimatedFloat {
         transitionDuration = duration;
     }
 
+    public void setDelay(long delay) {
+        transitionDelay = delay;
+    }
+
     public long getDuration() {
         return transitionDuration;
     }
@@ -208,5 +212,9 @@ public class AnimatedFloat {
 
     public void setParent(View parent) {
         this.parent = parent;
+    }
+
+    public void setInvalidate(Runnable invalidate) {
+        this.invalidate = invalidate;
     }
 }

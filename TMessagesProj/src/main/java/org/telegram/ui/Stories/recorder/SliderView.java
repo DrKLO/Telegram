@@ -59,7 +59,7 @@ public class SliderView extends View {
 
         currentType = type;
 
-        text.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        text.setTypeface(AndroidUtilities.bold());
         text.setAnimationProperties(.3f, 0, 40, CubicBezierInterpolator.EASE_OUT_QUINT);
         text.setCallback(this);
         text.setTextColor(0xffffffff);
@@ -80,7 +80,7 @@ public class SliderView extends View {
             text2 = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
             text2.setOverrideFullWidth(AndroidUtilities.displaySize.x);
             text2.setTextSize(dp(14));
-            text2.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            text2.setTypeface(AndroidUtilities.bold());
             text2.setAnimationProperties(.3f, 0, 40, CubicBezierInterpolator.EASE_OUT_QUINT);
             text2.setCallback(this);
             text2.setTextColor(0xffffffff);

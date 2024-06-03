@@ -83,8 +83,11 @@ public class Icon3D {
 
     public static final int TYPE_STAR = 0;
     public static final int TYPE_COIN = 1;
+    public static final int TYPE_GOLDEN_STAR = 2;
 
-    private static final String[] starModel = new String[] { "models/star.binobj" };
+    private static final String[] starModel = new String[] {
+        "models/star.binobj"
+    };
     private static final String[] coinModel = new String[] {
         "models/coin_outer.binobj",
         "models/coin_inner.binobj",
@@ -97,8 +100,10 @@ public class Icon3D {
         String[] modelPaths;
         if (type == TYPE_COIN) {
             modelPaths = coinModel;
-        } else {
+        } else if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             modelPaths = starModel;
+        } else {
+            modelPaths = new String[0];
         }
 
         N = modelPaths.length;
@@ -132,7 +137,15 @@ public class Icon3D {
         int[] linked = new int[1];
 
         vertexShader = GLIconRenderer.loadShader(GLES20.GL_VERTEX_SHADER, loadFromAsset(context, "shaders/vertex2.glsl"));
-        fragmentShader = GLIconRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, loadFromAsset(context, type == TYPE_COIN ? "shaders/fragment3.glsl" : "shaders/fragment2.glsl"));
+        String fragmentShaderSource;
+        if (type == TYPE_STAR) {
+            fragmentShaderSource = "shaders/fragment2.glsl";
+        } else if (type == TYPE_COIN) {
+            fragmentShaderSource = "shaders/fragment3.glsl";
+        } else {
+            fragmentShaderSource = "shaders/fragment4.glsl";
+        }
+        fragmentShader = GLIconRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, loadFromAsset(context, fragmentShaderSource));
 
         programObject = GLES20.glCreateProgram();
         GLES20.glAttachShader(programObject, vertexShader);
@@ -228,9 +241,14 @@ public class Icon3D {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
 
-        if (type == TYPE_STAR) {
-            Bitmap bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
-            Utilities.stackBlurBitmap(bitmap, 3);
+        if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
+            Bitmap bitmap;
+            if (type == TYPE_GOLDEN_STAR) {
+                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 240, 240, Color.WHITE);
+            } else {
+                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
+                Utilities.stackBlurBitmap(bitmap, 3);
+            }
 
             final int[] texture = new int[1];
             GLES20.glGenTextures(1, texture, 0);

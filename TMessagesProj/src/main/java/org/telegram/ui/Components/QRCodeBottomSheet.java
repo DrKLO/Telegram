@@ -104,7 +104,7 @@ public class QRCodeBottomSheet extends BottomSheet {
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setText(LocaleController.getString("ShareQrCode", R.string.ShareQrCode));
         buttonTextView.setOnClickListener(view -> {
             Uri uri = AndroidUtilities.getBitmapShareUri(qrCode, "qr_tmp.png", Bitmap.CompressFormat.PNG);
@@ -127,7 +127,7 @@ public class QRCodeBottomSheet extends BottomSheet {
             button2TextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             button2TextView.setGravity(Gravity.CENTER);
             button2TextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            //        button2TextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            //        button2TextView.setTypeface(AndroidUtilities.medium());
             button2TextView.setText(LocaleController.getString("ShareLink", R.string.ShareLink));
             button2TextView.setOnClickListener(view -> {
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);

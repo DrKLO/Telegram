@@ -18,7 +18,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -100,7 +99,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         }
         titleTextView.setTextColor(0xffffffff);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 29, 24, 0));
 
@@ -206,7 +205,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         positiveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         positiveButton.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
         positiveButton.setGravity(Gravity.CENTER);
-        positiveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        positiveButton.setTypeface(AndroidUtilities.bold());
         positiveButton.setText(LocaleController.getString("VoipRecordStart", R.string.VoipRecordStart));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             positiveButton.setForeground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_nameText), (int) (255 * 0.3f))));
@@ -226,7 +225,7 @@ public class GroupCallRecordAlert extends BottomSheet {
             titles[a] = new TextView(context);
             titles[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             titles[a].setTextColor(0xffffffff);
-            titles[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titles[a].setTypeface(AndroidUtilities.bold());
             titles[a].setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
             titles[a].setGravity(Gravity.CENTER_VERTICAL);
             titles[a].setSingleLine(true);

@@ -44,7 +44,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         textView.setSingleLine();
         textView.setAlpha(0f);
         textView.setGravity(Gravity.CENTER);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 0, 0));
 
         progressView = new RadialProgressView(context);

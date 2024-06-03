@@ -4,7 +4,6 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.view.Gravity;
@@ -43,7 +42,7 @@ public class SelectorUserCell extends BaseCell {
     public SelectorUserCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean isGreen) {
         super(context, resourcesProvider);
         statusBadgeComponent = new StatusBadgeComponent(this);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         radioButton.setVisibility(View.GONE);
         checkBox = new CheckBox2(context, 21, resourcesProvider);
         if (isGreen) {

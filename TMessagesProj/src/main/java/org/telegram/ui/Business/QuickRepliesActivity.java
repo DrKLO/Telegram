@@ -18,7 +18,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
-import android.text.InputType;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -69,7 +68,6 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -136,7 +134,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
         ActionBarMenu actionModeMenu = actionBar.createActionMode();
         countText = new NumberTextView(getContext());
         countText.setTextSize(18);
-        countText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        countText.setTypeface(AndroidUtilities.bold());
         countText.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionModeMenu.addView(countText, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         countText.setOnTouchListener((v, event) -> true);
@@ -528,7 +526,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Text text;
         public MoreSpan(int count) {
-            text = new Text(formatPluralString("BusinessRepliesMore", count), 9.33f, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            text = new Text(formatPluralString("BusinessRepliesMore", count), 9.33f, AndroidUtilities.bold());
         }
         public static CharSequence of(int count, int[] width) {
             SpannableString ss = new SpannableString("+");
@@ -623,7 +621,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
                 highlight = "/" + highlight;
             }
             ssb.append("/").append(quickReply.name);
-            ssb.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             ssb.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider)), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             if (highlight != null) {
                 ssb.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider)), 0, Math.min(highlight.length() <= 0 ? 1 : highlight.length(), ssb.length()), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -737,7 +735,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
             titleView.setSingleLine();
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, LocaleController.isRTL ? 40 : 78, 10.33f, LocaleController.isRTL ? 78 : 40, 0));
 

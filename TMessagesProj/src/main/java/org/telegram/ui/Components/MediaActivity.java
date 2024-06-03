@@ -16,7 +16,6 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -25,11 +24,8 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -62,8 +58,6 @@ import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.Paint.ShapeDetector;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.Stories.recorder.KeyboardNotifier;
-import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,8 +257,8 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             }
 
             @Override
-            protected void drawList(Canvas blurCanvas, boolean top) {
-                sharedMediaLayout.drawListForBlur(blurCanvas);
+            protected void drawList(Canvas blurCanvas, boolean top, ArrayList<IViewWithInvalidateCallback> views) {
+                sharedMediaLayout.drawListForBlur(blurCanvas, views);
             }
         };
         fragmentView.needBlur = true;
@@ -358,7 +352,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             nameTextView[i].setTextSize(18);
             nameTextView[i].setGravity(Gravity.LEFT);
-            nameTextView[i].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView[i].setTypeface(AndroidUtilities.bold());
             nameTextView[i].setLeftDrawableTopPadding(-dp(1.3f));
             nameTextView[i].setScrollNonFitText(true);
             nameTextView[i].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -406,7 +400,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         selectedTextView.setTextSize(dp(20));
         selectedTextView.setGravity(Gravity.LEFT);
         selectedTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        selectedTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedTextView.setTypeface(AndroidUtilities.bold());
         avatarContainer.addView(selectedTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.FILL_HORIZONTAL | Gravity.CENTER_VERTICAL, 72 + (hasAvatar ? 48 : 0), -2, 72, 0));
 
         if (type == TYPE_STORIES) {

@@ -79,7 +79,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         storageBtn.setEllipsize(TextUtils.TruncateAt.END);
         storageBtn.setSingleLine(true);
         storageBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        storageBtn.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        storageBtn.setTypeface(AndroidUtilities.bold());
         storageBtn.setText(LocaleController.getString("ManageDeviceStorage", R.string.ManageDeviceStorage));
         storageBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         storageBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
@@ -90,7 +90,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         clearBtn.setEllipsize(TextUtils.TruncateAt.END);
         clearBtn.setSingleLine(true);
         clearBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        clearBtn.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        clearBtn.setTypeface(AndroidUtilities.bold());
         clearBtn.setText(LocaleController.getString("ClearDownloadsList", R.string.ClearDownloadsList));
         clearBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         clearBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));

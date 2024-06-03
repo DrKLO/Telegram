@@ -27,7 +27,7 @@ public class SubtitleWithCounterCell extends org.telegram.ui.Cells.HeaderCell {
         counterTextView.setAnimationProperties(.45f, 0, 240, CubicBezierInterpolator.EASE_OUT_QUINT);
         counterTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         counterTextView.setTextSize(dp(15));
-        counterTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        counterTextView.setTypeface(AndroidUtilities.bold());
         counterTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
         addView(counterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, 24, 0, 24, 0));
         setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));

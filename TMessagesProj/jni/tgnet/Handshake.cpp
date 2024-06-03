@@ -206,9 +206,12 @@ inline bool check_prime(BIGNUM *p) {
     return result != 0;
 }
 
-inline bool isGoodPrime(BIGNUM *p, uint32_t g) {
+bool Handshake::isGoodPrime(BIGNUM *p, uint32_t g) {
     if (g < 2 || g > 7 || BN_num_bits(p) != 2048) {
         return false;
+    }
+    if (bnContext == nullptr) {
+        bnContext = BN_CTX_new();
     }
 
     BIGNUM *t = BN_new();
@@ -657,7 +660,7 @@ void Handshake::processHandshakeResponse_serverDHParams(TLObject *message, int64
             if (LOGS_ENABLED) DEBUG_E("can't allocate BIGNUM p");
             exit(1);
         }
-        if (!isGoodPrime(p, dhInnerData->g)) {
+        if (!Handshake::isGoodPrime(p, dhInnerData->g)) {
             if (LOGS_ENABLED) DEBUG_E("account%u dc%u handshake: bad prime, type = %d", currentDatacenter->instanceNum, currentDatacenter->datacenterId, handshakeType);
             beginHandshake(false);
             BN_free(p);
@@ -826,9 +829,11 @@ void Handshake::processHandshakeResponse_serverDHParamsAnswer(TLObject *message,
                 handshakeRequest = nullptr;
             }
 
-            std::unique_ptr<TL_future_salt> salt = std::unique_ptr<TL_future_salt>(handshakeServerSalt);
             currentDatacenter->clearServerSalts(handshakeType == HandshakeTypeMediaTemp);
-            currentDatacenter->addServerSalt(salt, handshakeType == HandshakeTypeMediaTemp);
+            if (handshakeServerSalt != nullptr) {
+                std::unique_ptr<TL_future_salt> salt = std::unique_ptr<TL_future_salt>(handshakeServerSalt);
+                currentDatacenter->addServerSalt(salt, handshakeType == HandshakeTypeMediaTemp);
+            }
             handshakeServerSalt = nullptr;
 
             if (handshakeType == HandshakeTypePerm) {

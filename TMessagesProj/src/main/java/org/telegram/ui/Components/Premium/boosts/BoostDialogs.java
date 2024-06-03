@@ -12,7 +12,6 @@ import static org.telegram.ui.Components.Premium.boosts.SelectorBottomSheet.TYPE
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -31,7 +30,6 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -54,7 +52,6 @@ import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.StatisticActivity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -215,7 +212,7 @@ public class BoostDialogs {
             {
                 setWillNotDraw(false);
                 paint.setTextSize(dp(20));
-                paint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                paint.setTypeface(AndroidUtilities.bold());
                 paint.setColor(datePickerColors.textColor);
             }
 
@@ -261,7 +258,7 @@ public class BoostDialogs {
         titleView.setText(getString("BoostingSelectDateTime", R.string.BoostingSelectDateTime));
         titleView.setTextColor(datePickerColors.textColor);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
         titleView.setOnTouchListener((v, event) -> true);
 
@@ -398,7 +395,7 @@ public class BoostDialogs {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(datePickerColors.buttonBackgroundColor, 8));
         buttonTextView.setText(getString("BoostingConfirm", R.string.BoostingConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
@@ -618,7 +615,7 @@ public class BoostDialogs {
             String str = getString("BoostingGiveawayCanceledByPayment", R.string.BoostingGiveawayCanceledByPayment);
             TextView bottomTextView = new TextView(context);
             bottomTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            bottomTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            bottomTextView.setTypeface(AndroidUtilities.bold());
             bottomTextView.setGravity(Gravity.CENTER);
             bottomTextView.setText(str);
             bottomTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));

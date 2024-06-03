@@ -248,7 +248,7 @@ public class FilesMigrationService extends Service {
             title.setGravity(Gravity.START);
             title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            title.setTypeface(AndroidUtilities.bold());
             title.setText(LocaleController.getString("MigrateOldFolderTitle", R.string.MigrateOldFolderTitle));
             linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 30, 21, 0));
 
@@ -264,7 +264,7 @@ public class FilesMigrationService extends Service {
             buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             buttonTextView.setGravity(Gravity.CENTER);
             buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            buttonTextView.setTypeface(AndroidUtilities.bold());
             buttonTextView.setText(LocaleController.getString("MigrateOldFolderButton", R.string.MigrateOldFolderButton));
 
             buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));

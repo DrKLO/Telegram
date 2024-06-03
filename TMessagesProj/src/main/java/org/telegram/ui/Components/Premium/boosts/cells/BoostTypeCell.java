@@ -26,7 +26,7 @@ public class BoostTypeCell extends BaseCell {
 
     public BoostTypeCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
     }
 
     @Override

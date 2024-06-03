@@ -941,6 +941,13 @@ void invokeWithLayer::serializeToStream(NativeByteBuffer *stream) {
     query->serializeToStream(stream);
 }
 
+void invokeWithGooglePlayIntegrity::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(nonce);
+    stream->writeString(token);
+    query->serializeToStream(stream);
+}
+
 void TL_inputClientProxy::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeString(address);

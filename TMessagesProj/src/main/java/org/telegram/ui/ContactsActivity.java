@@ -272,7 +272,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
         selectedContactsCountTextView = new NumberTextView(actionMode.getContext());
         selectedContactsCountTextView.setTextSize(18);
-        selectedContactsCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedContactsCountTextView.setTypeface(AndroidUtilities.bold());
         selectedContactsCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedContactsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedContactsCountTextView.setOnTouchListener((v, event) -> true);

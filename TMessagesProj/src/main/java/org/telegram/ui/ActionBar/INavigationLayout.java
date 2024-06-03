@@ -152,6 +152,17 @@ public interface INavigationLayout {
         return getFragmentStack().isEmpty() ? null : getFragmentStack().get(getFragmentStack().size() - 1);
     }
 
+    default BaseFragment getSafeLastFragment() {
+        if (getFragmentStack().isEmpty()) return null;
+        for (int i = getFragmentStack().size() - 1; i >= 0; --i) {
+            BaseFragment fragment = getFragmentStack().get(i);
+            if (fragment == null || fragment.isFinishing() || fragment.isRemovingFromStack())
+                continue;
+            return fragment;
+        }
+        return null;
+    }
+
     default void animateThemedValues(Theme.ThemeInfo theme, int accentId, boolean nightTheme, boolean instant) {
         animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant), null);
     }

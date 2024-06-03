@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -51,6 +53,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -104,6 +107,7 @@ import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -129,6 +133,8 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextPriceCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.HintEditText;
@@ -136,6 +142,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -284,8 +291,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private CountrySelectActivity.Country country;
     private String countryName;
     private String totalPriceDecimal;
-    private TLRPC.TL_payments_paymentForm paymentForm;
-    private TLRPC.TL_payments_paymentReceipt paymentReceipt;
+    private TLRPC.PaymentForm paymentForm;
+    private TLRPC.PaymentReceipt paymentReceipt;
     private TLRPC.TL_payments_validatedRequestedInfo requestedInfo;
     private TLRPC.TL_paymentFormMethod paymentFormMethod;
     private TLRPC.TL_shippingOption shippingOption;
@@ -314,7 +321,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private PaymentFormCallback paymentFormCallback;
     private InvoiceStatus invoiceStatus;
     private boolean paymentStatusSent;
-    private TLRPC.TL_inputInvoicePremiumGiftCode invoicePremiumGiftCode;
+    private TLRPC.InputInvoice invoiceInput;
 
     private final static int done_button = 1;
 
@@ -385,9 +392,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    public PaymentFormActivity(TLRPC.TL_payments_paymentReceipt receipt) {
+    public PaymentFormActivity(TLRPC.PaymentReceipt receipt) {
         currentStep = STEP_RECEIPT;
-        paymentForm = new TLRPC.TL_payments_paymentForm();
+        paymentForm = new TLRPC.PaymentForm();
         paymentReceipt = receipt;
         paymentForm.bot_id = receipt.bot_id;
         paymentForm.invoice = receipt.invoice;
@@ -421,25 +428,25 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         cardName = receipt.credentials_title;
     }
 
-    public PaymentFormActivity(TLRPC.TL_payments_paymentForm form, String invoiceSlug, BaseFragment parentFragment) {
+    public PaymentFormActivity(TLRPC.PaymentForm form, String invoiceSlug, BaseFragment parentFragment) {
         this(form, null, invoiceSlug, parentFragment);
    }
 
-    public PaymentFormActivity(TLRPC.TL_payments_paymentForm form, TLRPC.TL_inputInvoicePremiumGiftCode premiumGiftCode, BaseFragment parentFragment) {
+    public PaymentFormActivity(TLRPC.PaymentForm form, TLRPC.InputInvoice premiumGiftCode, BaseFragment parentFragment) {
         this(premiumGiftCode, form, null, null, STEP_CHECKOUT, null, null, null, null, null, null, false, null, parentFragment);
         isCheckoutPreview = true;
     }
 
-    public PaymentFormActivity(TLRPC.TL_payments_paymentForm form, MessageObject message, BaseFragment parentFragment) {
+    public PaymentFormActivity(TLRPC.PaymentForm form, MessageObject message, BaseFragment parentFragment) {
         this(form, message, null, parentFragment);
     }
 
-    public PaymentFormActivity(TLRPC.TL_payments_paymentForm form, MessageObject message, String invoiceSlug, BaseFragment parentFragment) {
+    public PaymentFormActivity(TLRPC.PaymentForm form, MessageObject message, String invoiceSlug, BaseFragment parentFragment) {
         isCheckoutPreview = true;
         init(null, form, message, invoiceSlug, STEP_CHECKOUT, null, null, null, null, null, null, false, null, parentFragment);
     }
 
-    private PaymentFormActivity(TLRPC.TL_inputInvoicePremiumGiftCode premiumGiftCode, TLRPC.TL_payments_paymentForm form, MessageObject message, String invoiceSlug, int step, TLRPC.TL_payments_validatedRequestedInfo validatedRequestedInfo, TLRPC.TL_shippingOption shipping, Long tips, String tokenJson, String card, TLRPC.TL_payments_validateRequestedInfo request, boolean saveCard, TLRPC.TL_inputPaymentCredentialsGooglePay googlePay, BaseFragment parent) {
+    private PaymentFormActivity(TLRPC.InputInvoice premiumGiftCode, TLRPC.PaymentForm form, MessageObject message, String invoiceSlug, int step, TLRPC.TL_payments_validatedRequestedInfo validatedRequestedInfo, TLRPC.TL_shippingOption shipping, Long tips, String tokenJson, String card, TLRPC.TL_payments_validateRequestedInfo request, boolean saveCard, TLRPC.TL_inputPaymentCredentialsGooglePay googlePay, BaseFragment parent) {
         init(premiumGiftCode, form, message, invoiceSlug, step, validatedRequestedInfo, shipping, tips, tokenJson, card, request, saveCard, googlePay, parent);
     }
 
@@ -455,7 +462,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             goToNextStep();
         } else {
             currentPassword = password;
-            waitingForEmail = !TextUtils.isEmpty(currentPassword.email_unconfirmed_pattern);
+            waitingForEmail = currentPassword != null && !TextUtils.isEmpty(currentPassword.email_unconfirmed_pattern);
             updatePasswordFields();
         }
     }
@@ -473,7 +480,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         return resourcesProvider;
     }
 
-    private void init(TLRPC.TL_inputInvoicePremiumGiftCode premiumGiftCode, TLRPC.TL_payments_paymentForm form, MessageObject message, String slug, int step, TLRPC.TL_payments_validatedRequestedInfo validatedRequestedInfo, TLRPC.TL_shippingOption shipping, Long tips, String tokenJson, String card, TLRPC.TL_payments_validateRequestedInfo request, boolean saveCard, TLRPC.TL_inputPaymentCredentialsGooglePay googlePay, BaseFragment parent) {
+    private void init(TLRPC.InputInvoice premiumGiftCode, TLRPC.PaymentForm form, MessageObject message, String slug, int step, TLRPC.TL_payments_validatedRequestedInfo validatedRequestedInfo, TLRPC.TL_shippingOption shipping, Long tips, String tokenJson, String card, TLRPC.TL_payments_validateRequestedInfo request, boolean saveCard, TLRPC.TL_inputPaymentCredentialsGooglePay googlePay, BaseFragment parent) {
         currentStep = step;
         parentFragment = parent;
         paymentJson = tokenJson;
@@ -484,7 +491,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         tipAmount = tips;
         messageObject = message;
         invoiceSlug = slug;
-        invoicePremiumGiftCode = premiumGiftCode;
+        invoiceInput = premiumGiftCode;
         saveCardInfo = saveCard;
         isWebView = !"stripe".equals(paymentForm.native_provider) && !"smartglocal".equals(paymentForm.native_provider);
         botUser = getMessagesController().getUser(form.bot_id);
@@ -1164,6 +1171,16 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
+                    public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                        new AlertDialog.Builder(getContext(), resourcesProvider)
+                                .setTitle(getString(R.string.ChromeCrashTitle))
+                                .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                                .setPositiveButton(getString(R.string.OK), null)
+                                .show();
+                        return true;
+                    }
+
+                    @Override
                     public void onLoadResource(WebView view, String url) {
                         super.onLoadResource(view, url);
                     }
@@ -1819,9 +1836,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 paymentInfoCell.setInvoice((TLRPC.TL_messageMediaInvoice) messageObject.messageOwner.media, currentBotName);
             } else if (paymentReceipt != null) {
                 paymentInfoCell.setReceipt(paymentReceipt, currentBotName);
-            } else if (invoiceSlug != null) {
-                paymentInfoCell.setInfo(paymentForm.title, paymentForm.description, paymentForm.photo, currentBotName, paymentForm);
-            } else if (invoicePremiumGiftCode != null) {
+            } else if (invoiceSlug != null || invoiceInput != null) {
                 paymentInfoCell.setInfo(paymentForm.title, paymentForm.description, paymentForm.photo, currentBotName, paymentForm);
             }
             linearLayout2.addView(paymentInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -2097,7 +2112,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         String text = LocaleController.getInstance().formatCurrencyString(amount, paymentForm.invoice.currency);
                         TextView valueTextView = new TextView(context);
                         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        valueTextView.setTypeface(AndroidUtilities.bold());
                         valueTextView.setLines(1);
                         valueTextView.setTag(amount);
                         valueTextView.setMaxLines(1);
@@ -2182,7 +2197,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (currentStep == STEP_CHECKOUT) {
                         detailSettingsCell[2].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[2].setOnClickListener(v -> {
-                            PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                            PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
                                 @Override
                                 public void didSelectNewAddress(TLRPC.TL_payments_validateRequestedInfo validateRequested) {
@@ -2205,7 +2220,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (currentStep == STEP_CHECKOUT) {
                         detailSettingsCell[3].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[3].setOnClickListener(v -> {
-                            PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                            PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
                                 @Override
                                 public void didSelectNewAddress(TLRPC.TL_payments_validateRequestedInfo validateRequested) {
@@ -2228,7 +2243,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (currentStep == STEP_CHECKOUT) {
                         detailSettingsCell[4].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[4].setOnClickListener(v -> {
-                            PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                            PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
                                 @Override
                                 public void didSelectNewAddress(TLRPC.TL_payments_validateRequestedInfo validateRequested) {
@@ -2251,7 +2266,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (currentStep == STEP_CHECKOUT) {
                         detailSettingsCell[5].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[5].setOnClickListener(v -> {
-                            PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                            PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
                                 @Override
                                 public void didSelectNewAddress(TLRPC.TL_payments_validateRequestedInfo validateRequested) {
@@ -2277,6 +2292,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
             if (currentStep == STEP_CHECKOUT) {
                 recurrentAccepted = !isCheckoutPreview;
+                if (invoiceInput instanceof TLRPC.TL_inputInvoiceStars) {
+                    recurrentAccepted = true;
+                }
                 bottomLayout = new BottomFrameLayout(context, paymentForm);
                 if (Build.VERSION.SDK_INT >= 21) {
                     View selectorView = new View(context);
@@ -2317,7 +2335,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         if (step == STEP_PAYMENT_INFO && !paymentForm.additional_methods.isEmpty()) {
                             showChoosePaymentMethod(v::callOnClick);
                         } else {
-                            presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, step, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, null, parentFragment));
+                            presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, step, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, null, parentFragment));
                         }
                         return;
                     }
@@ -2332,7 +2350,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                         if (UserConfig.getInstance(currentAccount).tmpPassword == null) {
                             needPayAfterTransition = true;
-                            presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_CONFIRM_PASSWORD, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment));
+                            presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_CONFIRM_PASSWORD, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment));
                             needPayAfterTransition = false;
                             return;
                         } else if (isCheckoutPreview) {
@@ -2363,7 +2381,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 payTextView.setText(LocaleController.formatString("PaymentCheckoutPay", R.string.PaymentCheckoutPay, totalPrice[0]));
                 payTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 payTextView.setGravity(Gravity.CENTER);
-                payTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                payTextView.setTypeface(AndroidUtilities.bold());
                 bottomLayout.addView(payTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
                 progressViewButton = new ContextProgressView(context, 0);
@@ -2397,6 +2415,18 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
 
                 webView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                        if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                            return true;
+                        }
+                        new AlertDialog.Builder(getContext(), resourcesProvider)
+                                .setTitle(getString(R.string.ChromeCrashTitle))
+                                .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                                .setPositiveButton(getString(R.string.OK), null)
+                                .show();
+                        return true;
+                    }
 
                     @Override
                     public void onPageFinished(WebView view, String url) {
@@ -2456,7 +2486,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     int botIndex = str.indexOf(format);
                     if (botIndex != -1) {
                         sb.replace(botIndex, botIndex + format.length(), currentBotName);
-                        sb.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), botIndex, botIndex + currentBotName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        sb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), botIndex, botIndex + currentBotName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
 
                     recurrentAcceptCell.setText(sb);
@@ -2734,12 +2764,12 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             if (which < titles.size() - 1) {
                 TLRPC.TL_paymentFormMethod method = paymentForm.additional_methods.get(which - savedCredentialsCards.size() - offset);
 
-                PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_PAYMENT_INFO, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_PAYMENT_INFO, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                 activity.setPaymentMethod(method);
                 activity.setDelegate(delegate);
                 presentFragment(activity);
             } else if (which == titles.size() - 1) {
-                PaymentFormActivity activity = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_PAYMENT_INFO, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
+                PaymentFormActivity activity = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_PAYMENT_INFO, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                 activity.setDelegate(delegate);
                 presentFragment(activity);
             }
@@ -3320,7 +3350,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (nextStep == STEP_PAYMENT_INFO && savedCredentialsCard == null && paymentJson == null && !paymentForm.additional_methods.isEmpty()) {
                         showChoosePaymentMethod(this::goToNextStep);
                     } else {
-                        presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, null, null, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
+                        presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, null, null, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
                     }
                 }
                 break;
@@ -3346,13 +3376,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 if (nextStep == STEP_PAYMENT_INFO && cardName == null && savedCredentialsCard == null && paymentJson == null && !paymentForm.additional_methods.isEmpty()) {
                     showChoosePaymentMethod(this::goToNextStep);
                 } else {
-                    presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
+                    presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
                 }
                 break;
             }
             case STEP_PAYMENT_INFO:
                 if (paymentForm.password_missing && saveCardInfo) {
-                    passwordFragment = new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_SET_PASSWORD_EMAIL, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment);
+                    passwordFragment = new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_SET_PASSWORD_EMAIL, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment);
                     passwordFragment.setCurrentPassword(currentPassword);
                     passwordFragment.setDelegate(new PaymentFormActivityDelegate() {
                         @Override
@@ -3382,7 +3412,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         delegate.didSelectNewCard(paymentJson, cardName, saveCardInfo, googlePayCredentials, null);
                         finishFragment();
                     } else {
-                        presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_CHECKOUT, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
+                        presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_CHECKOUT, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), isWebView);
                     }
                 }
                 break;
@@ -3393,7 +3423,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 } else {
                     nextStep = STEP_PAYMENT_INFO;
                 }
-                presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), true);
+                presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, nextStep, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), true);
                 break;
             }
             case STEP_CHECKOUT:
@@ -3423,7 +3453,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 break;
             case STEP_SET_PASSWORD_EMAIL:
                 if (!delegate.didSelectNewCard(paymentJson, cardName, saveCardInfo, googlePayCredentials, savedCredentialsCard)) {
-                    presentFragment(new PaymentFormActivity(invoicePremiumGiftCode, paymentForm, messageObject, invoiceSlug, STEP_CHECKOUT, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), true);
+                    presentFragment(new PaymentFormActivity(invoiceInput, paymentForm, messageObject, invoiceSlug, STEP_CHECKOUT, requestedInfo, shippingOption, tipAmount, paymentJson, cardName, validateRequest, saveCardInfo, googlePayCredentials, parentFragment), true);
                 } else {
                     finishFragment();
                 }
@@ -3432,7 +3462,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     private boolean onCheckoutSuccess(INavigationLayout parentLayout, Activity parentActivity) {
-        if (invoicePremiumGiftCode != null) {
+        if (invoiceInput != null) {
             if (parentLayout != null) {
                 for (BaseFragment fragment : new ArrayList<>(parentLayout.getFragmentStack())) {
                     if (fragment instanceof PaymentFormActivity) {
@@ -3899,8 +3929,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
         showEditDoneProgress(true, true);
         validateRequest = new TLRPC.TL_payments_validateRequestedInfo();
-        if (invoicePremiumGiftCode != null) {
-            validateRequest.invoice = invoicePremiumGiftCode;
+        if (invoiceInput != null) {
+            validateRequest.invoice = invoiceInput;
         } else if (messageObject != null) {
             TLRPC.TL_inputInvoiceMessage inputInvoice = new TLRPC.TL_inputInvoiceMessage();
             inputInvoice.peer = getMessagesController().getInputPeer(messageObject.messageOwner.peer_id);
@@ -3941,8 +3971,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
         showEditDoneProgress(true, true);
         validateRequest = new TLRPC.TL_payments_validateRequestedInfo();
-        if (invoicePremiumGiftCode != null) {
-            validateRequest.invoice = invoicePremiumGiftCode;
+        if (invoiceInput != null) {
+            validateRequest.invoice = invoiceInput;
         } else if (messageObject != null) {
             TLRPC.TL_inputInvoiceMessage inputInvoice = new TLRPC.TL_inputInvoiceMessage();
             inputInvoice.peer = getMessagesController().getInputPeer(messageObject.messageOwner.peer_id);
@@ -4042,8 +4072,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
         showEditDoneProgress(false, true);
         TLRPC.TL_payments_sendPaymentForm req = new TLRPC.TL_payments_sendPaymentForm();
-        if (invoicePremiumGiftCode != null) {
-            req.invoice = invoicePremiumGiftCode;
+        if (invoiceInput != null) {
+            req.invoice = invoiceInput;
         } else if (messageObject != null) {
             TLRPC.TL_inputInvoiceMessage inputInvoice = new TLRPC.TL_inputInvoiceMessage();
             inputInvoice.peer = getMessagesController().getInputPeer(messageObject.messageOwner.peer_id);
@@ -4099,17 +4129,49 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     AndroidUtilities.runOnUIThread(() -> {
                         paymentStatusSent = true;
                         invoiceStatus = InvoiceStatus.PAID;
-                        if (paymentFormCallback != null) {
+                        final boolean isStars = invoiceInput instanceof TLRPC.TL_inputInvoiceStars;
+                        if (!isStars && paymentFormCallback != null) {
                             paymentFormCallback.onInvoiceStatusChanged(invoiceStatus);
                         }
 
                         goToNextStep();
+                        if (isStars && paymentFormCallback != null) {
+                            paymentFormCallback.onInvoiceStatusChanged(invoiceStatus);
+                        }
+                        CharSequence bulletinText = AndroidUtilities.replaceTags(
+                            isStars ?
+                                LocaleController.formatPluralString("PaymentInfoHintStars", (int) ((TLRPC.TL_inputInvoiceStars) invoiceInput).option.stars, totalPrice[0]) :
+                                LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName)
+                        );
                         if (parentFragment instanceof ChatActivity) {
                             UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
                             if (undoView != null) {
-                                CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
-                                undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message[0], null, null);
+                                undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, bulletinText, message[0], null, null);
                             }
+                        } else {
+                            Bulletin bulletin = BulletinFactory.global().createSimpleBulletin(R.raw.payment_success, bulletinText);
+                            if (message[0] != null) {
+                                bulletin.setOnClickListener(v -> {
+                                    bulletin.hide();
+                                    TLRPC.TL_payments_getPaymentReceipt req2 = new TLRPC.TL_payments_getPaymentReceipt();
+                                    req2.msg_id = message[0].id;
+                                    req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(message[0].peer_id);
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                        if (response2 instanceof TLRPC.TL_payments_paymentReceiptStars) {
+                                            StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
+                                        } else if (response2 instanceof TLRPC.PaymentReceipt) {
+                                            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                                            if (lastFragment != null) {
+                                                BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                                                params.transitionFromLeft = true;
+                                                params.allowNestedScroll = false;
+                                                lastFragment.showAsSheet(new PaymentFormActivity((TLRPC.PaymentReceipt) response2), params);
+                                            }
+                                        }
+                                    }), ConnectionsManager.RequestFlagFailOnServerErrors);
+                                });
+                            }
+                            bulletin.show();
                         }
                     });
                 } else if (response instanceof TLRPC.TL_payments_paymentVerificationNeeded) {
@@ -4138,12 +4200,40 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                                     onCheckoutSuccess(parentLayout, parentActivity);
 
+                                    CharSequence bulletinText = AndroidUtilities.replaceTags(
+                                        invoiceInput instanceof TLRPC.TL_inputInvoiceStars ?
+                                            LocaleController.formatPluralString("PaymentInfoHintStars", (int) ((TLRPC.TL_inputInvoiceStars) invoiceInput).option.stars, totalPrice[0]) :
+                                            LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName)
+                                    );
                                     if (parentFragment instanceof ChatActivity) {
                                         UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
                                         if (undoView != null) {
-                                            CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
-                                            undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message, null, null);
+                                            undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, bulletinText, message, null, null);
                                         }
+                                    } else {
+                                        Bulletin bulletin = BulletinFactory.global().createSimpleBulletin(R.raw.payment_success, bulletinText);
+                                        if (message != null) {
+                                            bulletin.setOnClickListener(v -> {
+                                                bulletin.hide();
+                                                TLRPC.TL_payments_getPaymentReceipt req2 = new TLRPC.TL_payments_getPaymentReceipt();
+                                                req2.msg_id = message.id;
+                                                req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(message.peer_id);
+                                                ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                                    if (response2 instanceof TLRPC.TL_payments_paymentReceiptStars) {
+                                                        StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
+                                                    } else if (response2 instanceof TLRPC.PaymentReceipt) {
+                                                        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                                                        if (lastFragment != null) {
+                                                            BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                                                            params.transitionFromLeft = true;
+                                                            params.allowNestedScroll = false;
+                                                            lastFragment.showAsSheet(new PaymentFormActivity((TLRPC.PaymentReceipt) response2), params);
+                                                        }
+                                                    }
+                                                }), ConnectionsManager.RequestFlagFailOnServerErrors);
+                                            });
+                                        }
+                                        bulletin.show();
                                     }
                                 });
                                 return true;
@@ -4545,7 +4635,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         float progress;
         SpringAnimation springAnimation;
 
-        public BottomFrameLayout(@NonNull Context context, TLRPC.TL_payments_paymentForm paymentForm) {
+        public BottomFrameLayout(@NonNull Context context, TLRPC.PaymentForm paymentForm) {
             super(context);
             setWillNotDraw(false);
         }

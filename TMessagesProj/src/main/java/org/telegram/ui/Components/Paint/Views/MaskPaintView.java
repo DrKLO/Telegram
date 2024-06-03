@@ -5,19 +5,16 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Looper;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -26,7 +23,6 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
@@ -36,7 +32,6 @@ import org.telegram.ui.Components.Paint.Brush;
 import org.telegram.ui.Components.Paint.Painting;
 import org.telegram.ui.Components.Paint.PersistColorPalette;
 import org.telegram.ui.Components.Paint.RenderView;
-import org.telegram.ui.Components.Paint.Swatch;
 import org.telegram.ui.Components.Paint.UndoStore;
 import org.telegram.ui.Components.Size;
 
@@ -151,7 +146,7 @@ public class MaskPaintView extends FrameLayout {
 
         cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        cancelButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        cancelButton.setTypeface(AndroidUtilities.bold());
         cancelButton.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(Color.WHITE, .15f), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE));
         cancelButton.setPadding(dp(28), 0, dp(28), 0);
         cancelButton.setText(LocaleController.getString(R.string.Cancel).toUpperCase());
@@ -161,7 +156,7 @@ public class MaskPaintView extends FrameLayout {
 
         doneButton = new TextView(context);
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        doneButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        doneButton.setTypeface(AndroidUtilities.bold());
         doneButton.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_chat_editMediaButton), .15f), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE));
         doneButton.setPadding(dp(28), 0, dp(28), 0);
         doneButton.setText(LocaleController.getString(R.string.Save).toUpperCase());

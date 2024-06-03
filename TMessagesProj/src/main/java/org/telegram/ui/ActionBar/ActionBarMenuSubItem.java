@@ -27,6 +27,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private TextView textView;
     private TextView subtextView;
     public RLottieImageView imageView;
+    private boolean checkViewLeft;
     private CheckBox2 checkView;
     private ImageView rightIcon;
 
@@ -86,13 +87,16 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
+        checkViewLeft = LocaleController.isRTL;
         if (needCheck > 0) {
             checkView = new CheckBox2(context, 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
             checkView.setColor(-1, -1, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);
             if (needCheck == 1) {
+                checkViewLeft = !LocaleController.isRTL;
                 addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+                textView.setPadding(!LocaleController.isRTL ? dp(34) : 0, 0, !LocaleController.isRTL ? 0 : dp(34), 0);
             } else {
                 addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
                 textView.setPadding(LocaleController.isRTL ? dp(34) : 0, 0, LocaleController.isRTL ? 0 : dp(34), 0);
@@ -185,7 +189,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
                 imageView.setImageResource(icon);
             }
             imageView.setVisibility(VISIBLE);
-            textView.setPadding(LocaleController.isRTL ? (checkView != null ? dp(34) : 0) : dp(43), 0, LocaleController.isRTL ? dp(43) : (checkView != null ? dp(34) : 0), 0);
+            textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(icon != 0 || iconDrawable != null ? 43 : 0), 0, checkViewLeft ? dp(icon != 0 || iconDrawable != null ? 43 : 0) : (checkView != null ? dp(43) : 0), 0);
         } else {
             imageView.setVisibility(INVISIBLE);
             textView.setPadding(0, 0, 0, 0);

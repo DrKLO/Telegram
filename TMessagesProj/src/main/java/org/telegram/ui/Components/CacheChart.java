@@ -21,7 +21,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -133,7 +132,7 @@ public class CacheChart extends View {
         {
             text.setTextColor(Color.WHITE);
             text.setAnimationProperties(.35f, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
-            text.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            text.setTypeface(AndroidUtilities.bold());
             text.setTextSize(AndroidUtilities.dp(15));
             text.setGravity(Gravity.CENTER);
         }
@@ -390,7 +389,7 @@ public class CacheChart extends View {
 
         topText.setAnimationProperties(.2f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
         topText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        topText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        topText.setTypeface(AndroidUtilities.bold());
         topText.setTextSize(AndroidUtilities.dp(32));
         topText.setGravity(Gravity.CENTER);
 
@@ -401,13 +400,13 @@ public class CacheChart extends View {
 
         topCompleteText.setAnimationProperties(.2f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
         topCompleteText.getPaint().setShader(completeTextGradient);
-        topCompleteText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        topCompleteText.setTypeface(AndroidUtilities.bold());
         topCompleteText.setTextSize(AndroidUtilities.dp(32));
         topCompleteText.setGravity(Gravity.CENTER);
 
         bottomCompleteText.setAnimationProperties(.6f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
         bottomCompleteText.getPaint().setShader(completeTextGradient);
-        bottomCompleteText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        bottomCompleteText.setTypeface(AndroidUtilities.bold());
         bottomCompleteText.setTextSize(AndroidUtilities.dp(12));
         bottomCompleteText.setGravity(Gravity.CENTER);
 

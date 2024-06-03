@@ -217,7 +217,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 object.dialogId = userId != 0 ? userId : -chatId;
                 object.thumb = object.imageReceiver.getBitmapSafe();
                 object.size = -1;
-                object.radius = avatarImage.getImageReceiver().getRoundRadius();
+                object.radius = avatarImage.getImageReceiver().getRoundRadius(true);
                 object.scale = avatarContainer.getScaleX();
                 object.canEdit = true;
                 return object;

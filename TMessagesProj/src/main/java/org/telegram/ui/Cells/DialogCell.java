@@ -948,7 +948,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             int boldEnd = boldStart + title.length();
             builder.append(title);
             if (dialog.unread_count > 0) {
-                builder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new TypefaceSpan(AndroidUtilities.bold(), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             if (builder.length() > 150) {
                 break;
@@ -1412,7 +1412,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             TLRPC.MessagePeerReaction lastReaction = message.messageOwner.reactions.recent_reactions.get(0);
                             if (lastReaction.unread && lastReaction.peer_id.user_id != 0 &&lastReaction.peer_id.user_id != UserConfig.getInstance(currentAccount).clientUserId) {
                                 lastMessageIsReaction = true;
-                                ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(lastReaction.reaction);
+                                ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(lastReaction.reaction);
                                 currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                                 if (visibleReaction.emojicon != null) {
                                     messageString = LocaleController.formatString("ReactionInDialog", R.string.ReactionInDialog, visibleReaction.emojicon);
@@ -4900,7 +4900,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, 40);
-        TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
+        TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize(), false, null, true);
         if (smallThumb == bigThumb) {
             bigThumb = null;
         }
@@ -5484,7 +5484,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     }
                     if (boldLen > 0) {
                         spannableStringBuilder.setSpan(
-                                new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.key_chats_name, null),
+                                new TypefaceSpan(AndroidUtilities.bold(), 0, Theme.key_chats_name, null),
                                 0, Math.min(spannableStringBuilder.length(), boldLen + 2), 0
                         );
                     }
@@ -5539,5 +5539,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             invalidate();
         }
+    }
+
+    @Override
+    protected boolean allowCaching() {
+        return rightFragmentOpenedProgress <= 0;
     }
 }

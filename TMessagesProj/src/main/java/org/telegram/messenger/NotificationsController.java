@@ -3933,7 +3933,8 @@ public class NotificationsController extends BaseController {
                 chatName = UserObject.getUserName(user);
             }
             boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
-            if (DialogObject.isEncryptedDialog(dialog_id) || pushDialogs.size() > 1 || passcode) {
+            final boolean allowSummary = !"samsung".equalsIgnoreCase(Build.MANUFACTURER);
+            if (DialogObject.isEncryptedDialog(dialog_id) || allowSummary && pushDialogs.size() > 1 || passcode) {
                 if (passcode) {
                     if (chatId != 0) {
                         name = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
@@ -3952,21 +3953,25 @@ public class NotificationsController extends BaseController {
             }
 
             String detailText;
-            if (UserConfig.getActivatedAccountsCount() > 1) {
-                if (pushDialogs.size() == 1) {
-                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser());
+            if (allowSummary) {
+                if (UserConfig.getActivatedAccountsCount() > 1) {
+                    if (pushDialogs.size() == 1) {
+                        detailText = UserObject.getFirstName(getUserConfig().getCurrentUser());
+                    } else {
+                        detailText = UserObject.getFirstName(getUserConfig().getCurrentUser()) + "・";
+                    }
                 } else {
-                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser()) + "・";
+                    detailText = "";
+                }
+                if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
+                    if (pushDialogs.size() == 1) {
+                        detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
+                    } else {
+                        detailText += LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromChats", pushDialogs.size()));
+                    }
                 }
             } else {
                 detailText = "";
-            }
-            if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
-                if (pushDialogs.size() == 1) {
-                    detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
-                } else {
-                    detailText += LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromChats", pushDialogs.size()));
-                }
             }
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
@@ -3974,7 +3979,7 @@ public class NotificationsController extends BaseController {
             int silent = 2;
             String lastMessage = null;
             boolean hasNewMessages = false;
-            if (pushMessages.size() <= 1) {
+            if (pushMessages.size() <= 1 || !allowSummary) {
                 boolean[] text = new boolean[1];
                 String message = lastMessage = getStringForMessage(lastMessageObject, false, text, null);
                 silent = isSilentMessage(lastMessageObject) ? 1 : 0;
@@ -3993,6 +3998,9 @@ public class NotificationsController extends BaseController {
                     }
                 }
                 mBuilder.setContentText(message);
+                if (!allowSummary) {
+                    detailText = message;
+                }
                 mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
             } else {
                 mBuilder.setContentText(detailText);
@@ -5043,11 +5051,19 @@ public class NotificationsController extends BaseController {
                                     Uri uriFinal = uri;
                                     ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                                     AndroidUtilities.runOnUIThread(() -> {
-                                        ApplicationLoader.applicationContext.revokeUriPermission(uriFinal, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                        if (blurredAttach != null) {
-                                            blurredAttach.delete();
+                                        try {
+                                            ApplicationLoader.applicationContext.revokeUriPermission(uriFinal, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
                                         }
-                                    }, 20000);
+                                        try {
+                                            if (blurredAttach != null) {
+                                                blurredAttach.delete();
+                                            }
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
+                                    }, 20_000);
 
                                     if (!TextUtils.isEmpty(messageObject.caption)) {
                                         messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
@@ -5438,7 +5454,7 @@ public class NotificationsController extends BaseController {
 
                     if (textPaint == null) {
                         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                        textPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                        textPaint.setTypeface(AndroidUtilities.bold());
                         textPaint.setTextSize(sz * .25f);
                         textPaint.setColor(0xFFFFFFFF);
                     }

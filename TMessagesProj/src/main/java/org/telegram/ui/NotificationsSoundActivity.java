@@ -329,7 +329,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
         selectedTonesCountTextView = new NumberTextView(actionMode.getContext());
         selectedTonesCountTextView.setTextSize(18);
-        selectedTonesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedTonesCountTextView.setTypeface(AndroidUtilities.bold());
         selectedTonesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon, resourcesProvider));
         actionMode.addView(selectedTonesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedTonesCountTextView.setOnTouchListener((v, event) -> true);
@@ -583,7 +583,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
     }
 
     @Override
-    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate) {
+    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
         for (int i = 0; i < files.size(); i++) {
             getMediaDataController().uploadRingtone(files.get(i));
         }

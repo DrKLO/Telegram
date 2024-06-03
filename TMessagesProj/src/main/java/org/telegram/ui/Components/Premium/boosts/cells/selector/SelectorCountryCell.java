@@ -29,7 +29,7 @@ public class SelectorCountryCell extends BaseCell {
 
     public SelectorCountryCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         radioButton.setVisibility(View.GONE);
         imageView.setVisibility(View.GONE);
         checkBox = new CheckBox2(context, 21, resourcesProvider);

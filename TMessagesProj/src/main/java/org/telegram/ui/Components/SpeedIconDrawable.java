@@ -6,19 +6,12 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
 public class SpeedIconDrawable extends Drawable {
 
@@ -48,7 +41,7 @@ public class SpeedIconDrawable extends Drawable {
         textDrawable.setCallback(callback);
         textDrawable.setAnimationProperties(.3f, 0, 165, CubicBezierInterpolator.EASE_OUT_QUINT);
         textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
-        textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textDrawable.setTypeface(AndroidUtilities.bold());
         textDrawable.setTextSize(AndroidUtilities.dp(10));
         textDrawable.getPaint().setStyle(Paint.Style.FILL_AND_STROKE);
         textDrawable.getPaint().setStrokeWidth(AndroidUtilities.dpf2(.6f));

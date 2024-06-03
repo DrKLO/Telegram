@@ -65,7 +65,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.INavigationLayout;
@@ -858,7 +857,7 @@ public class ThemeEditorView {
             closeButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
             closeButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             closeButton.setText(LocaleController.getString("CloseEditor", R.string.CloseEditor).toUpperCase());
-            closeButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            closeButton.setTypeface(AndroidUtilities.bold());
             bottomSaveLayout.addView(closeButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             closeButton.setOnClickListener(v -> dismiss());
 
@@ -869,7 +868,7 @@ public class ThemeEditorView {
             saveButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
             saveButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             saveButton.setText(LocaleController.getString("SaveTheme", R.string.SaveTheme).toUpperCase());
-            saveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            saveButton.setTypeface(AndroidUtilities.bold());
             bottomSaveLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             saveButton.setOnClickListener(v -> {
                 Theme.saveCurrentTheme(themeInfo, true, false, false);
@@ -890,7 +889,7 @@ public class ThemeEditorView {
             cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
             cancelButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
-            cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            cancelButton.setTypeface(AndroidUtilities.bold());
             bottomLayout.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             cancelButton.setOnClickListener(v -> {
                 for (int a = 0; a < currentThemeDesription.size(); a++) {
@@ -910,7 +909,7 @@ public class ThemeEditorView {
             defaultButtom.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
             defaultButtom.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             defaultButtom.setText(LocaleController.getString("Default", R.string.Default).toUpperCase());
-            defaultButtom.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            defaultButtom.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(defaultButtom, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             defaultButtom.setOnClickListener(v -> {
                 for (int a = 0; a < currentThemeDesription.size(); a++) {
@@ -926,7 +925,7 @@ public class ThemeEditorView {
             saveButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
             saveButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             saveButton.setText(LocaleController.getString("Save", R.string.Save).toUpperCase());
-            saveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            saveButton.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             saveButton.setOnClickListener(v -> setColorPickerVisible(false));
         }

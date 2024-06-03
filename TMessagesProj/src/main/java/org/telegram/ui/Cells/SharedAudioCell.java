@@ -139,7 +139,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         if (resourcesProvider != null) {
             titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            titlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titlePaint.setTypeface(AndroidUtilities.bold());
             titlePaint.setTextSize(AndroidUtilities.dp(15));
             titlePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         }

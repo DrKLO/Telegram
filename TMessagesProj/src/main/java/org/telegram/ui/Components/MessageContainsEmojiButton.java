@@ -27,7 +27,6 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -64,7 +63,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     private class BoldAndAccent extends CharacterStyle {
         @Override
         public void updateDrawState(TextPaint textPaint) {
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(AndroidUtilities.bold());
             int wasAlpha = textPaint.getAlpha();
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
             textPaint.setAlpha(wasAlpha);

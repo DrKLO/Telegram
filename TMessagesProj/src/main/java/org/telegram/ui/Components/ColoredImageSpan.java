@@ -20,6 +20,7 @@ public class ColoredImageSpan extends ReplacementSpan {
 
     int drawableColor;
     public Drawable drawable;
+    public boolean recolorDrawable = true;
 
     boolean usePaintColor = true;
     public boolean useLinkPaintColor = false;
@@ -124,7 +125,7 @@ public class ColoredImageSpan extends ReplacementSpan {
         int color;
         if (checkColorDelegate != null) {
             checkColorDelegate.run();
-        } else {
+        } else if (recolorDrawable) {
             if (overrideColor != 0) {
                 color = overrideColor;
             } else if (useLinkPaintColor && paint instanceof TextPaint) {

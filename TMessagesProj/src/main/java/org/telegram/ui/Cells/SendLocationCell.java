@@ -24,7 +24,6 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
@@ -74,7 +73,7 @@ public class SendLocationCell extends FrameLayout {
         titleTextView = new SimpleTextView(context);
         titleTextView.setTextSize(16);
         titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 73, 9.33f, LocaleController.isRTL ? 73 : 16, 0));
 
         accurateTextView = new SimpleTextView(context);

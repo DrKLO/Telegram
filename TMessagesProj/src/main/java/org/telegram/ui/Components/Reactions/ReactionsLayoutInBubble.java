@@ -26,7 +26,6 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
@@ -75,7 +74,7 @@ public class ReactionsLayoutInBubble {
         paint.setColor(Theme.getColor(Theme.key_chat_inLoader, resourcesProvider));
         textPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         textPaint.setTextSize(dp(12));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         cutTagPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
     }
     public boolean isSmall;
@@ -211,8 +210,8 @@ public class ReactionsLayoutInBubble {
                         } else if (reactionCount.count <= 3 && totalCount <= 3) {
                             for (int j = 0; j < messageObject.messageOwner.reactions.recent_reactions.size(); j++) {
                                 TLRPC.MessagePeerReaction recent = messageObject.messageOwner.reactions.recent_reactions.get(j);
-                                VisibleReaction visibleReactionPeer = VisibleReaction.fromTLReaction(recent.reaction);
-                                VisibleReaction visibleReactionCount = VisibleReaction.fromTLReaction(reactionCount.reaction);
+                                VisibleReaction visibleReactionPeer = VisibleReaction.fromTL(recent.reaction);
+                                VisibleReaction visibleReactionCount = VisibleReaction.fromTL(reactionCount.reaction);
                                 TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessageObject.getPeerId(recent.peer_id));
                                 if (visibleReactionPeer.equals(visibleReactionCount) && object != null) {
                                     if (users == null) {
@@ -648,12 +647,12 @@ public class ReactionsLayoutInBubble {
                 textDrawable.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
                 textDrawable.setTextSize(dp(13));
                 textDrawable.setCallback(parentView);
-                textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textDrawable.setTypeface(AndroidUtilities.bold());
                 textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
             }
             this.reactionCount = reactionCount;
             this.reaction = reactionCount.reaction;
-            this.visibleReaction = VisibleReaction.fromTLReaction(reactionCount.reaction);
+            this.visibleReaction = VisibleReaction.fromTL(reactionCount.reaction);
             this.count = reactionCount.count;
             this.choosen = reactionCount.chosen;
             this.realCount = reactionCount.count;
@@ -1178,12 +1177,17 @@ public class ReactionsLayoutInBubble {
 
     public static class VisibleReaction {
 
+        public boolean isEffect;
+        public long effectId;
+        public boolean premium;
+        public boolean sticker;
+
         public String emojicon;
         public long documentId;
 
         public long hash;
 
-        public static VisibleReaction fromTLReaction(TLRPC.Reaction reaction) {
+        public static VisibleReaction fromTL(TLRPC.Reaction reaction) {
             VisibleReaction visibleReaction = new VisibleReaction();
             if (reaction instanceof TLRPC.TL_reactionEmoji) {
                 visibleReaction.emojicon = ((TLRPC.TL_reactionEmoji) reaction).emoticon;
@@ -1193,6 +1197,18 @@ public class ReactionsLayoutInBubble {
                 visibleReaction.hash = visibleReaction.documentId;
             }
 
+            return visibleReaction;
+        }
+
+        public static VisibleReaction fromTL(TLRPC.TL_availableEffect effect) {
+            VisibleReaction visibleReaction = new VisibleReaction();
+            visibleReaction.isEffect = true;
+            visibleReaction.effectId = effect.id;
+            visibleReaction.sticker = effect.effect_animation_id == 0;
+            visibleReaction.documentId = effect.effect_sticker_id;
+            visibleReaction.hash = effect.id;
+            visibleReaction.premium = effect.premium_required;
+            visibleReaction.emojicon = effect.emoticon;
             return visibleReaction;
         }
 

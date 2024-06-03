@@ -49,6 +49,7 @@ public class StoriesStorage {
             ArrayList<TL_stories.PeerStories> userStoriesArray = new ArrayList<>();
             ArrayList<Long> usersToLoad = new ArrayList<>();
             ArrayList<Long> chatsToLoad = new ArrayList<>();
+            final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             boolean failed = false;
             try {
                 cursor = database.queryFinalized("SELECT dialog_id, max_read FROM stories_counter");

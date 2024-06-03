@@ -10,7 +10,6 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -34,7 +33,7 @@ public class VideoTimerView extends View implements FlashViews.Invertable {
         textDrawable.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         textDrawable.setTextSize(AndroidUtilities.dp(13));
         textDrawable.setTextColor(0xffffffff);
-        textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textDrawable.setTypeface(AndroidUtilities.bold());
         textDrawable.setCallback(this);
         textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
 

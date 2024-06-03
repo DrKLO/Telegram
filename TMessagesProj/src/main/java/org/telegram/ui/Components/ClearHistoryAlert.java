@@ -93,7 +93,7 @@ public class ClearHistoryAlert extends BottomSheet {
             textView.setGravity(Gravity.CENTER);
             textView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
 
@@ -243,7 +243,7 @@ public class ClearHistoryAlert extends BottomSheet {
 
         if (!autoDeleteOnly) {
             TextView textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             textView.setText(LocaleController.getString("ClearHistory", R.string.ClearHistory));
@@ -314,7 +314,7 @@ public class ClearHistoryAlert extends BottomSheet {
             linearLayout.addView(lottieImageView, LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 0, 17, 0));
 
             TextView percentTextView = new TextView(context);
-            percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            percentTextView.setTypeface(AndroidUtilities.bold());
             percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
             percentTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             percentTextView.setText(LocaleController.getString("AutoDeleteAlertTitle", R.string.AutoDeleteAlertTitle));

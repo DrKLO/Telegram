@@ -984,7 +984,7 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
 
         // preload emojis
         List<TLRPC.TL_availableReaction> defaultReactions = MediaDataController.getInstance(currentAccount).getEnabledReactionsList();
-        for (int i = 0; i <= Math.min(defaultReactions.size(), 8); ++i) {
+        for (int i = 0; i < Math.min(defaultReactions.size(), 9); ++i) {
             Emoji.getEmojiDrawable(defaultReactions.get(i).reaction);
         }
     }

@@ -9,7 +9,6 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
@@ -29,7 +28,7 @@ public class DurationWithDiscountCell extends DurationCell {
         checkBox.setDrawUnchecked(true);
         checkBox.setDrawBackgroundAsArc(10);
         addView(checkBox);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         radioButton.setVisibility(GONE);
         updateLayouts();
     }

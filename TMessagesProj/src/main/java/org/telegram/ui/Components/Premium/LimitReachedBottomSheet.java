@@ -353,7 +353,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             actionBtn.setEllipsize(TextUtils.TruncateAt.END);
             actionBtn.setSingleLine(true);
             actionBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            actionBtn.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            actionBtn.setTypeface(AndroidUtilities.bold());
             actionBtn.setText(premiumButtonView.getTextView().getText());
             actionBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             actionBtn.setOnClickListener(v -> {
@@ -1766,7 +1766,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
                 TextView title = new TextView(context);
                 title.setGravity(Gravity.CENTER);
-                title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                title.setTypeface(AndroidUtilities.bold());
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                 title.setText(LocaleController.getString(R.string.InvitePremiumBlockedTitle));
@@ -1848,7 +1848,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
                     title = new TextView(context);
                     title.setGravity(Gravity.CENTER);
-                    title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    title.setTypeface(AndroidUtilities.bold());
                     title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                     title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                     title.setText(LocaleController.getString(R.string.InviteBlockedTitle));
@@ -1918,7 +1918,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             }
 
             title = new TextView(context);
-            title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            title.setTypeface(AndroidUtilities.bold());
             if (type == TYPE_FEATURES) {
                 title.setText(LocaleController.getString(R.string.BoostingAdditionalFeaturesTitle));
             } else if (type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS) {
@@ -2072,7 +2072,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 int titleIndex = indexOfChild(title);
                 removeView(title);
                 title = new TextView(getContext());
-                title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                title.setTypeface(AndroidUtilities.bold());
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 title.setGravity(Gravity.CENTER);
@@ -2734,7 +2734,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             levelTextView = new SimpleTextView(context);
             levelTextView.setTextColor(Color.WHITE);
             levelTextView.setWidthWrapContent(true);
-            levelTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            levelTextView.setTypeface(AndroidUtilities.bold());
             levelTextView.setTextSize(14);
             levelLayout = new FrameLayout(context) {
                 private final PremiumGradient.PremiumGradientTools gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
@@ -2800,7 +2800,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     if ((index = text.indexOf("%d")) >= 0) {
                         ssb = new SpannableStringBuilder(text);
                         SpannableString boldNumber = new SpannableString(feature.countPlural + "");
-                        boldNumber.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, boldNumber.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        boldNumber.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, boldNumber.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         ssb.replace(index, index + 2, boldNumber);
                     }
                     textView.setText(ssb);
@@ -2815,7 +2815,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         if ((index = text.indexOf("%s")) >= 0) {
                             ssb = new SpannableStringBuilder(text);
                             SpannableString boldNumber = new SpannableString(feature.countValue);
-                            boldNumber.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, boldNumber.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            boldNumber.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, boldNumber.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             ssb.replace(index, index + 2, boldNumber);
                         }
                         textView.setText(ssb);

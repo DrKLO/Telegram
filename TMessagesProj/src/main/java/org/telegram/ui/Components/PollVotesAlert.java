@@ -158,7 +158,7 @@ public class PollVotesAlert extends BottomSheet {
 
             textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextColor(Theme.getColor(Theme.key_graySectionText));
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -242,7 +242,7 @@ public class PollVotesAlert extends BottomSheet {
             } else {
                 builder = new SpannableStringBuilder(String.format(" – %s%%", percent));
             }
-            builder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 3, 3 + p.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 3, 3 + p.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             middleTextView.setText(builder);
             if (collapsed == 0) {
                 if (poll.quiz) {
@@ -306,7 +306,7 @@ public class PollVotesAlert extends BottomSheet {
 
             nameTextView = new SimpleTextView(context);
             nameTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView.setTypeface(AndroidUtilities.bold());
             nameTextView.setTextSize(16);
             nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 65, 12, LocaleController.isRTL ? 65 : 28, 0));
@@ -916,7 +916,7 @@ public class PollVotesAlert extends BottomSheet {
 
         titleTextView = new AnimatedEmojiSpan.TextViewEmojis(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(21));
         titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         titleTextView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));

@@ -39,7 +39,7 @@ public class ReplyMessageLine {
     public final float[] radii = new float[8];
     private final Path lineClipPath = new Path();
     private final Path backgroundPath = new Path();
-    private final Paint backgroundPaint = new Paint();
+    public final Paint backgroundPaint = new Paint();
     private LoadingDrawable backgroundLoadingDrawable;
 
     public boolean hasColor2, hasColor3;
@@ -311,6 +311,26 @@ public class ReplyMessageLine {
         if ((type == TYPE_REPLY || type == TYPE_LINK || type == TYPE_CONTACT) && messageObject != null && messageObject.overrideLinkEmoji != -1) {
             emojiDocumentId = messageObject.overrideLinkEmoji;
         }
+        if (emojiDocumentId != 0 && emoji == null) {
+            emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(parentView, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
+            if (parentView instanceof ChatMessageCell ? ((ChatMessageCell) parentView).isCellAttachedToWindow() : parentView.isAttachedToWindow()) {
+                emoji.attach();
+            }
+        }
+        if (emoji != null) {
+            if (emoji.set(emojiDocumentId, true)) {
+                emojiLoaded = false;
+            }
+        }
+        return nameColorAnimated.set(nameColor);
+    }
+
+    public int setFactCheck(Theme.ResourcesProvider resourcesProvider) {
+        nameColor = Theme.getColor(Theme.key_text_RedBold, resourcesProvider);
+        color1 = Theme.getColor(Theme.key_text_RedBold, resourcesProvider);
+        hasColor2 = false;
+        hasColor3 = false;
+        backgroundColor = Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold, resourcesProvider), 0.10f);
         if (emojiDocumentId != 0 && emoji == null) {
             emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(parentView, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
             if (parentView instanceof ChatMessageCell ? ((ChatMessageCell) parentView).isCellAttachedToWindow() : parentView.isAttachedToWindow()) {

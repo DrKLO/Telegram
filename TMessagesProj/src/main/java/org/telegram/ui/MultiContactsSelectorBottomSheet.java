@@ -340,6 +340,8 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
                     visibleItemsFrom = position;
                 }
                 visibleItemsTo = position;
+                if (position - 1 < 0 || position - 1 >= items.size())
+                    continue;
                 SelectorAdapter.Item item = items.get(position - 1);
                 SelectorUserCell cell = (SelectorUserCell) child;
                 cell.setChecked(item.checked, animated);
@@ -373,7 +375,7 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
     private void onSearch(String text) {
         this.query = text;
         AndroidUtilities.cancelRunOnUIThread(remoteSearchRunnable);
-        AndroidUtilities.runOnUIThread(remoteSearchRunnable, 350);
+        AndroidUtilities.runOnUIThread(remoteSearchRunnable, 100);
     }
 
     private void clearSearchAfterSelect() {

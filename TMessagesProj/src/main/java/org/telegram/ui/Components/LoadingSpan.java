@@ -55,16 +55,15 @@ public class LoadingSpan extends ReplacementSpan {
         this.view = view;
     }
 
+    private Paint paint;
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
+        this.paint = paint;
         if (paint != null && this.drawable.color1 == null && this.drawable.color2 == null) {
             drawable.setColors(
                 Theme.multAlpha(paint.getColor(), .1f),
                 Theme.multAlpha(paint.getColor(), .25f)
             );
-        }
-        if (paint != null) {
-            drawable.setAlpha(paint.getAlpha());
         }
         return size;
     }
@@ -72,6 +71,9 @@ public class LoadingSpan extends ReplacementSpan {
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
         drawable.setBounds((int) x, top + yOffset, (int) x + size, bottom - AndroidUtilities.dp(2) + yOffset);
+        if (paint != null) {
+            drawable.setAlpha(paint.getAlpha());
+        }
         drawable.draw(canvas);
         if (view != null) {
             view.invalidate();

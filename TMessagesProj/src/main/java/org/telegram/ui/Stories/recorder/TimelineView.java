@@ -197,7 +197,7 @@ public class TimelineView extends View {
 
         audioDotPaint.setColor(0x7fffffff);
         audioAuthorPaint.setTextSize(dp(12));
-        audioAuthorPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        audioAuthorPaint.setTypeface(AndroidUtilities.bold());
         audioAuthorPaint.setColor(0xffffffff);
         audioTitlePaint.setTextSize(dp(12));
         audioTitlePaint.setColor(0xffffffff);

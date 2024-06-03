@@ -53,7 +53,7 @@ public class TextCheckCell2 extends FrameLayout {
             animatedTextView.setTextSize(AndroidUtilities.dp(14));
             animatedTextView.getDrawable().setAllowCancel(true);
             animatedTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            animatedTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            animatedTextView.setTypeface(AndroidUtilities.bold());
             animatedTextView.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
             collapseViewContainer.addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,20));
 

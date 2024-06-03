@@ -537,6 +537,7 @@ public:
 class MessageEntity : public TLObject {
 
 public:
+    int32_t flags;
     int32_t offset;
     int32_t length;
     std::string url;
@@ -684,6 +685,15 @@ public:
 };
 
 class TL_messageEntityBlockquote : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0xf1ccaaac;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityBlockquote_layer180 : public MessageEntity {
 
 public:
     static const uint32_t constructor = 0x20df5d0;

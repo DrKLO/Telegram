@@ -1,5 +1,7 @@
 package org.telegram.ui.bots;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -31,6 +33,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -195,7 +198,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         addView(flickerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
         webViewNotAvailableText = new TextView(context);
-        webViewNotAvailableText.setText(LocaleController.getString(R.string.BotWebViewNotAvailablePlaceholder));
+        webViewNotAvailableText.setText(getString(R.string.BotWebViewNotAvailablePlaceholder));
         webViewNotAvailableText.setTextColor(getColor(Theme.key_windowBackgroundWhiteGrayText));
         webViewNotAvailableText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         webViewNotAvailableText.setGravity(Gravity.CENTER);
@@ -312,6 +315,24 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         webView.setVerticalScrollBarEnabled(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                    return true;
+                }
+                new AlertDialog.Builder(getContext(), resourcesProvider)
+                    .setTitle(getString(R.string.ChromeCrashTitle))
+                    .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                    .setPositiveButton(getString(R.string.OK), null)
+                    .setOnDismissListener(d -> {
+                        if (delegate != null) {
+                            delegate.onCloseRequested(null);
+                        }
+                    })
+                    .show();
+                return true;
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 Uri uriNew = Uri.parse(url);
                 if (Browser.isInternalUri(uriNew, null)) {
@@ -335,6 +356,24 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
                 WebView newWebView = new WebView(view.getContext());
                 newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                        if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                            return true;
+                        }
+                        new AlertDialog.Builder(getContext(), resourcesProvider)
+                                .setTitle(getString(R.string.ChromeCrashTitle))
+                                .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                                .setPositiveButton(getString(R.string.OK), null)
+                                .setOnDismissListener(d -> {
+                                    if (delegate != null) {
+                                        delegate.onCloseRequested(null);
+                                    }
+                                })
+                                .show();
+                        return true;
+                    }
+
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         onOpenUri(Uri.parse(url));
@@ -365,7 +404,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                     intent.setType("*/*");
-                    activity.startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.BotWebViewFileChooserTitle)), REQUEST_CODE_WEB_VIEW_FILE);
+                    activity.startActivityForResult(Intent.createChooser(intent, getString(R.string.BotWebViewFileChooserTitle)), REQUEST_CODE_WEB_VIEW_FILE);
                 }
 
                 return true;
@@ -660,6 +699,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             data.put("slug", slug);
             data.put("status", status);
             notifyEvent("invoice_closed", data);
+            FileLog.d("invoice_closed " + data);
 
             if (!ignoreCurrentCheck && Objects.equals(currentPaymentSlug, slug)) {
                 currentPaymentSlug = null;
@@ -1392,7 +1432,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         if (error != null) {
                             onInvoiceStatusUpdate(slug, "failed");
                         } else {
-                            delegate.onWebAppOpenInvoice(slug, response);
+                            delegate.onWebAppOpenInvoice(invoiceSlug, slug, response);
                         }
                     }));
                 } catch (JSONException e) {
@@ -1468,9 +1508,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                     final String[] status = new String[] { "cancelled" };
                     showDialog(3, new AlertDialog.Builder(getContext())
-                        .setTitle(LocaleController.getString(R.string.BotWebViewRequestWriteTitle))
-                        .setMessage(LocaleController.getString(R.string.BotWebViewRequestWriteMessage))
-                        .setPositiveButton(LocaleController.getString(R.string.BotWebViewRequestAllow), (di, w) -> {
+                        .setTitle(getString(R.string.BotWebViewRequestWriteTitle))
+                        .setMessage(getString(R.string.BotWebViewRequestWriteMessage))
+                        .setPositiveButton(getString(R.string.BotWebViewRequestAllow), (di, w) -> {
                             TLRPC.TL_bots_allowSendMessage req2 = new TLRPC.TL_bots_allowSendMessage();
                             req2.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
                             ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
@@ -1486,7 +1526,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                                 di.dismiss();
                             }));
                         })
-                        .setNegativeButton(LocaleController.getString(R.string.BotWebViewRequestDontAllow), (di, w) -> {
+                        .setNegativeButton(getString(R.string.BotWebViewRequestDontAllow), (di, w) -> {
                             di.dismiss();
                         })
                         .create(),
@@ -1558,21 +1598,21 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                 final String[] status = new String[] { "cancelled" };
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-                builder.setTitle(LocaleController.getString("ShareYouPhoneNumberTitle", R.string.ShareYouPhoneNumberTitle));
+                builder.setTitle(getString("ShareYouPhoneNumberTitle", R.string.ShareYouPhoneNumberTitle));
                 SpannableStringBuilder message = new SpannableStringBuilder();
                 String botName = UserObject.getUserName(botUser);
                 if (!TextUtils.isEmpty(botName)) {
                     message.append(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.AreYouSureShareMyContactInfoWebapp, botName)));
                 } else {
-                    message.append(AndroidUtilities.replaceTags(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBot)));
+                    message.append(AndroidUtilities.replaceTags(getString(R.string.AreYouSureShareMyContactInfoBot)));
                 }
                 final boolean blocked = MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(botUser.id) >= 0;
                 if (blocked) {
                     message.append("\n\n");
-                    message.append(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBotUnblock));
+                    message.append(getString(R.string.AreYouSureShareMyContactInfoBotUnblock));
                 }
                 builder.setMessage(message);
-                builder.setPositiveButton(LocaleController.getString("ShareContact", R.string.ShareContact), (di, i) -> {
+                builder.setPositiveButton(getString("ShareContact", R.string.ShareContact), (di, i) -> {
                     status[0] = null;
                     di.dismiss();
 
@@ -1600,7 +1640,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         }
                     }
                 });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (di, i) -> {
+                builder.setNegativeButton(getString("Cancel", R.string.Cancel), (di, i) -> {
                     di.dismiss();
                 });
                 showDialog(4, builder.create(), () -> {
@@ -1644,13 +1684,13 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     }};
                     AlertDialog.Builder alert = new AlertDialog.Builder(getContext(), resourcesProvider);
                     if (TextUtils.isEmpty(reason)) {
-                        alert.setTitle(LocaleController.getString(R.string.BotAllowBiometryTitle));
+                        alert.setTitle(getString(R.string.BotAllowBiometryTitle));
                         alert.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotAllowBiometryMessage, UserObject.getUserName(botUser))));
                     } else {
                         alert.setTitle(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotAllowBiometryMessage, UserObject.getUserName(botUser))));
                         alert.setMessage(reason);
                     }
-                    alert.setPositiveButton(LocaleController.getString(R.string.Allow), (di, w) -> {
+                    alert.setPositiveButton(getString(R.string.Allow), (di, w) -> {
                         if (cancel[0] != null) {
                             cancel[0] = null;
                         }
@@ -1664,7 +1704,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                             notifyBiometryReceived();
                         });
                     });
-                    alert.setNegativeButton(LocaleController.getString(R.string.Cancel), (di, w) -> {
+                    alert.setNegativeButton(getString(R.string.Cancel), (di, w) -> {
                         if (cancel[0] != null) {
                             cancel[0] = null;
                         }
@@ -1821,7 +1861,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     private void unknownError(String errCode) {
-        error(LocaleController.getString("UnknownError", R.string.UnknownError) + (errCode != null ? ": " + errCode : ""));
+        error(getString("UnknownError", R.string.UnknownError) + (errCode != null ? ": " + errCode : ""));
     }
 
     private void error(String reason) {
@@ -2005,10 +2045,11 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         /**
          * Called when web app attempts to open invoice
          *
+         * @param inputInvoice Invoice source
          * @param slug      Invoice slug for the form
          * @param response  Payment request response
          */
-        void onWebAppOpenInvoice(String slug, TLObject response);
+        void onWebAppOpenInvoice(TLRPC.InputInvoice inputInvoice, String slug, TLObject response);
 
         /**
          * Setups main button
@@ -2056,15 +2097,15 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     break;
                 }
                 case "ok": {
-                    text = LocaleController.getString(R.string.OK);
+                    text = getString(R.string.OK);
                     break;
                 }
                 case "close": {
-                    text = LocaleController.getString(R.string.Close);
+                    text = getString(R.string.Close);
                     break;
                 }
                 case "cancel": {
-                    text = LocaleController.getString(R.string.Cancel);
+                    text = getString(R.string.Cancel);
                     break;
                 }
                 case "destructive": {

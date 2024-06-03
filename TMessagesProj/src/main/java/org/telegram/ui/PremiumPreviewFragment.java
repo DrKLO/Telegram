@@ -1584,7 +1584,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             imageFrameLayout = new FrameLayout(context);
             final int sz = type == FEATURES_BUSINESS ? 175 : 190;
             addView(imageFrameLayout, LayoutHelper.createLinear(sz, sz, Gravity.CENTER_HORIZONTAL));
-            imageView = new GLIconTextureView(context, whiteBackground ? GLIconRenderer.DIALOG_STYLE : type == FEATURES_BUSINESS ? GLIconRenderer.BUSINESS_STYLE : GLIconRenderer.FRAGMENT_STYLE, type == FEATURES_BUSINESS ? Icon3D.TYPE_COIN : Icon3D.TYPE_STAR) {
+            imageView = new GLIconTextureView(context, whiteBackground ? GLIconRenderer.DIALOG_STYLE : GLIconRenderer.FRAGMENT_STYLE, type == FEATURES_BUSINESS ? Icon3D.TYPE_COIN : Icon3D.TYPE_STAR) {
                 @Override
                 public void onLongPress() {
                     super.onLongPress();
@@ -1612,7 +1612,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
-            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setGravity(Gravity.CENTER_HORIZONTAL);
             addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 16, type == FEATURES_BUSINESS ? 8 : 20, 16, 0));
 

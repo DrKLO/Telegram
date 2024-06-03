@@ -9,13 +9,10 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
-import android.os.Build;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -37,23 +34,23 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.SessionsActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 
-public class UnconfirmedAuthHintCell extends FrameLayout {
+public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
 
     private final LinearLayout linearLayout;
     private final TextView titleTextView;
@@ -63,8 +60,8 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
     private final TextViewWithLoading yesButton;
     private final TextViewWithLoading noButton;
 
-    public UnconfirmedAuthHintCell(Context context) {
-        super(context);
+    public UnconfirmedAuthHintCell(Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout) {
+        super(context, sizeNotifierFrameLayout);
 
         setClickable(true);
 
@@ -74,7 +71,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         titleTextView = new TextView(context);
         titleTextView.setGravity(Gravity.CENTER);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setText(LocaleController.getString(R.string.UnconfirmedAuthTitle));
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  11, 28, 0));
 
@@ -91,7 +88,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
 
         yesButton = new TextViewWithLoading(context);
         yesButton.setPadding(dp(10), dp(5), dp(10), dp(7));
-        yesButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        yesButton.setTypeface(AndroidUtilities.bold());
         yesButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.22f);
         yesButton.setText(LocaleController.getString(R.string.UnconfirmedAuthConfirm));
         buttonsLayout.addView(yesButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30));
@@ -100,7 +97,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
 
         noButton = new TextViewWithLoading(context);
         noButton.setPadding(dp(10), dp(5), dp(10), dp(7));
-        noButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        noButton.setTypeface(AndroidUtilities.bold());
         noButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.22f);
         noButton.setText(LocaleController.getString(R.string.UnconfirmedAuthDeny));
         buttonsLayout.addView(noButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30));
@@ -294,7 +291,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         linearLayout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER, 0, 14, 0, 0));
 
         TextView headerTextView = new TextView(getContext());
-        headerTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        headerTextView.setTypeface(AndroidUtilities.bold());
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         headerTextView.setGravity(Gravity.CENTER);
         headerTextView.setText(LocaleController.formatPluralString("UnconfirmedAuthDeniedTitle", auths.size()));
@@ -321,7 +318,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         warningLayout.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold), Theme.isCurrentThemeDark() ? .2f : .15f)));
 
         TextView warningTextView = new TextView(getContext());
-        warningTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        warningTextView.setTypeface(AndroidUtilities.bold());
         warningTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         warningTextView.setGravity(Gravity.CENTER);
         warningTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold));

@@ -257,7 +257,7 @@ public class FireworksOverlay extends View {
 
     public void start(boolean withStars) {
         this.withStars = withStars;
-        particles.clear();
+//        particles.clear();
         setLayerType(View.LAYER_TYPE_HARDWARE, null);
         started = true;
         startedFall = false;
@@ -273,7 +273,8 @@ public class FireworksOverlay extends View {
         } else if (withStars) {
             loadStarsDrawables();
         }
-        for (int a = 0; a < particlesCount; a++) {
+        int particlesToAdd = Utilities.clamp(particlesCount - particles.size(), particlesCount, particlesCount / 3);
+        for (int a = 0; a < particlesToAdd; a++) {
             particles.add(createParticle(false));
         }
         invalidate();

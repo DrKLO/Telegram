@@ -449,7 +449,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 6));
         buttonTextView.setOnClickListener(v -> processNext());
 
@@ -461,7 +461,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
                 break;
             default:
-                titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleTextView.setTypeface(AndroidUtilities.bold());
                 titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                 break;
         }

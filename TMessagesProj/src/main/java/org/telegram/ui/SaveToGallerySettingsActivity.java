@@ -251,7 +251,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setText(isNewException ? LocaleController.getString("AddException", R.string.AddException) : LocaleController.getString("SaveException", R.string.SaveException));
             textView.setGravity(Gravity.CENTER);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
             button.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
             button.setOnClickListener(v -> {

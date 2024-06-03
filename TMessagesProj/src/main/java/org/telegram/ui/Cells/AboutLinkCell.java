@@ -320,7 +320,7 @@ public class AboutLinkCell extends FrameLayout {
                             layout.draw(canvas);
                             canvas.restoreToCount(c);
                             x += layout.getLineRight(0) + SPACE;
-                            y += layout.getLineBottom(0) + layout.getTopPadding();
+                            y += layout.getLineBottom(0) + layout.getTopPadding() - 1;
                         }
                     }
                 }

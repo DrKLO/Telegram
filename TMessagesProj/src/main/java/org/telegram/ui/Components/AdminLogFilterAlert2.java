@@ -39,8 +39,8 @@ public class AdminLogFilterAlert2 extends BottomSheetWithRecyclerListView {
     private final SelectorBtnCell buttonContainer;
 
     public AdminLogFilterAlert2(BaseFragment fragment, TLRPC.TL_channelAdminLogEventsFilter filter, LongSparseArray<TLRPC.User> admins, boolean megagroup) {
-        super(fragment, false, false);
-        topPadding = 0.6f;
+        super(fragment.getContext(), fragment, false, false, false, true, ActionBarType.SLIDING, fragment.getResourceProvider());
+        topPadding = 0.35f;
         fixNavigationBar();
         setSlidingActionBar();
         setShowHandle(true);
@@ -190,7 +190,7 @@ public class AdminLogFilterAlert2 extends BottomSheetWithRecyclerListView {
 
     private View.OnClickListener getGroupClick(int a) {
         return v -> {
-            saveScrollPosition();
+//            saveScrollPosition();
             switch (a) {
                 case 0:
                     sectionMembersExpanded = !sectionMembersExpanded;
@@ -210,7 +210,7 @@ public class AdminLogFilterAlert2 extends BottomSheetWithRecyclerListView {
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         if (currentFilter == null) return;
         items.add(UItem.asHeader(getString(R.string.EventLogFilterByActions)));
-        items.add(UItem.asRoundGroupCheckbox(FILTER_SECTION_MEMBERS, getString(R.string.EventLogFilterSectionMembers), getGroupCount(0)).setChecked(
+        items.add(UItem.asRoundGroupCheckbox(FILTER_SECTION_MEMBERS, getString(isMegagroup ? R.string.EventLogFilterSectionMembers : R.string.EventLogFilterSectionSubscribers), getGroupCount(0)).setChecked(
             currentFilter.promote || currentFilter.demote ||
             isMegagroup && (currentFilter.kick || currentFilter.ban || currentFilter.unkick || currentFilter.unban) ||
             currentFilter.invite || currentFilter.join ||
@@ -221,8 +221,8 @@ public class AdminLogFilterAlert2 extends BottomSheetWithRecyclerListView {
             if (isMegagroup) {
                 items.add(UItem.asRoundCheckbox(FILTER_RESTRICTIONS, getString(R.string.EventLogFilterNewRestrictions)).pad().setChecked(currentFilter.kick || currentFilter.ban || currentFilter.unkick || currentFilter.unban));
             }
-            items.add(UItem.asRoundCheckbox(FILTER_NEW_MEMBERS, getString(R.string.EventLogFilterNewMembers)).pad().setChecked(currentFilter.invite || currentFilter.join));
-            items.add(UItem.asRoundCheckbox(FILTER_MEMBERS_LEFT, getString(R.string.EventLogFilterLeavingMembers2)).pad().setChecked(currentFilter.leave));
+            items.add(UItem.asRoundCheckbox(FILTER_NEW_MEMBERS, getString(isMegagroup ? R.string.EventLogFilterNewMembers : R.string.EventLogFilterNewSubscribers)).pad().setChecked(currentFilter.invite || currentFilter.join));
+            items.add(UItem.asRoundCheckbox(FILTER_MEMBERS_LEFT, getString(isMegagroup ? R.string.EventLogFilterLeavingMembers2 : R.string.EventLogFilterLeavingSubscribers2)).pad().setChecked(currentFilter.leave));
         }
         items.add(UItem.asRoundGroupCheckbox(FILTER_SECTION_SETTINGS, getString(isMegagroup ? R.string.EventLogFilterSectionGroupSettings : R.string.EventLogFilterSectionChannelSettings), getGroupCount(1)).setChecked(
             currentFilter.info || currentFilter.settings ||
@@ -258,7 +258,7 @@ public class AdminLogFilterAlert2 extends BottomSheetWithRecyclerListView {
     public void onClick(UItem item, View view, float x) {
         if (item == null) return;
         if (item.viewType == UniversalAdapter.VIEW_TYPE_ROUND_GROUP_CHECKBOX || item.viewType == UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX) {
-            saveScrollPosition();
+//            saveScrollPosition();
             final boolean clickedGroupExpand = item.viewType == UniversalAdapter.VIEW_TYPE_ROUND_GROUP_CHECKBOX && (LocaleController.isRTL ? x < view.getMeasuredWidth() - dp(60) : x > dp(60));
             CheckBoxCell cell = (CheckBoxCell) view;
             if (!clickedGroupExpand) {

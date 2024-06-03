@@ -11,7 +11,6 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -57,7 +56,7 @@ public class OptionsSpeedIconDrawable extends Drawable {
             textDrawable.setCallback(callback);
             textDrawable.setAnimationProperties(.3f, 0, 165, CubicBezierInterpolator.EASE_OUT_QUINT);
             textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
-            textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textDrawable.setTypeface(AndroidUtilities.bold());
             textDrawable.setTextSize(dp(7));
             textDrawable.setTextColor(0xFFFFFFFF);
             textDrawable.getPaint().setStyle(Paint.Style.FILL_AND_STROKE);

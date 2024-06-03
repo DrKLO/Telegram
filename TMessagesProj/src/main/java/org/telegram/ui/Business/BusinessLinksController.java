@@ -116,7 +116,7 @@ public class BusinessLinksController {
                         }
                     }
                     if (!usersToLoad.isEmpty()) {
-                        storage.getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        storage.getUsersInternal(usersToLoad, users);
                     }
                     if (!chatsToLoad.isEmpty()) {
                         storage.getChatsInternal(TextUtils.join(",", chatsToLoad), chats);

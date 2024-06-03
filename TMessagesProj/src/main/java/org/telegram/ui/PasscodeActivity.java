@@ -354,9 +354,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         });
                         showDialog(builder.create());
                     } else if (position == fingerprintRow) {
-                        SharedConfig.useFingerprint = !SharedConfig.useFingerprint;
+                        SharedConfig.useFingerprintLock = !SharedConfig.useFingerprintLock;
                         UserConfig.getInstance(currentAccount).saveConfig(false);
-                        ((TextCheckCell) view).setChecked(SharedConfig.useFingerprint);
+                        ((TextCheckCell) view).setChecked(SharedConfig.useFingerprintLock);
                     } else if (position == captureRow) {
                         SharedConfig.allowScreenCapture = !SharedConfig.allowScreenCapture;
                         UserConfig.getInstance(currentAccount).saveConfig(false);
@@ -429,7 +429,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
                 titleTextView = new TextView(context);
                 titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleTextView.setTypeface(AndroidUtilities.bold());
                 if (type == TYPE_SETUP_CODE) {
                     if (SharedConfig.passcodeHash.length() != 0) {
                         titleTextView.setText(LocaleController.getString("EnterNewPasscode", R.string.EnterNewPasscode));
@@ -870,6 +870,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     }
 
     private void updateRows() {
+        fingerprintRow = -1;
         rowCount = 0;
         utyanRow = rowCount++;
         hintRow = rowCount++;
@@ -877,14 +878,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         try {
             if (Build.VERSION.SDK_INT >= 23) {
                 if (
-                    BiometricManager.from(getContext()).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS &&
+                    BiometricManager.from(ApplicationLoader.applicationContext).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS &&
                     AndroidUtilities.isKeyguardSecure()
                 ) {
                     fingerprintRow = rowCount++;
-                } else {
-                    fingerprintRow = -1;
                 }
-            } else fingerprintRow = -1;
+            }
         } catch (Throwable e) {
             FileLog.e(e);
         }
@@ -1174,7 +1173,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 case VIEW_TYPE_CHECK: {
                     TextCheckCell textCell = (TextCheckCell) holder.itemView;
                     if (position == fingerprintRow) {
-                        textCell.setTextAndCheck(LocaleController.getString("UnlockFingerprint", R.string.UnlockFingerprint), SharedConfig.useFingerprint, true);
+                        textCell.setTextAndCheck(LocaleController.getString(R.string.UnlockFingerprint), SharedConfig.useFingerprintLock, false);
                     } else if (position == captureRow) {
                         textCell.setTextAndCheck(LocaleController.getString(R.string.ScreenCaptureShowContent), SharedConfig.allowScreenCapture, false);
                     }

@@ -99,7 +99,7 @@ public class DialogsEmptyCell extends LinearLayout {
         titleView = new TextView(context);
         titleView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setGravity(Gravity.CENTER);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 10, 52, 0));
 

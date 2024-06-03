@@ -47,6 +47,8 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
     @SuppressLint("UseCompatLoadingForDrawables")
     public RevenueSharingAdsInfoBottomSheet(BaseFragment baseFragment, Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, false, resourcesProvider);
+        fixNavigationBar();
+
         topIconBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         topIconBgPaint.setStyle(Paint.Style.FILL);
         topIconBgPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
@@ -63,7 +65,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
 
         TextView topTitle = new TextView(context);
         topTitle.setText(LocaleController.getString("AboutRevenueSharingAds", R.string.AboutRevenueSharingAds));
-        topTitle.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        topTitle.setTypeface(AndroidUtilities.bold());
         topTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         topTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         topTitle.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -100,7 +102,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
 
         TextView textViewDescription4 = new TextView(context);
         textViewDescription4.setText(LocaleController.getString("RevenueSharingAdsInfo4Title", R.string.RevenueSharingAdsInfo4Title));
-        textViewDescription4.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textViewDescription4.setTypeface(AndroidUtilities.bold());
         textViewDescription4.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textViewDescription4.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textViewDescription4.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
@@ -131,7 +133,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setEllipsize(TextUtils.TruncateAt.END);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setText(LocaleController.getString("RevenueSharingAdsAlertButton", R.string.RevenueSharingAdsAlertButton));
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 6));
@@ -169,7 +171,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
             tvTitle.setText(header);
             tvTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            tvTitle.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            tvTitle.setTypeface(AndroidUtilities.bold());
             addView(tvTitle, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, isRtl ? Gravity.RIGHT : Gravity.LEFT, isRtl ? ITEM_HORIZONTAL_PADDING : ITEM_TEXT_PADDING, 0, isRtl ? ITEM_TEXT_PADDING : ITEM_HORIZONTAL_PADDING, 0));
 
             LinkSpanDrawable.LinksTextView tvSubtitle = new LinkSpanDrawable.LinksTextView(getContext());

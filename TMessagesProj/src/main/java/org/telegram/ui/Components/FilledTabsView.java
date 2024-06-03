@@ -5,18 +5,14 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
-import androidx.core.graphics.ColorUtils;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
 
 public class FilledTabsView extends View {
 
@@ -38,7 +34,7 @@ public class FilledTabsView extends View {
         bounds = new RectF[texts.length];
 
         for (int i = 0; i < texts.length; ++i) {
-            tabs[i] = new Text(texts[i], 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            tabs[i] = new Text(texts[i], 14, AndroidUtilities.bold());
             bounds[i] = new RectF();
         }
 

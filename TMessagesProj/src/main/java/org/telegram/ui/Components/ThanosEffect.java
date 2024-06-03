@@ -855,6 +855,7 @@ public class ThanosEffect extends TextureView {
                 ArrayList<ChatMessageCell> drawTimeAfter = new ArrayList<>();
                 ArrayList<ChatMessageCell> drawNamesAfter = new ArrayList<>();
                 ArrayList<ChatMessageCell> drawCaptionAfter = new ArrayList<>();
+                ArrayList<ChatMessageCell> drawReactionsAfter = new ArrayList<>();
                 canvas.save();
                 for (int k = 0; k < 3; k++) {
                     drawingGroups.clear();
@@ -882,8 +883,11 @@ public class ThanosEffect extends TextureView {
                                         }
                                     }
                                     if (position != null || cell.getTransitionParams().transformGroupToSingleMessage || cell.getTransitionParams().animateBackgroundBoundsInner) {
-                                        if (position == null || (position.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0) {
+                                        if (position == null || (position.flags & cell.captionFlag()) != 0) {
                                             drawCaptionAfter.add(cell);
+                                        }
+                                        if (position == null || (position.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && (position.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+                                            drawReactionsAfter.add(cell);
                                         }
                                     }
                                 }
@@ -1036,6 +1040,17 @@ public class ThanosEffect extends TextureView {
                     }
                     drawCaptionAfter.clear();
                 }
+                size = drawReactionsAfter.size();
+                if (size > 0) {
+                    for (int a = 0; a < size; a++) {
+                        ChatMessageCell cell = drawReactionsAfter.get(a);
+                        if (cell.getCurrentPosition() == null && !cell.getTransitionParams().animateBackgroundBoundsInner) {
+                            continue;
+                        }
+                        drawChildElement(chatListView, chatActivity, canvas, listTop, cell, 3,  cell.getX() - mleft, cell.getY() - mtop);
+                    }
+                    drawReactionsAfter.clear();
+                }
                 canvas.restore();
 
                 for (int i = 0; i < views.size(); ++i) {
@@ -1055,8 +1070,10 @@ public class ThanosEffect extends TextureView {
                     cell.drawTime(canvas, alpha, true);
                 } else if (type == 1) {
                     cell.drawNamesLayout(canvas, alpha);
-                } else {
+                } else if (type == 2) {
                     cell.drawCaptionLayout(canvas, cell.getCurrentPosition() != null && (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) == 0, alpha);
+                } else if (!(cell.getCurrentPosition() != null && (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) == 0)) {
+                    cell.drawReactionsLayout(canvas, alpha);
                 }
                 cell.setInvalidatesParent(false);
                 canvas.restore();

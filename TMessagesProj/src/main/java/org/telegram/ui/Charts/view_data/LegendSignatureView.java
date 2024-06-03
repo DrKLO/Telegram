@@ -5,11 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.TextUtils;
-import android.text.style.CharacterStyle;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
@@ -96,10 +91,10 @@ public class LegendSignatureView extends FrameLayout {
 
         time = new TextView(context);
         time.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        time.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        time.setTypeface(AndroidUtilities.bold());
         hourTime = new TextView(context);
         hourTime.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        hourTime.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        hourTime.setTypeface(AndroidUtilities.bold());
 
         chevron = new ImageView(context);
         chevron.setImageResource(R.drawable.ic_chevron_right_black_18dp);
@@ -307,7 +302,7 @@ public class LegendSignatureView extends FrameLayout {
                 root.addView(percentage = new TextView(getContext()));
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
-                percentage.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                percentage.setTypeface(AndroidUtilities.bold());
                 percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
@@ -318,7 +313,7 @@ public class LegendSignatureView extends FrameLayout {
             signature.setGravity(Gravity.START);
             value.setGravity(Gravity.END);
 
-            value.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            value.setTypeface(AndroidUtilities.bold());
             value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 //            value.setMinEms(4);
 //            value.setMaxEms(4);

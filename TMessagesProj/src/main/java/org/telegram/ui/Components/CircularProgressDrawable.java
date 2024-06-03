@@ -51,6 +51,8 @@ public class CircularProgressDrawable extends Drawable {
 
     private final Paint paint = new Paint(); {
         paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
     }
 
     private float angleOffset;

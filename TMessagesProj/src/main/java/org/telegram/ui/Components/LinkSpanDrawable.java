@@ -250,6 +250,11 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             mParent = parentView;
         }
 
+        private Runnable additionalInvalidate;
+        public void setAdditionalInvalidate(Runnable additionalInvalidate) {
+            this.additionalInvalidate = additionalInvalidate;
+        }
+
         private ArrayList<Pair<LinkSpanDrawable, Object>> mLinks = new ArrayList<>();
         private int mLinksCount = 0;
 
@@ -494,6 +499,9 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                 text.invalidateParent();
             } else if (tryParent && mParent != null) {
                 mParent.invalidate();
+            }
+            if (additionalInvalidate != null) {
+                additionalInvalidate.run();
             }
         }
     }

@@ -33,7 +33,7 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
 
     public StoryReactionWidgetView(Context context, View parent, TL_stories.TL_mediaAreaSuggestedReaction mediaArea, EmojiAnimationsOverlay overlay) {
         super(context, parent, mediaArea);
-        visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(mediaArea.reaction);
+        visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(mediaArea.reaction);
         if (mediaArea.flipped) {
             storyReactionWidgetBackground.setMirror(true, false);
         }
@@ -94,7 +94,7 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    public void customDraw(Canvas canvas) {
         storyReactionWidgetBackground.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
         storyReactionWidgetBackground.draw(canvas);
         int imageSize = (int) (getMeasuredWidth() * 0.61f);
@@ -130,6 +130,14 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
         canvas.scale(progress, progress, storyReactionWidgetBackground.getBounds().centerX(), textCy);
         animatedTextDrawable.draw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        if (getParent() instanceof View) {
+            ((View) getParent()).invalidate();
+        }
     }
 
     @Override

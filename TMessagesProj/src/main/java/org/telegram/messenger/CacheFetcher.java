@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import android.content.SharedPreferences;
+import android.os.Looper;
 import android.util.Pair;
 
 import java.util.ArrayList;
@@ -21,11 +23,31 @@ public abstract class CacheFetcher<Args, R> {
         // Implement this function
     }
 
+    public CacheFetcher() {
+        this(4 * 60 * 1000);
+    }
+
+    public CacheFetcher(int timeout) {
+        requestRemotelyTimeout = timeout;
+    }
+
     protected boolean useCache(Args arguments) {
         return true;
     }
 
-    private final long requestRemotelyTimeout = 4 * 60 * 1000;
+    protected boolean emitLocal(Args arguments) {
+        return false;
+    }
+
+    protected boolean saveLastTimeRequested() {
+        return false;
+    }
+
+    protected long getSavedLastTimeRequested(int hashCode) { return 0; }
+
+    protected void setSavedLastTimeRequested(int hashCode, long time) {}
+
+    private final long requestRemotelyTimeout;
 
     private HashMap<Pair<Integer, Args>, R> cachedResults;
     private HashMap<Pair<Integer, Args>, ArrayList<Utilities.Callback<R>>> loadingCallbacks;
@@ -50,24 +72,28 @@ public abstract class CacheFetcher<Args, R> {
         saveCallback(key, onResult);
         getLocal(currentAccount, arguments, (hash, data) -> {
             if (shouldRequest(key)) {
+                if (data != null && emitLocal(arguments)) {
+                    cacheResult(key, data);
+                    callCallbacks(key, data, false);
+                }
                 getRemote(currentAccount, arguments, hash, (notModified, remoteData, newHash, requestSuccess) -> {
                     if (requestSuccess) {
                         saveLastRequested(key);
                     }
                     if (notModified) {
                         cacheResult(key, data);
-                        callCallbacks(key, data);
+                        callCallbacks(key, data, true);
                     } else {
                         if (remoteData != null) {
                             setLocal(currentAccount, arguments, remoteData, newHash);
                             cacheResult(key, remoteData);
                         }
-                        callCallbacks(key, remoteData);
+                        callCallbacks(key, remoteData, true);
                     }
                 });
             } else {
                 cacheResult(key, data);
-                callCallbacks(key, data);
+                callCallbacks(key, data, true);
             }
         });
     }
@@ -93,11 +119,18 @@ public abstract class CacheFetcher<Args, R> {
         if (lastRequestedRemotely == null) {
             lastRequestedRemotely = new HashMap<>();
         }
-        lastRequestedRemotely.put(key, System.currentTimeMillis());
+        final long now = System.currentTimeMillis();
+        lastRequestedRemotely.put(key, now);
+        if (saveLastTimeRequested()) {
+            setSavedLastTimeRequested(key.hashCode(), now);
+        }
     }
 
     private boolean shouldRequest(Pair<Integer, Args> key) {
         Long lastRequested = lastRequestedRemotely != null ? lastRequestedRemotely.get(key) : null;
+        if (saveLastTimeRequested() && lastRequested == null) {
+            lastRequested = getSavedLastTimeRequested(key.hashCode());
+        }
         return lastRequested == null || System.currentTimeMillis() - lastRequested >= requestRemotelyTimeout;
     }
 
@@ -105,7 +138,11 @@ public abstract class CacheFetcher<Args, R> {
         if (lastRequestedRemotely == null) {
             return;
         }
-        lastRequestedRemotely.remove(new Pair<>(currentAccount, args));
+        Pair<Integer, Args> key = new Pair<>(currentAccount, args);
+        lastRequestedRemotely.remove(key);
+        if (saveLastTimeRequested()) {
+            setSavedLastTimeRequested(key.hashCode(), 0);
+        }
     }
 
     private boolean isLoading(Pair<Integer, Args> key) {
@@ -116,33 +153,38 @@ public abstract class CacheFetcher<Args, R> {
         if (callback == null) {
             return;
         }
-        if (loadingCallbacks == null) {
-            loadingCallbacks = new HashMap<>();
-        }
-        ArrayList<Utilities.Callback<R>> callbacks = loadingCallbacks.get(key);
-        if (callbacks == null) {
-            loadingCallbacks.put(key, callbacks = new ArrayList<>());
-        }
-        callbacks.add(callback);
+        AndroidUtilities.runOnUIThread(() -> {
+            if (loadingCallbacks == null) {
+                loadingCallbacks = new HashMap<>();
+            }
+            ArrayList<Utilities.Callback<R>> callbacks = loadingCallbacks.get(key);
+            if (callbacks == null) {
+                loadingCallbacks.put(key, callbacks = new ArrayList<>());
+            }
+            callbacks.add(callback);
+        });
     }
 
-    private void callCallbacks(Pair<Integer, Args> key, R result) {
-        if (loadingCallbacks == null) {
-            return;
-        }
-
-        final ArrayList<Utilities.Callback<R>> callbacks = loadingCallbacks.get(key);
-        if (callbacks == null) {
-            return;
-        }
-
+    private void callCallbacks(Pair<Integer, Args> key, R result, boolean remove) {
         AndroidUtilities.runOnUIThread(() -> {
+            if (loadingCallbacks == null) {
+                return;
+            }
+
+            final ArrayList<Utilities.Callback<R>> callbacks = loadingCallbacks.get(key);
+            if (callbacks == null) {
+                return;
+            }
             for (Utilities.Callback<R> callback: callbacks) {
                 callback.run(result);
             }
-            callbacks.clear();
-        });
+            if (remove) {
+                callbacks.clear();
+            }
 
-        loadingCallbacks.remove(key);
+            if (remove) {
+                loadingCallbacks.remove(key);
+            }
+        });
     }
 }

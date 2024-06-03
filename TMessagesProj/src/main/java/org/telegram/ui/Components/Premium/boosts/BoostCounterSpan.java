@@ -48,7 +48,7 @@ public class BoostCounterSpan extends ReplacementSpan {
         countText.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         countText.setCallback(parent);
         countText.setTextSize(dp(11.5f));
-        countText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        countText.setTypeface(AndroidUtilities.bold());
         countText.setText("");
         countText.setGravity(Gravity.CENTER);
         boostProfileBadge = ContextCompat.getDrawable(parent.getContext(), R.drawable.mini_boost_profile_badge).mutate();

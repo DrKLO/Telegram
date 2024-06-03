@@ -109,7 +109,7 @@ public class LinkActionView extends LinearLayout {
         copyView.setContentDescription(LocaleController.getString("LinkActionCopy", R.string.LinkActionCopy));
         copyView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         copyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        copyView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        copyView.setTypeface(AndroidUtilities.bold());
         copyView.setSingleLine(true);
         linearLayout.addView(copyView, LayoutHelper.createLinear(0, 42, 1f, 0, containerPadding, 0, 4, 0));
 
@@ -123,7 +123,7 @@ public class LinkActionView extends LinearLayout {
         shareView.setContentDescription(LocaleController.getString("LinkActionShare", R.string.LinkActionShare));
         shareView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         shareView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        shareView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        shareView.setTypeface(AndroidUtilities.bold());
         shareView.setSingleLine(true);
         linearLayout.addView(shareView, LayoutHelper.createLinear(0, 42, 1f, 4, 0, containerPadding, 0));
 
@@ -138,7 +138,7 @@ public class LinkActionView extends LinearLayout {
         removeView.setText(spannableStringBuilder);
         removeView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         removeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        removeView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        removeView.setTypeface(AndroidUtilities.bold());
         removeView.setSingleLine(true);
         linearLayout.addView(removeView, LayoutHelper.createLinear(0, 42, 1f, containerPadding, 0, containerPadding, 0));
         removeView.setVisibility(View.GONE);
@@ -465,7 +465,7 @@ public class LinkActionView extends LinearLayout {
 
             countTextView = new TextView(context);
             countTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            countTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            countTextView.setTypeface(AndroidUtilities.bold());
 
             linearLayout.addView(avatarsImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
             linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));

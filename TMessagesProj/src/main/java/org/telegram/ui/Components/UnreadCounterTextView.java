@@ -51,10 +51,10 @@ public class UnreadCounterTextView extends View {
     public UnreadCounterTextView(Context context) {
         super(context);
         textPaint.setTextSize(AndroidUtilities.dp(13));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
 
         layoutPaint.setTextSize(AndroidUtilities.dp(15));
-        layoutPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        layoutPaint.setTypeface(AndroidUtilities.bold());
     }
 
     public void setText(CharSequence text, boolean animatedFromBottom) {
@@ -65,7 +65,7 @@ public class UnreadCounterTextView extends View {
         this.animatedFromBottom = animatedFromBottom;
         textLayoutOut = textLayout;
         iconOut = icon;
-        layoutPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        layoutPaint.setTypeface(AndroidUtilities.bold());
         layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
@@ -88,7 +88,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setText(CharSequence text) {
-        layoutPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        layoutPaint.setTypeface(AndroidUtilities.bold());
         layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);

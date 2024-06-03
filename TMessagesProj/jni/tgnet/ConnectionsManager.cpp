@@ -891,8 +891,11 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
         TLObject *request;
         if (datacenter->isHandshaking(connection->isMediaConnection)) {
             request = datacenter->getCurrentHandshakeRequest(connection->isMediaConnection);
+            if (request == nullptr) {
+                return;
+            }
         } else {
-            request = getRequestWithMessageId(messageId);
+            return;
         }
 
         deserializingDatacenter = datacenter;
@@ -1287,6 +1290,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                         static std::string authRestart = "AUTH_RESTART";
                         static std::string authKeyPermEmpty = "AUTH_KEY_PERM_EMPTY";
                         static std::string workerBusy = "WORKER_BUSY_TOO_LONG_RETRY";
+                        static std::string integrityCheckClassic = "INTEGRITY_CHECK_CLASSIC_";
                         bool processEvenFailed = error->error_code == 500 && error->error_message.find(authRestart) != std::string::npos;
                         bool isWorkerBusy = error->error_code == 500 && error->error_message.find(workerBusy) != std::string::npos;
                         if (LOGS_ENABLED) DEBUG_E("request %p rpc error %d: %s", request, error->error_code, error->error_message.c_str());
@@ -1301,8 +1305,19 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 saveConfig();
                                 datacenter->beginHandshake(connection->isMediaConnection ? HandshakeTypeMediaTemp : HandshakeTypeTemp, false);
                             }
-                        } else if ((request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed) {
-                            if (error->error_code == 500 || error->error_code < 0) {
+                        } else if (error->error_code == 403 && error->error_message.find(integrityCheckClassic) != std::string::npos) {
+                            discardResponse = true;
+                            std::string nonce = error->error_message.substr(integrityCheckClassic.size(), error->error_message.size() - integrityCheckClassic.size());
+                            request->awaitingIntegrityCheck = true;
+                            request->startTime = 0;
+                            request->startTimeMillis = 0;
+                            if (delegate != nullptr) {
+                                delegate->onIntegrityCheckClassic(instanceNum, request->requestToken, nonce);
+                            }
+                        } else {
+                            bool failServerErrors = (request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed;
+                            bool exceptFloodWait = (request->requestFlags & RequestFlagFailOnServerErrorsExceptFloodWait) != 0;
+                            if (failServerErrors && (error->error_code == 500 || error->error_code < 0)) {
                                 static std::string waitFailed = "MSG_WAIT_FAILED";
                                 static std::string waitTimeout = "MSG_WAIT_TIMEOUT";
                                 if (error->error_message.find(waitFailed) != std::string::npos) {
@@ -1318,13 +1333,14 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                     request->serverFailureCount++;
                                 }
                                 discardResponse = true;
-                            } else if (error->error_code == -504) {
+                            } else if (failServerErrors && error->error_code == -504) {
                                 discardResponse = (request->requestFlags & RequestFlagIgnoreFloodWait) == 0;
                                 request->failedByFloodWait = 2;
                                 request->startTime = 0;
                                 request->startTimeMillis = 0;
                                 request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 2);
                             } else if (
+                                (failServerErrors || exceptFloodWait) &&
                                 error->error_code == 420 && (request->requestFlags & RequestFlagIgnoreFloodWait) == 0 &&
                                 error->error_message.find("STORY_SEND_FLOOD") == std::string::npos
                             ) {
@@ -1363,7 +1379,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 if (isPremiumFloodWait && delegate != nullptr) {
                                     delegate->onPremiumFloodWait(instanceNum, request->requestToken, (request->connectionType & ConnectionTypeUpload) != 0);
                                 }
-                            } else if (error->error_code == 400) {
+                            } else if (failServerErrors && error->error_code == 400) {
                                 static std::string waitFailed = "MSG_WAIT_FAILED";
                                 static std::string bindFailed = "ENCRYPTED_MESSAGE_INVALID";
                                 static std::string waitTimeout = "MSG_WAIT_TIMEOUT";
@@ -2154,6 +2170,32 @@ void ConnectionsManager::failNotRunningRequest(int32_t token) {
     });
 }
 
+void ConnectionsManager::receivedIntegrityCheckClassic(int32_t requestToken, std::string nonce, std::string token) {
+    scheduleTask([&, requestToken, nonce, token] {
+        for (auto iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
+            Request *request = iter->get();
+            if (requestToken != 0 && request->requestToken == requestToken) {
+                auto invokeIntegrity = new invokeWithGooglePlayIntegrity();
+                invokeIntegrity->nonce = nonce;
+                invokeIntegrity->token = token;
+                invokeIntegrity->query = std::move(request->rpcRequest);
+                request->rpcRequest = std::unique_ptr<invokeWithGooglePlayIntegrity>(invokeIntegrity);
+
+                request->awaitingIntegrityCheck = false;
+                request->requestFlags &=~ RequestFlagFailOnServerErrors;
+
+                if (LOGS_ENABLED) DEBUG_D("account%d: received integrity token, wrapping %s", instanceNum, token.c_str());
+
+                processRequestQueue(request->connectionType, request->datacenterId);
+
+                return;
+            }
+        }
+
+        if (LOGS_ENABLED) DEBUG_E("account%d: received integrity token but no request %d found", instanceNum, requestToken);
+    });
+}
+
 void ConnectionsManager::onDatacenterHandshakeComplete(Datacenter *datacenter, HandshakeType type, int32_t timeDiff) {
     saveConfig();
     uint32_t datacenterId = datacenter->getDatacenterId();
@@ -2474,13 +2516,13 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
             forceThisRequest = false;
         }
 
-        if (forceThisRequest || (
+        if ((forceThisRequest || (
             abs(currentTime - request->startTime) > maxTimeout && (
                 currentTime >= request->minStartTime ||
                 (request->failedByFloodWait != 0 && (request->minStartTime - currentTime) > request->failedByFloodWait) ||
                 (request->failedByFloodWait == 0 && abs(currentTime - request->minStartTime) >= 60)
             )
-        )) {
+        )) && !request->awaitingIntegrityCheck) {
             if (!forceThisRequest && request->connectionToken > 0) {
                 if ((request->connectionType & ConnectionTypeGeneric || request->connectionType & ConnectionTypeTemp) && request->connectionToken == connection->getConnectionToken()) {
                     if (LOGS_ENABLED) DEBUG_D("request token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
@@ -3519,12 +3561,9 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
                 if (LOGS_ENABLED) DEBUG_D("can't decrypt dns config");
             } else {
                 delete config;
-                if (LOGS_ENABLED) DEBUG_D("dns config not valid due to date or expire");
+                if (LOGS_ENABLED) DEBUG_D("dns config not valid due to date or expire, current date = %d, config date = %d, config expired = %d", currentDate, config->date, config->expires);
             }
-            if (requestingSecondAddress == 2) {
-                requestingSecondAddress = 3;
-                delegate->onRequestNewServerIpAndPort(requestingSecondAddress, instanceNum);
-            } else if (requestingSecondAddress == 1) {
+            if (requestingSecondAddress == 1) {
                 requestingSecondAddress = 2;
                 delegate->onRequestNewServerIpAndPort(requestingSecondAddress, instanceNum);
             } else if (requestingSecondAddress == 0) {

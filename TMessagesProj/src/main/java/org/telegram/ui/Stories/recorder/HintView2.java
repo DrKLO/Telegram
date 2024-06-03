@@ -8,16 +8,23 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.CornerPathEffect;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
@@ -37,11 +44,15 @@ import android.view.ViewConfiguration;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.checkerframework.checker.units.qual.C;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -57,7 +68,7 @@ public class HintView2 extends View {
 
     // direction of an arrow to point
     // the gravity of location would be the same, location of arrow opposite:
-    // f.ex. hint with DIRECTION_LEFT has arrow on right and would be forced to the left ({view} <{hint})
+    // f.ex. hint with DIRECTION_LEFT has arrow on left of hint and would be forced to the left ({view} <{hint})
     public static final int DIRECTION_LEFT = 0;
     public static final int DIRECTION_TOP = 1;
     public static final int DIRECTION_RIGHT = 2;
@@ -71,6 +82,7 @@ public class HintView2 extends View {
     private boolean useScale = true;
     private boolean useTranslate = true;
     private boolean useAlpha = true;
+    private boolean useBlur = false;
     private int textMaxWidth = -1;
 
     private Drawable closeButtonDrawable;
@@ -83,6 +95,14 @@ public class HintView2 extends View {
     private float arrowHeight = dp(6);
 
     protected final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint blurBackgroundPaint, blurCutPaint;
+
+    private int blurBitmapWidth, blurBitmapHeight;
+    private BitmapShader blurBitmapShader;
+    private Matrix blurBitmapMatrix;
+    private float blurScale = 12f;
+    private float blurAlpha = .25f;
+    private int[] blurPos;
 
     private CharSequence textToSet;
     private AnimatedTextView.AnimatedTextDrawable textDrawable;
@@ -132,6 +152,9 @@ public class HintView2 extends View {
         if (cutSelectorPaint != null) {
             cutSelectorPaint.setPathEffect(new CornerPathEffect(rounding));
         }
+        if (blurCutPaint != null) {
+            blurCutPaint.setPathEffect(new CornerPathEffect(rounding));
+        }
         return this;
     }
 
@@ -176,6 +199,15 @@ public class HintView2 extends View {
         } else {
             this.textDrawable.setText(text, !LocaleController.isRTL && animated);
         }
+        return this;
+    }
+
+    public HintView2 allowBlur() {
+        return allowBlur(true);
+    }
+
+    public HintView2 allowBlur(boolean allow) {
+        useBlur = allow && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
         return this;
     }
 
@@ -395,7 +427,7 @@ public class HintView2 extends View {
                 new int[][]{ StateSet.WILD_CARD },
                 new int[]{ selectorColor }
         );
-        selectorDrawable = new RippleDrawable(colorStateList, null, new Drawable() {
+        selectorDrawable = new BaseCell.RippleDrawableSafe(colorStateList, null, new Drawable() {
             @Override
             public void draw(@NonNull Canvas canvas) {
                 canvas.save();
@@ -472,6 +504,7 @@ public class HintView2 extends View {
     private final Runnable hideRunnable = this::hide;
 
     public HintView2 show() {
+        prepareBlur();
         if (shown) {
             bounceShow();
         }
@@ -616,11 +649,20 @@ public class HintView2 extends View {
     private boolean firstDraw = true;
 
     protected void drawBgPath(Canvas canvas) {
+        if (blurBackgroundPaint != null) {
+            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+            canvas.drawPath(path, blurBackgroundPaint);
+            canvas.drawPath(path, blurCutPaint);
+            canvas.restore();
+        }
         canvas.drawPath(path, backgroundPaint);
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (drawingMyBlur) {
+            return;
+        }
         if (multiline && textLayout == null) {
             return;
         }
@@ -663,7 +705,6 @@ public class HintView2 extends View {
         }
         float bounceScale = bounce.getScale(.025f);
         if (bounceScale != 1) {
-//            canvas.scale(bounceScale, bounceScale, bounceX, bounceY);
             canvas.scale(bounceScale, bounceScale, arrowX, arrowY);
         }
         if (bounceT != 1) {
@@ -676,12 +717,14 @@ public class HintView2 extends View {
             }
         }
 
+        updateBlurBounds();
         final int wasAlpha = backgroundPaint.getAlpha();
         AndroidUtilities.rectTmp.set(bounds);
         AndroidUtilities.rectTmp.inset(-arrowHeight, -arrowHeight);
         float backgroundAlpha = alpha;
-        if (drawBlur(canvas, AndroidUtilities.rectTmp, path, alpha)) {
-            backgroundAlpha *= .2f;
+        if (blurBackgroundPaint != null && useBlur) {
+            backgroundAlpha *= (1f - blurAlpha);
+            blurBackgroundPaint.setAlpha((int) (0xFF * alpha));
         }
         backgroundPaint.setAlpha((int) (wasAlpha * backgroundAlpha));
         drawBgPath(canvas);
@@ -750,10 +793,6 @@ public class HintView2 extends View {
             closeButtonDrawable.draw(canvas);
         }
         canvas.restore();
-    }
-
-    protected boolean drawBlur(Canvas canvas, RectF bounds, Path path, float alpha) {
-        return false;
     }
 
     private void rewindPath(float width, float height) {
@@ -965,4 +1004,47 @@ public class HintView2 extends View {
         }
         return null;
     }
+
+    private boolean drawingMyBlur;
+
+    private void prepareBlur() {
+        if (!useBlur) return;
+
+        drawingMyBlur = true;
+        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+            drawingMyBlur = false;
+            blurBitmapWidth = bitmap.getWidth();
+            blurBitmapHeight = bitmap.getHeight();
+            blurBitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            blurBitmapMatrix = new Matrix();
+            blurBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            blurBackgroundPaint.setShader(blurBitmapShader);
+            ColorMatrix colorMatrix = new ColorMatrix();
+            colorMatrix.setSaturation(1.5f);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? +.12f : -.08f);
+            blurBackgroundPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+            blurCutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            blurCutPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+            blurCutPaint.setPathEffect(new CornerPathEffect(rounding));
+        }, blurScale);
+    }
+
+    private void updateBlurBounds() {
+        if (!useBlur) return;
+        if (blurBitmapShader == null || blurBitmapMatrix == null) return;
+
+        if (blurPos == null) {
+            blurPos = new int[2];
+        }
+        getLocationOnScreen(blurPos);
+        blurBitmapMatrix.reset();
+        blurBitmapMatrix.postScale(AndroidUtilities.displaySize.x / (float) blurBitmapWidth, (AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) / (float) blurBitmapHeight);
+        blurBitmapMatrix.postTranslate(-blurPos[0], -blurPos[1]);
+        if (show.get() < 1 && useScale) {
+            final float scale = 1f / lerp(.5f, 1f, show.get());
+            blurBitmapMatrix.postScale(scale, scale, arrowX, arrowY);
+        }
+        blurBitmapShader.setLocalMatrix(blurBitmapMatrix);
+    }
+
 }

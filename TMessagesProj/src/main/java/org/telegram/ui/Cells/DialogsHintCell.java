@@ -10,7 +10,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,11 +25,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarsImageView;
+import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
 
-public class DialogsHintCell extends FrameLayout {
+public class DialogsHintCell extends BlurredFrameLayout {
     private final LinearLayout parentView;
     private final LinearLayout contentView;
     public final AnimatedEmojiSpan.TextViewEmojis titleView;
@@ -39,8 +40,8 @@ public class DialogsHintCell extends FrameLayout {
     private final ImageView closeView;
     private final AvatarsImageView avatarsImageView;
 
-    public DialogsHintCell(@NonNull Context context) {
-        super(context);
+    public DialogsHintCell(@NonNull Context context, SizeNotifierFrameLayout parentFrameLayout) {
+        super(context, parentFrameLayout);
 
         setWillNotDraw(false);
         setPadding(dp(9), dp(8), dp(9), dp(8));
@@ -57,7 +58,7 @@ public class DialogsHintCell extends FrameLayout {
         titleView = new AnimatedEmojiSpan.TextViewEmojis(context);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setSingleLine();
         contentView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP));
 

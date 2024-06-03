@@ -52,7 +52,7 @@ public class QuickRepliesEmptyView extends LinearLayout {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         titleView.setGravity(Gravity.CENTER);
 

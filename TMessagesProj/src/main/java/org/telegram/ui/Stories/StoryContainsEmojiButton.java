@@ -27,7 +27,6 @@ import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -38,7 +37,6 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.LoadingDrawable;
-import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.TypefaceSpan;
 
 import java.util.ArrayList;
@@ -299,7 +297,7 @@ public class StoryContainsEmojiButton extends View {
         }
         SpannableString pack = new SpannableString("x " + set.set.title);
         pack.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chat_messageLinkIn, loadingDrawable.resourcesProvider)), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        pack.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        pack.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         TLRPC.Document document = null;
         ArrayList<TLRPC.Document> documents = set.documents;
         for (int i = 0; i < documents.size(); ++i) {
@@ -331,7 +329,7 @@ public class StoryContainsEmojiButton extends View {
     private void set(TLRPC.StickerSetCovered set) {
         SpannableString pack = new SpannableString("x " + set.set.title);
         pack.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chat_messageLinkIn, loadingDrawable.resourcesProvider)), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        pack.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        pack.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, pack.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         TLRPC.Document document = set.cover;
         if (document == null && set instanceof TLRPC.TL_stickerSetFullCovered) {
             ArrayList<TLRPC.Document> documents = ((TLRPC.TL_stickerSetFullCovered) set).documents;

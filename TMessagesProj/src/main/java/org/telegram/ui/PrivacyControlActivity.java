@@ -299,7 +299,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             messageObject.eventId = 1;
             messageObject.resetLayout();
 
-            cell = new ChatMessageCell(context);
+            cell = new ChatMessageCell(context, currentAccount);
             cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
 
             });

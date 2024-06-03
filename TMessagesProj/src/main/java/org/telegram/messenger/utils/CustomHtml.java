@@ -16,8 +16,34 @@ public class CustomHtml {
 
     public static String toHtml(Spanned text) {
         StringBuilder out = new StringBuilder();
-        toHTML_1_wrapTextStyle(out, text, 0, text.length());
+        toHTML_0_wrapQuote(out, text, 0, text.length());
         return out.toString();
+    }
+
+    private static void toHTML_0_wrapQuote(StringBuilder out, Spanned text, int start, int end) {
+
+        int next;
+        for (int i = start; i < end; i = next) {
+            next = text.nextSpanTransition(i, end, QuoteSpan.class);
+            if (next < 0) {
+                next = end;
+            }
+            QuoteSpan[] spans = text.getSpans(i, next, QuoteSpan.class);
+
+            if (spans != null) {
+                for (int j = 0; j < spans.length; ++j) {
+                    out.append(spans[j].isCollapsing ? "<details>" : "<blockquote>");
+                }
+            }
+
+            toHTML_1_wrapTextStyle(out, text, i, next);
+
+            if (spans != null) {
+                for (int j = spans.length - 1; j >= 0; --j) {
+                    out.append(spans[j].isCollapsing ? "</details>" : "</blockquote>");
+                }
+            }
+        }
     }
 
     private static void toHTML_1_wrapTextStyle(StringBuilder out, Spanned text, int start, int end) {
@@ -174,7 +200,7 @@ public class CustomHtml {
                 }
             }
 
-            toHTML_5_wrapQuote(out, text, i, next);
+            toHTML_6_wrapAnimatedEmoji(out, text, i, next);
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
@@ -182,32 +208,6 @@ public class CustomHtml {
                     if (span != null) {
                         out.append("</pre>");
                     }
-                }
-            }
-        }
-    }
-
-    private static void toHTML_5_wrapQuote(StringBuilder out, Spanned text, int start, int end) {
-
-        int next;
-        for (int i = start; i < end; i = next) {
-            next = text.nextSpanTransition(i, end, QuoteSpan.class);
-            if (next < 0) {
-                next = end;
-            }
-            QuoteSpan[] spans = text.getSpans(i, next, QuoteSpan.class);
-
-            if (spans != null) {
-                for (int j = 0; j < spans.length; ++j) {
-                    out.append("<blockquote>");
-                }
-            }
-
-            toHTML_6_wrapAnimatedEmoji(out, text, i, next);
-
-            if (spans != null) {
-                for (int j = 0; j < spans.length; ++j) {
-                    out.append("</blockquote>");
                 }
             }
         }

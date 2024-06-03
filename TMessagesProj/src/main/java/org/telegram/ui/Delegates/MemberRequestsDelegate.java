@@ -65,7 +65,6 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -504,7 +503,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                                 : LocaleController.formatString("HasBeenAddedToGroup", R.string.HasBeenAddedToGroup, userName);
                         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(message);
                         int start = message.indexOf(userName);
-                        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), start, start + userName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), start, start + userName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                         layout.textView.setText(stringBuilder);
                         if (allImporters.isEmpty()) {
                             Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();
@@ -773,7 +772,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             nameText.setMaxLines(1);
             nameText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, fragment.getResourceProvider()));
             nameText.setTextSize(16);
-            nameText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameText.setTypeface(AndroidUtilities.bold());
             contentView.addView(nameText);
 
             bioText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, fragment.getResourceProvider()));

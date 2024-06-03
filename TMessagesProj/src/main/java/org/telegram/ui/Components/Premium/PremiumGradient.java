@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
 public class PremiumGradient {
 
     private final PremiumGradientTools mainGradient = new PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+    private final PremiumGradientTools goldGradient = new PremiumGradientTools(Theme.key_starsGradient1, Theme.key_starsGradient2, -1);
 //    private final GradientTools grayGradient = new GradientTools(Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7);
     private final Paint mainGradientPaint = mainGradient.paint;
     Paint lockedPremiumPaint;
@@ -41,6 +42,7 @@ public class PremiumGradient {
     public InternalDrawable premiumStarMenuDrawable;
     public InternalDrawable premiumStarMenuDrawable2;
     public InternalDrawable premiumStarMenuDrawableGray;
+    public InternalDrawable goldenStarMenuDrawable;
 
     private int lastStarColor;
 
@@ -54,6 +56,7 @@ public class PremiumGradient {
     private PremiumGradient() {
         premiumStarDrawableMini = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
         premiumStarMenuDrawable = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium));
+        goldenStarMenuDrawable = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium), goldGradient);
         premiumStarMenuDrawable2 = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_normal));
 //        premiumStarMenuDrawableGray = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium), grayGradient);
         premiumStarColoredDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();

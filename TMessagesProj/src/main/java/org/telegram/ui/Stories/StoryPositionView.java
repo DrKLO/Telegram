@@ -4,8 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.SpannableStringBuilder;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
@@ -26,7 +24,7 @@ public class StoryPositionView {
     public StoryPositionView() {
         textDrawable.setTextSize(AndroidUtilities.dp(13));
         textDrawable.setTextColor(Color.WHITE);
-        textDrawable.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textDrawable.setTypeface(AndroidUtilities.bold());
 
         backgroundPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.23f)));
 

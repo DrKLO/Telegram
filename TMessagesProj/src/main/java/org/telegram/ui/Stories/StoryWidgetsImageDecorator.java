@@ -96,7 +96,7 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
                 storyReactionWidgetBackground.nextStyle();
             }
             imageHolder.setStatic();
-            imageHolder.setVisibleReaction(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(mediaArea.reaction));
+            imageHolder.setVisibleReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(mediaArea.reaction));
         }
 
         public void draw(Canvas canvas, ImageReceiver imageReceiver, float alpha) {

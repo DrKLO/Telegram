@@ -187,6 +187,7 @@ public class TL_stories {
         public TLRPC.Peer peer;
         public int max_read_id;
         public ArrayList<StoryItem> stories = new ArrayList<>();
+        public boolean checkedExpired; //custom
 
         public static PeerStories TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             PeerStories result = null;

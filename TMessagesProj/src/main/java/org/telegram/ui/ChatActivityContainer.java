@@ -34,7 +34,6 @@ public class ChatActivityContainer extends FrameLayout {
 
     public ChatActivityContainer(
         Context context,
-        Utilities.Callback0Return<FrameLayout> resizableView,
         INavigationLayout parentLayout,
         Bundle args
     ) {
@@ -50,7 +49,6 @@ public class ChatActivityContainer extends FrameLayout {
                 ChatActivityContainer.this.onSearchLoadingUpdate(loading);
             }
         };
-        chatActivity.insideContainerResizableView = resizableView;
         chatActivity.isInsideContainer = true;
     }
 
@@ -62,6 +60,10 @@ public class ChatActivityContainer extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
 
+        initChatActivity();
+    }
+
+    protected void initChatActivity() {
         if (!chatActivity.onFragmentCreate()) {
             return;
         }

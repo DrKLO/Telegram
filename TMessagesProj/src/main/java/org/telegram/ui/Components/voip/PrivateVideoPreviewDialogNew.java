@@ -236,7 +236,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
         positiveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         positiveButton.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
         positiveButton.setGravity(Gravity.CENTER);
-        positiveButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        positiveButton.setTypeface(AndroidUtilities.bold());
         positiveButton.getPaint().setTextAlign(Paint.Align.CENTER);
         positiveButton.setContentDescription(LocaleController.getString("VoipShareVideo", R.string.VoipShareVideo));
 
@@ -502,7 +502,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             textView.setTextColor(0xffffffff);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setTypeface(AndroidUtilities.bold());
             frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 21, 28, 21, 0));
             frameLayout.setTag("screencast_stub");
             frameLayout.setVisibility(GONE);

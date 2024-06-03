@@ -28,12 +28,8 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -991,7 +987,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             titleView.setEllipsizeByGradient(true);
             titleView.setTextSize(20);
             titleView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTypeface(AndroidUtilities.bold());
             actionBarContainer.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 72, 0, 72, 0));
         }
 
@@ -1291,7 +1287,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         public LevelLock(Context context, boolean plus, int lvl, Theme.ResourcesProvider resourcesProvider) {
             this.resourcesProvider = resourcesProvider;
-            text = new Text(LocaleController.formatPluralString(plus ? "BoostLevelPlus" : "BoostLevel", lvl), 12, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            text = new Text(LocaleController.formatPluralString(plus ? "BoostLevelPlus" : "BoostLevel", lvl), 12, AndroidUtilities.bold());
             lock = context.getResources().getDrawable(R.drawable.mini_switch_lock).mutate();
             lock.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
             gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1, -1, resourcesProvider);
@@ -1435,7 +1431,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             needDivider = divider;
             CharSequence text = chat.title;
             text = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
-            userText = new Text(text, 13, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            userText = new Text(text, 13, AndroidUtilities.bold());
             final int color;
             int colorId = ChatObject.getColorId(chat);
             if (colorId < 7) {
@@ -1468,7 +1464,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             CharSequence text = name;
             text = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
-            userText = new Text(text, 13, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            userText = new Text(text, 13, AndroidUtilities.bold());
             final int color;
             int colorId = UserObject.getColorId(user);
             if (colorId < 7) {
@@ -2198,6 +2194,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         protected final AvatarDrawable avatarDrawable = new AvatarDrawable();
         protected final SimpleTextView titleView, subtitleView;
 
+        private boolean isForum;
+
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusEmoji;
 
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
@@ -2230,7 +2228,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             titleView.setRightDrawable(statusEmoji);
             titleView.setTextColor(0xFFFFFFFF);
             titleView.setTextSize(20);
-            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setScrollNonFitText(true);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 97, 0, 16, 50.33f));
 
@@ -2313,6 +2311,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             invalidate();
         }
 
+        public void setForum(boolean forum) {
+            if (isForum != forum) {
+                invalidate();
+            }
+            isForum = forum;
+        }
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -2405,10 +2409,20 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         @Override
         protected void dispatchDraw(Canvas canvas) {
             rectF.set(dp(20.33f), getHeight() - dp(25.33f + 53.33f), dp(20.33f) + dp(53.33f), getHeight() - dp(25.33f));
+            imageReceiver.setRoundRadius(isForum ? dp(18) : dp(54));
             imageReceiver.setImageCoords(rectF);
             imageReceiver.draw(canvas);
 
-            canvas.drawCircle(rectF.centerX(), rectF.centerY(), rectF.width() / 2f + dp(4), storyGradient.getPaint(rectF));
+            final float r = rectF.width() / 2f + dp(4);
+            final float rr = dp(isForum ? 22 : 58);
+            canvas.drawRoundRect(
+                rectF.centerX() - r,
+                rectF.centerY() - r,
+                rectF.centerX() + r,
+                rectF.centerY() + r,
+                rr, rr,
+                storyGradient.getPaint(rectF)
+            );
 
             drawProfileIconPattern(getWidth() - dp(46), getHeight(), 1f, (x, y, sz, alpha) -> {
                 emoji.setAlpha((int) (0xFF * alpha));

@@ -11,7 +11,7 @@ public class ProfilePremiumCell extends TextCell {
 
     StarParticlesView.Drawable drawable = new StarParticlesView.Drawable(6);
 
-    public ProfilePremiumCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public ProfilePremiumCell(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
         drawable.size1 = 6;
         drawable.size2 = 6;
@@ -21,7 +21,12 @@ public class ProfilePremiumCell extends TextCell {
         drawable.minLifeTime = 600;
         drawable.randLifeTime = 500;
         drawable.startFromCenter = true;
+        drawable.useRotate = true;
         drawable.type = StarParticlesView.Drawable.TYPE_SETTINGS;
+        if (type == 1) {
+            drawable.useGradient = false;
+            drawable.colorKey = Theme.key_starsGradient1;
+        }
 
         drawable.init();
     }

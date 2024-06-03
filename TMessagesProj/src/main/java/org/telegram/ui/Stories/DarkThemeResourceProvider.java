@@ -42,7 +42,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_actionBarDefaultSubmenuItem, Color.WHITE);
         sparseIntArray.put(Theme.key_actionBarDefaultSubmenuItemIcon, Color.WHITE);
         sparseIntArray.put(Theme.key_text_RedRegular, -1152913);
-        sparseIntArray.put(Theme.key_listSelector, 234881023);
+        sparseIntArray.put(Theme.key_listSelector, 0x16ffffff);
         sparseIntArray.put(Theme.key_dialogButtonSelector, 436207615);
         sparseIntArray.put(Theme.key_chat_emojiPanelTrendingTitle, Color.WHITE);
         sparseIntArray.put(Theme.key_groupcreate_sectionText, 0x99ffffff);

@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.StrikethroughSpan;
@@ -34,6 +35,7 @@ public class CopyUtilities {
     private final static int TYPE_SPOILER = 0;
     private final static int TYPE_MONO = 1;
     private final static int TYPE_QUOTE = 2;
+    private final static int TYPE_COLLAPSE = 3;
 
     public static Spannable fromHTML(String html) {
         Spanned spanned;
@@ -81,7 +83,7 @@ public class CopyUtilities {
                     } else {
                         entities.add(setEntityStartEnd(new TLRPC.TL_messageEntityPre(), start, end));
                     }
-                } else if (parsedSpan.type == TYPE_QUOTE) {
+                } else if (parsedSpan.type == TYPE_QUOTE || parsedSpan.type == TYPE_COLLAPSE) {
                     quotes.add(parsedSpan);
                 }
             } else if (span instanceof AnimatedEmojiSpan) {
@@ -92,7 +94,7 @@ public class CopyUtilities {
             }
         }
 
-        SpannableString spannable = new SpannableString(spanned.toString());
+        SpannableStringBuilder spannable = new SpannableStringBuilder(spanned.toString());
         MediaDataController.addTextStyleRuns(entities, spannable, spannable);
         for (int i = 0; i < spans.length; ++i) {
             Object span = spans[i];
@@ -126,7 +128,7 @@ public class CopyUtilities {
         }
         for (int i = 0; i < quotes.size(); ++i) {
             ParsedSpan span = quotes.get(i);
-            QuoteSpan.putQuote(spannable, spanned.getSpanStart(span), spanned.getSpanEnd(span));
+            QuoteSpan.putQuoteToEditable(spannable, spanned.getSpanStart(span), spanned.getSpanEnd(span), span.type == TYPE_COLLAPSE);
         }
         return spannable;
     }
@@ -293,6 +295,21 @@ public class CopyUtilities {
                     return true;
                 } else {
                     ParsedSpan obj = getLast(output, ParsedSpan.class, TYPE_QUOTE);
+                    if (obj != null) {
+                        int where = output.getSpanStart(obj);
+                        output.removeSpan(obj);
+                        if (where != output.length()) {
+                            output.setSpan(obj, where, output.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        return true;
+                    }
+                }
+            } else if (tag.equals("details")) {
+                if (opening) {
+                    output.setSpan(new ParsedSpan(TYPE_COLLAPSE), output.length(), output.length(), Spanned.SPAN_MARK_MARK);
+                    return true;
+                } else {
+                    ParsedSpan obj = getLast(output, ParsedSpan.class, TYPE_COLLAPSE);
                     if (obj != null) {
                         int where = output.getSpanStart(obj);
                         output.removeSpan(obj);

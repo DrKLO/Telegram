@@ -998,7 +998,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         }
 
         public void updateLockImageReceiver() {
-            if (lockView != null && !lockView.ready() && getDrawable() instanceof AnimatedEmojiDrawable) {
+            if (lockView != null && !lockView.done() && getDrawable() instanceof AnimatedEmojiDrawable) {
                 if (((AnimatedEmojiDrawable) getDrawable()).canOverrideColor()) {
                     lockView.setImageReceiver(null);
                     lockView.setColor(accentColor);

@@ -17,6 +17,8 @@ import android.graphics.Rect;
 
 import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
 
+import org.telegram.tgnet.ConnectionsManager;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigInteger;
@@ -254,53 +256,7 @@ public class Utilities {
     }
 
     public static boolean isGoodPrime(byte[] prime, int g) {
-        if (!(g >= 2 && g <= 7)) {
-            return false;
-        }
-
-        if (prime.length != 256 || prime[0] >= 0) {
-            return false;
-        }
-
-        BigInteger dhBI = new BigInteger(1, prime);
-
-        if (g == 2) { // p mod 8 = 7 for g = 2;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(8));
-            if (res.intValue() != 7) {
-                return false;
-            }
-        } else if (g == 3) { // p mod 3 = 2 for g = 3;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(3));
-            if (res.intValue() != 2) {
-                return false;
-            }
-        } else if (g == 5) { // p mod 5 = 1 or 4 for g = 5;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(5));
-            int val = res.intValue();
-            if (val != 1 && val != 4) {
-                return false;
-            }
-        } else if (g == 6) { // p mod 24 = 19 or 23 for g = 6;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(24));
-            int val = res.intValue();
-            if (val != 19 && val != 23) {
-                return false;
-            }
-        } else if (g == 7) { // p mod 7 = 3, 5 or 6 for g = 7.
-            BigInteger res = dhBI.mod(BigInteger.valueOf(7));
-            int val = res.intValue();
-            if (val != 3 && val != 5 && val != 6) {
-                return false;
-            }
-        }
-
-        String hex = bytesToHex(prime);
-        if (hex.equals("C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B")) {
-            return true;
-        }
-
-        BigInteger dhBI2 = dhBI.subtract(BigInteger.valueOf(1)).divide(BigInteger.valueOf(2));
-        return !(!dhBI.isProbablePrime(30) || !dhBI2.isProbablePrime(30));
+        return ConnectionsManager.native_isGoodPrime(prime, g);
     }
 
     public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger p) {
@@ -470,6 +426,24 @@ public class Utilities {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(AndroidUtilities.getStringBytes(md5));
+            StringBuilder sb = new StringBuilder();
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
+    public static String SHA256(String x) {
+        if (x == null) {
+            return null;
+        }
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] array = md.digest(AndroidUtilities.getStringBytes(x));
             StringBuilder sb = new StringBuilder();
             for (int a = 0; a < array.length; a++) {
                 sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));

@@ -1,12 +1,9 @@
 package org.telegram.ui.Cells;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -68,7 +65,7 @@ public class ExpiredStoryView {
         CharSequence subtitle = String.format(fromString, fromName);
         if (idx >= 0) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(subtitle);
-            spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), idx, idx + fromName.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), idx, idx + fromName.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             subtitle = spannableStringBuilder;
         }
         TextPaint titlePaint = Theme.chat_replyTextPaint;

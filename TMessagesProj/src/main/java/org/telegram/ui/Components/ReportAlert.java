@@ -52,7 +52,7 @@ public class ReportAlert extends BottomSheet {
             textView.setGravity(Gravity.CENTER);
             textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
 
@@ -84,7 +84,7 @@ public class ReportAlert extends BottomSheet {
         frameLayout.addView(imageView, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 14, 17, 0));
 
         TextView percentTextView = new TextView(context);
-        percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         percentTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         if (type == AlertsCreator.REPORT_TYPE_SPAM) {

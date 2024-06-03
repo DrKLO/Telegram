@@ -3054,7 +3054,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             scheduleStartInTextView = new SimpleTextView(context);
             scheduleStartInTextView.setGravity(Gravity.CENTER);
             scheduleStartInTextView.setTextColor(0xffffffff);
-            scheduleStartInTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            scheduleStartInTextView.setTypeface(AndroidUtilities.bold());
             scheduleStartInTextView.setTextSize(18);
             scheduleStartInTextView.setText(LocaleController.getString("VoipChatStartsIn", R.string.VoipChatStartsIn));
             containerView.addView(scheduleStartInTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 21, 0, 21, 231 + 80)); //-80
@@ -3134,14 +3134,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             };
             scheduleTimeTextView.setGravity(Gravity.CENTER);
             scheduleTimeTextView.setTextColor(0xffffffff);
-            scheduleTimeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            scheduleTimeTextView.setTypeface(AndroidUtilities.bold());
             scheduleTimeTextView.setTextSize(60);
             containerView.addView(scheduleTimeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 21, 0, 21, 231));
 
             scheduleStartAtTextView = new SimpleTextView(context);
             scheduleStartAtTextView.setGravity(Gravity.CENTER);
             scheduleStartAtTextView.setTextColor(0xffffffff);
-            scheduleStartAtTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            scheduleStartAtTextView.setTypeface(AndroidUtilities.bold());
             scheduleStartAtTextView.setTextSize(18);
             containerView.addView(scheduleStartAtTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 21, 0, 21, 231 - 30)); //+ 30
         }
@@ -4483,7 +4483,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 TextView textView = new TextView(context);
                 textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setGravity(Gravity.LEFT | Gravity.TOP);
                 textView.setSingleLine(true);
                 textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -5002,7 +5002,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             scheduleButtonTextView.setGravity(Gravity.CENTER);
             scheduleButtonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), 0, 0x3f000000));
             scheduleButtonTextView.setTextColor(0xffffffff);
-            scheduleButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            scheduleButtonTextView.setTypeface(AndroidUtilities.bold());
             scheduleButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             containerView.addView(scheduleButtonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 21, 0, 21, 20.5f));
             scheduleButtonTextView.setOnClickListener(v -> {
@@ -5659,13 +5659,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
                 if (user != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        spannableStringBuilder.append(UserObject.getFirstName(user), new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0);
+                        spannableStringBuilder.append(UserObject.getFirstName(user), new TypefaceSpan(AndroidUtilities.bold()), 0);
                     } else {
                         spannableStringBuilder.append(UserObject.getFirstName(user));
                     }
                 } else {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        spannableStringBuilder.append(chat.title, new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0);
+                        spannableStringBuilder.append(chat.title, new TypefaceSpan(AndroidUtilities.bold()), 0);
                     } else {
                         spannableStringBuilder.append(chat.title);
                     }
@@ -7035,7 +7035,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             TextView textView = new TextView(getContext());
             textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setLines(1);
             textView.setMaxLines(1);
             textView.setSingleLine(true);

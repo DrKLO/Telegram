@@ -20,13 +20,21 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 
 public class MessageTopicButton {
@@ -63,6 +71,10 @@ public class MessageTopicButton {
     private boolean topicPressed;
     private MessageObject lastMessageObject;
 
+    private ImageReceiver imageReceiver;
+    private AvatarDrawable avatarDrawable;
+    private int avatarSize;
+
     private Context context;
     private Theme.ResourcesProvider resourcesProvider;
 
@@ -76,38 +88,77 @@ public class MessageTopicButton {
 
     protected void onClick() {}
 
-    public int set(ChatMessageCell cell, MessageObject messageObject, @NonNull TLRPC.TL_forumTopic topic, int maxWidth) {
-        lastMessageObject = messageObject;
-        isGeneralTopic = topic.id == 1;
+    public int set(ChatMessageCell cell, MessageObject messageObject, @NonNull TLObject userOrChat, int maxWidth) {
         if (cell == null || messageObject == null) {
             return 0;
         }
-
-        int iconsz = AndroidUtilities.dp(7) + (int) Theme.chat_topicTextPaint.getTextSize();
-        float padleft = AndroidUtilities.dp(isGeneralTopic ? 6 : 10) + iconsz;
-        float padright1 = Theme.chat_topicTextPaint.getTextSize() - AndroidUtilities.dp(8);
-        float padright = AndroidUtilities.dp(5) + Theme.chat_topicTextPaint.getTextSize();
-        maxWidth -= padleft + padright;
-
-        String title = topic.title == null ? "" : topic.title;
-        topicClosed = topic.closed;
-        if (topicClosed) {
-            maxWidth -= AndroidUtilities.dp(18);
-        }
-        topicNameLayout = StaticLayoutEx.createStaticLayout(title, Theme.chat_topicTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1f, 0, false, TextUtils.TruncateAt.END, maxWidth, 2, false);
-        topicHeight = AndroidUtilities.dp(4 + 4.5f) + Math.min(AndroidUtilities.dp(24), topicNameLayout == null ? 0 : topicNameLayout.getHeight());
-        float textWidth = 0;
-        int lineCount = topicNameLayout == null ? 0 : topicNameLayout.getLineCount();
-        if (topicPath == null) {
-            topicPath = new Path();
+        isGeneralTopic = false;
+        topicClosed = false;
+        String title;
+        if (userOrChat instanceof TLRPC.User) {
+            title = UserObject.getForcedFirstName((TLRPC.User) userOrChat);
         } else {
-            topicPath.rewind();
+            title = ContactsController.formatName(userOrChat);
         }
-        if (topicPaint == null) {
-            topicPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        topicIconDrawable = null;
+
+        avatarSize = AndroidUtilities.dp(11) + (int) Theme.chat_topicTextPaint.getTextSize();
+        float avatarScale = (float) avatarSize / AndroidUtilities.dp(56);
+        avatarDrawable = new AvatarDrawable();
+        imageReceiver = new ImageReceiver(cell);
+        imageReceiver.setRoundRadius(avatarSize / 2);
+        if (userOrChat instanceof TLRPC.User && UserObject.isReplyUser((TLRPC.User) userOrChat)) {
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
+            avatarDrawable.setScaleSize(avatarScale);
+            imageReceiver.setImage(null, null, avatarDrawable, null, userOrChat, 0);
+            title = LocaleController.getString(R.string.RepliesTitle);
+        } else if (userOrChat instanceof TLRPC.User && UserObject.isUserSelf((TLRPC.User) userOrChat)) {
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_MY_NOTES);
+            avatarDrawable.setScaleSize(avatarScale);
+            imageReceiver.setImage(null, null, avatarDrawable, null, userOrChat, 0);
+            title = LocaleController.getString(R.string.MyNotes);
+        } else {
+            avatarDrawable.setInfo(messageObject.currentAccount, userOrChat);
+            imageReceiver.setForUserOrChat(userOrChat, avatarDrawable);
         }
+
+        if (messageObject.isOutOwner()) {
+            topicNameColor = getThemedColor(Theme.key_chat_outReplyNameText);
+        } else {
+            int colorId = 0;
+            if (userOrChat instanceof TLRPC.User) {
+                colorId = UserObject.getColorId((TLRPC.User) userOrChat);
+            } else if (userOrChat instanceof TLRPC.Chat) {
+                colorId = ChatObject.getColorId((TLRPC.Chat) userOrChat);
+            }
+            if (colorId < 7) {
+                topicNameColor = getThemedColor(Theme.keys_avatar_nameInMessage[colorId]);
+            } else {
+                MessagesController.PeerColors peerColors = MessagesController.getInstance(messageObject.currentAccount).peerColors;
+                MessagesController.PeerColor peerColor = peerColors != null ? peerColors.getColor(colorId) : null;
+                if (peerColor != null) {
+                    topicNameColor = peerColor.getColor(0, resourcesProvider);
+                } else {
+                    topicNameColor = getThemedColor(Theme.key_chat_inReplyNameText);
+                }
+            }
+        }
+        boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+        topicBackgroundColor = Theme.multAlpha(topicNameColor, dark ? 0.12f : 0.10f);
+
+
+        return setInternal(cell, messageObject, maxWidth, title, 1);
+    }
+
+    public int set(ChatMessageCell cell, MessageObject messageObject, @NonNull TLRPC.TL_forumTopic topic, int maxWidth) {
+        if (cell == null || messageObject == null) {
+            return 0;
+        }
+        isGeneralTopic = topic.id == 1;
+        topicClosed = topic.closed;
+        String title = topic.title == null ? "" : topic.title;
         int iconColor;
-        if (topic.id == 1) {
+        if (isGeneralTopic) {
             iconColor = getThemedColor(messageObject != null && messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
             topicIconDrawable = ForumUtilities.createGeneralTopicDrawable(context, .65f, iconColor, false);
         } else if (topic.icon_emoji_id != 0) {
@@ -130,6 +181,34 @@ public class MessageTopicButton {
             topicIconDrawable = ForumUtilities.createSmallTopicDrawable(title, topic.icon_color);
         }
         setupColors(iconColor);
+
+        return setInternal(cell, messageObject, maxWidth, title, 2);
+    }
+
+    private int setInternal(ChatMessageCell cell, MessageObject messageObject, int maxWidth, String title, int maxLines) {
+        lastMessageObject = messageObject;
+
+        int iconsz = AndroidUtilities.dp(7) + (int) Theme.chat_topicTextPaint.getTextSize();
+        float padleft = AndroidUtilities.dp(isGeneralTopic ? 6 : 10) + iconsz;
+        float padright1 = Theme.chat_topicTextPaint.getTextSize() - AndroidUtilities.dp(8);
+        float padright = AndroidUtilities.dp(5) + Theme.chat_topicTextPaint.getTextSize();
+        maxWidth -= padleft + padright;
+        if (topicClosed) {
+            maxWidth -= AndroidUtilities.dp(18);
+        }
+        topicNameLayout = StaticLayoutEx.createStaticLayout(title, Theme.chat_topicTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1f, 0, false, TextUtils.TruncateAt.END, maxWidth, maxLines, false);
+        topicHeight = AndroidUtilities.dp(4 + 4.5f) + Math.min(AndroidUtilities.dp(24), topicNameLayout == null ? 0 : topicNameLayout.getHeight());
+        float textWidth = 0;
+        int lineCount = topicNameLayout == null ? 0 : topicNameLayout.getLineCount();
+        if (topicPath == null) {
+            topicPath = new Path();
+        } else {
+            topicPath.rewind();
+        }
+        if (topicPaint == null) {
+            topicPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+
         if (topicIconWaiting) {
             if (topicNameColorAnimated == null) {
                 topicNameColorAnimated = new AnimatedColor(cell);
@@ -477,9 +556,14 @@ public class MessageTopicButton {
         if (topicHitRect != null) {
             canvas.save();
             canvas.translate(topicHitRect.left, topicHitRect.top);
-            topicIconDrawable.setAlpha((int) (255 * alpha));
-            topicIconDrawable.setBounds(topicIconDrawableBounds);
-            topicIconDrawable.draw(canvas);
+            if (topicIconDrawable != null) {
+                topicIconDrawable.setAlpha((int) (255 * alpha));
+                topicIconDrawable.setBounds(topicIconDrawableBounds);
+                topicIconDrawable.draw(canvas);
+            } else if (imageReceiver != null) {
+                imageReceiver.setImageCoords(0, 0, avatarSize, avatarSize);
+                imageReceiver.draw(canvas);
+            }
             canvas.restore();
         }
     }

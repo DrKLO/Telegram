@@ -555,7 +555,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         zoomOutButton.setPadding(dp(8), 0, dp(8), 0);
         zoomOutText = new TextView(context);
         zoomOutText.setTextColor(Color.WHITE);
-        zoomOutText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        zoomOutText.setTypeface(AndroidUtilities.bold());
         zoomOutText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         zoomOutText.setText(LocaleController.getString(R.string.PhotoEditorZoomOut));
         zoomOutImage = new ImageView(context);
@@ -574,7 +574,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         undoAllButton.setText(LocaleController.getString(R.string.PhotoEditorClearAll));
         undoAllButton.setGravity(Gravity.CENTER_VERTICAL);
         undoAllButton.setTextColor(Color.WHITE);
-        undoAllButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        undoAllButton.setTypeface(AndroidUtilities.bold());
         undoAllButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         undoAllButton.setOnClickListener(v -> {
             if (!undoStore.canUndo()) {
@@ -598,7 +598,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         cancelTextButton.setPadding(dp(8), 0, dp(8), 0);
         cancelTextButton.setGravity(Gravity.CENTER_VERTICAL);
         cancelTextButton.setTextColor(Color.WHITE);
-        cancelTextButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        cancelTextButton.setTypeface(AndroidUtilities.bold());
         cancelTextButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         cancelTextButton.setOnClickListener(v -> {
             if (currentEntityView instanceof TextPaintView) {
@@ -620,7 +620,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         doneTextButton.setPadding(dp(8), 0, dp(8), 0);
         doneTextButton.setGravity(Gravity.CENTER_VERTICAL);
         doneTextButton.setTextColor(Color.WHITE);
-        doneTextButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        doneTextButton.setTypeface(AndroidUtilities.bold());
         doneTextButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         doneTextButton.setOnClickListener(v -> {
             selectEntity(null);
@@ -1289,7 +1289,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         drawTab.setTextColor(Color.WHITE);
         drawTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         drawTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        drawTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        drawTab.setTypeface(AndroidUtilities.bold());
         drawTab.setSingleLine();
         drawTab.setOnClickListener(v -> {
             if (editingText) {
@@ -1308,7 +1308,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         stickerTab.setTextColor(Color.WHITE);
         stickerTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         stickerTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        stickerTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        stickerTab.setTypeface(AndroidUtilities.bold());
         stickerTab.setAlpha(0.6f);
         stickerTab.setSingleLine();
         tabsLayout.addView(stickerTab, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -1320,7 +1320,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         textTab.setTextColor(Color.WHITE);
         textTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        textTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textTab.setTypeface(AndroidUtilities.bold());
         textTab.setAlpha(0.6f);
         textTab.setSingleLine();
         textTab.setOnClickListener(v -> {
@@ -1497,7 +1497,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             }
 
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
                 try {
                     HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     if (!photos.isEmpty()) {

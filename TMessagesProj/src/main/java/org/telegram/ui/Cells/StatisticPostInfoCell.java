@@ -34,8 +34,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -100,7 +98,7 @@ public class StatisticPostInfoCell extends FrameLayout {
             }
         };
         NotificationCenter.listenEmojiLoading(message);
-        message.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        message.setTypeface(AndroidUtilities.bold());
         message.setTextSize(16);
         message.setMaxLines(1);
         message.setTextColor(Color.BLACK);

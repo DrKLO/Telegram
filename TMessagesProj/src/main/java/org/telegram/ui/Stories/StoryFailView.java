@@ -22,7 +22,6 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
-import org.webrtc.voiceengine.WebRtcAudioEffects;
 
 public class StoryFailView extends FrameLayout {
 
@@ -56,7 +55,7 @@ public class StoryFailView extends FrameLayout {
         button = new TextView(context);
         button.setPadding(dp(13), 0, dp(13), 0);
         button.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(16), 0x1fffffff, 0x38ffffff));
-        button.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        button.setTypeface(AndroidUtilities.bold());
         button.setText(LocaleController.getString(R.string.TryAgain));
         button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         button.setTextColor(Color.WHITE);

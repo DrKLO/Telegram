@@ -1150,7 +1150,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 dropDown.setMaxLines(1);
                 dropDown.setEllipsize(TextUtils.TruncateAt.END);
                 dropDown.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-                dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                dropDown.setTypeface(AndroidUtilities.bold());
                 dropDown.setText(LocaleController.getString("ColorPickerMainColor", R.string.ColorPickerMainColor));
                 Drawable dropDownDrawable = context.getResources().getDrawable(R.drawable.ic_arrow_drop_down).mutate();
                 dropDownDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultTitle), PorterDuff.Mode.MULTIPLY));
@@ -1576,7 +1576,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
             TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setTextSize(dp(14));
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(AndroidUtilities.bold());
             if (!(currentWallpaper instanceof WallpapersListActivity.EmojiWallpaper)) {
                 int textsCount;
                 if (screenType == SCREEN_TYPE_ACCENT_COLOR || currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
@@ -1937,7 +1937,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
                         patternsCancelButton[a] = new TextView(context);
                         patternsCancelButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                        patternsCancelButton[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        patternsCancelButton[a].setTypeface(AndroidUtilities.bold());
                         patternsCancelButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
                         patternsCancelButton[a].setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
                         patternsCancelButton[a].setGravity(Gravity.CENTER);
@@ -1986,7 +1986,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
                         patternsSaveButton[a] = new TextView(context);
                         patternsSaveButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                        patternsSaveButton[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        patternsSaveButton[a].setTypeface(AndroidUtilities.bold());
                         patternsSaveButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
                         patternsSaveButton[a].setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
                         patternsSaveButton[a].setGravity(Gravity.CENTER);
@@ -2013,7 +2013,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
                         patternTitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                         patternTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                        patternTitleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        patternTitleView.setTypeface(AndroidUtilities.bold());
                         patternTitleView.setPadding(dp(21), dp(6), dp(21), dp(8));
 
                         patternTitleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
@@ -2328,7 +2328,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
             cancelButton.setPadding(dp(29), 0, dp(29), 0);
             cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
-            cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            cancelButton.setTypeface(AndroidUtilities.bold());
             saveButtonsContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             cancelButton.setOnClickListener(v -> cancelThemeApply(false));
 
@@ -2339,7 +2339,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
             doneButton.setPadding(dp(29), 0, dp(29), 0);
             doneButton.setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
-            doneButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            doneButton.setTypeface(AndroidUtilities.bold());
             saveButtonsContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             doneButton.setOnClickListener(v -> {
                 Theme.ThemeInfo previousTheme = Theme.getPreviousTheme();
@@ -5331,7 +5331,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view;
             if (viewType == 0) {
-                view = new ChatMessageCell(mContext, false, null, new Theme.ResourcesProvider() {
+                view = new ChatMessageCell(mContext, currentAccount, false, null, new Theme.ResourcesProvider() {
                     @Override
                     public int getColor(int key) {
                         return themeDelegate.getColor(key);
@@ -5983,7 +5983,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         }
 
         public void setText(CharSequence text) {
-            this.text = new Text(text, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            this.text = new Text(text, 14, AndroidUtilities.bold());
         }
 
         public void setSubText(CharSequence subtext, boolean animated) {
@@ -6133,7 +6133,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_actionTextPaint2.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_botButtonPaint.setTextSize(AndroidUtilities.dp(15));
-            chat_botButtonPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            chat_botButtonPaint.setTypeface(AndroidUtilities.bold());
             chat_actionBackgroundGradientDarkenPaint.setColor(0x15000000);
         }
 

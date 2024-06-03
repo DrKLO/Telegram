@@ -89,7 +89,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
         startBtn.setEllipsize(TextUtils.TruncateAt.END);
         startBtn.setSingleLine(true);
         startBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        startBtn.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        startBtn.setTypeface(AndroidUtilities.bold());
         startBtn.setText(isChannelOrGiga
                 ? LocaleController.formatString("VoipChannelStartVoiceChat", R.string.VoipChannelStartVoiceChat)
                 : LocaleController.formatString("VoipGroupStartVoiceChat", R.string.VoipGroupStartVoiceChat)
@@ -103,7 +103,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
         scheduleBtn.setEllipsize(TextUtils.TruncateAt.END);
         scheduleBtn.setSingleLine(true);
         scheduleBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        scheduleBtn.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        scheduleBtn.setTypeface(AndroidUtilities.bold());
         scheduleBtn.setText(isChannelOrGiga
                 ? LocaleController.formatString("VoipChannelScheduleVoiceChat", R.string.VoipChannelScheduleVoiceChat)
                 : LocaleController.formatString("VoipGroupScheduleVoiceChat", R.string.VoipGroupScheduleVoiceChat)
@@ -256,7 +256,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
             addView(imageView, LayoutHelper.createLinear(112, 112, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 24, 0, 0));
 
             TextView title = new TextView(context);
-            title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            title.setTypeface(AndroidUtilities.bold());
             title.setText(isChannelOrGiga
                     ? LocaleController.formatString("StartVoipChannelTitle", R.string.StartVoipChannelTitle)
                     : LocaleController.formatString("StartVoipChatTitle", R.string.StartVoipChatTitle)

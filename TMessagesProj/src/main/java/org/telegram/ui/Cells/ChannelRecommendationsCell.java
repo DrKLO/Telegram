@@ -9,20 +9,14 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.shapes.RoundRectShape;
 import android.graphics.text.LineBreaker;
-import android.media.Image;
 import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -45,7 +39,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -114,7 +107,7 @@ public class ChannelRecommendationsCell {
         this.currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         this.chatId = -dialogId;
 
-        serviceTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        serviceTextPaint.setTypeface(AndroidUtilities.bold());
         serviceTextPaint.setTextSize(dp(14));
         serviceTextPaint.setColor(cell.getThemedColor(Theme.key_chat_serviceText));
         serviceText = new StaticLayout(getString(R.string.ChannelJoined), serviceTextPaint, msg.getMaxMessageTextWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0f, false);
@@ -134,7 +127,7 @@ public class ChannelRecommendationsCell {
         cell.totalHeight = dp(4 + 3.33f + 3.33f + 4) + serviceTextHeight;
 
         if (headerText == null) {
-            headerText = new Text(getString(R.string.SimilarChannels), 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)).hackClipBounds();
+            headerText = new Text(getString(R.string.SimilarChannels), 14, AndroidUtilities.bold()).hackClipBounds();
         }
 
         for (int i = 0; i < channels.size(); ++i) {
@@ -496,7 +489,7 @@ public class ChannelRecommendationsCell {
             if (chat == null || chat.participants_count <= 1) {
                 subscribersText = null;
             } else {
-                subscribersText = new Text("+" + moreCount, 9.33f, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                subscribersText = new Text("+" + moreCount, 9.33f, AndroidUtilities.bold());
             }
         }
 
@@ -550,7 +543,7 @@ public class ChannelRecommendationsCell {
             if (chat == null || chat.participants_count <= 1) {
                 subscribersText = null;
             } else {
-                subscribersText = new Text(chat != null ? LocaleController.formatShortNumber(chat.participants_count, null) : "", 9.33f, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                subscribersText = new Text(chat != null ? LocaleController.formatShortNumber(chat.participants_count, null) : "", 9.33f, AndroidUtilities.bold());
             }
         }
 

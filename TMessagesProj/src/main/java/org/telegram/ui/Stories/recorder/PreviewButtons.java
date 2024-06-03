@@ -8,10 +8,8 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
@@ -29,11 +27,7 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
-import com.google.common.primitives.Chars;
-
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -237,7 +231,7 @@ public class PreviewButtons extends FrameLayout {
 
             textPaint.setTextSize(dp(13));
             textPaint.setColor(0xffffffff);
-            textPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textPaint.setTypeface(AndroidUtilities.bold());
 //            textPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
 
             SpannableString arrow = new SpannableString(">");

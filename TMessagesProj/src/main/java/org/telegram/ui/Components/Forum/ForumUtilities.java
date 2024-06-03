@@ -59,7 +59,7 @@ public class ForumUtilities {
         }
         if (forumTopic.id == 1) {
             backupImageView.setAnimatedEmojiDrawable(null);
-            backupImageView.setImageDrawable(createGeneralTopicDrawable(backupImageView.getContext(), 0.75f, Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), false));
+            backupImageView.setImageDrawable(createGeneralTopicDrawable(backupImageView.getContext(), 0.75f, Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), false, largeIcon));
         } else if (forumTopic.icon_emoji_id != 0) {
             backupImageView.setImageDrawable(null);
             if (backupImageView.animatedEmojiDrawable == null || forumTopic.icon_emoji_id != backupImageView.animatedEmojiDrawable.getDocumentId()) {
@@ -73,15 +73,15 @@ public class ForumUtilities {
         }
     }
 
-    public static Drawable createGeneralTopicDrawable(Context context, float scale, Theme.ResourcesProvider resourcesProvider) {
-        return createGeneralTopicDrawable(context, scale, Theme.getColor(Theme.key_chat_inMenu, resourcesProvider), false);
+    public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
+        return createGeneralTopicDrawable(context, scale, color, isDialog, false);
     }
 
-    public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
+    public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color, boolean isDialog, boolean large) {
         if (context == null) {
             return null;
         }
-        return new GeneralTopicDrawable(context, scale, color, isDialog);
+        return new GeneralTopicDrawable(context, scale, color, isDialog, large);
     }
 
     public static void filterMessagesByTopic(long threadMessageId, ArrayList<MessageObject> messageObjects) {
@@ -111,14 +111,14 @@ public class ForumUtilities {
             this.scale = scale;
         }
 
-        public GeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
+        public GeneralTopicDrawable(Context context, float scale, int color, boolean isDialog, boolean large) {
             if (isDialog) {
                 if (dialogGeneralIcon == null) {
-                    dialogGeneralIcon = context.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+                    dialogGeneralIcon = context.getResources().getDrawable(large ? R.drawable.msg_filled_general_large : R.drawable.msg_filled_general).mutate();
                 }
                 this.icon = dialogGeneralIcon;
             } else {
-                this.icon = context.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+                this.icon = context.getResources().getDrawable(large ? R.drawable.msg_filled_general_large : R.drawable.msg_filled_general).mutate();
             }
             this.scale = scale;
             setColor(color);

@@ -23,7 +23,7 @@ public class AboutPremiumView extends LinearLayout {
         TextView textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setText(LocaleController.getString("AboutPremiumTitle", R.string.AboutPremiumTitle));
         addView(textView);
 

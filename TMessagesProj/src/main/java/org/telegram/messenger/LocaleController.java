@@ -23,6 +23,8 @@ import android.util.Xml;
 import androidx.annotation.StringRes;
 
 import org.telegram.messenger.time.FastDateFormat;
+import org.telegram.ui.Stars.StarsController;
+import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -1168,7 +1170,17 @@ public class LocaleController {
         return formatPluralStringComma(key, plural, ',');
     }
 
+    public static String formatPluralStringComma(String key, int plural, Object... args) {
+        return formatPluralStringComma(key, plural, ',', args);
+    }
+
+
     public static String formatPluralStringComma(String key, int plural, char symbol) {
+        return formatPluralStringComma(key, plural, symbol, new Object[] {});
+    }
+
+
+    public static String formatPluralStringComma(String key, int plural, char symbol, Object... args) {
         try {
             if (key == null || key.length() == 0 || getInstance().currentPluralRules == null) {
                 return "LOC_ERR:" + key;
@@ -1195,15 +1207,27 @@ public class LocaleController {
             value = value.replace("%d", "%1$s");
             value = value.replace("%1$d", "%1$s");
 
+            Object[] a = new Object[(args == null ? 0 : args.length) + 1];
+            for (int i = 0; i < a.length; ++i) {
+                a[i] = i == 0 ? stringBuilder : args[i - 1];
+            }
             if (getInstance().currentLocale != null) {
-                return String.format(getInstance().currentLocale, value, stringBuilder);
+                return String.format(getInstance().currentLocale, value, a);
             } else {
-                return String.format(value, stringBuilder);
+                return String.format(value, a);
             }
         } catch (Exception e) {
             FileLog.e(e);
             return "LOC_ERR: " + key;
         }
+    }
+
+    public static String formatNumber(long count, char symbol) {
+        StringBuilder stringBuilder = new StringBuilder(String.format("%d", count));
+        for (int a = stringBuilder.length() - 3; a > 0; a -= 3) {
+            stringBuilder.insert(a, symbol);
+        }
+        return stringBuilder.toString();
     }
 
     public static String formatString(@StringRes int res, Object... args) {
@@ -1324,6 +1348,11 @@ public class LocaleController {
         amount = Math.abs(amount);
         Currency currency = Currency.getInstance(type);
         switch (type) {
+            case StarsController.currency:
+                customFormat = " %.0f";
+                doubleAmount = amount;
+                break;
+
             case "CLF":
                 customFormat = " %.4f";
                 doubleAmount = amount / 10000.0;

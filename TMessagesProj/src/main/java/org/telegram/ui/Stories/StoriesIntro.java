@@ -59,7 +59,7 @@ public class StoriesIntro extends FrameLayout {
 
         TextView header = new TextView(context);
         header.setTextColor(Color.WHITE);
-        header.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        header.setTypeface(AndroidUtilities.bold());
         header.setText(LocaleController.getString("StoriesIntroHeader", R.string.StoriesIntroHeader));
         header.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         linearLayout.addView(header, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -95,7 +95,7 @@ public class StoriesIntro extends FrameLayout {
         }
         TextView bottomText = new TextView(context);
         bottomText.setTextColor(Color.WHITE);
-        bottomText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        bottomText.setTypeface(AndroidUtilities.bold());
         bottomText.setText(LocaleController.getString("StoriesIntroDismiss", R.string.StoriesIntroDismiss));
         bottomText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         linearLayout.addView(bottomText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 73, 0, 0));
@@ -202,7 +202,7 @@ public class StoriesIntro extends FrameLayout {
             headerTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             headerTextPaint.setColor(Color.WHITE);
             headerTextPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics()));
-            headerTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            headerTextPaint.setTypeface(AndroidUtilities.bold());
 
             subHeaderTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             subHeaderTextPaint.setColor(0x96FFFFFF);

@@ -25,6 +25,7 @@ import androidx.annotation.RequiresApi;
 public class NoClipCanvas extends Canvas {
 
     public Canvas canvas;
+    public boolean disableReject;
 
     @Override
     public boolean clipRect(float left, float top, float right, float bottom) {
@@ -577,6 +578,9 @@ public class NoClipCanvas extends Canvas {
 
     @Override
     public boolean quickReject(float left, float top, float right, float bottom) {
+        if (disableReject) {
+            return false;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return canvas.quickReject(left, top, right, bottom);
         }
@@ -585,6 +589,9 @@ public class NoClipCanvas extends Canvas {
 
     @Override
     public boolean quickReject(@NonNull RectF rect) {
+        if (disableReject) {
+            return false;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return canvas.quickReject(rect);
         }
@@ -593,6 +600,9 @@ public class NoClipCanvas extends Canvas {
 
     @Override
     public boolean quickReject(@NonNull Path path) {
+        if (disableReject) {
+            return false;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return canvas.quickReject(path);
         }
@@ -601,16 +611,25 @@ public class NoClipCanvas extends Canvas {
 
     @Override
     public boolean quickReject(@NonNull RectF rect, @NonNull EdgeType type) {
+        if (disableReject) {
+            return false;
+        }
         return canvas.quickReject(rect, type);
     }
 
     @Override
     public boolean quickReject(@NonNull Path path, @NonNull EdgeType type) {
+        if (disableReject) {
+            return false;
+        }
         return canvas.quickReject(path, type);
     }
 
     @Override
     public boolean quickReject(float left, float top, float right, float bottom, @NonNull EdgeType type) {
+        if (disableReject) {
+            return false;
+        }
         return canvas.quickReject(left, top, right, bottom, type);
     }
 

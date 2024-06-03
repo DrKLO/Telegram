@@ -28,6 +28,7 @@ import com.android.billingclient.api.QueryPurchasesParams;
 import org.telegram.messenger.utils.BillingUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.text.NumberFormat;
@@ -96,6 +97,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         return formatCurrency(amount, currency, exp, false);
     }
 
+    private static NumberFormat currencyInstance;
     public String formatCurrency(long amount, String currency, int exp, boolean rounded) {
         if (currency == null || currency.isEmpty()) {
             return String.valueOf(amount);
@@ -105,12 +107,14 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         }
         Currency cur = Currency.getInstance(currency);
         if (cur != null) {
-            NumberFormat numberFormat = NumberFormat.getCurrencyInstance();
-            numberFormat.setCurrency(cur);
-            if (rounded) {
-                return numberFormat.format(Math.round(amount / Math.pow(10, exp)));
+            if (currencyInstance == null) {
+                currencyInstance = NumberFormat.getCurrencyInstance();
             }
-            return numberFormat.format(amount / Math.pow(10, exp));
+            currencyInstance.setCurrency(cur);
+            if (rounded) {
+                return currencyInstance.format(Math.round(amount / Math.pow(10, exp)));
+            }
+            return currencyInstance.format(amount / Math.pow(10, exp));
         }
         return amount + " " + currency;
     }
@@ -187,7 +191,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
 
-        if (paymentPurpose instanceof TLRPC.TL_inputStorePaymentGiftPremium && !checkedConsume) {
+        if ((paymentPurpose instanceof TLRPC.TL_inputStorePaymentGiftPremium || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStars) && !checkedConsume) {
             queryPurchases(BillingClient.ProductType.INAPP, (billingResult, list) -> {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     Runnable callback = () -> launchBillingFlow(activity, accountInstance, paymentPurpose, productDetails, subscriptionUpdateParams, true);
@@ -281,8 +285,13 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                     req.receipt.data = purchase.getOriginalJson();
                     req.purpose = payload.second;
 
+                    final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
+                    AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
+
                     AccountInstance acc = payload.first;
                     acc.getConnectionsManager().sendRequest(req, (response, error) -> {
+                        AndroidUtilities.runOnUIThread(progressDialog::dismiss);
+
                         requestingTokens.remove(purchase.getPurchaseToken());
 
                         if (response instanceof TLRPC.Updates) {
@@ -303,7 +312,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                             }
                             NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
                         }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagInvokeAfter);
+                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
                 } else {
                     consumeGiftPurchase(purchase, payload.second);
                 }
@@ -318,6 +327,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose) {
         if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
+                || purpose instanceof TLRPC.TL_inputStorePaymentStars
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
             billingClient.consumeAsync(
                     ConsumeParams.newBuilder()
@@ -340,6 +350,11 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         AndroidUtilities.runOnUIThread(() -> startConnection(), delay);
     }
 
+    private ArrayList<Runnable> setupListeners = new ArrayList<>();
+    public void whenSetuped(Runnable listener) {
+        setupListeners.add(listener);
+    }
+
     private int triesLeft = 0;
 
     @Override
@@ -355,6 +370,12 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             }
             queryPurchases(BillingClient.ProductType.INAPP, this::onPurchasesUpdated);
             queryPurchases(BillingClient.ProductType.SUBS, this::onPurchasesUpdated);
+            if (!setupListeners.isEmpty()) {
+                for (int i = 0; i < setupListeners.size(); ++i) {
+                    AndroidUtilities.runOnUIThread(setupListeners.get(i));
+                }
+                setupListeners.clear();
+            }
         } else {
             if (!isDisconnected) {
                 switchToInvoice();
@@ -395,5 +416,23 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 }, delay);
             }
         }
+    }
+
+    public static String getResponseCodeString(int code) {
+        switch (code) {
+            case -3: return "SERVICE_TIMEOUT";
+            case -2: return "FEATURE_NOT_SUPPORTED";
+            case -1: return "SERVICE_DISCONNECTED";
+            case 0: return "OK";
+            case 1: return "USER_CANCELED";
+            case 2: return "SERVICE_UNAVAILABLE";
+            case 3: return "BILLING_UNAVAILABLE";
+            case 4: return "ITEM_UNAVAILABLE";
+            case 5: return "DEVELOPER_ERROR";
+            case 6: return "ERROR";
+            case 7: return "ITEM_ALREADY_OWNED";
+            case 8: return "ITEM_NOT_OWNED";
+        }
+        return null;
     }
 }

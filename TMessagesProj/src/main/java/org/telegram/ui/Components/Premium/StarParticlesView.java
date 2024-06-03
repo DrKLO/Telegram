@@ -112,7 +112,12 @@ public class StarParticlesView extends View {
             clipGradientMatrix.reset();
             clipGradientMatrix.postTranslate(0, 1 + getHeight() - dp(12));
             clipGradient.setLocalMatrix(clipGradientMatrix);
-            canvas.drawRect(0, 0, getWidth(), getHeight(), clipGradientPaint);
+            canvas.drawRect(0, getHeight() - dp(12), getWidth(), getHeight(), clipGradientPaint);
+            clipGradientMatrix.reset();
+            clipGradientMatrix.postRotate(180);
+            clipGradientMatrix.postTranslate(0, dp(12));
+            clipGradient.setLocalMatrix(clipGradientMatrix);
+            canvas.drawRect(0, 0, getWidth(), dp(12), clipGradientPaint);
             canvas.restore();
             canvas.restore();
         }
@@ -155,6 +160,8 @@ public class StarParticlesView extends View {
         public float excludeRadius = 0;
         public float centerOffsetX = 0, centerOffsetY = 0;
         public Paint overridePaint;
+        public Utilities.CallbackReturn<Integer, Paint> getPaint;
+        public boolean useScale;
 
         public ArrayList<Particle> particles = new ArrayList<>();
         public float speedScale = 1f;
@@ -326,6 +333,14 @@ public class StarParticlesView extends View {
                         flip[i] = true;
                         continue;
                     }
+                } else if (type == 105) {
+                    int res;
+                    if (i == 0) {
+                        res = R.raw.premium_object_star2;
+                        stars[i] = SvgHelper.getBitmap(res, size, size, getPathColor(i));
+//                        flip[i] = true;
+                        continue;
+                    }
                 }
 
                 bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -376,7 +391,7 @@ public class StarParticlesView extends View {
                     paint1.setPathEffect(null);
                     paint1.setAlpha(255);
                 } else {
-                    paint.setColor(getPathColor());
+                    paint.setColor(getPathColor(i));
                     if (roundEffect) {
                         paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dpf2(size1 / 5f)));
                     }
@@ -388,7 +403,7 @@ public class StarParticlesView extends View {
             }
         }
 
-        protected int getPathColor() {
+        protected int getPathColor(int i) {
             if (type == 100) {
                 return ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 200);
             } else {
@@ -456,8 +471,15 @@ public class StarParticlesView extends View {
             prevTime = time;
         }
 
+        private int lastParticleI = 0;
         public class Particle {
             public long lifeTime;
+
+            private int i;
+            private float scale = 1f;
+            public Particle() {
+                i = lastParticleI++;
+            }
 
             private float x, y;
             private float x2, y2;
@@ -527,9 +549,21 @@ public class StarParticlesView extends View {
                         flipProgress += dt / 1000f * Math.min(speedScale, 3.5f);
                         canvas.scale((float) Math.cos(Math.PI * flipProgress), 1f, 0, 0);
                     }
-                    Paint paint = overridePaint != null ? overridePaint : Drawable.this.paint;
+                    Paint paint;
+                    if (overridePaint != null) {
+                        paint = overridePaint;
+                    } else if (getPaint != null) {
+                        paint = getPaint.run(i);
+                    } else {
+                        paint = Drawable.this.paint;
+                    }
                     paint.setAlpha((int) (this.alpha * (1f - outProgress) * alpha));
-                    canvas.drawBitmap(stars[starIndex], -(stars[starIndex].getWidth() >> 1), -(stars[starIndex].getHeight() >> 1), paint);
+                    final Bitmap bitmap = stars[starIndex];
+                    if (useScale) {
+                        final float s = scale * (1f - outProgress) * alpha * inProgress;
+                        canvas.scale(s, s);
+                    }
+                    canvas.drawBitmap(bitmap, -(bitmap.getWidth() >> 1), -(bitmap.getHeight() >> 1), paint);
                     canvas.restore();
                 }
                 if (!paused) {
@@ -562,6 +596,9 @@ public class StarParticlesView extends View {
                 }
                 lifeTime = time + minLifeTime + Utilities.fastRandom.nextInt(randLifeTime * (flip[starIndex] ? 3 : 1));
                 randomRotate = 0;
+                if (useScale) {
+                    scale = .4f + .6f * Utilities.fastRandom.nextFloat();
+                }
 
                 if (distributionAlgorithm) {
                     float bestDistance = 0;
@@ -619,11 +656,13 @@ public class StarParticlesView extends View {
                 if (flip[starIndex]) {
                     float d = 100;
                     a = Math.toRadians(180 + d - 2 * d * Utilities.fastRandom.nextFloat());
+                } else if (startFromCenter) {
+                    a = Utilities.fastRandom.nextDouble() * Math.PI * 2.0;
                 } else {
-                    a = Math.atan2(x - (rect.centerX() + centerOffsetX), y - (rect.centerY() + centerOffsetY));
+                    a = Math.atan2(y - (rect.centerY() + centerOffsetY), x - (rect.centerX() + centerOffsetX));
                 }
-                vecX = (float) Math.sin(a);
-                vecY = (float) Math.cos(a);
+                vecX = (float) Math.cos(a);
+                vecY = (float) Math.sin(a);
                 if (svg[starIndex]) {
                     alpha = (int) (120 * ((50 + Utilities.fastRandom.nextInt(50)) / 100f));
                 } else {
@@ -644,10 +683,9 @@ public class StarParticlesView extends View {
                     inProgress = 0;
                 }
                 if (startFromCenter) {
-                    x2 = x;
-                    y2 = y;
-                    x = rect.centerX() + centerOffsetX;// + (x - rect.centerX()) * 0.3f;
-                    y = rect.centerY() + centerOffsetY;// + (y - rect.centerY()) * 0.3f;
+                    final float r = (.6f + 1.2f * Utilities.fastRandom.nextFloat()) * Math.min(rect.width(), rect.height()) / 2f;
+                    x2 = x = rect.centerX() + centerOffsetX + (float) Math.cos(a) * r;
+                    y2 = y = rect.centerY() + centerOffsetY + (float) Math.sin(a) * r;
                 }
                 first = false;
             }

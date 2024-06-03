@@ -50,7 +50,7 @@ public class HelloParticles {
 
         public Drawable(int count) {
             this.count = count;
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(AndroidUtilities.bold());
             textPaint.setColor(Color.WHITE);
             switch (SharedConfig.getDevicePerformanceClass()) {
                 case SharedConfig.PERFORMANCE_CLASS_LOW:

@@ -16,6 +16,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ReplacementSpan;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.view.Gravity;
 import android.view.View;

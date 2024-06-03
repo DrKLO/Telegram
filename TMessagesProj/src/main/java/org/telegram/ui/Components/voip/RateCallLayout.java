@@ -252,7 +252,7 @@ public class RateCallLayout extends FrameLayout {
             titleTextView.setText(LocaleController.getString("VoipRateCallTitle", R.string.VoipRateCallTitle));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             messageTextView = new TextView(context);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setTextColor(Color.WHITE);

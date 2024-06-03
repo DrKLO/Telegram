@@ -901,7 +901,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         emojiRationalTopTextView = new TextView(context);
         emojiRationalTopTextView.setText(LocaleController.getString("VoipCallEncryptionEndToEnd", R.string.VoipCallEncryptionEndToEnd));
         emojiRationalTopTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        emojiRationalTopTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        emojiRationalTopTextView.setTypeface(AndroidUtilities.bold());
         emojiRationalTopTextView.setTextColor(Color.WHITE);
         emojiRationalTopTextView.setGravity(Gravity.CENTER);
 

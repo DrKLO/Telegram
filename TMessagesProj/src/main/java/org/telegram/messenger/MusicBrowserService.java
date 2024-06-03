@@ -221,7 +221,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                         cursor.dispose();
                         if (!usersToLoad.isEmpty()) {
                             ArrayList<TLRPC.User> usersArrayList = new ArrayList<>();
-                            messagesStorage.getUsersInternal(TextUtils.join(",", usersToLoad), usersArrayList);
+                            messagesStorage.getUsersInternal(usersToLoad, usersArrayList);
                             for (int a = 0; a < usersArrayList.size(); a++) {
                                 TLRPC.User user = usersArrayList.get(a);
                                 users.put(user.id, user);

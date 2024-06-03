@@ -37,6 +37,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.CollapseTextCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorBtnCell;
 
 import java.util.ArrayList;
@@ -71,6 +72,10 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
     private boolean[] banFilter;
     private boolean[] restrictFilter;
     private boolean canRestrict;
+
+    private int[] participantMessageCounts;
+    private boolean participantMessageCountsLoading = false;
+    private boolean participantMessageCountsLoaded = false;
 
     private TLRPC.TL_chatBannedRights defaultBannedRights;
     private TLRPC.TL_chatBannedRights bannedRights;
@@ -179,7 +184,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             TLObject userOrChat = first();
             String name;
             if (userOrChat instanceof TLRPC.User) {
-                name = UserObject.getUserName((TLRPC.User) userOrChat);
+                name = UserObject.getForcedFirstName((TLRPC.User) userOrChat);
             } else {
                 name = ContactsController.formatName(userOrChat);
             }
@@ -228,7 +233,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             adapter.update(true);
         }
 
-        void performAction(Utilities.IndexedConsumer<TLObject> action) {
+        void forEachSelected(Utilities.IndexedConsumer<TLObject> action) {
             for (int i = 0; i < totalCount; i++) {
                 if (checks[i] && (filter == null || filter[i])) {
                     action.accept(options.get(i), i);
@@ -283,7 +288,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
         actionButton.setEllipsize(TextUtils.TruncateAt.END);
         actionButton.setGravity(Gravity.CENTER);
         actionButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        actionButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        actionButton.setTypeface(AndroidUtilities.bold());
         actionButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         actionButton.setText(getString(R.string.DeleteProceedBtn));
         actionButton.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 6));
@@ -491,7 +496,15 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     protected CharSequence getTitle() {
-        return LocaleController.formatPluralString("DeleteOptionsTitle", messages != null ? messages.size() : 0);
+        final int[] messageCount = {messages != null ? messages.size() : 0};
+
+        if (participantMessageCounts != null && participantMessageCountsLoaded) {
+            deleteAll.forEachSelected((o, i) -> {
+                messageCount[0] += participantMessageCounts[i];
+            });
+        }
+
+        return LocaleController.formatPluralString("DeleteOptionsTitle", messageCount[0]);
     }
 
     @Override
@@ -503,6 +516,11 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
     public void show() {
         super.show();
         Bulletin.hideVisible();
+    }
+
+    @Override
+    protected boolean canHighlightChildAt(View child, float x, float y) {
+        return !(child instanceof CollapseTextCell);
     }
 
     private int getSendMediaSelectedCount() {
@@ -535,6 +553,45 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             i++;
         }
         return i;
+    }
+
+    private void updateParticipantMessageCounts() {
+        if (participantMessageCountsLoading) {
+            return;
+        }
+        participantMessageCountsLoading = true;
+
+        participantMessageCounts = new int[deleteAll.totalCount];
+
+        int[] loadCountdown = new int[]{deleteAll.totalCount};
+        for (int a = 0; a < deleteAll.totalCount; a++) {
+            final int i = a;
+
+            final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
+            req.peer = MessagesController.getInputPeer(inChat);
+            req.q = "";
+            final TLRPC.InputPeer inputPeer = MessagesController.getInputPeer(deleteAll.options.get(a));
+            req.from_id = inputPeer;
+            req.flags |= 1;
+            req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+            req.limit = 1;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response instanceof TLRPC.TL_messages_channelMessages) {
+                    int totalCount = ((TLRPC.TL_messages_channelMessages) response).count;
+                    int alreadyAccountedFor = (int) messages.stream()
+                            .filter(msg -> MessageObject.peersEqual(inputPeer, msg.messageOwner.from_id))
+                            .count();
+                    participantMessageCounts[i] = totalCount - alreadyAccountedFor;
+                }
+
+                loadCountdown[0]--;
+                if (loadCountdown[0] == 0) {
+                    participantMessageCountsLoading = false;
+                    participantMessageCountsLoaded = true;
+                    updateTitleAnimated();
+                }
+            }));
+        }
     }
 
     private boolean allDefaultMediaBanned() {
@@ -711,6 +768,14 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
         }
     }
 
+    private void onDeleteAllChanged() {
+        if (participantMessageCountsLoaded) {
+            updateTitleAnimated();
+        } else {
+            updateParticipantMessageCounts();
+        }
+    }
+
     private float shiftDp = 10.0f;
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.viewType == VIEW_TYPE_USER_CHECKBOX) {
@@ -721,6 +786,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                 report.toggleCheck(index);
             } else if (action == ACTION_DELETE_ALL) {
                 deleteAll.toggleCheck(index);
+                onDeleteAllChanged();
             } else if (action == ACTION_BAN) {
                 banOrRestrict.toggleCheck(index);
             }
@@ -729,6 +795,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                 report.toggleAllChecks();
             } else if (item.id == ACTION_DELETE_ALL) {
                 deleteAll.toggleAllChecks();
+                onDeleteAllChanged();
             } else if (item.id == ACTION_BAN) {
                 banOrRestrict.toggleAllChecks();
             } else if (item.viewType == VIEW_TYPE_ROUND_CHECKBOX) {
@@ -824,6 +891,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             restrict = !restrict;
             banOrRestrict.setFilter(restrict ? restrictFilter : banFilter);
             adapter.update(true);
+            onRestrictionsChanged();
         }
     }
 
@@ -845,7 +913,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             MessagesController.getInstance(currentAccount).deleteMessages(groupMessageIds, null, null, mergeDialogId, topicId, true, mode);
         }
 
-        banOrRestrict.performAction((participant, i) -> {
+        banOrRestrict.forEachSelected((participant, i) -> {
             if (restrict) {
                 TLRPC.TL_chatBannedRights rights = bannedRightsOr(bannedRights, participantsBannedRights.get(i));
                 if (participant instanceof TLRPC.User) {
@@ -862,7 +930,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             }
         });
 
-        report.performAction((participant, i) -> {
+        report.forEachSelected((participant, i) -> {
             TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();
             req.channel = MessagesController.getInputChannel(inChat);
             if (participant instanceof TLRPC.User) {
@@ -886,7 +954,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
         });
 
-        deleteAll.performAction((participant, i) -> {
+        deleteAll.forEachSelected((participant, i) -> {
             if (participant instanceof TLRPC.User) {
                 MessagesController.getInstance(currentAccount).deleteUserChannelHistory(inChat, (TLRPC.User) participant, null, 0);
             } else if (participant instanceof TLRPC.Chat) {

@@ -29,6 +29,7 @@ public class BlurredLinearLayout extends LinearLayout {
         this.sizeNotifierFrameLayout = sizeNotifierFrameLayout;
     }
 
+    private android.graphics.Rect blurBounds = new android.graphics.Rect();
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (SharedConfig.chatBlurEnabled() && sizeNotifierFrameLayout != null && drawBlur && backgroundColor != Color.TRANSPARENT) {
@@ -36,14 +37,14 @@ public class BlurredLinearLayout extends LinearLayout {
                 backgroundPaint = new Paint();
             }
             backgroundPaint.setColor(backgroundColor);
-            AndroidUtilities.rectTmp2.set(0, backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight() - backgroundPaddingBottom);
+            blurBounds.set(0, backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight() - backgroundPaddingBottom);
             float y = 0;
             View view = this;
             while (view != sizeNotifierFrameLayout) {
                 y += view.getY();
                 view = (View) view.getParent();
             }
-            sizeNotifierFrameLayout.drawBlurRect(canvas, y, AndroidUtilities.rectTmp2, backgroundPaint, isTopView);
+            sizeNotifierFrameLayout.drawBlurRect(canvas, y, blurBounds, backgroundPaint, isTopView);
         }
         super.dispatchDraw(canvas);
     }

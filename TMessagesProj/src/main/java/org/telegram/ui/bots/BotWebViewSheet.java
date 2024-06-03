@@ -24,6 +24,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.TextView;
 
@@ -38,6 +39,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -63,6 +65,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
+import org.telegram.ui.ActionBar.OKLCH;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
@@ -78,6 +81,7 @@ import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
+import org.telegram.ui.Stars.StarsController;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -168,6 +172,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private int actionBarColor;
+    private int navBarColor;
     private boolean actionBarIsLight;
     private Paint actionBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -193,7 +198,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private PasscodeView passcodeView;
 
     private Runnable pollRunnable = () -> {
-        if (!dismissed) {
+        if (!dismissed && queryId != 0) {
             TLRPC.TL_messages_prolongWebView prolongWebView = new TLRPC.TL_messages_prolongWebView();
             prolongWebView.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
             prolongWebView.peer = MessagesController.getInstance(currentAccount).getInputPeer(peerId);
@@ -299,12 +304,14 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             @Override
             public void onWebAppSetActionBarColor(int color, boolean isOverrideColor) {
                 int from = actionBarColor;
+                int navBarFrom = navBarColor;
                 int to = color;
+                int navBarTo = navigationBarColor(color);
 
                 BotWebViewMenuContainer.ActionBarColorsAnimating actionBarColorsAnimating = new BotWebViewMenuContainer.ActionBarColorsAnimating();
                 actionBarColorsAnimating.setFrom(overrideBackgroundColor ? actionBarColor : 0, resourcesProvider);
                 overrideBackgroundColor = isOverrideColor;
-                actionBarIsLight = ColorUtils.calculateLuminance(color) < 0.5f;
+                actionBarIsLight = ColorUtils.calculateLuminance(color) < 0.721f;
                 actionBarColorsAnimating.setTo(overrideBackgroundColor ? to : 0, resourcesProvider);
 
                 ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
@@ -312,12 +319,33 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 animator.addUpdateListener(animation -> {
                     float progress = (float) animation.getAnimatedValue();
                     actionBarColor = ColorUtils.blendARGB(from, to, progress);
+                    navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
+                    AndroidUtilities.setNavigationBarColor(getWindow(), navBarColor, false);
+                    AndroidUtilities.setLightNavigationBar(getWindow(), AndroidUtilities.computePerceivedBrightness(navBarColor) > .721f);
+                    frameLayout.invalidate();
                     actionBar.setBackgroundColor(actionBarColor);
 
                     actionBarColorsAnimating.updateActionBar(actionBar, progress);
                     lineColor = actionBarColorsAnimating.getColor(Theme.key_sheet_scrollUp);
 
                     frameLayout.invalidate();
+                });
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        float progress = 1f;
+                        actionBarColor = ColorUtils.blendARGB(from, to, progress);
+                        navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
+                        AndroidUtilities.setNavigationBarColor(getWindow(), navBarColor, false);
+                        AndroidUtilities.setLightNavigationBar(getWindow(), AndroidUtilities.computePerceivedBrightness(navBarColor) > .721f);
+                        frameLayout.invalidate();
+                        actionBar.setBackgroundColor(actionBarColor);
+
+                        actionBarColorsAnimating.updateActionBar(actionBar, progress);
+                        lineColor = actionBarColorsAnimating.getColor(Theme.key_sheet_scrollUp);
+
+                        frameLayout.invalidate();
+                    }
                 });
                 animator.start();
                 updateLightStatusBar();
@@ -349,15 +377,25 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
 
             @Override
-            public void onWebAppOpenInvoice(String slug, TLObject response) {
+            public void onWebAppOpenInvoice(TLRPC.InputInvoice inputInvoice, String slug, TLObject response) {
                 BaseFragment parentFragment = ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment();
                 PaymentFormActivity paymentFormActivity = null;
-                if (response instanceof TLRPC.TL_payments_paymentForm) {
-                    TLRPC.TL_payments_paymentForm form = (TLRPC.TL_payments_paymentForm) response;
+                if (response instanceof TLRPC.TL_payments_paymentFormStars) {
+                    AndroidUtilities.hideKeyboard(frameLayout);
+                    final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+                    progressDialog.showDelayed(150);
+                    StarsController.getInstance(currentAccount).openPaymentForm(inputInvoice, (TLRPC.TL_payments_paymentFormStars) response, () -> {
+                        progressDialog.dismiss();
+                    }, status -> {
+                        webViewContainer.onInvoiceStatusUpdate(slug, status);
+                    });
+                    return;
+                } else if (response instanceof TLRPC.PaymentForm) {
+                    TLRPC.PaymentForm form = (TLRPC.PaymentForm) response;
                     MessagesController.getInstance(currentAccount).putUsers(form.users, false);
                     paymentFormActivity = new PaymentFormActivity(form, slug, parentFragment);
-                } else if (response instanceof TLRPC.TL_payments_paymentReceipt) {
-                    paymentFormActivity = new PaymentFormActivity((TLRPC.TL_payments_paymentReceipt) response);
+                } else if (response instanceof TLRPC.PaymentReceipt) {
+                    paymentFormActivity = new PaymentFormActivity((TLRPC.PaymentReceipt) response);
                 }
 
                 if (paymentFormActivity != null) {
@@ -514,9 +552,25 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
         dimPaint.setColor(0x40000000);
         actionBarColor = getColor(Theme.key_windowBackgroundWhite);
+        navBarColor = getColor(Theme.key_windowBackgroundGray);
+        AndroidUtilities.setNavigationBarColor(getWindow(), navBarColor, false);
         frameLayout = new SizeNotifierFrameLayout(context) {
             {
+                setClipChildren(false);
+                setClipToPadding(false);
                 setWillNotDraw(false);
+            }
+
+            private final Paint navbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+
+                if (passcodeView.getVisibility() != View.VISIBLE) {
+                    navbarPaint.setColor(navBarColor);
+                    AndroidUtilities.rectTmp.set(0, getHeight() - getPaddingBottom(), getWidth(), getHeight() + AndroidUtilities.navigationBarHeight);
+                    canvas.drawRect(AndroidUtilities.rectTmp, navbarPaint);
+                }
             }
 
             @Override
@@ -610,7 +664,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         mainButton.setAlpha(0f);
         mainButton.setSingleLine();
         mainButton.setGravity(Gravity.CENTER);
-        mainButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        mainButton.setTypeface(AndroidUtilities.bold());
         int padding = AndroidUtilities.dp(16);
         mainButton.setPadding(padding, 0, padding, 0);
         mainButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -775,7 +829,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             lightStatusBar = !actionBarIsLight;
         } else {
             int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
-            lightStatusBar = !AndroidUtilities.isTablet() && ColorUtils.calculateLuminance(color) >= 0.9 && actionBarTransitionProgress >= 0.85f;
+            lightStatusBar = !AndroidUtilities.isTablet() && ColorUtils.calculateLuminance(color) >= 0.721f && actionBarTransitionProgress >= 0.85f;
         }
         if (wasLightStatusBar != null && wasLightStatusBar == lightStatusBar) {
             return;
@@ -821,17 +875,21 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             window.setStatusBarColor(Color.TRANSPARENT);
         }
 
-        frameLayout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        frameLayout.setFitsSystemWindows(true);
+        frameLayout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             frameLayout.setOnApplyWindowInsetsListener((v, insets) -> {
                 v.setPadding(0, 0, 0, insets.getSystemWindowInsetBottom());
-                return insets;
+                if (Build.VERSION.SDK_INT >= 30) {
+                    return WindowInsets.CONSUMED;
+                } else {
+                    return insets.consumeSystemWindowInsets();
+                }
             });
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
-            AndroidUtilities.setLightNavigationBar(window, ColorUtils.calculateLuminance(color) >= 0.9);
+            AndroidUtilities.setLightNavigationBar(window, ColorUtils.calculateLuminance(navBarColor) >= 0.721f);
         }
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
@@ -1161,6 +1219,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
     @Override
     public void show() {
+        if (!AndroidUtilities.isSafeToShow(getContext())) return;
         frameLayout.setAlpha(0f);
         frameLayout.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -1268,5 +1327,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             updateActionBarColors();
             updateLightStatusBar();
         }
+    }
+
+    public static int navigationBarColor(int actionBarColor) {
+        final boolean isDark = AndroidUtilities.computePerceivedBrightness(actionBarColor) < 0.721f;
+//        final int themeNavBarColor = (Theme.isCurrentThemeDark() == isDark ? Theme.getColor(Theme.key_windowBackgroundGray) : (isDark ? 0xFF151E27 : 0xFFF0F0F0));
+//        return Theme.adaptHue(themeNavBarColor, actionBarColor);
+//        return OKLCH.adapt(themeNavBarColor, actionBarColor);
+        return Theme.adaptHSV(actionBarColor, +.35f, -.1f);
     }
 }

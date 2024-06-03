@@ -74,7 +74,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         text.setCallback(this);
         text.setTextSize(dp(14));
         if (filled) {
-            text.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            text.setTypeface(AndroidUtilities.bold());
         }
         text.setGravity(Gravity.CENTER_HORIZONTAL);
 
@@ -88,7 +88,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         countText.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         countText.setCallback(this);
         countText.setTextSize(dp(12));
-        countText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        countText.setTypeface(AndroidUtilities.bold());
         countText.setText("");
         countText.setGravity(Gravity.CENTER_HORIZONTAL);
 

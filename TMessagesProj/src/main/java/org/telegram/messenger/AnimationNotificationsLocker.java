@@ -6,6 +6,8 @@ public class AnimationNotificationsLocker {
     int notificationsIndex = -1;
     int globalNotificationsIndex = -1;
 
+    boolean disabled;
+
     final int[] allowedNotifications;
 
     public AnimationNotificationsLocker() {
@@ -17,6 +19,9 @@ public class AnimationNotificationsLocker {
     }
 
     public void lock() {
+        if (disabled) {
+            return;
+        }
         int currentAccount = UserConfig.selectedAccount;
         if (this.currentAccount != currentAccount) {
             NotificationCenter.getInstance(currentAccount).onAnimationFinish(notificationsIndex);
@@ -28,8 +33,15 @@ public class AnimationNotificationsLocker {
     }
 
     public void unlock() {
+        if (disabled) {
+            return;
+        }
         NotificationCenter.getInstance(currentAccount).onAnimationFinish(notificationsIndex);
         NotificationCenter.getGlobalInstance().onAnimationFinish(globalNotificationsIndex);
+    }
+
+    public void disable() {
+        disabled = true;
     }
 
 }

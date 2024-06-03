@@ -590,6 +590,7 @@ public class EmojiThemes {
     }
 
     private int getOrDefault(SparseIntArray colorsMap, int key) {
+        if (colorsMap == null) return Theme.getDefaultColor(key);
         int index = colorsMap.indexOfKey(key);
         if (index >= 0) {
             return colorsMap.valueAt(index);

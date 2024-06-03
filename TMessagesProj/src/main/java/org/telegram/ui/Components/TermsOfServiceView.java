@@ -63,7 +63,7 @@ public class TermsOfServiceView extends FrameLayout {
         titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setText(LocaleController.getString("PrivacyPolicyAndTerms", R.string.PrivacyPolicyAndTerms));
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 20, 0, 0));
 
@@ -86,7 +86,7 @@ public class TermsOfServiceView extends FrameLayout {
         TextView declineTextView = new TextView(context);
         declineTextView.setText(LocaleController.getString("Decline", R.string.Decline).toUpperCase());
         declineTextView.setGravity(Gravity.CENTER);
-        declineTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        declineTextView.setTypeface(AndroidUtilities.bold());
         declineTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         declineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         declineTextView.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText)));
@@ -138,7 +138,7 @@ public class TermsOfServiceView extends FrameLayout {
         TextView acceptTextView = new TextView(context);
         acceptTextView.setText(LocaleController.getString("Accept", R.string.Accept));
         acceptTextView.setGravity(Gravity.CENTER);
-        acceptTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        acceptTextView.setTypeface(AndroidUtilities.bold());
         acceptTextView.setTextColor(0xffffffff);
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));

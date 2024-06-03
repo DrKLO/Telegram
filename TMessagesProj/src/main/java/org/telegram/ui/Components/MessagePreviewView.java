@@ -14,21 +14,17 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Outline;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.icu.util.Measure;
 import android.os.Build;
-import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,13 +32,11 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ChatListItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -53,8 +47,6 @@ import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -63,11 +55,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -391,8 +380,9 @@ public class MessagePreviewView extends FrameLayout {
                         cell.drawContent(canvas, true);
                         cell.layoutTextXY(true);
                         cell.drawMessageText(canvas);
-                        if ((cell.getCurrentMessagesGroup() == null || cell.getCurrentPosition() != null && (cell.getCurrentPosition().last || cell.getCurrentMessagesGroup() != null && cell.getCurrentMessagesGroup().isDocuments)) || cell.getTransitionParams().animateBackgroundBoundsInner) {
+                        if ((cell.getCurrentMessagesGroup() == null || cell.getCurrentPosition() != null && ((cell.getCurrentPosition().flags & cell.captionFlag()) != 0 && (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) != 0 || cell.getCurrentMessagesGroup() != null && cell.getCurrentMessagesGroup().isDocuments)) || cell.getTransitionParams().animateBackgroundBoundsInner) {
                             cell.drawCaptionLayout(canvas, false, cell.getAlpha());
+                            cell.drawReactionsLayout(canvas, cell.getAlpha());
                         }
                         if (cell.getCurrentMessagesGroup() != null || cell.getTransitionParams().animateBackgroundBoundsInner) {
                             cell.drawNamesLayout(canvas, cell.getAlpha());
@@ -959,7 +949,8 @@ public class MessagePreviewView extends FrameLayout {
                 ToggleButton sendersNameButton = new ToggleButton(
                     context,
                     R.raw.name_hide, messagePreviewParams.multipleUsers ? LocaleController.getString(R.string.ShowSenderNames) : LocaleController.getString(R.string.ShowSendersName),
-                    R.raw.name_show, messagePreviewParams.multipleUsers ? LocaleController.getString(R.string.HideSenderNames) : LocaleController.getString(R.string.HideSendersName)
+                    R.raw.name_show, messagePreviewParams.multipleUsers ? LocaleController.getString(R.string.HideSenderNames) : LocaleController.getString(R.string.HideSendersName),
+                    resourcesProvider
                 );
                 menu.addView(sendersNameButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
@@ -968,7 +959,8 @@ public class MessagePreviewView extends FrameLayout {
                     captionButton = new ToggleButton(
                         context,
                         R.raw.caption_hide, LocaleController.getString(R.string.ShowCaption),
-                        R.raw.caption_show, LocaleController.getString(R.string.HideCaption)
+                        R.raw.caption_show, LocaleController.getString(R.string.HideCaption),
+                        resourcesProvider
                     );
                     captionButton.setState(messagePreviewParams.hideCaption, false);
                     menu.addView(captionButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
@@ -1043,7 +1035,8 @@ public class MessagePreviewView extends FrameLayout {
                 changePositionBtn = new ToggleButton(
                     context,
                     R.raw.position_below, LocaleController.getString(R.string.LinkAbove),
-                    R.raw.position_above, LocaleController.getString(R.string.LinkBelow)
+                    R.raw.position_above, LocaleController.getString(R.string.LinkBelow),
+                    resourcesProvider
                 );
                 changePositionBtn.setState(!messagePreviewParams.webpageTop, false);
                 menu.addView(changePositionBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
@@ -1053,15 +1046,17 @@ public class MessagePreviewView extends FrameLayout {
                 changeSizeBtn = new ToggleButton(
                     context,
                     R.raw.media_shrink, LocaleController.getString(R.string.LinkMediaLarger),
-                    R.raw.media_enlarge, LocaleController.getString(R.string.LinkMediaSmaller)
+                    R.raw.media_enlarge, LocaleController.getString(R.string.LinkMediaSmaller),
+                    resourcesProvider
                 );
                 changeSizeBtn.setBackground(null);
                 changeSizeBtn.setVisibility(messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
                 changeSizeBtnContainer.addView(changeSizeBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 videoChangeSizeBtn = new ToggleButton(
-                        context,
-                        R.raw.media_shrink, LocaleController.getString(R.string.LinkVideoLarger),
-                        R.raw.media_enlarge, LocaleController.getString(R.string.LinkVideoSmaller)
+                    context,
+                    R.raw.media_shrink, LocaleController.getString(R.string.LinkVideoLarger),
+                    R.raw.media_enlarge, LocaleController.getString(R.string.LinkVideoSmaller),
+                    resourcesProvider
                 );
                 videoChangeSizeBtn.setBackground(null);
                 videoChangeSizeBtn.setVisibility(!messagePreviewParams.isVideo ? View.INVISIBLE : View.VISIBLE);
@@ -1501,7 +1496,7 @@ public class MessagePreviewView extends FrameLayout {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext(), false, sharedResources, resourcesProvider) {
+                ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext(), currentAccount, false, sharedResources, resourcesProvider) {
                     @Override
                     public void invalidate() {
                         super.invalidate();
@@ -1673,9 +1668,9 @@ public class MessagePreviewView extends FrameLayout {
                     if (index > block.charactersOffset) {
                         final float y;
                         if (index - block.charactersOffset > layoutText.length() - 1) {
-                            y = offsetY + (int) (block.textYOffset + block.padTop + block.height);
+                            y = offsetY + (int) (block.textYOffset(textLayoutBlocks, cell.transitionParams) + block.padTop + block.height);
                         } else {
-                            y = offsetY + block.textYOffset + block.padTop + layout.getLineTop(layout.getLineForOffset(index - block.charactersOffset));
+                            y = offsetY + block.textYOffset(textLayoutBlocks, cell.transitionParams) + block.padTop + layout.getLineTop(layout.getLineForOffset(index - block.charactersOffset));
                         }
                         return (int) y;
                     }
@@ -1930,7 +1925,7 @@ public class MessagePreviewView extends FrameLayout {
 
             public Tab(int id, String name) {
                 this.id = id;
-                text = new Text(name, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                text = new Text(name, 14, AndroidUtilities.bold());
             }
         }
 
@@ -2101,7 +2096,7 @@ public class MessagePreviewView extends FrameLayout {
 
             title = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
             title.setAnimationProperties(.3f, 0, 430, CubicBezierInterpolator.EASE_OUT_QUINT);
-            title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            title.setTypeface(AndroidUtilities.bold());
             title.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider));
             title.setTextSize(dp(18));
             title.setEllipsizeByGradient(!LocaleController.isRTL);
@@ -2224,7 +2219,7 @@ public class MessagePreviewView extends FrameLayout {
         return false;
     }
 
-    private class ToggleButton extends View {
+    public static class ToggleButton extends View {
         AnimatedTextView.AnimatedTextDrawable textDrawable;
         RLottieToggleDrawable iconDrawable;
 
@@ -2236,19 +2231,20 @@ public class MessagePreviewView extends FrameLayout {
         public ToggleButton(
             Context context,
             int iconRes1, String text1,
-            int iconRes2, String text2
+            int iconRes2, String text2,
+            Theme.ResourcesProvider resourcesProvider
         ) {
             super(context);
 
             this.text1 = text1;
             this.text2 = text2;
 
-            setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
+            setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL));
 
             textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
             textDrawable.setAnimationProperties(.35f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
             textDrawable.setTextSize(dp(16));
-            textDrawable.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            textDrawable.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
             textDrawable.setCallback(this);
             textDrawable.setEllipsizeByGradient(!LocaleController.isRTL);
             if (LocaleController.isRTL) {
@@ -2258,7 +2254,7 @@ public class MessagePreviewView extends FrameLayout {
             textDrawable.setOverrideFullWidth(minWidth);
 
             iconDrawable = new RLottieToggleDrawable(this, iconRes1, iconRes2);
-            iconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+            iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
         }
 
         public void setState(boolean state1, boolean animated) {
@@ -2269,6 +2265,10 @@ public class MessagePreviewView extends FrameLayout {
             textDrawable.setText(state1 ? text1 : text2, animated && !LocaleController.isRTL);
             iconDrawable.setState(state1, animated);
             first = false;
+        }
+
+        public boolean getState() {
+            return isState1;
         }
 
         @Override
@@ -2333,7 +2333,7 @@ public class MessagePreviewView extends FrameLayout {
         }
     }
 
-    private class RLottieToggleDrawable extends Drawable {
+    private static  class RLottieToggleDrawable extends Drawable {
 
         private RLottieDrawable state1, state2;
         private RLottieDrawable currentState;

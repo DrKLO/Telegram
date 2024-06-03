@@ -57,6 +57,7 @@ void Connection::suspendConnection(bool idle) {
     connectionState = idle ? TcpConnectionStageIdle : TcpConnectionStageSuspended;
     dropConnection();
     ConnectionsManager::getInstance(currentDatacenter->instanceNum).onConnectionClosed(this, 0);
+    generation++;
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
@@ -243,7 +244,11 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
 
         uint32_t old = buffer->limit();
         buffer->limit(buffer->position() + currentPacketLength);
+        uint32_t current_generation = generation;
         ConnectionsManager::getInstance(currentDatacenter->instanceNum).onConnectionDataReceived(this, buffer, currentPacketLength);
+        if (current_generation != generation) {
+          break;
+        }
         buffer->position(buffer->limit());
         buffer->limit(old);
 
@@ -350,6 +355,7 @@ void Connection::connect() {
     reconnectTimer->stop();
 
     if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) connecting (%s:%hu)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
+    generation++;
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
@@ -657,6 +663,7 @@ void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
             currentTimeout += 2;
         }
     }
+    generation++;
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();

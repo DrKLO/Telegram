@@ -1814,6 +1814,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             } else if (type == TYPE_BANNED && ChatObject.canBlockUsers(currentChat)) {
                 if (ChatObject.canAddUsers(currentChat) && peerId > 0) {
                     options.add(R.drawable.msg_contact_add, isChannel ? LocaleController.getString("ChannelAddToChannel", R.string.ChannelAddToChannel) : LocaleController.getString("ChannelAddToGroup", R.string.ChannelAddToGroup), () -> {
+                        deletePeer(peerId);
                         TLRPC.User user = getMessagesController().getUser(peerId);
                         getMessagesController().addUserToChat(chatId, user, 0, null, ChatUsersActivity.this, null);
                     });

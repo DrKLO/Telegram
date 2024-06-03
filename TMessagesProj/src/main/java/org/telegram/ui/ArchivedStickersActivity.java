@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -36,6 +37,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class ArchivedStickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -47,6 +49,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     private LinearLayoutManager layoutManager;
     private RecyclerListView listView;
 
+    private HashSet<Long> loadedSets = new HashSet<>();
     private ArrayList<TLRPC.StickerSetCovered> sets = new ArrayList<>();
     private boolean firstLoaded;
     private boolean endReached;
@@ -221,8 +224,14 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
 
     private void processResponse(TLRPC.TL_messages_archivedStickers res) {
         if (!isInTransition) {
-            sets.addAll(res.sets);
-            endReached = res.sets.size() != 15;
+            int added = 0;
+            for (TLRPC.StickerSetCovered s : res.sets) {
+                if (loadedSets.contains(s.set.id)) continue;
+                loadedSets.add(s.set.id);
+                sets.add(s);
+                added++;
+            }
+            endReached = added <= 0;
             loadingStickers = false;
             firstLoaded = true;
             if (emptyView != null) {

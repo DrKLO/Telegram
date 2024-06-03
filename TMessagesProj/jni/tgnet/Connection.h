@@ -101,6 +101,7 @@ private:
     int64_t usefullDataReceiveTime;
     uint32_t currentTimeout = 4;
     uint32_t receivedDataAmount = 0;
+    uint32_t generation = 0;
 
     uint8_t temp[64];
 

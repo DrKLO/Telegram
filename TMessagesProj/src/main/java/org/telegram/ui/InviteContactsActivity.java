@@ -596,7 +596,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         infoTextView.setGravity(Gravity.CENTER);
         infoTextView.setText(LocaleController.getString("InviteFriendsHelp", R.string.InviteFriendsHelp));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        infoTextView.setTypeface(AndroidUtilities.bold());
         infoTextView.setPadding(AndroidUtilities.dp(17), AndroidUtilities.dp(9), AndroidUtilities.dp(17), AndroidUtilities.dp(9));
         frameLayout.addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -632,7 +632,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         counterView.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
         counterTextView = new TextView(context);
-        counterTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        counterTextView.setTypeface(AndroidUtilities.bold());
         counterTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         counterTextView.setTextColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         counterTextView.setGravity(Gravity.CENTER);
@@ -647,7 +647,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         textView.setGravity(Gravity.CENTER);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
         textView.setText(LocaleController.getString("InviteToTelegram", R.string.InviteToTelegram).toUpperCase());
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
         updateHint();

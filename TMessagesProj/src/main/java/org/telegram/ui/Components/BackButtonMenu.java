@@ -246,15 +246,29 @@ public class BackButtonMenu {
         if (parentLayout == null) {
             return dialogs;
         }
+        int maxStackIndex = -1;
+        List<PulledDialog> pulledDialogs = parentLayout.getPulledDialogs();
+        if (pulledDialogs != null) {
+            for (int i = 0; i < pulledDialogs.size(); i++) {
+                PulledDialog pulledDialog = pulledDialogs.get(i);
+                if (pulledDialog.topic == null || pulledDialog.topic.id == topicId) {
+                    continue;
+                }
+                if (pulledDialog.stackIndex >= maxStackIndex) {
+                    maxStackIndex = pulledDialog.stackIndex;
+                }
+                dialogs.add(pulledDialog);
+            }
+        }
         if (parentLayout.getFragmentStack().size() > 1 && parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) instanceof TopicsFragment) {
             PulledDialog pulledDialog = new PulledDialog();
             dialogs.add(pulledDialog);
-            pulledDialog.stackIndex = 0;
+            pulledDialog.stackIndex = ++maxStackIndex;
             pulledDialog.activity = DialogsActivity.class;
 
             pulledDialog = new PulledDialog();
             dialogs.add(pulledDialog);
-            pulledDialog.stackIndex = parentLayout.getFragmentStack().size() - 2;
+            pulledDialog.stackIndex = -1;
             pulledDialog.activity = TopicsFragment.class;
             pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
         } else {
@@ -263,16 +277,6 @@ public class BackButtonMenu {
             pulledDialog.stackIndex = -1;
             pulledDialog.activity = TopicsFragment.class;
             pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
-        }
-        List<PulledDialog> pulledDialogs = parentLayout.getPulledDialogs();
-        if (pulledDialogs != null) {
-            for (int i = 0; i < pulledDialogs.size(); i++) {
-                PulledDialog pulledDialog = pulledDialogs.get(i);
-                if (pulledDialog.topic == null || pulledDialog.topic.id == topicId) {
-                    continue;
-                }
-                dialogs.add(pulledDialog);
-            }
         }
         Collections.sort(dialogs, (d1, d2) -> d2.stackIndex - d1.stackIndex);
         return dialogs;

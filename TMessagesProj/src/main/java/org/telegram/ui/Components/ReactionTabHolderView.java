@@ -65,7 +65,7 @@ public class ReactionTabHolderView extends FrameLayout {
         counterView = new TextView(context);
         counterView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         counterView.setTextColor(Theme.getColor(Theme.key_avatar_nameInMessageBlue));
-        counterView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        counterView.setTypeface(AndroidUtilities.bold());
         addView(counterView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 40, 0, 8, 0));
 
         outlinePaint.setStyle(Paint.Style.STROKE);
@@ -107,7 +107,7 @@ public class ReactionTabHolderView extends FrameLayout {
     public void setCounter(int currentAccount, TLRPC.ReactionCount counter) {
         this.count = counter.count;
         counterView.setText(String.format("%s", LocaleController.formatShortNumber(counter.count, null)));
-        ReactionsLayoutInBubble.VisibleReaction counterReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(counter.reaction);
+        ReactionsLayoutInBubble.VisibleReaction counterReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(counter.reaction);
         reaction = counterReaction;
         if (reaction.emojicon != null) {
             for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {

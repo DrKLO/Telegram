@@ -131,7 +131,7 @@ public class JoinGroupAlert extends BottomSheet {
         }
 
         SimpleTextView simpleTextView = new SimpleTextView(context);
-        simpleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        simpleTextView.setTypeface(AndroidUtilities.bold());
         simpleTextView.setTextSize(20);
         simpleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         simpleTextView.setText(title);
@@ -190,7 +190,7 @@ public class JoinGroupAlert extends BottomSheet {
             requestTextView.setText(isChannel ? LocaleController.getString("RequestToJoinChannel", R.string.RequestToJoinChannel) : LocaleController.getString("RequestToJoinGroup", R.string.RequestToJoinGroup));
             requestTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             requestTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            requestTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            requestTextView.setTypeface(AndroidUtilities.bold());
             requestTextView.setOnClickListener((view) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (!isDismissed()) {
@@ -305,7 +305,7 @@ public class JoinGroupAlert extends BottomSheet {
             joinTextView.setText(isJoinToChannel ? LocaleController.getString("ProfileJoinChannel", R.string.ProfileJoinChannel) : LocaleController.getString("ProfileJoinGroup", R.string.ProfileJoinGroup));
             joinTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             joinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            joinTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            joinTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(joinTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 14, 0, 14, 14));
             joinTextView.setOnClickListener(v -> {
                 dismiss();

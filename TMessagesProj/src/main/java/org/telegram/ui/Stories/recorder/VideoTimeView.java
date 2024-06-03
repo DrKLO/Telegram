@@ -12,11 +12,8 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
@@ -34,7 +31,7 @@ public class VideoTimeView extends View {
         textDrawable.setAnimationProperties(.2f, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
         textDrawable.setTextSize(dp(13));
         textDrawable.setTextColor(0xffffffff);
-        textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textDrawable.setTypeface(AndroidUtilities.bold());
         textDrawable.setCallback(this);
         textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
 

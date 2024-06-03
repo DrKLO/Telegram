@@ -53,6 +53,7 @@ import org.telegram.ui.Charts.view_data.ChartHeaderView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.FillLastLinearLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkActionView;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
@@ -133,8 +134,11 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                     view = new View(getContext()) {
                         @Override
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                            int h = Math.max(0, layoutManager.getLastItemHeight()) ;
-                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY));
+                            int lastItemHeight = 0;
+                            if (layoutManager instanceof FillLastLinearLayoutManager) {
+                                lastItemHeight = ((FillLastLinearLayoutManager) layoutManager).getLastItemHeight();
+                            }
+                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.max(0, lastItemHeight), MeasureSpec.EXACTLY));
                         }
                     };
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -765,7 +769,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
             imageView = new ImageView(context);
             textView = new TextView(context);
             textView.setTextColor(Color.WHITE);
-            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 25, 0, 0));

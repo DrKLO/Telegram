@@ -70,7 +70,7 @@ public final class BulletinFactory {
     public static final int ICON_TYPE_WARNING = 1;
 
     public static BulletinFactory global() {
-        BaseFragment baseFragment = LaunchActivity.getLastFragment();
+        BaseFragment baseFragment = LaunchActivity.getSafeLastFragment();
         if (baseFragment == null) {
             return BulletinFactory.of(Bulletin.BulletinWindow.make(ApplicationLoader.applicationContext), null);
         }
@@ -194,6 +194,16 @@ public final class BulletinFactory {
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
+        return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createSimpleBulletinDetail(int iconRawId, CharSequence text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(iconRawId, 36, 36);
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        layout.textView.setMaxLines(4);
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
@@ -1061,7 +1071,8 @@ public final class BulletinFactory {
     }
 
     public Bulletin createAdReportedBulletin(CharSequence text) {
-        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), fragment.getResourceProvider());
+        if (getContext() == null) return new Bulletin.EmptyBulletin();
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(R.raw.ic_admin, "Shield");
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(3);

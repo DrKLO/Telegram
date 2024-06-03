@@ -122,7 +122,7 @@ public class LinkEditActivity extends BaseFragment {
         }
         createTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         createTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
-        createTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        createTextView.setTypeface(AndroidUtilities.bold());
         createTextView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(8), AndroidUtilities.dp(18), AndroidUtilities.dp(8));
         int topSpace = actionBar.getOccupyStatusBar() ? (AndroidUtilities.statusBarHeight / AndroidUtilities.dp(2)) : 0;
         actionBar.addView(createTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, topSpace, 0, 0));
@@ -274,7 +274,7 @@ public class LinkEditActivity extends BaseFragment {
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
 
         if (type == CREATE_TYPE) {
             buttonTextView.setText(LocaleController.getString("CreateLink", R.string.CreateLink));
@@ -301,7 +301,7 @@ public class LinkEditActivity extends BaseFragment {
             approveCell.setHeight(56);
             approveCell.setTag(Theme.key_windowBackgroundUnchecked);
             approveCell.setTextAndCheck(LocaleController.getString("ApproveNewMembers", R.string.ApproveNewMembers), false, false);
-            approveCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            approveCell.setTypeface(AndroidUtilities.bold());
             approveCell.setOnClickListener(view -> {
                 TextCheckCell cell = (TextCheckCell) view;
                 boolean newIsChecked = !cell.isChecked();

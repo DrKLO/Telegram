@@ -427,7 +427,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         public void updateDrawState(TextPaint ds) {
             super.updateDrawState(ds);
             ds.setUnderlineText(true);
-            ds.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            ds.setTypeface(AndroidUtilities.bold());
         }
 
         @Override
@@ -1558,7 +1558,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         noPasswordSetTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText5));
         noPasswordSetTextView.setGravity(Gravity.CENTER);
         noPasswordSetTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        noPasswordSetTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        noPasswordSetTextView.setTypeface(AndroidUtilities.bold());
         noPasswordSetTextView.setText(LocaleController.getString("TelegramPassportCreatePassword", R.string.TelegramPassportCreatePassword));
         linearLayout2.addView(noPasswordSetTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 9, 21, 0));
         noPasswordSetTextView.setOnClickListener(v -> {
@@ -2406,7 +2406,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         acceptTextView.setText(LocaleController.getString("PassportAuthorize", R.string.PassportAuthorize));
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptTextView.setGravity(Gravity.CENTER);
-        acceptTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        acceptTextView.setTypeface(AndroidUtilities.bold());
         bottomLayout.addView(acceptTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
         progressViewButton = new ContextProgressView(context, 0);
@@ -2502,7 +2502,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyTextView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         emptyTextView1.setGravity(Gravity.CENTER);
         emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        emptyTextView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTextView1.setTypeface(AndroidUtilities.bold());
         emptyTextView1.setText(LocaleController.getString("PassportNoDocuments", R.string.PassportNoDocuments));
         emptyLayout.addView(emptyTextView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 16, 0, 0));
 
@@ -2520,7 +2520,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyTextView3.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), 0x20), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        emptyTextView3.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTextView3.setTypeface(AndroidUtilities.bold());
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setText(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd).toUpperCase());
         emptyLayout.addView(emptyTextView3, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER, 0, 12, 0, 0));
@@ -6837,7 +6837,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
                     if (getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -6931,7 +6931,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public void didSelectFiles(ArrayList<String> files, String caption, boolean notify, int scheduleDate) {
+    public void didSelectFiles(ArrayList<String> files, String caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
         ArrayList<SendMessagesHelper.SendingMediaInfo> arrayList = new ArrayList<>();
         for (int a = 0, count = files.size(); a < count; a++) {
             SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
@@ -7265,7 +7265,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             titleTextView = new TextView(context);
             titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             titleTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             titleTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
@@ -7506,7 +7506,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     codeField[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
                     codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                     codeField[a].setMaxLines(1);
-                    codeField[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    codeField[a].setTypeface(AndroidUtilities.bold());
                     codeField[a].setPadding(0, 0, 0, 0);
                     codeField[a].setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
                     if (verificationType == 3) {

@@ -288,7 +288,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         }
 
         for (int a = 0; a < cells.length; a++) {
-            cells[a] = new ChatMessageCell(context, false, null, resourcesProvider) {
+            cells[a] = new ChatMessageCell(context, currentAccount, false, null, resourcesProvider) {
                 private GestureDetector gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {

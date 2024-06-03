@@ -50,7 +50,6 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     private final int type;
     public final static int FRAGMENT_STYLE = 0;
     public final static int DIALOG_STYLE = 1;
-    public final static int BUSINESS_STYLE = 2;
     public boolean isDarkBackground;
 
     public GLIconRenderer(Context context, int style, int type) {

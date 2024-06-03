@@ -154,6 +154,7 @@ typedef struct ConnectiosManagerDelegate {
     virtual void getHostByName(std::string domain, int32_t instanceNum, ConnectionSocket *socket) = 0;
     virtual int32_t getInitFlags(int32_t instanceNum) = 0;
     virtual void onPremiumFloodWait(int32_t instanceNum, int32_t requestToken, bool isUpload) = 0;
+    virtual void onIntegrityCheckClassic(int32_t instanceNum, int32_t requestToken, std::string nonce) = 0;
 } ConnectiosManagerDelegate;
 
 typedef struct HandshakeDelegate {
@@ -175,7 +176,8 @@ enum RequestFlag {
     RequestFlagResendAfter = 512,
     RequestFlagIgnoreFloodWait = 1024,
     RequestFlagListenAfterCancel = 2048,
-    RequestFlagIsCancel = 32768
+    RequestFlagIsCancel = 32768,
+    RequestFlagFailOnServerErrorsExceptFloodWait = 65536
 };
 
 inline std::string to_string_int32(int32_t value) {

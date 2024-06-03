@@ -811,7 +811,7 @@ public class SavedMessagesController {
                 }
 
                 if (!usersToLoad.isEmpty()) {
-                    messagesStorage.getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                    messagesStorage.getUsersInternal(usersToLoad, users);
                 }
                 if (!chatsToLoad.isEmpty()) {
                     messagesStorage.getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
@@ -886,7 +886,7 @@ public class SavedMessagesController {
                 }
 
                 if (!usersToLoad.isEmpty()) {
-                    messagesStorage.getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                    messagesStorage.getUsersInternal(usersToLoad, users);
                 }
                 if (!chatsToLoad.isEmpty()) {
                     messagesStorage.getChatsInternal(TextUtils.join(",", chatsToLoad), chats);

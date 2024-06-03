@@ -56,9 +56,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 
 import java.util.ArrayList;
@@ -300,7 +298,7 @@ public class UndoView extends FrameLayout {
 
         undoTextView = new TextView(context);
         undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        undoTextView.setTypeface(AndroidUtilities.bold());
         undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
         undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
         undoButton.addView(undoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 6, 4, 8, 4));
@@ -315,7 +313,7 @@ public class UndoView extends FrameLayout {
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(12));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         textPaint.setColor(getThemedColor(Theme.key_undo_infoColor));
 
         setWillNotDraw(false);
@@ -620,8 +618,8 @@ public class UndoView extends FrameLayout {
                         req.msg_id = message.id;
                         req.peer = parentFragment.getMessagesController().getInputPeer(message.peer_id);
                         parentFragment.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (response instanceof TLRPC.TL_payments_paymentReceipt) {
-                                parentFragment.presentFragment(new PaymentFormActivity((TLRPC.TL_payments_paymentReceipt) response));
+                            if (response instanceof TLRPC.PaymentReceipt) {
+                                parentFragment.presentFragment(new PaymentFormActivity((TLRPC.PaymentReceipt) response));
                             }
                         }), ConnectionsManager.RequestFlagFailOnServerErrors);
                     });
@@ -918,7 +916,7 @@ public class UndoView extends FrameLayout {
                 subinfoTextView.setText(subInfoText);
                 subinfoTextView.setVisibility(VISIBLE);
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                infoTextView.setTypeface(AndroidUtilities.bold());
             } else {
                 layoutParams.leftMargin = AndroidUtilities.dp(58);
                 layoutParams.topMargin = AndroidUtilities.dp(13);
@@ -1127,7 +1125,7 @@ public class UndoView extends FrameLayout {
             leftImageView.setVisibility(VISIBLE);
 
             if (radius != 0) {
-                infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                infoTextView.setTypeface(AndroidUtilities.bold());
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 leftImageView.clearLayerColors();
                 leftImageView.setLayerColor("BODY.**", getThemedColor(Theme.key_undo_infoColor));
@@ -1183,7 +1181,7 @@ public class UndoView extends FrameLayout {
             subinfoTextView.setText(authorization.app_name);
             subinfoTextView.setVisibility(VISIBLE);
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            infoTextView.setTypeface(AndroidUtilities.bold());
 
             undoTextView.setTextColor(getThemedColor(Theme.key_text_RedRegular));
             undoImageView.setVisibility(GONE);
@@ -1351,7 +1349,7 @@ public class UndoView extends FrameLayout {
         } else if (currentAction == ACTION_HINT_SWIPE_TO_REPLY) {
             infoTextView.setVisibility(VISIBLE);
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            infoTextView.setTypeface(AndroidUtilities.bold());
             infoTextView.setText(LocaleController.getString("SwipeToReplyHint", R.string.SwipeToReplyHint));
             leftImageView.setVisibility(VISIBLE);
             leftImageView.setAnimation(R.raw.hint_swipe_reply, (int) (36 * 1.8f), (int) (36 * 1.8f));
@@ -1472,7 +1470,7 @@ public class UndoView extends FrameLayout {
                     layoutParams.rightMargin = margin;
 
                     infoTextView.setText(LocaleController.formatString("FolderLinkDeletedTitle", R.string.FolderLinkDeletedTitle, folderName));
-                    infoTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    infoTextView.setTypeface(AndroidUtilities.bold());
 
                     subinfoTextView.setVisibility(VISIBLE);
                     subinfoTextView.setText(LocaleController.formatPluralString("FolderLinkDeletedSubtitle", chatsCount));

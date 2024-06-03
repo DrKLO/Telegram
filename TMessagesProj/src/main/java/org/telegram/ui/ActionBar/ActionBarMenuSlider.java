@@ -33,7 +33,6 @@ import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
-import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
@@ -47,10 +46,8 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FloatSeekBarAccessibilityDelegate;
-import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
-import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.SpeedIconDrawable;
 
 public class ActionBarMenuSlider extends FrameLayout {
@@ -111,7 +108,7 @@ public class ActionBarMenuSlider extends FrameLayout {
             }
         };
         textDrawable.setCallback(this);
-        textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textDrawable.setTypeface(AndroidUtilities.bold());
         textDrawable.setAnimationProperties(.3f, 0, 165, CubicBezierInterpolator.EASE_OUT_QUINT);
         textDrawable.setTextSize(AndroidUtilities.dpf2(14));
         textDrawable.getPaint().setStyle(Paint.Style.FILL_AND_STROKE);

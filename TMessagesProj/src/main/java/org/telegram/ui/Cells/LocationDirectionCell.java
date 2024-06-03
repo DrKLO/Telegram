@@ -34,7 +34,7 @@ public class LocationDirectionCell extends FrameLayout {
         buttonTextView.setTextSize(14);
         buttonTextView.setText(LocaleController.getString("Directions", R.string.Directions));
         buttonTextView.setLeftDrawable(R.drawable.filled_directions);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         frameLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 

@@ -14,7 +14,6 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.text.method.LinkMovementMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -294,7 +293,7 @@ public class TableCell extends FrameLayout {
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         }
         if (text != null) {
-            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setText(text);
             textView.setBackgroundColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
             textView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 32 : 12), AndroidUtilities.dp(11), AndroidUtilities.dp(LocaleController.isRTL ? 12 : 32), AndroidUtilities.dp(11));

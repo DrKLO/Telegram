@@ -1,9 +1,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -33,7 +31,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
 
         TextView textView = new TextView(context);
         textView.setText(LocaleController.getString("SponsoredMessageInfo", R.string.SponsoredMessageInfo));
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
 

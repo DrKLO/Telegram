@@ -38,7 +38,6 @@ import android.text.TextWatcher;
 import android.transition.Transition;
 import android.transition.TransitionManager;
 import android.transition.TransitionValues;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -60,7 +59,6 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -101,7 +99,6 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
@@ -1107,7 +1104,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
         titleTextView.setPadding(dp(18), dp(6), dp(18), dp(6));
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 40, 0));
 
         optionsButton = new ActionBarMenuItem(context, null, 0, getThemedColor(Theme.key_sheet_other), resourcesProvider);
@@ -1141,7 +1138,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         pickerBottomLayout.setTextColor(getThemedColor(buttonTextColorKey = Theme.key_dialogTextBlue2));
         pickerBottomLayout.setTextSize(dp(14));
         pickerBottomLayout.setPadding(dp(18), 0, dp(18), 0);
-        pickerBottomLayout.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        pickerBottomLayout.setTypeface(AndroidUtilities.bold());
         pickerBottomLayout.setGravity(Gravity.CENTER);
 
         pickerBottomFrameLayout = new FrameLayout(context);
@@ -1175,7 +1172,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         previewSendButton.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_dialogBackground), getThemedColor(Theme.key_listSelector)));
         previewSendButton.setGravity(Gravity.CENTER);
         previewSendButton.setPadding(dp(29), 0, dp(29), 0);
-        previewSendButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        previewSendButton.setTypeface(AndroidUtilities.bold());
         stickerPreviewLayout.addView(previewSendButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
         previewSendButton.setOnClickListener(v -> {
             if (importingStickersPaths != null) {

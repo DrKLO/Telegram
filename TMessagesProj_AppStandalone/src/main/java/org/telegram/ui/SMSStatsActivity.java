@@ -39,7 +39,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -708,7 +707,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
             TextView titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setText(LocaleController.getString(R.string.SmsOverview));
             addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
 
@@ -725,7 +724,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
             smsSentTextView = new AnimatedTextView(context, false, true, true);
             smsSentTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
             smsSentTextView.setTextSize(dp(17));
-            smsSentTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            smsSentTextView.setTypeface(AndroidUtilities.bold());
             left.addView(smsSentTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 4, 0, 4, 0));
             TextView textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -736,7 +735,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
             sentSinceDateTextView = new AnimatedTextView(context, false, true, true);
             sentSinceDateTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
             sentSinceDateTextView.setTextSize(dp(17));
-            sentSinceDateTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            sentSinceDateTextView.setTypeface(AndroidUtilities.bold());
             right.addView(sentSinceDateTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 4, 0, 4, 0));
             sentSinceTitleView = new TextView(context);
             sentSinceTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -757,7 +756,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
             smsRemainingTextView = new AnimatedTextView(context, false, true, true);
             smsRemainingTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
             smsRemainingTextView.setTextSize(dp(17));
-            smsRemainingTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            smsRemainingTextView.setTypeface(AndroidUtilities.bold());
             smsRemainingTextView.setText("0");
             left.addView(smsRemainingTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 4, 0, 4, 0));
             textView = new TextView(context);
@@ -769,7 +768,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
             giftSinceDateTextView = new AnimatedTextView(context, false, true, true);
             giftSinceDateTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
             giftSinceDateTextView.setTextSize(dp(17));
-            giftSinceDateTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            giftSinceDateTextView.setTypeface(AndroidUtilities.bold());
             right.addView(giftSinceDateTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 4, 0, 4, 0));
             lastGiftLinkTextView = new LinkSpanDrawable.LinksTextView(context);
             lastGiftLinkTextView.setPadding(dp(4), 0, 0, 0);
@@ -857,7 +856,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
                 textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setText(getString(R.string.SmsHistoryTitle));
                 addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 50, 0, 50, 6));
 
@@ -892,7 +891,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
 
                 TextView dateCountry = new TextView(context);
                 dateCountry.setGravity(Gravity.CENTER_VERTICAL);
-                dateCountry.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                dateCountry.setTypeface(AndroidUtilities.bold());
                 dateCountry.setText(LocaleController.getString(R.string.SmsHistoryDateCountry));
                 dateCountry.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                 dateCountry.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -901,7 +900,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
 
                 TextView status = new TextView(context);
                 status.setGravity(Gravity.CENTER_VERTICAL);
-                status.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                status.setTypeface(AndroidUtilities.bold());
                 status.setText(LocaleController.getString(R.string.SmsHistoryStatus));
                 status.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                 status.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -973,7 +972,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
 
                 statusTextView = new TextView(context);
                 statusTextView.setGravity(Gravity.CENTER_VERTICAL);
-                statusTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                statusTextView.setTypeface(AndroidUtilities.bold());
                 statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 statusTextView.setPadding(dp(4), 0, dp(13), 0);
                 right.addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 55, Gravity.FILL));
@@ -1068,8 +1067,8 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
 
             strokePaint.setStrokeWidth(dp(1));
             strokePaint.setStyle(Paint.Style.STROKE);
-            strokePaint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_divider, resourcesProvider), Color.WHITE, 0.1f));
-            backgroundPaint.setColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
+            strokePaint.setColor(Theme.getColor(Theme.key_table_border, resourcesProvider));
+            backgroundPaint.setColor(Theme.getColor(Theme.key_table_background, resourcesProvider));
 
             FrameLayout buttonContainer = new FrameLayout(getContext());
             buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));

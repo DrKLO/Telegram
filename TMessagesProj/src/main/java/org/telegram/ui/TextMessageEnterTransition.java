@@ -526,6 +526,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         messageView.drawNamesLayout(canvas, alphaProgress);
         messageView.drawCommentButton(canvas, alphaProgress);
         messageView.drawCaptionLayout(canvas, false, alphaProgress);
+        messageView.drawReactionsLayout(canvas, alphaProgress);
         messageView.drawLinkPreview(canvas, alphaProgress);
         canvas.restore();
 
@@ -734,7 +735,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         }
 
         canvas.save();
-        canvas.translate(fromX * (1f - progressX) + (toX - toXOffset) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
+        canvas.translate(fromX * (1f - progressX) + (toX - toXOffset) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset(messageView.getMessageObject().textLayoutBlocks, messageView.transitionParams)) * progress);
         canvas.scale(scale, scale * scale2, 0, 0);
 
         if (drawBitmaps) {
@@ -765,7 +766,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         if (rtlLayout != null) {
             canvas.save();
-            canvas.translate(fromX * (1f - progressX) + (toX - toXOffsetRtl) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
+            canvas.translate(fromX * (1f - progressX) + (toX - toXOffsetRtl) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset(messageView.getMessageObject().textLayoutBlocks, messageView.transitionParams)) * progress);
             canvas.scale(scale, scale * scale2, 0, 0);
             if (drawBitmaps) {
                 if (crossfade) {

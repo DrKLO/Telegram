@@ -27,13 +27,10 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.Editable;
-import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -49,7 +46,6 @@ import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
@@ -59,7 +55,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -155,6 +150,16 @@ public class CaptionContainerView extends FrameLayout {
                     return false;
                 }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            protected void updatedEmojiExpanded() {
+                keyboardNotifier.fire();
+            }
+
+            @Override
+            protected boolean allowSearch() {
+                return true;
             }
 
             @Override
@@ -328,7 +333,7 @@ public class CaptionContainerView extends FrameLayout {
         limitTextView.setTextSize(dp(15));
         limitTextView.setTextColor(0xffffffff);
         limitTextView.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
-        limitTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        limitTextView.setTypeface(AndroidUtilities.bold());
         limitTextContainer = new FrameLayout(context);
         limitTextContainer.setTranslationX(dp(2));
         limitTextContainer.addView(limitTextView, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | Gravity.BOTTOM));
@@ -743,6 +748,14 @@ public class CaptionContainerView extends FrameLayout {
     private Paint blurPaint;
 
     public boolean onBackPressed() {
+        if (editText.emojiExpanded && editText.getEmojiView() != null) {
+            if (keyboardNotifier.keyboardVisible()) {
+                editText.getEmojiView().hideSearchKeyboard();
+            } else {
+                editText.collapseEmojiView();
+            }
+            return true;
+        }
         if (editText.isPopupShowing()) {
             editText.hidePopup(true);
             return true;
@@ -777,7 +790,7 @@ public class CaptionContainerView extends FrameLayout {
         } else {
             hasReply = true;
 
-            replyTitle = new Text(title == null ? "" : title, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            replyTitle = new Text(title == null ? "" : title, 14, AndroidUtilities.bold());
             replyText = new Text(text == null ? "" : text, 14);
         }
     }

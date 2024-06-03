@@ -625,7 +625,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         zoomOutButton.setPadding(dp(8), 0, dp(8), 0);
         zoomOutText = new TextView(context);
         zoomOutText.setTextColor(Color.WHITE);
-        zoomOutText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        zoomOutText.setTypeface(AndroidUtilities.bold());
         zoomOutText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         zoomOutText.setText(LocaleController.getString(R.string.PhotoEditorZoomOut));
         zoomOutImage = new ImageView(context);
@@ -644,7 +644,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         undoAllButton.setText(LocaleController.getString(R.string.PhotoEditorClearAll));
         undoAllButton.setGravity(Gravity.CENTER_VERTICAL);
         undoAllButton.setTextColor(Color.WHITE);
-        undoAllButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        undoAllButton.setTypeface(AndroidUtilities.bold());
         undoAllButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         undoAllButton.setOnClickListener(v -> clearAll());
         undoAllButton.setAlpha(0.6f);
@@ -656,7 +656,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         cancelTextButton.setPadding(dp(8), 0, dp(8), 0);
         cancelTextButton.setGravity(Gravity.CENTER_VERTICAL);
         cancelTextButton.setTextColor(Color.WHITE);
-        cancelTextButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        cancelTextButton.setTypeface(AndroidUtilities.bold());
         cancelTextButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         cancelTextButton.setOnClickListener(v -> {
             if (currentEntityView instanceof TextPaintView) {
@@ -678,7 +678,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         doneTextButton.setPadding(dp(8), 0, dp(8), 0);
         doneTextButton.setGravity(Gravity.CENTER_VERTICAL);
         doneTextButton.setTextColor(Color.WHITE);
-        doneTextButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        doneTextButton.setTypeface(AndroidUtilities.bold());
         doneTextButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         doneTextButton.setOnClickListener(v -> {
             selectEntity(null);
@@ -1615,7 +1615,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         drawTab.setTextColor(Color.WHITE);
         drawTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         drawTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        drawTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        drawTab.setTypeface(AndroidUtilities.bold());
         drawTab.setSingleLine();
         drawTab.setOnClickListener(v -> {
             if (editingText) {
@@ -1634,7 +1634,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         stickerTab.setTextColor(Color.WHITE);
         stickerTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         stickerTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        stickerTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        stickerTab.setTypeface(AndroidUtilities.bold());
         stickerTab.setAlpha(0.6f);
         stickerTab.setSingleLine();
         tabsLayout.addView(stickerTab, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -1646,7 +1646,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         textTab.setTextColor(Color.WHITE);
         textTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textTab.setGravity(Gravity.CENTER_HORIZONTAL);
-        textTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textTab.setTypeface(AndroidUtilities.bold());
         textTab.setAlpha(0.6f);
         textTab.setSingleLine();
         textTab.setOnClickListener(v -> {
@@ -1911,7 +1911,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }, false, true, false, resourcesProvider);
         locationAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
 
             }
         });
@@ -1963,7 +1963,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             }
 
             @Override
-            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate) {
+            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
                 if (audios.isEmpty()) {
                     return;
                 }
@@ -1980,7 +1980,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         audioAlert[0] = new ChatAttachAlert(getContext(), chatActivity, false, true, false, resourcesProvider);
         audioAlert[0].setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
 
             }
         });
@@ -2178,7 +2178,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     view = locationView;
                 } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_REACTION) {
                     ReactionWidgetEntityView entityView = createReactionWidget(false);
-                    entityView.setCurrentReaction(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(entity.mediaArea.reaction), false);
+                    entityView.setCurrentReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(entity.mediaArea.reaction), false);
                     if (entity.mediaArea.flipped) {
                         entityView.mirror(false);
                     }
@@ -3499,7 +3499,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 deleteView.setLines(1);
                 deleteView.setSingleLine();
                 deleteView.setEllipsize(TextUtils.TruncateAt.END);
-                deleteView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                deleteView.setTypeface(AndroidUtilities.bold());
                 deleteView.setPadding(dp(16), 0, dp(16), 0);
                 deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 deleteView.setTag(0);
@@ -3525,7 +3525,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 editView.setLines(1);
                 editView.setSingleLine();
                 editView.setEllipsize(TextUtils.TruncateAt.END);
-                editView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                editView.setTypeface(AndroidUtilities.bold());
                 editView.setPadding(dp(16), 0, dp(16), 0);
                 editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 if ((keyboardNotifier.keyboardVisible() && !keyboardNotifier.ignoring) || emojiPadding > 0) {
@@ -3611,7 +3611,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 duplicateView.setSingleLine();
                 duplicateView.setEllipsize(TextUtils.TruncateAt.END);
                 duplicateView.setGravity(Gravity.CENTER_VERTICAL);
-                duplicateView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                duplicateView.setTypeface(AndroidUtilities.bold());
                 duplicateView.setPadding(dp(16), 0, dp(16), 0);
                 duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 duplicateView.setTag(2);
@@ -3652,7 +3652,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         textView.setLines(1);
         textView.setSingleLine();
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setPadding(dp(16), 0, dp(16), 0);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTag(tag);

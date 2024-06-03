@@ -41,7 +41,6 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
-import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.Premium.boosts.cells.DurationWithDiscountCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorBtnCell;
 import org.telegram.ui.LaunchActivity;
@@ -398,7 +397,7 @@ public class PremiumPreviewGiftToUsersBottomSheet extends PremiumPreviewBottomSh
                 paint.setColor(Theme.getColor(Theme.key_dialogBackground));
             }
             paint.setTextSize(dp(11.5f));
-            paint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            paint.setTypeface(AndroidUtilities.bold());
         }
 
         @Override

@@ -60,7 +60,11 @@ public class BillingUtilities {
         paymentPurpose.serializeToStream(serializedData);
         String obfuscatedData = Base64.encodeToString(serializedData.toByteArray(), Base64.DEFAULT);
         serializedData.cleanup();
-        if (paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode || paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
+        if (
+            paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode ||
+            paymentPurpose instanceof TLRPC.TL_inputStorePaymentStars ||
+            paymentPurpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway
+        ) {
             remPaymentPurpose = paymentPurpose;
             return Pair.create(obfuscatedAccountId, obfuscatedAccountId);
         } else {
@@ -97,10 +101,15 @@ public class BillingUtilities {
         try {
             TLRPC.InputStorePaymentPurpose purpose;
             if (remPaymentPurpose == null) {
-                byte[] obfuscatedDataBytes = Base64.decode(obfuscatedData, Base64.DEFAULT);
-                SerializedData data = new SerializedData(obfuscatedDataBytes);
-                purpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(true), true);
-                data.cleanup();
+                try {
+                    byte[] obfuscatedDataBytes = Base64.decode(obfuscatedData, Base64.DEFAULT);
+                    SerializedData data = new SerializedData(obfuscatedDataBytes);
+                    purpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(true), true);
+                    data.cleanup();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    purpose = null;
+                }
             } else {
                 purpose = remPaymentPurpose;
                 remPaymentPurpose = null;

@@ -45,7 +45,7 @@ public class StickerCutOutBtn extends ButtonWithCounterView {
         setWillNotDraw(false);
         setTextColor(Color.WHITE);
         setFlickeringLoading(true);
-        text.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        text.setTypeface(AndroidUtilities.bold());
         disableRippleView();
         setForeground(Theme.createRadSelectorDrawable(Theme.multAlpha(Color.WHITE, .08f), 8, 8));
         setPadding(dp(24), 0, dp(24), 0);

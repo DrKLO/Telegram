@@ -117,6 +117,7 @@ public class EditTextBoldCursor extends EditTextEffects {
     private StaticLayout hintLayout;
     public float hintLayoutX, hintLayoutY;
     public boolean hintLayoutYFix;
+    public boolean lineYFix;
     public Utilities.Callback2<Canvas, Runnable> drawHint;
     private AnimatedTextView.AnimatedTextDrawable hintAnimatedDrawable;
     private AnimatedTextView.AnimatedTextDrawable hintAnimatedDrawable2;
@@ -1010,7 +1011,7 @@ public class EditTextBoldCursor extends EditTextEffects {
             }
 
             int scrollHeight = (getLayout() == null ? 0 : getLayout().getHeight()) - getMeasuredHeight() + getPaddingBottom() + getPaddingTop();
-            int bottom = (int) lineY + getScrollY() + Math.min(Math.max(0, scrollHeight - getScrollY()), dp(2));
+            int bottom = lineYFix ? getMeasuredHeight() - dp(2) : (int) lineY + getScrollY() + Math.min(Math.max(0, scrollHeight - getScrollY()), dp(2));
             int centerX = lastTouchX < 0 ? getMeasuredWidth() / 2 : lastTouchX,
                 maxWidth = Math.max(centerX, getMeasuredWidth() - centerX) * 2;
             if (lineActiveness < 1f) {

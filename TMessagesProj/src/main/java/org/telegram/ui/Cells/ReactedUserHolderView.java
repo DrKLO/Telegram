@@ -211,7 +211,7 @@ public class ReactedUserHolderView extends FrameLayout {
             reactView.setImageDrawable(likeDrawableFilled);
             contentDescription = LocaleController.formatString("AccDescrLike", R.string.AccDescrLike);
         } else if (reaction != null) {
-            ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction);
+            ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction);
             if (visibleReaction.emojicon != null) {
                 reactView.setAnimatedEmojiDrawable(null);
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(visibleReaction.emojicon);

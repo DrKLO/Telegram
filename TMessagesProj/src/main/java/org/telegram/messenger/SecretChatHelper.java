@@ -960,7 +960,7 @@ public class SecretChatHelper extends BaseController {
                     }
                     newMessage.media.document.thumbs.add(photoSize);
                     newMessage.media.document.flags |= 1;
-                    TLRPC.TL_documentAttributeVideo attributeVideo = new TLRPC.TL_documentAttributeVideo();
+                    TLRPC.TL_documentAttributeVideo_layer159 attributeVideo = new TLRPC.TL_documentAttributeVideo_layer159();
                     attributeVideo.w = decryptedMessage.media.w;
                     attributeVideo.h = decryptedMessage.media.h;
                     attributeVideo.duration = decryptedMessage.media.duration;

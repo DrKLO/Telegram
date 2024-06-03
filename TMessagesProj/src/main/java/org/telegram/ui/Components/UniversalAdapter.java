@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +27,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stats;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.BusinessLinksActivity;
 import org.telegram.ui.Business.QuickRepliesActivity;
@@ -39,7 +39,6 @@ import org.telegram.ui.Cells.DialogRadioCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
-import org.telegram.ui.Cells.ProfileChannelCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCell;
@@ -59,6 +58,8 @@ import java.util.ArrayList;
 
 public class UniversalAdapter extends AdapterWithDiffUtils {
 
+    public static final int VIEW_TYPE_FULLSCREEN_CUSTOM = -3;
+    public static final int VIEW_TYPE_FULLY_CUSTOM = -2;
     public static final int VIEW_TYPE_CUSTOM = -1;
 
     public static final int VIEW_TYPE_HEADER = 0;
@@ -137,13 +138,13 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     }
 
     public UniversalAdapter(
-            RecyclerListView listView,
-            Context context,
-            int currentAccount,
-            int classGuid,
-            boolean dialog,
-            Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems,
-            Theme.ResourcesProvider resourcesProvider
+        RecyclerListView listView,
+        Context context,
+        int currentAccount,
+        int classGuid,
+        boolean dialog,
+        Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems,
+        Theme.ResourcesProvider resourcesProvider
     ) {
         super();
         this.listView = listView;
@@ -270,10 +271,20 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         reorderSections.clear();
         if (fillItems != null) {
             fillItems.run(items, this);
-            if (animated) {
-                setItems(oldItems, items);
+            if (listView != null && listView.isComputingLayout()) {
+                listView.post(() -> {
+                    if (animated) {
+                        setItems(oldItems, items);
+                    } else {
+                        notifyDataSetChanged();
+                    }
+                });
             } else {
-                notifyDataSetChanged();
+                if (animated) {
+                    setItems(oldItems, items);
+                } else {
+                    notifyDataSetChanged();
+                }
             }
         }
     }
@@ -283,7 +294,17 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view;
         final int key_background = dialog ? Theme.key_dialogBackground : Theme.key_windowBackgroundWhite;
-        switch (viewType) {
+        if (viewType >= UItem.factoryViewTypeStartsWith) {
+            UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
+            if (factory != null) {
+                view = factory.createView(context, currentAccount, classGuid, resourcesProvider);
+                if (!factory.isShadow()) {
+                    view.setBackgroundColor(getThemedColor(key_background));
+                }
+            } else {
+                view = new View(context);
+            }
+        } else switch (viewType) {
             case VIEW_TYPE_HEADER:
                 if (dialog) {
                     view = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 0, false, resourcesProvider);
@@ -318,7 +339,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 if (viewType == VIEW_TYPE_CHECKRIPPLE) {
                     cell.setDrawCheckRipple(true);
                     cell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-                    cell.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    cell.setTypeface(AndroidUtilities.bold());
                     cell.setHeight(56);
                 }
                 cell.setBackgroundColor(getThemedColor(key_background));
@@ -340,6 +361,42 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
                     }
                 };
+                break;
+            case VIEW_TYPE_FULLY_CUSTOM:
+                view = new FrameLayout(context) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        widthMeasureSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY);
+                        measureChildren(widthMeasureSpec, heightMeasureSpec);
+                        int height = 0;
+                        for (int i = 0; i < getChildCount(); ++i) {
+                            View child = getChildAt(i);
+                            height = Math.max(height, child.getMeasuredHeight());
+                        }
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+                    }
+                };
+                break;
+            case VIEW_TYPE_FULLSCREEN_CUSTOM:
+                view = new FrameLayout(context) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        int maxHeight = MeasureSpec.getSize(heightMeasureSpec);
+                        widthMeasureSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY);
+                        measureChildren(widthMeasureSpec, heightMeasureSpec);
+                        int height = 0;
+                        for (int i = 0; i < getChildCount(); ++i) {
+                            View child = getChildAt(i);
+                            height = Math.max(height, child.getMeasuredHeight());
+                        }
+                        if (maxHeight > 0) {
+                            maxHeight -= AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight();
+                            height = Math.min(height, maxHeight);
+                        }
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+                    }
+                };
+                view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
                 break;
             case VIEW_TYPE_FILTER_CHAT:
             case VIEW_TYPE_FILTER_CHAT_CHECK:
@@ -422,7 +479,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context, resourcesProvider);
                 flickerLoadingView.setIsSingleCell(true);
                 view = flickerLoadingView;
-                view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                view.setBackgroundColor(getThemedColor(key_background));
                 break;
             default:
             case VIEW_TYPE_SHADOW:
@@ -473,7 +530,11 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         return item != null && !item.hideDivider && nextItem != null && isShadow(nextItem.viewType) == isShadow(item.viewType);
     }
 
-    private boolean isShadow(int viewType) {
+    public boolean isShadow(int viewType) {
+        if (viewType >= UItem.factoryViewTypeStartsWith) {
+            UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
+            return factory != null && factory.isShadow();
+        }
         return viewType == VIEW_TYPE_SHADOW || viewType == VIEW_TYPE_LARGE_SHADOW || viewType == VIEW_TYPE_SHADOW_COLLAPSE_BUTTON || viewType == VIEW_TYPE_GRAY_SECTION || viewType == VIEW_TYPE_FLICKER;
     }
 
@@ -485,7 +546,12 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         if (item == null) return;
         final int viewType = holder.getItemViewType();
         final boolean divider = hasDivider(position);
-        switch (viewType) {
+        if (viewType >= UItem.factoryViewTypeStartsWith) {
+            UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
+            if (factory != null) {
+                factory.bindView(holder.itemView, item, divider);
+            }
+        } else switch (viewType) {
             case VIEW_TYPE_HEADER:
             case VIEW_TYPE_BLACK_HEADER:
             case VIEW_TYPE_LARGE_HEADER:
@@ -627,12 +693,20 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 }
                 break;
             case VIEW_TYPE_CUSTOM:
+            case VIEW_TYPE_FULLY_CUSTOM:
+            case VIEW_TYPE_FULLSCREEN_CUSTOM:
                 FrameLayout frameLayout = (FrameLayout) holder.itemView;
                 if (frameLayout.getChildCount() != (item.view == null ? 0 : 1) || frameLayout.getChildAt(0) != item.view) {
                     frameLayout.removeAllViews();
                     if (item.view != null) {
                         AndroidUtilities.removeFromParent(item.view);
-                        frameLayout.addView(item.view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                        FrameLayout.LayoutParams lp;
+                        if (viewType == VIEW_TYPE_CUSTOM || viewType == VIEW_TYPE_FULLSCREEN_CUSTOM) {
+                            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
+                        } else {
+                            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                        }
+                        frameLayout.addView(item.view, lp);
                     }
                 }
                 break;
@@ -878,29 +952,37 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         final int viewType = holder.getItemViewType();
         UItem item = getItem(holder.getAdapterPosition());
-        return (
-            viewType == VIEW_TYPE_TEXT ||
-            viewType == VIEW_TYPE_TEXT_CHECK ||
-            viewType == VIEW_TYPE_ICON_TEXT_CHECK ||
-            viewType == VIEW_TYPE_RIGHT_ICON_TEXT ||
-            viewType == VIEW_TYPE_CHECK ||
-            viewType == VIEW_TYPE_RADIO ||
-            viewType == VIEW_TYPE_FILTER_CHAT ||
-            viewType == VIEW_TYPE_FILTER_CHAT_CHECK ||
-            viewType == VIEW_TYPE_LARGE_QUICK_REPLY ||
-            viewType == VIEW_TYPE_QUICK_REPLY ||
-            viewType == VIEW_TYPE_BUSINESS_LINK ||
-            viewType == VIEW_TYPE_TRANSACTION ||
-            viewType == VIEW_TYPE_RADIO_USER ||
-            viewType == VIEW_TYPE_PROFILE_CELL ||
-            viewType == VIEW_TYPE_SEARCH_MESSAGE ||
-            viewType == VIEW_TYPE_ROUND_CHECKBOX ||
-            viewType == VIEW_TYPE_USER_GROUP_CHECKBOX ||
-            viewType == VIEW_TYPE_USER_CHECKBOX ||
-            viewType == VIEW_TYPE_ROUND_GROUP_CHECKBOX ||
-            viewType == VIEW_TYPE_SWITCH ||
-            viewType == VIEW_TYPE_EXPANDABLE_SWITCH
-        ) && (item == null || item.enabled);
+        final boolean clickable;
+        if (viewType >= UItem.factoryViewTypeStartsWith) {
+            UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
+            clickable = factory != null && factory.isClickable();
+        } else {
+            clickable = (
+                viewType == VIEW_TYPE_TEXT ||
+                viewType == VIEW_TYPE_TEXT_CHECK ||
+                viewType == VIEW_TYPE_ICON_TEXT_CHECK ||
+                viewType == VIEW_TYPE_RIGHT_ICON_TEXT ||
+                viewType == VIEW_TYPE_CHECK ||
+                viewType == VIEW_TYPE_RADIO ||
+                viewType == VIEW_TYPE_FILTER_CHAT ||
+                viewType == VIEW_TYPE_FILTER_CHAT_CHECK ||
+                viewType == VIEW_TYPE_LARGE_QUICK_REPLY ||
+                viewType == VIEW_TYPE_QUICK_REPLY ||
+                viewType == VIEW_TYPE_BUSINESS_LINK ||
+                viewType == VIEW_TYPE_TRANSACTION ||
+                viewType == VIEW_TYPE_RADIO_USER ||
+                viewType == VIEW_TYPE_PROFILE_CELL ||
+                viewType == VIEW_TYPE_SEARCH_MESSAGE ||
+                viewType == VIEW_TYPE_ROUND_CHECKBOX ||
+                viewType == VIEW_TYPE_USER_GROUP_CHECKBOX ||
+                viewType == VIEW_TYPE_USER_CHECKBOX ||
+                viewType == VIEW_TYPE_ROUND_GROUP_CHECKBOX ||
+                viewType == VIEW_TYPE_SWITCH ||
+                viewType == VIEW_TYPE_EXPANDABLE_SWITCH ||
+                viewType == VIEW_TYPE_SHADOW_COLLAPSE_BUTTON
+            );
+        }
+        return clickable && (item == null || item.enabled);
     }
 
     public UItem getItem(int position) {

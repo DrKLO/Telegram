@@ -36,7 +36,7 @@ public class SelectorHeaderCell extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context);
-        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));

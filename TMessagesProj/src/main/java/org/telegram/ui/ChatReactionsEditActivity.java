@@ -119,7 +119,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             enableReactionsCell.setHeight(56);
             enableReactionsCell.setTextAndCheck(LocaleController.getString("EnableReactions", R.string.EnableReactions), !chatReactions.isEmpty(), false);
             enableReactionsCell.setBackgroundColor(Theme.getColor(enableReactionsCell.isChecked() ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-            enableReactionsCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            enableReactionsCell.setTypeface(AndroidUtilities.bold());
             enableReactionsCell.setOnClickListener(v -> {
                 setCheckedEnableReactionCell(enableReactionsCell.isChecked() ? SELECT_TYPE_NONE : SELECT_TYPE_SOME, true);
             });

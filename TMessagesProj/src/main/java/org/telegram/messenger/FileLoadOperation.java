@@ -880,6 +880,9 @@ public class FileLoadOperation {
             return wasPaused;
         }
         if (location == null && webLocation == null) {
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("loadOperation: no location, failing");
+            }
             onFail(true, 0);
             return false;
         }

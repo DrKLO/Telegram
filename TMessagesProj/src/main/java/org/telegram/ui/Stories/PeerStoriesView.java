@@ -450,8 +450,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             @Override
             public void showEffect(StoryReactionWidgetView v) {
                 if (!isSelf && currentStory.storyItem != null) {
-                    ReactionsLayoutInBubble.VisibleReaction newReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(v.mediaArea.reaction);
-                    ReactionsLayoutInBubble.VisibleReaction currentReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(currentStory.storyItem.sent_reaction);
+                    ReactionsLayoutInBubble.VisibleReaction newReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(v.mediaArea.reaction);
+                    ReactionsLayoutInBubble.VisibleReaction currentReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(currentStory.storyItem.sent_reaction);
                     if (!Objects.equals(newReaction, currentReaction)) {
                         likeStory(newReaction);
                     }
@@ -1867,7 +1867,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 layout.addView(imageView, LayoutHelper.createLinear(150, 150, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
 
                 TextView headerView = new TextView(getContext());
-                headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                headerView.setTypeface(AndroidUtilities.bold());
                 headerView.setGravity(Gravity.CENTER);
                 headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
                 headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -1991,7 +1991,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (!hasReactionOld) {
                 counterChanged = true;
             }
-            storiesLikeButton.setReaction(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(currentStory.storyItem.sent_reaction));
+            storiesLikeButton.setReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(currentStory.storyItem.sent_reaction));
             performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             added = true;
         }
@@ -2595,13 +2595,13 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
 
             @Override
-            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl, long effectId) {
                 checkInstantCameraView();
                 if (instantCameraView != null) {
                     if (state == 0) {
                         instantCameraView.showCamera(false);
                     } else if (state == 1 || state == 3 || state == 4) {
-                        instantCameraView.send(state, notify, scheduleDate, ttl);
+                        instantCameraView.send(state, notify, scheduleDate, ttl, effectId);
                     } else if (state == 2 || state == 5) {
                         instantCameraView.cancel(state == 2);
                     }
@@ -2700,6 +2700,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         chatActivityEnterView.shouldDrawRecordedAudioPanelInParent = true;
         chatActivityEnterView.setAllowStickersAndGifs(true, true, true);
         chatActivityEnterView.updateColors();
+        chatActivityEnterView.isStories = true;
         addView(chatActivityEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 0));
 
         chatActivityEnterView.recordingGuid = classGuid;
@@ -2849,7 +2850,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
                     if (!storyViewer.isShowing) {
                         return;
                     }
@@ -2896,7 +2897,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 if (i == 0) {
                                     updateStickersOrder = photos.get(0).updateStickersOrder;
                                 }
-                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, 0, updateStickersOrder, null, null, 0);
+                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, 0, updateStickersOrder, null, null, 0, 0, false);
                             }
                             chatActivityEnterView.setFieldText("");
                             afterMessageSend();
@@ -2931,12 +2932,12 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 }
 
                 @Override
-                public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate) {
+                public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
                     TL_stories.StoryItem storyItem = currentStory.storyItem;
                     if (storyItem == null || storyItem instanceof TL_stories.TL_storyItemSkipped) {
                         return;
                     }
-                    SendMessagesHelper.prepareSendingAudioDocuments(getAccountInstance(), audios, caption != null ? caption : null, dialogId, null, null, storyItem, notify, scheduleDate, null, null, 0);
+                    SendMessagesHelper.prepareSendingAudioDocuments(getAccountInstance(), audios, caption != null ? caption : null, dialogId, null, null, storyItem, notify, scheduleDate, null, null, 0, effectId, invertMedia);
                     afterMessageSend();
                 }
 
@@ -2950,12 +2951,12 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             chatAttachAlert.init();
             chatAttachAlert.setDocumentsDelegate(new ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate() {
                 @Override
-                public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate) {
+                public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
                     TL_stories.StoryItem storyItem = currentStory.storyItem;
                     if (storyItem == null || storyItem instanceof TL_stories.TL_storyItemSkipped) {
                         return;
                     }
-                    SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), files, files, null, caption, null, dialogId, null, null, storyItem, null, null, notify, scheduleDate, null, null, 0);
+                    SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), files, files, null, caption, null, dialogId, null, null, storyItem, null, null, notify, scheduleDate, null, null, 0, 0, false);
                     afterMessageSend();
                 }
 
@@ -3398,7 +3399,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
         TextView textView = new TextView(getContext());
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(LocaleController.getString("StoryUnsupported", R.string.StoryUnsupported));
@@ -3410,7 +3411,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         buttonTextView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
         buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         buttonTextView.setBackground(
                 Theme.createSimpleSelectorRoundRectDrawable(dp(8),
@@ -4346,7 +4347,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (currentStory.storyItem == null || currentStory.storyItem.sent_reaction == null) {
                 storiesLikeButton.setReaction(null);
             } else {
-                storiesLikeButton.setReaction(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(currentStory.storyItem.sent_reaction));
+                storiesLikeButton.setReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(currentStory.storyItem.sent_reaction));
             }
         }
 
@@ -4517,7 +4518,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         if (storyItem.media_areas.get(k) instanceof TL_stories.TL_mediaAreaSuggestedReaction) {
                             TL_stories.TL_mediaAreaSuggestedReaction reaction = (TL_stories.TL_mediaAreaSuggestedReaction) storyItem.media_areas.get(k);
                             ReactionImageHolder reactionImageHolder = new ReactionImageHolder(this);
-                            reactionImageHolder.setVisibleReaction(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction.reaction));
+                            reactionImageHolder.setVisibleReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction.reaction));
                             reactionImageHolder.onAttachedToWindow(attachedToWindow);
                             preloadReactionHolders.add(reactionImageHolder);
                         }
@@ -5119,9 +5120,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
         }
         if (sendAsUri) {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0);
+            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0, false);
         } else {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0);
+            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0, false);
         }
     }
 
@@ -5327,7 +5328,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
             titleView = new SimpleTextView(context);
             titleView.setTextSize(14);
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setMaxLines(1);
             titleView.setEllipsizeByGradient(dp(4));
           //  titleView.setSingleLine(true);
@@ -6292,15 +6293,15 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 storyItem.dialogId = dialogId;
                 if (photoEntry.isVideo) {
                     if (videoEditedInfo != null) {
-                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, videoEditedInfo, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0);
+                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, videoEditedInfo, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, 0);
                     } else {
-                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0);
+                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, 0);
                     }
                 } else {
                     if (photoEntry.imagePath != null) {
-                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.imagePath, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, 0, forceDocument, photoEntry.caption, null, 0);
+                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.imagePath, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, 0, forceDocument, photoEntry.caption, null, 0, 0);
                     } else if (photoEntry.path != null) {
-                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.path, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, 0, forceDocument, photoEntry.caption, null, 0);
+                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.path, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, 0, forceDocument, photoEntry.caption, null, 0, 0);
                     }
                 }
                 afterMessageSend();

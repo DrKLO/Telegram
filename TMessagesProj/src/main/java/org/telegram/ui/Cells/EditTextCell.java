@@ -1,5 +1,6 @@
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.decelerateInterpolator;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
@@ -166,7 +167,20 @@ public class EditTextCell extends FrameLayout {
             @Override
             public void afterTextChanged(Editable editable) {
                 if (!ignoreEditText) {
+                    if (maxLength > 0 && editable != null && editable.length() > maxLength) {
+                        ignoreEditText = true;
+                        editText.setText(editable.subSequence(0, maxLength));
+                        editText.setSelection(editText.length());
+                        ignoreEditText = false;
+                    }
                     EditTextCell.this.onTextChanged(editable);
+                }
+
+                if (multiline) {
+                    int pos;
+                    while ((pos = editable.toString().indexOf("\n")) >= 0) {
+                        editable.delete(pos, pos + 1);
+                    }
                 }
             }
         });
@@ -180,26 +194,6 @@ public class EditTextCell extends FrameLayout {
                 onFocusChanged(hasFocus);
             }
         });
-        ArrayList<InputFilter> filters = new ArrayList<>();
-        if (multiline) {
-            filters.add(new InputFilter() {
-                @Override
-                public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-                    if (source != null) {
-                        String s = source.toString();
-                        if (s.contains("\n")) {
-                            s = s.replaceAll("\n", "");
-                        }
-                        return s;
-                    }
-                    return null;
-                }
-            });
-        }
-        if (maxLength > 0) {
-            filters.add(new InputFilter.LengthFilter(maxLength));
-        }
-        editText.setFilters(filters.toArray(new InputFilter[0]));
         addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP));
 
         updateLimitText();

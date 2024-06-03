@@ -44,7 +44,7 @@ public class PaymentInfoCell extends FrameLayout {
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setLines(1);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -119,7 +119,7 @@ public class PaymentInfoCell extends FrameLayout {
         setInfo(invoice.title, invoice.description, invoice.webPhoto, botname, invoice);
     }
 
-    public void setReceipt(TLRPC.TL_payments_paymentReceipt receipt, String botname) {
+    public void setReceipt(TLRPC.PaymentReceipt receipt, String botname) {
         setInfo(receipt.title, receipt.description, receipt.photo, botname, receipt);
     }
 }

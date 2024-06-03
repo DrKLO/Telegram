@@ -112,7 +112,7 @@ public class UserObject {
 
     public static String getForcedFirstName(TLRPC.User user) {
         if (user == null || isDeleted(user)) {
-            return "DELETED";
+            return LocaleController.getString(R.string.HiddenName);
         }
         String name = user.first_name;
         if (TextUtils.isEmpty(name)) {

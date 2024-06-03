@@ -385,6 +385,12 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         if (child == hintsContainer) {
             drawHighlight(canvas);
+        } else if (child instanceof AreaView) {
+            canvas.save();
+            canvas.translate(child.getLeft(), child.getTop());
+            canvas.concat(child.getMatrix());
+            ((AreaView) child).customDraw(canvas);
+            canvas.restore();
         }
         return super.drawChild(canvas, child, drawingTime);
     }
@@ -574,6 +580,10 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         private boolean scaleOnTap;
         private boolean shining = false;
         private long startTime;
+
+        public void customDraw(Canvas canvas) {
+
+        }
 
         @Override
         protected void onDraw(Canvas canvas) {

@@ -215,7 +215,7 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setText(LocaleController.getString(R.string.DebugMenu));
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(19), AndroidUtilities.dp(24), AndroidUtilities.dp(19));
         bigLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 

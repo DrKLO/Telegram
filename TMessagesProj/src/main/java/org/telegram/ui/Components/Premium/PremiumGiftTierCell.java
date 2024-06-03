@@ -73,7 +73,7 @@ public class PremiumGiftTierCell extends ViewGroup {
         discountView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         discountView.setTextColor(Color.WHITE);
         discountView.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
-        discountView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        discountView.setTypeface(AndroidUtilities.bold());
         addView(discountView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 0, 0, 0, 8));
 
         pricePerMonthView = new TextView(context);

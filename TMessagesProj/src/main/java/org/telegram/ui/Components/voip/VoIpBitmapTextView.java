@@ -32,7 +32,7 @@ public class VoIpBitmapTextView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(dp(13));
         textPaint.setColor(Color.WHITE);
-        textPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textPaint.setTypeface(AndroidUtilities.bold());
         textWidth = textPaint.measureText(text);
         this.text = text;
     }

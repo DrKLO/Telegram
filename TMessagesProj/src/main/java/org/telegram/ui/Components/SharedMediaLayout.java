@@ -68,8 +68,6 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -387,7 +385,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
-    public void drawListForBlur(Canvas blurCanvas) {
+    public void drawListForBlur(Canvas blurCanvas, ArrayList<SizeNotifierFrameLayout.IViewWithInvalidateCallback> views) {
         for (int i = 0; i < mediaPages.length; i++) {
             if (mediaPages[i] != null && mediaPages[i].getVisibility() == View.VISIBLE) {
                 for (int j = 0; j < mediaPages[i].listView.getChildCount(); j++) {
@@ -396,6 +394,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         int restore = blurCanvas.save();
                         blurCanvas.translate(mediaPages[i].getX() + child.getX(), getY() + mediaPages[i].getY() + mediaPages[i].listView.getY() + child.getY());
                         child.draw(blurCanvas);
+                        if (views != null && child instanceof SizeNotifierFrameLayout.IViewWithInvalidateCallback) {
+                            views.add((SizeNotifierFrameLayout.IViewWithInvalidateCallback) child);
+                        }
                         blurCanvas.restoreToCount(restore);
                     }
                 }
@@ -423,7 +424,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (profileActivity == null) return;
         if (profileActivity.getMessagesController().getStoriesController().hasStories(dialogCell.getDialogId())) {
             profileActivity.getOrCreateStoryViewer().doOnAnimationReady(onDone);
-            profileActivity.getOrCreateStoryViewer().open(profileActivity.getContext(), dialogCell.getDialogId(), StoriesListPlaceProvider.of((RecyclerListView) dialogCell.getParent()));
+            profileActivity.getOrCreateStoryViewer().open(profileActivity.getContext(), dialogCell.getDialogId(), StoriesListPlaceProvider.of((RecyclerListView) dialogCell.getParent()).addBottomClip(profileActivity instanceof ProfileActivity && ((ProfileActivity) profileActivity).myProfile ? dp(68) : 0));
         }
     }
 
@@ -1192,7 +1193,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     object.animatingImageViewYOffset = -coords[1];
                     object.imageReceiver = imageReceiver;
                     object.allowTakeAnimation = true;
-                    object.radius = object.imageReceiver.getRoundRadius();
+                    object.radius = object.imageReceiver.getRoundRadius(true);
                     object.thumb = object.imageReceiver.getBitmapSafe();
                     object.parentView.getLocationInWindow(coords);
                     object.clipTopAddition = 0;
@@ -1932,7 +1933,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         selectedMessagesCountTextView = new NumberTextView(context);
         selectedMessagesCountTextView.setTextSize(18);
-        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedMessagesCountTextView.setTypeface(AndroidUtilities.bold());
         selectedMessagesCountTextView.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
         actionModeLayout.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 18, 0, 0, 0));
         actionModeViews.add(selectedMessagesCountTextView);
@@ -2011,7 +2012,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             Bundle args = new Bundle();
             args.putLong("user_id", profileActivity.getUserConfig().getClientUserId());
             args.putInt("chatMode", ChatActivity.MODE_SAVED);
-            savedMessagesContainer = new ChatActivityContainer(context, () -> profileActivity.getLayoutContainer(), profileActivity.getParentLayout(), args) {
+            savedMessagesContainer = new ChatActivityContainer(context, profileActivity.getParentLayout(), args) {
                 @Override
                 protected void onSearchLoadingUpdate(boolean loading) {
                     if (searchItem != null) {
@@ -6532,7 +6533,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (forward) {
                         storiesList.load(false, 30);
                     }
-                }));
+                }).addBottomClip(profileActivity instanceof ProfileActivity && ((ProfileActivity) profileActivity).myProfile ? dp(68) : 0));
             }
         }
         updateForwardItem();
@@ -8498,7 +8499,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             });
             SpannableString count = new SpannableString("" + MessagesController.getInstance(currentAccount).recommendedChannelsLimitPremium);
-            count.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, count.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            count.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, count.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             textView.setText(AndroidUtilities.replaceCharSequence("%s", text, count));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 24, 96, 24, 12));
         }
@@ -9524,14 +9525,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             super(context, resourcesProvider);
         }
 
+        private Rect blurBounds = new Rect();
         protected void drawBackground(Canvas canvas) {
             if (SharedConfig.chatBlurEnabled() && backgroundColor != Color.TRANSPARENT) {
                 if (backgroundPaint == null) {
                     backgroundPaint = new Paint();
                 }
                 backgroundPaint.setColor(backgroundColor);
-                AndroidUtilities.rectTmp2.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                drawBackgroundWithBlur(canvas, getY(), AndroidUtilities.rectTmp2, backgroundPaint);
+                blurBounds.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                drawBackgroundWithBlur(canvas, getY(), blurBounds, backgroundPaint);
             }
         }
 
@@ -9657,7 +9659,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             n = MessagesController.getInstance(currentAccount).uploadPremiumSpeedupDownload;
         }
         SpannableString boldN = new SpannableString(Double.toString(Math.round(n * 10) / 10.0).replaceAll("\\.0$", ""));
-        boldN.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, boldN.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        boldN.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, boldN.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         if (profileActivity.hasStoryViewer()) return;
         BulletinFactory.of(profileActivity).createSimpleBulletin(

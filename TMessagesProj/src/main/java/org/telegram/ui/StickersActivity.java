@@ -288,7 +288,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         ActionBarMenu actionMode = actionBar.createActionMode();
         selectedCountTextView = new NumberTextView(actionMode.getContext());
         selectedCountTextView.setTextSize(18);
-        selectedCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedCountTextView.setTypeface(AndroidUtilities.bold());
         selectedCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedCountTextView.setOnTouchListener((v, event) -> true);
@@ -650,6 +650,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
         rowCount = 0;
 
+        archivedRow = -1;
         loopRow = -1;
         loopInfoRow = -1;
 
@@ -1297,7 +1298,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         }
                     };
                     view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    ((FeaturedStickerSetCell2) view).getTextView().setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    ((FeaturedStickerSetCell2) view).getTextView().setTypeface(AndroidUtilities.bold());
                     break;
                 case TYPE_STICKER_SET:
                     view = new StickerSetCell(mContext, 1) {

@@ -1,7 +1,6 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.ui.ActionBar.Theme.key_dialogGrayLine;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -41,7 +40,6 @@ import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.Date;
 
@@ -168,7 +166,7 @@ public class MessagePrivateSeenView extends FrameLayout {
         layout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
 
         TextView headerView = new TextView(context);
-        headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        headerView.setTypeface(AndroidUtilities.bold());
         headerView.setGravity(Gravity.CENTER);
         headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -258,7 +256,7 @@ public class MessagePrivateSeenView extends FrameLayout {
             layout.addView(or, LayoutHelper.createLinear(270, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 17, 12, 17));
 
             TextView headerView2 = new TextView(context);
-            headerView2.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            headerView2.setTypeface(AndroidUtilities.bold());
             headerView2.setGravity(Gravity.CENTER);
             headerView2.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             headerView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

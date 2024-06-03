@@ -113,7 +113,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Objects;
 
 public class CacheControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -519,7 +518,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 ArrayList<TLRPC.Chat> chats = new ArrayList<>();
                 if (!unknownUsers.isEmpty()) {
                     try {
-                        getMessagesStorage().getUsersInternal(TextUtils.join(",", unknownUsers), users);
+                        getMessagesStorage().getUsersInternal(unknownUsers, users);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -683,7 +682,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         String percentString = percent <= 0 ? String.format("<%.1f%%", 1f) : String.format("%d%%", percent);
         SpannableString percentStr = new SpannableString(percentString);
         percentStr.setSpan(new RelativeSizeSpan(.834f), 0, percentStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        percentStr.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, percentStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        percentStr.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, percentStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         SpannableStringBuilder string = new SpannableStringBuilder(header);
         string.append("  ");
         string.append(percentStr);
@@ -1268,7 +1267,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         actionModeTitle = new AnimatedTextView(context, true, true, true);
         actionModeTitle.setAnimationProperties(.35f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         actionModeTitle.setTextSize(AndroidUtilities.dp(18));
-        actionModeTitle.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        actionModeTitle.setTypeface(AndroidUtilities.bold());
         actionModeTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         actionModeLayout.addView(actionModeTitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, -11, 18, 0));
 
@@ -1283,7 +1282,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         actionModeClearButton.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         actionModeClearButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         actionModeClearButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 6));
-        actionModeClearButton.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        actionModeClearButton.setTypeface(AndroidUtilities.bold());
         actionModeClearButton.setGravity(Gravity.CENTER);
         actionModeClearButton.setText(LocaleController.getString("CacheClear", R.string.CacheClear));
         actionModeClearButton.setOnClickListener(e -> clearSelectedFiles());
@@ -1717,7 +1716,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
             title = new AnimatedTextView(context);
             title.setAnimationProperties(.35f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-            title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            title.setTypeface(AndroidUtilities.bold());
             title.setTextSize(AndroidUtilities.dp(20));
             title.setText(LocaleController.getString("StorageUsage", R.string.StorageUsage));
             title.setGravity(Gravity.CENTER);
@@ -1941,7 +1940,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             percentsTextView.setGravity(Gravity.CENTER_HORIZONTAL);
             percentsTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             percentsTextView.setTextSize(AndroidUtilities.dp(24));
-            percentsTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            percentsTextView.setTypeface(AndroidUtilities.bold());
             addView(percentsTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 16 + 150 + 16 - 6, 0, 0));
 
             progressView = new ProgressView(context);
@@ -1951,7 +1950,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             title.setGravity(Gravity.CENTER_HORIZONTAL);
             title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            title.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            title.setTypeface(AndroidUtilities.bold());
             title.setText(LocaleController.getString("ClearingCache", R.string.ClearingCache));
             addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 16 + 150 + 16 + 28 + 16 + 5 + 30, 0, 0));
 
@@ -2171,7 +2170,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 rtlTextView.setText(LocaleController.getString("ClearCache", R.string.ClearCache));
                 rtlTextView.setGravity(Gravity.CENTER);
                 rtlTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                rtlTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                rtlTextView.setTypeface(AndroidUtilities.bold());
                 rtlTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
                 button.addView(rtlTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
             }
@@ -2182,14 +2181,14 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             textView.setTextSize(AndroidUtilities.dp(14));
             textView.setText(LocaleController.getString("ClearCache", R.string.ClearCache));
             textView.setGravity(Gravity.RIGHT);
-            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
 
             valueTextView = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
             valueTextView.setAnimationProperties(.25f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
             valueTextView.setCallback(button);
             valueTextView.setTextSize(AndroidUtilities.dp(14));
-            valueTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            valueTextView.setTypeface(AndroidUtilities.bold());
             valueTextView.setTextColor(Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_buttonText), .7f)));
             valueTextView.setText("");
 

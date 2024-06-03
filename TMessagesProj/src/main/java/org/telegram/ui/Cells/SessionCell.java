@@ -102,7 +102,7 @@ public class SessionCell extends FrameLayout {
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, type == 0 ? 15 : 16);
         nameTextView.setLines(1);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -185,7 +185,7 @@ public class SessionCell extends FrameLayout {
 
         if (object instanceof TLRPC.TL_authorization) {
             TLRPC.TL_authorization session = (TLRPC.TL_authorization) object;
-            imageView.setImageDrawable(createDrawable(session));
+            imageView.setImageDrawable(createDrawable(42, session));
 
             StringBuilder stringBuilder = new StringBuilder();
             if (session.device_model.length() != 0) {
@@ -286,7 +286,15 @@ public class SessionCell extends FrameLayout {
         }
     }
 
-    public static Drawable createDrawable(TLRPC.TL_authorization session) {
+    public static Drawable createDrawable(int sz, String platform) {
+        TLRPC.TL_authorization auth = new TLRPC.TL_authorization();
+        auth.device_model = platform;
+        auth.platform = platform;
+        auth.app_name = platform;
+        return createDrawable(sz, auth);
+    }
+
+    public static Drawable createDrawable(int sz, TLRPC.TL_authorization session) {
         String platform = session.platform.toLowerCase();
         if (platform.isEmpty()) {
             platform = session.system_version.toLowerCase();
@@ -298,7 +306,7 @@ public class SessionCell extends FrameLayout {
             iconId = R.drawable.device_web_safari;
             colorKey = Theme.key_avatar_backgroundPink;
             colorKey2 = Theme.key_avatar_background2Pink;
-        } else  if (deviceModel.contains("edge")) {
+        } else if (deviceModel.contains("edge")) {
             iconId = R.drawable.device_web_edge;
             colorKey = Theme.key_avatar_backgroundPink;
             colorKey2 = Theme.key_avatar_background2Pink;
@@ -334,20 +342,30 @@ public class SessionCell extends FrameLayout {
             iconId = deviceModel.contains("tab") ? R.drawable.device_tablet_android : R.drawable.device_phone_android;
             colorKey = Theme.key_avatar_backgroundGreen;
             colorKey2 = Theme.key_avatar_background2Green;
+        } else if (platform.contains("fragment")) {
+            iconId = R.drawable.fragment;
+            colorKey = -1;
+            colorKey2 = -1;
+        } else if (platform.contains("premiumbot")) {
+            iconId = R.drawable.filled_star_plus;
+            colorKey = Theme.key_color_yellow;
+            colorKey2 = Theme.key_color_orange;
+        } else if (platform.equals("?")) {
+            iconId = R.drawable.msg_emoji_question;
+            colorKey = -1;
+            colorKey2 = -1;
+        } else if (session.app_name.toLowerCase().contains("desktop")) {
+            iconId = R.drawable.device_desktop_other;
+            colorKey = Theme.key_avatar_backgroundCyan;
+            colorKey2 = Theme.key_avatar_background2Cyan;
         } else {
-            if (session.app_name.toLowerCase().contains("desktop")) {
-                iconId = R.drawable.device_desktop_other;
-                colorKey = Theme.key_avatar_backgroundCyan;
-                colorKey2 = Theme.key_avatar_background2Cyan;
-            } else {
-                iconId = R.drawable.device_web_other;
-                colorKey = Theme.key_avatar_backgroundPink;
-                colorKey2 = Theme.key_avatar_background2Pink;
-            }
+            iconId = R.drawable.device_web_other;
+            colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         }
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
-        Drawable bgDrawable = new CircleGradientDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey), Theme.getColor(colorKey2));
+        Drawable bgDrawable = new CircleGradientDrawable(AndroidUtilities.dp(sz), colorKey == -1 ? 0xFF000000 : Theme.getColor(colorKey), colorKey2 == -1 ? 0xFF000000 : Theme.getColor(colorKey2));
         CombinedDrawable combinedDrawable = new CombinedDrawable(bgDrawable, iconDrawable);
         return combinedDrawable;
     }

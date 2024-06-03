@@ -103,11 +103,11 @@ public class OKLCH {
     }
 
     public static double[] oklch2rgb(double[] lch) {
-        return srgbLinear2rgb(xyz2rgbLinear(oklab2xyz(oklch2oklab(lch))));
+        return xyz2rgbLinear(oklab2xyz(oklch2oklab(lch)));
     }
 
     public static double[] rgb2oklch(double[] rgb) {
-        return oklab2oklch(xyz2oklab(rgbLinear2xyz(rgb2srgbLinear(rgb))));
+        return oklab2oklch(xyz2oklab(rgbLinear2xyz(rgb)));
     }
 
     public static double[] rgb(int color) {

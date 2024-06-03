@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueuePoolBackground;
@@ -27,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BitmapsCache {
 
@@ -38,6 +41,7 @@ public class BitmapsCache {
     String fileName;
     int w;
     int h;
+    public final AtomicInteger framesProcessed = new AtomicInteger(0);
 
     ArrayList<FrameOffset> frameOffsets = new ArrayList<>();
 
@@ -111,6 +115,7 @@ public class BitmapsCache {
                         if (frameOffsets.size() == 0) {
                             cacheCreated = false;
                             fileExist = false;
+                            checked = true;
                             file.delete();
                         } else {
                             if (cachedFile != randomAccessFile) {
@@ -123,6 +128,7 @@ public class BitmapsCache {
                     e.printStackTrace();
                     file.delete();
                     fileExist = false;
+                    checked = true;
                 } finally {
                     try {
                         if (cachedFile != randomAccessFile && randomAccessFile != null) {
@@ -133,12 +139,14 @@ public class BitmapsCache {
                     }
                 }
             }
+            checked = true;
         } else {
             fileExist = false;
             cacheCreated = false;
         }
     }
 
+    public volatile boolean checked;
     volatile boolean checkCache;
     volatile boolean cacheCreated;
     volatile boolean recycled;
@@ -189,10 +197,12 @@ public class BitmapsCache {
                             }
                             cachedFile = randomAccessFile;
                             fileExist = true;
+                            checked = true;
                             return;
                         } else {
                             fileExist = false;
                             cacheCreated = false;
+                            checked = true;
                         }
                     }
                     if (!cacheCreated) {
@@ -322,6 +332,7 @@ public class BitmapsCache {
                 if (index >= N) {
                     index = 0;
                 }
+                framesProcessed.set(framePosition);
             }
             for (int i = 0; i < N; i++) {
                 if (countDownLatch[i] != null) {
@@ -357,6 +368,7 @@ public class BitmapsCache {
             cachedFile = new RandomAccessFile(file, "r");
             cacheCreated = true;
             fileExist = true;
+            checked = true;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -411,6 +423,7 @@ public class BitmapsCache {
                 framesCount = randomAccessFile.readInt();
                 if (framesCount <= 0) {
                     cacheCreated = false;
+                    checked = true;
                 }
             }
         } catch (Exception e) {
@@ -449,6 +462,7 @@ public class BitmapsCache {
                 }
                 if (frameOffsets.size() == 0) {
                     cacheCreated = false;
+                    checked = true;
                 }
 
                 if (!cacheCreated) {

@@ -70,7 +70,7 @@ public class WallpaperCheckBoxView extends View {
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(14));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
 
         checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         checkPaint.setStyle(Paint.Style.STROKE);

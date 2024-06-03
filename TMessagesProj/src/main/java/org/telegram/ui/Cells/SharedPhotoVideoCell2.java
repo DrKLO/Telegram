@@ -24,11 +24,9 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -141,7 +139,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         viewsText.setCallback(this);
         viewsText.setTextSize(dp(12));
         viewsText.setTextColor(Color.WHITE);
-        viewsText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        viewsText.setTypeface(AndroidUtilities.bold());
         viewsText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
 
         setWillNotDraw(false);
@@ -866,7 +864,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         public SharedResources(Context context, Theme.ResourcesProvider resourcesProvider) {
             textPaint.setTextSize(dp(12));
             textPaint.setColor(Color.WHITE);
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(AndroidUtilities.bold());
             playDrawable = ContextCompat.getDrawable(context, R.drawable.play_mini_video);
             playDrawable.setBounds(0, 0, playDrawable.getIntrinsicWidth(), playDrawable.getIntrinsicHeight());
             viewDrawable = ContextCompat.getDrawable(context, R.drawable.filled_views);

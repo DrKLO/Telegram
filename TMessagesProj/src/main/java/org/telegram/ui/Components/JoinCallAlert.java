@@ -136,7 +136,7 @@ public class JoinCallAlert extends BottomSheet {
                 textView[a].setGravity(Gravity.CENTER);
                 if (hasBackground) {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                    textView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView[a].setTypeface(AndroidUtilities.bold());
                 } else {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 }
@@ -508,7 +508,7 @@ public class JoinCallAlert extends BottomSheet {
         }
 
         textView = new TextView(context);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         if (type == TYPE_DISPLAY) {
             textView.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));

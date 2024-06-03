@@ -29,7 +29,6 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.util.Log;
 import android.util.SparseIntArray;
 import android.util.StateSet;
 import android.view.HapticFeedbackConstants;
@@ -558,7 +557,7 @@ public class RecyclerListView extends RecyclerView {
             } else {
                 isRtl = false;
                 letterPaint.setTextSize(AndroidUtilities.dp(13));
-                letterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                letterPaint.setTypeface(AndroidUtilities.bold());
                 paint2.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                 fastScrollBackgroundDrawable = ContextCompat.getDrawable(context, R.drawable.calendar_date).mutate();
                 fastScrollBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), Color.WHITE, 0.1f), PorterDuff.Mode.MULTIPLY));

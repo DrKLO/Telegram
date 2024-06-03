@@ -312,6 +312,7 @@ public class FileLoader extends BaseController {
         String key = getAttachFileName(document);
         if (loadingVideos.containsKey(key + (player ? "" : "p"))) {
             loadingVideos.put(key + (player ? "p" : ""), true);
+            getNotificationCenter().postNotificationName(NotificationCenter.videoLoadingStateChanged, key);
         }
     }
 

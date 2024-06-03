@@ -45,6 +45,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     public static final long DEFAULT_DURATION = 250;
     public static final Interpolator DEFAULT_INTERPOLATOR = new CubicBezierInterpolator(0.19919472913616398, 0.010644531250000006, 0.27920937042459737, 0.91025390625);
 
+    @Nullable
     private final ChatActivity activity;
     private final RecyclerListView recyclerListView;
 
@@ -347,7 +348,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (!(chatMessageCell != null && chatMessageCell.getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
-        if (chatMessageCell != null && activity.animatingMessageObjects.contains(chatMessageCell.getMessageObject())) {
+        if (activity != null && chatMessageCell != null && activity.animatingMessageObjects.contains(chatMessageCell.getMessageObject())) {
             activity.animatingMessageObjects.remove(chatMessageCell.getMessageObject());
             if (activity.getChatActivityEnterView().canShowMessageTransition()) {
                 if (chatMessageCell.getMessageObject().isVoice()) {

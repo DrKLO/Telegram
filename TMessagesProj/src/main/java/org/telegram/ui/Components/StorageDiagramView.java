@@ -112,7 +112,7 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
 
         text1.setAnimationProperties(.18f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
         text1.setTextSize(AndroidUtilities.dp(24));
-        text1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        text1.setTypeface(AndroidUtilities.bold());
 
         text2.setAnimationProperties(.18f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
 

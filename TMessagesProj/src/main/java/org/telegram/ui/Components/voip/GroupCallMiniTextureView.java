@@ -178,12 +178,12 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         castingScreenDrawable = parentContainer.getContext().getResources().getDrawable(R.drawable.screencast_big).mutate();
 
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         textPaint.setTextSize(AndroidUtilities.dp(13));
         textPaint.setColor(Color.WHITE);
 
         TextPaint textPaint2 = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        textPaint2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint2.setTypeface(AndroidUtilities.bold());
         textPaint2.setTextSize(AndroidUtilities.dp(15));
         textPaint2.setColor(Color.WHITE);
 
@@ -513,7 +513,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         nameView = new SimpleTextView(parentContainer.getContext());
         nameView.setTextSize(13);
         nameView.setTextColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.9f)));
-        nameView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameView.setTypeface(AndroidUtilities.bold());
         nameView.setFullTextMaxLines(1);
         nameView.setBuildFullLayout(true);
         infoContainer = new FrameLayout(parentContainer.getContext());
@@ -545,7 +545,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         };
         stopSharingTextView.setText(LocaleController.getString("VoipVideoScreenStopSharing", R.string.VoipVideoScreenStopSharing));
         stopSharingTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        stopSharingTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        stopSharingTextView.setTypeface(AndroidUtilities.bold());
         stopSharingTextView.setPadding(AndroidUtilities.dp(21), 0, AndroidUtilities.dp(21), 0);
         stopSharingTextView.setTextColor(0xffffffff);
         stopSharingTextView.setBackground(rippleDrawable);

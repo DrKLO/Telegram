@@ -643,7 +643,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
     private float getPlaybackSpeed(boolean isPlaying, MessageObject messageObject) {
         if (isPlaying) {
-            if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+            if (messageObject != null && (messageObject.isVoice() || messageObject.isRoundVideo())) {
                 return MediaController.getInstance().getPlaybackSpeed(false);
             }
             return 1;

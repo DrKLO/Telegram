@@ -719,7 +719,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
 
                 if (!usersToLoad.isEmpty()) {
-                    MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                    MessagesStorage.getInstance(currentAccount).getUsersInternal(usersToLoad, users);
                     for (int a = 0; a < users.size(); a++) {
                         TLRPC.User user = users.get(a);
                         RecentSearchObject recentSearchObject = hashMap.get(user.id);

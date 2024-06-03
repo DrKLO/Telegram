@@ -20,7 +20,6 @@ import android.widget.TextView;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -52,7 +51,7 @@ public class JoinCallByUrlAlert extends BottomSheet {
             textView.setGravity(Gravity.CENTER);
             textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
 
@@ -83,7 +82,7 @@ public class JoinCallByUrlAlert extends BottomSheet {
         avatarImageView.setForUserOrChat(chat, avatarDrawable);
 
         TextView percentTextView = new TextView(context);
-        percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         percentTextView.setGravity(Gravity.CENTER_HORIZONTAL);

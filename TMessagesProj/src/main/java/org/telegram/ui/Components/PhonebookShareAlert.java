@@ -120,7 +120,7 @@ public class PhonebookShareAlert extends BottomSheet {
             addView(avatarImageView, LayoutHelper.createLinear(80, 80, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
             TextView textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
             textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             textView.setSingleLine(true);
@@ -637,7 +637,7 @@ public class PhonebookShareAlert extends BottomSheet {
         } else {
             buttonTextView.setText(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
         }
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
         frameLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 14, 14, 14, 14));
         buttonTextView.setOnClickListener(v -> {
@@ -929,11 +929,11 @@ public class PhonebookShareAlert extends BottomSheet {
                 if (parentFragment instanceof ChatActivity && ((ChatActivity) parentFragment).isInScheduleMode()) {
                     ChatActivity chatActivity = (ChatActivity) parentFragment;
                     AlertsCreator.createScheduleDatePickerDialog(getContext(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
-                        delegate.didSelectContact(currentUser, notify, scheduleDate);
+                        delegate.didSelectContact(currentUser, notify, scheduleDate, 0, false);
                         dismiss();
                     }, resourcesProvider);
                 } else {
-                    delegate.didSelectContact(currentUser, true, 0);
+                    delegate.didSelectContact(currentUser, true, 0, 0, false);
                     dismiss();
                 }
             }

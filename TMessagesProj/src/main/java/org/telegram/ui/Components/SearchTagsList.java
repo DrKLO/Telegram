@@ -1,6 +1,5 @@
 package org.telegram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.cancelRunOnUIThread;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.AndroidUtilities.runOnUIThread;
@@ -17,27 +16,18 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.TextWatcher;
-import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -49,19 +39,15 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.AlertDialogDecor;
@@ -180,7 +166,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         };
         tagView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider));
         tagView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        tagView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        tagView.setTypeface(AndroidUtilities.bold());
         SpannableStringBuilder ssb = new SpannableStringBuilder();
         Drawable lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock3).mutate();
         lockDrawable.setColorFilter(new PorterDuffColorFilter(Theme.key_chat_messageLinkIn, PorterDuff.Mode.SRC_IN));
@@ -198,7 +184,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         TextView textView = new TextView(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textView.setTypeface(AndroidUtilities.bold());
         ssb = new SpannableStringBuilder(LocaleController.getString(R.string.AddTagsToYourSavedMessages2));
         SpannableString arrow = new SpannableString(">");
         Drawable imageDrawable = getContext().getResources().getDrawable(R.drawable.msg_arrowright).mutate();
@@ -382,7 +368,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
             builder = new AlertDialog.Builder(context, resourcesProvider);
         }
         String name = MessagesController.getInstance(currentAccount).getSavedTagName(reaction);
-        builder.setTitle(new SpannableStringBuilder(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction).toCharSequence(20)).append("  ").append(LocaleController.getString(TextUtils.isEmpty(name) ? R.string.SavedTagLabelTag : R.string.SavedTagRenameTag)));
+        builder.setTitle(new SpannableStringBuilder(ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction).toCharSequence(20)).append("  ").append(LocaleController.getString(TextUtils.isEmpty(name) ? R.string.SavedTagLabelTag : R.string.SavedTagRenameTag)));
 
         final int MAX_NAME_LENGTH = 12;
         EditTextBoldCursor editText = new EditTextBoldCursor(context) {
@@ -434,7 +420,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
                         AndroidUtilities.shakeView(editText);
                         return true;
                     }
-                    MessagesController.getInstance(currentAccount).renameSavedReactionTag(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction), text);
+                    MessagesController.getInstance(currentAccount).renameSavedReactionTag(ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction), text);
                     if (dialog[0] != null) {
                         dialog[0].dismiss();
                     }
@@ -502,7 +488,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
                 AndroidUtilities.shakeView(editText);
                 return;
             }
-            MessagesController.getInstance(currentAccount).renameSavedReactionTag(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction), text);
+            MessagesController.getInstance(currentAccount).renameSavedReactionTag(ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction), text);
             dialogInterface.dismiss();
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
@@ -588,7 +574,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         if (savedReactionsTags != null) {
             for (int i = 0; i < savedReactionsTags.tags.size(); ++i) {
                 TLRPC.TL_savedReactionTag tag = savedReactionsTags.tags.get(i);
-                ReactionsLayoutInBubble.VisibleReaction r = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(tag.reaction);
+                ReactionsLayoutInBubble.VisibleReaction r = ReactionsLayoutInBubble.VisibleReaction.fromTL(tag.reaction);
                 if (!hashes.contains(r.hash)) {
                     if (topicId != 0 && tag.count <= 0)
                         continue;

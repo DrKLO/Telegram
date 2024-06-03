@@ -20,6 +20,7 @@ import android.view.ViewConfiguration;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
 
 import java.util.ArrayList;
 
@@ -95,7 +96,8 @@ public class CanvasButton {
                     new int[][]{StateSet.WILD_CARD},
                     new int[]{Theme.getColor(Theme.key_listSelector) & 0x19ffffff}
             );
-            selectorDrawable = new RippleDrawable(colorStateList, null, maskDrawable);
+            selectorDrawable = new BaseCell.RippleDrawableSafe(colorStateList, null, maskDrawable);
+            selectorDrawable.setCallback(parent);
         }
     }
 

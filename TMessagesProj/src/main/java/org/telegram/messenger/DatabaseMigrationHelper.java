@@ -1504,6 +1504,18 @@ public class DatabaseMigrationHelper {
             version = 153;
         }
 
+        if (version == 153) {
+            database.executeFast("CREATE TABLE effects(data BLOB)").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 154").stepThis().dispose();
+            version = 154;
+        }
+
+        if (version == 154) {
+            database.executeFast("CREATE TABLE fact_checks(hash INTEGER PRIMARY KEY, data BLOB, expires INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 155").stepThis().dispose();
+            version = 155;
+        }
+
         return version;
     }
 

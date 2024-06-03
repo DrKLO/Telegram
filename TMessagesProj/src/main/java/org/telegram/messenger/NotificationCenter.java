@@ -93,6 +93,7 @@ public class NotificationCenter {
     public static final int pinnedInfoDidLoad = totalEvents++;
     public static final int botKeyboardDidLoad = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
+    public static final int hashtagSearchUpdated = totalEvents++;
     public static final int chatSearchResultsLoading = totalEvents++;
     public static final int musicDidLoad = totalEvents++;
     public static final int moreMusicDidLoad = totalEvents++;
@@ -247,6 +248,11 @@ public class NotificationCenter {
     public static final int timezonesUpdated = totalEvents++;
     public static final int customStickerCreated = totalEvents++;
     public static final int premiumFloodWaitReceived = totalEvents++;
+    public static final int availableEffectsUpdate = totalEvents++;
+    public static final int starOptionsLoaded = totalEvents++;
+    public static final int starBalanceUpdated = totalEvents++;
+    public static final int starTransactionsLoaded = totalEvents++;
+    public static final int factCheckLoaded = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

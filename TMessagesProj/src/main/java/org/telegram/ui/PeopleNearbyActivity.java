@@ -219,10 +219,10 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            if (newItemPosition >= usersStartRow && newItemPosition < usersEndRow && oldItemPosition >= oldUsersStartRow && oldItemPosition < oldUsersEndRow) {
+            if (newItemPosition >= usersStartRow && newItemPosition < usersEndRow && (newItemPosition - usersStartRow) < users.size() && oldItemPosition >= oldUsersStartRow && oldItemPosition < oldUsersEndRow && (oldItemPosition - oldUsersStartRow) < oldUsers.size()) {
                 return MessageObject.getPeerId(oldUsers.get(oldItemPosition - oldUsersStartRow).peer) == MessageObject.getPeerId(users.get(newItemPosition - usersStartRow).peer);
             }
-            if (newItemPosition >= chatsStartRow && newItemPosition < chatsEndRow && oldItemPosition >= oldChatsStartRow && oldItemPosition < oldChatsEndRow) {
+            if (newItemPosition >= chatsStartRow && newItemPosition < chatsEndRow && (newItemPosition - chatsStartRow) < chats.size() && oldItemPosition >= oldChatsStartRow && oldItemPosition < oldChatsEndRow && (oldItemPosition - oldChatsStartRow) < oldChats.size()) {
                 return MessageObject.getPeerId(oldChats.get(oldItemPosition - oldChatsStartRow).peer) == MessageObject.getPeerId(chats.get(newItemPosition - chatsStartRow).peer);
             }
             int oldIndex = oldPositionToItem.get(oldItemPosition, -1);
@@ -609,6 +609,9 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         if (share != 0) {
             req.flags |= 1;
             req.self_expires = share == 1 ? 0x7fffffff : 0;
+        } else if (getUserConfig().sharingMyLocationUntil != 0) {
+            req.flags |= 1;
+            req.self_expires = getUserConfig().sharingMyLocationUntil;
         }
         reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             reqId = 0;
@@ -1009,7 +1012,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         actionCell.setText(LocaleController.getString("NearbyCreateGroup", R.string.NearbyCreateGroup), null, R.drawable.msg_groups_create, chatsStartRow != -1);
                     } else if (position == showMeRow) {
                         if (showingMe = (getUserConfig().sharingMyLocationUntil > getConnectionsManager().getCurrentTime())) {
-                            actionCell.setText(LocaleController.getString("StopShowingMe", R.string.StopShowingMe), null, R.drawable.msg_nearby_off, usersStartRow != -1);
+                            actionCell.setText(LocaleController.getString(R.string.StopShowingMe), null, R.drawable.menu_nearby_off, usersStartRow != -1);
                             actionCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
                         } else {
                             actionCell.setText(LocaleController.getString("MakeMyselfVisible", R.string.MakeMyselfVisible), null, R.drawable.msg_nearby, usersStartRow != -1);

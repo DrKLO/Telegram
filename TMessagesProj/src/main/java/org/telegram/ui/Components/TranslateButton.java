@@ -67,7 +67,7 @@ public class TranslateButton extends FrameLayout {
         textView.setAnimationProperties(.3f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
 
         textView.setTextSize(AndroidUtilities.dp(15));
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
         textView.setIgnoreRTL(!LocaleController.isRTL);

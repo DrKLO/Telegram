@@ -461,7 +461,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
                     textView.setGravity(Gravity.CENTER);
-                    textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView.setTypeface(AndroidUtilities.bold());
                     textView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
                     textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.LEFT));
@@ -471,7 +471,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
                     textView.setGravity(Gravity.CENTER);
-                    textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView.setTypeface(AndroidUtilities.bold());
                     textView.setText(LocaleController.getString("Save", R.string.Save).toUpperCase());
                     textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.RIGHT));
@@ -816,7 +816,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 case 0: {
                     TextCheckCell cell = new TextCheckCell(mContext);
                     cell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-                    cell.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    cell.setTypeface(AndroidUtilities.bold());
                     cell.setHeight(56);
                     view = cell;
                     break;

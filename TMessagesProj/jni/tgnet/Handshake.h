@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include "Defines.h"
+#include <openssl/bn.h>
 
 class Datacenter;
 class ByteArray;
@@ -37,6 +38,7 @@ public:
     ByteArray *getPendingAuthKey();
     int64_t getPendingAuthKeyId();
     TLObject *getCurrentHandshakeRequest();
+    static bool isGoodPrime(BIGNUM *p, uint32_t g);
 
 private:
 

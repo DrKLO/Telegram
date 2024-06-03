@@ -15,7 +15,6 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
-import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.MotionEvent;
 import android.view.TextureView;
@@ -32,24 +31,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MessageBackgroundDrawable;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.Size;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
@@ -103,7 +98,7 @@ public class MessageEntityView extends EntityView {
 //        dateCell = new ChatActionCell(context, false, resourcesProvider) {
 //            public final BlurringShader.StoryBlurDrawer blurDrawer = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND);
 //            private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG); {
-//                textPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+//                textPaint.setTypeface(AndroidUtilities.medium());
 //                textPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
 //                textPaint.setColor(0xffffffff);
 //            }
@@ -219,6 +214,7 @@ public class MessageEntityView extends EntityView {
             private final ArrayList<ChatMessageCell> drawTimeAfter = new ArrayList<>();
             private final ArrayList<ChatMessageCell> drawNamesAfter = new ArrayList<>();
             private final ArrayList<ChatMessageCell> drawCaptionAfter = new ArrayList<>();
+            private final ArrayList<ChatMessageCell> drawReactionsAfter = new ArrayList<>();
             private final ArrayList<MessageObject.GroupedMessages> drawingGroups = new ArrayList<>(10);
 
             @Override
@@ -298,6 +294,47 @@ public class MessageEntityView extends EntityView {
                         }
                     }
                     drawCaptionAfter.clear();
+                }
+                size = drawReactionsAfter.size();
+                if (size > 0) {
+                    for (int a = 0; a < size; a++) {
+                        ChatMessageCell cell = drawReactionsAfter.get(a);
+                        boolean selectionOnly = false;
+                        if (cell.getCurrentPosition() != null) {
+                            selectionOnly = (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) == 0;
+                        }
+                        if (!selectionOnly) {
+                            float alpha = cell.shouldDrawAlphaLayer() ? cell.getAlpha() : 1f;
+                            float canvasOffsetX = cell.getLeft() + cell.getNonAnimationTranslationX(false);
+                            float canvasOffsetY = cell.getY();
+                            canvas.save();
+                            MessageObject.GroupedMessages groupedMessages = cell.getCurrentMessagesGroup();
+                            if (groupedMessages != null && groupedMessages.transitionParams.backgroundChangeBounds) {
+                                float x = cell.getNonAnimationTranslationX(true);
+                                float l = (groupedMessages.transitionParams.left + x + groupedMessages.transitionParams.offsetLeft);
+                                float t = (groupedMessages.transitionParams.top + groupedMessages.transitionParams.offsetTop);
+                                float r = (groupedMessages.transitionParams.right + x + groupedMessages.transitionParams.offsetRight);
+                                float b = (groupedMessages.transitionParams.bottom + groupedMessages.transitionParams.offsetBottom);
+
+                                if (!groupedMessages.transitionParams.backgroundChangeBounds) {
+                                    t += cell.getTranslationY();
+                                    b += cell.getTranslationY();
+                                }
+                                canvas.clipRect(
+                                        l + AndroidUtilities.dp(8), t + AndroidUtilities.dp(8),
+                                        r - AndroidUtilities.dp(8), b - AndroidUtilities.dp(8)
+                                );
+                            }
+                            if (cell.getTransitionParams().wasDraw) {
+                                canvas.translate(canvasOffsetX, canvasOffsetY);
+                                cell.setInvalidatesParent(true);
+                                cell.drawReactionsLayout(canvas, alpha);
+                                cell.setInvalidatesParent(false);
+                                canvas.restore();
+                            }
+                        }
+                    }
+                    drawReactionsAfter.clear();
                 }
             }
 
@@ -532,8 +569,11 @@ public class MessageEntityView extends EntityView {
                             }
                         }
                         if (position != null || cell.getTransitionParams().transformGroupToSingleMessage || cell.getTransitionParams().animateBackgroundBoundsInner) {
-                            if (position == null || (position.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0) {
+                            if (position == null || (position.flags & cell.captionFlag()) != 0) {
                                 drawCaptionAfter.add(cell);
+                            }
+                            if (position == null || (position.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && (position.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+                                drawReactionsAfter.add(cell);
                             }
                         }
                     }
@@ -709,7 +749,7 @@ public class MessageEntityView extends EntityView {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                ChatMessageCell cell = new ChatMessageCell(context, false, null, resourcesProvider) {
+                ChatMessageCell cell = new ChatMessageCell(context, UserConfig.selectedAccount, false, null, resourcesProvider) {
                     public BlurringShader.StoryBlurDrawer blurDrawer = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND);
 
                     @Override
@@ -1146,7 +1186,7 @@ public class MessageEntityView extends EntityView {
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_actionTextPaint2.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_botButtonPaint.setTextSize(AndroidUtilities.dp(15));
-            chat_botButtonPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            chat_botButtonPaint.setTypeface(AndroidUtilities.bold());
             chat_actionBackgroundGradientDarkenPaint.setColor(0x15000000);
         }
 

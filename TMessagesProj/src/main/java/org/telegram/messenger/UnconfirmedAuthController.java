@@ -267,6 +267,7 @@ public class UnconfirmedAuthController {
         public String device;
         public String location;
 
+
         public UnconfirmedAuth(AbstractSerializedData stream) {
             int magic = stream.readInt32(true);
             if (magic != 0x7ab6618c) {

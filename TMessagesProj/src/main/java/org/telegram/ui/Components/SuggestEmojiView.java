@@ -14,6 +14,7 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextWatcher;
+import android.text.style.UnderlineSpan;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -676,7 +677,8 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                             editable.removeSpan(emojiSpans[j]);
                         }
                     }
-                    editable.replace(i, i + replacingLength, emoji);
+                    editable.replace(i, i + replacingLength, "");
+                    editable.insert(i, emoji);
                 } else {
                     break;
                 }

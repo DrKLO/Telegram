@@ -9,8 +9,6 @@ import android.graphics.drawable.Drawable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -55,7 +53,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
         TextView titleTextView = new TextView(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setText(LocaleController.getString("ArchiveHintHeader1", R.string.ArchiveHintHeader1));
         layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 9));
@@ -125,7 +123,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
         textLayout.setOrientation(LinearLayout.VERTICAL);
         TextView textView1 = new TextView(getContext());
         textView1.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        textView1.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textView1.setTypeface(AndroidUtilities.bold());
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp(14));
         textView1.setText(title);
         textLayout.addView(textView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2.6f, 0, 0));

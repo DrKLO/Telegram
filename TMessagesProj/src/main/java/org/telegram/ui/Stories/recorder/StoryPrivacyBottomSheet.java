@@ -2078,7 +2078,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     usersString.append(", ");
                 }
                 SpannableString username = new SpannableString("@" + restrictedUsers.get(i));
-                username.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), 0, username.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                username.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, username.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 usersString.append(username);
             }
             new AlertDialog.Builder(getContext(), resourcesProvider)
@@ -2637,7 +2637,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             addView(imageView);
 
             titleTextView = new SimpleTextView(context);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             titleTextView.setTextSize(16);
             titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -2725,11 +2725,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public void set(Object object) {
             if (object instanceof TLRPC.User) {
-                titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                titleTextView.setTypeface(AndroidUtilities.bold());
                 titleTextView.setTranslationX(0);
                 setUser((TLRPC.User) object);
             } else if (object instanceof TLRPC.Chat) {
-                titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                titleTextView.setTypeface(AndroidUtilities.bold());
                 titleTextView.setTranslationX(0);
                 setChat((TLRPC.Chat) object, 0);
             } else if (object instanceof String) {
@@ -2974,7 +2974,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             titleTextView = new TextView(context);
             titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 27, 16, 27, 0));
 
             subtitleTextView = new TextView(context);
@@ -3004,7 +3004,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             this.resourcesProvider = resourcesProvider;
 
             textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
@@ -4303,7 +4303,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             headerView.setPadding(backgroundPaddingLeft + dp(22), dp(2), backgroundPaddingLeft + dp(22), dp(14));
             headerView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
-            headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            headerView.setTypeface(AndroidUtilities.bold());
             headerView.setText(LocaleController.getString(R.string.StoryPrivacyPublishAs));
             containerView.addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }

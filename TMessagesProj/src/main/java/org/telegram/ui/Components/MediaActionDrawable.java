@@ -16,7 +16,6 @@ import android.text.TextPaint;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 public class MediaActionDrawable extends Drawable {
@@ -99,7 +98,7 @@ public class MediaActionDrawable extends Drawable {
 
         paint3.setColor(0xffffffff);
 
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         textPaint.setTextSize(AndroidUtilities.dp(13));
         textPaint.setColor(0xffffffff);
 

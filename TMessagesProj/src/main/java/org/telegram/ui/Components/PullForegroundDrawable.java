@@ -119,7 +119,7 @@ public class PullForegroundDrawable {
     };
 
     public PullForegroundDrawable(CharSequence pullText, CharSequence releaseText) {
-        tooltipTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        tooltipTextPaint.setTypeface(AndroidUtilities.bold());
 //        tooltipTextPaint.setTextAlign(Paint.Align.CENTER);
         tooltipTextPaint.setTextSize(AndroidUtilities.dp(16));
 

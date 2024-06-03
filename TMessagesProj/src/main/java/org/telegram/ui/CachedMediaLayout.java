@@ -285,7 +285,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
 
         selectedMessagesCountTextView = new AnimatedTextView(context, true, true, true);
         selectedMessagesCountTextView.setTextSize(AndroidUtilities.dp(18));
-        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedMessagesCountTextView.setTypeface(AndroidUtilities.bold());
         selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionModeLayout.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 18, 0, 0, 0));
         actionModeViews.add(selectedMessagesCountTextView);

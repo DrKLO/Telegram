@@ -54,7 +54,7 @@ public class StoryThemeSheet extends FrameLayout {
 
         titleView = new TextView(context);
         titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setText(LocaleController.getString(R.string.StorySetWallpaper));
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 54, 16, 24, 0));
