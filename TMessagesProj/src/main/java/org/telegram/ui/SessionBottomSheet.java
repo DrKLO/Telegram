@@ -23,6 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.utils.SessionTypeUtil;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -301,76 +302,18 @@ public class SessionBottomSheet extends BottomSheet {
     }
 
     private void setAnimation(TLRPC.TL_authorization session, RLottieImageView imageView) {
-        String platform = session.platform.toLowerCase();
-        if (platform.isEmpty()) {
-            platform = session.system_version.toLowerCase();
-        }
-        String deviceModel = session.device_model.toLowerCase();
-        int iconId;
-        int colorKey, colorKey2;
-        boolean animation = true;
+        SessionTypeUtil.SessionType sessionType = SessionTypeUtil.getSessionTypeObject(session);
+        SessionTypeUtil.DrawableInfo drawableInfo = SessionTypeUtil.getDrawableInfoForSessionType(sessionType);
 
-
-        if (deviceModel.contains("safari")) {
-            iconId = R.raw.safari_30;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("edge")) {
-            iconId = R.raw.edge_30;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("chrome")) {
-            iconId = R.raw.chrome_30;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("opera") || deviceModel.contains("firefox") || deviceModel.contains("vivaldi")) {
-            animation = false;
-            if (deviceModel.contains("opera")) {
-                iconId = R.drawable.device_web_opera;
-            } else if (deviceModel.contains("firefox")) {
-                iconId = R.drawable.device_web_firefox;
-            } else {
-                iconId = R.drawable.device_web_other;
-            }
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (platform.contains("ubuntu")) {
-            iconId = R.raw.ubuntu_30;
-            colorKey = Theme.key_avatar_backgroundBlue;
-            colorKey2 = Theme.key_avatar_background2Blue;
-        } else if (platform.contains("ios")) {
-            iconId = deviceModel.contains("ipad") ? R.raw.ipad_30 : R.raw.iphone_30;
-            colorKey = Theme.key_avatar_backgroundBlue;
-            colorKey2 = Theme.key_avatar_background2Blue;
-        } else if (platform.contains("windows")) {
-            iconId = R.raw.windows_30;
-            colorKey = Theme.key_avatar_backgroundCyan;
-            colorKey2 = Theme.key_avatar_background2Cyan;
-        } else if (platform.contains("macos")) {
-            iconId = R.raw.mac_30;
-            colorKey = Theme.key_avatar_backgroundCyan;
-            colorKey2 = Theme.key_avatar_background2Cyan;
-        } else if (platform.contains("android")) {
-            iconId = R.raw.android_30;
-            colorKey = Theme.key_avatar_backgroundGreen;
-            colorKey2 = Theme.key_avatar_background2Green;
-        } else {
-            if (session.app_name.toLowerCase().contains("desktop")) {
-                iconId = R.raw.windows_30;
-                colorKey = Theme.key_avatar_backgroundCyan;
-                colorKey2 = Theme.key_avatar_background2Cyan;
-            } else {
-                iconId = R.raw.chrome_30;
-                colorKey = Theme.key_avatar_backgroundPink;
-                colorKey2 = Theme.key_avatar_background2Pink;
-            }
-        }
+        int iconId = drawableInfo.getIconId();
+        int colorKey = drawableInfo.getColorKey();
+        int animatedIcon = drawableInfo.getAnimatedIcon();
 
         imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey)));
-//        imageView.setBackground(new SessionCell.CircleGradientDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey), Theme.getColor(colorKey2)));
-        if (animation) {
+        // imageView.setBackground(new SessionCell.CircleGradientDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey), Theme.getColor(colorKey2)));
+        if (animatedIcon != -1) {
             int[] colors = new int[]{0x000000, Theme.getColor(colorKey)};
-            imageView.setAnimation(iconId, 50, 50, colors);
+            imageView.setAnimation(animatedIcon, 50, 50, colors);
         } else {
             imageView.setImageDrawable(ContextCompat.getDrawable(getContext(), iconId));
         }
