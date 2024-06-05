@@ -38,6 +38,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.utils.SessionTypeUtil;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -295,74 +296,13 @@ public class SessionCell extends FrameLayout {
     }
 
     public static Drawable createDrawable(int sz, TLRPC.TL_authorization session) {
-        String platform = session.platform.toLowerCase();
-        if (platform.isEmpty()) {
-            platform = session.system_version.toLowerCase();
-        }
-        String deviceModel = session.device_model.toLowerCase();
-        int iconId;
-        int colorKey, colorKey2;
-        if (deviceModel.contains("safari")) {
-            iconId = R.drawable.device_web_safari;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("edge")) {
-            iconId = R.drawable.device_web_edge;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("chrome")) {
-            iconId = R.drawable.device_web_chrome;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("opera")) {
-            iconId = R.drawable.device_web_opera;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("firefox")) {
-            iconId = R.drawable.device_web_firefox;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (deviceModel.contains("vivaldi")) {
-            iconId = R.drawable.device_web_other;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        } else if (platform.contains("ios")) {
-            iconId = deviceModel.contains("ipad") ? R.drawable.device_tablet_ios : R.drawable.device_phone_ios;
-            colorKey = Theme.key_avatar_backgroundBlue;
-            colorKey2 = Theme.key_avatar_background2Blue;
-        } else if (platform.contains("windows")) {
-            iconId = R.drawable.device_desktop_win;
-            colorKey = Theme.key_avatar_backgroundCyan;
-            colorKey2 = Theme.key_avatar_background2Cyan;
-        } else if (platform.contains("macos")) {
-            iconId = R.drawable.device_desktop_osx;
-            colorKey = Theme.key_avatar_backgroundCyan;
-            colorKey2 = Theme.key_avatar_background2Cyan;
-        } else if (platform.contains("android")) {
-            iconId = deviceModel.contains("tab") ? R.drawable.device_tablet_android : R.drawable.device_phone_android;
-            colorKey = Theme.key_avatar_backgroundGreen;
-            colorKey2 = Theme.key_avatar_background2Green;
-        } else if (platform.contains("fragment")) {
-            iconId = R.drawable.fragment;
-            colorKey = -1;
-            colorKey2 = -1;
-        } else if (platform.contains("premiumbot")) {
-            iconId = R.drawable.filled_star_plus;
-            colorKey = Theme.key_color_yellow;
-            colorKey2 = Theme.key_color_orange;
-        } else if (platform.equals("?")) {
-            iconId = R.drawable.msg_emoji_question;
-            colorKey = -1;
-            colorKey2 = -1;
-        } else if (session.app_name.toLowerCase().contains("desktop")) {
-            iconId = R.drawable.device_desktop_other;
-            colorKey = Theme.key_avatar_backgroundCyan;
-            colorKey2 = Theme.key_avatar_background2Cyan;
-        } else {
-            iconId = R.drawable.device_web_other;
-            colorKey = Theme.key_avatar_backgroundPink;
-            colorKey2 = Theme.key_avatar_background2Pink;
-        }
+        SessionTypeUtil.SessionType sessionType = SessionTypeUtil.getSessionTypeObject(session);
+        SessionTypeUtil.DrawableInfo drawableInfo = SessionTypeUtil.getDrawableInfoForSessionType(sessionType);
+
+        int iconId = drawableInfo.getIconId();
+        int colorKey = drawableInfo.getColorKey();
+        int colorKey2 = drawableInfo.getColorKey2();
+
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
         Drawable bgDrawable = new CircleGradientDrawable(AndroidUtilities.dp(sz), colorKey == -1 ? 0xFF000000 : Theme.getColor(colorKey), colorKey2 == -1 ? 0xFF000000 : Theme.getColor(colorKey2));
