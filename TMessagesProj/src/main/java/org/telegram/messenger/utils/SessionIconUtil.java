@@ -11,10 +11,10 @@ public class SessionIconUtil {
     private static final String TAG = "SessionIconUtil";
 
     public static SessionType getSessionTypeObject(TLRPC.TL_authorization authorization) {
-        String appName = (authorization.app_name != null ? authorization.app_name : "").toLowerCase();
-        String deviceModel = (authorization.device_model != null ? authorization.device_model : "").toLowerCase();
-        String platform = (authorization.platform != null ? authorization.platform : "").toLowerCase();
-        String systemVersion = (authorization.system_version != null ? authorization.system_version : "").toLowerCase();
+        String appName = safeLowerCase(authorization.app_name);
+        String deviceModel = safeLowerCase(authorization.device_model);
+        String platform = safeLowerCase(authorization.platform);
+        String systemVersion = safeLowerCase(authorization.system_version);
 
         if (BuildVars.DEBUG_PRIVATE_VERSION) {
             Log.e(TAG, "appName: " + appName);
@@ -80,6 +80,10 @@ public class SessionIconUtil {
         return SessionType.UNKNOWN;
     }
 
+    private static String safeLowerCase(String input) {
+        return (input != null ? input : "").toLowerCase();
+    }
+
     public static DrawableInfo getDrawableInfoForSessionType(SessionType sessionType) {
         int iconId;
         int colorKey;
@@ -140,7 +144,7 @@ public class SessionIconUtil {
                 break;
             case MAC:
                 iconId = R.drawable.device_desktop_osx;
-                animatedIcon = R.raw.linux_30;
+                animatedIcon = R.raw.mac_30;
                 colorKey = Theme.key_avatar_backgroundCyan;
                 colorKey2 = Theme.key_avatar_background2Cyan;
                 break;
@@ -190,9 +194,9 @@ public class SessionIconUtil {
     }
 
     public enum SessionType {
-        UNKNOWN, XBOX, BRAVE, VIVALDI, OPERA, EDGE, CHROME, FIREFOX,
-        SAFARI, ANDROID, ANDROID_TABLET, WINDOWS, UBUNTU, LINUX, IPHONE, IPAD,
-        MAC, APPLE, PREMIUMBOT, FRAGMENT, GENERIC_DESKTOP, QUESTION
+        UNKNOWN, BRAVE, VIVALDI, OPERA, EDGE, CHROME, FIREFOX, SAFARI,
+        ANDROID, ANDROID_TABLET, WINDOWS, UBUNTU, LINUX, IPHONE, IPAD, MAC,
+        PREMIUMBOT, FRAGMENT, QUESTION
     }
 
     public static class DrawableInfo {
