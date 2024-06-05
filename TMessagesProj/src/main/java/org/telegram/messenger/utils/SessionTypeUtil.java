@@ -12,10 +12,10 @@ public class SessionTypeUtil {
     }
 
     public static SessionType getSessionTypeObject(TLRPC.TL_authorization authorization) {
-        String appName = authorization.app_name.toLowerCase();
-        String deviceModel = authorization.device_model.toLowerCase();
-        String platform = authorization.platform.toLowerCase();
-        String systemVersion = authorization.system_version.toLowerCase();
+        String appName = (authorization.app_name != null ? authorization.app_name : "").toLowerCase();
+        String deviceModel = (authorization.device_model != null ? authorization.device_model : "").toLowerCase();
+        String platform = (authorization.platform != null ? authorization.platform : "").toLowerCase();
+        String systemVersion = (authorization.system_version != null ? authorization.system_version : "").toLowerCase();
 
         if (deviceModel.contains("xbox")) {
             return SessionType.XBOX;

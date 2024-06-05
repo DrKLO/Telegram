@@ -1106,7 +1106,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             }
             Drawable drawable = cachedPlatformDrawables.get(platform);
             if (drawable == null) {
-                cachedPlatformDrawables.put(platform, drawable = SessionCell.createStarsDrawable(44, platform));
+                cachedPlatformDrawables.put(platform, drawable = SessionCell.createDrawable(44, platform));
             }
             return drawable;
         }
@@ -1690,7 +1690,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             } else if (transaction.peer instanceof TLRPC.TL_starsTransactionPeerFragment) {
                 platform = "fragment";
             }
-            CombinedDrawable drawable = (CombinedDrawable) SessionCell.createStarsDrawable(100, platform);
+            CombinedDrawable drawable = (CombinedDrawable) SessionCell.createDrawable(100, platform);
             drawable.setIconSize(dp(40), dp(40));
             imageView.setImageDrawable(drawable);
             // linearLayout.addView(imageView, LayoutHelper.createLinear(100, 100, Gravity.CENTER, 0, 0, 0, 10));

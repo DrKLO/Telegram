@@ -287,37 +287,6 @@ public class SessionCell extends FrameLayout {
         }
     }
 
-    public static Drawable createStarsDrawable(int sz, String platform) {
-        int iconId;
-        int colorKey;
-        int colorKey2;
-
-        if (platform.equals("?")) {
-            iconId = R.drawable.msg_emoji_question;
-            colorKey = -1;
-            colorKey2 = -1;
-        } else {
-            if (platform.contains("fragment")) {
-                iconId = R.drawable.fragment;
-                colorKey = -1;
-                colorKey2 = -1;
-            } else if (platform.contains("premiumbot")) {
-                iconId = R.drawable.filled_star_plus;
-                colorKey = Theme.key_color_yellow;
-                colorKey2 = Theme.key_color_orange;
-            } else {
-                iconId = R.drawable.device_web_other;
-                colorKey = Theme.key_avatar_backgroundPink;
-                colorKey2 = Theme.key_avatar_background2Pink;
-            }
-        }
-
-        Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
-        iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
-        Drawable bgDrawable = new CircleGradientDrawable(AndroidUtilities.dp(sz), colorKey == -1 ? 0xFF000000 : Theme.getColor(colorKey), colorKey2 == -1 ? 0xFF000000 : Theme.getColor(colorKey2));
-        return new CombinedDrawable(bgDrawable, iconDrawable);
-    }
-
     public static Drawable createDrawable(int sz, String platform) {
         TLRPC.TL_authorization auth = new TLRPC.TL_authorization();
         auth.device_model = platform;
