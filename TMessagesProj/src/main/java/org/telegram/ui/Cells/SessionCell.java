@@ -38,7 +38,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.utils.SessionTypeUtil;
+import org.telegram.messenger.utils.SessionIconUtil;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -296,8 +296,8 @@ public class SessionCell extends FrameLayout {
     }
 
     public static Drawable createDrawable(int sz, TLRPC.TL_authorization session) {
-        SessionTypeUtil.SessionType sessionType = SessionTypeUtil.getSessionTypeObject(session);
-        SessionTypeUtil.DrawableInfo drawableInfo = SessionTypeUtil.getDrawableInfoForSessionType(sessionType);
+        SessionIconUtil.SessionType sessionType = SessionIconUtil.getSessionTypeObject(session);
+        SessionIconUtil.DrawableInfo drawableInfo = SessionIconUtil.getDrawableInfoForSessionType(sessionType);
 
         int iconId = drawableInfo.getIconId();
         int colorKey = drawableInfo.getColorKey();

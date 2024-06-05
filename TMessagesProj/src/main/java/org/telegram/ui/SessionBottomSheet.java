@@ -23,7 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.utils.SessionTypeUtil;
+import org.telegram.messenger.utils.SessionIconUtil;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -302,8 +302,8 @@ public class SessionBottomSheet extends BottomSheet {
     }
 
     private void setAnimation(TLRPC.TL_authorization session, RLottieImageView imageView) {
-        SessionTypeUtil.SessionType sessionType = SessionTypeUtil.getSessionTypeObject(session);
-        SessionTypeUtil.DrawableInfo drawableInfo = SessionTypeUtil.getDrawableInfoForSessionType(sessionType);
+        SessionIconUtil.SessionType sessionType = SessionIconUtil.getSessionTypeObject(session);
+        SessionIconUtil.DrawableInfo drawableInfo = SessionIconUtil.getDrawableInfoForSessionType(sessionType);
 
         int iconId = drawableInfo.getIconId();
         int colorKey = drawableInfo.getColorKey();

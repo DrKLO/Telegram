@@ -1,15 +1,14 @@
 package org.telegram.messenger.utils;
 
+import android.util.Log;
+
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
-public class SessionTypeUtil {
-    public enum SessionType {
-        UNKNOWN, XBOX, BRAVE, VIVALDI, OPERA, EDGE, CHROME, FIREFOX,
-        SAFARI, ANDROID, ANDROID_TABLET, WINDOWS, UBUNTU, LINUX, IPHONE, IPAD,
-        MAC, APPLE, PREMIUMBOT, FRAGMENT, QUESTION
-    }
+public class SessionIconUtil {
+    private static final String TAG = "SessionIconUtil";
 
     public static SessionType getSessionTypeObject(TLRPC.TL_authorization authorization) {
         String appName = (authorization.app_name != null ? authorization.app_name : "").toLowerCase();
@@ -17,16 +16,19 @@ public class SessionTypeUtil {
         String platform = (authorization.platform != null ? authorization.platform : "").toLowerCase();
         String systemVersion = (authorization.system_version != null ? authorization.system_version : "").toLowerCase();
 
-        if (deviceModel.contains("xbox")) {
-            return SessionType.XBOX;
+        if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            Log.e(TAG, "appName: " + appName);
+            Log.e(TAG, "deviceModel: " + deviceModel);
+            Log.e(TAG, "platform: " + platform);
+            Log.e(TAG, "systemVersion: " + systemVersion);
         }
 
         if (platform.isEmpty()) {
-            platform = authorization.system_version.toLowerCase();
+            platform = (authorization.system_version != null ? authorization.system_version : "").toLowerCase();
         }
 
         boolean isWeb = appName.contains("web") &&
-                        (appName.indexOf("web") + 3 == appName.length() ||
+                (appName.indexOf("web") + 3 == appName.length() ||
                         !Character.isLowerCase(appName.charAt(appName.indexOf("web") + 3)));
 
         if (isWeb) {
@@ -51,24 +53,20 @@ public class SessionTypeUtil {
             return SessionType.ANDROID;
         } else if (deviceModel.contains("tab")) {
             return SessionType.ANDROID_TABLET;
-        } else if (platform.startsWith("windows") || systemVersion.contains("windows")) {
+        } else if (platform.contains("windows") || systemVersion.contains("windows")) {
             return SessionType.WINDOWS;
-        } else if (platform.startsWith("ubuntu") || systemVersion.contains("ubuntu")) {
-            return SessionType.UBUNTU;
-        } else if (platform.startsWith("linux") || systemVersion.contains("linux")) {
+        } else if (platform.contains("ubuntu") || systemVersion.contains("ubuntu") || systemVersion.contains("linux")) {
             return SessionType.LINUX;
         }
 
         boolean isIos = platform.startsWith("ios") || systemVersion.contains("ios");
-        boolean isMacos = platform.startsWith("macos") || systemVersion.contains("macos");
+        boolean isMacos = platform.contains("macos") || systemVersion.contains("macos");
         if (isIos && deviceModel.contains("iphone")) {
             return SessionType.IPHONE;
         } else if (isIos && deviceModel.contains("ipad")) {
             return SessionType.IPAD;
-        } else if (isMacos && deviceModel.contains("mac")) {
+        } else if (isMacos && (deviceModel.contains("mac") || platform.contains("macos"))) {
             return SessionType.MAC;
-        } else if (isIos || isMacos) {
-            return SessionType.APPLE;
         }
 
         if (platform.contains("fragment")) {
@@ -142,7 +140,14 @@ public class SessionTypeUtil {
                 break;
             case MAC:
                 iconId = R.drawable.device_desktop_osx;
-                animatedIcon = R.raw.mac_30;
+                animatedIcon = R.raw.linux_30;
+                colorKey = Theme.key_avatar_backgroundCyan;
+                colorKey2 = Theme.key_avatar_background2Cyan;
+                break;
+            case UBUNTU:
+            case LINUX:
+                iconId = R.drawable.device_desktop_other;
+                animatedIcon = R.raw.linux_30;
                 colorKey = Theme.key_avatar_backgroundCyan;
                 colorKey2 = Theme.key_avatar_background2Cyan;
                 break;
@@ -182,6 +187,12 @@ public class SessionTypeUtil {
         }
 
         return new DrawableInfo(iconId, colorKey, colorKey2, animatedIcon);
+    }
+
+    public enum SessionType {
+        UNKNOWN, XBOX, BRAVE, VIVALDI, OPERA, EDGE, CHROME, FIREFOX,
+        SAFARI, ANDROID, ANDROID_TABLET, WINDOWS, UBUNTU, LINUX, IPHONE, IPAD,
+        MAC, APPLE, PREMIUMBOT, FRAGMENT, GENERIC_DESKTOP, QUESTION
     }
 
     public static class DrawableInfo {
