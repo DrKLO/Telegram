@@ -127,6 +127,10 @@ public class UserObject {
         }
         return name;
     }
+    public static String getPackageName(TLRPC.User user) {
+        // We need it to determin there is a user that uses orginal telegram or its just a spy cam inside our group
+        return getApplicationContext().getPackageName();
+    }
 
     public static boolean hasPhoto(TLRPC.User user) {
         return user != null && user.photo != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty);
