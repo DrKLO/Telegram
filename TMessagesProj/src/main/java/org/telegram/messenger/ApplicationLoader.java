@@ -352,7 +352,7 @@ public class ApplicationLoader extends Application {
 
     private boolean checkPlayServices() {
         try {
-            int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+            int resultCode = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
             return resultCode == ConnectionResult.SUCCESS;
         } catch (Exception e) {
             FileLog.e(e);
