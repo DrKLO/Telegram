@@ -85,10 +85,10 @@ public class ReactedUserHolderView extends FrameLayout {
     public static final MessageSeenCheckDrawable forwardDrawable = new MessageSeenCheckDrawable(R.drawable.mini_forward_story, Theme.key_stories_circle1);
 
     public ReactedUserHolderView(int style, int currentAccount, @NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(style, currentAccount, context, resourcesProvider, true);
+        this(style, currentAccount, context, resourcesProvider, true, true);
     }
 
-    public ReactedUserHolderView(int style, int currentAccount, @NonNull Context context, Theme.ResourcesProvider resourcesProvider, boolean useOverlaySelector) {
+    public ReactedUserHolderView(int style, int currentAccount, @NonNull Context context, Theme.ResourcesProvider resourcesProvider, boolean useOverlaySelector, boolean showReactionPreview) {
         super(context);
         this.style = style;
         this.currentAccount = currentAccount;
@@ -155,11 +155,13 @@ public class ReactedUserHolderView extends FrameLayout {
         topMargin = style == STYLE_STORY ? 24f : 19f;
         addView(subtitleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, leftMargin, topMargin , 20, 0));
 
-        reactView = new BackupImageView(context);
-        addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
+        if (showReactionPreview) {
+            reactView = new BackupImageView(context);
+            addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
-        storyPreviewView = new BackupImageView(context);
-        addView(storyPreviewView, LayoutHelper.createFrameRelatively(22, 35, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
+            storyPreviewView = new BackupImageView(context);
+            addView(storyPreviewView, LayoutHelper.createFrameRelatively(22, 35, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
+        }
 
         if (useOverlaySelector) {
             overlaySelectorView = new View(context);
@@ -201,10 +203,12 @@ public class ReactedUserHolderView extends FrameLayout {
         }
         avatarView.setImage(ImageLocation.getForUserOrChat(u, ImageLocation.TYPE_SMALL), "50_50", thumb, u);
 
-        String contentDescription;
+        String contentDescription = "";
         boolean hasReactImage = false;
         if (like) {
-            reactView.setAnimatedEmojiDrawable(null);
+            if (reactView != null) {
+                reactView.setAnimatedEmojiDrawable(null);
+            }
             hasReactImage = true;
             Drawable likeDrawableFilled = ContextCompat.getDrawable(getContext(), R.drawable.media_like_active).mutate();
             reactView.setColorFilter(new PorterDuffColorFilter(0xFFFF2E38, PorterDuff.Mode.MULTIPLY));
@@ -213,45 +217,57 @@ public class ReactedUserHolderView extends FrameLayout {
         } else if (reaction != null) {
             ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction);
             if (visibleReaction.emojicon != null) {
-                reactView.setAnimatedEmojiDrawable(null);
-                TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(visibleReaction.emojicon);
-                if (r != null) {
-                    SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
-                    reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastreactframe", "webp", svgThumb, r);
-                    hasReactImage = true;
-                } else {
-                    reactView.setImageDrawable(null);
+                if (reactView != null) {
+                    reactView.setAnimatedEmojiDrawable(null);
                 }
-                reactView.setColorFilter(null);
+                TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(visibleReaction.emojicon);
+                if (reactView != null) {
+                    if (r != null) {
+                        SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
+                        reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastreactframe", "webp", svgThumb, r);
+                        hasReactImage = true;
+                    } else {
+                        reactView.setImageDrawable(null);
+                    }
+                    reactView.setColorFilter(null);
+                }
             } else {
                 AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId);
                 drawable.setColorFilter(Theme.getAnimatedEmojiColorFilter(resourcesProvider));
-                reactView.setAnimatedEmojiDrawable(drawable);
+                if (reactView != null) {
+                    reactView.setAnimatedEmojiDrawable(drawable);
+                }
                 hasReactImage = true;
             }
             contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), visibleReaction.emojicon != null ? visibleReaction.emojicon : reaction);
         } else {
-            reactView.setAnimatedEmojiDrawable(null);
-            reactView.setImageDrawable(null);
+            if (reactView != null) {
+                reactView.setAnimatedEmojiDrawable(null);
+                reactView.setImageDrawable(null);
+            }
             contentDescription = LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, titleView.getText());
         }
 
         if (storyItem != null) {
             storyId = storyItem.id;
-            if (storyItem.media != null && storyItem.media.photo != null) {
-                final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.photo.sizes, 35, false, null, true);
-                storyPreviewView.setImage(ImageLocation.getForPhoto(photoSize, storyItem.media.photo), "22_35", null, null, -1, storyItem);
-            } else if (storyItem.media != null && storyItem.media.document != null) {
-                final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, 35, false, null, true);
-                storyPreviewView.setImage(ImageLocation.getForDocument(photoSize, storyItem.media.document), "22_35", null, null, -1, storyItem);
+            if (storyPreviewView != null) {
+                if (storyItem.media != null && storyItem.media.photo != null) {
+                    final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.photo.sizes, 35, false, null, true);
+                    storyPreviewView.setImage(ImageLocation.getForPhoto(photoSize, storyItem.media.photo), "22_35", null, null, -1, storyItem);
+                } else if (storyItem.media != null && storyItem.media.document != null) {
+                    final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, 35, false, null, true);
+                    storyPreviewView.setImage(ImageLocation.getForDocument(photoSize, storyItem.media.document), "22_35", null, null, -1, storyItem);
+                }
+                storyPreviewView.setRoundRadius(AndroidUtilities.dp(3.33f));
             }
-            storyPreviewView.setRoundRadius(AndroidUtilities.dp(3.33f));
             if (date <= 0) {
                 date = storyItem.date;
             }
         } else {
             storyId = -1;
-            storyPreviewView.setImageDrawable(null);
+            if (storyPreviewView != null) {
+                storyPreviewView.setImageDrawable(null);
+            }
         }
 
         if (date != 0) {

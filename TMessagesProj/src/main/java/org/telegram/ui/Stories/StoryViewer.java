@@ -82,7 +82,7 @@ import org.telegram.ui.LaunchActivity;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class StoryViewer implements NotificationCenter.NotificationCenterDelegate {
+public class StoryViewer implements NotificationCenter.NotificationCenterDelegate, BaseFragment.AttachedSheet {
 
     public static boolean animationInProgress;
 
@@ -161,6 +161,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     public final TransitionViewHolder transitionViewHolder = new TransitionViewHolder();
     public PlaceProvider placeProvider;
     Dialog currentDialog;
+    BaseFragment.AttachedSheet currentSheet;
     private boolean allowTouchesByViewpager = false;
     boolean openedFromLightNavigationBar;
     ArrayList<Runnable> doOnAnimationReadyRunnables = new ArrayList<>();
@@ -1729,7 +1730,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    public void showDialog(Dialog dialog) {
+    @Override
+    public boolean showDialog(Dialog dialog) {
         try {
             currentDialog = dialog;
             dialog.setOnDismissListener(dialog1 -> {
@@ -1740,10 +1742,26 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             });
             dialog.show();
             updatePlayingMode();
+            return true;
         } catch (Throwable e) {
             FileLog.e(e);
             currentDialog = null;
+            return false;
         }
+    }
+
+    public boolean listenToAttachedSheet(BaseFragment.AttachedSheet sheet) {
+        currentSheet = sheet;
+        sheet.setOnDismissListener(() -> {
+            currentSheet = null;
+            updatePlayingMode();
+        });
+        return true;
+    }
+
+    @Override
+    public void setOnDismissListener(Runnable onDismiss) {
+        // not used
     }
 
     public void cancelSwipeToReply() {
@@ -1924,11 +1942,15 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (storyItem == null && isSingleStory) {
                 storyItem = singleStory;
             }
-            if (storiesList != null) {
+            long did = storiesViewPager.getCurrentDialogId();
+            if (storiesList instanceof StoriesController.SearchStoriesList && storyItem != null) {
+                did = storyItem.dialogId;
+                storyId = storyItem.messageId;
+            } else if (storiesList != null) {
                 storyId = dayStoryId;
             }
             transitionViewHolder.clear();
-            if (placeProvider.findView(storiesViewPager.getCurrentDialogId(), messageId, storyId, storyItem == null ? -1 : storyItem.messageType, transitionViewHolder)) {
+            if (placeProvider.findView(did, messageId, storyId, storyItem == null ? -1 : storyItem.messageType, transitionViewHolder)) {
                 transitionViewHolder.storyId = storyId;
                 if (transitionViewHolder.view != null) {
                     int[] loc = new int[2];
@@ -2031,6 +2053,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             isInTouchMode ||
             keyboardVisible ||
             currentDialog != null ||
+            currentSheet != null ||
             allowTouchesByViewpager ||
             isClosed ||
             isRecording ||
@@ -2359,15 +2382,19 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     release();
                     try {
                         AndroidUtilities.runOnUIThread(() -> {
-                            if (windowView == null) {
-                                return;
+                            try {
+                                if (windowView == null) {
+                                    return;
+                                }
+                                if (ATTACH_TO_FRAGMENT) {
+                                    AndroidUtilities.removeFromParent(windowView);
+                                } else {
+                                    windowManager.removeView(windowView);
+                                }
+                                windowView = null;
+                            } catch (Exception e2) {
+
                             }
-                            if (ATTACH_TO_FRAGMENT) {
-                                AndroidUtilities.removeFromParent(windowView);
-                            } else {
-                                windowManager.removeView(windowView);
-                            }
-                            windowView = null;
                         });
                     } catch (Exception e) {
 
@@ -2388,6 +2415,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }, 16);
     }
 
+    @Override
     public void release() {
         lastUri = null;
         setInTouchMode(false);
@@ -2403,8 +2431,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         MessagesController.getInstance(currentAccount).getStoriesController().stopAllPollers();
         if (ATTACH_TO_FRAGMENT) {
             lockOrientation(false);
-            if (fragment != null && fragment.storyViewerStack != null) {
-                fragment.storyViewerStack.remove(this);
+            if (fragment != null && fragment.sheetsStack != null) {
+                fragment.sheetsStack.remove(this);
             }
         }
 
@@ -2426,6 +2454,17 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    @Override
+    public View getWindowView() {
+        return windowView;
+    }
+
+    @Override
+    public void dismiss() {
+        close(true);
+    }
+
+    @Override
     public int getNavigationBarColor(int currentColor) {
         return ColorUtils.blendARGB(currentColor, Color.BLACK, getBlackoutAlpha());
     }
@@ -2434,6 +2473,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         return progressToOpen * (0.5f + 0.5f * (1f - progressToDismiss));
     }
 
+    @Override
     public boolean onBackPressed() {
         if (selfStoriesViewsOffset != 0) {
             if (selfStoryViewsView.onBackPressed()) {
@@ -2449,6 +2489,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         return true;
     }
 
+    @Override
     public boolean isShown() {
         return !isClosed;
     }
@@ -2476,6 +2517,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    @Override
     public boolean attachedToParent() {
         if (ATTACH_TO_FRAGMENT) {
             return windowView != null;
@@ -2494,6 +2536,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    @Override
     public boolean isFullyVisible() {
         return fullyVisible;
     }
@@ -2549,6 +2592,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     public void dismissVisibleDialogs() {
         if (currentDialog != null) {
             currentDialog.dismiss();
+        }
+        if (currentSheet != null) {
+            currentSheet.dismiss();
         }
         PeerStoriesView peerView = getCurrentPeerView();
         if (peerView != null) {

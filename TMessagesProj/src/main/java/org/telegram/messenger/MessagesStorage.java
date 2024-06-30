@@ -7981,6 +7981,7 @@ public class MessagesStorage extends BaseController {
                 ArrayList<Long> usersToLoad = new ArrayList<>();
                 ArrayList<Long> chatsToLoad = new ArrayList<>();
                 ArrayList<Integer> encryptedChatIds = new ArrayList<>();
+                ArrayList<TLRPC.Message> toDelete = new ArrayList<>();
 
                 cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, s.seq_in, s.seq_out, m.ttl FROM messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid LEFT JOIN messages_seq as s ON m.mid = s.mid WHERE (m.mid < 0 AND m.send_state = 1) OR (m.mid > 0 AND m.send_state = 3) ORDER BY m.mid DESC LIMIT " + count);
                 while (cursor.next()) {
@@ -8001,7 +8002,11 @@ public class MessagesStorage extends BaseController {
                             message.seq_in = cursor.intValue(7);
                             message.seq_out = cursor.intValue(8);
                             message.ttl = cursor.intValue(9);
-                            messages.add(message);
+                            if (message.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+                                toDelete.add(message); // TODO: actually send again
+                            } else {
+                                messages.add(message);
+                            }
                             messageHashMap.put(message.id, message);
 
                             if (DialogObject.isEncryptedDialog(message.dialog_id)) {
@@ -8029,6 +8034,12 @@ public class MessagesStorage extends BaseController {
                 }
                 cursor.dispose();
                 cursor = null;
+
+                if (!toDelete.isEmpty()) {
+                    for (TLRPC.Message msg : toDelete) {
+                        database.executeFast("DELETE FROM messages_v2 WHERE uid = " + msg.dialog_id + " AND mid = " + msg.id).stepThis().dispose();
+                    }
+                }
 
                 cursor = database.queryFinalized("SELECT m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, m.ttl FROM scheduled_messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid WHERE (m.mid < 0 AND m.send_state = 1) OR (m.mid > 0 AND m.send_state = 3) ORDER BY date ASC");
                 while (cursor.next()) {

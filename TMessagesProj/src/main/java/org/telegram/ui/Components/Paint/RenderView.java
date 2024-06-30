@@ -480,7 +480,7 @@ public class RenderView extends TextureView {
                 transformedBitmap = true;
             }
             if (blurBitmap != null && (blurBitmap.getWidth() != paintingSize.width || blurBitmap.getHeight() != paintingSize.height)) {
-                Bitmap b = Bitmap.createBitmap((int) paintingSize.width, (int) paintingSize.height, Bitmap.Config.ALPHA_8);
+                Bitmap b = Bitmap.createBitmap((int) paintingSize.width, (int) paintingSize.height, Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(b);
                 canvas.drawBitmap(blurBitmap, null, new RectF(0, 0, paintingSize.width, paintingSize.height), null);
                 blurBitmap = b;

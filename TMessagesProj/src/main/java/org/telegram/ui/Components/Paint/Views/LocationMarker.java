@@ -68,9 +68,10 @@ public class LocationMarker extends View {
     private StaticLayout layout;
     private float layoutWidth, layoutLeft;
 
+    public final int type;
     public final int padx, pady;
 
-    public LocationMarker(Context context, float density) {
+    public LocationMarker(Context context, float density, int type) {
         super(context);
         this.density = density;
 
@@ -79,6 +80,7 @@ public class LocationMarker extends View {
         padx = (int) (3 * density);
         pady = (int) (1 * density);
 
+        this.type = type;
         icon = context.getResources().getDrawable(R.drawable.map_pin3).mutate();
         textPaint.setTextSize(24 * density);
         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
@@ -224,6 +226,7 @@ public class LocationMarker extends View {
     }
 
     public void setType(int type, int color) {
+        if (this.type == 1) return;
         if (type == 0) {
             outlinePaint.setColor(color);
             final int textColor = AndroidUtilities.computePerceivedBrightness(color) >= .721f ? Color.BLACK : Color.WHITE;
@@ -287,6 +290,10 @@ public class LocationMarker extends View {
 
     private final RectF bounds = new RectF();
     private final Path path = new Path();
+
+    public float getRadius() {
+        return .2f * h;
+    }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {

@@ -18,6 +18,7 @@ import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -1394,7 +1395,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
     }
 
     public boolean hasWidgets() {
-        return onWidgetSelected != null && (canShowWidget(WIDGET_LOCATION) || canShowWidget(WIDGET_AUDIO) || canShowWidget(WIDGET_PHOTO) || canShowWidget(WIDGET_REACTION));
+        return onWidgetSelected != null && (canShowWidget(WIDGET_LOCATION) || canShowWidget(WIDGET_AUDIO) || canShowWidget(WIDGET_PHOTO) || canShowWidget(WIDGET_REACTION) || canShowWidget(WIDGET_LINK));
     }
 
     @Override
@@ -1423,8 +1424,9 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     return;
                 }
             }
-            onWidgetSelected.run(id);
-            dismiss();
+            if (onWidgetSelected.run(id)) {
+                dismiss();
+            }
         }
     }
 
@@ -1721,7 +1723,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         this.onDocumentSelected = listener;
         return this;
     }
-    private Utilities.Callback<Integer> onWidgetSelected;
+    private Utilities.CallbackReturn<Integer, Boolean> onWidgetSelected;
 
     public EmojiBottomSheet whenPlusSelected(Runnable listener) {
         this.onPlusSelected = listener;
@@ -1735,7 +1737,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         }
         return this;
     }
-    public EmojiBottomSheet whenWidgetSelected(Utilities.Callback<Integer> listener) {
+    public EmojiBottomSheet whenWidgetSelected(Utilities.CallbackReturn<Integer, Boolean> listener) {
         this.onWidgetSelected = listener;
         View[] pages = viewPager.getViewPages();
         for (int i = 0; i < pages.length; ++i) {
@@ -2780,6 +2782,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
     public static final int WIDGET_AUDIO = 1;
     public static final int WIDGET_PHOTO = 2;
     public static final int WIDGET_REACTION = 3;
+    public static final int WIDGET_LINK = 4;
 
     private class StoryWidgetsCell extends View {
 
@@ -2802,7 +2805,9 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             if (canShowWidget(WIDGET_AUDIO))
                 widgets.add(new Button(WIDGET_AUDIO, R.drawable.filled_widget_music, LocaleController.getString(R.string.StoryWidgetAudio)));
             if (canShowWidget(WIDGET_PHOTO))
-                widgets.add(new Button(WIDGET_PHOTO, R.drawable.files_gallery, LocaleController.getString(R.string.StoryWidgetPhoto)));
+                widgets.add(new Button(WIDGET_PHOTO, R.drawable.filled_premium_camera, LocaleController.getString(R.string.StoryWidgetPhoto)));
+            if (canShowWidget(WIDGET_LINK))
+                widgets.add(new Button(WIDGET_LINK, R.drawable.msg_limit_links, LocaleController.getString(R.string.StoryWidgetLink)).needsPremium());
             if (canShowWidget(WIDGET_REACTION))
                 widgets.add(new ReactionWidget());
         }
@@ -2825,9 +2830,11 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         private class Button extends BaseWidget {
             Drawable drawable;
+            Drawable lockDrawable;
             StaticLayout layout;
             float textWidth;
             float textLeft;
+            Paint lockPaint;
 
             public Button(int id, int iconId, String string) {
                 this.id = id;
@@ -2842,12 +2849,25 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 this.height = dpf2(36);
             }
 
+            public Button needsPremium() {
+                if (!UserConfig.getInstance(currentAccount).isPremium()) {
+                    lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock3).mutate();
+                    lockDrawable.setColorFilter(new PorterDuffColorFilter(Theme.multAlpha(Color.WHITE, .60f), PorterDuff.Mode.SRC_IN));
+                    lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    lockPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+                }
+                return this;
+            }
+
             public void draw(Canvas canvas, float left, float top) {
                 bounds.set(left, top, left + width, top + height);
                 final float scale = bounce.getScale(.05f);
                 canvas.save();
                 canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
                 canvas.drawRoundRect(bounds, dp(8), dp(8), bgPaint);
+                if (lockDrawable != null) {
+                    canvas.saveLayerAlpha(bounds, 0xFF, Canvas.ALL_SAVE_FLAG);
+                }
                 drawable.setBounds(
                     (int) (bounds.left + dp(6)),
                     (int) (bounds.top + height / 2 - dp(24) / 2),
@@ -2855,6 +2875,27 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     (int) (bounds.top + height / 2 + dp(24) / 2)
                 );
                 drawable.draw(canvas);
+                if (lockDrawable != null) {
+                    AndroidUtilities.rectTmp.set(
+                        bounds.left + dp(6 + 24 - 12 + .55f),
+                        bounds.top + height - dp(5) - dp(12 + .55f),
+                        bounds.left + dp(6 + 24 - .55f),
+                        bounds.left + dp(6 + 24 + 1)
+                    );
+                    canvas.drawRoundRect(
+                        AndroidUtilities.rectTmp,
+                        dp(6), dp(6),
+                        lockPaint
+                    );
+                    lockDrawable.setBounds(
+                            (int) (bounds.left + dp(6 + 24 - 12)),
+                            (int) (bounds.top + height - dp(5) - dp(12)),
+                            (int) (bounds.left + dp(6 + 24)),
+                            (int) (bounds.top + height - dp(5))
+                    );
+                    lockDrawable.draw(canvas);
+                    canvas.restore();
+                }
                 canvas.translate(bounds.left + dp(6 + 24 + 4) - textLeft, bounds.top + height / 2 - layout.getHeight() / 2f);
                 layout.draw(canvas);
                 canvas.restore();

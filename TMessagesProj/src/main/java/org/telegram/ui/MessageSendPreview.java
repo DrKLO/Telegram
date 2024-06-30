@@ -16,6 +16,7 @@ import android.graphics.Insets;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -82,6 +83,9 @@ import org.telegram.ui.Components.ReactionsContainerLayout;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SmoothScroller;
+import org.telegram.ui.Components.Text;
+import org.telegram.ui.Components.spoilers.SpoilerEffect2;
+import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
@@ -115,12 +119,16 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
     private int messagesContainerTopPadding;
     private final RecyclerListView chatListView;
+    private final RecyclerView.Adapter adapter;
     private final GridLayoutManagerFixed chatLayoutManager;
     private final ArrayList<MessageObject> messageObjects = new ArrayList<>();
     private int messageObjectsWidth;
     private final LongSparseArray<MessageObject.GroupedMessages> groupedMessagesMap = new LongSparseArray<>();
     private ChatMessageCell mainMessageCell;
     private int mainMessageCellId;
+    private int getMainMessageCellPosition() {
+        return groupedMessagesMap.isEmpty() || messageObjects.size() < 10 ? 0 : messageObjects.size() % 10;
+    }
     private EditTextCaption editText;
     private Paint editTextBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Utilities.Callback2<Canvas, Utilities.Callback0Return<Boolean>> drawEditText;
@@ -140,6 +148,8 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
     private boolean layoutDone;
     public boolean allowRelayout;
+
+    private SpoilerEffect2 spoilerEffect2;
 
     public MessageSendPreview(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
@@ -179,6 +189,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 }
             }
         };
+        spoilerEffect2 = SpoilerEffect2.getInstance(SpoilerEffect2.TYPE_PREVIEW, windowView, windowView);
         windowView.setOnClickListener(v -> {
             onBackPressed();
         });
@@ -305,7 +316,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                         canvas.restore();
                     } else {
                         destCell.getLocationInWindow(pos2);
-                        final int chatListViewTy = (int) ((View) destCell.getParent()).getTranslationY();
+                        final int chatListViewTy = (destCell.getParent() instanceof View) ? (int) ((View) destCell.getParent()).getTranslationY() : 0;
                         if (this.chatListViewTy > chatListViewTy && destCellPos[1] - pos2[1] > this.chatListViewTy) {
 
                         } else {
@@ -414,7 +425,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                         Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
                         MessageSendPreview.this.insets.set(r.left, r.top, r.right, r.bottom);
                     } else {
-                        MessageSendPreview.this.insets.set(insets.getStableInsetLeft(), insets.getStableInsetTop(), insets.getStableInsetRight(), insets.getStableInsetBottom());
+                        MessageSendPreview.this.insets.set(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
                     }
                     containerView.setPadding(MessageSendPreview.this.insets.left, MessageSendPreview.this.insets.top, MessageSendPreview.this.insets.right, MessageSendPreview.this.insets.bottom);
                     windowView.requestLayout();
@@ -471,6 +482,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 canvas.save();
                 drawChatBackgroundElements(canvas);
                 super.dispatchDraw(canvas);
+                drawChatForegroundElements(canvas);
                 canvas.save();
 
                 float topAlpha = top.set(canScrollVertically(-1));
@@ -662,6 +674,114 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                     }
                 }
             }
+
+            private void drawChatForegroundElements(Canvas canvas) {
+                int count = getChildCount();
+                MessageObject.GroupedMessages lastDrawnGroup = null;
+
+                for (int a = 0; a < count; a++) {
+                    View child = getChildAt(a);
+                    if (child instanceof ChatMessageCell) {
+                        ChatMessageCell cell = (ChatMessageCell) child;
+                        MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
+                        if (group != null && group == lastDrawnGroup) {
+                            continue;
+                        }
+                        lastDrawnGroup = group;
+                        if (group == null) {
+                            drawStarsPrice(canvas, cell.getBoundsLeft(), cell.getY(), cell.getBoundsRight(), cell.getY() + cell.getHeight());
+                        }
+                    }
+                }
+                MessageObject.GroupedMessages scrimGroup = null;
+                for (int k = 0; k < 3; k++) {
+                    drawingGroups.clear();
+                    if (k == 2 && !chatListView.isFastScrollAnimationRunning()) {
+                        continue;
+                    }
+                    for (int i = 0; i < count; i++) {
+                        View child = chatListView.getChildAt(i);
+                        if (child instanceof ChatMessageCell) {
+                            ChatMessageCell cell = (ChatMessageCell) child;
+                            if (child.getY() > chatListView.getHeight() || child.getY() + child.getHeight() < 0) {
+                                continue;
+                            }
+                            MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
+                            if (group == null || (k == 0 && group.messages.size() == 1) || (k == 1 && !group.transitionParams.drawBackgroundForDeletedItems)) {
+                                continue;
+                            }
+                            if ((k == 0 && cell.getMessageObject().deleted) || (k == 1 && !cell.getMessageObject().deleted)) {
+                                continue;
+                            }
+                            if ((k == 2 && !cell.willRemovedAfterAnimation()) || (k != 2 && cell.willRemovedAfterAnimation())) {
+                                continue;
+                            }
+
+                            if (!drawingGroups.contains(group)) {
+                                group.transitionParams.left = 0;
+                                group.transitionParams.top = 0;
+                                group.transitionParams.right = 0;
+                                group.transitionParams.bottom = 0;
+
+                                group.transitionParams.pinnedBotton = false;
+                                group.transitionParams.pinnedTop = false;
+                                group.transitionParams.cell = cell;
+                                drawingGroups.add(group);
+                            }
+
+                            group.transitionParams.pinnedTop = cell.isPinnedTop();
+                            group.transitionParams.pinnedBotton = cell.isPinnedBottom();
+
+                            int left = (int) (cell.getX() + cell.getBackgroundDrawableLeft());
+                            int right = (int) (cell.getX() + cell.getBackgroundDrawableRight());
+                            int top = (int) (cell.getY() + cell.getBackgroundDrawableTop());
+                            int bottom = (int) (cell.getY() + cell.getBackgroundDrawableBottom());
+
+                            if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
+                                top -= dp(10);
+                            }
+
+                            if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
+                                bottom += dp(10);
+                            }
+
+                            if (cell.willRemovedAfterAnimation()) {
+                                group.transitionParams.cell = cell;
+                            }
+
+                            if (group.transitionParams.top == 0 || top < group.transitionParams.top) {
+                                group.transitionParams.top = top;
+                            }
+                            if (group.transitionParams.bottom == 0 || bottom > group.transitionParams.bottom) {
+                                group.transitionParams.bottom = bottom;
+                            }
+                            if (group.transitionParams.left == 0 || left < group.transitionParams.left) {
+                                group.transitionParams.left = left;
+                            }
+                            if (group.transitionParams.right == 0 || right > group.transitionParams.right) {
+                                group.transitionParams.right = right;
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < drawingGroups.size(); i++) {
+                        MessageObject.GroupedMessages group = drawingGroups.get(i);
+                        float x = group.transitionParams.cell.getNonAnimationTranslationX(true);
+                        float l = (group.transitionParams.left + x + group.transitionParams.offsetLeft);
+                        float t = (group.transitionParams.top + group.transitionParams.offsetTop);
+                        float r = (group.transitionParams.right + x + group.transitionParams.offsetRight);
+                        float b = (group.transitionParams.bottom + group.transitionParams.offsetBottom);
+                        if (t < -dp(20)) {
+                            t = -dp(20);
+                        }
+                        if (b > chatListView.getMeasuredHeight() + dp(20)) {
+                            b = chatListView.getMeasuredHeight() + dp(20);
+                        }
+                        drawStarsPrice(canvas, l, t, r, b);
+                        group.transitionParams.cell = null;
+                    }
+                }
+            }
         };
         chatListView.setOnClickListener(v -> {
             onBackPressed();
@@ -849,7 +969,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 }
             }
         });
-        chatListView.setAdapter(new RecyclerView.Adapter() {
+        chatListView.setAdapter(adapter = new RecyclerView.Adapter() {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -867,8 +987,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 MessageObject messageObject = messageObjects.get(getItemCount() - 1 - position);
                 ChatMessageCell cell = (ChatMessageCell) holder.itemView;
-                cell.setMessageObject(messageObject, getValidGroupedMessage(messageObject), false, false);
-                if (position == (groupedMessagesMap.isEmpty() || getItemCount() < 10 ? 0 : getItemCount() % 10) && !messageObject.needDrawForwarded()) {
+                MessageObject.GroupedMessages group = getValidGroupedMessage(messageObject);
+                cell.setInvalidatesParent(group != null);
+                cell.setMessageObject(messageObject, group, false, false);
+                if (position == getMainMessageCellPosition() && !messageObject.needDrawForwarded()) {
                     mainMessageCell = cell;
                     mainMessageCellId = messageObject.getId();
                 }
@@ -948,6 +1070,11 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
     private class MessageCell extends ChatMessageCell {
         public MessageCell(Context context, int currentAccount, boolean canDrawBackgroundInParent, ChatMessageSharedResources sharedResources, Theme.ResourcesProvider resourcesProvider) {
             super(context, currentAccount, canDrawBackgroundInParent, sharedResources, resourcesProvider);
+        }
+
+        @Override
+        protected SpoilerEffect2 makeSpoilerEffect() {
+            return SpoilerEffect2.getInstance(SpoilerEffect2.TYPE_PREVIEW, this, windowView);
         }
 
         @Override
@@ -1100,6 +1227,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             }
         };
         this.anchorSendButton.copyCountTo(this.sendButton);
+        this.anchorSendButton.copyEmojiTo(this.sendButton);
         this.sendButton.center = sendButton.center;
         this.sendButton.open.set(sendButton.open.get(), true);
         this.sendButton.setOnClickListener(onClick);
@@ -1167,6 +1295,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                             messageObject.messageOwner.flags2 &=~ 4;
                         }
                     }
+                    if (sendButton != null) {
+                        sendButton.setEffect(messageObject.messageOwner.effect);
+                    }
+                    onEffectChange(messageObject.messageOwner.effect);
                 } else if (cameraRect != null) {
                     boolean clear = false;
                     if (visibleReaction.effectId == effectId) {
@@ -1175,6 +1307,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                     } else {
                         effectId = visibleReaction.effectId;
                     }
+                    if (sendButton != null) {
+                        sendButton.setEffect(effectId);
+                    }
+                    onEffectChange(effectId);
                     if (!premiumLocked) {
                         TLRPC.TL_availableEffect effect = effectId == 0 ? null : MessagesController.getInstance(currentAccount).getEffect(effectId);
                         if (effectDrawable != null) {
@@ -1242,6 +1378,22 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
         });
     }
 
+    public void setEffectId(long effectId) {
+        this.effectId = effectId;
+        final int position = getMainMessageCellPosition();
+        MessageObject messageObject = position >= 0 && position < messageObjects.size() ? messageObjects.get(position) : null;
+        if (messageObject != null) {
+            messageObject.messageOwner.flags2 |= 4;
+            messageObject.messageOwner.effect = effectId;
+        }
+        if (effectSelector != null) {
+            TLRPC.TL_availableEffect effect = MessagesController.getInstance(currentAccount).getEffect(effectId);
+            if (effect != null) {
+                effectSelector.setSelectedReactionAnimated(ReactionsLayoutInBubble.VisibleReaction.fromTL(effect));
+            }
+        }
+    }
+
     public void showEffectSelector() {
         if (effectSelectorShown) return;
         layoutDone = false;
@@ -1269,6 +1421,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             return messageObject.messageOwner.effect;
         }
         return 0;
+    }
+
+    protected void onEffectChange(long effectId) {
+
     }
 
     public void hideEffectSelector() {
@@ -1361,6 +1517,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
     @Override
     public void show() {
         if (!AndroidUtilities.isSafeToShow(getContext())) return;
+        SpoilerEffect2.pause(SpoilerEffect2.TYPE_DEFAULT, true);
         super.show();
         prepareBlur(null);
         if (effectsView != null) {
@@ -1461,6 +1618,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             fromPart = VisiblePart.of(mainMessageCell);
         }
         animateOpenTo(false, () -> {
+            SpoilerEffect2.pause(SpoilerEffect2.TYPE_DEFAULT, false);
+            if (spoilerEffect2 != null) {
+                spoilerEffect2.detach(windowView);
+            }
             AndroidUtilities.runOnUIThread(super::dismiss);
         });
         windowView.invalidate();
@@ -1484,6 +1645,10 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             anchorSendButton.invalidate();
         }
         animateOpenTo(false, () -> {
+            SpoilerEffect2.pause(SpoilerEffect2.TYPE_DEFAULT, false);
+            if (spoilerEffect2 != null) {
+                spoilerEffect2.detach(windowView);
+            }
             AndroidUtilities.runOnUIThread(super::dismiss);
         });
         windowView.invalidate();
@@ -1682,4 +1847,42 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
         dummyMessageCell.isMegagroup = false;
         return dummyMessageCell.computeWidth(object, groupedMessagesMap.get(object.getGroupId()));
     }
+
+    private Text buttonText;
+    private Paint buttonBgPaint;
+
+    public void setStars(long stars) {
+        buttonText = stars <= 0 ? null : new Text(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatPluralStringComma("UnlockPaidContent", (int) stars), .7f), 14, AndroidUtilities.bold());
+        if (buttonBgPaint == null) {
+            buttonBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            buttonBgPaint.setColor(0x40000000);
+        }
+        chatListView.invalidate();
+        for (int i = 0; i < messageObjects.size(); ++i) {
+            MessageObject msg = messageObjects.get(i);
+            if (msg != null && msg.messageOwner != null && msg.messageOwner.media != null) {
+                msg.messageOwner.media.spoiler = stars > 0;
+            }
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    public void drawStarsPrice(Canvas canvas, float l, float t, float r, float b) {
+        if (buttonText == null || buttonBgPaint == null) return;
+        final float cx = (l + r) / 2f, cy = (t + b) / 2f;
+
+        final float buttonWidth = dp(14 + 14) + buttonText.getCurrentWidth();
+        final float buttonHeight = dp(32);
+        AndroidUtilities.rectTmp.set(
+            cx - buttonWidth / 2f,
+            cy - buttonHeight / 2f,
+            cx + buttonWidth / 2f,
+            cy + buttonHeight / 2f
+        );
+        canvas.save();
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, buttonHeight / 2f, buttonHeight / 2f, buttonBgPaint);
+        buttonText.draw(canvas, cx - buttonWidth / 2f + dp(14), cy, 0xFFFFFFFF, 1f);
+        canvas.restore();
+    }
+
 }

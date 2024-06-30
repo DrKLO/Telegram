@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.Spannable;
 import android.text.style.ReplacementSpan;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -15,6 +16,7 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class AvatarSpan extends ReplacementSpan {
@@ -87,6 +89,14 @@ public class AvatarSpan extends ReplacementSpan {
         }
     };
 
+    public void setDialogId(long dialogId) {
+        if (dialogId >= 0) {
+            setUser(MessagesController.getInstance(currentAccount).getUser(dialogId));
+        } else {
+            setChat(MessagesController.getInstance(currentAccount).getChat(-dialogId));
+        }
+    }
+
     public void setChat(TLRPC.Chat chat) {
         avatarDrawable.setInfo(currentAccount, chat);
         imageReceiver.setForUserOrChat(chat, avatarDrawable);
@@ -108,11 +118,17 @@ public class AvatarSpan extends ReplacementSpan {
     }
 
     private float translateX, translateY;
+    private int shadowPaintAlpha = 0xFF;
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+        if (shadowPaintAlpha != paint.getAlpha()) {
+            shadowPaint.setAlpha(shadowPaintAlpha = paint.getAlpha());
+            shadowPaint.setShadowLayer(dp(1), 0, dp(.66f), Theme.multAlpha(0x33000000, shadowPaintAlpha / 255f));
+        }
         canvas.drawCircle(translateX + x + dp(sz) / 2f, translateY + (top + bottom) / 2f, dp(sz) / 2f, shadowPaint);
         imageReceiver.setImageCoords(translateX + x, translateY + (top + bottom) / 2f - dp(sz) / 2f, dp(sz), dp(sz));
+        imageReceiver.setAlpha(paint.getAlpha() / 255f);
         imageReceiver.draw(canvas);
     }
 

@@ -17,18 +17,16 @@ import android.graphics.CornerPathEffect;
 import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PathMeasure;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Layout;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -48,14 +46,11 @@ import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.MessageSendPreview;
+import org.telegram.ui.ChatActivity;
 
 import java.util.ArrayList;
 
@@ -81,7 +76,9 @@ public class ScrimOptions extends Dialog {
     private ChatMessageCell scrimCell;
     private boolean isGroup;
     private Drawable scrimDrawable;
-    private float scrimDrawableTx, scrimDrawableTy;
+    private float scrimDrawableTx1, scrimDrawableTy1;
+    private float scrimDrawableTx2, scrimDrawableTy2;
+    private float scrimDrawableSw = 1f, scrimDrawableSh = 1f;
 
     public ScrimOptions(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
@@ -105,7 +102,13 @@ public class ScrimOptions extends Dialog {
                 if (scrimDrawable != null) {
                     scrimDrawable.setAlpha((int) (0xFF * openProgress));
                     canvas.save();
-                    canvas.translate(scrimDrawableTx * openProgress, scrimDrawableTy * openProgress);
+                    canvas.translate(scrimDrawableTx2 + scrimDrawableTx1 * openProgress, scrimDrawableTy2 + scrimDrawableTy1 * openProgress);
+                    final float scale = AndroidUtilities.lerp(AndroidUtilities.lerp(Math.min(scrimDrawableSw, scrimDrawableSh), Math.max(scrimDrawableSw, scrimDrawableSh), .75f), 1f, openProgress);
+                    canvas.scale(
+                        scale, scale,
+                        -scrimDrawableTx2 + scrimDrawable.getBounds().left + scrimDrawable.getBounds().width() / 2f * scrimDrawableSw,
+                        -scrimDrawableTy2 + scrimDrawable.getBounds().top + scrimDrawable.getBounds().height() / 2f * scrimDrawableSh
+                    );
                     scrimDrawable.draw(canvas);
                     canvas.restore();
                 }
@@ -142,7 +145,7 @@ public class ScrimOptions extends Dialog {
                         Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
                         ScrimOptions.this.insets.set(r.left, r.top, r.right, r.bottom);
                     } else {
-                        ScrimOptions.this.insets.set(insets.getStableInsetLeft(), insets.getStableInsetTop(), insets.getStableInsetRight(), insets.getStableInsetBottom());
+                        ScrimOptions.this.insets.set(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
                     }
                     containerView.setPadding(ScrimOptions.this.insets.left, ScrimOptions.this.insets.top, ScrimOptions.this.insets.right, ScrimOptions.this.insets.bottom);
                     windowView.requestLayout();
@@ -325,26 +328,31 @@ public class ScrimOptions extends Dialog {
         }
 
         if (optionsContainer != null) {
+            final float boundsLeft = bounds.left + scrimDrawableTx2;
+            final float boundsRight = bounds.right + scrimDrawableTx2;
+            final float boundsTop = bounds.top + scrimDrawableTy2;
+            final float boundsBottom = bounds.bottom + scrimDrawableTy2;
+
             boolean right = false;
             boolean bottom = false;
-            if (bounds.right - optionsContainer.getMeasuredWidth() < dp(8)) {
+            if (boundsRight - optionsContainer.getMeasuredWidth() < dp(8)) {
                 optionsView.setPivotX(dp(6));
-                optionsContainer.setX(Math.min(containerView.getWidth() - optionsContainer.getWidth(), bounds.left - dp(10)) - containerView.getX());
+                optionsContainer.setX(Math.min(containerView.getWidth() - optionsContainer.getWidth(), boundsLeft - dp(10)) - containerView.getX());
             } else {
                 right = true;
                 optionsView.setPivotX(optionsView.getMeasuredWidth() - dp(6));
-                optionsContainer.setX(Math.max(dp(8), bounds.right + dp(4) - optionsContainer.getMeasuredWidth()) - containerView.getX());
+                optionsContainer.setX(Math.max(dp(8), boundsRight + dp(4) - optionsContainer.getMeasuredWidth()) - containerView.getX());
             }
-            scrimDrawableTx = right ? optionsContainer.getX() + optionsContainer.getWidth() - dp(6) - bounds.right : optionsContainer.getX() + dp(10) - bounds.left;
-            scrimDrawableTy = 0f;
+            scrimDrawableTx1 = right ? optionsContainer.getX() + optionsContainer.getWidth() - dp(6) - boundsRight : optionsContainer.getX() + dp(10) - boundsLeft;
+            scrimDrawableTy1 = 0f;
 
-            if (bounds.bottom + optionsContainer.getMeasuredHeight() > windowView.getMeasuredHeight() - dp(16)) {
+            if (boundsBottom + optionsContainer.getMeasuredHeight() > windowView.getMeasuredHeight() - dp(16)) {
                 bottom = true;
                 optionsView.setPivotY(optionsView.getMeasuredHeight() - dp(6));
-                optionsContainer.setY(bounds.top - dp(4) - optionsContainer.getMeasuredHeight() - containerView.getY());
+                optionsContainer.setY(boundsTop - dp(4) - optionsContainer.getMeasuredHeight() - containerView.getY());
             } else {
                 optionsView.setPivotY(dp(6));
-                optionsContainer.setY(Math.min(windowView.getHeight() - optionsContainer.getMeasuredHeight() - dp(16), bounds.bottom) - containerView.getY());
+                optionsContainer.setY(Math.min(windowView.getHeight() - optionsContainer.getMeasuredHeight() - dp(16), boundsBottom) - containerView.getY());
             }
             options.setSwipebackGravity(right, bottom);
         }
@@ -354,7 +362,7 @@ public class ScrimOptions extends Dialog {
 
     }
 
-    public void setScrim(ChatMessageCell cell, CharacterStyle link) {
+    public void setScrim(ChatMessageCell cell, CharacterStyle link, CharSequence replaceText) {
         if (cell == null) return;
 
         scrimCell = cell;
@@ -411,11 +419,37 @@ public class ScrimOptions extends Dialog {
 
         if (layout == null) return;
 
+        RectF realPathBounds = null;
+        if (replaceText != null) {
+            int line = layout.getLineForOffset(start);
+            y += layout.getLineTop(line);
+            float xoffset = layout.getPrimaryHorizontal(start);
+            float xwidth = layout.getLineWidth(line);
+
+            final LinkPath path = new LinkPath(true);
+            path.setCurrentLayout(layout, start, 0);
+            layout.getSelectionPath(start, end, path);
+            realPathBounds = new RectF();
+            path.computeBounds(realPathBounds, true);
+
+            layout = MessageObject.makeStaticLayout(replaceText, layout.getPaint(), layout.getWidth(), 1f, 0f, true);
+            start = 0;
+            end = replaceText.length();
+            float l = layout.getWidth(), r = 0;
+            for (int i = 0; i < layout.getLineCount(); ++i) {
+                l = Math.min(l, layout.getLineLeft(i));
+                r = Math.max(r, layout.getLineRight(i));
+            }
+
+            x += Math.min(xoffset, xwidth - Math.max(0, r - l));
+        }
+
         final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setColor(Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble, resourcesProvider));
         backgroundPaint.setPathEffect(new CornerPathEffect(dp(5)));
 
         final LinkPath path = new LinkPath(true);
+        path.setUseCornerPathImplementation(true);
         path.setCurrentLayout(layout, start, 0);
         layout.getSelectionPath(start, end, path);
         path.closeRects();
@@ -449,7 +483,18 @@ public class ScrimOptions extends Dialog {
         paint.setTextSize(layout.getPaint().getTextSize());
         paint.setTextAlign(layout.getPaint().getTextAlign());
         paint.setTypeface(layout.getPaint().getTypeface());
-        final StaticLayout finalLayout = new StaticLayout(layout.getText(), paint, layout.getWidth(), layout.getAlignment(), 1f, 0f, false);
+        final StaticLayout finalLayout;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            StaticLayout.Builder builder =
+                StaticLayout.Builder.obtain(layout.getText(), 0, layout.getText().length(), paint, layout.getWidth())
+                    .setLineSpacing(0f, 1f)
+                    .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                    .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
+                    .setAlignment(Layout.Alignment.ALIGN_NORMAL);
+            finalLayout = builder.build();
+        } else {
+            finalLayout = new StaticLayout(layout.getText(), paint, layout.getWidth(), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+        }
         final int finalBlockNum = blockNum;
         final int[] pos = new int[2];
         cell.getLocationOnScreen(pos);
@@ -470,11 +515,18 @@ public class ScrimOptions extends Dialog {
                 canvas.translate(pos2[0], pos2[1]);
 
                 if (cell != null && cell.drawBackgroundInParent()) {
-                    canvas.translate(-pos2[0], -pos2[1]);
-                    canvas.translate(pos[0], pos[1]);
-                    cell.drawBackgroundInternal(canvas, true);
-                    canvas.translate(-pos[0], -pos[1]);
-                    canvas.translate(pos2[0], pos2[1]);
+                    if (cell.currentBackgroundDrawable != null && cell.currentBackgroundDrawable.getPaint() != null) {
+                        canvas.save();
+                        canvas.translate(0, -cell.currentBackgroundDrawable.getTopY());
+                        canvas.drawPaint(cell.currentBackgroundDrawable.getPaint());
+                        canvas.restore();
+                    } else {
+                        canvas.translate(-pos2[0], -pos2[1]);
+                        canvas.translate(pos[0], pos[1]);
+                        cell.drawBackgroundInternal(canvas, true);
+                        canvas.translate(-pos[0], -pos[1]);
+                        canvas.translate(pos2[0], pos2[1]);
+                    }
                     if (finalBitmap != null) {
                         canvas.save();
                         canvas.drawBitmap(finalBitmap, pathBounds.left, pathBounds.top, bitmapPaint);
@@ -486,7 +538,6 @@ public class ScrimOptions extends Dialog {
                 canvas.clipPath(path);
 
                 canvas.save();
-                canvas.translate(0, dp(1.33f));
                 finalLayout.draw(canvas);
 //                if (cell != null && cell.linkBlockNum == finalBlockNum) {
 //                    cell.links.draw(canvas);
@@ -512,6 +563,19 @@ public class ScrimOptions extends Dialog {
         int left = (int) (pos[0] + x + pathBounds.left + path.getRadius() / 2f);
         int top = (int) (pos[1] + y + pathBounds.top);
         scrimDrawable.setBounds(left, top, left + (int) pathBounds.width(), top + (int) pathBounds.height());
+
+        if (replaceText != null) {
+            if (left + pathBounds.width() > AndroidUtilities.displaySize.x - dp(8)) {
+                scrimDrawableTx2 -= (left + pathBounds.width()) - (AndroidUtilities.displaySize.x - dp(8));
+            }
+            if (top + pathBounds.height() > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight - dp(8)) {
+                scrimDrawableTy2 -= (top + pathBounds.height()) - (AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight - dp(8));
+            }
+            if (realPathBounds != null) {
+                scrimDrawableSw = realPathBounds.width() / pathBounds.width();
+                scrimDrawableSh = realPathBounds.height() / pathBounds.height();
+            }
+        }
     }
 
 }

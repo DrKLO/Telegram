@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import static androidx.core.view.ViewCompat.TYPE_TOUCH;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.Manifest;
@@ -19,6 +20,7 @@ import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -61,6 +63,9 @@ import android.widget.TextView;
 
 import androidx.collection.LongSparseArray;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.NestedScrollingParent3;
+import androidx.core.view.NestedScrollingParentHelper;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -80,6 +85,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -91,6 +97,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.LocationActivityAdapter;
 import org.telegram.ui.Adapters.LocationActivitySearchAdapter;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LocationCell;
 import org.telegram.ui.Cells.LocationDirectionCell;
@@ -110,6 +117,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MapPlaceholderDrawable;
 import org.telegram.ui.Components.ProximitySheet;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SharedMediaLayout;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
@@ -136,6 +145,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private ActionBarMenuItem searchItem;
     private MapOverlayView overlayView;
     private HintView2 hintView;
+    public boolean fromStories;
 
     private UndoView[] undoView = new UndoView[2];
     private boolean canUndo;
@@ -431,6 +441,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         AndroidUtilities.fixGoogleMapsBug();
     }
 
+    private SharedMediaLayout sharedMediaLayout;
+    private GraySectionCell sharedMediaHeader;
+    private TL_stories.MediaArea searchStoriesArea;
+
+    public LocationActivity searchStories(TL_stories.MediaArea area) {
+        searchStoriesArea = area;
+        return this;
+    }
+
     private boolean initialMaxZoom;
     public void setInitialMaxZoom(boolean initialMaxZoom) {
         this.initialMaxZoom = initialMaxZoom;
@@ -662,30 +681,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
         }
 
-        fragmentView = new FrameLayout(context) {
-            private boolean first = true;
-
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                super.onLayout(changed, left, top, right, bottom);
-
-                if (changed) {
-                    fixLayoutInternal(first);
-                    first = false;
-                } else {
-                    updateClipView(true);
-                }
-            }
-
-            @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                boolean result = super.drawChild(canvas, child, drawingTime);
-                if (child == actionBar && parentLayout != null) {
-                    parentLayout.drawHeaderShadow(canvas, actionBar.getMeasuredHeight());
-                }
-                return result;
-            }
-        };
+        fragmentView = new NestedFrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         fragmentView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
 
@@ -996,7 +992,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         emptyView.addView(emptySubtitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 6, 0, 0));
 
         listView = new RecyclerListView(context);
-        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, false, getResourceProvider(), false, locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
+        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, false, getResourceProvider(), false, fromStories, locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
             @Override
             protected void onDirectionClick() {
                 openDirections(null);
@@ -1025,10 +1021,84 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 super.setLiveLocations(liveLocations);
             }
         });
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        if (searchStoriesArea != null) {
+            sharedMediaHeader = new GraySectionCell(context, resourceProvider);
+            sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(this), 0, null, null, null, SharedMediaLayout.TAB_STORIES, this, new SharedMediaLayout.Delegate() {
+                @Override
+                public void scrollToSharedMedia() {
+
+                }
+
+                @Override
+                public boolean onMemberClick(TLRPC.ChatParticipant participant, boolean b, boolean resultOnly, View view) {
+                    return false;
+                }
+
+                @Override
+                public TLRPC.Chat getCurrentChat() {
+                    return null;
+                }
+
+                @Override
+                public boolean isFragmentOpened() {
+                    return true;
+                }
+
+                @Override
+                public RecyclerListView getListView() {
+                    return listView;
+                }
+
+                @Override
+                public boolean canSearchMembers() {
+                    return false;
+                }
+
+                @Override
+                public void updateSelectedMediaTabText() {
+                    final int count = sharedMediaLayout == null ? 0 : sharedMediaLayout.getStoriesCount(SharedMediaLayout.TAB_STORIES);
+                    sharedMediaHeader.setText(LocaleController.formatPluralString("LocationStories", count));
+                    if (adapter.setSharedMediaLayoutVisible(count > 0)) {
+                        listView.smoothScrollBy(0, dp(200));
+                    }
+                }
+            }, SharedMediaLayout.VIEW_TYPE_MEDIA_ACTIVITY, getResourceProvider()) {
+                @Override
+                public TL_stories.MediaArea getStoriesArea() {
+                    return searchStoriesArea;
+                }
+
+                @Override
+                protected boolean customTabs() {
+                    return true;
+                }
+
+                @Override
+                public int mediaPageTopMargin() {
+                    return 32;
+                }
+
+                @Override
+                public int overrideColumnsCount() {
+                    return 3;
+                }
+            };
+            sharedMediaLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+            sharedMediaLayout.addView(sharedMediaHeader, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            adapter.setSharedMediaLayout(sharedMediaLayout);
+            listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
+            DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+            itemAnimator.setSupportsChangeAnimations(false);
+            itemAnimator.setDelayAnimations(false);
+            itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            itemAnimator.setDurations(350);
+            listView.setItemAnimator(itemAnimator);
+        }
         adapter.setMyLocationDenied(locationDenied, false);
         adapter.setUpdateRunnable(() -> updateClipView(false));
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media != null && !TextUtils.isEmpty(messageObject.messageOwner.media.address)) {
             adapter.setAddressNameOverride(messageObject.messageOwner.media.address);
@@ -2245,6 +2315,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             } else {
                 overScrollHeight = viewHeight - dp(66) - height;
             }
+            if (sharedMediaLayout != null && sharedMediaLayout.getStoriesCount(SharedMediaLayout.TAB_STORIES) > 0) {
+                overScrollHeight -= dp(200);
+            }
 
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.topMargin = height;
@@ -3011,4 +3084,151 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public boolean isLightStatusBar() {
         return ColorUtils.calculateLuminance(getThemedColor(Theme.key_windowBackgroundWhite)) > 0.7f;
     }
+
+    private class NestedFrameLayout extends SizeNotifierFrameLayout implements NestedScrollingParent3 {
+
+        private NestedScrollingParentHelper nestedScrollingParentHelper;
+
+        private boolean first = true;
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+
+            if (changed) {
+                fixLayoutInternal(first);
+                first = false;
+            } else {
+                updateClipView(true);
+            }
+        }
+
+        @Override
+        protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+            boolean result = super.drawChild(canvas, child, drawingTime);
+            if (child == actionBar && parentLayout != null) {
+                parentLayout.drawHeaderShadow(canvas, actionBar.getMeasuredHeight());
+            }
+            return result;
+        }
+
+        public NestedFrameLayout(Context context) {
+            super(context);
+            nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
+        }
+
+        @Override
+        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] consumed) {
+            try {
+                if (target == listView && sharedMediaLayout != null && sharedMediaLayout.isAttachedToWindow()) {
+                    RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                    int top = sharedMediaLayout.getTop();
+                    if (top == 0) {
+                        consumed[1] = dyUnconsumed;
+                        innerListView.scrollBy(0, dyUnconsumed);
+                    }
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                        if (innerListView != null && innerListView.getAdapter() != null) {
+                            innerListView.getAdapter().notifyDataSetChanged();
+                        }
+                    } catch (Throwable e2) {
+
+                    }
+                });
+            }
+        }
+
+        @Override
+        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type) {
+
+        }
+
+        @Override
+        public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
+            return super.onNestedPreFling(target, velocityX, velocityY);
+        }
+
+        @Override
+        public void onNestedPreScroll(View target, int dx, int dy, int[] consumed, int type) {
+            if (target == listView && sharedMediaLayout != null && sharedMediaLayout.isAttachedToWindow()) {
+                boolean searchVisible = actionBar.isSearchFieldVisible();
+                int t = sharedMediaLayout.getTop();
+                if (dy < 0) {
+                    boolean scrolledInner = false;
+                    if (t <= 0) {
+                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                        if (innerListView != null) {
+                            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) innerListView.getLayoutManager();
+                            int pos = linearLayoutManager.findFirstVisibleItemPosition();
+                            if (pos != RecyclerView.NO_POSITION) {
+                                RecyclerView.ViewHolder holder = innerListView.findViewHolderForAdapterPosition(pos);
+                                int top = holder != null ? holder.itemView.getTop() : -1;
+                                int paddingTop = innerListView.getPaddingTop();
+                                if (top != paddingTop || pos != 0) {
+                                    consumed[1] = pos != 0 ? dy : Math.max(dy, (top - paddingTop));
+                                    innerListView.scrollBy(0, dy);
+                                    scrolledInner = true;
+                                }
+                            }
+                        }
+                    }
+                    if (searchVisible) {
+                        if (!scrolledInner && t < 0) {
+                            consumed[1] = dy - Math.max(t, dy);
+                        } else {
+                            consumed[1] = dy;
+                        }
+                    }
+                } else {
+                    if (searchVisible) {
+                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                        consumed[1] = dy;
+                        if (t > 0) {
+                            consumed[1] -= dy;
+                        }
+                        if (innerListView != null && consumed[1] > 0) {
+                            innerListView.scrollBy(0, consumed[1]);
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public boolean onStartNestedScroll(View child, View target, int axes, int type) {
+            return sharedMediaLayout != null && axes == ViewCompat.SCROLL_AXIS_VERTICAL;
+        }
+
+        @Override
+        public void onNestedScrollAccepted(View child, View target, int axes, int type) {
+            nestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes);
+        }
+
+        @Override
+        public void onStopNestedScroll(View target, int type) {
+            nestedScrollingParentHelper.onStopNestedScroll(target);
+        }
+
+        @Override
+        public void onStopNestedScroll(View child) {
+
+        }
+
+        @Override
+        protected void drawList(Canvas blurCanvas, boolean top, ArrayList<IViewWithInvalidateCallback> views) {
+            super.drawList(blurCanvas, top, views);
+            if (sharedMediaLayout != null) {
+                blurCanvas.save();
+                blurCanvas.translate(0, listView.getY());
+                sharedMediaLayout.drawListForBlur(blurCanvas, views);
+                blurCanvas.restore();
+            }
+        }
+    }
+
 }

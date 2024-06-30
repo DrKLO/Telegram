@@ -244,7 +244,7 @@ public class QuoteSpan implements LeadingMarginSpan {
 
                 if (spannable instanceof SpannableStringBuilder) {
                     SpannableStringBuilder ssb = (SpannableStringBuilder) spannable;
-                    final boolean hasPad = ssb.charAt(block.span.end - 1) == '\n';
+                    final boolean hasPad = block.span.end - 1 >= 0 && ssb.charAt(block.span.end - 1) == '\n';
                     final boolean needsPad = block.hasButton() && block.span.end - 2 >= 0 && layout.getLineRight(layout.getLineForOffset(block.span.end - 1)) - dp(12) > block.width - block.buttonWidth();
                     if (hasPad != needsPad) {
                         int newEnd = block.span.end;

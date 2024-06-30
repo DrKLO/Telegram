@@ -23,6 +23,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.LaunchActivity;
 
@@ -600,6 +601,15 @@ public class DownloadController extends BaseController implements NotificationCe
     }
 
     public boolean canDownloadMedia(MessageObject messageObject) {
+        if (messageObject.type == MessageObject.TYPE_STORY) {
+            if (!SharedConfig.isAutoplayVideo()) return false;
+            TLRPC.TL_messageMediaStory mediaStory = (TLRPC.TL_messageMediaStory) MessageObject.getMedia(messageObject);
+            TL_stories.StoryItem storyItem = mediaStory.storyItem;
+            if (storyItem == null || storyItem.media == null || storyItem.media.document == null || !storyItem.isPublic) {
+                return false;
+            }
+            return true;
+        }
         return canDownloadMedia(messageObject.messageOwner) == 1;
     }
 
@@ -641,6 +651,88 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message) || MessageObject.isAnimatedStickerMessage(message)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(message) != null) {
+            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+        } else {
+            return 0;
+        }
+        int index;
+        TLRPC.Peer peer = message.peer_id;
+        if (peer != null) {
+            if (peer.user_id != 0) {
+                if (getContactsController().contactsDict.containsKey(peer.user_id)) {
+                    index = 0;
+                } else {
+                    index = 1;
+                }
+            } else if (peer.chat_id != 0) {
+                if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
+                    index = 0;
+                } else {
+                    index = 2;
+                }
+            } else {
+                TLRPC.Chat chat = message.peer_id.channel_id != 0 ? getMessagesController().getChat(message.peer_id.channel_id) : null;
+                if (ChatObject.isChannel(chat) && chat.megagroup) {
+                    if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
+                        index = 0;
+                    } else {
+                        index = 2;
+                    }
+                } else {
+                    index = 3;
+                }
+            }
+        } else {
+            index = 1;
+        }
+        Preset preset;
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
+            if (!wifiPreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentWiFiPreset();
+
+        } else if (networkType == StatsController.TYPE_ROAMING) {
+            if (!roamingPreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentRoamingPreset();
+        } else {
+            if (!mobilePreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentMobilePreset();
+        }
+        int mask = preset.mask[index];
+        long maxSize;
+        if (type == AUTODOWNLOAD_TYPE_AUDIO) {
+            maxSize = Math.max(512 * 1024, preset.sizes[typeToIndex(type)]);
+        } else {
+            maxSize = preset.sizes[typeToIndex(type)];
+        }
+        long size = MessageObject.getMessageSize(message);
+        if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
+            return (mask & type) != 0 ? 2 : 0;
+        } else {
+            return (type == AUTODOWNLOAD_TYPE_PHOTO || size != 0 && size <= maxSize) && (type == AUTODOWNLOAD_TYPE_AUDIO || (mask & type) != 0) ? 1 : 0;
+        }
+    }
+
+    public int canDownloadMedia(TLRPC.Message message, TLRPC.MessageMedia media) {
+        if (message == null || media instanceof TLRPC.TL_messageMediaStory) {
+            return canPreloadStories() ? 2 : 0;
+        }
+        int type;
+        boolean isVideo = false;
+        if (MessageObject.isVideoDocument(media.document)) {
+            isVideo = true;
+            type = AUTODOWNLOAD_TYPE_VIDEO;
+        } else if (MessageObject.isVoiceDocument(media.document)) {
+            type = AUTODOWNLOAD_TYPE_AUDIO;
+        } else if (media instanceof TLRPC.TL_messageMediaPhoto) {
+            type = AUTODOWNLOAD_TYPE_PHOTO;
+        } else if (media.document != null) {
             type = AUTODOWNLOAD_TYPE_DOCUMENT;
         } else {
             return 0;

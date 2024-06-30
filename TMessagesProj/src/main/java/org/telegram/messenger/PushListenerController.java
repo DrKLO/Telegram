@@ -215,6 +215,9 @@ public class PushListenerController {
                         countDownLatch.countDown();
                         return;
                     }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d(tag + " " + loc_key);
+                    }
                     switch (loc_key) {
                         case "DC_UPDATE": {
                             int dc = custom.getInt("dc");
@@ -493,6 +496,36 @@ public class PushListenerController {
                                         case "CHANNEL_MESSAGE_TEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, args[0], args[1]);
                                             message1 = args[1];
+                                            break;
+                                        }
+                                        case "MESSAGE_PAID_MEDIA": {
+                                            int stars = Integer.parseInt(args[1]);
+                                            messageText = LocaleController.formatPluralString("NotificationMessagePaidMedia", stars, args[0]);
+                                            message1 = LocaleController.formatPluralString("NotificationPaidMedia", stars);
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_PAID_MEDIA": {
+                                            int stars = Integer.parseInt(args[1]);
+                                            messageText = LocaleController.formatPluralString("NotificationChannelMessagePaidMedia", stars, args[0]);
+                                            message1 = LocaleController.formatPluralString("NotificationPaidMedia", stars);
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_PAID_MEDIA": {
+                                            int stars = Integer.parseInt(args[2]);
+                                            messageText = LocaleController.formatPluralString("NotificationChatMessagePaidMedia", stars, args[0], args[1]);
+                                            message1 = LocaleController.formatPluralString("NotificationPaidMedia", stars);
+                                            break;
+                                        }
+                                        case "PINNED_PAID_MEDIA": {
+                                            int stars = Integer.parseInt(args[1]);
+                                            messageText = LocaleController.formatPluralString("NotificationPinnedPaidMedia", stars, args[0]);
+                                            message1 = LocaleController.formatPluralString("NotificationPinnedPaidMedia", stars, args[0]);
+                                            break;
+                                        }
+                                        case "CHAT_REACT_PAID_MEDIA": {
+                                            int stars = Integer.parseInt(args[1]);
+                                            messageText = LocaleController.formatPluralString("NotificationPinnedPaidMedia", stars, args[0]);
+                                            message1 = LocaleController.formatPluralString("NotificationPinnedPaidMedia", stars, args[0]);
                                             break;
                                         }
                                         case "MESSAGE_NOTEXT": {

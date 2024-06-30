@@ -49,6 +49,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;

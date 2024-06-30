@@ -1307,12 +1307,15 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             }
                         } else if (error->error_code == 403 && error->error_message.find(integrityCheckClassic) != std::string::npos) {
                             discardResponse = true;
-                            std::string nonce = error->error_message.substr(integrityCheckClassic.size(), error->error_message.size() - integrityCheckClassic.size());
+                            std::string err = error->error_message;
+                            int index = err.find('_', integrityCheckClassic.size());
+                            std::string project = err.substr(integrityCheckClassic.size(), index - integrityCheckClassic.size());
+                            std::string nonce = err.substr(integrityCheckClassic.size() + project.size() + 1, err.size() - (integrityCheckClassic.size() + project.size() + 1));
                             request->awaitingIntegrityCheck = true;
                             request->startTime = 0;
                             request->startTimeMillis = 0;
                             if (delegate != nullptr) {
-                                delegate->onIntegrityCheckClassic(instanceNum, request->requestToken, nonce);
+                                delegate->onIntegrityCheckClassic(instanceNum, request->requestToken, project, nonce);
                             }
                         } else {
                             bool failServerErrors = (request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed;

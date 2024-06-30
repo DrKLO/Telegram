@@ -292,7 +292,12 @@ public class MessagePrivateSeenView extends FrameLayout {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        Bulletin.hideVisible();
+        if (Bulletin.getVisibleBulletin() != null) {
+            Bulletin bulletin = Bulletin.getVisibleBulletin();
+            if (bulletin.getLayout() != null && bulletin.getLayout().getParent() != null && bulletin.getLayout().getParent().getParent() instanceof Bulletin.BulletinWindow.BulletinWindowLayout) {
+                bulletin.hide();
+            }
+        }
     }
 
     float minWidth = -1;

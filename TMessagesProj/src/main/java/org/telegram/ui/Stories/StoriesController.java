@@ -54,6 +54,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.Stories.recorder.DraftsController;
@@ -2394,6 +2395,130 @@ public class StoriesController {
         }
     }
 
+    public static class SearchStoriesList extends StoriesList {
+
+        public final String query;
+        public final TL_stories.MediaArea queryArea;
+
+        public SearchStoriesList(int currentAccount, String query) {
+            super(currentAccount, 0, TYPE_SEARCH, null);
+            this.query = query;
+            this.queryArea = null;
+        }
+
+        public SearchStoriesList(int currentAccount, TL_stories.MediaArea area) {
+            super(currentAccount, 0, TYPE_SEARCH, null);
+            this.query = null;
+            this.queryArea = area;
+        }
+
+        @Override
+        public boolean isOnlyCache() {
+            return false;
+        }
+        @Override
+        protected void invalidateCache() {}
+        @Override
+        protected void preloadCache() {}
+        @Override
+        protected void saveCache() {}
+
+        @Override
+        protected boolean markAsRead(int storyId) {
+            return false;
+        }
+
+        public void cancel() {
+            if (this.reqId != 0) {
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(this.reqId, true);
+                this.reqId = 0;
+            }
+        }
+
+        private ArrayList<ArrayList<Integer>> fakeDays = new ArrayList<>();
+
+        private boolean loading;
+        private String last_offset = "";
+        private int reqId;
+        private int count;
+
+        @Override
+        public boolean load(boolean force, int count, List<Integer> ids) {
+            if (loading) return false;
+            if (last_offset == null) return false;
+
+            TL_stories.TL_stories_searchPosts req = new TL_stories.TL_stories_searchPosts();
+            req.offset = last_offset;
+            req.limit = count;
+            if (query != null) {
+                req.flags |= 1;
+                req.hashtag = query;
+            }
+            if (queryArea != null) {
+                req.flags |= 2;
+                req.area = queryArea;
+            }
+
+            loading = true;
+
+            this.reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                this.reqId = 0;
+                if (res instanceof TL_stories.TL_foundStories) {
+                    TL_stories.TL_foundStories r = (TL_stories.TL_foundStories) res;
+                    MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+                    for (TL_stories.TL_foundStory s : r.stories) {
+                        s.storyItem.dialogId = DialogObject.getPeerDialogId(s.peer);
+                        s.storyItem.messageId = messageObjects.size();
+                        MessageObject msg = new MessageObject(currentAccount, s.storyItem);
+                        msg.generateThumbs(false);
+                        ArrayList<Integer> day = new ArrayList<>();
+                        day.add(messageObjects.size());
+                        fakeDays.add(day);
+                        messageObjects.add(msg);
+                    }
+                    this.count = Math.max(messageObjects.size(), r.count);
+                    if (r.stories.isEmpty()) {
+                        this.count = messageObjects.size();
+                    }
+                    last_offset = messageObjects.size() >= r.count || r.stories.isEmpty() ? null : r.next_offset;
+                    this.loading = false;
+
+                    AndroidUtilities.cancelRunOnUIThread(super.notify);
+                    AndroidUtilities.runOnUIThread(super.notify);
+                }
+            }));
+
+            return true;
+        }
+
+        @Override
+        public int getCount() {
+            return count;
+        }
+
+        @Override
+        public int getLoadedCount() {
+            return messageObjects.size();
+        }
+
+        @Override
+        public boolean isLoading() {
+            return loading;
+        }
+
+        @Override
+        protected ArrayList<ArrayList<Integer>> getDays() {
+            return fakeDays;
+        }
+
+        @Override
+        public MessageObject findMessageObject(int id) {
+            if (id < 0 || id >= messageObjects.size()) return null;
+            return messageObjects.get(id);
+        }
+    }
+
     public static class StoriesList {
 
         private static HashMap<Integer, Long> lastLoadTime;
@@ -2403,12 +2528,14 @@ public class StoriesController {
         public int link() {
             final int id = maxLinkId++;
             links.add(id);
-            AndroidUtilities.cancelRunOnUIThread(destroyRunnable);
+            if (destroyRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(destroyRunnable);
+            }
             return id;
         }
         public void unlink(int id) {
             links.remove((Integer) id);
-            if (links.isEmpty()) {
+            if (links.isEmpty() && destroyRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(destroyRunnable);
                 AndroidUtilities.runOnUIThread(destroyRunnable, 1000 * 60 * 5);
             }
@@ -2417,6 +2544,7 @@ public class StoriesController {
         public static final int TYPE_PINNED = 0;
         public static final int TYPE_ARCHIVE = 1;
         public static final int TYPE_STATISTICS = 2;
+        public static final int TYPE_SEARCH = 3;
 
         public final int currentAccount;
         public final long dialogId;
@@ -2459,7 +2587,7 @@ public class StoriesController {
             NotificationCenter.getInstance(StoriesList.this.currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, StoriesList.this);
         };
 
-        public void fill(boolean notify) {
+        private void fill(boolean notify) {
             fill(this.messageObjects, showPhotos, showVideos);
             if (notify) {
                 AndroidUtilities.cancelRunOnUIThread(this.notify);
@@ -2516,7 +2644,7 @@ public class StoriesController {
         private boolean preloading, loading;
         private boolean invalidateAfterPreload;
         private boolean error;
-        private Runnable destroyRunnable;
+        private final Runnable destroyRunnable;
 
         private Utilities.CallbackReturn<Integer, Boolean> toLoad;
 
@@ -2529,7 +2657,7 @@ public class StoriesController {
             preloadCache();
         }
 
-        private void preloadCache() {
+        protected void preloadCache() {
             if (preloading || loading || error) {
                 return;
             }
@@ -2696,7 +2824,7 @@ public class StoriesController {
             return year * 10000L + month * 100L + day;
         }
 
-        public ArrayList<ArrayList<Integer>> getDays() {
+        protected ArrayList<ArrayList<Integer>> getDays() {
             final ArrayList<Long> keys = new ArrayList<>(groupedByDay.keySet());
             Collections.sort(keys, (a, b) -> (int) (b - a));
             final ArrayList<ArrayList<Integer>> days = new ArrayList<>();
@@ -2720,7 +2848,7 @@ public class StoriesController {
             return days;
         }
 
-        public void invalidateCache() {
+        protected void invalidateCache() {
             if (preloading) {
                 invalidateAfterPreload = true;
                 return;
@@ -2746,7 +2874,7 @@ public class StoriesController {
 
         private boolean saving;
 
-        private void saveCache() {
+        protected void saveCache() {
             if (saving) {
                 return;
             }
@@ -2800,7 +2928,7 @@ public class StoriesController {
             });
         }
 
-        public boolean markAsRead(int storyId) {
+        protected boolean markAsRead(int storyId) {
             if (seenStories.contains(storyId)) return false;
             seenStories.add(storyId);
             saveCache();
@@ -2812,7 +2940,7 @@ public class StoriesController {
             return true;
         }
 
-        private boolean canLoad() {
+        protected boolean canLoad() {
             if (lastLoadTime == null) {
                 return true;
             }
@@ -2824,7 +2952,7 @@ public class StoriesController {
             return System.currentTimeMillis() - time > 1000L * 60 * 2;
         }
 
-        private void resetCanLoad() {
+        protected void resetCanLoad() {
             if (lastLoadTime != null) {
                 lastLoadTime.remove(Objects.hash(currentAccount, type, dialogId));
             }

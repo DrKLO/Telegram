@@ -71,7 +71,7 @@ public class LocationView extends EntityView {
     public LocationView(Context context, Point position, int currentAccount, TLRPC.MessageMedia location, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type, int color) {
         super(context, position);
 
-        marker = new LocationMarker(context, density);
+        marker = new LocationMarker(context, density, 0);
         marker.setMaxWidth(maxWidth);
         setLocation(currentAccount, location, mediaArea);
         marker.setType(currentType = type, currentColor = color);

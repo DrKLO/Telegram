@@ -1907,7 +1907,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                     if (selectedAlbum != null) {
                         MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(position);
-                        cell.setPhotoEntry(photoEntry, true, false);
+                        cell.setPhotoEntry(photoEntry, selectedPhotosOrder.size() > 1, true, false);
                         cell.setChecked(allowIndices ? selectedPhotosOrder.indexOf(photoEntry.imageId) : -1, selectedPhotos.containsKey(photoEntry.imageId), false);
                         showing = PhotoViewer.isShowingImage(photoEntry.path);
                     } else {

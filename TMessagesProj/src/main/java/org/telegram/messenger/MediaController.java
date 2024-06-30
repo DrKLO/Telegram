@@ -50,6 +50,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.telephony.PhoneStateListener;
@@ -63,6 +64,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.widget.FrameLayout;
+
+import androidx.core.content.FileProvider;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -457,6 +460,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public boolean isMuted;
         public boolean canDeleteAfter;
         public boolean hasSpoiler;
+        public long starsAmount;
         public String emoji;
 
         public int videoOrientation = -1;
@@ -514,6 +518,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public void copyFrom(MediaEditState state) {
             super.copyFrom(state);
             this.hasSpoiler = state instanceof PhotoEntry && ((PhotoEntry) state).hasSpoiler;
+            this.starsAmount = state instanceof PhotoEntry ? ((PhotoEntry) state).starsAmount : 0;
         }
 
         public PhotoEntry clone() {
@@ -522,6 +527,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             photoEntry.isMuted = isMuted;
             photoEntry.canDeleteAfter = canDeleteAfter;
             photoEntry.hasSpoiler = hasSpoiler;
+            photoEntry.starsAmount = starsAmount;
             photoEntry.isChatPreviewSpoilerRevealed = isChatPreviewSpoilerRevealed;
             photoEntry.isAttachSpoilerRevealed = isAttachSpoilerRevealed;
             photoEntry.emojiMarkup = emojiMarkup;
@@ -545,6 +551,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
             hasSpoiler = false;
+            starsAmount = 0;
             super.reset();
         }
 
@@ -4221,28 +4228,28 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     private void stopRecordingInternal(final int send, boolean notify, int scheduleDate, boolean once) {
-        if (send != 0) {
+        if (send != 0 && recordingAudioFile != null) {
             final TLRPC.TL_document audioToSend = recordingAudio;
             final File recordingAudioFileToSend = recordingAudioFile;
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("stop recording internal filename " + recordingAudioFile.getPath());
+                FileLog.d("stop recording internal filename " + (recordingAudioFileToSend == null ? "null" : recordingAudioFileToSend.getPath()));
             }
             fileEncodingQueue.postRunnable(() -> {
                 stopRecord(false);
                 if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("stop recording internal in queue " + recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length());
+                    FileLog.d("stop recording internal in queue " + (recordingAudioFileToSend == null ? "null" : recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length()));
                 }
                 AndroidUtilities.runOnUIThread(() -> {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("stop recording internal " + recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length() + " " + " recordTimeCount " + recordTimeCount + " writedFrames" + writedFrame);
+                        FileLog.d("stop recording internal " + (recordingAudioFileToSend == null ? "null" : recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length() + " " + " recordTimeCount " + recordTimeCount + " writedFrames" + writedFrame));
                     }
-                    boolean fileExist = recordingAudioFileToSend.exists();
+                    boolean fileExist = recordingAudioFileToSend != null && recordingAudioFileToSend.exists();
                     if (!fileExist && BuildVars.DEBUG_VERSION) {
                         FileLog.e(new RuntimeException("file not found :( recordTimeCount " + recordTimeCount + " writedFrames" + writedFrame));
                     }
                     MediaDataController.getInstance(recordingCurrentAccount).pushDraftVoiceMessage(recordDialogId, recordTopicId, null);
                     audioToSend.date = ConnectionsManager.getInstance(recordingCurrentAccount).getCurrentTime();
-                    audioToSend.size = (int) recordingAudioFileToSend.length();
+                    audioToSend.size = recordingAudioFileToSend == null ? 0 : (int) recordingAudioFileToSend.length();
                     TLRPC.TL_documentAttributeAudio attributeAudio = new TLRPC.TL_documentAttributeAudio();
                     attributeAudio.voice = true;
                     attributeAudio.waveform = getWaveform2(recordSamples, recordSamples.length);
@@ -4264,8 +4271,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, send == 2 ? audioToSend : null, send == 2 ? recordingAudioFileToSend.getAbsolutePath() : null);
                     } else {
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, false, (int) duration);
-                        AutoDeleteMediaTask.unlockFile(recordingAudioFileToSend);
-                        recordingAudioFileToSend.delete();
+                        if (recordingAudioFileToSend != null) {
+                            AutoDeleteMediaTask.unlockFile(recordingAudioFileToSend);
+                            recordingAudioFileToSend.delete();
+                        }
                     }
                     requestAudioFocus(false);
                 });
@@ -4387,19 +4396,19 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     path = null;
                                 }
                             }
-                            if (path == null || path.length() == 0) {
-                                path = null;
-                                TLRPC.Document document = message.getDocument();
-                                if (!TextUtils.isEmpty(FileLoader.getDocumentFileName(document)) && !(message.messageOwner instanceof TLRPC.TL_message_secret) && FileLoader.canSaveAsFile(message)) {
-                                    String filename = FileLoader.getDocumentFileName(document);
-                                    File newDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_FILES);
-                                    if (newDir != null) {
-                                        path = new File(newDir, filename).getAbsolutePath();
-                                    }
-                                }
-                                if (path == null) {
+                            if (TextUtils.isEmpty(path)) {
+//                                path = null;
+//                                TLRPC.Document document = message.getDocument();
+//                                if (!TextUtils.isEmpty(FileLoader.getDocumentFileName(document)) && !(message.messageOwner instanceof TLRPC.TL_message_secret) && FileLoader.canSaveAsFile(message)) {
+//                                    String filename = FileLoader.getDocumentFileName(document);
+//                                    File newDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_FILES);
+//                                    if (newDir != null) {
+//                                        path = new File(newDir, filename).getAbsolutePath();
+//                                    }
+//                                }
+//                                if (path == null) {
                                     path = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToMessage(message.messageOwner).toString();
-                                }
+//                                }
                             }
                             File sourceFile = new File(path);
                             if (!sourceFile.exists()) {

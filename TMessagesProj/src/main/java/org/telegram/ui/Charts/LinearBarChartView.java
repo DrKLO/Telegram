@@ -3,6 +3,7 @@ package org.telegram.ui.Charts;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Log;
 
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.view_data.LineViewData;
@@ -111,7 +112,7 @@ public class LinearBarChartView extends BaseChartView<ChartData, LineViewData> {
                     transitionAlpha = transitionParams.progress;
                 }
                 line.paint.setAlpha((int) (255 * line.alpha * transitionAlpha));
-                if(endXIndex - startXIndex > 100){
+                if (endXIndex - startXIndex > 100) {
                     line.paint.setStrokeCap(Paint.Cap.SQUARE);
                 } else {
                     line.paint.setStrokeCap(Paint.Cap.ROUND);

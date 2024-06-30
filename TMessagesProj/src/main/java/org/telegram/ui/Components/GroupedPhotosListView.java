@@ -75,6 +75,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         void onShowAnimationStart();
         void onStopScrolling();
         boolean validGroupId(long groupId);
+        boolean forceAll();
     }
 
     public GroupedPhotosListView(Context context) {
@@ -134,12 +135,13 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 changed = true;
                 currentGroupId = localGroupId;
             }
-            if (currentGroupId != 0) {
+            final boolean forcedGroup = imagesArr.size() > 1 && delegate.forceAll();
+            if (currentGroupId != 0 || forcedGroup) {
                 hasPhotos = true;
                 int max = Math.min(currentIndex + 10, imagesArr.size());
                 for (int a = currentIndex; a < max; a++) {
                     MessageObject object = imagesArr.get(a);
-                    if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
+                    if (slideshowMessageId != 0 || forcedGroup || object.getGroupIdForUse() == currentGroupId) {
                         newCount++;
                     } else {
                         break;
@@ -148,7 +150,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 int min = Math.max(currentIndex - 10, 0);
                 for (int a = currentIndex - 1; a >= min; a--) {
                     MessageObject object = imagesArr.get(a);
-                    if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
+                    if (slideshowMessageId != 0 || forcedGroup || object.getGroupIdForUse() == currentGroupId) {
                         newCount++;
                     } else {
                         break;
@@ -282,11 +284,12 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 animateToItem = -1;
                 animateToItemFast = false;
             } else if (imagesArr != null && !imagesArr.isEmpty()) {
-                if (currentGroupId != 0 || slideshowMessageId != 0) {
+                final boolean forcedGroup = delegate.forceAll() && imagesArr.size() > 1;
+                if (currentGroupId != 0 || forcedGroup || slideshowMessageId != 0) {
                     int max = Math.min(currentIndex + 10, imagesArr.size());
                     for (int a = currentIndex; a < max; a++) {
                         MessageObject object = imagesArr.get(a);
-                        if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
+                        if (slideshowMessageId != 0 || forcedGroup || object.getGroupIdForUse() == currentGroupId) {
                             currentObjects.add(object);
                             currentPhotos.add(ImageLocation.getForObject(FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true), object.photoThumbsObject));
                         } else {
@@ -299,7 +302,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     int min = Math.max(currentIndex - 10, 0);
                     for (int a = currentIndex - 1; a >= min; a--) {
                         MessageObject object = imagesArr.get(a);
-                        if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
+                        if (slideshowMessageId != 0 || forcedGroup || object.getGroupIdForUse() == currentGroupId) {
                             currentObjects.add(0, object);
                             currentPhotos.add(0, ImageLocation.getForObject(FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true), object.photoThumbsObject));
                             currentImage++;

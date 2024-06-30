@@ -131,6 +131,10 @@ public class HintView2 extends View {
     private int iconWidth, iconHeight;
     private boolean iconLeft;
 
+    public HintView2(Context context) {
+        this(context, 0);
+    }
+
     public HintView2(Context context, int direction) {
         super(context);
         this.direction = direction;
@@ -144,6 +148,11 @@ public class HintView2 extends View {
 
         setTextSize(14);
         setTextColor(0xffffffff);
+    }
+
+    public HintView2 setDirection(int direction) {
+        this.direction = direction;
+        return this;
     }
 
     public HintView2 setRounding(float roundingDp) {

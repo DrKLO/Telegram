@@ -166,12 +166,22 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        if (currentPassword == null || currentPassword.current_algo == null || currentPasswordHash == null || currentPasswordHash.length <= 0) {
-            loadPasswordInfo(true, currentPassword != null);
-        }
+        if (!preloaded) preload(null);
         updateRows();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
         return true;
+    }
+
+    public boolean preloaded;
+    public void preload(Runnable whenPreloaded) {
+        preloaded = false;
+        if (currentPassword == null || currentPassword.current_algo == null || currentPasswordHash == null || currentPasswordHash.length <= 0) {
+            loadPasswordInfo(true, currentPassword != null, whenPreloaded);
+        } else {
+            if (whenPreloaded != null) {
+                whenPreloaded.run();
+            }
+        }
     }
 
     @Override
@@ -640,7 +650,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             if (args != null && args.length > 0 && args[0] != null) {
                 currentPasswordHash = (byte[]) args[0];
             }
-            loadPasswordInfo(false, false);
+            loadPasswordInfo(false, false, null);
             updateRows();
         }
     }
@@ -702,7 +712,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         }
     }
 
-    private void loadPasswordInfo(boolean first, final boolean silent) {
+    private void loadPasswordInfo(boolean first, final boolean silent, Runnable whenDone) {
         if (!silent) {
             loading = true;
             if (listAdapter != null) {
@@ -723,6 +733,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 }
                 initPasswordNewAlgo(currentPassword);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
+            }
+            if (whenDone != null) {
+                whenDone.run();
             }
             updateRows();
         }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);

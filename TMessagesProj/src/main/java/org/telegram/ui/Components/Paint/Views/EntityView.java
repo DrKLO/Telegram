@@ -592,10 +592,11 @@ public class EntityView extends FrameLayout {
     private float scale = 1f;
 
     public void scale(float scale) {
+        float oldScale = this.scale;
         this.scale *= scale;
         float newScale = Math.max(this.scale, 0.1f);
         newScale = Utilities.clamp(newScale, getMaxScale(), getMinScale());
-        if (allowHaptic() && (newScale >= getMaxScale() || newScale <= getMinScale())) {
+        if (allowHaptic() && (newScale >= getMaxScale() || newScale <= getMinScale()) != (oldScale >= getMaxScale() || oldScale <= getMinScale())) {
             try {
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
             } catch (Exception ignore) {

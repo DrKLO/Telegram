@@ -1172,6 +1172,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                        if (!AndroidUtilities.isSafeToShow(getContext())) {
+                            return true;
+                        }
                         new AlertDialog.Builder(getContext(), resourcesProvider)
                                 .setTitle(getString(R.string.ChromeCrashTitle))
                                 .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
@@ -1717,7 +1720,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
             }
         } else if (currentStep == STEP_SHIPPING_METHODS) {
-            int count = requestedInfo.shipping_options.size();
+            int count = requestedInfo.shipping_options == null ? 0 : requestedInfo.shipping_options.size();
             radioCells = new RadioCell[count];
             for (int a = 0; a < count; a++) {
                 TLRPC.TL_shippingOption shippingOption = requestedInfo.shipping_options.get(a);
@@ -2417,7 +2420,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                        if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                        if (!AndroidUtilities.isSafeToShow(getContext())) {
                             return true;
                         }
                         new AlertDialog.Builder(getContext(), resourcesProvider)
@@ -4158,7 +4161,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(message[0].peer_id);
                                     ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (response2 instanceof TLRPC.TL_payments_paymentReceiptStars) {
-                                            StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
+                                            StarsIntroActivity.showTransactionSheet(getContext(), false, currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
                                         } else if (response2 instanceof TLRPC.PaymentReceipt) {
                                             BaseFragment lastFragment = LaunchActivity.getLastFragment();
                                             if (lastFragment != null) {
@@ -4220,7 +4223,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                                 req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(message.peer_id);
                                                 ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                                     if (response2 instanceof TLRPC.TL_payments_paymentReceiptStars) {
-                                                        StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
+                                                        StarsIntroActivity.showTransactionSheet(getContext(), false, currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
                                                     } else if (response2 instanceof TLRPC.PaymentReceipt) {
                                                         BaseFragment lastFragment = LaunchActivity.getLastFragment();
                                                         if (lastFragment != null) {

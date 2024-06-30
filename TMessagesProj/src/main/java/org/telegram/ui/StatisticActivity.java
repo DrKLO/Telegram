@@ -609,6 +609,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
         if (hasMonetization) {
             monetizationLayout = new ChannelMonetizationLayout(getContext(), StatisticActivity.this, currentAccount, -chatId, getResourceProvider());
+            monetizationLayout.setActionBar(actionBar);
         }
         boolean showTabs = isBoostSupported && !onlyBoostsStat;
         if (showTabs && startFromBoosts) {
@@ -2186,7 +2187,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         public String errorMessage;
         public long activeZoom;
         public boolean viewShowed;
-        ChartData chartData;
+        public ChartData chartData;
         ChartData childChartData;
         String token;
         String zoomToken;

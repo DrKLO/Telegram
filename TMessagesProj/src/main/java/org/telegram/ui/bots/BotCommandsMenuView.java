@@ -69,6 +69,7 @@ public class BotCommandsMenuView extends View {
 
     private String menuText = LocaleController.getString(R.string.BotsMenuTitle);
     StaticLayout menuTextLayout;
+    private float menuTextWidth;
     boolean isOpened;
 
     public boolean isWebView;
@@ -134,13 +135,15 @@ public class BotCommandsMenuView extends View {
             backDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
             textPaint.setTextSize(AndroidUtilities.dp(15));
             lastSize = size;
-            int w = (int) textPaint.measureText(menuText);
-            menuTextLayout = StaticLayoutEx.createStaticLayout(menuText, textPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false, TextUtils.TruncateAt.END, w, 1);
+            CharSequence c = Emoji.replaceEmoji(menuText, textPaint.getFontMetricsInt(), false);
+            int w = (int) (AndroidUtilities.displaySize.x * .6f);
+            menuTextLayout = StaticLayoutEx.createStaticLayout(c, textPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false, TextUtils.TruncateAt.END, w, 1);
+            menuTextWidth = menuTextLayout.getLineCount() > 0 ? menuTextLayout.getLineWidth(0) : 0;
         }
-        onTranslationChanged((menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
+        onTranslationChanged((menuTextWidth + AndroidUtilities.dp(4)) * expandProgress);
         int width = AndroidUtilities.dp(40);
         if (expanded) {
-            width += menuTextLayout.getWidth() + AndroidUtilities.dp(4);
+            width += (int) menuTextWidth + AndroidUtilities.dp(4);
         }
 
         super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
@@ -174,7 +177,7 @@ public class BotCommandsMenuView extends View {
             }
 
             if (drawBackgroundDrawable) {
-                rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
+                rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuTextWidth + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
                 canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
                 backgroundDrawable.setBounds((int) rectTmp.left, (int) rectTmp.top, (int) rectTmp.right, (int) rectTmp.bottom);
                 backgroundDrawable.draw(canvas);
@@ -206,7 +209,7 @@ public class BotCommandsMenuView extends View {
             }
 
             if (update) {
-                onTranslationChanged((menuTextLayout.getWidth() + AndroidUtilities.dp(4)) * expandProgress);
+                onTranslationChanged((menuTextWidth + AndroidUtilities.dp(4)) * expandProgress);
             }
         }
         super.dispatchDraw(canvas);

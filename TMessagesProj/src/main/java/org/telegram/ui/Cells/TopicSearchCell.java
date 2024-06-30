@@ -52,9 +52,9 @@ public class TopicSearchCell extends FrameLayout {
     public void setTopic(TLRPC.TL_forumTopic topic) {
         this.topic = topic;
         if (TextUtils.isEmpty(topic.searchQuery)) {
-            textView.setText(topic.title);
+            textView.setText(AndroidUtilities.removeDiacritics(topic.title));
         } else {
-            textView.setText(AndroidUtilities.highlightText(topic.title, topic.searchQuery, null));
+            textView.setText(AndroidUtilities.highlightText(AndroidUtilities.removeDiacritics(topic.title), topic.searchQuery, null));
         }
         ForumUtilities.setTopicIcon(backupImageView, topic);
         if (backupImageView != null && backupImageView.getImageReceiver() != null && backupImageView.getImageReceiver().getDrawable() instanceof ForumUtilities.GeneralTopicDrawable) {

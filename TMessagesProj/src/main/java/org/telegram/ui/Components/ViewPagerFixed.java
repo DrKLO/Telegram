@@ -782,6 +782,18 @@ public class ViewPagerFixed extends FrameLayout {
         }
     }
 
+    public void updateCurrent() {
+        if (viewTypes[0] != adapter.getItemViewType(currentPosition)) {
+            updateViewForIndex(0);
+            if (viewPages[1] != null) {
+                viewsByType.put(viewTypes[1], viewPages[1]);
+                removeView(viewPages[1]);
+                viewPages[1] = null;
+            }
+            viewPages[0].setTranslationX(0);
+        }
+    }
+
     protected void onItemSelected(View currentPage, View oldPage, int position, int oldPosition) {
 
     }
@@ -1322,6 +1334,7 @@ public class ViewPagerFixed extends FrameLayout {
                     return super.canHighlightChildAt(child, x, y);
                 }
             };
+            listView.setOverScrollMode(OVER_SCROLL_NEVER);
             if (hasStableIds) {
                 listView.setItemAnimator(null);
             } else {
@@ -1915,4 +1928,5 @@ public class ViewPagerFixed extends FrameLayout {
     public void setAllowDisallowInterceptTouch(boolean allowDisallowInterceptTouch) {
         this.allowDisallowInterceptTouch = allowDisallowInterceptTouch;
     }
+
 }

@@ -328,7 +328,7 @@ public class ItemOptions {
     }
 
     public ItemOptions addSpaceGap() {
-        if (layout == lastLayout) {
+        if (!(layout instanceof LinearLayout)) {
             layout = new LinearLayout(context);
             ((LinearLayout) layout).setOrientation(LinearLayout.VERTICAL);
             layout.addView(lastLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -339,7 +339,7 @@ public class ItemOptions {
                 dismiss();
             }
         });
-        addView(lastLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, -8, 0, 0));
+        layout.addView(lastLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, -8, 0, 0));
         return this;
     }
 

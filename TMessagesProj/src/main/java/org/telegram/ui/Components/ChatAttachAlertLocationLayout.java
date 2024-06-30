@@ -691,7 +691,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
         };
         listView.setClipToPadding(false);
-        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, true, resourcesProvider, parentAlert.isStoryLocationPicker, parentAlert.isBizLocationPicker));
+        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, true, resourcesProvider, parentAlert.isStoryLocationPicker, false, parentAlert.isBizLocationPicker));
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setDurations(350);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);

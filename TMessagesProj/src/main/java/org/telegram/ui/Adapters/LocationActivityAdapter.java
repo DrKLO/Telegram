@@ -37,6 +37,7 @@ import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.LocationActivity;
 
 import java.util.ArrayList;
@@ -75,14 +76,31 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         updateCell();
     }
 
-    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider, boolean stories, boolean biz) {
-        super(stories, biz);
+    private boolean fromStories;
 
+    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider, boolean stories, boolean fromStories, boolean biz) {
+        super(stories, biz);
+        this.fromStories = fromStories;
         mContext = context;
         locationType = type;
         dialogId = did;
         needEmptyView = emptyView;
         this.resourcesProvider = resourcesProvider;
+    }
+
+    private SharedMediaLayout sharedMediaLayout;
+    private boolean sharedMediaLayoutVisible;
+    public void setSharedMediaLayout(SharedMediaLayout layout) {
+        this.sharedMediaLayout = layout;
+    }
+
+    public boolean setSharedMediaLayoutVisible(boolean sharedMediaLayoutVisible) {
+        if (this.sharedMediaLayoutVisible != sharedMediaLayoutVisible) {
+            this.sharedMediaLayoutVisible = sharedMediaLayoutVisible;
+            notifyDataSetChanged();
+            return true;
+        }
+        return false;
     }
 
     private boolean myLocationDenied = false;
@@ -305,43 +323,49 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             }
             fetchingLocation = true;
             updateCell();
-            LocationController.fetchLocationAddress(location, this);
+            LocationController.fetchLocationAddress(location, stories ? LocationController.TYPE_STORY : 0, this);
         }
     }
 
     @Override
     public int getItemCount() {
+        int count;
         if (locationType == LocationActivity.LOCATION_TYPE_LIVE_VIEW) {
-            return 2;
+            count = 2;
         } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW) {
-            return 2;
+            count = 2;
         } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
-            return 2;
+            count = 2;
         } else if (biz) {
-            return 2;
+            count = 2;
         } else if (currentMessageObject != null) {
-            return 2 + (currentLiveLocations.isEmpty() ? 1 : currentLiveLocations.size() + 3);
+            count = 2 + (currentLiveLocations.isEmpty() ? (fromStories ? 0 : 1) : currentLiveLocations.size() + 3);
         } else if (locationType == LocationActivity.LOCATION_TYPE_LIVE) {
             LocationController.SharingLocationInfo currentInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
-            return 2 + currentLiveLocations.size() + (currentInfo != null && currentInfo.period != 0x7FFFFFFF ? 1 : 0);
+            count = 2 + currentLiveLocations.size() + (currentInfo != null && currentInfo.period != 0x7FFFFFFF ? 1 : 0);
         } else {
             if (searching || !searched || places.isEmpty()) {
-                int count = 6;
+                count = 6;
                 if (locationType == LocationActivity.LOCATION_TYPE_SEND) {
                     count = 5;
                 } else if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY) {
                     count = 5 + (this.street != null ? 1 : 0);
                 }
-                return count + (!myLocationDenied && (searching || !searched) ? 2 : 0) + (needEmptyView ? 1 : 0) - (myLocationDenied ? 2 : 0);
+                count += (!myLocationDenied && (searching || !searched) ? 2 : 0) + (needEmptyView ? 1 : 0) - (myLocationDenied ? 2 : 0);
+            } else {
+                count = 5;
+                if (locationType == LocationActivity.LOCATION_TYPE_SEND_WITH_LIVE) {
+                    count = 6;
+                } else if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY) {
+                    count = 5;// + (this.street != null ? 1 : 0);
+                }
+                count += locations.size() + places.size() + (needEmptyView ? 1 : 0);
             }
-            int count = 5;
-            if (locationType == LocationActivity.LOCATION_TYPE_SEND_WITH_LIVE) {
-                count = 6;
-            } else if (locationType == ChatAttachAlertLocationLayout.LOCATION_TYPE_STORY) {
-                count = 5;// + (this.street != null ? 1 : 0);
-            }
-            return count + locations.size() + places.size() + (needEmptyView ? 1 : 0);
         }
+        if (sharedMediaLayout != null && sharedMediaLayoutVisible) {
+            count++;
+        }
+        return count;
     }
 
     private FrameLayout emptyCell;
@@ -419,6 +443,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 view = locationCell2;
                 break;
             }
+            case VIEW_TYPE_SHARED_STORIES:
+                view = sharedMediaLayout;
+                break;
             case VIEW_TYPE_EMPTY:
             default: {
                 view = new View(mContext);
@@ -441,6 +468,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     public static final int VIEW_TYPE_SHADOW = 10;
     public static final int VIEW_TYPE_EMPTY = 11;
     public static final int VIEW_TYPE_STORY_LOCATION = 12;
+    public static final int VIEW_TYPE_SHARED_STORIES = 13;
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
@@ -603,6 +631,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     @Override
     public int getItemViewType(int position) {
+        if (position == getItemCount() - 1 && sharedMediaLayout != null && sharedMediaLayoutVisible) {
+            return VIEW_TYPE_SHARED_STORIES;
+        }
         if (position == 0) {
             return VIEW_TYPE_PADDING;
         }

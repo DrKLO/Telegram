@@ -273,6 +273,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             fillItems.run(items, this);
             if (listView != null && listView.isComputingLayout()) {
                 listView.post(() -> {
+                    if (listView.isComputingLayout()) {
+                        return;
+                    }
                     if (animated) {
                         setItems(oldItems, items);
                     } else {
@@ -378,24 +381,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 };
                 break;
             case VIEW_TYPE_FULLSCREEN_CUSTOM:
-                view = new FrameLayout(context) {
-                    @Override
-                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                        int maxHeight = MeasureSpec.getSize(heightMeasureSpec);
-                        widthMeasureSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY);
-                        measureChildren(widthMeasureSpec, heightMeasureSpec);
-                        int height = 0;
-                        for (int i = 0; i < getChildCount(); ++i) {
-                            View child = getChildAt(i);
-                            height = Math.max(height, child.getMeasuredHeight());
-                        }
-                        if (maxHeight > 0) {
-                            maxHeight -= AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight();
-                            height = Math.min(height, maxHeight);
-                        }
-                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
-                    }
-                };
+                view = new FullscreenCustomFrameLayout(context);
                 view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
                 break;
             case VIEW_TYPE_FILTER_CHAT:
@@ -694,7 +680,6 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
             case VIEW_TYPE_CUSTOM:
             case VIEW_TYPE_FULLY_CUSTOM:
-            case VIEW_TYPE_FULLSCREEN_CUSTOM:
                 FrameLayout frameLayout = (FrameLayout) holder.itemView;
                 if (frameLayout.getChildCount() != (item.view == null ? 0 : 1) || frameLayout.getChildAt(0) != item.view) {
                     frameLayout.removeAllViews();
@@ -707,6 +692,17 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                             lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
                         }
                         frameLayout.addView(item.view, lp);
+                    }
+                }
+                break;
+            case VIEW_TYPE_FULLSCREEN_CUSTOM:
+                FullscreenCustomFrameLayout frameLayout2 = (FullscreenCustomFrameLayout) holder.itemView;
+                frameLayout2.setMinusHeight(item.intValue);
+                if (frameLayout2.getChildCount() != (item.view == null ? 0 : 1) || frameLayout2.getChildAt(0) != item.view) {
+                    frameLayout2.removeAllViews();
+                    if (item.view != null) {
+                        AndroidUtilities.removeFromParent(item.view);
+                        frameLayout2.addView(item.view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                     }
                 }
                 break;
@@ -1000,8 +996,35 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         return null;
     }
 
-    private int getThemedColor(int key) {
+    protected int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
     }
 
+
+    private class FullscreenCustomFrameLayout extends FrameLayout {
+        private int minusHeight = 0;
+        public FullscreenCustomFrameLayout(Context context) {
+            super(context);
+        }
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int maxHeight = View.MeasureSpec.getSize(heightMeasureSpec);
+            widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.EXACTLY);
+            measureChildren(widthMeasureSpec, heightMeasureSpec);
+            int height = 0;
+            for (int i = 0; i < getChildCount(); ++i) {
+                View child = getChildAt(i);
+                height = Math.max(height, child.getMeasuredHeight());
+            }
+            if (maxHeight > 0) {
+                maxHeight -= minusHeight;
+                height = Math.min(height, maxHeight);
+            }
+            super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        }
+
+        public void setMinusHeight(int minusHeight) {
+            this.minusHeight = minusHeight;
+        }
+    }
 }

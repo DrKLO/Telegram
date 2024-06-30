@@ -167,9 +167,9 @@ public class DialogsHintCell extends BlurredFrameLayout {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        canvas.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1, Theme.dividerPaint);
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+        canvas.drawRect(0, getHeight() - 1, getWidth(), getHeight(), Theme.dividerPaint);
     }
 
     private int height;

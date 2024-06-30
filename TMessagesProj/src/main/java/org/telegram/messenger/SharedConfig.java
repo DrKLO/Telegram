@@ -313,6 +313,7 @@ public class SharedConfig {
     public static int emojiInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
     public static int callEncryptionHintDisplayedCount;
+    public static boolean botTabs3DEffect;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
@@ -646,12 +647,13 @@ public class SharedConfig {
             dayNightWallpaperSwitchHint = preferences.getInt("dayNightWallpaperSwitchHint", 0);
             bigCameraForRound = preferences.getBoolean("bigCameraForRound", false);
             useNewBlur = preferences.getBoolean("useNewBlur", true);
-            useCamera2Force = !preferences.contains("useCamera2Force") ? null : preferences.getBoolean("useCamera2Force", false);
+            useCamera2Force = !preferences.contains("useCamera2Force_2") ? null : preferences.getBoolean("useCamera2Force_2", false);
             useSurfaceInStories = preferences.getBoolean("useSurfaceInStories", Build.VERSION.SDK_INT >= 30);
             payByInvoice = preferences.getBoolean("payByInvoice", false);
             photoViewerBlur = preferences.getBoolean("photoViewerBlur", true);
             multipleReactionsPromoShowed = preferences.getBoolean("multipleReactionsPromoShowed", false);
             callEncryptionHintDisplayedCount = preferences.getInt("callEncryptionHintDisplayedCount", 0);
+            botTabs3DEffect = preferences.getBoolean("botTabs3DEffect", true);
 
             loadDebugConfig(preferences);
 
@@ -1078,6 +1080,13 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("callEncryptionHintDisplayedCount", callEncryptionHintDisplayedCount);
+        editor.apply();
+    }
+
+    public static void setBotTabs3DEffect(boolean value) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("botTabs3DEffect", botTabs3DEffect = value);
         editor.apply();
     }
 
@@ -1757,7 +1766,7 @@ public class SharedConfig {
     public static void toggleUseCamera2(int currentAccount) {
         ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
                 .edit()
-                .putBoolean("useCamera2", useCamera2Force = !isUsingCamera2(currentAccount))
+                .putBoolean("useCamera2Force_2", useCamera2Force = !isUsingCamera2(currentAccount))
                 .apply();
     }
 

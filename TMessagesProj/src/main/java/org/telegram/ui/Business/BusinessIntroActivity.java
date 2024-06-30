@@ -174,7 +174,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         previewContainer.addView(previewBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
         previewContainer.addView(greetingsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 42, 18, 42, 18));
 
-        titleEdit = new EditTextCell(context, getString(R.string.BusinessIntroTitleHint), false, getMessagesController().introTitleLengthLimit) {
+        titleEdit = new EditTextCell(context, getString(R.string.BusinessIntroTitleHint), false, getMessagesController().introTitleLengthLimit, resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 greetingsView.setPreview(titleEdit.getText().toString(), messageEdit.getText().toString());
@@ -193,7 +193,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         titleEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         titleEdit.setDivider(true);
         titleEdit.hideKeyboardOnEnter();
-        messageEdit = new EditTextCell(context, getString(R.string.BusinessIntroMessageHint), true, getMessagesController().introDescriptionLengthLimit) {
+        messageEdit = new EditTextCell(context, getString(R.string.BusinessIntroMessageHint), true, getMessagesController().introDescriptionLengthLimit, resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 greetingsView.setPreview(titleEdit.getText().toString(), messageEdit.getText().toString());

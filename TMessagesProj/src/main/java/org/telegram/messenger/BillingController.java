@@ -30,6 +30,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stars.StarsController;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -273,48 +274,137 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             }
 
             if (!requestingTokens.contains(purchase.getPurchaseToken()) && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> payload = BillingUtilities.extractDeveloperPayload(purchase);
-                if (payload == null) {
+                Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> opayload = BillingUtilities.extractDeveloperPayload(purchase);
+                if (opayload == null || opayload.first == null) {
                     continue;
                 }
                 if (!purchase.isAcknowledged()) {
                     requestingTokens.add(purchase.getPurchaseToken());
 
-                    TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
-                    req.receipt = new TLRPC.TL_dataJSON();
-                    req.receipt.data = purchase.getOriginalJson();
-                    req.purpose = payload.second;
+                    retrievePurpose(purchase, opayload, payload -> {
+                        TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
+                        req.receipt = new TLRPC.TL_dataJSON();
+                        req.receipt.data = purchase.getOriginalJson();
+                        req.purpose = payload.second;
 
-                    final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
-                    AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
+                        final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
+                        AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
 
-                    AccountInstance acc = payload.first;
-                    acc.getConnectionsManager().sendRequest(req, (response, error) -> {
-                        AndroidUtilities.runOnUIThread(progressDialog::dismiss);
+                        AccountInstance acc = payload.first;
+                        acc.getConnectionsManager().sendRequest(req, (response, error) -> {
+                            AndroidUtilities.runOnUIThread(progressDialog::dismiss);
 
-                        requestingTokens.remove(purchase.getPurchaseToken());
+                            requestingTokens.remove(purchase.getPurchaseToken());
 
-                        if (response instanceof TLRPC.Updates) {
-                            acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                            if (response instanceof TLRPC.Updates) {
+                                acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
 
-                            for (String productId : purchase.getProducts()) {
-                                Consumer<BillingResult> listener = resultListeners.remove(productId);
-                                if (listener != null) {
-                                    listener.accept(billing);
+                                for (String productId : purchase.getProducts()) {
+                                    Consumer<BillingResult> listener = resultListeners.remove(productId);
+                                    if (listener != null) {
+                                        listener.accept(billing);
+                                    }
                                 }
-                            }
 
-                            consumeGiftPurchase(purchase, req.purpose);
-                        } else if (error != null) {
-                            if (onCanceled != null) {
-                                onCanceled.run();
-                                onCanceled = null;
+                                consumeGiftPurchase(purchase, req.purpose);
+                            } else if (error != null) {
+                                if (onCanceled != null) {
+                                    onCanceled.run();
+                                    onCanceled = null;
+                                }
+                                NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
                             }
-                            NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
-                        }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
+                        }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
+                    });
                 } else {
-                    consumeGiftPurchase(purchase, payload.second);
+                    consumeGiftPurchase(purchase, opayload.second);
+                }
+            }
+        }
+    }
+
+    private boolean retrievePurpose(Purchase purchase, Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> payload, Utilities.Callback<Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>> whenPayload) {
+        if (payload == null || payload.first == null) {
+            FileLog.d("retrievePurpose: payload or account is null");
+            return false;
+        }
+        if (payload.second != null) {
+            FileLog.d("retrievePurpose: already has purpose");
+            whenPayload.run(payload);
+            return true;
+        }
+        if (purchase == null || purchase.getProducts().isEmpty()) {
+            FileLog.d("retrievePurpose: no products found for purpose!");
+            whenPayload.run(payload);
+            return false;
+        } else {
+            final int currentAccount = payload.first.getCurrentAccount();
+            final String productId = purchase.getProducts().get(0);
+
+            if (productId == null) {
+                FileLog.d("retrievePurpose: first product is null!");
+                whenPayload.run(payload);
+                return false;
+            }
+
+            ArrayList<TLRPC.TL_starsTopupOption> options = StarsController.getInstance(currentAccount).getOptionsCached();
+            if (options == null) {
+                ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_payments_getStarsTopupOptions(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    ArrayList<TLRPC.TL_starsTopupOption> loadedOptions = new ArrayList<>();
+                    if (res instanceof TLRPC.Vector) {
+                        TLRPC.Vector vector = (TLRPC.Vector) res;
+                        for (Object object : vector.objects) {
+                            if (object instanceof TLRPC.TL_starsTopupOption) {
+                                TLRPC.TL_starsTopupOption option = (TLRPC.TL_starsTopupOption) object;
+                                loadedOptions.add(option);
+                            }
+                        }
+                    } else if (err != null) {
+                        FileLog.d("retrievePopup: getStarsTopupOptions gives error! " + err.code + ": " + err.text);
+                    }
+
+                    TLRPC.TL_starsTopupOption foundOption = null;
+                    for (int i = 0; i < loadedOptions.size(); ++i) {
+                        if (productId.equals(loadedOptions.get(i).store_product)) {
+                            foundOption = loadedOptions.get(i);
+                            break;
+                        }
+                    }
+
+                    if (foundOption != null) {
+                        TLRPC.TL_inputStorePaymentStars purpose = new TLRPC.TL_inputStorePaymentStars();
+                        purpose.amount = foundOption.amount;
+                        purpose.currency = foundOption.currency;
+                        purpose.stars = foundOption.stars;
+                        FileLog.d("retrievePurpose: found stars option of " + productId + " from stars loaded options!");
+                        whenPayload.run(new Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>(payload.first, purpose));
+                    } else {
+                        FileLog.d("retrievePurpose: failed to find option of " + productId + " from stars loaded options");
+                        whenPayload.run(payload);
+                    }
+                }));
+                return true;
+            } else {
+                TLRPC.TL_starsTopupOption foundOption = null;
+                for (int i = 0; i < options.size(); ++i) {
+                    if (productId.equals(options.get(i).store_product)) {
+                        foundOption = options.get(i);
+                        break;
+                    }
+                }
+
+                if (foundOption != null) {
+                    TLRPC.TL_inputStorePaymentStars purpose = new TLRPC.TL_inputStorePaymentStars();
+                    purpose.amount = foundOption.amount;
+                    purpose.currency = foundOption.currency;
+                    purpose.stars = foundOption.stars;
+                    FileLog.d("retrievePurpose: found stars option of " + productId + " from stars options!");
+                    whenPayload.run(new Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>(payload.first, purpose));
+                    return true;
+                } else {
+                    FileLog.d("retrievePurpose: failed to find option of " + productId + " from stars options");
+                    whenPayload.run(payload);
+                    return false;
                 }
             }
         }

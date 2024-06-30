@@ -138,7 +138,8 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
 //            canvas.save();
 //        }
 
-        circlePaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(messageView.getRadialProgress().getCircleColorKey()), progress));
+        final int circleColorKey = messageView.getRadialProgress().getCircleColorKey();
+        circlePaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(circleColorKey < 0 ? Theme.key_chat_messagePanelVoiceBackground : circleColorKey), progress));
 
         if (recordCircle != null) {
             recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);

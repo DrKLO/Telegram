@@ -8,17 +8,24 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.view.View;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.SecureDocument;
@@ -370,5 +377,62 @@ public class BackupImageView extends View {
             roundRadiusAnimator.setDuration(200);
             roundRadiusAnimator.start();
         }
+    }
+
+    public Text blurText;
+    private Path blurTextClipPath;
+    private ColorFilter blurTextBgColorFilter;
+
+    public void setBlurredText(CharSequence str) {
+        if (TextUtils.isEmpty(str)) {
+            blurText = null;
+            return;
+        }
+
+        blurText = new Text(str, 16.5f, AndroidUtilities.bold());
+        if (blurTextBgColorFilter == null) {
+            ColorMatrix colorMatrix = new ColorMatrix();
+            colorMatrix.setSaturation(1.2f);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, -.2f);
+            blurTextBgColorFilter = new ColorMatrixColorFilter(colorMatrix);
+        }
+    }
+
+    public void drawBlurredText(Canvas canvas, float alpha) {
+        if (blurText == null) return;
+
+        if (blurTextClipPath == null) {
+            blurTextClipPath = new Path();
+        } else blurTextClipPath.rewind();
+
+        final float W, H;
+        if (width != -1 && height != -1) {
+            W = width;
+            H = height;
+        } else {
+            W = getMeasuredWidth();
+            H = getMeasuredHeight();
+        }
+
+        final float w = blurText.getCurrentWidth() + dp(18);
+        final float h = dp(28);
+        final float l = (W - w) / 2f;
+        final float cy = H / 2f;
+
+        AndroidUtilities.rectTmp.set(l, cy - h / 2f, l + w, cy + h / 2f);
+        blurTextClipPath.addRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, Path.Direction.CW);
+
+        canvas.save();
+        canvas.clipPath(blurTextClipPath);
+        if (blurImageReceiver != null && blurAllowed) {
+            blurImageReceiver.setColorFilter(blurTextBgColorFilter);
+            float wasAlpha = blurImageReceiver.getAlpha();
+            blurImageReceiver.setAlpha(alpha);
+            blurImageReceiver.draw(canvas);
+            blurImageReceiver.setAlpha(wasAlpha);
+            blurImageReceiver.setColorFilter(null);
+        }
+        blurText.draw(canvas, l + dp(9), cy, 0xFFFFFFFF, alpha);
+        canvas.restore();
     }
 }

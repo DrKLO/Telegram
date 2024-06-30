@@ -80,7 +80,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
-        actionBarLayout = INavigationLayout.newLayout(this);
+        actionBarLayout = INavigationLayout.newLayout(this, false);
         actionBarLayout.setInBubbleMode(true);
         actionBarLayout.setRemoveActionBarExtraHeight(true);
 

@@ -64,6 +64,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
         super(viewType, selectable);
     }
 
+    public static UItem asCustom(int id, View view) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
+        i.id = id;
+        i.view = view;
+        return i;
+    }
     public static UItem asCustom(View view) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
         i.view = view;

@@ -188,7 +188,7 @@ public class CameraScanActivity extends BaseFragment {
         if (parentActivity == null) {
             return null;
         }
-        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(parentActivity)};
+        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(parentActivity, false)};
         BottomSheet bottomSheet = new BottomSheet(parentActivity, false) {
             CameraScanActivity fragment;
             {

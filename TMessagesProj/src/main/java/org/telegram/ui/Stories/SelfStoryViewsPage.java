@@ -784,7 +784,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     view = new FixedHeightEmptyCell(getContext(), 70);
                     break;
                 case USER_ITEM:
-                    view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_STORY, currentAccount, getContext(), resourcesProvider, false) {
+                    view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_STORY, currentAccount, getContext(), resourcesProvider, false, true) {
                         @Override
                         public void openStory(long dialogId, Runnable onDone) {
                             BaseFragment lastFragment = LaunchActivity.getLastFragment();

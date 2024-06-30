@@ -26,6 +26,7 @@ public class Text {
     private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private StaticLayout layout;
     private float width, left;
+    private float maxWidth = 999999;
 
     public Text(CharSequence text, float textSizeDp) {
         this(text, textSizeDp, null);
@@ -37,10 +38,29 @@ public class Text {
         setText(text);
     }
 
+    public Text setTextSizePx(float px) {
+        paint.setTextSize(px);
+        return this;
+    }
+
     public void setText(CharSequence text) {
-        layout = new StaticLayout(AndroidUtilities.replaceNewLines(text), paint, 99999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-        width = layout.getLineCount() > 0 ? layout.getLineWidth(0) : 0;
-        left = layout.getLineCount() > 0 ? layout.getLineLeft(0) : 0;
+        layout = new StaticLayout(AndroidUtilities.replaceNewLines(text), paint, (int) Math.max(maxWidth, 1), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+        width = 0;
+        left = 0;
+        for (int i = 0; i < layout.getLineCount(); ++i) {
+            width = Math.max(width, layout.getLineWidth(i));
+            left = Math.max(left, layout.getLineLeft(i));
+        }
+    }
+
+    public Text setMaxWidth(float maxWidth) {
+        this.maxWidth = maxWidth;
+        setText(layout.getText());
+        return this;
+    }
+
+    public int getLineCount() {
+        return layout.getLineCount();
     }
 
     private boolean hackClipBounds;
@@ -117,13 +137,25 @@ public class Text {
     private LinearGradient ellipsizeGradient;
     private Matrix ellipsizeMatrix;
     private Paint ellipsizePaint;
+    private int vertPad;
+
+    public Text setVerticalClipPadding(int pad) {
+        vertPad = pad;
+        return this;
+    }
+
+    public Text setShadow(float shadowAlpha) {
+        paint.setShadowLayer(dp(1), 0, dp(.66f), Theme.multAlpha(0xFF000000, shadowAlpha));
+        return this;
+    }
+
 
     public void draw(Canvas canvas) {
         if (layout == null) {
             return;
         }
         if (!doNotSave && ellipsizeWidth >= 0 && width > ellipsizeWidth) {
-            canvas.saveLayerAlpha(0, 0, ellipsizeWidth, layout.getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+            canvas.saveLayerAlpha(0, -vertPad, ellipsizeWidth - 1, layout.getHeight() + vertPad, 0xFF, Canvas.ALL_SAVE_FLAG);
         }
         if (hackClipBounds) {
             canvas.drawText(layout.getText().toString(), 0, -paint.getFontMetricsInt().ascent, paint);
@@ -158,6 +190,10 @@ public class Text {
 
     public float getCurrentWidth() {
         return width;
+    }
+
+    public float getHeight() {
+        return layout.getHeight();
     }
 
     @NonNull

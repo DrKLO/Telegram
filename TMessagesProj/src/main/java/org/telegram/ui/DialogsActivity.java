@@ -7232,7 +7232,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean onBackPressed() {
-        if (closeStoryViewer()) {
+        if (closeSheet()) {
             return false;
         } else if (rightSlidingDialogContainer.hasFragment()) {
             if (rightSlidingDialogContainer.getFragment().onBackPressed()) {

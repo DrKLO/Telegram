@@ -514,7 +514,7 @@ public class PollVotesAlert extends BottomSheet {
         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media;
         poll = mediaPoll.poll;
         Context context = parentFragment.getParentActivity();
-        peer = parentFragment.getMessagesController().getInputPeer((int) message.getDialogId());
+        peer = parentFragment.getMessagesController().getInputPeer(message.getDialogId());
 
         ArrayList<VotesList> loadedVoters = new ArrayList<>();
         int count = mediaPoll.results.results.size();

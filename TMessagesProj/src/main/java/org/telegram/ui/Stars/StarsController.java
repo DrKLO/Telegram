@@ -19,6 +19,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -94,7 +96,7 @@ public class StarsController {
                     MessagesController.getInstance(currentAccount).putChats(r.chats, false);
 
                     if (transactions[ALL_TRANSACTIONS].isEmpty()) {
-                        for (TLRPC.TL_starsTransaction t : r.history) {
+                        for (TLRPC.StarsTransaction t : r.history) {
                             transactions[ALL_TRANSACTIONS].add(t);
                             transactions[t.stars > 0 ? INCOMING_TRANSACTIONS : OUTGOING_TRANSACTIONS].add(t);
                         }
@@ -155,6 +157,10 @@ public class StarsController {
 
     private boolean optionsLoading, optionsLoaded;
     private ArrayList<TLRPC.TL_starsTopupOption> options;
+    public ArrayList<TLRPC.TL_starsTopupOption> getOptionsCached() {
+        return options;
+    }
+
     public ArrayList<TLRPC.TL_starsTopupOption> getOptions() {
         if (optionsLoading || optionsLoaded) {
             return options;
@@ -243,7 +249,7 @@ public class StarsController {
     public static final int INCOMING_TRANSACTIONS = 1;
     public static final int OUTGOING_TRANSACTIONS = 2;
 
-    public final ArrayList<TLRPC.TL_starsTransaction>[] transactions = new ArrayList[] { new ArrayList<>(), new ArrayList<>(), new ArrayList<>() };
+    public final ArrayList<TLRPC.StarsTransaction>[] transactions = new ArrayList[] { new ArrayList<>(), new ArrayList<>(), new ArrayList<>() };
     public final boolean[] transactionsExist = new boolean[3];
     private final String[] offset = new String[3];
     private final boolean[] loading = new boolean[3];
@@ -447,25 +453,27 @@ public class StarsController {
         }));
     }
 
-    public void pay(MessageObject messageObject, Runnable whenShown) {
+    public Runnable pay(MessageObject messageObject, Runnable whenShown) {
         final Context context = LaunchActivity.instance != null ? LaunchActivity.instance : ApplicationLoader.applicationContext;
         final Theme.ResourcesProvider resourcesProvider = getResourceProvider();
 
-        if (context == null) {
-            return;
+        if (messageObject == null || context == null) {
+            return null;
         }
 
-        if (!(MessageObject.getMedia(messageObject) instanceof TLRPC.TL_messageMediaInvoice)) {
-            return;
-        }
+//        if (!(MessageObject.getMedia(messageObject) instanceof TLRPC.TL_messageMediaInvoice)) {
+//            return;
+//        }
 
-        if (whenShown != null) {
-            whenShown.run();
-        }
+        long did = messageObject.getDialogId();
+        int msg_id = messageObject.getId();
+//        if (messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
+//            did = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+//        }
 
         TLRPC.TL_inputInvoiceMessage inputInvoice = new TLRPC.TL_inputInvoiceMessage();
-        inputInvoice.peer = MessagesController.getInstance(currentAccount).getInputPeer(messageObject.getDialogId());
-        inputInvoice.msg_id = messageObject.getId();
+        inputInvoice.peer = MessagesController.getInstance(currentAccount).getInputPeer(did);
+        inputInvoice.msg_id = msg_id;
 
         TLRPC.TL_payments_getPaymentForm req = new TLRPC.TL_payments_getPaymentForm();
         final JSONObject themeParams = BotWebViewSheet.makeThemeParams(resourcesProvider);
@@ -476,9 +484,9 @@ public class StarsController {
         }
         req.invoice = inputInvoice;
 
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
             if (res instanceof TLRPC.TL_payments_paymentFormStars) {
-                openPaymentForm(inputInvoice, (TLRPC.TL_payments_paymentFormStars) res, whenShown, null);
+                openPaymentForm(messageObject, inputInvoice, (TLRPC.TL_payments_paymentFormStars) res, whenShown, null);
             } else {
                 bulletinError(err, "NO_PAYMENT_FORM");
             }
@@ -486,11 +494,13 @@ public class StarsController {
                 whenShown.run();
             }
         }));
+
+        return () -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
     }
 
     private boolean paymentFormOpened;
 
-    public void openPaymentForm(TLRPC.InputInvoice inputInvoice, TLRPC.TL_payments_paymentFormStars form, Runnable whenShown, Utilities.Callback<String> whenAllDone) {
+    public void openPaymentForm(MessageObject messageObject, TLRPC.InputInvoice inputInvoice, TLRPC.TL_payments_paymentFormStars form, Runnable whenShown, Utilities.Callback<String> whenAllDone) {
         if (form == null || form.invoice == null || paymentFormOpened) {
             return;
         }
@@ -511,7 +521,7 @@ public class StarsController {
                     }
                     return;
                 }
-                openPaymentForm(inputInvoice, form, whenShown, whenAllDone);
+                openPaymentForm(messageObject, inputInvoice, form, whenShown, whenAllDone);
             });
             return;
         }
@@ -536,7 +546,7 @@ public class StarsController {
         }
 
         final boolean[] allDone = new boolean[] { false };
-        StarsIntroActivity.openConfirmPurchaseSheet(context, resourcesProvider, currentAccount, dialogId, product, stars, form.photo, whenDone -> {
+        StarsIntroActivity.openConfirmPurchaseSheet(context, resourcesProvider, currentAccount, messageObject, dialogId, product, stars, form.photo, whenDone -> {
             if (balance < stars) {
                 if (!MessagesController.getInstance(currentAccount).starsPurchaseAvailable()) {
                     paymentFormOpened = false;
@@ -553,7 +563,7 @@ public class StarsController {
                 final boolean[] purchased = new boolean[] { false };
                 StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, bot, () -> {
                     purchased[0] = true;
-                    payAfterConfirmed(inputInvoice, form, success -> {
+                    payAfterConfirmed(messageObject, inputInvoice, form, success -> {
                         allDone[0] = true;
                         if (whenAllDone != null) {
                             whenAllDone.run(success ? "paid" : "failed");
@@ -575,7 +585,7 @@ public class StarsController {
                 });
                 sheet.show();
             } else {
-                payAfterConfirmed(inputInvoice, form, success -> {
+                payAfterConfirmed(messageObject, inputInvoice, form, success -> {
                     if (whenDone != null) {
                         whenDone.run(true);
                     }
@@ -602,7 +612,7 @@ public class StarsController {
             .show();
     }
 
-    private void payAfterConfirmed(TLRPC.InputInvoice inputInvoice, TLRPC.TL_payments_paymentFormStars form, Utilities.Callback<Boolean> whenDone) {
+    private void payAfterConfirmed(MessageObject messageObject, TLRPC.InputInvoice inputInvoice, TLRPC.TL_payments_paymentFormStars form, Utilities.Callback<Boolean> whenDone) {
         if (form == null) {
             return;
         }
@@ -619,7 +629,16 @@ public class StarsController {
             _stars += price.amount;
         }
         final long stars = _stars;
-        final long dialogId = form.bot_id;
+        final long dialogId;
+        if (messageObject != null) {
+            if (messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
+                dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+            } else {
+                dialogId = messageObject.getDialogId();
+            }
+        } else {
+            dialogId = form.bot_id;
+        }
         final String bot;
         if (dialogId >= 0) {
             bot = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(dialogId));
@@ -644,10 +663,22 @@ public class StarsController {
                 TLRPC.TL_payments_paymentResult result = (TLRPC.TL_payments_paymentResult) res2;
                 MessagesController.getInstance(currentAccount).processUpdates(result.updates, false);
 
+                final boolean media = messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia;
                 Drawable starDrawable = context.getResources().getDrawable(R.drawable.star_small_inner).mutate();
-                b.createSimpleBulletin(starDrawable, getString(R.string.StarsPurchaseCompleted), AndroidUtilities.replaceTags(formatPluralString("StarsPurchaseCompletedInfo", (int) stars, product, bot))).show();
+                if (media) {
+                    b.createSimpleBulletin(starDrawable, getString(R.string.StarsMediaPurchaseCompleted), AndroidUtilities.replaceTags(formatPluralString("StarsMediaPurchaseCompletedInfo", (int) stars, bot))).show();
+                } else {
+                    b.createSimpleBulletin(starDrawable, getString(R.string.StarsPurchaseCompleted), AndroidUtilities.replaceTags(formatPluralString("StarsPurchaseCompletedInfo", (int) stars, product, bot))).show();
+                }
 
                 invalidateTransactions(true);
+
+                if (messageObject != null) {
+                    TLRPC.TL_messages_getExtendedMedia req = new TLRPC.TL_messages_getExtendedMedia();
+                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+                    req.id.add(messageObject.getId());
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                }
             } else if (err2 != null && "BALANCE_TOO_LOW".equals(err2.text)) {
                 if (!MessagesController.getInstance(currentAccount).starsPurchaseAvailable()) {
                     if (whenDone != null) {
@@ -659,7 +690,7 @@ public class StarsController {
                 final boolean[] purchased = new boolean[] { false };
                 StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, bot, () -> {
                     purchased[0] = true;
-                    payAfterConfirmed(inputInvoice, form, success -> {
+                    payAfterConfirmed(messageObject, inputInvoice, form, success -> {
                         if (whenDone != null) {
                             whenDone.run(success);
                         }
@@ -682,7 +713,7 @@ public class StarsController {
                 req.invoice = inputInvoice;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res3, err3) -> AndroidUtilities.runOnUIThread(() -> {
                     if (res3 instanceof TLRPC.TL_payments_paymentFormStars) {
-                        payAfterConfirmed(inputInvoice, (TLRPC.TL_payments_paymentFormStars) res3, whenDone);
+                        payAfterConfirmed(messageObject, inputInvoice, (TLRPC.TL_payments_paymentFormStars) res3, whenDone);
                     } else {
                         if (whenDone != null) {
                             whenDone.run(false);
@@ -695,6 +726,96 @@ public class StarsController {
                     whenDone.run(false);
                 }
                 b.createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.UnknownErrorCode, err2 != null ? err2.text : "FAILED_SEND_STARS")).show();
+
+                if (messageObject != null) {
+                    TLRPC.TL_messages_getExtendedMedia req = new TLRPC.TL_messages_getExtendedMedia();
+                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+                    req.id.add(messageObject.getId());
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                }
+            }
+        }));
+    }
+
+    public void updateMediaPrice(MessageObject msg, long price, Runnable done) {
+        updateMediaPrice(msg, price, done, false);
+    }
+
+    private void updateMediaPrice(MessageObject msg, long price, Runnable done, boolean afterFileRef) {
+        if (msg == null) {
+            done.run();
+            return;
+        }
+
+        final long dialog_id = msg.getDialogId();
+        final int msg_id = msg.getId();
+
+        TLRPC.TL_messageMediaPaidMedia paidMedia = (TLRPC.TL_messageMediaPaidMedia) msg.messageOwner.media;
+
+        TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialog_id);
+        req.flags |= 32768;
+        req.schedule_date = msg.messageOwner.date;
+        req.id = msg_id;
+        req.flags |= 16384;
+
+        TLRPC.TL_inputMediaPaidMedia media = new TLRPC.TL_inputMediaPaidMedia();
+        media.stars_amount = price;
+        for (int i = 0; i < paidMedia.extended_media.size(); ++i) {
+            TLRPC.MessageExtendedMedia emedia = paidMedia.extended_media.get(i);
+            if (!(emedia instanceof TLRPC.TL_messageExtendedMedia)) {
+                done.run();
+                return;
+            }
+            TLRPC.MessageMedia imedia = ((TLRPC.TL_messageExtendedMedia) emedia).media;
+            if (imedia instanceof TLRPC.TL_messageMediaPhoto) {
+                TLRPC.TL_messageMediaPhoto mediaPhoto = (TLRPC.TL_messageMediaPhoto) imedia;
+                TLRPC.TL_inputMediaPhoto inputMedia = new TLRPC.TL_inputMediaPhoto();
+                TLRPC.TL_inputPhoto photo = new TLRPC.TL_inputPhoto();
+                photo.id = mediaPhoto.photo.id;
+                photo.access_hash = mediaPhoto.photo.access_hash;
+                photo.file_reference = mediaPhoto.photo.file_reference;
+                inputMedia.id = photo;
+                media.extended_media.add(inputMedia);
+            } else if (imedia instanceof TLRPC.TL_messageMediaDocument) {
+                TLRPC.TL_messageMediaDocument mediaDocument = (TLRPC.TL_messageMediaDocument) imedia;
+                TLRPC.TL_inputMediaDocument inputMedia = new TLRPC.TL_inputMediaDocument();
+                TLRPC.TL_inputDocument doc = new TLRPC.TL_inputDocument();
+                doc.id = mediaDocument.document.id;
+                doc.access_hash = mediaDocument.document.access_hash;
+                doc.file_reference = mediaDocument.document.file_reference;
+                inputMedia.id = doc;
+                media.extended_media.add(inputMedia);
+            }
+        }
+        req.media = media;
+
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            if (res instanceof TLRPC.Updates) {
+                MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res, false);
+                done.run();
+            } else if (err != null && FileRefController.isFileRefError(err.text) && !afterFileRef) {
+                TLRPC.TL_messages_getScheduledMessages req2 = new TLRPC.TL_messages_getScheduledMessages();
+                req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialog_id);
+                req2.id.add(msg_id);
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (res2 instanceof TLRPC.TL_messages_messages) {
+                        TLRPC.TL_messages_messages m = (TLRPC.TL_messages_messages) res2;
+                        MessagesController.getInstance(currentAccount).putUsers(m.users, false);
+                        MessagesController.getInstance(currentAccount).putChats(m.chats, false);
+
+                        if (m.messages.size() == 1 && m.messages.get(0) instanceof TLRPC.TL_message && m.messages.get(0).media instanceof TLRPC.TL_messageMediaPaidMedia) {
+                            msg.messageOwner = m.messages.get(0);
+                            updateMediaPrice(msg, price, done, true);
+                        } else {
+                            done.run();
+                        }
+                    } else {
+                        done.run();
+                    }
+                }));
+            } else {
+                done.run();
             }
         }));
     }

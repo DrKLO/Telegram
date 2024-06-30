@@ -382,7 +382,7 @@ public class DownloadButton extends ImageView {
         private float doneLayoutWidth, doneLayoutLeft;
 
         public PreparingVideoToast(Context context) {
-            this(context, LocaleController.getString(R.string.PreparingSticker));
+            this(context, LocaleController.getString(R.string.PreparingVideo));
         }
 
         public PreparingVideoToast(Context context, String text) {

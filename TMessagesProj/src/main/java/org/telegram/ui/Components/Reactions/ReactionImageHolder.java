@@ -90,7 +90,7 @@ public class ReactionImageHolder {
                 FileLoader.getInstance(currentAccount).loadFile(defaultReaction.select_animation, reaction, FileLoader.PRIORITY_LOW, 0);
             }
         } else {
-            new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, currentAccount, reaction.documentId);
+            new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, currentAccount, reaction.documentId).preload();
         }
     }
 

@@ -33,6 +33,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -983,6 +984,7 @@ public class BlurringShader {
 
                 float alpha = 1f;
                 private final Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                private final Rect rect = new Rect();
 
                 @Nullable
                 private Paint getPaint() {
@@ -1012,7 +1014,6 @@ public class BlurringShader {
                 @Override
                 public void draw(@NonNull Canvas canvas) {
                     Paint paint = getPaint();
-
                     Rect bounds = getBounds();
                     if (paint != null) {
                         if (base != null) {
@@ -1021,12 +1022,12 @@ public class BlurringShader {
                             base.draw(canvas);
                             canvas.drawRect(bounds, paint);
                             canvas.restore();
-                            getPadding(AndroidUtilities.rectTmp2);
+                            getPadding(rect);
                             AndroidUtilities.rectTmp.set(
-                                bounds.left + AndroidUtilities.rectTmp2.left,
-                                bounds.top + AndroidUtilities.rectTmp2.top,
-                                bounds.right - AndroidUtilities.rectTmp2.right,
-                                bounds.bottom - AndroidUtilities.rectTmp2.bottom
+                                bounds.left + rect.left,
+                                bounds.top + rect.top,
+                                bounds.right - rect.right,
+                                bounds.bottom - rect.bottom
                             );
                             dimPaint.setColor(0x66000000);
                             canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, dimPaint);

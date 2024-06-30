@@ -6,6 +6,7 @@ import android.opengl.GLUtils;
 import android.os.Build;
 import android.util.Log;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.Size;
 
 import java.nio.ByteBuffer;
@@ -66,16 +67,21 @@ public class Texture {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 
-//        int width = bitmap.getWidth();
-//        int height = bitmap.getHeight();
-//        int[] pixels = new int[width * height];
-//        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-//        for (int i = 0; i < pixels.length; i += 1) {
-//            int argb = pixels[i];
-//            pixels[i] = argb & 0xff00ff00 | ((argb & 0xff) << 16) | ((argb >> 16) & 0xff);
-//        }
-//        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, IntBuffer.wrap(pixels));
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+        try {
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, bitmap, GLES20.GL_UNSIGNED_BYTE, 0);
+        } catch (Exception e) {
+            FileLog.e(e);
+
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            int[] pixels = new int[width * height];
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+            for (int i = 0; i < pixels.length; i += 1) {
+                int argb = pixels[i];
+                pixels[i] = argb & 0xff00ff00 | ((argb & 0xff) << 16) | ((argb >> 16) & 0xff);
+            }
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, IntBuffer.wrap(pixels));
+        }
 
         if (!bitmap.isRecycled() && Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             int px = bitmap.getPixel(0, 0);

@@ -93,7 +93,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
-        actionBarLayout = INavigationLayout.newLayout(this);
+        actionBarLayout = INavigationLayout.newLayout(this, false);
 
         drawerLayoutContainer = new DrawerLayoutContainer(this);
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
@@ -153,7 +153,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
 
             });
 
-            layersActionBarLayout = INavigationLayout.newLayout(this);
+            layersActionBarLayout = INavigationLayout.newLayout(this, false);
             layersActionBarLayout.setRemoveActionBarExtraHeight(true);
             layersActionBarLayout.setBackgroundView(shadowTablet);
             layersActionBarLayout.setUseAlphaAnimations(true);

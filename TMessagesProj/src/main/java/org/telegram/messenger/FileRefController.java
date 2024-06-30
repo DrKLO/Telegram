@@ -41,7 +41,7 @@ public class FileRefController extends BaseController {
     private HashMap<String, ArrayList<Requester>> locationRequester = new HashMap<>();
     private HashMap<String, ArrayList<Requester>> parentRequester = new HashMap<>();
     private HashMap<String, CachedResult> responseCache = new HashMap<>();
-    private HashMap<TLRPC.TL_messages_sendMultiMedia, Object[]> multiMediaCache = new HashMap<>();
+    private HashMap<TLObject, Object[]> multiMediaCache = new HashMap<>();
 
     private long lastCleanupTime = SystemClock.elapsedRealtime();
 
@@ -91,6 +91,9 @@ public class FileRefController extends BaseController {
         } else if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             long channelId = messageObject.getChannelId();
+            if (messageObject.type == MessageObject.TYPE_PAID_MEDIA && messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
+                channelId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+            }
             return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled + "_" + messageObject.getQuickReplyId();
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
@@ -155,6 +158,16 @@ public class FileRefController extends BaseController {
                 sendErrorToObject(args, 0);
                 return;
             }
+        } else if (args[0] instanceof TLRPC.TL_inputMediaDocument) {
+            TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) args[0];
+            locationKey = "file_" + mediaDocument.id.id;
+            location = new TLRPC.TL_inputDocumentFileLocation();
+            location.id = mediaDocument.id.id;
+        } else if (args[0] instanceof TLRPC.TL_inputMediaPhoto) {
+            TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) args[0];
+            locationKey = "photo_" + mediaPhoto.id.id;
+            location = new TLRPC.TL_inputPhotoFileLocation();
+            location.id = mediaPhoto.id.id;
         } else if (args[0] instanceof TLRPC.TL_messages_sendMultiMedia) {
             TLRPC.TL_messages_sendMultiMedia req = (TLRPC.TL_messages_sendMultiMedia) args[0];
             ArrayList<Object> parentObjects = (ArrayList<Object>) parentObject;
@@ -180,6 +193,40 @@ public class FileRefController extends BaseController {
                 locationKey = "photo_" + mediaPhoto.id.id;
                 location = new TLRPC.TL_inputPhotoFileLocation();
                 location.id = mediaPhoto.id.id;
+            } else if (req.media instanceof TLRPC.TL_inputMediaPaidMedia) {
+                TLRPC.TL_inputMediaPaidMedia paidMedia = (TLRPC.TL_inputMediaPaidMedia) req.media;
+                if (parentObject instanceof ArrayList) {
+                    ArrayList<Object> parentObjects = (ArrayList<Object>) parentObject;
+                    multiMediaCache.put(req, args);
+                    for (int a = 0, size = paidMedia.extended_media.size(); a < size; a++) {
+                        TLRPC.InputMedia media = paidMedia.extended_media.get(a);
+                        parentObject = parentObjects.get(a);
+                        if (parentObject == null) {
+                            continue;
+                        }
+                        requestReference(parentObject, media, req);
+                    }
+                    return;
+                } else if (paidMedia.extended_media.size() == 1) {
+                    TLRPC.InputMedia inputMedia = paidMedia.extended_media.get(0);
+                    if (inputMedia instanceof TLRPC.TL_inputMediaDocument) {
+                        TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) inputMedia;
+                        locationKey = "file_" + mediaDocument.id.id;
+                        location = new TLRPC.TL_inputDocumentFileLocation();
+                        location.id = mediaDocument.id.id;
+                    } else if (inputMedia instanceof TLRPC.TL_inputMediaPhoto) {
+                        TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) inputMedia;
+                        locationKey = "photo_" + mediaPhoto.id.id;
+                        location = new TLRPC.TL_inputPhotoFileLocation();
+                        location.id = mediaPhoto.id.id;
+                    } else {
+                        sendErrorToObject(args, 0);
+                        return;
+                    }
+                } else {
+                    sendErrorToObject(args, 0);
+                    return;
+                }
             } else {
                 sendErrorToObject(args, 0);
                 return;
@@ -600,6 +647,49 @@ public class FileRefController extends BaseController {
                 multiMediaCache.remove(multiMedia);
                 AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(multiMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
             }
+        } else if (requester.args.length >= 2 && requester.args[1] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) requester.args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (requester.args[0] instanceof TLRPC.TL_inputMediaPhoto || requester.args[0] instanceof TLRPC.TL_inputMediaDocument)) {
+            TLRPC.TL_messages_sendMedia sendMedia = (TLRPC.TL_messages_sendMedia) requester.args[1];
+            Object[] objects = multiMediaCache.get(sendMedia);
+            if (objects == null) {
+                return true;
+            }
+
+            TLRPC.InputMedia inputMedia = null;
+            if (requester.args[0] instanceof TLRPC.TL_inputMediaDocument) {
+                TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) requester.args[0];
+                inputMedia = mediaDocument;
+                if (fromCache && isSameReference(mediaDocument.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaDocument.id.file_reference = file_reference;
+            } else if (requester.args[0] instanceof TLRPC.TL_inputMediaPhoto) {
+                TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) requester.args[0];
+                inputMedia = mediaPhoto;
+                if (fromCache && isSameReference(mediaPhoto.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaPhoto.id.file_reference = file_reference;
+            }
+
+            TLRPC.TL_inputMediaPaidMedia paidMedia = (TLRPC.TL_inputMediaPaidMedia) sendMedia.media;
+
+            int index = paidMedia.extended_media.indexOf(inputMedia);
+            if (index < 0) {
+                return true;
+            }
+            ArrayList<Object> parentObjects = (ArrayList<Object>) objects[3];
+            parentObjects.set(index, null);
+
+            boolean done = true;
+            for (int a = 0, size; a < parentObjects.size(); a++) {
+                if (parentObjects.get(a) != null) {
+                    done = false;
+                }
+            }
+            if (done) {
+                multiMediaCache.remove(sendMedia);
+                AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(sendMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
+            }
         } else if (requester.args[0] instanceof TLRPC.TL_messages_sendMedia) {
             TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) requester.args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
@@ -729,7 +819,14 @@ public class FileRefController extends BaseController {
                 multiMediaCache.remove(req);
                 AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
             }
-        } else if (args[0] instanceof TLRPC.TL_messages_sendMedia || args[0] instanceof TLRPC.TL_messages_editMessage) {
+        } else if ((args[0] instanceof TLRPC.TL_inputMediaDocument || args[0] instanceof TLRPC.TL_inputMediaPhoto) && args[1] instanceof TLRPC.TL_messages_sendMedia) {
+            TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) args[1];
+            Object[] objects = multiMediaCache.get(req);
+            if (objects != null) {
+                multiMediaCache.remove(req);
+                AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
+            }
+        } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) || args[0] instanceof TLRPC.TL_messages_editMessage) {
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null, null, (Boolean) args[6]));
         } else if (args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) args[0];
@@ -817,7 +914,32 @@ public class FileRefController extends BaseController {
                 if (!res.messages.isEmpty()) {
                     for (int i = 0, size3 = res.messages.size(); i < size3; i++) {
                         TLRPC.Message message = res.messages.get(i);
-                        if (message.media != null) {
+                        if (message.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+                            TLRPC.TL_messageMediaPaidMedia paidMedia = (TLRPC.TL_messageMediaPaidMedia) message.media;
+                            for (int j = 0; j < paidMedia.extended_media.size(); ++j) {
+                                TLRPC.MessageExtendedMedia extendedMedia = paidMedia.extended_media.get(j);
+                                if (extendedMedia instanceof TLRPC.TL_messageExtendedMedia) {
+                                    TLRPC.MessageMedia media = ((TLRPC.TL_messageExtendedMedia) extendedMedia).media;
+                                    if (media != null) {
+                                        if (media.document != null) {
+                                            result = getFileReference(media.document, requester.location, needReplacement, locationReplacement);
+                                        } else if (media.game != null) {
+                                            result = getFileReference(media.game.document, requester.location, needReplacement, locationReplacement);
+                                            if (result == null) {
+                                                result = getFileReference(media.game.photo, requester.location, needReplacement, locationReplacement);
+                                            }
+                                        } else if (media.photo != null) {
+                                            result = getFileReference(media.photo, requester.location, needReplacement, locationReplacement);
+                                        } else if (media.webpage != null) {
+                                            result = getFileReference(media.webpage, requester.location, needReplacement, locationReplacement);
+                                        }
+                                    }
+                                }
+                                if (result != null) {
+                                    break;
+                                }
+                            }
+                        } else if (message.media != null) {
                             if (message.media.document != null) {
                                 result = getFileReference(message.media.document, requester.location, needReplacement, locationReplacement);
                             } else if (message.media.game != null) {
@@ -1398,6 +1520,21 @@ public class FileRefController extends BaseController {
     }
 
     public static boolean isFileRefError(String error) {
-        return "FILEREF_EXPIRED".equals(error) || "FILE_REFERENCE_EXPIRED".equals(error) || "FILE_REFERENCE_EMPTY".equals(error) || error != null && error.startsWith("FILE_REFERENCE_");
+        return (
+            "FILEREF_EXPIRED".equals(error) ||
+            "FILE_REFERENCE_EXPIRED".equals(error) ||
+            "FILE_REFERENCE_EMPTY".equals(error) ||
+            error != null && error.startsWith("FILE_REFERENCE_")
+        );
+    }
+
+    public static int getFileRefErrorIndex(String error) {
+        if (error == null) return -1;
+        if (!error.startsWith("FILE_REFERENCE_") || !error.endsWith("_EXPIRED")) return -1;
+        try {
+            return Integer.parseInt(error.substring("FILE_REFERENCE_".length(), error.length() - "_EXPIRED".length()));
+        } catch (Exception e) {
+            return -1;
+        }
     }
 }

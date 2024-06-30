@@ -638,6 +638,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         try {
             if (receiverRegistered) {
                 ApplicationLoader.applicationContext.unregisterReceiver(receiver);
+                receiverRegistered = false;
             }
         } catch (Exception e) {
             FileLog.e(e);

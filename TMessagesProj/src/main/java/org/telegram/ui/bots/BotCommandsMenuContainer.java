@@ -1,5 +1,7 @@
 package org.telegram.ui.bots;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
@@ -33,6 +35,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
     public RecyclerListView listView;
     Paint backgroundPaint = new Paint();
     Paint topBackground = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private float containerY;
 
     boolean dismissed = true;
 
@@ -60,14 +63,25 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
                     y = 0;
                 }
                 scrollYOffset = y;
-                y -= AndroidUtilities.dp(8);
+                y -= dp(8);
                 if (y > 0) {
-                    shadowDrawable.setBounds(-AndroidUtilities.dp(8), (int) y - AndroidUtilities.dp(24), getMeasuredWidth() + AndroidUtilities.dp(8), (int) y);
+                    shadowDrawable.setBounds(
+                        -dp(8),
+                        (int) y - dp(24),
+                        getMeasuredWidth() + dp(8),
+                        (int) y
+                    );
                     shadowDrawable.draw(canvas);
                 }
-                canvas.drawRect(0, y, getMeasuredWidth(), getMeasuredHeight() + AndroidUtilities.dp(16), backgroundPaint);
-                AndroidUtilities.rectTmp.set(getMeasuredWidth() / 2f - AndroidUtilities.dp(12), y - AndroidUtilities.dp(4),getMeasuredWidth() / 2f + AndroidUtilities.dp(12), y);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), topBackground);
+                containerY = y - dp(16);
+                canvas.drawRect(0, y, getMeasuredWidth(), getMeasuredHeight() + dp(16), backgroundPaint);
+                AndroidUtilities.rectTmp.set(
+                    getMeasuredWidth() / 2f - dp(12),
+                    y - dp(4),
+                    getMeasuredWidth() / 2f + dp(12),
+                    y
+                );
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(4), dp(4), topBackground);
                 super.dispatchDraw(canvas);
             }
         };
@@ -76,6 +90,10 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
         addView(listView);
         updateColors();
         setClipChildren(false);
+    }
+
+    public float clipBottom() {
+        return Math.max(0, getMeasuredHeight() - (containerY + listView.getTranslationY()));
     }
 
     @Override
@@ -105,7 +123,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
         if (dismissed) {
             return;
         }
-        if (listView.getTranslationY() > AndroidUtilities.dp(16)) {
+        if (listView.getTranslationY() > dp(16)) {
             dismiss();
         } else {
             playEnterAnim(false);
@@ -189,7 +207,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (entering && !dismissed) {
-            listView.setTranslationY(listView.getMeasuredHeight() - listView.getPaddingTop() + AndroidUtilities.dp(16));
+            listView.setTranslationY(listView.getMeasuredHeight() - listView.getPaddingTop() + dp(16));
             playEnterAnim(true);
             entering = false;
         }
@@ -214,7 +232,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
         if (!dismissed) {
             dismissed = true;
             cancelCurrentAnimation();
-            currentAnimation = ObjectAnimator.ofFloat(listView, TRANSLATION_Y, listView.getTranslationY(), getMeasuredHeight() - scrollYOffset + AndroidUtilities.dp(40));
+            currentAnimation = ObjectAnimator.ofFloat(listView, TRANSLATION_Y, listView.getTranslationY(), getMeasuredHeight() - scrollYOffset + dp(40));
             currentAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -235,7 +253,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN && ev.getY() < scrollYOffset - AndroidUtilities.dp(24)) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN && ev.getY() < scrollYOffset - dp(24)) {
             return false;
         }
         return super.dispatchTouchEvent(ev);

@@ -35,7 +35,7 @@ public class OverlayActionBarLayoutDialog extends Dialog implements INavigationL
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
 
-        actionBarLayout = INavigationLayout.newLayout(context);
+        actionBarLayout = INavigationLayout.newLayout(context, false);
         actionBarLayout.setFragmentStack(new ArrayList<>());
         actionBarLayout.presentFragment(new INavigationLayout.NavigationParams(new EmptyFragment()).setNoAnimation(true));
         actionBarLayout.setDelegate(this);

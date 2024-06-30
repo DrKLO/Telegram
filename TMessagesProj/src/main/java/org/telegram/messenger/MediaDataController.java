@@ -7145,8 +7145,8 @@ public class MediaDataController extends BaseController {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         if (!TextUtils.equals(a, b)) return false;
-        CharSequence[] A = new CharSequence[] { a };
-        CharSequence[] B = new CharSequence[] { b };
+        CharSequence[] A = new CharSequence[] { new SpannableStringBuilder(a) };
+        CharSequence[] B = new CharSequence[] { new SpannableStringBuilder(b) };
         ArrayList<TLRPC.MessageEntity> ae = getInstance(UserConfig.selectedAccount).getEntities(A, true);
         ArrayList<TLRPC.MessageEntity> be = getInstance(UserConfig.selectedAccount).getEntities(B, true);
         return entitiesEqual(ae, be);
@@ -7185,8 +7185,9 @@ public class MediaDataController extends BaseController {
             if (allowEntity) {
                 // check if it is inside a code block: do not convert __ ** || to styles inside code
                 for (int i = 0; i < entities.size(); ++i) {
-                    if (entities.get(i) instanceof TLRPC.TL_messageEntityPre) {
-                        if (AndroidUtilities.intersect1d(m.start() - offset, m.end() - offset, entities.get(i).offset, entities.get(i).offset + entities.get(i).length)) {
+                    final TLRPC.MessageEntity entity = entities.get(i);
+                    if (entity instanceof TLRPC.TL_messageEntityPre || entity instanceof TLRPC.TL_messageEntityCode) {
+                        if (AndroidUtilities.intersect1d(m.start() - offset, m.end() - offset, entity.offset, entity.offset + entity.length)) {
                             allowEntity = false;
                             break;
                         }
@@ -7291,11 +7292,11 @@ public class MediaDataController extends BaseController {
         return threads.get(threadId);
     }
 
-    public void saveDraft(long dialogId, int threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, boolean noWebpage) {
-        saveDraft(dialogId, threadId, message, entities, replyToMessage, null, noWebpage, false);
+    public void saveDraft(long dialogId, int threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, boolean noWebpage, long effectId) {
+        saveDraft(dialogId, threadId, message, entities, replyToMessage, null, effectId, noWebpage, false);
     }
 
-    public void saveDraft(long dialogId, long threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, ChatActivity.ReplyQuote quote, boolean noWebpage, boolean clean) {
+    public void saveDraft(long dialogId, long threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, ChatActivity.ReplyQuote quote, long effectId, boolean noWebpage, boolean clean) {
         TLRPC.DraftMessage draftMessage;
         if (getMessagesController().isForum(dialogId) && threadId == 0) {
             replyToMessage = null;
@@ -7308,6 +7309,10 @@ public class MediaDataController extends BaseController {
         draftMessage.date = (int) (System.currentTimeMillis() / 1000);
         draftMessage.message = message == null ? "" : message.toString();
         draftMessage.no_webpage = noWebpage;
+        if (effectId != 0) {
+            draftMessage.flags |= 128;
+            draftMessage.effect = effectId;
+        }
         if (replyToMessage != null) {
             draftMessage.reply_to = new TLRPC.TL_inputReplyToMessage();
             draftMessage.flags |= 16;
@@ -7350,12 +7355,14 @@ public class MediaDataController extends BaseController {
                 sameDraft = (
                     currentDraft.message.equals(draftMessage.message) &&
                     replyToEquals(currentDraft.reply_to, draftMessage.reply_to) &&
-                    currentDraft.no_webpage == draftMessage.no_webpage
+                    currentDraft.no_webpage == draftMessage.no_webpage &&
+                    currentDraft.effect == draftMessage.effect
                 );
             } else {
                 sameDraft = (
                     TextUtils.isEmpty(draftMessage.message) &&
-                    (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0)
+                    (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0) &&
+                    draftMessage.effect == 0
                 );
             }
             if (sameDraft) {
@@ -7381,6 +7388,10 @@ public class MediaDataController extends BaseController {
                 if ((draftMessage.flags & 8) != 0) {
                     req.entities = draftMessage.entities;
                     req.flags |= 8;
+                }
+                if ((draftMessage.flags & 128) != 0) {
+                    req.effect = draftMessage.effect;
+                    req.flags |= 128;
                 }
                 getConnectionsManager().sendRequest(req, (response, error) -> {
 
@@ -7696,7 +7707,7 @@ public class MediaDataController extends BaseController {
                 draftMessage.reply_to.reply_to_msg_id = 0;
             }
             draftMessage.flags &= ~1;
-            saveDraft(dialogId, threadId, draftMessage.message, draftMessage.entities, null, null, draftMessage.no_webpage, true);
+            saveDraft(dialogId, threadId, draftMessage.message, draftMessage.entities, null, null, 0, draftMessage.no_webpage, true);
         }
     }
 

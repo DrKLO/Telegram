@@ -42,7 +42,7 @@ public class ChatMessagesMetadataController {
                     messageObject.reactionsLastCheckTime = currentTime;
                     reactionsToCheck.add(messageObject);
                 }
-                if (chatActivity.getThreadMessage() != messageObject && messageObject.getId() > 0 && messageObject.hasExtendedMediaPreview() && (currentTime - messageObject.extendedMediaLastCheckTime) > 30000L) {
+                if (chatActivity.getThreadMessage() != messageObject && messageObject.getId() > 0 && (messageObject.hasExtendedMediaPreview() || messageObject.hasPaidMediaPreview()) && (currentTime - messageObject.extendedMediaLastCheckTime) > 30000L) {
                     messageObject.extendedMediaLastCheckTime = currentTime;
                     extendedMediaToCheck.add(messageObject);
                 }

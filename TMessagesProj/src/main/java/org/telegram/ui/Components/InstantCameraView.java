@@ -155,7 +155,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     private volatile boolean cameraTextureAvailable;
     private final int[] position = new int[2];
-    private final int[] cameraTexture = new int[2];
+    private final int[] cameraTexture = new int[] { Integer.MIN_VALUE, Integer.MIN_VALUE };
     private final int[] oldCameraTexture = new int[1];
     private float cameraTextureAlpha = 1.0f;
 
@@ -1653,9 +1653,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
                     egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
                 }
-                if (cameraTexture != null && cameraTexture[0] != 0) {
+                if (cameraTexture != null && cameraTexture[0] != Integer.MIN_VALUE) {
                     GLES20.glDeleteTextures(1, cameraTexture, 0);
-                    cameraTexture[0] = 0;
+                    cameraTexture[0] = Integer.MIN_VALUE;
+                }
+                if (cameraTexture != null && cameraTexture[1] != Integer.MIN_VALUE) {
+                    GLES20.glDeleteTextures(1, cameraTexture, 1);
+                    cameraTexture[1] = Integer.MIN_VALUE;
                 }
             }
             if (eglSurface != null) {
@@ -2563,10 +2567,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 GLES20.glUniform2f(texelSizeHandle, (float) 1f / previewSize[surfaceIndex].getWidth() / 2f, (float) 1f / previewSize[surfaceIndex].getHeight() / 2f);
             }
 
-            GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, mSTMatrix, 0);
-            GLES20.glUniform1f(alphaHandle, cameraTextureAlpha);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTexture[surfaceIndex]);
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            final int tex = cameraTexture[surfaceIndex];
+            if (tex != Integer.MIN_VALUE) {
+                GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, mSTMatrix, 0);
+                GLES20.glUniform1f(alphaHandle, cameraTextureAlpha);
+                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, tex);
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            }
 
             GLES20.glDisableVertexAttribArray(positionHandle);
             GLES20.glDisableVertexAttribArray(textureHandle);

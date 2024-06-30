@@ -254,9 +254,9 @@ public class ChannelBoostLayout extends FrameLayout {
                 overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString("BoostsLevel2", R.string.BoostsLevel2));
                 if (boostsStatus.premium_audience != null && boostsStatus.premium_audience.total != 0) {
                     float percent = (((float) boostsStatus.premium_audience.part / (float) boostsStatus.premium_audience.total) * 100f);
-                    overviewCell.setData(1, "~" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", percent) + "%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
+                    overviewCell.setData(1, "≈" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", percent) + "%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 } else {
-                    overviewCell.setData(1, "~0", "0%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
+                    overviewCell.setData(1, "≈0", "0%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 }
                 overviewCell.setData(2, String.valueOf(boostsStatus.boosts), null, LocaleController.getString("BoostsExisting", R.string.BoostsExisting));
                 overviewCell.setData(3, String.valueOf(Math.max(0, boostsStatus.next_level_boosts - boostsStatus.boosts)), null, LocaleController.getString("BoostsToLevel", R.string.BoostsToLevel));

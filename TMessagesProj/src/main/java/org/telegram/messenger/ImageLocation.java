@@ -352,7 +352,7 @@ public class ImageLocation {
     }
 
     public static String getStrippedKey(Object parentObject, Object fullObject, Object strippedObject) {
-        if (parentObject instanceof TLRPC.WebPage) {
+        if (parentObject instanceof TLRPC.WebPage || parentObject instanceof MessageObject && ((MessageObject) parentObject).type == MessageObject.TYPE_PAID_MEDIA) {
             if (fullObject instanceof ImageLocation) {
                 ImageLocation imageLocation = (ImageLocation) fullObject;
                 if (imageLocation.document != null) {
@@ -391,7 +391,7 @@ public class ImageLocation {
             return secureDocument.secureFile.dc_id + "_" + secureDocument.secureFile.id;
         } else if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
             if (photoSize.bytes.length > 0) {
-                return getStrippedKey(parentObject, fullObject, photoSize);
+                return getStrippedKey(parentObject, fullObject == null ? this : fullObject, photoSize);
             }
         } else if (location != null) {
             return location.volume_id + "_" + location.local_id;

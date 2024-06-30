@@ -35,6 +35,7 @@
     <item name="menu_delete_bot" type="id"/>
     <item name="menu_tos_bot" type="id"/>
     <item name="menu_add_to_home_screen_bot" type="id"/>
+    <item name="menu_collapse_bot" type="id"/>
 
     <!-- there are required for focusing order customization on the passcode screen -->
     <item name="passcode_btn_1" type="id"/>
