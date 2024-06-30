@@ -1,10 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: 'com.huawei.agconnect'
-
-repositories {
-    mavenCentral()
-    google()
-    maven { url 'https://developer.huawei.com/repo/' }
+plugins {
+    id 'com.android.application'
+    //id 'com.huawei.agconnect'
+id 'com.google.gms.google-services'
 }
 
 configurations {
@@ -30,6 +27,7 @@ dependencies {
 }
 
 android {
+    namespace 'org.telegram.messenger.huawei'
     compileSdkVersion 33
     buildToolsVersion '33.0.0'
 
@@ -149,7 +147,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
             }
         }
     }
@@ -162,5 +160,3 @@ android {
         checkReleaseBuilds false
     }
 }
-
-apply plugin: 'com.google.gms.google-services'
