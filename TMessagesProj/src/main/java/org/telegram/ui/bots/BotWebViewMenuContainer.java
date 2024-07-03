@@ -187,6 +187,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         tab.main = mainButtonSettings;
         tab.confirmDismiss = needCloseConfirmation;
         tab.expanded = swipeContainer != null && ((1f - Math.min(swipeContainer.getTopActionBarOffsetY(), swipeContainer.getTranslationY() - swipeContainer.getTopActionBarOffsetY()) / swipeContainer.getTopActionBarOffsetY()) > .5f);
+        tab.expandedOffset = swipeContainer != null ? swipeContainer.getOffsetY() : Float.MAX_VALUE;
         tab.needsContext = true;
 
         BotWebViewContainer.MyWebView webView = webViewContainer == null ? null : webViewContainer.getWebView();

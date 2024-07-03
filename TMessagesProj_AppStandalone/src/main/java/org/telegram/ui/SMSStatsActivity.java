@@ -1006,7 +1006,7 @@ public class SMSStatsActivity extends GradientHeaderActivity implements Notifica
 
             public void setEntry(SMSJobController.JobEntry entry, boolean last) {
                 if (entry == null) return;
-                dateTextView.setText(LocaleController.getInstance().formatterGiveawayCard.format(new Date(entry.date * 1000L)) + ", " + LocaleController.getInstance().formatterDay.format(new Date(entry.date * 1000L)));
+                dateTextView.setText(LocaleController.getInstance().getFormatterGiveawayCard().format(new Date(entry.date * 1000L)) + ", " + LocaleController.getInstance().getFormatterDay().format(new Date(entry.date * 1000L)));
                 if (!TextUtils.isEmpty(entry.country)) {
                     countryTextView.setText(Emoji.replaceEmoji(LocationController.countryCodeToEmoji(entry.country) + " " + new Locale("", entry.country).getDisplayCountry(), countryTextView.getPaint().getFontMetricsInt(), false));
                 } else {

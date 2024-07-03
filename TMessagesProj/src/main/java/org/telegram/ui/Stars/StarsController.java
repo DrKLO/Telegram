@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 import org.telegram.ui.bots.BotWebViewSheet;
@@ -531,7 +532,11 @@ public class StarsController {
             _stars += price.amount;
         }
         final long stars = _stars;
-        final long dialogId = form.bot_id;
+        final long dialogId = messageObject != null && messageObject.type == MessageObject.TYPE_PAID_MEDIA ? (
+            (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) ?
+                DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id) :
+                messageObject.getDialogId()
+        ) : form.bot_id;
         final String bot;
         if (dialogId >= 0) {
             bot = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(dialogId));
@@ -669,6 +674,9 @@ public class StarsController {
                     b.createSimpleBulletin(starDrawable, getString(R.string.StarsMediaPurchaseCompleted), AndroidUtilities.replaceTags(formatPluralString("StarsMediaPurchaseCompletedInfo", (int) stars, bot))).show();
                 } else {
                     b.createSimpleBulletin(starDrawable, getString(R.string.StarsPurchaseCompleted), AndroidUtilities.replaceTags(formatPluralString("StarsPurchaseCompletedInfo", (int) stars, product, bot))).show();
+                }
+                if (LaunchActivity.instance != null && LaunchActivity.instance.getFireworksOverlay() != null) {
+                    LaunchActivity.instance.getFireworksOverlay().start();
                 }
 
                 invalidateTransactions(true);

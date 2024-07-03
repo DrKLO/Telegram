@@ -27,6 +27,8 @@ import android.view.MotionEvent;
 import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
+import com.google.android.exoplayer2.offline.Download;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
@@ -36,6 +38,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessageObject.GroupedMessagePosition;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -597,15 +600,11 @@ public class GroupMedia {
             if (messageObject.isSending()) {
                 SendMessagesHelper sendMessagesHelper = SendMessagesHelper.getInstance(messageObject.currentAccount);
                 long[] progress = ImageLoader.getInstance().getFileProgressSizes(h.attachPath);
-                float loadingProgress = 0;
-                boolean sending = sendMessagesHelper.isSendingMessage(messageObject.getId());
+                final boolean sending = sendMessagesHelper.isSendingPaidMessage(messageObject.getId(), i);
                 if (progress == null && sending) {
-                    loadingProgress = 1.0f;
-                } else if (progress != null) {
-                    loadingProgress = DownloadController.getProgress(progress);
+                    h.radialProgress.setProgress(1.0f, true);
+                    h.setIcon(h.album ? MediaActionDrawable.ICON_CHECK : h.getDefaultIcon());
                 }
-                h.radialProgress.setProgress(loadingProgress, false);
-                h.setIcon(sending && loadingProgress < 1.0f ? MediaActionDrawable.ICON_CANCEL : (h.album ? MediaActionDrawable.ICON_CHECK : h.getDefaultIcon()));
             } else if (FileLoader.getInstance(messageObject.currentAccount).isLoadingFile(h.filename)) {
                 h.setIcon(MediaActionDrawable.ICON_CANCEL);
             } else {
@@ -620,7 +619,7 @@ public class GroupMedia {
             canvas.clipPath(clipPath2);
             canvas.translate(l, t);
             canvas.saveLayerAlpha(0, 0, (int) (r - l), (int) (b - t), (int) (0xFF * hiddenAlpha), Canvas.ALL_SAVE_FLAG);
-            spoilerEffect.draw(canvas, cell, (int) (r - l), (int) (b - t), 1f);
+            spoilerEffect.draw(canvas, cell, (int) (r - l), (int) (b - t), 1f, cell.drawingToBitmap);
             canvas.restore();
             canvas.restore();
             cell.invalidate();
@@ -734,7 +733,7 @@ public class GroupMedia {
             this.media = media;
 
             autoplay = false;
-            final String filter = w + "_" + h;
+            String filter = w + "_" + h;
             if (media instanceof TLRPC.TL_messageExtendedMediaPreview) {
                 hidden = true;
                 filename = null;
@@ -747,7 +746,11 @@ public class GroupMedia {
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, -.1f);
                 this.imageReceiver.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             } else if (media instanceof TLRPC.TL_messageExtendedMedia) {
-                hidden = false;
+                hidden = msg.isRepostPreview;
+                if (hidden) {
+                    filter += "_b3";
+                }
+                final int cacheType = 0;
 
                 this.imageReceiver.setColorFilter(null);
 
@@ -760,23 +763,15 @@ public class GroupMedia {
                     TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(mediaPhoto.photo.sizes, Math.min(w, h) / 100, false, photoSize, false);
                     ImageLocation photoLocation = ImageLocation.getForPhoto(photoSize, mediaPhoto.photo);
                     ImageLocation thumbLocation = ImageLocation.getForPhoto(thumbSize, mediaPhoto.photo);
-//                    if (msg.isSending()) {
-//                        sendingPhotoLocation = photoLocation;
-//                        sendingPhotoLocationDialogId = msg.getDialogId();
-//                        sendingPhotoLocationMessageId = msg.getId();
-//                    }
-//                    if (sendingPhotoLocation != null && sendingPhotoLocationDialogId == msg.getDialogId() && sendingPhotoLocationMessageId == msg.getId()) {
-//                        thumbLocation = sendingPhotoLocation;
-//                    }
                     imageReceiver.setImage(
                         photoLocation, filter,
                         thumbLocation, filter,
                         0, null,
-                        msg, 0
+                        msg, cacheType
                     );
                 } else if (messageMedia instanceof TLRPC.TL_messageMediaDocument) {
                     TLRPC.TL_messageMediaDocument mediaDocument = (TLRPC.TL_messageMediaDocument) messageMedia;
-                    autoplay = !album && video && SharedConfig.isAutoplayVideo();
+                    autoplay = !hidden && !album && video && SharedConfig.isAutoplayVideo();
 //                    if (!TextUtils.isEmpty(extMedia.attachPath)) {
 //                        imageReceiver.setImage(ImageLocation.getForPath(extMedia.attachPath), filter + (autoplay ? "_g" : ""), null, null, msg, 0);
 //                        return;
@@ -788,20 +783,12 @@ public class GroupMedia {
                             ImageLocation mediaLocation = ImageLocation.getForDocument(mediaDocument.document);
                             ImageLocation photoLocation = ImageLocation.getForDocument(photoSize, mediaDocument.document);
                             ImageLocation thumbLocation = ImageLocation.getForDocument(thumbSize, mediaDocument.document);
-//                            if (msg.isSending()) {
-//                                sendingPhotoLocation = photoLocation;
-//                                sendingPhotoLocationDialogId = msg.getDialogId();
-//                                sendingPhotoLocationMessageId = msg.getId();
-//                            }
-//                            if (sendingPhotoLocation != null && sendingPhotoLocationDialogId == msg.getDialogId() && sendingPhotoLocationMessageId == msg.getId()) {
-//                                thumbLocation = sendingPhotoLocation;
-//                            }
                             imageReceiver.setImage(
-                                mediaLocation, filter + (autoplay ? "_g" : ""),
+                                autoplay ? mediaLocation : null, filter + (autoplay ? "_g" : ""),
                                 photoLocation, filter,
-                                    thumbLocation, filter, null,
+                                thumbLocation, filter, null,
                                 0, null,
-                                msg, 0
+                                msg, cacheType
                             );
                             return;
                         }
@@ -811,19 +798,11 @@ public class GroupMedia {
                         TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(mediaDocument.document.thumbs, Math.min(w, h), false, photoSize, false);
                         ImageLocation photoLocation = ImageLocation.getForDocument(photoSize, mediaDocument.document);
                         ImageLocation thumbLocation = ImageLocation.getForDocument(thumbSize, mediaDocument.document);
-//                        if (msg.isSending()) {
-//                            sendingPhotoLocation = photoLocation;
-//                            sendingPhotoLocationDialogId = msg.getDialogId();
-//                            sendingPhotoLocationMessageId = msg.getId();
-//                        }
-//                        if (sendingPhotoLocation != null && sendingPhotoLocationDialogId == msg.getDialogId() && sendingPhotoLocationMessageId == msg.getId()) {
-//                            thumbLocation = sendingPhotoLocation;
-//                        }
                         imageReceiver.setImage(
                             photoLocation, filter,
                             thumbLocation, filter,
                             0, null,
-                            msg, 0
+                            msg, cacheType
                         );
                     }
                 }

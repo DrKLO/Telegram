@@ -2866,6 +2866,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             boolean hasMessageToEffect = false;
             MessageObject messageWithCaption = null;
 
+            boolean canHaveStars = false;
             ArrayList<MessageObject> messageObjects = new ArrayList<>();
             int id = 0;
             if (currentAttachLayout == photoLayout || currentAttachLayout == photoPreviewLayout) {
@@ -2973,6 +2974,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             if (messageWithCaption == null && !TextUtils.isEmpty(msg.message)) {
                                 messageWithCaption = messageObject;
                             }
+                            canHaveStars = true;
                         }
                     }
                 }
@@ -3144,7 +3146,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                 });
             }
-            if (chatActivity != null && ChatObject.isChannelAndNotMegaGroup(chatActivity.getCurrentChat()) && chatActivity.getCurrentChatInfo() != null && chatActivity.getCurrentChatInfo().paid_media_allowed) {
+            if (canHaveStars && chatActivity != null && ChatObject.isChannelAndNotMegaGroup(chatActivity.getCurrentChat()) && chatActivity.getCurrentChatInfo() != null && chatActivity.getCurrentChatInfo().paid_media_allowed) {
                 ActionBarMenuSubItem item = options.add(R.drawable.menu_feature_paid, getString(R.string.PaidMediaButton), null).getLast();
                 item.setOnClickListener(v -> {
                     if (photoLayout == null) return;

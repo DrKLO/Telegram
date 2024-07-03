@@ -138,14 +138,45 @@ public class ForwardBackground {
         view.invalidate();
     }
 
-    public void draw(Canvas canvas) {
+    private LoadingDrawable loadingDrawable;
+
+    public void draw(Canvas canvas, boolean loading) {
         canvas.save();
         canvas.clipPath(path);
         if (rippleDrawable != null) {
             rippleDrawable.setBounds(bounds);
             rippleDrawable.draw(canvas);
         }
+
+        if (loading) {
+            if (loadingDrawable == null) {
+                loadingDrawable = new LoadingDrawable();
+                loadingDrawable.setAppearByGradient(true);
+            } else if (loadingDrawable.isDisappeared() || loadingDrawable.isDisappearing()) {
+                loadingDrawable.reset();
+                loadingDrawable.resetDisappear();
+            }
+        } else if (loadingDrawable != null && !loadingDrawable.isDisappearing() && !loadingDrawable.isDisappeared()) {
+            loadingDrawable.disappear();
+        }
+
         canvas.restore();
+
+        if (loadingDrawable != null && !loadingDrawable.isDisappeared()) {
+            loadingDrawable.usePath(path);
+            loadingDrawable.setColors(
+                Theme.multAlpha(rippleDrawableColor, .7f),
+                Theme.multAlpha(rippleDrawableColor, 1.3f),
+                Theme.multAlpha(rippleDrawableColor, 1.5f),
+                Theme.multAlpha(rippleDrawableColor, 2f)
+            );
+            loadingDrawable.setBounds(bounds);
+            canvas.save();
+            loadingDrawable.draw(canvas);
+            canvas.restore();
+            view.invalidate();
+        }
+
     }
 
 }

@@ -1,6 +1,7 @@
 package org.telegram.ui.bots;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.ui.Components.Bulletin.DURATION_PROLONG;
 
 import android.animation.Animator;
@@ -345,14 +346,16 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         }
     };
 
+    private final Context context;
     private final BaseFragment fragment;
 
     public Context getContext() {
-        return fragment.getContext();
+        return context;
     }
 
     public BotWebViewAttachedSheet(@NonNull BaseFragment fragment) {
         this.fragment = fragment;
+        this.context = fragment.getContext();
         this.resourcesProvider = fragment.getResourceProvider();
         lineColor = Theme.getColor(Theme.key_sheet_scrollUp);
 
@@ -454,6 +457,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
             @Override
             public void onWebAppOpenInvoice(TLRPC.InputInvoice inputInvoice, String slug, TLObject response) {
+                if (getContext() == null) {
+                    return;
+                }
                 BaseFragment parentFragment = ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment();
                 PaymentFormActivity paymentFormActivity = null;
                 if (response instanceof TLRPC.TL_payments_paymentFormStars) {
@@ -722,8 +728,8 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
     public float getContainerTop() {
         float transitionProgress = AndroidUtilities.isTablet() ? 0 : actionBarTransitionProgress;
-        return AndroidUtilities.isTablet() ? AndroidUtilities.lerp(swipeContainer.getTranslationY() + dp(12), AndroidUtilities.statusBarHeight / 2f, actionBarTransitionProgress) :
-                (AndroidUtilities.lerp(swipeContainer.getTranslationY(), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f, transitionProgress) + dp(12));
+        return AndroidUtilities.isTablet() ? lerp(swipeContainer.getTranslationY() + dp(12), AndroidUtilities.statusBarHeight / 2f, actionBarTransitionProgress) :
+                (lerp(swipeContainer.getTranslationY(), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f, transitionProgress) + dp(12));
     }
 
     public void attachInternal() {
@@ -852,6 +858,12 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
             if (swipeContainer != null) {
                 swipeContainer.setFullSize(getFullSize());
             }
+        }
+    }
+
+    public void setWasOpenedByLinkIntent(boolean value) {
+        if (webViewContainer != null) {
+            webViewContainer.setWasOpenedByLinkIntent(value);
         }
     }
 
@@ -1261,6 +1273,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         show(false);
     }
     public void show(boolean lowBounce) {
+        show(lowBounce, false);
+    }
+    public void show(boolean lowBounce, boolean instant) {
         if (!AndroidUtilities.isSafeToShow(getContext())) return;
 
         windowView.setAlpha(0f);
@@ -1283,15 +1298,25 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                 }
 
                 if (showExpanded || getFullSize()) {
-                    swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY(), locker::unlock);
-                } else {
-                    new SpringAnimation(swipeContainer, ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer.SWIPE_OFFSET_Y, 0)
-                        .setSpring(new SpringForce(0)
-                            .setDampingRatio(lowBounce ? SpringForce.DAMPING_RATIO_NO_BOUNCY : SpringForce.DAMPING_RATIO_LOW_BOUNCY)
-                            .setStiffness(lowBounce ? 800 : 500.0f)
-                    ).addEndListener((animation, canceled, value, velocity) -> {
+                    if (instant) {
+                        swipeContainer.setSwipeOffsetY(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY());
                         locker.unlock();
-                    }).start();
+                    } else {
+                        swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY(), locker::unlock);
+                    }
+                } else {
+                    if (instant) {
+                        swipeContainer.setSwipeOffsetY(0);
+                        locker.unlock();
+                    } else {
+                        new SpringAnimation(swipeContainer, ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer.SWIPE_OFFSET_Y, 0)
+                            .setSpring(new SpringForce(0)
+                                .setDampingRatio(lowBounce ? SpringForce.DAMPING_RATIO_NO_BOUNCY : SpringForce.DAMPING_RATIO_LOW_BOUNCY)
+                                .setStiffness(lowBounce ? 800 : 500.0f)
+                            ).addEndListener((animation, canceled, value, velocity) -> {
+                                locker.unlock();
+                            }).start();
+                    }
                 }
                 swipeContainer.opened = true;
             }
@@ -1362,6 +1387,10 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
     public void dismiss() {
         dismiss(false, null);
+    }
+
+    public void dismiss(boolean intoTabs) {
+        dismiss(intoTabs, null);
     }
 
     public boolean onCheckDismissByUser() {
@@ -1467,7 +1496,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         return false;
     }
 
-    public class WindowView extends SizeNotifierFrameLayout {
+    public class WindowView extends SizeNotifierFrameLayout implements BaseFragment.AttachedSheetWindow {
         public WindowView(Context context) {
             super(context);
             setWillNotDraw(false);
@@ -1503,7 +1532,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
             actionBarPaint.setColor(actionBarColor);
             float radius = dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-            AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + dp(24) + radius);
+            AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + dp(24) + radius);
             canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
 
             AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), swipeContainer.getTranslationY() + dp(24), swipeContainer.getRight(), getHeight());
@@ -1537,7 +1566,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             if (drawingFromOverlay) return false;
-            if (event.getAction() == MotionEvent.ACTION_DOWN && (event.getY() <= AndroidUtilities.lerp(swipeContainer.getTranslationY() + dp(24), 0, actionBarTransitionProgress) ||
+            if (event.getAction() == MotionEvent.ACTION_DOWN && (event.getY() <= lerp(swipeContainer.getTranslationY() + dp(24), 0, actionBarTransitionProgress) ||
                     event.getX() > swipeContainer.getRight() || event.getX() < swipeContainer.getLeft())) {
 //                if (can_minimize) {
                     dismiss(true, null);
@@ -1577,25 +1606,60 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         private final RectF rect = new RectF();
         private final Path clipPath = new Path();
 
+        public RectF getRect() {
+            rect.set(swipeContainer.getLeft(), lerp(swipeContainer.getTranslationY() + dp(24), 0, actionBarTransitionProgress), swipeContainer.getRight(), getHeight());
+            return rect;
+        }
 
-        public float drawInto(Canvas canvas, RectF finalRect, float progress, RectF clipRect) {
-            rect.set(swipeContainer.getLeft(), swipeContainer.getTranslationY() + dp(24), swipeContainer.getRight(), getHeight());
+
+        public float drawInto(Canvas canvas, RectF finalRect, float progress, RectF clipRect, float alpha, boolean opening) {
+            rect.set(swipeContainer.getLeft(),  lerp(swipeContainer.getTranslationY() + dp(24), 0, actionBarTransitionProgress), swipeContainer.getRight(), getHeight());
             AndroidUtilities.lerpCentered(rect, finalRect, progress, clipRect);
 
             canvas.save();
 
             clipPath.rewind();
             float radius = dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-            final float r = AndroidUtilities.lerp(radius, dp(10), progress);
-            clipPath.addRoundRect(clipRect, r, r, Path.Direction.CW);
+            final float r = lerp(radius, dp(10), progress);
+            rect.set(clipRect);
+            if (opening) {
+                rect.top -= dp(16) * (1f - actionBarTransitionProgress);
+            }
+            clipPath.addRoundRect(rect, r, r, Path.Direction.CW);
             canvas.clipPath(clipPath);
+
+            if (!overrideBackgroundColor) {
+                backgroundPaint.setColor(getColor(Theme.key_windowBackgroundWhite));
+            }
+            int wasAlpha = backgroundPaint.getAlpha();
+            backgroundPaint.setAlpha((int) (wasAlpha * alpha));
             canvas.drawPaint(backgroundPaint);
+            backgroundPaint.setAlpha(wasAlpha);
 
             if (swipeContainer != null) {
                 canvas.save();
-                canvas.translate(swipeContainer.getX(), Math.max(swipeContainer.getY(), clipRect.top) + progress * dp(51));
+                canvas.translate(swipeContainer.getX(), Math.max(swipeContainer.getY(), clipRect.top) + (opening ? lerp(dp(16), actionBar.getHeight(), actionBarTransitionProgress) * (1f - alpha) : progress * dp(51)));
+                if (opening) {
+                    canvas.scale(1f, lerp(1f, 1.25f, 1f - alpha));
+                    swipeContainer.setAlpha(alpha);
+                }
                 swipeContainer.draw(canvas);
+                if (opening) {
+                    swipeContainer.setAlpha(1f);
+                }
                 canvas.restore();
+            }
+
+            if (opening) {
+                if (actionBar != null && actionBarTransitionProgress > 0) {
+                    canvas.saveLayerAlpha(actionBar.getX(), actionBar.getY() + clipRect.top, actionBar.getX() + actionBar.getWidth(), actionBar.getY() + clipRect.top + actionBar.getHeight() + actionBarShadow.getIntrinsicHeight(), (int) (0xFF * alpha * actionBarTransitionProgress), Canvas.ALL_SAVE_FLAG);
+                    canvas.translate(actionBar.getX(), actionBar.getY() + clipRect.top);
+                    actionBar.draw(canvas);
+                    actionBarShadow.setAlpha(0xff);//(int) (actionBar.getAlpha() * progress * 0xFF));
+                    actionBarShadow.setBounds(0, actionBar.getHeight(), actionBar.getWidth(), (int) (actionBar.getHeight() + actionBarShadow.getIntrinsicHeight()));
+                    actionBarShadow.draw(canvas);
+                    canvas.restore();
+                }
             }
 
             canvas.restore();

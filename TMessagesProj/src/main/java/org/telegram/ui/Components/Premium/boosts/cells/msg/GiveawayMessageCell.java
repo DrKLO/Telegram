@@ -311,8 +311,8 @@ public class GiveawayMessageCell {
         SpannableStringBuilder bottomStringBuilder = new SpannableStringBuilder(dateTitle);
         bottomStringBuilder.setSpan(new RelativeSizeSpan(1.05f), 0, dateTitle.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         Date date = new Date(giveaway.until_date * 1000L);
-        String monthTxt = LocaleController.getInstance().formatterGiveawayCard.format(date);
-        String timeTxt = LocaleController.getInstance().formatterDay.format(date);
+        String monthTxt = LocaleController.getInstance().getFormatterGiveawayCard().format(date);
+        String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
         bottomStringBuilder.append("\n");
         bottomStringBuilder.append(formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
 

@@ -105,8 +105,8 @@ public class GiftedUserCell extends UserCell {
                 avatarImageView.setForUserOrChat(null, avatarDrawable);
                 nameTextView.setRightDrawable(null);
             }
-            String date = LocaleController.getInstance().formatterScheduleDay.format(new Date(boost.expires * 1000L));
-            String time = LocaleController.getInstance().formatterDay.format(new Date(boost.expires * 1000L));
+            String date = LocaleController.getInstance().getFormatterScheduleDay().format(new Date(boost.expires * 1000L));
+            String time = LocaleController.getInstance().getFormatterDay().format(new Date(boost.expires * 1000L));
 
             statusTextView.setText(LocaleController.formatString("BoostingShortMonths", R.string.BoostingShortMonths, months) + " • " + LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, date, time));
 

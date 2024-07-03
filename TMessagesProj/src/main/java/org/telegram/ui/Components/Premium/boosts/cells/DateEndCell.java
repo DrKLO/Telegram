@@ -49,8 +49,8 @@ public class DateEndCell extends FrameLayout {
     public void setDate(long time) {
         selectedTime = time;
         Date date = new Date(time);
-        String monthTxt = LocaleController.getInstance().formatterDayMonth.format(date);
-        String timeTxt = LocaleController.getInstance().formatterDay.format(date);
+        String monthTxt = LocaleController.getInstance().getFormatterDayMonth().format(date);
+        String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
         timeTextView.setText(LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
     }
 

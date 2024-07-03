@@ -28,6 +28,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
-public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdapter {
+public abstract class BaseLocationAdapter extends AdapterWithDiffUtils {
 
     public final boolean stories;
     public final boolean biz;
@@ -82,7 +83,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             places.clear();
             locations.clear();
             searchInProgress = false;
-            notifyDataSetChanged();
+            update(true);
         } else {
             if (searchRunnable != null) {
                 Utilities.searchQueue.cancelRunnable(searchRunnable);
@@ -483,7 +484,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                     }
                     BaseLocationAdapter.this.locations.clear();
                     BaseLocationAdapter.this.locations.addAll(locations);
-                    notifyDataSetChanged();
+                    update(true);
                 });
             });
         } else {
@@ -525,10 +526,13 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             if (delegate != null) {
                 delegate.didLoadSearchResult(places);
             }
-            notifyDataSetChanged();
+            update(true);
         }));
 
+        update(true);
+    }
+
+    protected void update(boolean animated) {
         notifyDataSetChanged();
-//        notifyStartSearch(wasSearched, wasSearching, oldItemCount, animated);
     }
 }

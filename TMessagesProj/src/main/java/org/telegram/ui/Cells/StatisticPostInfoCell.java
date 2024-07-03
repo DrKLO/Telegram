@@ -235,8 +235,8 @@ public class StatisticPostInfoCell extends FrameLayout {
         views.setText(String.format(LocaleController.getPluralString("Views", postInfo.getViews()), AndroidUtilities.formatWholeNumber(postInfo.getViews(), 0)));
 
         Date time = new Date(postInfo.getDate() * 1000L);
-        String monthTxt = LocaleController.getInstance().formatterYear.format(time);
-        String timeTxt = LocaleController.getInstance().formatterDay.format(time);
+        String monthTxt = LocaleController.getInstance().getFormatterYear().format(time);
+        String timeTxt = LocaleController.getInstance().getFormatterDay().format(time);
         date.setText(LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
 
         shares.setText(AndroidUtilities.formatWholeNumber(postInfo.getForwards(), 0));

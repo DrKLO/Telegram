@@ -194,6 +194,11 @@ public class ThanosEffect extends TextureView {
         if (drawThread != null) {
             drawThread.kill();
         }
+        if (whenDone != null) {
+            Runnable runnable = whenDone;
+            whenDone = null;
+            runnable.run();
+        }
     }
 
     public void scroll(int dx, int dy) {

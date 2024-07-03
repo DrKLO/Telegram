@@ -5132,12 +5132,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     int year = calendar.get(Calendar.YEAR);
                     if (year == currentYear) {
                         return (
-                            LocaleController.getInstance().formatterWeek.format(date) +
+                            LocaleController.getInstance().getFormatterWeek().format(date) +
                             " " +
-                            LocaleController.getInstance().formatterScheduleDay.format(date)
+                            LocaleController.getInstance().getFormatterScheduleDay().format(date)
                         );
                     } else {
-                        return LocaleController.getInstance().formatterScheduleYear.format(date);
+                        return LocaleController.getInstance().getFormatterScheduleYear().format(date);
                     }
                 }
             });

@@ -188,7 +188,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             for (int a = 0; a < count; a++) {
                 View child = getChildAt(a);
                 if (!(child instanceof ActionBar)) {
-                    if (child.getFitsSystemWindows()) {
+                    if (child.getFitsSystemWindows() || child instanceof BaseFragment.AttachedSheetWindow) {
                         measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, bottomTabsHeight);
                     } else {
                         measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, actionBarHeight + bottomTabsHeight);
@@ -214,7 +214,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                 View child = getChildAt(a);
                 if (!(child instanceof ActionBar)) {
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) child.getLayoutParams();
-                    if (child.getFitsSystemWindows()) {
+                    if (child.getFitsSystemWindows() || child instanceof BaseFragment.AttachedSheetWindow) {
                         child.layout(
                             layoutParams.leftMargin,
                             layoutParams.topMargin,
@@ -822,9 +822,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                 float opacity = MathUtils.clamp(widthOffset / (float) width, 0, 0.8f);
                 scrimPaint.setColor(Color.argb((int)(0x99 * opacity), 0x00, 0x00, 0x00));
                 if (overrideWidthOffset != -1) {
-                    canvas.drawRect(0, 0, getWidth(), getHeight() - getBottomTabsHeight(true), scrimPaint);
+                    canvas.drawRect(0, 0, getWidth(), getHeight() * 1.5f, scrimPaint);
                 } else {
-                    canvas.drawRect(clipLeft, 0, clipRight, getHeight() - getBottomTabsHeight(true), scrimPaint);
+                    canvas.drawRect(clipLeft, 0, clipRight, getHeight() * 1.5f, scrimPaint);
                 }
             }
         }

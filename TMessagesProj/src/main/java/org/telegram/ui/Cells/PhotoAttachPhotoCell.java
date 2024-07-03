@@ -669,7 +669,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         }
         if (photoEntry != null) {
             sb.append(". ");
-            sb.append(LocaleController.getInstance().formatterStats.format(photoEntry.dateTaken * 1000L));
+            sb.append(LocaleController.getInstance().getFormatterStats().format(photoEntry.dateTaken * 1000L));
         }
         info.setText(sb);
         if (checkBox.isChecked()) {

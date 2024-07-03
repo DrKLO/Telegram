@@ -1518,11 +1518,11 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
             String c;
             if (videosCount == 0) {
-                c = formatString(R.string.StarsConfirmPurchaseMedia1, photosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SinglePhoto) : formatPluralString("StarsConfirmPurchaseMedia_Photos", photosCount), chatTitle, formatPluralString("Stars", (int) stars));
+                c = formatPluralString("StarsConfirmPurchaseMediaOne2", (int) stars, photosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SinglePhoto) : formatPluralString("StarsConfirmPurchaseMedia_Photos", photosCount), chatTitle);
             } else if (photosCount == 0) {
-                c = formatString(R.string.StarsConfirmPurchaseMedia1, videosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SingleVideo) : formatPluralString("StarsConfirmPurchaseMedia_Videos", videosCount), chatTitle, formatPluralString("Stars", (int) stars));
+                c = formatPluralString("StarsConfirmPurchaseMediaOne2", (int) stars, videosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SingleVideo) : formatPluralString("StarsConfirmPurchaseMedia_Videos", videosCount), chatTitle);
             } else {
-                c = formatString(R.string.StarsConfirmPurchaseMedia2, photosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SinglePhoto) : formatPluralString("StarsConfirmPurchaseMedia_Photos", photosCount), videosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SingleVideo) : formatPluralString("StarsConfirmPurchaseMedia_Videos", videosCount), chatTitle, formatPluralString("Stars", (int) stars));
+                c = formatPluralString("StarsConfirmPurchaseMediaTwo2", (int) stars, photosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SinglePhoto) : formatPluralString("StarsConfirmPurchaseMedia_Photos", photosCount), videosCount == 1 ? getString(R.string.StarsConfirmPurchaseMedia_SingleVideo) : formatPluralString("StarsConfirmPurchaseMedia_Videos", videosCount), chatTitle);
             }
             subtitleView.setText(AndroidUtilities.replaceTags(c));
         } else {
@@ -2249,11 +2249,11 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             tableView.addRowUnpadded(getString(R.string.StarsTransactionID), idLayout);
         }
 
-        tableView.addRow(getString(R.string.StarsTransactionDate), LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().formatterGiveawayCard.format(new Date(transaction.date * 1000L)), LocaleController.getInstance().formatterDay.format(new Date(transaction.date * 1000L))));
+        tableView.addRow(getString(R.string.StarsTransactionDate), LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterGiveawayCard().format(new Date(transaction.date * 1000L)), LocaleController.getInstance().getFormatterDay().format(new Date(transaction.date * 1000L))));
         linearLayout.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 17, 0, 0));
 
         if ((transaction.flags & 32) != 0) {
-            tableView.addRow(getString(R.string.StarsTransactionTONDate), LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().formatterGiveawayCard.format(new Date(transaction.transaction_date * 1000L)), LocaleController.getInstance().formatterDay.format(new Date(transaction.transaction_date * 1000L))));
+            tableView.addRow(getString(R.string.StarsTransactionTONDate), LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterGiveawayCard().format(new Date(transaction.transaction_date * 1000L)), LocaleController.getInstance().getFormatterDay().format(new Date(transaction.transaction_date * 1000L))));
         }
 
         textView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);

@@ -47,6 +47,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -2682,7 +2683,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         } else if (id == NotificationCenter.liveLocationsChanged) {
             if (adapter != null) {
                 adapter.notifyDataSetChanged();
-                adapter.updateLiveLocationCell();
             }
         } else if (id == NotificationCenter.didReceiveNewMessages) {
             boolean scheduled = (Boolean) args[2];
@@ -2757,7 +2757,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
             if (updated && adapter != null) {
-                adapter.updateLiveLocations();
+                adapter.notifyDataSetChanged();
                 if (proximitySheet != null) {
                     proximitySheet.updateText(true, true);
                 }

@@ -11433,7 +11433,7 @@ public class MessagesController extends BaseController implements NotificationCe
         req.offset_id = offset;
         req.offset_date = offsetDate;
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start migrate with id " + offset + " date " + LocaleController.getInstance().formatterStats.format((long) offsetDate * 1000));
+            FileLog.d("start migrate with id " + offset + " date " + LocaleController.getInstance().getFormatterStats().format((long) offsetDate * 1000));
         }
         if (offset == 0) {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
@@ -11462,14 +11462,14 @@ public class MessagesController extends BaseController implements NotificationCe
                         for (int a = 0; a < dialogsRes.messages.size(); a++) {
                             TLRPC.Message message = dialogsRes.messages.get(a);
                             if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("search migrate id " + message.id + " date " + LocaleController.getInstance().formatterStats.format((long) message.date * 1000));
+                                FileLog.d("search migrate id " + message.id + " date " + LocaleController.getInstance().getFormatterStats().format((long) message.date * 1000));
                             }
                             if (lastMessage == null || message.date < lastMessage.date) {
                                 lastMessage = message;
                             }
                         }
                         if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("migrate step with id " + lastMessage.id + " date " + LocaleController.getInstance().formatterStats.format((long) lastMessage.date * 1000));
+                            FileLog.d("migrate step with id " + lastMessage.id + " date " + LocaleController.getInstance().getFormatterStats().format((long) lastMessage.date * 1000));
                         }
                         if (dialogsRes.dialogs.size() >= 100) {
                             offsetId = lastMessage.id;
@@ -11547,7 +11547,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                         }
                                         offsetId = -1;
                                         if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
+                                            FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().getFormatterStats().format((long) date * 1000));
                                         }
                                     }
                                     dialogsRes.messages.remove(a);
@@ -11572,7 +11572,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                                 offsetId = -1;
                                 if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
+                                    FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().getFormatterStats().format((long) date * 1000));
                                 }
                             }
                         }
@@ -19824,6 +19824,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean checkCanOpenChat(Bundle bundle, BaseFragment fragment, MessageObject originalMessage) {
+        return checkCanOpenChat(bundle, fragment, originalMessage, null);
+    }
+
+    public boolean checkCanOpenChat(Bundle bundle, BaseFragment fragment, MessageObject originalMessage, Browser.Progress progress) {
         if (bundle == null || fragment == null) {
             return true;
         }
@@ -19853,7 +19857,13 @@ public class MessagesController extends BaseController implements NotificationCe
         if (messageId != 0 && originalMessage != null && chat != null && chat.access_hash == 0) {
             long did = originalMessage.getDialogId();
             if (!DialogObject.isEncryptedDialog(did)) {
-                AlertDialog progressDialog = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+                final AlertDialog progressDialog;
+                if (progress != null) {
+                    progressDialog = null;
+                    progress.init();
+                } else {
+                    progressDialog = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+                }
                 TLObject req;
                 if (did < 0) {
                     chat = getChat(-did);
@@ -19873,7 +19883,12 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (response != null) {
                         AndroidUtilities.runOnUIThread(() -> {
                             try {
-                                progressDialog.dismiss();
+                                if (progressDialog != null) {
+                                    progressDialog.dismiss();
+                                }
+                                if (progress != null) {
+                                    progress.end();
+                                }
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
@@ -19885,14 +19900,38 @@ public class MessagesController extends BaseController implements NotificationCe
                         });
                     }
                 });
-                progressDialog.setOnCancelListener(dialog -> {
-                    getConnectionsManager().cancelRequest(reqId, true);
-                    fragment.setVisibleDialog(null);
-                });
-                fragment.setVisibleDialog(progressDialog);
-                progressDialog.show();
+                if (progressDialog != null) {
+                    progressDialog.setOnCancelListener(dialog -> {
+                        getConnectionsManager().cancelRequest(reqId, true);
+                        fragment.setVisibleDialog(null);
+                    });
+                    fragment.setVisibleDialog(progressDialog);
+                    progressDialog.show();
+                } else {
+                    progress.onCancel(() -> {
+                        getConnectionsManager().cancelRequest(reqId, true);
+                        fragment.setVisibleDialog(null);
+                    });
+                    progress.init();
+                }
                 return false;
             }
+        } else if (messageId != 0 && originalMessage != null && progress != null) {
+            progress.init();
+            progress.onCancel(ensureMessagesLoaded(-chatId, messageId, new MessagesLoadedCallback() {
+                @Override
+                public void onMessagesLoaded(boolean fromCache) {
+                    progress.end();
+                    fragment.presentFragment(new ChatActivity(bundle), true);
+                }
+
+                @Override
+                public void onError() {
+                    progress.end();
+                    fragment.presentFragment(new ChatActivity(bundle), true);
+                }
+            }));
+            return false;
         }
         return true;
     }
@@ -20026,7 +20065,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    public void ensureMessagesLoaded(long dialogId, int messageId, MessagesLoadedCallback callback) {
+    public Runnable ensureMessagesLoaded(long dialogId, int messageId, MessagesLoadedCallback callback) {
         SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
         if (messageId == 0) {
             messageId = sharedPreferences.getInt("diditem" + dialogId, 0);
@@ -20046,13 +20085,17 @@ public class MessagesController extends BaseController implements NotificationCe
         if (chatId != 0) {
             currentChat = getMessagesController().getChat(chatId);
             if (currentChat == null) {
+                final boolean[] cancelled = new boolean[1];
+                final Runnable[] cancel = new Runnable[1];
                 MessagesStorage messagesStorage = getMessagesStorage();
                 messagesStorage.getStorageQueue().postRunnable(() -> {
+                    if (cancelled[0]) return;
                     TLRPC.Chat chat = messagesStorage.getChat(chatId);
                     AndroidUtilities.runOnUIThread(() -> {
+                        if (cancelled[0]) return;
                         if (chat != null) {
                             getMessagesController().putChat(chat, true);
-                            ensureMessagesLoaded(dialogId, finalMessageId, callback);
+                            cancel[0] = ensureMessagesLoaded(dialogId, finalMessageId, callback);
                         } else {
                             if (callback != null) {
                                 callback.onError();
@@ -20060,7 +20103,12 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                     });
                 });
-                return;
+                return () -> {
+                    cancelled[0] = true;
+                    if (cancel[0] != null) {
+                        cancel[0].run();
+                    }
+                };
             }
         }
 
@@ -20106,6 +20154,8 @@ public class MessagesController extends BaseController implements NotificationCe
         } else {
             loadMessagesInternal(dialogId, 0, true, count, finalMessageId, 0, true, 0, classGuid, 2, 0, 0, 0, -1, 0, 0, 0, false, 0, true, false, false, null, 0L);
         }
+
+        return () -> getConnectionsManager().cancelRequestsForGuid(classGuid);
     }
 
     public int getChatPendingRequestsOnClosed(long chatId) {

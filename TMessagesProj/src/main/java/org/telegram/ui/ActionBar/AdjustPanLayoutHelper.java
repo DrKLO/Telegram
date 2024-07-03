@@ -28,6 +28,7 @@ import com.google.android.exoplayer2.util.Log;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -172,7 +173,11 @@ public class AdjustPanLayoutHelper {
                 additionalContentHeight = ((View) viewParent).getHeight() - contentHeight;
             }
         }
-        setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight));
+        int bottomTabsHeight = 0;
+        if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null) {
+            bottomTabsHeight += LaunchActivity.instance.getBottomSheetTabs().getExpandedHeight();
+        }
+        setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight + bottomTabsHeight));
         resizableView.requestLayout();
 
         onTransitionStart(isKeyboardVisible, previousHeight, contentHeight);
@@ -186,7 +191,7 @@ public class AdjustPanLayoutHelper {
             parent.setTranslationY(-dy);
             onPanTranslationUpdate(dy, 1f, isKeyboardVisible);
             from = -dy;
-            to = 0;
+            to = -bottomTabsHeight;
             inverse = true;
         } else {
             parent.setTranslationY(previousStartOffset);
@@ -219,7 +224,7 @@ public class AdjustPanLayoutHelper {
         setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
         viewsToHeightSet.clear();
         resizableView.requestLayout();
-            onPanTranslationUpdate(0, isKeyboardVisible ? 1f : 0f, isKeyboardVisible);
+        onPanTranslationUpdate(0, isKeyboardVisible ? 1f : 0f, isKeyboardVisible);
         parent.setTranslationY(0);
         onTransitionEnd();
     }

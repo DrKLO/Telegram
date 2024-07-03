@@ -203,8 +203,8 @@ public class TableCell extends FrameLayout {
     public void setData(TLRPC.TL_payments_checkedGiftCode giftCode, Utilities.Callback<TLObject> onObjectClicked) {
         this.giftCode = giftCode;
         Date date = new Date(giftCode.date * 1000L);
-        String monthTxt = LocaleController.getInstance().formatterYear.format(date);
-        String timeTxt = LocaleController.getInstance().formatterDay.format(date);
+        String monthTxt = LocaleController.getInstance().getFormatterYear().format(date);
+        String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
 
         dateTextView.setText(LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
         reasonTextView.setTextColor(Theme.getColor(giftCode.via_giveaway ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider));

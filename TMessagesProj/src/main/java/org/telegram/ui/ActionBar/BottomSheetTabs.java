@@ -6,25 +6,19 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -38,7 +32,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
@@ -46,7 +39,6 @@ import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.BotWebViewContainer;
 import org.telegram.ui.bots.BotWebViewSheet;
 
-import java.io.CharArrayReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -92,11 +84,15 @@ public class BottomSheetTabs extends FrameLayout {
         }
         boolean closed = closeAttachedSheets();
         Utilities.Callback<BaseFragment> open = fragment -> {
+            if (fragment == null) return;
             if (fragment instanceof ChatActivity) {
                 if (((ChatActivity) fragment).getChatActivityEnterView() != null) {
                     ((ChatActivity) fragment).getChatActivityEnterView().closeKeyboard();
                     ((ChatActivity) fragment).getChatActivityEnterView().hidePopup(true, false);
                 }
+            }
+            if (fragment.getContext() == null) {
+                return;
             }
             if (AndroidUtilities.isTablet()) {
                 BotWebViewSheet sheet = new BotWebViewSheet(fragment.getContext(), fragment.getResourceProvider());
@@ -106,20 +102,24 @@ public class BottomSheetTabs extends FrameLayout {
                     sheet.show();
                 }
             } else {
+                BottomSheetTabsOverlay overlay = LaunchActivity.instance.getBottomSheetTabsOverlay();
                 BotWebViewAttachedSheet webViewSheet = fragment.createBotViewer();
                 webViewSheet.setParentActivity(fragment.getParentActivity());
                 if (webViewSheet.restoreState(fragment, tab)) {
-                    removeTab(tab, false);
-                    webViewSheet.show(closed);
+//                    if (overlay != null && overlay.isOpened() && overlay.openSheet(webViewSheet, tab, null)) {
+//                        removeTab(tab, false);
+//                        webViewSheet.show(closed, true);
+//                    } else {
+                        removeTab(tab, false);
+                        webViewSheet.show(closed);
+//                    }
                 }
             }
         };
         if (tab.needsContext && (!(lastFragment instanceof ChatActivity) || ((ChatActivity) lastFragment).getDialogId() != tab.props.botId)) {
             BaseFragment chatActivity = ChatActivity.of(tab.props.botId);
+            chatActivity.whenFullyVisible(() -> open.run(chatActivity));
             lastFragment.presentFragment(chatActivity);
-            AndroidUtilities.runOnUIThread(() -> {
-                open.run(chatActivity);
-            }, 200);
         } else {
             open.run(lastFragment);
         }
@@ -460,7 +460,7 @@ public class BottomSheetTabs extends FrameLayout {
                 getTabBounds(rect, position);
                 drawable.setExpandProgress(0f);
                 drawable.setBackgroundColor(tabColor, tabIsDark > .5f);
-                drawable.draw(canvas, rect, dp(10), alpha);
+                drawable.draw(canvas, rect, dp(10), alpha, 1f);
             }
         }
     }
@@ -583,7 +583,7 @@ public class BottomSheetTabs extends FrameLayout {
         private final Path closePath = new Path();
         private final Path expandPath = new Path();
 
-        public void draw(Canvas canvas, RectF bounds, float r, float alpha) {
+        public void draw(Canvas canvas, RectF bounds, float r, float alpha, float contentAlpha) {
             final int backgroundColor = ColorUtils.blendARGB(this.backgroundColor, this.tabColor, expandProgress);
             backgroundPaint.setColor(backgroundColor);
             backgroundPaint.setAlpha((int) (0xFF * alpha));
@@ -618,24 +618,24 @@ public class BottomSheetTabs extends FrameLayout {
 
             canvas.save();
             canvas.translate(bounds.left + dp(22 - 4), bounds.centerY() - dp(6));
-            iconPaint.setAlpha((int) (0xFF * alpha));
+            iconPaint.setAlpha((int) (0xFF * alpha * contentAlpha));
             canvas.drawPath(closePath, iconPaint);
             canvas.restore();
 
             canvas.save();
             canvas.translate(bounds.right - dp(22 - 4 + 12.66f), bounds.centerY());
-            iconPaint.setAlpha((int) (0xFF * alpha * (1f - expandProgress)));
+            iconPaint.setAlpha((int) (0xFF * alpha * contentAlpha * (1f - expandProgress)));
             canvas.drawPath(expandPath, iconPaint);
             canvas.restore();
 
             if (overrideTitle != null) {
                 overrideTitle
                     .ellipsize((int) (bounds.width() - dp(100)))
-                    .draw(canvas, bounds.left + dp(60), bounds.centerY(), iconColor, (1f - expandProgress) * alpha);
+                    .draw(canvas, bounds.left + dp(60), bounds.centerY(), iconColor, (1f - expandProgress) * alpha * contentAlpha);
             }
             title
                 .ellipsize((int) (bounds.width() - dp(100)))
-                .draw(canvas, bounds.left + dp(60), bounds.centerY(), iconColor, (overrideTitle == null ? 1f : expandProgress) * alpha);
+                .draw(canvas, bounds.left + dp(60), bounds.centerY(), iconColor, (overrideTitle == null ? 1f : expandProgress) * alpha * contentAlpha);
         }
 
     }

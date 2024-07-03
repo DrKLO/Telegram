@@ -807,7 +807,7 @@ public class DataUsageActivity extends BaseFragment {
                 case 3: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     cell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    cell.setText(LocaleController.formatString("NetworkUsageSince", R.string.NetworkUsageSince, LocaleController.getInstance().formatterStats.format(StatsController.getInstance(currentAccount).getResetStatsDate(currentType))));
+                    cell.setText(LocaleController.formatString("NetworkUsageSince", R.string.NetworkUsageSince, LocaleController.getInstance().getFormatterStats().format(StatsController.getInstance(currentAccount).getResetStatsDate(currentType))));
                     break;
                 }
                 default:

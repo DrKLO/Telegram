@@ -122,10 +122,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     private RectF actualDrawRect = new RectF();
 
-    private BitmapShader[] renderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private BitmapShader[] nextRenderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private BitmapShader[] nextRenderingShader2 = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private BitmapShader[] backgroundShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final BitmapShader[] renderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final BitmapShader[] nextRenderingShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final BitmapShader[] nextRenderingShader2 = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final BitmapShader[] backgroundShader = new BitmapShader[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
     ArrayList<Bitmap> unusedBitmaps = new ArrayList<>();
 
     private BitmapShader renderingShaderBackgroundDraw;
@@ -155,15 +155,15 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private float scaleFactor = 1f;
     public boolean isWebmSticker;
     private final TLRPC.Document document;
-    private RectF[] dstRectBackground = new RectF[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private Paint[] backgroundPaint = new Paint[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private Matrix[] shaderMatrixBackground = new Matrix[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-    private Path[] roundPathBackground = new Path[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final RectF[] dstRectBackground = new RectF[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final Paint[] backgroundPaint = new Paint[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final Matrix[] shaderMatrixBackground = new Matrix[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+    private final Path[] roundPathBackground = new Path[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
 
     private View parentView;
-    private ArrayList<View> secondParentViews = new ArrayList<>();
+    private final ArrayList<View> secondParentViews = new ArrayList<>();
 
-    private ArrayList<ImageReceiver> parents = new ArrayList<>();
+    private final ArrayList<ImageReceiver> parents = new ArrayList<>();
 
     private AnimatedFileDrawableStream stream;
 

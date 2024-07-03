@@ -314,13 +314,13 @@ public class MessagePrivateSeenView extends FrameLayout {
             minWidth = Math.max(minWidth, dp(40 + 96 + 8));
             minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadUnknown)));
             minWidth = Math.max(minWidth, dp(40 + 16 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmRead) + premiumTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadShowWhen))));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadTodayAt, LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadTodayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
             if (messageDiff > 60 * 60 * 24) {
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadYesterdayAt, LocaleController.getInstance().formatterDay.format(new Date(date)))));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadYesterdayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
             }
             if (messageDiff > 60 * 60 * 24 * 2) {
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().formatterDayMonth.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterDayMonth().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterYear().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
             }
         }
 

@@ -869,6 +869,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
+    public void setWasOpenedByLinkIntent(boolean value) {
+        if (webViewContainer != null) {
+            webViewContainer.setWasOpenedByLinkIntent(value);
+        }
+    }
+
     public void setNeedsContext(boolean needsContext) {
         this.needsContext = needsContext;
     }

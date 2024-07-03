@@ -468,7 +468,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
             int hours = (time - min) / 60 % 24;
             Calendar rightNow = Calendar.getInstance();
             rightNow.set(0, 0, 0, hours, min);
-            String str = LocaleController.getInstance().formatterConstDay.format(rightNow.getTime());
+            String str = LocaleController.getInstance().getFormatterConstDay().format(rightNow.getTime());
             if (time > 24 * 60 && includeNextDay) {
                 return LocaleController.formatString(R.string.BusinessHoursNextDay, str);
             }

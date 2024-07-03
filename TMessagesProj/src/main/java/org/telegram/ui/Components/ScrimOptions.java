@@ -441,7 +441,7 @@ public class ScrimOptions extends Dialog {
                 r = Math.max(r, layout.getLineRight(i));
             }
 
-            x += Math.min(xoffset, xwidth - Math.max(0, r - l));
+            x += Math.max(0, Math.min(xoffset, xwidth - Math.max(0, r - l)));
         }
 
         final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

@@ -27,7 +27,6 @@ import android.os.Build;
 import android.os.Message;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -97,7 +96,6 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -302,10 +300,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     private void onOpenUri(Uri uri) {
-        onOpenUri(uri, false, false);
+        onOpenUri(uri, null, false, false);
     }
 
-    private void onOpenUri(Uri uri, boolean tryInstantView, boolean suppressPopup) {
+    private void onOpenUri(Uri uri, String browser, boolean tryInstantView, boolean suppressPopup) {
         if (isRequestingPageOpen || System.currentTimeMillis() - lastClickMs > 1000 && suppressPopup) {
             return;
         }
@@ -314,23 +312,17 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         boolean[] forceBrowser = {false};
         boolean internal = Browser.isInternalUri(uri, forceBrowser);
 
-        if (internal && !forceBrowser[0]) {
-            if (delegate != null) {
-                setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
-                BotWebViewContainer.this.setFocusable(false);
-                webView.setFocusable(false);
-                webView.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
-                webView.clearFocus();
-                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-
-                Browser.openUrl(getContext(), uri, true, tryInstantView);
-            } else {
-                Browser.openUrl(getContext(), uri, true, tryInstantView);
-            }
-        } else {
-            Browser.openUrl(getContext(), uri, true, tryInstantView);
+        if (internal && !forceBrowser[0] && delegate != null) {
+            setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+            BotWebViewContainer.this.setFocusable(false);
+            webView.setFocusable(false);
+            webView.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+            webView.clearFocus();
+            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
+
+        Browser.openUrl(getContext(), uri, true, tryInstantView, false, null, browser);
     }
 
     public static int getMainButtonRippleColor(int buttonColor) {
@@ -809,6 +801,11 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
+    private boolean wasOpenedByLinkIntent;
+    public void setWasOpenedByLinkIntent(boolean value) {
+        wasOpenedByLinkIntent = value;
+    }
+
     public void setDelegate(Delegate delegate) {
         this.delegate = delegate;
     }
@@ -821,7 +818,22 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         d("onEventReceived " + eventType);
         switch (eventType) {
             case "web_app_close": {
+                boolean return_back = false;
+                try {
+                    JSONObject jsonObject = new JSONObject(eventData);
+                    return_back = jsonObject.optBoolean("return_back");
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+
                 delegate.onCloseRequested(null);
+                if (wasOpenedByLinkIntent && return_back && LaunchActivity.instance != null) {
+                    Activity activity = AndroidUtilities.findActivity(getContext());
+                    if (activity == null) activity = LaunchActivity.instance;
+                    if (activity != null && !activity.isFinishing()) {
+                        activity.moveTaskToBack(true);
+                    }
+                }
                 break;
             }
             case "web_app_switch_inline_query": {
@@ -1142,9 +1154,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 try {
                     JSONObject jsonData = new JSONObject(eventData);
                     Uri uri = Uri.parse(jsonData.optString("url"));
+                    String browser = jsonData.optString("try_browser");
                     if (MessagesController.getInstance(currentAccount).webAppAllowedProtocols != null &&
                         MessagesController.getInstance(currentAccount).webAppAllowedProtocols.contains(uri.getScheme())) {
-                        onOpenUri(uri, jsonData.optBoolean("try_instant_view"), true);
+                        onOpenUri(uri, browser, jsonData.optBoolean("try_instant_view"), true);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -1158,7 +1171,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     if (pathFull.startsWith("/")) {
                         pathFull = pathFull.substring(1);
                     }
-                    onOpenUri(Uri.parse("https://t.me/" + pathFull), false, true);
+                    onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true);
                 } catch (JSONException e) {
                     FileLog.e(e);
                 }

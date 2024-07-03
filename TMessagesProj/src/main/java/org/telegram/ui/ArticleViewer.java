@@ -3636,7 +3636,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else {
                     webPageUrl = adapter[0].currentPage.url;
                 }
-                Browser.openUrl(parentActivity, webPageUrl, true, false);
+                if (parentActivity == null || parentActivity.isFinishing()) return;
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webPageUrl));
+                intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
+                intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, parentActivity.getPackageName());
+                parentActivity.startActivity(intent);
             } else if (id == settings_item) {
                 BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
                 builder.setApplyTopPadding(false);
@@ -7131,7 +7135,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
 
                     if (currentBlock.date != 0) {
-                        dateLayout = createLayoutForText(this, LocaleController.getInstance().chatFullDate.format((long) currentBlock.date * 1000), null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), AndroidUtilities.dp(29), currentBlock, parentAdapter);
+                        dateLayout = createLayoutForText(this, LocaleController.getInstance().getChatFullDate().format((long) currentBlock.date * 1000), null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), AndroidUtilities.dp(29), currentBlock, parentAdapter);
                     } else {
                         dateLayout = null;
                     }
@@ -9682,11 +9686,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
             String description;
             if (item.published_date != 0 && !TextUtils.isEmpty(item.author)) {
-                description = LocaleController.formatString("ArticleDateByAuthor", R.string.ArticleDateByAuthor, LocaleController.getInstance().chatFullDate.format((long) item.published_date * 1000), item.author);
+                description = LocaleController.formatString("ArticleDateByAuthor", R.string.ArticleDateByAuthor, LocaleController.getInstance().getChatFullDate().format((long) item.published_date * 1000), item.author);
             } else if (!TextUtils.isEmpty(item.author)) {
                 description = LocaleController.formatString("ArticleByAuthor", R.string.ArticleByAuthor, item.author);
             } else if (item.published_date != 0) {
-                description = LocaleController.getInstance().chatFullDate.format((long) item.published_date * 1000);
+                description = LocaleController.getInstance().getChatFullDate().format((long) item.published_date * 1000);
             } else if (!TextUtils.isEmpty(item.description)) {
                 description = item.description;
             } else {
@@ -10960,11 +10964,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     spans = null;
                 }
                 if (currentBlock.published_date != 0 && !TextUtils.isEmpty(author)) {
-                    text = LocaleController.formatString("ArticleDateByAuthor", R.string.ArticleDateByAuthor, LocaleController.getInstance().chatFullDate.format((long) currentBlock.published_date * 1000), author);
+                    text = LocaleController.formatString("ArticleDateByAuthor", R.string.ArticleDateByAuthor, LocaleController.getInstance().getChatFullDate().format((long) currentBlock.published_date * 1000), author);
                 } else if (!TextUtils.isEmpty(author)) {
                     text = LocaleController.formatString("ArticleByAuthor", R.string.ArticleByAuthor, author);
                 } else {
-                    text = LocaleController.getInstance().chatFullDate.format((long) currentBlock.published_date * 1000);
+                    text = LocaleController.getInstance().getChatFullDate().format((long) currentBlock.published_date * 1000);
                 }
                 try {
                     if (spans != null && spans.length > 0) {

@@ -5993,7 +5993,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 obj = getMessagesController().getChat(chatId);
                             }
                             final String usernameStr = "@" + usernameObj.username;
-                            final String date = LocaleController.getInstance().formatterBoostExpired.format(new Date(info.purchase_date * 1000L));
+                            final String date = LocaleController.getInstance().getFormatterBoostExpired().format(new Date(info.purchase_date * 1000L));
                             final String cryptoAmount = BillingController.getInstance().formatCurrency(info.crypto_amount, info.crypto_currency);
                             final String amount = BillingController.getInstance().formatCurrency(info.amount, info.currency);
                             BulletinFactory.of(shareAlert.bulletinContainer2, resourcesProvider)
@@ -10506,7 +10506,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         i.setType("message/rfc822");
                         i.putExtra(Intent.EXTRA_EMAIL, "");
-                        i.putExtra(Intent.EXTRA_SUBJECT, "Logs from " + LocaleController.getInstance().formatterStats.format(System.currentTimeMillis()));
+                        i.putExtra(Intent.EXTRA_SUBJECT, "Logs from " + LocaleController.getInstance().getFormatterStats().format(System.currentTimeMillis()));
                         i.putExtra(Intent.EXTRA_STREAM, uri);
                         if (activity != null) {
                             try {

@@ -59,9 +59,17 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public boolean withUsername = true;
 
-
     public UItem(int viewType, boolean selectable) {
         super(viewType, selectable);
+    }
+
+    public UItem(int viewType) {
+        super(viewType, false);
+    }
+
+    public UItem(int viewType, Object object) {
+        super(viewType, false);
+        this.object = object;
     }
 
     public static UItem asCustom(int id, View view) {

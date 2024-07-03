@@ -8690,6 +8690,10 @@
     <string name="MonetizationInfo">Telegram shares %1$d%% of the revenue from ads displayed in your channel. **Learn more >**</string>
     <string name="MonetizationBalance">Available balance</string>
     <string name="MonetizationBalanceInfo">You can collect your reward using Fragment, a third-party platform used by advertisers to pay for ads. **Learn more >**</string>
+    <string name="MonetizationProceedsInfo">Funds from your total balance become available for spending on ads and rewards 21 days after they are earned.</string>
+    <string name="MonetizationProceedsInfoLink">https://telegram.org/tos/content-creator-rewards</string>
+    <string name="MonetizationProceedsInfoTON">TON from your total balance become available for spending on ads and rewards 21 days after they are earned.</string>
+    <string name="MonetizationProceedsInfoTONLink">https://telegram.org/tos/content-creator-rewards</string>
     <string name="MonetizationBalanceInfoLink">https://telegram.org/tos/content-creator-rewards</string>
     <string name="MonetizationBalanceInfoNotAvailable">In the coming weeks you will be able to collect your reward using Fragment, a third-party platform used by advertisers to pay ads. **Learn more >**</string>
     <string name="MonetizationTransactions">Transaction history</string>
@@ -9062,7 +9066,9 @@
     <string name="StarsConfirmPurchaseMedia_Photos_other">**%d photos**</string>
     <string name="StarsConfirmPurchaseMedia_Videos_one">**%s video**</string>
     <string name="StarsConfirmPurchaseMedia_Videos_other">**%s videos**</string>
-    <string name="StarsConfirmPurchaseMedia1">Do you want to unlock %1$s in **%2$s** for **%3$s**?</string>
-    <string name="StarsConfirmPurchaseMedia2">Do you want to unlock %1$s and %2$s in **%3$s** for **%4$s**?</string>
+    <string name="StarsConfirmPurchaseMediaOne2_one">Do you want to unlock %2$s in **%3$s** for **%1$d star**?</string>
+    <string name="StarsConfirmPurchaseMediaOne2_other">Do you want to unlock %2$s in **%3$s** for **%1$d stars**?</string>
+    <string name="StarsConfirmPurchaseMediaTwo2_one">Do you want to unlock %2$s and %3$s in **%4$s** for **%1$d star**?</string>
+    <string name="StarsConfirmPurchaseMediaTwo2_other">Do you want to unlock %2$s and %3$s in **%4$s** for **%1$d stars**?</string>
     <string name="AttachPaidMedia">⭐️ %s</string>
 </resources>

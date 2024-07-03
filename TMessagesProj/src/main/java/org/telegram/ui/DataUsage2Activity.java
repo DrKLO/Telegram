@@ -346,8 +346,8 @@ public class DataUsage2Activity extends BaseFragment {
 
             itemInners.add(new ItemInner(VIEW_TYPE_CHART));
             final String sinceText = totalSize > 0 ?
-                LocaleController.formatString("YourNetworkUsageSince", R.string.YourNetworkUsageSince, LocaleController.getInstance().formatterStats.format(getResetStatsDate())) :
-                LocaleController.formatString("NoNetworkUsageSince", R.string.NoNetworkUsageSince, LocaleController.getInstance().formatterStats.format(getResetStatsDate()));
+                LocaleController.formatString("YourNetworkUsageSince", R.string.YourNetworkUsageSince, LocaleController.getInstance().getFormatterStats().format(getResetStatsDate())) :
+                LocaleController.formatString("NoNetworkUsageSince", R.string.NoNetworkUsageSince, LocaleController.getInstance().getFormatterStats().format(getResetStatsDate()));
             itemInners.add(ItemInner.asSubtitle(sinceText));
 
             ArrayList<ItemInner> sections = new ArrayList<>();

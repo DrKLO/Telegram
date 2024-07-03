@@ -1843,7 +1843,7 @@ public class AndroidUtilities {
                             calendar.set(Calendar.YEAR, Utilities.parseInt(date[0]));
                             calendar.set(Calendar.MONTH, Utilities.parseInt(date[1]) - 1);
                             calendar.set(Calendar.DAY_OF_MONTH, Utilities.parseInt(date[2]));
-                            return LocaleController.getInstance().formatterYearMax.format(calendar.getTime());
+                            return LocaleController.getInstance().getFormatterYearMax().format(calendar.getTime());
                         }
                     }
                 }
@@ -5933,17 +5933,41 @@ public class AndroidUtilities {
                 case "http":
                 case "https": {
                     if (path.isEmpty()) return false;
-                    ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
-                    if (segments.size() > 0 && segments.get(0).equals("s")) {
-                        segments.remove(0);
-                    }
-                    if (segments.size() > 0) {
-                        if (segments.size() >= 3 && "s".equals(segments.get(1))) {
-                            return false;
-                        } else if (segments.size() > 1) {
-                            return !TextUtils.isEmpty(segments.get(1));
-                        } else if (segments.size() == 1) {
-                            return !TextUtils.isEmpty(uri.getQueryParameter("startapp"));
+                    String host = uri.getHost().toLowerCase();
+                    Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
+                    boolean isPrefix = prefixMatcher.find();
+                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
+                        ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
+                        if (segments.size() > 0 && segments.get(0).equals("s")) {
+                            segments.remove(0);
+                        }
+                        if (segments.size() > 0) {
+                            if (segments.size() >= 3 && "s".equals(segments.get(1))) {
+                                return false;
+                            } else if (segments.size() > 1) {
+                                final String segment = segments.get(1);
+                                if (TextUtils.isEmpty(segment)) return false;
+                                switch (segment) {
+                                    case "joinchat":
+                                    case "login":
+                                    case "addstickers":
+                                    case "addemoji":
+                                    case "msg":
+                                    case "share":
+                                    case "confirmphone":
+                                    case "setlanguage":
+                                    case "addtheme":
+                                    case "boost":
+                                    case "c":
+                                    case "contact":
+                                    case "folder":
+                                    case "addlist":
+                                        return false;
+                                }
+                                return true;
+                            } else if (segments.size() == 1) {
+                                return !TextUtils.isEmpty(uri.getQueryParameter("startapp"));
+                            }
                         }
                     }
                     break;

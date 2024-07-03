@@ -5963,6 +5963,31 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return sendingMessages.indexOfKey(mid) >= 0 || editingMessages.indexOfKey(mid) >= 0;
     }
 
+
+    public boolean isSendingPaidMessage(int mid, int index) {
+        DelayedMessage delayedMessage = null;
+        if (delayedMessages != null) {
+            for (ArrayList<DelayedMessage> arr : delayedMessages.values()) {
+                if (arr == null) continue;
+                for (DelayedMessage m : arr) {
+                    if (m.messages == null) continue;
+                    for (TLRPC.Message msg : m.messages) {
+                        if (msg != null && msg.id == mid) {
+                            delayedMessage = m;
+                            break;
+                        }
+                    }
+                    if (delayedMessage != null) break;
+                }
+                if (delayedMessage != null) break;
+            }
+        }
+        if (delayedMessage != null && index >= 0 && index < delayedMessage.messages.size()) {
+            mid = delayedMessage.messages.get(index).id;
+        }
+        return sendingMessages.indexOfKey(mid) >= 0 || editingMessages.indexOfKey(mid) >= 0;
+    }
+
     public boolean isSendingMessageIdDialog(long did) {
         return sendingMessagesIdDialogs.get(did, 0) > 0;
     }

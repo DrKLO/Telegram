@@ -840,7 +840,7 @@ enum PARAM_NUM {
     PARAM_NUM_COUNT = 11,
 };
 
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz,jint sdkVersion, jstring src, jintArray data) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jint sdkVersion, jstring src, jintArray data) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);

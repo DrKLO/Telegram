@@ -1608,16 +1608,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             blurredAnimationInProgress = true;
             BaseFragment fragment = parentActivity.getActionBarLayout().getFragmentStack().get(parentActivity.getActionBarLayout().getFragmentStack().size() - 1);
             View fragmentView = fragment.getFragmentView();
-            int w = (int) (fragmentView.getMeasuredWidth() / 6.0f);
-            int h = (int) (fragmentView.getMeasuredHeight() / 6.0f);
-            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            canvas.scale(1.0f / 6.0f, 1.0f / 6.0f);
-            fragmentView.draw(canvas);
-            canvas.translate(containerView.getLeft() - getLeftInset(), 0);
-            containerView.draw(canvas);
-            Utilities.stackBlurBitmap(bitmap, Math.max(7, Math.max(w, h) / 180));
-            blurredView.setBackground(new BitmapDrawable(bitmap));
+            if (fragmentView != null) {
+                int w = (int) (fragmentView.getMeasuredWidth() / 6.0f);
+                int h = (int) (fragmentView.getMeasuredHeight() / 6.0f);
+                Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                canvas.scale(1.0f / 6.0f, 1.0f / 6.0f);
+                fragmentView.draw(canvas);
+                canvas.translate(containerView.getLeft() - getLeftInset(), 0);
+                containerView.draw(canvas);
+                Utilities.stackBlurBitmap(bitmap, Math.max(7, Math.max(w, h) / 180));
+                blurredView.setBackground(new BitmapDrawable(bitmap));
+            }
             blurredView.setVisibility(View.VISIBLE);
             blurredView.animate().alpha(1.0f).setDuration(180).setListener(new AnimatorListenerAdapter() {
                 @Override

@@ -190,8 +190,8 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                     cell.setText(text);
                 } else {
                     Date date = new Date(giftCode.used_date * 1000L);
-                    String monthTxt = LocaleController.getInstance().formatterYear.format(date);
-                    String timeTxt = LocaleController.getInstance().formatterDay.format(date);
+                    String monthTxt = LocaleController.getInstance().getFormatterYear().format(date);
+                    String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
                     String fullDateStr = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt);
                     cell.setText(LocaleController.formatString("BoostingUsedLinkDate", R.string.BoostingUsedLinkDate, fullDateStr));
                 }

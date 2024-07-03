@@ -168,7 +168,7 @@ public class SelectorUserCell extends BaseCell {
         titleTextView.setText(chat.title);
 
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
-        setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().formatterBoostExpired.format(new Date(boost.expires * 1000L))));
+        setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
 
         if (boost.cooldown_until_date > 0) {
             long diff = boost.cooldown_until_date * 1000L - System.currentTimeMillis();
@@ -191,7 +191,7 @@ public class SelectorUserCell extends BaseCell {
             subtitleTextView.setAlpha(0.65f);
             setCheckboxAlpha(0.3f, false);
         } else {
-            setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().formatterBoostExpired.format(new Date(boost.expires * 1000L))));
+            setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
             if (titleTextView.getAlpha() < 1f) {
                 titleTextView.animate().alpha(1f).start();
                 subtitleTextView.animate().alpha(1f).start();

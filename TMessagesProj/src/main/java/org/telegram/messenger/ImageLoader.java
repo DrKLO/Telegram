@@ -1103,7 +1103,11 @@ public class ImageLoader {
                 if ((isAnimatedAvatar(cacheImage.filter) || AUTOPLAY_FILTER.equals(cacheImage.filter)) && !(cacheImage.imageLocation.document instanceof TLRPC.TL_documentEncrypted) && !precache) {
                     TLRPC.Document document = cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null;
                     long size = document != null ? cacheImage.size : cacheImage.imageLocation.currentSize;
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, fistFrame, notCreateStream ? 0 : size, cacheImage.priority, notCreateStream ? null : document, document == null && !notCreateStream ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, cacheOptions);
+                    int cacheType = document != null ? 1 : 0;
+                    if (cacheImage.cacheType > 1) {
+                        cacheType = cacheImage.cacheType;
+                    }
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, fistFrame, notCreateStream ? 0 : size, cacheImage.priority, notCreateStream ? null : document, document == null && !notCreateStream ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, 0, 0, cacheOptions, cacheType);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(document) || MessageObject.isVideoSticker(document) || isAnimatedAvatar(cacheImage.filter));
                 } else {
 

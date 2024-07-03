@@ -79,7 +79,7 @@ public class BoostDialogs {
         if (error.text.contains("PREMIUM_SUB_ACTIVE_UNTIL_")) {
             String strDate = error.text.replace("PREMIUM_SUB_ACTIVE_UNTIL_", "");
             long date = Long.parseLong(strDate);
-            String formattedDate = LocaleController.getInstance().formatterBoostExpired.format(new Date(date * 1000L));
+            String formattedDate = LocaleController.getInstance().getFormatterBoostExpired().format(new Date(date * 1000L));
             String subTitleText = getString("GiftPremiumActivateErrorText", R.string.GiftPremiumActivateErrorText);
             SpannableStringBuilder subTitleWithLink = AndroidUtilities.replaceSingleTag(
                     subTitleText,
@@ -302,9 +302,9 @@ public class BoostDialogs {
                 calendar.setTimeInMillis(date);
                 int year = calendar.get(Calendar.YEAR);
                 if (year == currentYear) {
-                    return LocaleController.getInstance().formatterScheduleDay.format(date);
+                    return LocaleController.getInstance().getFormatterScheduleDay().format(date);
                 } else {
-                    return LocaleController.getInstance().formatterScheduleYear.format(date);
+                    return LocaleController.getInstance().getFormatterScheduleYear().format(date);
                 }
             }
         });
@@ -502,10 +502,10 @@ public class BoostDialogs {
     public static void showAbout(boolean isChannel, String from, long msgDate, TLRPC.TL_payments_giveawayInfo giveawayInfo, TLRPC.TL_messageMediaGiveaway giveaway, Context context, Theme.ResourcesProvider resourcesProvider) {
         int quantity = giveaway.quantity;
         String months = formatPluralString("BoldMonths", giveaway.months);
-        String endDate = LocaleController.getInstance().formatterGiveawayMonthDay.format(new Date(giveaway.until_date * 1000L));
+        String endDate = LocaleController.getInstance().getFormatterGiveawayMonthDay().format(new Date(giveaway.until_date * 1000L));
 
-        String fromTime = LocaleController.getInstance().formatterDay.format(new Date(giveawayInfo.start_date * 1000L));
-        String fromDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveawayInfo.start_date * 1000L));
+        String fromTime = LocaleController.getInstance().getFormatterDay().format(new Date(giveawayInfo.start_date * 1000L));
+        String fromDate = LocaleController.getInstance().getFormatterGiveawayMonthDayYear().format(new Date(giveawayInfo.start_date * 1000L));
         boolean isSeveralChats = giveaway.channels.size() > 1;
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         builder.setTitle(getString("BoostingGiveAwayAbout", R.string.BoostingGiveAwayAbout));
@@ -550,7 +550,7 @@ public class BoostDialogs {
             String title = badChat != null ? badChat.title : "";
             stringBuilder.append(replaceTags(formatString(isChannel ? R.string.BoostingGiveawayNotEligibleAdmin : R.string.BoostingGiveawayNotEligibleAdminGroup, title)));
         } else if (giveawayInfo.joined_too_early_date != 0) {
-            String date = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveawayInfo.joined_too_early_date * 1000L));
+            String date = LocaleController.getInstance().getFormatterGiveawayMonthDayYear().format(new Date(giveawayInfo.joined_too_early_date * 1000L));
             stringBuilder.append(replaceTags(formatString("BoostingGiveawayNotEligible", R.string.BoostingGiveawayNotEligible, date)));
         } else {
             if (isSeveralChats) {
@@ -573,10 +573,10 @@ public class BoostDialogs {
         }
         int quantity = giveaway.quantity;
         String months = formatPluralString("BoldMonths", giveaway.months);
-        String endDate = LocaleController.getInstance().formatterGiveawayMonthDay.format(new Date(giveaway.until_date * 1000L));
+        String endDate = LocaleController.getInstance().getFormatterGiveawayMonthDay().format(new Date(giveaway.until_date * 1000L));
 
-        String fromTime = LocaleController.getInstance().formatterDay.format(new Date(giveawayInfo.start_date * 1000L));
-        String fromDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(giveawayInfo.start_date * 1000L));
+        String fromTime = LocaleController.getInstance().getFormatterDay().format(new Date(giveawayInfo.start_date * 1000L));
+        String fromDate = LocaleController.getInstance().getFormatterGiveawayMonthDayYear().format(new Date(giveawayInfo.start_date * 1000L));
         boolean isSeveralChats = giveaway.channels.size() > 1;
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         builder.setTitle(getString("BoostingGiveawayEnd", R.string.BoostingGiveawayEnd));
