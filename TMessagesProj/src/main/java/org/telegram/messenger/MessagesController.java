@@ -19922,13 +19922,13 @@ public class MessagesController extends BaseController implements NotificationCe
                 @Override
                 public void onMessagesLoaded(boolean fromCache) {
                     progress.end();
-                    fragment.presentFragment(new ChatActivity(bundle), true);
+                    fragment.presentFragment(new ChatActivity(bundle));
                 }
 
                 @Override
                 public void onError() {
                     progress.end();
-                    fragment.presentFragment(new ChatActivity(bundle), true);
+                    fragment.presentFragment(new ChatActivity(bundle));
                 }
             }));
             return false;

@@ -30,6 +30,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Space;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -116,7 +117,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     private boolean balanceEditTextAll = true;
     private long balanceEditTextValue;
     private EditTextBoldCursor balanceEditText;
-    private ButtonWithCounterView balanceButton;
+    private ButtonWithCounterView balanceButton, adsButton;
     private ColoredImageSpan[] starRef = new ColoredImageSpan[1];
     private int shakeDp = 4;
 
@@ -241,7 +242,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
-                long balance = BotStarsController.getInstance(currentAccount).getBalance(bot_id);
+                long balance = BotStarsController.getInstance(currentAccount).getAvailableBalance(bot_id);
                 balanceEditTextValue = TextUtils.isEmpty(s) ? 0 : Long.parseLong(s.toString());
                 if (balanceEditTextValue > balance) {
                     balanceEditTextValue = balance;
@@ -274,37 +275,46 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             return false;
         });
         balanceLayout.addView(balanceEditTextContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 18, 14, 18, 2));
+        balanceEditTextContainer.setVisibility(View.GONE);
 
-        final CircularProgressDrawable circularProgressDrawable = new CircularProgressDrawable(dp(15), dpf2(2), Theme.getColor(Theme.key_featuredStickers_buttonText, getResourceProvider())) {
-            @Override
-            public int getIntrinsicWidth() {
-                return dp(24);
-            }
-            @Override
-            public int getIntrinsicHeight() {
-                return dp(24);
-            }
-        };
-        circularProgressDrawable.setBounds(0, 0, dp(24), dp(24));
+        LinearLayout balanceButtonsLayout = new LinearLayout(context);
+        balanceButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         balanceButton = new ButtonWithCounterView(context, getResourceProvider()) {
-            @Override
-            protected boolean verifyDrawable(@NonNull Drawable who) {
-                return who == circularProgressDrawable || super.verifyDrawable(who);
-            }
-
             @Override
             protected boolean subTextSplitToWords() {
                 return false;
             }
         };
         balanceButton.setEnabled(MessagesController.getInstance(currentAccount).channelRevenueWithdrawalEnabled);
-        circularProgressDrawable.setCallback(balanceButton);
-        balanceButton.setText(getString(R.string.BotStarsButtonWithdrawAll), false);
+        balanceButton.setText(getString(R.string.BotStarsButtonWithdrawShortAll), false);
         balanceButton.setOnClickListener(v -> {
             withdraw();
         });
-        balanceLayout.addView(balanceButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 18, 13, 18, 0));
+
+        adsButton = new ButtonWithCounterView(context, getResourceProvider());
+        adsButton.setEnabled(true);
+        adsButton.setText(getString(R.string.MonetizationStarsAds), false);
+        adsButton.setOnClickListener(v -> {
+            if (!v.isEnabled() || adsButton.isLoading()) return;
+
+            adsButton.setLoading(true);
+            TLRPC.TL_payments_getStarsRevenueAdsAccountUrl req = new TLRPC.TL_payments_getStarsRevenueAdsAccountUrl();
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(bot_id);
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (res instanceof TLRPC.TL_payments_starsRevenueAdsAccountUrl) {
+                    Browser.openUrl(context, ((TLRPC.TL_payments_starsRevenueAdsAccountUrl) res).url);
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    adsButton.setLoading(false);
+                }, 1000);
+            }));
+        });
+
+        balanceButtonsLayout.addView(balanceButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        balanceButtonsLayout.addView(new Space(context), LayoutHelper.createLinear(8, 48, 0, Gravity.FILL));
+        balanceButtonsLayout.addView(adsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        balanceLayout.addView(balanceButtonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 18, 13, 18, 0));
 
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onItemClick, this::onItemLongClick);
@@ -330,7 +340,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             Drawable starDrawable = getContext().getResources().getDrawable(R.drawable.star_small_inner).mutate();
             BulletinFactory.of(this).createSimpleBulletin(starDrawable, AndroidUtilities.replaceSingleTag(LocaleController.formatPluralString("BotStarsWithdrawMinLimit", (int) getMessagesController().starsRevenueWithdrawalMin), () -> {
                 Bulletin.hideVisible();
-                long balance = BotStarsController.getInstance(currentAccount).getBalance(bot_id);
+                long balance = BotStarsController.getInstance(currentAccount).getAvailableBalance(bot_id);
                 if (balance < getMessagesController().starsRevenueWithdrawalMin) {
                     balanceEditTextAll = true;
                     balanceEditTextValue = balance;
@@ -407,6 +417,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         }
         balanceTitle.setText(ssb);
         balanceSubtitle.setText("≈" + BillingController.getInstance().formatCurrency(amount, "USD"));
+        balanceEditTextContainer.setVisibility(amount > 0 ? View.VISIBLE : View.GONE);
         if (balanceEditTextAll) {
             balanceEditTextIgnore = true;
             balanceEditText.setText(Long.toString(balanceEditTextValue = crypto_amount));
@@ -426,7 +437,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         final int now = getConnectionsManager().getCurrentTime();
         balanceButton.setEnabled(balanceEditTextValue > 0 || balanceBlockedUntil > now);
         if (now < balanceBlockedUntil) {
-            balanceButton.setText(getString(R.string.BotStarsButtonWithdrawUntil), true);
+            balanceButton.setText(getString(R.string.BotStarsButtonWithdrawShortUntil), true);
 
             if (lock == null) {
                 lock = new SpannableStringBuilder("l");
@@ -446,7 +457,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             AndroidUtilities.runOnUIThread(this.setBalanceButtonText, 1000);
         } else {
             balanceButton.setSubText(null, true);
-            balanceButton.setText(StarsIntroActivity.replaceStars(balanceEditTextAll ? getString(R.string.BotStarsButtonWithdrawAll) : LocaleController.formatPluralStringComma("BotStarsButtonWithdraw", (int) balanceEditTextValue, ' '), starRef), true);
+            balanceButton.setText(StarsIntroActivity.replaceStars(balanceEditTextAll ? getString(R.string.BotStarsButtonWithdrawShortAll) : LocaleController.formatPluralStringComma("BotStarsButtonWithdrawShort", (int) balanceEditTextValue, ' '), starRef), true);
         }
     };
 
@@ -492,7 +503,8 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             rate = stats.usd_rate;
             revenueChartData = StatisticActivity.createViewData(stats.revenue_graph, getString(R.string.BotStarsChartRevenue), 2);
             if (revenueChartData != null && revenueChartData.chartData != null && revenueChartData.chartData.lines != null && !revenueChartData.chartData.lines.isEmpty() && revenueChartData.chartData.lines.get(0) != null) {
-                revenueChartData.chartData.lines.get(0).colorKey = Theme.key_statisticChartLine_golden;
+                revenueChartData.showAll = true;
+                revenueChartData.chartData.lines.get(0).colorKey = Theme.key_color_yellow;
                 revenueChartData.chartData.yRate = (float) (1.0 / rate / 100.0);
             }
             setBalance(stats.status.available_balance, stats.status.next_withdrawal_at);

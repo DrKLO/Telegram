@@ -8410,6 +8410,7 @@ public class MessageObject {
         }
         boolean isAnimated = false;
         boolean isVideo = false;
+        String filename = null;
         int width = 0;
         int height = 0;
         for (int a = 0; a < document.attributes.size(); a++) {
@@ -8423,6 +8424,20 @@ public class MessageObject {
                 height = attribute.h;
             } else if (attribute instanceof TLRPC.TL_documentAttributeAnimated) {
                 isAnimated = true;
+            } else if (attribute instanceof TLRPC.TL_documentAttributeFilename) {
+                filename = attribute.file_name;
+            }
+        }
+        if (filename != null) {
+            int index = filename.lastIndexOf(".");
+            if (index >= 0) {
+                String ext = filename.substring(index + 1);
+                switch (ext.toLowerCase().hashCode()) {
+                    case 0x17a1c: case 0x3107ab: case 0x19a1b:
+                    case 0xe55:   case 0x18417:  case 0x184fe:
+                    case 0x18181:
+                        return false;
+                }
             }
         }
         if (isAnimated && (width > 1280 || height > 1280)) {

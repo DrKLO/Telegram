@@ -87,19 +87,6 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="ton"/>
         </intent>
-
-        <package android:name="com.android.chrome" />
-        <package android:name="org.mozilla.firefox" />
-        <package android:name="com.microsoft.emmx" />
-        <package android:name="com.opera.browser" />
-        <package android:name="com.opera.mini.native" />
-        <package android:name="com.brave.browser" />
-        <package android:name="com.duckduckgo.mobile.android" />
-        <package android:name="com.sec.android.app.sbrowser" />
-        <package android:name="com.vivaldi.browser" />
-        <package android:name="com.kiwibrowser.browser" />
-        <package android:name="com.UCMobile.intl" />
-        <package android:name="org.torproject.torbrowser" />
     </queries>
 
     <application

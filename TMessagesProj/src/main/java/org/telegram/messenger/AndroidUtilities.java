@@ -27,7 +27,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -36,7 +35,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -44,10 +42,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.fonts.Font;
-import android.graphics.fonts.FontFamily;
-import android.graphics.fonts.FontStyle;
-import android.graphics.fonts.SystemFonts;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -79,7 +73,6 @@ import android.text.style.DynamicDrawableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Pair;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -101,7 +94,6 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
@@ -122,9 +114,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
-import androidx.core.graphics.TypefaceCompatUtil;
 import androidx.core.math.MathUtils;
-import androidx.core.provider.FontRequest;
 import androidx.core.widget.NestedScrollView;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -3875,7 +3865,7 @@ public class AndroidUtilities {
         }
     }
 
-    public static boolean openForView(File f, String fileName, String mimeType, final Activity activity, Theme.ResourcesProvider resourcesProvider) {
+    public static boolean openForView(File f, String fileName, String mimeType, final Activity activity, Theme.ResourcesProvider resourcesProvider, boolean restrict) {
         if (f != null && f.exists()) {
             String realMimeType = null;
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -3884,6 +3874,10 @@ public class AndroidUtilities {
             int idx = fileName.lastIndexOf('.');
             if (idx != -1) {
                 String ext = fileName.substring(idx + 1);
+                int h = ext.toLowerCase().hashCode();
+                if (restrict && (h == 0x17a1c || h == 0x3107ab || h == 0x19a1b || h == 0xe55 || h == 0x18417)) {
+                    return true;
+                }
                 realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
                 if (realMimeType == null) {
                     realMimeType = mimeType;
@@ -3892,9 +3886,12 @@ public class AndroidUtilities {
                     }
                 }
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && realMimeType != null && realMimeType.equals("application/vnd.android.package-archive") && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
-                AlertsCreator.createApkRestrictedDialog(activity, resourcesProvider).show();
-                return true;
+            if (realMimeType != null && realMimeType.equals("application/vnd.android.package-archive")) {
+                if (restrict) return true;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
+                    AlertsCreator.createApkRestrictedDialog(activity, resourcesProvider).show();
+                    return true;
+                }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 intent.setDataAndType(FileProvider.getUriForFile(activity, ApplicationLoader.getApplicationId() + ".provider", f), realMimeType != null ? realMimeType : "text/plain");
@@ -3920,7 +3917,7 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static boolean openForView(MessageObject message, Activity activity, Theme.ResourcesProvider resourcesProvider) {
+    public static boolean openForView(MessageObject message, Activity activity, Theme.ResourcesProvider resourcesProvider, boolean restrict) {
         File f = null;
         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
             f = new File(message.messageOwner.attachPath);
@@ -3929,13 +3926,13 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(message.currentAccount).getPathToMessage(message.messageOwner);
         }
         String mimeType = message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT ? message.getMimeType() : null;
-        return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider);
+        return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider, restrict);
     }
 
     public static boolean openForView(TLRPC.Document document, boolean forceCache, Activity activity) {
         String fileName = FileLoader.getAttachFileName(document);
         File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
-        return openForView(f, fileName, document.mime_type, activity, null);
+        return openForView(f, fileName, document.mime_type, activity, null, false);
     }
 
     public static SpannableStringBuilder formatSpannableSimple(CharSequence format, CharSequence... cs) {

@@ -293,6 +293,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 return super.dispatchTouchEvent(event);
             }
         };
+        starsBalanceEditTextContainer.setVisibility(GONE);
         starsBalanceEditTextContainer.setText(getString(R.string.BotStarsWithdrawPlaceholder));
         starsBalanceEditTextContainer.setLeftPadding(dp(14 + 22));
         starsBalanceEditText = new EditTextBoldCursor(context) {
@@ -671,13 +672,14 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         starsBalance = crypto_amount;
         starsBalanceTitle.setText(ssb);
         starsBalanceSubtitle.setText("≈" + BillingController.getInstance().formatCurrency(amount, "USD"));
+        starsBalanceEditTextContainer.setVisibility(crypto_amount > 0 ? VISIBLE : GONE);
         if (starsBalanceEditTextAll) {
             starsBalanceEditTextIgnore = true;
             starsBalanceEditText.setText(Long.toString(starsBalanceEditTextValue = crypto_amount));
             starsBalanceEditText.setSelection(starsBalanceEditText.getText().length());
             starsBalanceEditTextIgnore = false;
 
-            balanceButton.setEnabled(starsBalanceEditTextValue > 0);
+            starsBalanceButton.setEnabled(starsBalanceEditTextValue > 0);
         }
         starsBalanceBlockedUntil = blockedUntil;
 

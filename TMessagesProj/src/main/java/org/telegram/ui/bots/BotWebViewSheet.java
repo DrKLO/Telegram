@@ -249,6 +249,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         tab.backButton = backButtonShown;
         tab.main = mainButtonSettings;
         tab.confirmDismiss = needCloseConfirmation;
+        tab.settings = settingsItem != null && settingsItem.getVisibility() == View.VISIBLE;
         BotWebViewContainer.MyWebView webView = webViewContainer == null ? null : webViewContainer.getWebView();
         if (webView != null) {
             webViewContainer.preserveWebView();
@@ -312,6 +313,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             tab.props.responseTime = 0;
         }
         requestWebView(fragment, tab.props);
+        if (settingsItem != null) {
+            settingsItem.setVisibility(tab.settings ? View.VISIBLE : View.GONE);
+        }
         return true;
     }
 

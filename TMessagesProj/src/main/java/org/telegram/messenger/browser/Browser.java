@@ -49,6 +49,7 @@ import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 
@@ -253,11 +254,9 @@ public class Browser {
         boolean[] forceBrowser = new boolean[]{false};
         boolean internalUri = isInternalUri(uri, forceBrowser);
         String browserPackage = getBrowserPackageName(browser);
-        if (isBrowserPackageInstalled(context, browserPackage, uri)) {
+        if (browserPackage != null) {
             tryTelegraph = false;
             _allowCustom = false;
-        } else {
-            browserPackage = null;
         }
         final boolean allowCustom = _allowCustom;
         if (tryTelegraph) {
@@ -431,7 +430,16 @@ public class Browser {
                 intent.putExtra(LaunchActivity.EXTRA_FORCE_NOT_INTERNAL_APPS, forceNotInternalForApps);
                 ((LaunchActivity) context).onNewIntent(intent, inCaseLoading);
             } else {
-                context.startActivity(intent);
+                try {
+                    context.startActivity(intent);
+                } catch (Exception e2) {
+                    if (browserPackage != null) {
+                        intent.setPackage(browserPackage = null);
+                        context.startActivity(intent);
+                    } else {
+                        FileLog.e(e2);
+                    }
+                }
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -586,14 +594,6 @@ public class Browser {
                 return "org.torproject.torbrowser";
         }
         return null;
-    }
-
-    public static boolean isBrowserPackageInstalled(Context context, String packageName, Uri uri) {
-        if (packageName == null) return false;
-        PackageManager packageManager = context.getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setPackage(packageName);
-        return packageManager.resolveActivity(intent, 0) != null;
     }
 
     public static String replaceHostname(Uri originalUri, String newHostname) {

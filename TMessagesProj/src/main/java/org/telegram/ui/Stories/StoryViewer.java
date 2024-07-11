@@ -2185,21 +2185,27 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         openCloseAnimator = ValueAnimator.ofFloat(0, 1f);
         openCloseAnimator.addUpdateListener(animation -> {
             progressToOpen = (float) animation.getAnimatedValue();
-            containerView.checkHwAcceleration(progressToOpen);
+            if (containerView != null) {
+                containerView.checkHwAcceleration(progressToOpen);
+            }
             checkNavBarColor();
             if (windowView != null) {
                 windowView.invalidate();
             }
         });
         locker.lock();
-        containerView.enableHwAcceleration();
+        if (containerView != null) {
+            containerView.enableHwAcceleration();
+        }
         openCloseAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 progressToOpen = 1f;
                 checkNavBarColor();
                 animationInProgress = false;
-                containerView.disableHwAcceleration();
+                if (containerView != null) {
+                    containerView.disableHwAcceleration();
+                }
                 if (windowView != null) {
                     windowView.invalidate();
                 }
@@ -2221,42 +2227,43 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     showViewsAfterOpening = false;
                     openViews();
                 } else if (!SharedConfig.storiesIntroShown) {
-                    if (storiesIntro == null) {
+                    if (storiesIntro == null && containerView != null) {
                         storiesIntro = new StoriesIntro(containerView.getContext(), windowView);
                         storiesIntro.setAlpha(0f);
                         containerView.addView(storiesIntro);
                     }
-
-                    storiesIntro.setOnClickListener(v -> {
+                    if (storiesIntro != null) {
+                        storiesIntro.setOnClickListener(v -> {
+                            storiesIntro.animate()
+                                    .alpha(0f)
+                                    .setDuration(150L)
+                                    .setListener(new AnimatorListenerAdapter() {
+                                        @Override
+                                        public void onAnimationEnd(Animator animation) {
+                                            super.onAnimationEnd(animation);
+                                            if (storiesIntro != null) {
+                                                storiesIntro.stopAnimation();
+                                                containerView.removeView(storiesIntro);
+                                            }
+                                            storiesIntro = null;
+                                            updatePlayingMode();
+                                        }
+                                    })
+                                    .start();
+                        });
                         storiesIntro.animate()
-                                .alpha(0f)
+                                .alpha(1f)
                                 .setDuration(150L)
                                 .setListener(new AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
                                         super.onAnimationEnd(animation);
                                         if (storiesIntro != null) {
-                                            storiesIntro.stopAnimation();
-                                            containerView.removeView(storiesIntro);
+                                            storiesIntro.startAnimation(true);
                                         }
-                                        storiesIntro = null;
-                                        updatePlayingMode();
                                     }
-                                })
-                                .start();
-                    });
-                    storiesIntro.animate()
-                            .alpha(1f)
-                            .setDuration(150L)
-                            .setListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-                                    super.onAnimationEnd(animation);
-                                    if (storiesIntro != null) {
-                                        storiesIntro.startAnimation(true);
-                                    }
-                                }
-                            }).start();
+                                }).start();
+                    }
 
                     SharedConfig.setStoriesIntroShown(true);
                 }
@@ -2297,7 +2304,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
         transitionViewHolder.storyImage = null;
         transitionViewHolder.avatarImage = null;
-        containerView.disableHwAcceleration();
+        if (containerView != null) {
+            containerView.disableHwAcceleration();
+        }
         locker.unlock();
         if (currentPlayerScope != null) {
             currentPlayerScope.invalidate();
@@ -2349,17 +2358,21 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (openCloseAnimator == null) {
                 return;
             }
-            containerView.enableHwAcceleration();
+            if (containerView != null) {
+                containerView.enableHwAcceleration();
+            }
             openCloseAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    containerView.disableHwAcceleration();
+                    if (containerView != null) {
+                        containerView.disableHwAcceleration();
+                    }
                     checkNavBarColor();
                     locker.unlock();
                     if (storiesIntro != null) {
                         storiesIntro.stopAnimation();
-                        containerView.removeView(storiesIntro);
+                        AndroidUtilities.removeFromParent(storiesIntro);
                         storiesIntro = null;
                     }
                     if (transitionViewHolder.avatarImage != null) {
@@ -2621,7 +2634,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         if (peerStoriesView != null) {
             peerStoriesView.invalidate();
         }
-        containerView.invalidate();
+        if (containerView != null) {
+            containerView.invalidate();
+        }
     }
 
     public void openViews() {

@@ -1461,8 +1461,10 @@ public class LocaleController {
                 value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key + "_other") : null;
             }
             if (value == null) {
-                int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-                value = ApplicationLoader.applicationContext.getString(resourceId);
+                try {
+                    int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
+                    value = ApplicationLoader.applicationContext.getString(resourceId);
+                } catch (Exception e2) {}
             }
             if (value == null) {
                 int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());

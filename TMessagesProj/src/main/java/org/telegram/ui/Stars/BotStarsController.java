@@ -84,6 +84,11 @@ public class BotStarsController {
         return botStats == null ? 0 : botStats.status.current_balance;
     }
 
+    public long getAvailableBalance(long bot_id) {
+        TLRPC.TL_payments_starsRevenueStats botStats = getRevenueStats(bot_id);
+        return botStats == null ? 0 : botStats.status.available_balance;
+    }
+
     public boolean isBalanceAvailable(long bot_id) {
         return getRevenueStats(bot_id) != null;
     }

@@ -9023,6 +9023,10 @@
     <string name="BotStarsWithdrawInfoLink">https://telegram.org/privacy</string>
     <string name="BotStarsButtonWithdrawUntil">Withdraw via Fragment</string>
     <string name="BotStarsButtonWithdrawAll">Withdraw all via Fragment</string>
+    <string name="BotStarsButtonWithdrawShortAll">Withdraw all</string>
+    <string name="BotStarsButtonWithdrawShort_one">Withdraw ⭐️%d</string>
+    <string name="BotStarsButtonWithdrawShort_other">Withdraw ⭐️%d</string>
+    <string name="BotStarsButtonWithdrawShortUntil">Withdraw</string>
     <string name="BotStarsWithdrawPlaceholder">Enter amount to withdraw</string>
     <string name="BotStarsButtonWithdraw_one">Withdraw ⭐️%d via Fragment</string>
     <string name="BotStarsButtonWithdraw_other">Withdraw ⭐️%d via Fragment</string>

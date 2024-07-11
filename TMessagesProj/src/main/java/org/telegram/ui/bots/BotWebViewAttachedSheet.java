@@ -250,9 +250,6 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         if (backDrawable != null) {
             backDrawable.setRotation(backButtonShown ? 0f : 1f, false);
         }
-        if (settingsItem != null) {
-            settingsItem.setVisibility(tab.settings ? View.VISIBLE : View.GONE);
-        }
         if (tab.main != null) {
             setMainButton(tab.main);
         }
@@ -288,6 +285,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
             tab.props.responseTime = 0;
         }
         requestWebView(fragment, tab.props);
+        if (settingsItem != null) {
+            settingsItem.setVisibility(tab.settings ? View.VISIBLE : View.GONE);
+        }
         return true;
     }
 

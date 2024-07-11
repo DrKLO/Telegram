@@ -138,7 +138,7 @@ public class BotBiometry {
 
     public void updateToken(String reason, String token, Utilities.Callback<Boolean> whenDone) {
         prompt(reason, false, token, result -> {
-            boolean success = true;
+            boolean success = result != null;
             if (result != null) {
                 try {
                     BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
