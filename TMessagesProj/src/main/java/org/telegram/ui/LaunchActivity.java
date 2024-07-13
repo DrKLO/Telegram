@@ -4640,7 +4640,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             });
             presentFragment(fragment, false, true);
         } else if (auth != null) {
-            final int bot_id = Utilities.parseInt(auth.get("bot_id"));
+            final long bot_id = Utilities.parseLong(auth.get("bot_id"));
             if (bot_id == 0) {
                 return;
             }
