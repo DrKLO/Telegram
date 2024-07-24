@@ -479,6 +479,8 @@ public class Camera2Session {
             if (recordingVideo) {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
                 captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
+                
+                isStabilizationAvailable(builder);
             }
 
             if (sensorSize != null && Math.abs(currentZoom - 1f) >= 0.01f) {
@@ -500,6 +502,41 @@ public class Camera2Session {
         } catch (Exception e) {
             FileLog.e("Camera2Sessions setRepeatingRequest error in updateCaptureRequest", e);
         }
+    }
+
+    private void isStabilizationAvailable(CaptureRequest.Builder builder) {
+        if (setModeIfAvailable(
+                builder,
+                CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION,
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON,
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE)) {
+            builder.set(
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+            FileLog.d("Camera2Sessions use OpticalImageStabilization");
+        } else if (setModeIfAvailable(
+            builder,
+            CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
+            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON,
+            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE)) {
+            builder.set(
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
+            FileLog.d("Camera2Sessions use ElectronicImageStabilization");
+        } else {
+            FileLog.d("Camera2Sessions stabilization is not available");
+        }
+    }
+
+    private boolean setModeIfAvailable(
+            CameraCharacteristics.Key<int[]> key, int desiredMode,
+            CaptureRequest.Builder builder, CaptureRequest.Key<Integer> requestKey) {
+        int[] availableModes = cameraCharacteristics.get(key);
+        if (availableModes != null && Arrays.stream(availableModes).anyMatch(mode -> mode == desiredMode)) {
+            builder.set(requestKey, desiredMode);
+            return true;
+        }
+        return false;
     }
 
     public boolean takePicture(final File file, Utilities.Callback<Integer> whenDone) {
