@@ -481,6 +481,7 @@ public class Camera2Session {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
                 
                 isStabilizationAvailable(builder);
+                isAutoFocusAvailable(builder);
             }
 
             if (sensorSize != null && Math.abs(currentZoom - 1f) >= 0.01f) {
@@ -525,6 +526,18 @@ public class Camera2Session {
             FileLog.d("Camera2Sessions use ElectronicImageStabilization");
         } else {
             FileLog.d("Camera2Sessions stabilization is not available");
+        }
+    }
+
+    private void isAutoFocusAvailable(CaptureRequest.Builder builder) {
+        if (setModeIfAvailable(
+                builder,
+                CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO,
+                CaptureRequest.CONTROL_AF_MODE)) {
+            FileLog.d("Camera2Sessions use continuous AF");
+        } else {
+            FileLog.d("Camera2Sessions AF is not available");
         }
     }
 
