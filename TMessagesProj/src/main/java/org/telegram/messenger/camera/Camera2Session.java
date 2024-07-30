@@ -477,7 +477,8 @@ public class Camera2Session {
             }
 
             if (recordingVideo) {
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
+                Range<Integer> targetFpsRange = selectOptimalFpsRange();
+                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, targetFpsRange);
                 captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
                 
                 isStabilizationAvailable(captureRequestBuilder);
@@ -503,6 +504,22 @@ public class Camera2Session {
         } catch (Exception e) {
             FileLog.e("Camera2Sessions setRepeatingRequest error in updateCaptureRequest", e);
         }
+    }
+
+    private Range<Integer> selectOptimalFpsRange() {
+        Range<Integer>[] fpsRange = cameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+        Range<Integer> optimalRange = new Range<>(30, 30);
+
+        assert fpsRange != null;
+        for (Range<Integer> range : fpsRange) {
+            if (range.getLower() <= 30 && range.getUpper() >= 30) {
+                optimalRange = range;
+                break;
+            }
+        }
+
+        FileLog.d("Camera2Session selected FPS range: " + optimalRange);
+        return optimalRange;
     }
 
     private void isStabilizationAvailable(CaptureRequest.Builder builder) {
