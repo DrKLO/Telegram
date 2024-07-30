@@ -480,8 +480,8 @@ public class Camera2Session {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
                 captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
                 
-                isStabilizationAvailable(builder);
-                isAutoFocusAvailable(builder);
+                isStabilizationAvailable(captureRequestBuilder);
+                isAutoFocusAvailable(captureRequestBuilder);
             }
 
             if (sensorSize != null && Math.abs(currentZoom - 1f) >= 0.01f) {
@@ -507,22 +507,22 @@ public class Camera2Session {
 
     private void isStabilizationAvailable(CaptureRequest.Builder builder) {
         if (setModeIfAvailable(
-                builder,
                 CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION,
                 CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON,
+                builder,
                 CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE)) {
             builder.set(
-                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
-                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
             FileLog.d("Camera2Sessions use OpticalImageStabilization");
         } else if (setModeIfAvailable(
-            builder,
-            CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
-            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON,
-            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE)) {
+                CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON,
+                builder,
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE)) {
             builder.set(
-                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
-                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
+                    CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
+                    CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
             FileLog.d("Camera2Sessions use ElectronicImageStabilization");
         } else {
             FileLog.d("Camera2Sessions stabilization is not available");
@@ -531,9 +531,9 @@ public class Camera2Session {
 
     private void isAutoFocusAvailable(CaptureRequest.Builder builder) {
         if (setModeIfAvailable(
-                builder,
                 CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES,
                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO,
+                builder,
                 CaptureRequest.CONTROL_AF_MODE)) {
             FileLog.d("Camera2Sessions use continuous AF");
         } else {
@@ -542,8 +542,10 @@ public class Camera2Session {
     }
 
     private boolean setModeIfAvailable(
-            CameraCharacteristics.Key<int[]> key, int desiredMode,
-            CaptureRequest.Builder builder, CaptureRequest.Key<Integer> requestKey) {
+            CameraCharacteristics.Key<int[]> key,
+            int desiredMode,
+            CaptureRequest.Builder builder,
+            CaptureRequest.Key<Integer> requestKey) {
         int[] availableModes = cameraCharacteristics.get(key);
         if (availableModes != null && Arrays.stream(availableModes).anyMatch(mode -> mode == desiredMode)) {
             builder.set(requestKey, desiredMode);
