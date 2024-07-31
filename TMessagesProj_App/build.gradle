@@ -1,10 +1,7 @@
-apply plugin: 'com.android.application'
-
-repositories {
-    mavenCentral()
-    google()
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'
 }
-
 configurations {
     compile.exclude module: 'support-v4'
 }
@@ -22,6 +19,7 @@ dependencies {
 }
 
 android {
+    namespace 'org.telegram.messenger.regular'
     compileSdkVersion 33
     buildToolsVersion '33.0.0'
 
@@ -90,7 +88,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
-            minifyEnabled true
+            minifyEnabled false
             shrinkResources false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
@@ -184,7 +182,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
             }
         }
     }
@@ -197,5 +195,3 @@ android {
         checkReleaseBuilds false
     }
 }
-
-apply plugin: 'com.google.gms.google-services'

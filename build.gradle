@@ -2,15 +2,10 @@
 buildscript {
     repositories {
         mavenCentral()
-        google()
-        maven { url 'https://developer.huawei.com/repo/' }
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
-        classpath 'com.google.gms:google-services:4.3.10'
-        classpath 'com.huawei.agconnect:agcp:1.6.0.300'
     }
 }
-repositories {
-    google()
+plugins {
+    id 'com.android.application' version '8.0.2' apply false
+    id 'com.google.gms.google-services' version '4.3.15' apply false
+    id 'com.huawei.agconnect' version '1.9.1.300' apply false
 }
