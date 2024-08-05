@@ -2689,7 +2689,7 @@ public class AndroidUtilities {
 
     public static int getPhotoSize() {
         if (photoSize == null) {
-            photoSize = 1280;
+            photoSize = Integer.MAX_VALUE;
         }
         return photoSize;
     }
