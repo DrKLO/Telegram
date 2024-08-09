@@ -390,7 +390,7 @@ public class EmbedBottomSheet extends BottomSheet {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                if (!AndroidUtilities.isSafeToShow(getContext())) {
+                if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
                     return true;
                 }
                 new AlertDialog.Builder(getContext(), resourcesProvider)

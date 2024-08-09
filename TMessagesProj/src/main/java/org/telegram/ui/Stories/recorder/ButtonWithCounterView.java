@@ -78,7 +78,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
         text.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        subText = new AnimatedTextView.AnimatedTextDrawable(subTextSplitToWords(), true, false);
+        subText = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
         subText.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         subText.setCallback(this);
         subText.setTextSize(dp(12));
@@ -94,10 +94,6 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
         setWillNotDraw(false);
         updateColors();
-    }
-
-    protected boolean subTextSplitToWords() {
-        return true;
     }
 
     public void disableRippleView() {

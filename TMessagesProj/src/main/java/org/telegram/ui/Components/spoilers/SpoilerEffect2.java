@@ -33,7 +33,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -48,41 +47,25 @@ public class SpoilerEffect2 {
     private final double MIN_DELTA;
     private final double MAX_DELTA;
 
-    public static final int TYPE_DEFAULT = 0;
-    public static final int TYPE_PREVIEW = 1;
-
-    public final int type;
-
     public static boolean supports() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     }
 
-    private static HashMap<Integer, SpoilerEffect2> instance;
+    private static SpoilerEffect2 instance;
     public static SpoilerEffect2 getInstance(View view) {
-        return getInstance(TYPE_DEFAULT, view);
-    }
-
-    public static SpoilerEffect2 getInstance(int type, View view) {
-        return getInstance(type, view, getRootView(view));
-    }
-
-    public static SpoilerEffect2 getInstance(int type, View view, ViewGroup rootView) {
         if (view == null || !supports()) {
             return null;
         }
         if (instance == null) {
-            instance = new HashMap<>();
-        }
-        SpoilerEffect2 e = instance.get(type);
-        if (e == null) {
             final int sz = getSize();
+            ViewGroup rootView = getRootView(view);
             if (rootView == null) {
                 return null;
             }
-            instance.put(type, e = new SpoilerEffect2(type, makeTextureViewContainer(rootView), sz, sz));
+            instance = new SpoilerEffect2(makeTextureViewContainer(rootView), sz, sz);
         }
-        e.attach(view);
-        return e;
+        instance.attach(view);
+        return instance;
     }
 
     private static ViewGroup getRootView(View view) {
@@ -98,16 +81,8 @@ public class SpoilerEffect2 {
     }
 
     public static void pause(boolean pause) {
-        if (instance == null) return;
-        for (SpoilerEffect2 s : instance.values()) {
-            if (s.thread != null) s.thread.pause(pause);
-        }
-    }
-
-    public static void pause(int type, boolean pause) {
-        if (instance == null) return;
-        for (SpoilerEffect2 s : instance.values()) {
-            if (s.type == type && s.thread != null) s.thread.pause(pause);
+        if (instance != null && instance.thread != null) {
+            instance.thread.pause(pause);
         }
     }
 
@@ -254,12 +229,11 @@ public class SpoilerEffect2 {
         }
     }
 
-    private SpoilerEffect2(int type, ViewGroup container, int width, int height) {
+    private SpoilerEffect2(ViewGroup container, int width, int height) {
         MAX_FPS = (int) AndroidUtilities.screenRefreshRate;
         MIN_DELTA = 1.0 / MAX_FPS;
         MAX_DELTA = MIN_DELTA * 4;
 
-        this.type = type;
         this.width = width;
         this.height = height;
 

@@ -473,10 +473,6 @@ public class Utilities {
         return Math.max(Math.min(value, maxValue), minValue);
     }
 
-    public static float clamp01(float value) {
-        return clamp(value, 1f, 0f);
-    }
-
     public static double clamp(double value, double maxValue, double minValue) {
         if (Double.isNaN(value)) {
             return minValue;

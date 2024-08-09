@@ -729,9 +729,9 @@ public class LinkEditActivity extends BaseFragment {
                     if (selectedDate < 86400L) {
                         options[i] = LocaleController.getString("MessageScheduleToday", R.string.MessageScheduleToday);
                     } else if (selectedDate < 364 * 86400L) {
-                        options[i] = LocaleController.getInstance().getFormatterScheduleDay().format(originDate * 1000L);
+                        options[i] = LocaleController.getInstance().formatterScheduleDay.format(originDate * 1000L);
                     } else {
-                        options[i] = LocaleController.getInstance().getFormatterYear().format(originDate * 1000L);
+                        options[i] = LocaleController.getInstance().formatterYear.format(originDate * 1000L);
                     }
                 }
             }

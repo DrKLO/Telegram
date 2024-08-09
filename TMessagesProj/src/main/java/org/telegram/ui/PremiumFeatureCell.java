@@ -95,7 +95,11 @@ public class PremiumFeatureCell extends FrameLayout {
         this.data = data;
         title.setText(data.title);
         description.setText(data.description);
-        imageView.setImageResource(data.icon);
+        if (data.icon == 0){
+            imageView.setImageDrawable(data.img);
+        }else {
+            imageView.setImageResource(data.icon);
+        }
         this.drawDivider = drawDivider;
     }
 

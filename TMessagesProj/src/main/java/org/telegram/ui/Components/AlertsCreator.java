@@ -121,6 +121,7 @@ import org.telegram.ui.ProfileNotificationsActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.TooManyCommunitiesActivity;
+import org.xatirchi.utils.DeletedMsg;
 
 import java.net.IDN;
 import java.time.YearMonth;
@@ -1200,7 +1201,7 @@ public class AlertsCreator {
         }
         long inlineReturn = (fragment instanceof ChatActivity) ? ((ChatActivity) fragment).getInlineReturn() : 0;
         if (Browser.isInternalUrl(url, null) || !ask) {
-            Browser.openUrl(fragment.getParentActivity(), Uri.parse(url), inlineReturn == 0, tryTelegraph, forceNotInternalForApps && checkInternalBotApp(url), progress, null);
+            Browser.openUrl(fragment.getParentActivity(), Uri.parse(url), inlineReturn == 0, tryTelegraph, forceNotInternalForApps && checkInternalBotApp(url), progress);
         } else {
             String urlFinal;
             if (punycode) {
@@ -3046,7 +3047,7 @@ public class AlertsCreator {
             } else if (type == 3) {
                 num += 9;
             }
-            button.setText(LocaleController.getInstance().getFormatterScheduleSend(num).format(time));
+            button.setText(LocaleController.getInstance().formatterScheduleSend[num].format(time));
         }
         if (infoText != null) {
             int diff = (int) ((time - systemTime) / 1000);
@@ -3294,12 +3295,12 @@ public class AlertsCreator {
                 int year = calendar.get(Calendar.YEAR);
                 if (year == currentYear) {
                     return (
-                        LocaleController.getInstance().getFormatterWeek().format(date) +
+                        LocaleController.getInstance().formatterWeek.format(date) +
                         ", " +
-                        LocaleController.getInstance().getFormatterScheduleDay().format(date)
+                        LocaleController.getInstance().formatterScheduleDay.format(date)
                     );
                 } else {
-                    return LocaleController.getInstance().getFormatterScheduleYear().format(date);
+                    return LocaleController.getInstance().formatterScheduleYear.format(date);
                 }
             }
         });
@@ -3478,9 +3479,9 @@ public class AlertsCreator {
                 calendar.setTimeInMillis(date);
                 int year = calendar.get(Calendar.YEAR);
                 if (year == currentYear) {
-                    return LocaleController.getInstance().getFormatterScheduleDay().format(date);
+                    return LocaleController.getInstance().formatterScheduleDay.format(date);
                 } else {
-                    return LocaleController.getInstance().getFormatterScheduleYear().format(date);
+                    return LocaleController.getInstance().formatterScheduleYear.format(date);
                 }
             }
         });
@@ -3908,11 +3909,11 @@ public class AlertsCreator {
                 int year = calendar.get(Calendar.YEAR);
                 int yearDay = calendar.get(Calendar.DAY_OF_YEAR);
                 if (year == currentYear && yearDay < currentDayYear + 7) {
-                    return LocaleController.getInstance().getFormatterWeek().format(date) + ", " + LocaleController.getInstance().getFormatterScheduleDay().format(date);
+                    return LocaleController.getInstance().formatterWeek.format(date) + ", " + LocaleController.getInstance().formatterScheduleDay.format(date);
                 } else if (year == currentYear) {
-                    return LocaleController.getInstance().getFormatterScheduleDay().format(date);
+                    return LocaleController.getInstance().formatterScheduleDay.format(date);
                 } else {
-                    return LocaleController.getInstance().getFormatterScheduleYear().format(date);
+                    return LocaleController.getInstance().formatterScheduleYear.format(date);
                 }
             }
         });
@@ -6231,6 +6232,7 @@ public class AlertsCreator {
         }
 
         DialogInterface.OnClickListener deleteAction = (dialogInterface, i) -> {
+            DeletedMsg.INSTANCE.setMyDelete(true);
             ArrayList<Integer> ids = null;
             long thisDialogId = dialogId;
             if (isSavedMessages) {
@@ -6343,7 +6345,7 @@ public class AlertsCreator {
             if (isActiveGiveawayAndOwner) {
                 TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) selectedMessage.messageOwner.media;
                 long untilDate = giveaway.until_date * 1000L;
-                giveawayEndDate = LocaleController.getInstance().getFormatterGiveawayMonthDayYear().format(new Date(untilDate));
+                giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
                 isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
             }
         } else if (count == 1) {
@@ -6354,7 +6356,7 @@ public class AlertsCreator {
                     if (isActiveGiveawayAndOwner) {
                         TLRPC.TL_messageMediaGiveaway giveaway = (TLRPC.TL_messageMediaGiveaway) msg.messageOwner.media;
                         long untilDate = giveaway.until_date * 1000L;
-                        giveawayEndDate = LocaleController.getInstance().getFormatterGiveawayMonthDayYear().format(new Date(untilDate));
+                        giveawayEndDate = LocaleController.getInstance().formatterGiveawayMonthDayYear.format(new Date(untilDate));
                         isActiveGiveawayAndOwner = System.currentTimeMillis() < untilDate;
                     }
                 }

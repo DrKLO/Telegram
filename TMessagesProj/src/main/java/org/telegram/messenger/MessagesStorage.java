@@ -15,18 +15,23 @@ import static org.telegram.messenger.MessagesController.LOAD_FORWARD;
 import static org.telegram.messenger.MessagesController.LOAD_FROM_UNREAD;
 
 import android.appwidget.AppWidgetManager;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
@@ -45,6 +50,9 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
+import org.xatirchi.utils.DeletedMsg;
+import org.xatirchi.utils.EditMessage;
+import org.xatirchi.utils.WhoDeletedMsg;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -63,6 +71,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class MessagesStorage extends BaseController {
+
+    private static final String TAG = "MessagesStorage";
 
     private DispatchQueue storageQueue;
     private SQLiteDatabase database;
@@ -98,6 +108,7 @@ public class MessagesStorage extends BaseController {
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
     private static final Object[] lockObjects = new Object[UserConfig.MAX_ACCOUNT_COUNT];
+
     static {
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             lockObjects[i] = new Object();
@@ -437,7 +448,7 @@ public class MessagesStorage extends BaseController {
         return restored;
     }
 
-    public final static String[] DATABASE_TABLES = new String[] {
+    public final static String[] DATABASE_TABLES = new String[]{
             "messages_holes",
             "media_holes_v2",
             "scheduled_messages_v2",
@@ -851,7 +862,7 @@ public class MessagesStorage extends BaseController {
                 tryRecover = false;
                 clearLoadingDialogsOffsets();
                 AndroidUtilities.runOnUIThread(() -> {
-                   getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
+                    getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
                 });
                 FileLog.e(new Exception("database restored!!"));
             } else {
@@ -1724,11 +1735,11 @@ public class MessagesStorage extends BaseController {
 
                             NativeByteBuffer data2 = cursor.byteBufferValue(2);
                             //if (data2 != null) {
-                                topic.topicStartMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
-                                if (data2 != null) {
-                                    data2.reuse();
-                                }
-                           // }
+                            topic.topicStartMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
+                            if (data2 != null) {
+                                data2.reuse();
+                            }
+                            // }
                             topic.unread_count = cursor.intValue(3);
                             topic.read_inbox_max_id = cursor.intValue(4);
                             topic.unread_mentions_count = cursor.intValue(5);
@@ -1772,9 +1783,9 @@ public class MessagesStorage extends BaseController {
 
                             try {
                                 if (message != null && message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
-                                    message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                    message.action instanceof TLRPC.TL_messageActionGameScore
+                                        message.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                                message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                                message.action instanceof TLRPC.TL_messageActionGameScore
                                 )) {
                                     if (!cursor2.isNull(2)) {
                                         NativeByteBuffer data2 = cursor2.byteBufferValue(2);
@@ -2056,7 +2067,7 @@ public class MessagesStorage extends BaseController {
                 try {
                     database.executeFast(String.format(Locale.US, "UPDATE topics SET read_outbox = max((SELECT read_outbox FROM topics WHERE did = %d AND topic_id = %d), %d) WHERE did = %d AND topic_id = %d", topicKey.dialogId, topicKey.topicId, value, topicKey.dialogId, topicKey.topicId)).stepThis().dispose();
                 } catch (SQLiteException e) {
-                   checkSQLException(e);
+                    checkSQLException(e);
                 }
             }
         });
@@ -2094,7 +2105,7 @@ public class MessagesStorage extends BaseController {
             getNotificationCenter().postNotificationName(NotificationCenter.didClearDatabase);
             getMediaDataController().loadAttachMenuBots(false, true);
             getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
-            
+
             getMessagesController().getStoriesController().cleanup();
         });
     }
@@ -4677,7 +4688,7 @@ public class MessagesStorage extends BaseController {
             SQLiteCursor cursor_groups = null;
             try {
                 final long selfId = getUserConfig().getClientUserId();
-                state = database.executeFast("SELECT m.data, m.replydata, m.group_id FROM messages_v2 m INNER JOIN tag_message_id t ON m.mid = t.mid WHERE m.uid = ? AND t.tag = ?" + (!TextUtils.isEmpty(query) ? " AND t.text LIKE '%' || ? || '%'" : "") + (topic_id != 0 ? " AND topic_id = ? "  : "") + " ORDER BY m.mid DESC LIMIT ? OFFSET ?");
+                state = database.executeFast("SELECT m.data, m.replydata, m.group_id FROM messages_v2 m INNER JOIN tag_message_id t ON m.mid = t.mid WHERE m.uid = ? AND t.tag = ?" + (!TextUtils.isEmpty(query) ? " AND t.text LIKE '%' || ? || '%'" : "") + (topic_id != 0 ? " AND topic_id = ? " : "") + " ORDER BY m.mid DESC LIMIT ? OFFSET ?");
 
                 ArrayList<TLRPC.User> users = new ArrayList<>();
 //                ArrayList<TLRPC.User> encUsers = new ArrayList<>();
@@ -4709,7 +4720,7 @@ public class MessagesStorage extends BaseController {
                 state.bindInteger(pointer++, limit);
                 state.bindInteger(pointer++, offset);
 
-                cursor = state.query(new Object[] {});
+                cursor = state.query(new Object[]{});
                 state = null;
 
                 ArrayList<MessageObject> messageObjects = new ArrayList<>();
@@ -4869,6 +4880,7 @@ public class MessagesStorage extends BaseController {
         long topic_id;
         TLRPC.TL_messageReactions old;
         TLRPC.TL_messageReactions last;
+
         public SavedReactionsUpdate(long selfId, TLRPC.Message oldMessage, TLRPC.Message newMessage) {
             topic_id = MessageObject.getSavedDialogId(selfId, newMessage);
             old = oldMessage.reactions;
@@ -5320,7 +5332,7 @@ public class MessagesStorage extends BaseController {
                     cursor.dispose();
                     cursor = null;
 
-                    database.executeFast(String.format(Locale.US, "UPDATE topics SET unread_mentions = %d WHERE did = %d AND topic_id = %d",topicMentionsCount, dialogId, topicId)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "UPDATE topics SET unread_mentions = %d WHERE did = %d AND topic_id = %d", topicMentionsCount, dialogId, topicId)).stepThis().dispose();
 
                     getMessagesController().getTopicsController().updateMentionsUnread(dialogId, topicId, topicMentionsCount);
                 }
@@ -6597,7 +6609,7 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 checkSQLException(e);
             } finally {
-                if (state !=  null) {
+                if (state != null) {
                     state.dispose();
                 }
             }
@@ -7277,6 +7289,7 @@ public class MessagesStorage extends BaseController {
         return result[0];
     }
 
+    //    XatirchiGetMessage
     public TLRPC.Message getMessage(long dialogId, long msgId) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AtomicReference<TLRPC.Message> ref = new AtomicReference<>();
@@ -7981,7 +7994,6 @@ public class MessagesStorage extends BaseController {
                 ArrayList<Long> usersToLoad = new ArrayList<>();
                 ArrayList<Long> chatsToLoad = new ArrayList<>();
                 ArrayList<Integer> encryptedChatIds = new ArrayList<>();
-                ArrayList<TLRPC.Message> toDelete = new ArrayList<>();
 
                 cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, s.seq_in, s.seq_out, m.ttl FROM messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid LEFT JOIN messages_seq as s ON m.mid = s.mid WHERE (m.mid < 0 AND m.send_state = 1) OR (m.mid > 0 AND m.send_state = 3) ORDER BY m.mid DESC LIMIT " + count);
                 while (cursor.next()) {
@@ -8002,11 +8014,7 @@ public class MessagesStorage extends BaseController {
                             message.seq_in = cursor.intValue(7);
                             message.seq_out = cursor.intValue(8);
                             message.ttl = cursor.intValue(9);
-                            if (message.media instanceof TLRPC.TL_messageMediaPaidMedia) {
-                                toDelete.add(message); // TODO: actually send again
-                            } else {
-                                messages.add(message);
-                            }
+                            messages.add(message);
                             messageHashMap.put(message.id, message);
 
                             if (DialogObject.isEncryptedDialog(message.dialog_id)) {
@@ -8034,12 +8042,6 @@ public class MessagesStorage extends BaseController {
                 }
                 cursor.dispose();
                 cursor = null;
-
-                if (!toDelete.isEmpty()) {
-                    for (TLRPC.Message msg : toDelete) {
-                        database.executeFast("DELETE FROM messages_v2 WHERE uid = " + msg.dialog_id + " AND mid = " + msg.id).stepThis().dispose();
-                    }
-                }
 
                 cursor = database.queryFinalized("SELECT m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, m.ttl FROM scheduled_messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid WHERE (m.mid < 0 AND m.send_state = 1) OR (m.mid > 0 AND m.send_state = 3) ORDER BY date ASC");
                 while (cursor.next()) {
@@ -8282,6 +8284,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    //    XatirchiGetMesssages
     public Runnable getMessagesInternal(long dialogId, long mergeDialogId, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, int mode, long threadMessageId, int loadIndex, boolean processMessages, boolean isTopic, MessageLoaderLogger loaderLogger) {
         TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
         long currentUserId = getUserConfig().clientUserId;
@@ -9977,7 +9980,7 @@ public class MessagesStorage extends BaseController {
 
     public boolean containsLocalDialog(long did) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Boolean[] result = new Boolean[] { false };
+        Boolean[] result = new Boolean[]{false};
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             try {
@@ -10114,6 +10117,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    //    XatirchiUpdate
     private void putChatsInternal(List<TLRPC.Chat> chats) throws Exception {
         if (chats == null || chats.isEmpty()) {
             return;
@@ -11274,7 +11278,7 @@ public class MessagesStorage extends BaseController {
                 HashMap<TopicKey, ArrayList<Integer>> topicMentionsIdsMap = new HashMap<>();
                 HashMap<TopicKey, Integer> topicsMentions = new HashMap<>();
                 SparseArray<HashMap<TopicKey, Integer>> mediaCountsTopics = new SparseArray<>();
-                HashMap<TopicKey,StringBuilder> mediaIdsMapTopics =  new HashMap<>();
+                HashMap<TopicKey, StringBuilder> mediaIdsMapTopics = new HashMap<>();
                 HashMap<TopicKey, ArrayList<Integer>> messagesMediaIdsMapTopics = new HashMap<>();
                 ArrayList<TLRPC.Message> createNewTopics = null;
                 ArrayList<TLRPC.Message> changedSavedMessages = null;
@@ -12077,7 +12081,7 @@ public class MessagesStorage extends BaseController {
                         if (old_unread_count == 0 && unread_count != 0) {
                             newMessagesCounts.put(key, unread_count);
                         }
-                        if (old_mentions_count == 0 && mentions_count != 0){
+                        if (old_mentions_count == 0 && mentions_count != 0) {
                             newMentionsCounts.put(key, mentions_count);
                         }
                     }
@@ -12208,9 +12212,9 @@ public class MessagesStorage extends BaseController {
                     }
                     state_topics_update.requery();
                     state_topics_update.bindInteger(1, newUnreadCount);
-                    state_topics_update.bindInteger(2,  messageId);
-                    state_topics_update.bindInteger(3,  newUnreadMentions);
-                    state_topics_update.bindInteger(4,  newTotalMessagesCount);
+                    state_topics_update.bindInteger(2, messageId);
+                    state_topics_update.bindInteger(3, newUnreadMentions);
+                    state_topics_update.bindInteger(4, newTotalMessagesCount);
                     state_topics_update.bindLong(5, topicKey.dialogId);
                     state_topics_update.bindLong(6, topicKey.topicId);
                     state_topics_update.step();
@@ -12219,7 +12223,7 @@ public class MessagesStorage extends BaseController {
                         if (oldUnreadCount == 0 && newUnreadCount != 0) {
                             newMessagesCounts.put(topicKey.dialogId, 1);
                         }
-                        if (oldMentions == 0 && newUnreadMentions != 0){
+                        if (oldMentions == 0 && newUnreadMentions != 0) {
                             newMentionsCounts.put(topicKey.dialogId, newUnreadMentions);
                         }
                     }
@@ -13083,7 +13087,53 @@ public class MessagesStorage extends BaseController {
         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.quickRepliesUpdated));
     }
 
+    //    XatirchiDelete
     private ArrayList<Long> markMessagesAsDeletedInternal(long dialogId, ArrayList<Integer> messages, boolean deleteFiles, int mode, int threadMessageId) {
+
+        int deletedType = DeletedMsg.INSTANCE.getCheckType();
+
+        if (DeletedMsg.SIMPLE == deletedType) {
+
+        } else if (DeletedMsg.YOU == deletedType) {
+            if (DeletedMsg.INSTANCE.getMyDelete()) {
+
+            } else {
+                ArrayList<WhoDeletedMsg> deletedMsgs = DeletedMsg.INSTANCE.getAllIds();
+
+                for (Integer message : messages) {
+                    deletedMsgs.add(new WhoDeletedMsg(message, DeletedMsg.INSTANCE.getMyDelete()));
+                }
+
+                DeletedMsg.INSTANCE.saveDeletedMessagesId(deletedMsgs);
+
+                messages.clear();
+            }
+        } else if (DeletedMsg.I == deletedType) {
+            if (DeletedMsg.INSTANCE.getMyDelete()) {
+                ArrayList<WhoDeletedMsg> deletedMsgs = DeletedMsg.INSTANCE.getAllIds();
+
+                for (Integer message : messages) {
+                    deletedMsgs.add(new WhoDeletedMsg(message, DeletedMsg.INSTANCE.getMyDelete()));
+                }
+
+                DeletedMsg.INSTANCE.saveDeletedMessagesId(deletedMsgs);
+
+                messages.clear();
+            } else {
+
+            }
+        } else if (DeletedMsg.YOU_AND_I == deletedType) {
+            ArrayList<WhoDeletedMsg> deletedMsgs = DeletedMsg.INSTANCE.getAllIds();
+
+            for (Integer message : messages) {
+                deletedMsgs.add(new WhoDeletedMsg(message, DeletedMsg.INSTANCE.getMyDelete()));
+            }
+
+            DeletedMsg.INSTANCE.saveDeletedMessagesId(deletedMsgs);
+
+            messages.clear();
+        }
+
         SQLiteCursor cursor = null;
         SQLitePreparedStatement state = null;
         try {
@@ -14256,7 +14306,7 @@ public class MessagesStorage extends BaseController {
                         }
                         state.bindInteger(pointer++, hole.type);
                         state.bindInteger(pointer++, hole.start);
-                        state.bindInteger( pointer++, minId);
+                        state.bindInteger(pointer++, minId);
                         state.step();
                         state.requery();
                         state.bindLong(1, did);
@@ -14523,7 +14573,7 @@ public class MessagesStorage extends BaseController {
                     }
 
                     if (removeSavedPeerIdLater) {
-                        message.flags &=~ 268435456;
+                        message.flags &= ~268435456;
                         message.saved_peer_id = null;
                     }
                 }
@@ -14634,6 +14684,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    //    XatirchiUpdate
     // put messages in data base while load history
     public void putMessages(TLRPC.messages_Messages messages, long dialogId, int load_type, int max_id, boolean createDialog, int mode, long threadMessageId) {
         storageQueue.postRunnable(() -> {
@@ -14802,6 +14853,8 @@ public class MessagesStorage extends BaseController {
                                 if (data != null) {
                                     TLRPC.Message oldMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     oldMessage.readAttachPath(data, getUserConfig().clientUserId);
+//                                    XatirchiEditMessage
+                                    message.message = EditMessage.INSTANCE.editMessage(oldMessage.message,message.message);
                                     data.reuse();
                                     if (reactionUpdates != null) {
                                         reactionUpdates.add(new SavedReactionsUpdate(selfId, oldMessage, message));
@@ -15027,7 +15080,7 @@ public class MessagesStorage extends BaseController {
                             }
 
                             if (removeSavedPeerIdLater) {
-                                message.flags &=~ 268435456;
+                                message.flags &= ~268435456;
                                 message.saved_peer_id = null;
                             }
                         }
@@ -17208,6 +17261,7 @@ public class MessagesStorage extends BaseController {
             topicKey.topicId = topicId;
             return topicKey;
         }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;

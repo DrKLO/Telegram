@@ -7,7 +7,6 @@ import android.graphics.RectF;
 import android.graphics.Region;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -26,16 +25,8 @@ public class OutlineTextContainerView extends FrameLayout {
     private final static SimpleFloatPropertyCompat<OutlineTextContainerView> SELECTION_PROGRESS_PROPERTY =
             new SimpleFloatPropertyCompat<OutlineTextContainerView>("selectionProgress", obj -> obj.selectionProgress, (obj, value) -> {
                 obj.selectionProgress = value;
-                if (!obj.forceUseCenter || obj.forceForceUseCenter) {
+                if (!obj.forceUseCenter) {
                     obj.outlinePaint.setStrokeWidth(AndroidUtilities.lerp(obj.strokeWidthRegular, obj.strokeWidthSelected, obj.selectionProgress));
-                    obj.updateColor();
-                }
-                obj.invalidate();
-            }).setMultiplier(SPRING_MULTIPLIER);
-    private final static SimpleFloatPropertyCompat<OutlineTextContainerView> TITLE_PROGRESS_PROPERTY =
-            new SimpleFloatPropertyCompat<OutlineTextContainerView>("titleProgress", obj -> obj.titleProgress, (obj, value) -> {
-                obj.titleProgress = value;
-                if (!obj.forceUseCenter || obj.forceForceUseCenter) {
                     obj.updateColor();
                 }
                 obj.invalidate();
@@ -55,9 +46,6 @@ public class OutlineTextContainerView extends FrameLayout {
     private SpringAnimation selectionSpring = new SpringAnimation(this, SELECTION_PROGRESS_PROPERTY);
     private float selectionProgress;
 
-    private SpringAnimation titleSpring = new SpringAnimation(this, TITLE_PROGRESS_PROPERTY);
-    private float titleProgress;
-
     private SpringAnimation errorSpring = new SpringAnimation(this, ERROR_PROGRESS_PROPERTY);
     private float errorProgress;
 
@@ -65,7 +53,7 @@ public class OutlineTextContainerView extends FrameLayout {
     private float strokeWidthSelected = AndroidUtilities.dp(1.6667f);
 
     private EditText attachedEditText;
-    private boolean forceUseCenter, forceForceUseCenter;
+    private boolean forceUseCenter;
 
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -92,12 +80,6 @@ public class OutlineTextContainerView extends FrameLayout {
         invalidate();
     }
 
-    public void setForceForceUseCenter(boolean forceForceUseCenter) {
-        this.forceUseCenter = forceForceUseCenter;
-        this.forceForceUseCenter = forceForceUseCenter;
-        invalidate();
-    }
-
     public EditText getAttachedEditText() {
         return attachedEditText;
     }
@@ -118,48 +100,26 @@ public class OutlineTextContainerView extends FrameLayout {
     }
 
     public void updateColor() {
-        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : titleProgress);
+        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider), forceUseCenter ? 0f : selectionProgress);
         textPaint.setColor(ColorUtils.blendARGB(textSelectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
-        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : selectionProgress);
+        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter ? 0f : selectionProgress);
         setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
     }
 
-    public void animateSelection(boolean selected) {
-        animateSelection(selected ? 1f : 0f, selected ? 1f : 0f, true);
+    public void animateSelection(float newValue) {
+        animateSelection(newValue, true);
     }
 
-    public void animateSelection(float selected) {
-        animateSelection(selected, selected, true);
-    }
-
-    public void animateSelection(float selected, float title) {
-        animateSelection(selected, title, true);
-    }
-
-    public void animateSelection(boolean selected, boolean title) {
-        animateSelection(selected ? 1f : 0f, title ? 1f : 0f, true);
-    }
-
-    public void animateSelection(float selected, boolean animated) {
-        animateSelection(selected, selected, animated);
-    }
-
-    public void animateSelection(boolean selected, boolean title, boolean animated) {
-        animateSelection(selected ? 1f : 0f, title ? 1f : 0f, animated);
-    }
-
-    public void animateSelection(float selected, float title, boolean animate) {
+    public void animateSelection(float newValue, boolean animate) {
         if (!animate) {
-            selectionProgress = selected;
-            titleProgress = title;
+            selectionProgress = newValue;
             if (!forceUseCenter) {
                 outlinePaint.setStrokeWidth(strokeWidthRegular + (strokeWidthSelected - strokeWidthRegular) * selectionProgress);
             }
             updateColor();
             return;
         }
-        animateSpring(selectionSpring, selected);
-        animateSpring(titleSpring, title);
+        animateSpring(selectionSpring, newValue);
     }
 
     public void animateError(float newValue) {
@@ -179,12 +139,6 @@ public class OutlineTextContainerView extends FrameLayout {
                 .start();
     }
 
-    private float leftPadding;
-    public void setLeftPadding(float padding) {
-        this.leftPadding = padding;
-        invalidate();
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -193,11 +147,10 @@ public class OutlineTextContainerView extends FrameLayout {
         float topY = getPaddingTop() + textOffset;
         float centerY = getHeight() / 2f + textPaint.getTextSize() / 2f;
         boolean useCenter = attachedEditText != null && attachedEditText.length() == 0 && TextUtils.isEmpty(attachedEditText.getHint()) || forceUseCenter;
-        float textY = useCenter ? topY + (centerY - topY) * (1f - titleProgress) : topY;
-        float textX = useCenter ? leftPadding * (1f - titleProgress) : 0;
+        float textY = useCenter ? topY + (centerY - topY) * (1f - selectionProgress) : topY;
         float stroke = outlinePaint.getStrokeWidth();
 
-        float scaleX = useCenter ? 0.75f + 0.25f * (1f - titleProgress) : 0.75f;
+        float scaleX = useCenter ? 0.75f + 0.25f * (1f - selectionProgress) : 0.75f;
         float textWidth = textPaint.measureText(mText) * scaleX;
 
         canvas.save();
@@ -212,14 +165,14 @@ public class OutlineTextContainerView extends FrameLayout {
 
         float activeLeft = left + textWidth + AndroidUtilities.dp(PADDING_LEFT - PADDING_TEXT);
         float fromLeft = left + textWidth / 2f;
-        canvas.drawLine(fromLeft + (activeLeft - fromLeft) * (useCenter ? titleProgress : 1f), lineY, right, lineY, outlinePaint);
+        canvas.drawLine(fromLeft + (activeLeft - fromLeft) * (useCenter ? selectionProgress : 1f), lineY, right, lineY, outlinePaint);
 
         float fromRight = left + textWidth / 2f + AndroidUtilities.dp(PADDING_TEXT);
-        canvas.drawLine(left, lineY, fromRight + (left - fromRight) * (useCenter ? titleProgress : 1f), lineY, outlinePaint);
+        canvas.drawLine(left, lineY, fromRight + (left - fromRight) * (useCenter ? selectionProgress : 1f), lineY, outlinePaint);
 
         canvas.save();
         canvas.scale(scaleX, scaleX, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT + PADDING_TEXT), textY);
-        canvas.drawText(mText, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT) + textX, textY, textPaint);
+        canvas.drawText(mText, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT), textY, textPaint);
         canvas.restore();
     }
 }

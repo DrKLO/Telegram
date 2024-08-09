@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/menu_item_ic"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginVertical="15dp"
+        android:layout_marginLeft="20dp"
+        android:src="@drawable/app_ic_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:layout_marginRight="30dp"
+        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/menu_item_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@id/menu_item_ic"
+        app:layout_constraintLeft_toRightOf="@id/menu_item_ic"
+        app:layout_constraintTop_toTopOf="@id/menu_item_ic" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0.2dp"
+        android:layout_marginHorizontal="10dp"
+        android:background="#AFAFAF"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -431,7 +431,6 @@ public class GiveawayResultsMessageCell {
 
         if (selectorDrawable == null) {
             selectorDrawable = Theme.createRadSelectorDrawable(selectorColor = Theme.getColor(Theme.key_listSelector), 12, 12);
-            selectorDrawable.setCallback(parentView);
         }
 
         textPaint.setColor(Theme.chat_msgTextPaint.getColor());
@@ -564,8 +563,7 @@ public class GiveawayResultsMessageCell {
                 Theme.setSelectorDrawableColor(selectorDrawable, selectorColor = rippleColor, true);
             }
             selectorDrawable.setBounds(clickRect[pressedPos]);
-            selectorDrawable.setCallback(parentView);
-//            selectorDrawable.draw(canvas);
+            selectorDrawable.draw(canvas);
         }
 
         if (links != null && links.draw(canvas)) {

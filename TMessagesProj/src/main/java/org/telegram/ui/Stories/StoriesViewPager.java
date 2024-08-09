@@ -16,7 +16,6 @@ import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -99,12 +98,7 @@ public class StoriesViewPager extends ViewPager {
                 pageLayout.setTag(position);
                 if (days != null) {
                     pageLayout.day = days.get(storyViewer.reversed ? days.size() - 1 - position : position);
-                    if (storyViewer.storiesList instanceof StoriesController.SearchStoriesList) {
-                        MessageObject msg = storyViewer.storiesList.findMessageObject(pageLayout.day.get(0));
-                        pageLayout.dialogId = msg == null ? daysDialogId : msg.getDialogId();
-                    } else {
-                        pageLayout.dialogId = daysDialogId;
-                    }
+                    pageLayout.dialogId = daysDialogId;
                 } else {
                     pageLayout.day = null;
                     pageLayout.dialogId = dialogs.get(position);

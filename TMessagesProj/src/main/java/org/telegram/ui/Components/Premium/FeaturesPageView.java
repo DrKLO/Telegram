@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -41,6 +42,11 @@ import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
 import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.xatirchi.callApi.DialogData;
+import org.xatirchi.callApi.modul.Future;
+import org.xatirchi.callApi.modul.IcTitleDescription;
+import org.xatirchi.callApi.modul.TitleDescription;
+import org.xatirchi.utils.SvgUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,98 +65,117 @@ public class FeaturesPageView extends BaseListPageView {
     Bitmap bitmap;
 
     public final int type;
+    public int featureDataType;
 
-    public FeaturesPageView(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
+    public FeaturesPageView(int featureDataType, Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
         this.type = type;
+        this.featureDataType = featureDataType;
         ArrayList<Item> itemsTmp = new ArrayList<>();
 
         MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
         SparseIntArray order = null;
-        if (type == FEATURES_STORIES) {
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_order,
-                    LocaleController.getString("PremiumStoriesPriority", R.string.PremiumStoriesPriority),
-                    LocaleController.getString("PremiumStoriesPriorityDescription", R.string.PremiumStoriesPriorityDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_PRIORITY_ORDER
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_stealth,
-                    LocaleController.getString("PremiumStoriesStealth", R.string.PremiumStoriesStealth),
-                    LocaleController.getString("PremiumStoriesStealthDescription", R.string.PremiumStoriesStealthDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_STEALTH_MODE
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quality_hd,
-                    LocaleController.getString(R.string.PremiumStoriesQuality),
-                    LocaleController.getString(R.string.PremiumStoriesQualityDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_QUALITY
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_views,
-                    LocaleController.getString("PremiumStoriesViews", R.string.PremiumStoriesViews),
-                    LocaleController.getString("PremiumStoriesViewsDescription", R.string.PremiumStoriesViewsDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_VIEWS_HISTORY
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_timer,
-                    LocaleController.getString("PremiumStoriesExpiration", R.string.PremiumStoriesExpiration),
-                    LocaleController.getString("PremiumStoriesExpirationDescription", R.string.PremiumStoriesExpirationDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_save,
-                    LocaleController.getString("PremiumStoriesSaveToGallery", R.string.PremiumStoriesSaveToGallery),
-                    LocaleController.getString("PremiumStoriesSaveToGalleryDescription", R.string.PremiumStoriesSaveToGalleryDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_caption,
-                    LocaleController.getString("PremiumStoriesCaption", R.string.PremiumStoriesCaption),
-                    LocaleController.getString("PremiumStoriesCaptionDescription", R.string.PremiumStoriesCaptionDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_CAPTION
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_link,
-                    LocaleController.getString("PremiumStoriesFormatting", R.string.PremiumStoriesFormatting),
-                    LocaleController.getString("PremiumStoriesFormattingDescription", R.string.PremiumStoriesFormattingDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING
-            ));
-        } else if (type == FEATURES_BUSINESS) {
-            order = messagesController.businessFeaturesTypesToPosition;
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_location,
-                    LocaleController.getString(R.string.PremiumBusinessLocation),
-                    LocaleController.getString(R.string.PremiumBusinessLocationDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_LOCATION
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_clock,
-                    LocaleController.getString(R.string.PremiumBusinessOpeningHours),
-                    LocaleController.getString(R.string.PremiumBusinessOpeningHoursDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_OPENING_HOURS
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quickreply,
-                    LocaleController.getString(R.string.PremiumBusinessQuickReplies),
-                    LocaleController.getString(R.string.PremiumBusinessQuickRepliesDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_QUICK_REPLIES
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_feature_status,
-                    LocaleController.getString(R.string.PremiumBusinessGreetingMessages),
-                    LocaleController.getString(R.string.PremiumBusinessGreetingMessagesDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_GREETING_MESSAGES
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_away,
-                    LocaleController.getString(R.string.PremiumBusinessAwayMessages),
-                    LocaleController.getString(R.string.PremiumBusinessAwayMessagesDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_AWAY_MESSAGES
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_chatbot,
-                    LocaleController.getString(R.string.PremiumBusinessChatbots2),
-                    LocaleController.getString(R.string.PremiumBusinessChatbotsDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_CHATBOTS
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_feature_intro,
-                    LocaleController.getString(R.string.PremiumBusinessIntro),
-                    LocaleController.getString(R.string.PremiumBusinessIntroDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_INTRO
-            ));
-            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_chatlink,
-                    LocaleController.getString(R.string.PremiumBusinessChatLinks),
-                    LocaleController.getString(R.string.PremiumBusinessChatLinksDescription),
-                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_CHAT_LINKS
-            ));
+//        Xatirchi
+//        if (type == FEATURES_STORIES) {
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_order,
+//                    LocaleController.getString("PremiumStoriesPriority", R.string.PremiumStoriesPriority),
+//                    LocaleController.getString("PremiumStoriesPriorityDescription", R.string.PremiumStoriesPriorityDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_PRIORITY_ORDER
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_stealth,
+//                    LocaleController.getString("PremiumStoriesStealth", R.string.PremiumStoriesStealth),
+//                    LocaleController.getString("PremiumStoriesStealthDescription", R.string.PremiumStoriesStealthDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_STEALTH_MODE
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quality_hd,
+//                    LocaleController.getString(R.string.PremiumStoriesQuality),
+//                    LocaleController.getString(R.string.PremiumStoriesQualityDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_QUALITY
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_views,
+//                    LocaleController.getString("PremiumStoriesViews", R.string.PremiumStoriesViews),
+//                    LocaleController.getString("PremiumStoriesViewsDescription", R.string.PremiumStoriesViewsDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_VIEWS_HISTORY
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_timer,
+//                    LocaleController.getString("PremiumStoriesExpiration", R.string.PremiumStoriesExpiration),
+//                    LocaleController.getString("PremiumStoriesExpirationDescription", R.string.PremiumStoriesExpirationDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_save,
+//                    LocaleController.getString("PremiumStoriesSaveToGallery", R.string.PremiumStoriesSaveToGallery),
+//                    LocaleController.getString("PremiumStoriesSaveToGalleryDescription", R.string.PremiumStoriesSaveToGalleryDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_caption,
+//                    LocaleController.getString("PremiumStoriesCaption", R.string.PremiumStoriesCaption),
+//                    LocaleController.getString("PremiumStoriesCaptionDescription", R.string.PremiumStoriesCaptionDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_CAPTION
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_link,
+//                    LocaleController.getString("PremiumStoriesFormatting", R.string.PremiumStoriesFormatting),
+//                    LocaleController.getString("PremiumStoriesFormattingDescription", R.string.PremiumStoriesFormattingDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING
+//            ));
+//        } else if (type == FEATURES_BUSINESS) {
+//            order = messagesController.businessFeaturesTypesToPosition;
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_location,
+//                    LocaleController.getString(R.string.PremiumBusinessLocation),
+//                    LocaleController.getString(R.string.PremiumBusinessLocationDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_LOCATION
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_clock,
+//                    LocaleController.getString(R.string.PremiumBusinessOpeningHours),
+//                    LocaleController.getString(R.string.PremiumBusinessOpeningHoursDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_OPENING_HOURS
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quickreply,
+//                    LocaleController.getString(R.string.PremiumBusinessQuickReplies),
+//                    LocaleController.getString(R.string.PremiumBusinessQuickRepliesDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_QUICK_REPLIES
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_feature_status,
+//                    LocaleController.getString(R.string.PremiumBusinessGreetingMessages),
+//                    LocaleController.getString(R.string.PremiumBusinessGreetingMessagesDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_GREETING_MESSAGES
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_away,
+//                    LocaleController.getString(R.string.PremiumBusinessAwayMessages),
+//                    LocaleController.getString(R.string.PremiumBusinessAwayMessagesDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_AWAY_MESSAGES
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_chatbot,
+//                    LocaleController.getString(R.string.PremiumBusinessChatbots2),
+//                    LocaleController.getString(R.string.PremiumBusinessChatbotsDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_CHATBOTS
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_feature_intro,
+//                    LocaleController.getString(R.string.PremiumBusinessIntro),
+//                    LocaleController.getString(R.string.PremiumBusinessIntroDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_INTRO
+//            ));
+//            itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_premium_chatlink,
+//                    LocaleController.getString(R.string.PremiumBusinessChatLinks),
+//                    LocaleController.getString(R.string.PremiumBusinessChatLinksDescription),
+//                    PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS_CHAT_LINKS
+//            ));
+//        }
+
+        Future future = DialogData.INSTANCE.getDialogLikeStoriesFutures(featureDataType);
+        if (future != null) {
+            for (IcTitleDescription littleFuture : future.getLittleFutures()) {
+                TitleDescription titleDescription = DialogData.INSTANCE.getTitleAndDesc(littleFuture.getTitleDescriptions());
+                if (titleDescription != null) {
+                    itemsTmp.add(new Item(VIEW_TYPE_ITEM, 0,
+                            titleDescription.getTitle(),
+                            titleDescription.getDescription(),
+                            PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_PRIORITY_ORDER,SvgUtils.INSTANCE.getDrawableFromSvg(littleFuture.getSvgIcon())
+                    ));
+                }
+            }
         }
+
+
         if (order != null) {
             final SparseIntArray finalOrder = order;
 //            if (finalOrder.size() > 0) {
@@ -174,7 +199,7 @@ public class FeaturesPageView extends BaseListPageView {
         bitmap = Bitmap.createBitmap(items.size(), 1, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint();
-        paint.setShader(new LinearGradient(0, 0, bitmap.getWidth(), 0, new int[] {
+        paint.setShader(new LinearGradient(0, 0, bitmap.getWidth(), 0, new int[]{
                 Theme.getColor(Theme.key_premiumGradient1),
                 Theme.getColor(Theme.key_premiumGradient2),
                 Theme.getColor(Theme.key_premiumGradient3),
@@ -212,7 +237,11 @@ public class FeaturesPageView extends BaseListPageView {
                 if (items.get(position).viewType == VIEW_TYPE_ITEM) {
                     ItemCell cell = (ItemCell) holder.itemView;
                     cell.imageView.setColorFilter(new PorterDuffColorFilter(bitmap.getPixel(position, 0), PorterDuff.Mode.MULTIPLY));
-                    cell.imageView.setImageDrawable(ContextCompat.getDrawable(getContext(), items.get(position).iconRes));
+                    if (items.get(position).iconRes != 0) {
+                        cell.imageView.setImageDrawable(ContextCompat.getDrawable(getContext(), items.get(position).iconRes));
+                    } else {
+                        cell.imageView.setImageDrawable(items.get(position).img);
+                    }
                     cell.textView.setText(items.get(position).text);
                     cell.description.setText(items.get(position).description);
                 }
@@ -238,6 +267,8 @@ public class FeaturesPageView extends BaseListPageView {
         String description;
         int order;
 
+        Drawable img;
+
         private Item(int viewType) {
             this.viewType = viewType;
         }
@@ -248,6 +279,15 @@ public class FeaturesPageView extends BaseListPageView {
             this.text = text;
             this.description = description;
             this.order = order;
+        }
+
+        public Item(int viewType, int iconRes, String text, String description, int order, Drawable img) {
+            this.viewType = viewType;
+            this.iconRes = iconRes;
+            this.text = text;
+            this.description = description;
+            this.order = order;
+            this.img = img;
         }
     }
 
@@ -264,22 +304,36 @@ public class FeaturesPageView extends BaseListPageView {
         public HeaderView(Context context) {
             super(context);
             if (type == FEATURES_STORIES) {
+
+                Future future = DialogData.INSTANCE.getDialogLikeStoriesFutures(featureDataType);
+
                 height = dp(150);
 
                 imageView = new BackupImageView(context);
                 imageView.setRoundRadius((int) (dp(65) / 2f));
                 addView(imageView, LayoutHelper.createFrame(65, 65, Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
-                TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
-                AvatarDrawable avatarDrawable = new AvatarDrawable();
-                avatarDrawable.setInfo(user);
-                imageView.getImageReceiver().setForUserOrChat(user, avatarDrawable);
+                if (future != null) {
+                    imageView.setImageResource(R.mipmap.app_ic);
+                } else {
+                    TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+                    AvatarDrawable avatarDrawable = new AvatarDrawable();
+                    avatarDrawable.setInfo(user);
+                    imageView.getImageReceiver().setForUserOrChat(user, avatarDrawable);
+                }
 
                 TextView textView = new TextView(context);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                textView.setText(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
+                if (future != null) {
+                    TitleDescription titleDescription = DialogData.INSTANCE.getTitleAndDesc(future.getFuture().getTitleDescriptions());
+                    if (titleDescription != null) {
+                        textView.setText(titleDescription.getTitle());
+                    }
+                } else {
+                    textView.setText(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
+                }
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 111, 0, 0));
 
                 gradientTools.isLinear = true;

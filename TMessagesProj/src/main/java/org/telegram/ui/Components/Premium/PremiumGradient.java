@@ -43,6 +43,7 @@ public class PremiumGradient {
     public InternalDrawable premiumStarMenuDrawable2;
     public InternalDrawable premiumStarMenuDrawableGray;
     public InternalDrawable goldenStarMenuDrawable;
+    public InternalDrawable myCustomEmoji;
 
     private int lastStarColor;
 
@@ -60,6 +61,7 @@ public class PremiumGradient {
         premiumStarMenuDrawable2 = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_normal));
 //        premiumStarMenuDrawableGray = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium), grayGradient);
         premiumStarColoredDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
+        myCustomEmoji = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext,R.drawable.xatirchi_premium_flash_ic));
         mainGradient.chekColors();
         checkIconColors();
     }

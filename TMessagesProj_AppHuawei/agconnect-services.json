@@ -33,7 +33,7 @@
 		"project_id":"9105385871708127577",
 		"app_id":"101184875",
 		"api_key":"DAEDAEehEkTAPVhW2szdQNNLzBVS1Re7Pw98QkLMvgGZaEEUc8JLBVi2qhMh2vWw9h/Yq2PwtSGxZzFrSmLAQIysf7Tvo4BAadcblA==",
-		"package_name":"org.telegram.messenger"
+		"package_name":"org.xatirchi.messenger"
 	},
 	"oauth_client":{
 		"client_id":"101184875",
@@ -41,7 +41,7 @@
 	},
 	"app_info":{
 		"app_id":"101184875",
-		"package_name":"org.telegram.messenger"
+		"package_name":"org.xatirchi.messenger"
 	},
 	"service":{
 		"analytics":{
@@ -75,12 +75,12 @@
 	"configuration_version":"3.0",
 	"appInfos":[
 		{
-			"package_name":"org.telegram.messenger",
+			"package_name":"org.xatirchi.messenger",
 			"client":{
 				"app_id":"101184875"
 			},
 			"app_info":{
-				"package_name":"org.telegram.messenger",
+				"package_name":"org.xatirchi.messenger",
 				"app_id":"101184875"
 			},
 			"oauth_client":{

@@ -66,15 +66,12 @@ public class ReactedUsersListView extends FrameLayout {
     MessageContainsEmojiButton messageContainsEmojiButton;
     Theme.ResourcesProvider resourcesProvider;
 
-    private boolean showReactionPreview;
-
-    public ReactedUsersListView(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, MessageObject message, TLRPC.ReactionCount reactionCount, boolean addPadding, boolean showReactionPreview) {
+    public ReactedUsersListView(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, MessageObject message, TLRPC.ReactionCount reactionCount, boolean addPadding) {
         super(context);
         this.currentAccount = currentAccount;
         this.message = message;
         this.filter = reactionCount == null ? null : reactionCount.reaction;
         this.resourcesProvider = resourcesProvider;
-        this.showReactionPreview = showReactionPreview;
         predictiveCount = reactionCount == null ? VISIBLE_ITEMS : reactionCount.count;
         listView = new RecyclerListView(context, resourcesProvider) {
             @Override
@@ -103,7 +100,7 @@ public class ReactedUsersListView extends FrameLayout {
                 View view = null;
                 switch (viewType) {
                     case USER_VIEW_TYPE:
-                        view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_DEFAULT, currentAccount, context, resourcesProvider, true, showReactionPreview);
+                        view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_DEFAULT, currentAccount, context, null);
                         break;
                     default:
                     case CUSTOM_EMOJI_VIEW_TYPE:

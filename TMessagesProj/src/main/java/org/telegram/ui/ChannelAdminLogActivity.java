@@ -2432,7 +2432,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     @Override
     public void onRemoveFromParent() {
         MediaController.getInstance().setTextureView(videoTextureView, null, null, false);
-        super.onRemoveFromParent();
     }
 
     private void hideFloatingDateView(boolean animated) {
@@ -2904,7 +2903,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId, float touchX, float touchY, boolean asForward) {
+                    public void didPressChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId, float touchX, float touchY) {
                         if (chat != null && chat != currentChat) {
                             Bundle args = new Bundle();
                             args.putLong("chat_id", chat.id);
@@ -2923,7 +2922,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY, boolean asForward) {
+                    public void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY) {
                         if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId()) {
                             openProfile(user);
                         }
@@ -3164,7 +3163,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 }
                             }
                             try {
-                                AndroidUtilities.openForView(message, getParentActivity(), null, false);
+                                AndroidUtilities.openForView(message, getParentActivity(), null);
                             } catch (Exception e) {
                                 alertUserOpenError(message);
                             }

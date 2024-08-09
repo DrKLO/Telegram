@@ -366,11 +366,9 @@ class Delegate : public ConnectiosManagerDelegate {
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onPremiumFloodWait, instanceNum, requestToken, isUpload);
     }
 
-    void onIntegrityCheckClassic(int32_t instanceNum, int32_t requestToken, std::string project, std::string nonce) {
-        jstring projectStr = jniEnv[instanceNum]->NewStringUTF(project.c_str());
+    void onIntegrityCheckClassic(int32_t instanceNum, int32_t requestToken, std::string nonce) {
         jstring nonceStr = jniEnv[instanceNum]->NewStringUTF(nonce.c_str());
-        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onIntegrityCheckClassic, instanceNum, requestToken, projectStr, nonceStr);
-        jniEnv[instanceNum]->DeleteLocalRef(projectStr);
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onIntegrityCheckClassic, instanceNum, requestToken, nonceStr);
         jniEnv[instanceNum]->DeleteLocalRef(nonceStr);
     }
 
@@ -629,7 +627,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_ConnectionsManager_onPremiumFloodWait == 0) {
         return JNI_FALSE;
     }
-    jclass_ConnectionsManager_onIntegrityCheckClassic = env->GetStaticMethodID(jclass_ConnectionsManager, "onIntegrityCheckClassic", "(IILjava/lang/String;Ljava/lang/String;)V");
+    jclass_ConnectionsManager_onIntegrityCheckClassic = env->GetStaticMethodID(jclass_ConnectionsManager, "onIntegrityCheckClassic", "(IILjava/lang/String;)V");
     if (jclass_ConnectionsManager_onIntegrityCheckClassic == 0) {
         return JNI_FALSE;
     }

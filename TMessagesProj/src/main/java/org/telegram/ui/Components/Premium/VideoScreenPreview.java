@@ -41,9 +41,12 @@ import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.StoryViewer;
+import org.xatirchi.callApi.DialogData;
+import org.xatirchi.callApi.modul.Future;
 
 import java.io.File;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 
 public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, NotificationCenter.NotificationCenterDelegate {
 
@@ -100,7 +103,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
     boolean firstFrameRendered;
 
     float progress;
-//    VideoPlayer videoPlayer;
+    //    VideoPlayer videoPlayer;
     VideoPlayerHolderBase videoPlayerBase;
     AspectRatioFrameLayout aspectRatioFrameLayout;
     TextureView textureView;
@@ -542,6 +545,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
     }
 
     private void runVideoPlayer() {
+        //xatirchiVideo
         if (file != null || SharedConfig.streamMedia) {
             if (videoPlayerBase != null) {
                 return;
@@ -581,16 +585,21 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 uri = Uri.fromFile(file);
             } else {
                 try {
-                    String params = "?account=" + currentAccount +
-                            "&id=" + document.id +
-                            "&hash=" + document.access_hash +
-                            "&dc=" + document.dc_id +
-                            "&size=" + document.size +
-                            "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
-                            "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(MediaDataController.getInstance(currentAccount).getPremiumPromo()) +
-                            "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
-                            "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
-                    uri = Uri.parse("tg://" + attachFileName + params);
+//                    String params = "?account=" + currentAccount +
+//                            "&id=" + document.id +
+//                            "&hash=" + document.access_hash +
+//                            "&dc=" + document.dc_id +
+//                            "&size=" + document.size +
+//                            "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
+//                            "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(MediaDataController.getInstance(currentAccount).getPremiumPromo()) +
+//                            "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
+//                            "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
+                    uri = Uri.parse("");
+
+                    Future future = DialogData.INSTANCE.getDialogLikeVideoFutures(type);
+                    if (future != null) {
+                        uri = Uri.parse(future.getVideo());
+                    }
                 } catch (Exception exception) {
                     uri = null;
                 }
