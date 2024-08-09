@@ -1,7 +1,5 @@
 package org.telegram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.style.ReplacementSpan;
@@ -20,10 +18,9 @@ public class LoadingSpan extends ReplacementSpan {
     private LoadingDrawable drawable;
 
     public int yOffset;
-    private float scaleY = 1f;
 
     public LoadingSpan(View view, int size) {
-        this(view, size, dp(2));
+        this(view, size, AndroidUtilities.dp(2));
     }
 
     public LoadingSpan(View view, int size, int yOffset) {
@@ -54,10 +51,6 @@ public class LoadingSpan extends ReplacementSpan {
         this.drawable.color2 = color2;
     }
 
-    public void setScaleY(float scaleY) {
-        this.scaleY = scaleY;
-    }
-
     public void setView(View view) {
         this.view = view;
     }
@@ -77,12 +70,7 @@ public class LoadingSpan extends ReplacementSpan {
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-        drawable.setBounds(
-            (int) x,
-            (int) (top + (bottom - dp(2) - top) / 2f * (1f - scaleY) + yOffset),
-            (int) x + size,
-            (int) (bottom - dp(2) - ((bottom - dp(2)) - top) / 2f * (1f - scaleY) + yOffset)
-        );
+        drawable.setBounds((int) x, top + yOffset, (int) x + size, bottom - AndroidUtilities.dp(2) + yOffset);
         if (paint != null) {
             drawable.setAlpha(paint.getAlpha());
         }

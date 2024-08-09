@@ -27,16 +27,16 @@ public class NotificationCenter {
     private static int totalEvents = 1;
 
     public static final int didReceiveNewMessages = totalEvents++;
-    public static final int updateInterfaces = totalEvents++;
+    public static final int updateInterfaces = totalEvents++; //2
     public static final int dialogsNeedReload = totalEvents++;
     public static final int closeChats = totalEvents++;
-    public static final int messagesDeleted = totalEvents++;
+    public static final int messagesDeleted = totalEvents++; //5
     public static final int historyCleared = totalEvents++;
     public static final int messagesRead = totalEvents++;
     public static final int threadMessagesRead = totalEvents++;
     public static final int commentsRead = totalEvents++;
     public static final int changeRepliesCounter = totalEvents++;
-    public static final int messagesDidLoad = totalEvents++;
+    public static final int messagesDidLoad = totalEvents++; //11
     public static final int didLoadSponsoredMessages = totalEvents++;
     public static final int didLoadSendAsPeers = totalEvents++;
     public static final int updateDefaultSendAsPeer = totalEvents++;
@@ -71,7 +71,7 @@ public class NotificationCenter {
     public static final int mainUserInfoChanged = totalEvents++;
     public static final int privacyRulesUpdated = totalEvents++;
     public static final int updateMessageMedia = totalEvents++;
-    public static final int replaceMessagesObjects = totalEvents++;
+    public static final int replaceMessagesObjects = totalEvents++; //46
     public static final int didSetPasscode = totalEvents++;
     public static final int passcodeDismissed = totalEvents++;
     public static final int twoStepPasswordChanged = totalEvents++;
@@ -89,8 +89,8 @@ public class NotificationCenter {
     public static final int groupStickersDidLoad = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoad = totalEvents++;
-    public static final int userInfoDidLoad = totalEvents++;
-    public static final int pinnedInfoDidLoad = totalEvents++;
+    public static final int userInfoDidLoad = totalEvents++; //64
+    public static final int pinnedInfoDidLoad = totalEvents++; //65
     public static final int botKeyboardDidLoad = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
     public static final int hashtagSearchUpdated = totalEvents++;
@@ -114,7 +114,7 @@ public class NotificationCenter {
     public static final int openArticle = totalEvents++;
     public static final int articleClosed = totalEvents++;
     public static final int updateMentionsCount = totalEvents++;
-    public static final int didUpdatePollResults = totalEvents++;
+    public static final int didUpdatePollResults = totalEvents++; //89
     public static final int chatOnlineCountDidLoad = totalEvents++;
     public static final int videoLoadingStateChanged = totalEvents++;
     public static final int newPeopleNearbyAvailable = totalEvents++;
@@ -126,7 +126,7 @@ public class NotificationCenter {
     public static final int didUpdateReactions = totalEvents++;
     public static final int didUpdateExtendedMedia = totalEvents++;
     public static final int didVerifyMessagesStickers = totalEvents++;
-    public static final int scheduledMessagesUpdated = totalEvents++;
+    public static final int scheduledMessagesUpdated = totalEvents++; //101
     public static final int newSuggestionsAvailable = totalEvents++;
     public static final int didLoadChatInviter = totalEvents++;
     public static final int didLoadChatAdmins = totalEvents++;
@@ -161,7 +161,7 @@ public class NotificationCenter {
     public static final int httpFileDidLoad = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
 
-    public static final int didUpdateConnectionState = totalEvents++;
+    public static final int didUpdateConnectionState = totalEvents++; //130
 
     public static final int fileUploaded = totalEvents++;
     public static final int fileUploadFailed = totalEvents++;
@@ -253,9 +253,6 @@ public class NotificationCenter {
     public static final int starBalanceUpdated = totalEvents++;
     public static final int starTransactionsLoaded = totalEvents++;
     public static final int factCheckLoaded = totalEvents++;
-    public static final int botStarsUpdated = totalEvents++;
-    public static final int botStarsTransactionsLoaded = totalEvents++;
-    public static final int channelStarsUpdated = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;
@@ -336,6 +333,7 @@ public class NotificationCenter {
     public static final int onReceivedChannelDifference = totalEvents++;
     public static final int storiesReadUpdated = totalEvents++;
     public static final int nearEarEvent = totalEvents++;
+    public static final int forSetTextToTextView = totalEvents++;
 
     public static boolean alreadyLogged;
 

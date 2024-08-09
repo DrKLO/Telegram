@@ -42,7 +42,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -697,7 +696,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     public static class WebViewSwipeContainer extends FrameLayout {
         public final static SimpleFloatPropertyCompat<WebViewSwipeContainer> SWIPE_OFFSET_Y = new SimpleFloatPropertyCompat<>("swipeOffsetY", WebViewSwipeContainer::getSwipeOffsetY, WebViewSwipeContainer::setSwipeOffsetY);
 
-        private final GestureDetectorCompat gestureDetector;
+        private GestureDetectorCompat gestureDetector;
         private boolean isScrolling;
         private boolean isSwipeDisallowed;
 
@@ -724,21 +723,6 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
 
         private GenericProvider<Void, Boolean> isKeyboardVisible = obj -> false;
 
-        private boolean fullsize;
-        public boolean opened;
-        public void setFullSize(boolean fullsize) {
-            if (this.fullsize != fullsize) {
-                this.fullsize = fullsize;
-                if (fullsize) {
-                    if (opened) {
-                        stickTo(-getOffsetY() + getTopActionBarOffsetY());
-                    }
-                } else {
-                    stickTo(0);
-                }
-            }
-        }
-
         public WebViewSwipeContainer(@NonNull Context context) {
             super(context);
 
@@ -746,7 +730,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
                 @Override
                 public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                    if (isSwipeDisallowed || fullsize) {
+                    if (isSwipeDisallowed) {
                         return false;
                     }
                     if (velocityY >= 700 && (webView == null || webView.getScrollY() == 0)) {
@@ -811,9 +795,6 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                         }
 
                         swipeOffsetY = MathUtils.clamp(swipeOffsetY, -offsetY + topActionBarOffsetY, getHeight() - offsetY + topActionBarOffsetY);
-                        if (fullsize) {
-                            swipeOffsetY = Math.min(swipeOffsetY, -offsetY + topActionBarOffsetY);
-                        }
                         invalidateTranslation();
                         return true;
                     }
@@ -901,11 +882,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                             float progress = (value - wasOffsetY) / deltaOffsetY;
 
                             if (wasOnTop) {
-                                swipeOffsetY = MathUtils.clamp(
-                                    swipeOffsetY - progress * Math.max(0, deltaOffsetY),
-                                    -this.offsetY + topActionBarOffsetY,
-                                    getHeight() - this.offsetY + topActionBarOffsetY
-                                );
+                                swipeOffsetY = MathUtils.clamp(swipeOffsetY - progress * Math.max(0, deltaOffsetY), -this.offsetY + topActionBarOffsetY, getHeight() - this.offsetY + topActionBarOffsetY);
                             }
                             if (scrollAnimator != null && scrollAnimator.getSpring().getFinalPosition() == -wasOffsetY + topActionBarOffsetY) {
                                 scrollAnimator.getSpring().setFinalPosition(-offsetY + topActionBarOffsetY);
@@ -927,11 +904,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                 this.offsetY = offsetY;
 
                 if (wasOnTop) {
-                    swipeOffsetY = MathUtils.clamp(
-                        swipeOffsetY - Math.max(0, deltaOffsetY),
-                        -this.offsetY + topActionBarOffsetY,
-                        getHeight() - this.offsetY + topActionBarOffsetY
-                    );
+                    swipeOffsetY = MathUtils.clamp(swipeOffsetY - Math.max(0, deltaOffsetY), -this.offsetY + topActionBarOffsetY, getHeight() - this.offsetY + topActionBarOffsetY);
                 }
                 invalidateTranslation();
             }
@@ -986,9 +959,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                 isSwipeDisallowed = false;
                 isScrolling = false;
 
-                if (fullsize) {
-
-                } else if (flingInProgress) {
+                if (flingInProgress) {
                     flingInProgress = false;
                 } else {
                     if (swipeOffsetY <= -swipeStickyRange) {
@@ -1015,9 +986,6 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         }
 
         public void stickTo(float offset, Runnable callback) {
-            if (fullsize) {
-                offset = -getOffsetY() + getTopActionBarOffsetY();
-            }
             if (swipeOffsetY == offset || scrollAnimator != null && scrollAnimator.getSpring().getFinalPosition() == offset) {
                 if (callback != null) {
                     callback.run();
@@ -1037,7 +1005,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             }
             scrollAnimator = new SpringAnimation(this, SWIPE_OFFSET_Y, offset)
                     .setSpring(new SpringForce(offset)
-                            .setStiffness(1200)
+                            .setStiffness(1400)
                             .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
                     .addEndListener((animation, canceled, value, velocity) -> {
                         if (animation == scrollAnimator) {

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!--    <RadioGroup-->
+    <!--        android:id="@+id/radio_group"-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="0dp"-->
+    <!--        android:layout_marginRight="20dp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@id/i_and_your_delete_tv"-->
+    <!--        app:layout_constraintRight_toRightOf="parent"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/simple_delete_tv">-->
+    <!--        -->
+    <!--    </RadioGroup>-->
+
+    <RadioButton
+        android:id="@+id/radio1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:buttonTint="#2196F3"
+        app:layout_constraintBottom_toBottomOf="@id/simple_delete_tv"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/simple_delete_tv" />
+
+    <RadioButton
+        android:id="@+id/radio2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:buttonTint="#2196F3"
+        app:layout_constraintBottom_toBottomOf="@id/your_delete_tv"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/your_delete_tv" />
+
+    <RadioButton
+        android:id="@+id/radio3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:buttonTint="#2196F3"
+        app:layout_constraintBottom_toBottomOf="@id/i_delete_tv"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/i_delete_tv" />
+
+    <RadioButton
+        android:id="@+id/radio4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:buttonTint="#2196F3"
+        app:layout_constraintBottom_toBottomOf="@id/i_and_your_delete_tv"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/i_and_your_delete_tv" />
+
+
+    <TextView
+        android:id="@+id/simple_delete_tv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="25dp"
+        android:layout_marginRight="30dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="Simple Delete"
+        android:textSize="18dp"
+        android:textStyle="bold"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/radio1"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv1_deck"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="30dp"
+        android:paddingLeft="10dp"
+        android:textSize="14dp"
+        android:textStyle="normal|italic"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="@id/simple_delete_tv"
+        app:layout_constraintRight_toLeftOf="@id/radio1"
+        app:layout_constraintTop_toBottomOf="@id/simple_delete_tv" />
+
+    <TextView
+        android:id="@+id/your_delete_tv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="25dp"
+        android:layout_marginRight="30dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="Your Delete Tv"
+        android:textSize="18dp"
+        android:textStyle="bold"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/radio1"
+        app:layout_constraintTop_toBottomOf="@id/tv1_deck" />
+
+    <TextView
+        android:id="@+id/tv2_deck"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="30dp"
+        android:paddingLeft="10dp"
+        android:textSize="14dp"
+        android:textStyle="normal|italic"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="@id/your_delete_tv"
+        app:layout_constraintRight_toLeftOf="@id/radio2"
+        app:layout_constraintTop_toBottomOf="@id/your_delete_tv" />
+
+    <TextView
+        android:id="@+id/i_delete_tv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="25dp"
+        android:layout_marginRight="30dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="I Delete Tv"
+        android:textSize="18dp"
+        android:textStyle="bold"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/radio1"
+        app:layout_constraintTop_toBottomOf="@id/tv2_deck" />
+
+    <TextView
+        android:id="@+id/tv3_deck"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="30dp"
+        android:paddingLeft="10dp"
+        android:textSize="14dp"
+        android:textStyle="normal|italic"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="@id/i_delete_tv"
+        app:layout_constraintRight_toLeftOf="@id/radio3"
+        app:layout_constraintTop_toBottomOf="@id/i_delete_tv" />
+
+    <TextView
+        android:id="@+id/i_and_your_delete_tv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="25dp"
+        android:layout_marginRight="30dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="I And Your Delete Tv"
+        android:textSize="18dp"
+        android:textStyle="bold"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/radio1"
+        app:layout_constraintTop_toBottomOf="@id/tv3_deck" />
+
+    <TextView
+        android:id="@+id/tv4_deck"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="30dp"
+        android:paddingLeft="10dp"
+        android:textSize="14dp"
+        android:textStyle="normal|italic"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintLeft_toLeftOf="@id/i_and_your_delete_tv"
+        app:layout_constraintRight_toLeftOf="@id/radio4"
+        app:layout_constraintTop_toBottomOf="@id/i_and_your_delete_tv" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

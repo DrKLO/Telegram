@@ -312,14 +312,13 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
 
 
     @Override
-    public boolean setData(StackLinearChartData chartData) {
-        boolean u = super.setData(chartData);
+    public void setData(StackLinearChartData chartData) {
+        super.setData(chartData);
         if (chartData != null) {
             values = new float[chartData.lines.size()];
             darawingValuesPercentage = new float[chartData.lines.size()];
             onPickerDataChanged(false, true, false);
         }
-        return u;
     }
 
     @Override

@@ -57,8 +57,7 @@ public class LocationCell extends FrameLayout {
         addView(imageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 11, LocaleController.isRTL ? 15 : 0, 0));
 
         nameTextView = new AnimatedTextView(context, true, true, true);
-        nameTextView.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-        nameTextView.setScaleProperty(.6f);
+        nameTextView.setAnimationProperties(0.4f, 0, 240, CubicBezierInterpolator.EASE_OUT_QUINT);
         nameTextView.setTextSize(AndroidUtilities.dp(16));
         nameTextView.setEllipsizeByGradient(true);
         nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -69,8 +68,7 @@ public class LocationCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 22, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 10, (LocaleController.isRTL ? 73 : 16), 0));
 
         addressTextView = new AnimatedTextView(context, true, true, true);
-        addressTextView.setScaleProperty(.6f);
-        addressTextView.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        addressTextView.setAnimationProperties(0.4f, 0, 240, CubicBezierInterpolator.EASE_OUT_QUINT);
         addressTextView.setTextSize(AndroidUtilities.dp(14));
         addressTextView.setEllipsizeByGradient(true);
         addressTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));

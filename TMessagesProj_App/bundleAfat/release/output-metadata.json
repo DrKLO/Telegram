@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "org.xatirchi.messenger",
+  "variantName": "bundleAfatRelease",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 48451,
+      "versionName": "10.13.1",
+      "outputFile": "app.apk"
+    }
+  ],
+  "elementType": "File"
+}

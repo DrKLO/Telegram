@@ -13,7 +13,6 @@ import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -49,7 +48,6 @@ import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 
@@ -239,26 +237,20 @@ public class Browser {
     }
 
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
-        openUrl(context, uri, allowCustom, tryTelegraph, false, null, null);
+        openUrl(context, uri, allowCustom, tryTelegraph, false, null);
     }
 
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, Progress inCaseLoading) {
-        openUrl(context, uri, allowCustom, tryTelegraph, false, inCaseLoading, null);
+        openUrl(context, uri, allowCustom, tryTelegraph, false, inCaseLoading);
     }
 
-    public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser) {
+    public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading) {
         if (context == null || uri == null) {
             return;
         }
         final int currentAccount = UserConfig.selectedAccount;
         boolean[] forceBrowser = new boolean[]{false};
         boolean internalUri = isInternalUri(uri, forceBrowser);
-        String browserPackage = getBrowserPackageName(browser);
-        if (browserPackage != null) {
-            tryTelegraph = false;
-            _allowCustom = false;
-        }
-        final boolean allowCustom = _allowCustom;
         if (tryTelegraph) {
             try {
                 String host = AndroidUtilities.getHostAuthority(uri);
@@ -421,25 +413,13 @@ public class Browser {
                 ComponentName componentName = new ComponentName(context.getPackageName(), LaunchActivity.class.getName());
                 intent.setComponent(componentName);
             }
-            if (!TextUtils.isEmpty(browserPackage)) {
-                intent.setPackage(browserPackage);
-            }
             intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
             intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, context.getPackageName());
             if (internalUri && context instanceof LaunchActivity) {
                 intent.putExtra(LaunchActivity.EXTRA_FORCE_NOT_INTERNAL_APPS, forceNotInternalForApps);
                 ((LaunchActivity) context).onNewIntent(intent, inCaseLoading);
             } else {
-                try {
-                    context.startActivity(intent);
-                } catch (Exception e2) {
-                    if (browserPackage != null) {
-                        intent.setPackage(browserPackage = null);
-                        context.startActivity(intent);
-                    } else {
-                        FileLog.e(e2);
-                    }
-                }
+                context.startActivity(intent);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -555,47 +535,7 @@ public class Browser {
         return false;
     }
 
-    public static String getBrowserPackageName(String browser) {
-        if (browser == null) return null;
-        switch (browser) {
-            case "google-chrome":
-            case "chrome":
-                return "com.android.chrome";
-            case "mozilla-firefox":
-            case "firefox":
-                return "org.mozilla.firefox";
-            case "microsoft-edge":
-            case "edge":
-                return "com.microsoft.emmx";
-            case "opera":
-                return "com.opera.browser";
-            case "opera-mini":
-                return "com.opera.mini.native";
-            case "brave":
-            case "brave-browser":
-                return "com.brave.browser";
-            case "duckduckgo":
-            case "duckduckgo-browser":
-                return "com.duckduckgo.mobile.android";
-            case "samsung":
-            case "samsung-browser":
-                return "com.sec.android.app.sbrowser";
-            case "vivaldi":
-            case "vivaldi-browser":
-                return "com.vivaldi.browser";
-            case "kiwi":
-            case "kiwi-browser":
-                return "com.kiwibrowser.browser";
-            case "uc":
-            case "uc-browser":
-                return "com.UCMobile.intl";
-            case "tor":
-            case "tor-browser":
-                return "org.torproject.torbrowser";
-        }
-        return null;
-    }
-
+    // © ChatGPT. All puns reserved. 🤖📜
     public static String replaceHostname(Uri originalUri, String newHostname) {
         String scheme = originalUri.getScheme();
         String userInfo = originalUri.getUserInfo();
