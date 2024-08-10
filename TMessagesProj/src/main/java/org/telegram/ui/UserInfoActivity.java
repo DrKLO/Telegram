@@ -86,7 +86,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
     @Override
     public View createView(Context context) {
-        firstNameEdit = new EditTextCell(context, getString(R.string.EditProfileFirstName), false, -1, resourceProvider) {
+        firstNameEdit = new EditTextCell(context, getString(R.string.EditProfileFirstName), false, -1) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
@@ -96,7 +96,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         firstNameEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         firstNameEdit.setDivider(true);
         firstNameEdit.hideKeyboardOnEnter();
-        lastNameEdit = new EditTextCell(context, getString(R.string.EditProfileLastName), false, -1, resourceProvider) {
+        lastNameEdit = new EditTextCell(context, getString(R.string.EditProfileLastName), false, -1) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
@@ -105,7 +105,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         };
         lastNameEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         lastNameEdit.hideKeyboardOnEnter();
-        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint), true, getMessagesController().getAboutLimit(), resourceProvider) {
+        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint), true, getMessagesController().getAboutLimit()) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
@@ -208,12 +208,12 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             calendar.set(Calendar.YEAR, birthday.year);
             calendar.set(Calendar.MONTH, birthday.month - 1);
             calendar.set(Calendar.DAY_OF_MONTH, birthday.day);
-            return LocaleController.getInstance().getFormatterBoostExpired().format(calendar.getTimeInMillis());
+            return LocaleController.getInstance().formatterBoostExpired.format(calendar.getTimeInMillis());
         } else {
             Calendar calendar = Calendar.getInstance();
             calendar.set(Calendar.MONTH, birthday.month - 1);
             calendar.set(Calendar.DAY_OF_MONTH, birthday.day);
-            return LocaleController.getInstance().getFormatterDayMonth().format(calendar.getTimeInMillis());
+            return LocaleController.getInstance().formatterDayMonth.format(calendar.getTimeInMillis());
         }
     }
 

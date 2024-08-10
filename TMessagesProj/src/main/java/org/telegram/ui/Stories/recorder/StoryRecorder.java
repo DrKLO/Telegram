@@ -4274,7 +4274,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
         }
         if (paintViewBlurBitmap == null) {
-            paintViewBlurBitmap = Bitmap.createBitmap(size.first, size.second, Bitmap.Config.ARGB_8888);
+            paintViewBlurBitmap = Bitmap.createBitmap(size.first, size.second, Bitmap.Config.ALPHA_8);
         }
 
         int w = previewContainer.getMeasuredWidth(), h = previewContainer.getMeasuredHeight();
@@ -4297,8 +4297,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             null,
             blurManager,
             resourcesProvider,
-            videoTextureHolder,
-            previewView
+            videoTextureHolder
         ) {
             @Override
             public void onEntityDraggedTop(boolean value) {

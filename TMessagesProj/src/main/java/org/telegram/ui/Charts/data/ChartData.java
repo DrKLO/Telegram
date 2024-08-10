@@ -10,7 +10,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.SegmentTree;
 import org.telegram.ui.ActionBar.ThemeColors;
-import org.telegram.ui.Stars.StarsController;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ public class ChartData {
     public float oneDayPercentage = 0f;
 
     public static final int FORMATTER_TON = 1;
-    public static final int FORMATTER_XTR = 2;
 
     public int xTickFormatter = 0;
     public int xTooltipFormatter = 0;
@@ -114,7 +112,6 @@ public class ChartData {
     public int getFormatter(String value) {
         if (TextUtils.isEmpty(value)) return 0;
         if (value.contains("TON")) return FORMATTER_TON;
-        if (value.contains(StarsController.currency)) return FORMATTER_XTR;
         return 0;
     }
 

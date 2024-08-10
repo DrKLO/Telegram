@@ -724,6 +724,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             }));
             return;
         }
+        //nobody and everybody
         TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
             req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
@@ -759,6 +760,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         } else if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
             req.key = new TLRPC.TL_inputPrivacyKeyBirthday();
         } else {
+            //nobody and everybody
             req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
         }
         if (currentType != 0 && currentPlus.size() > 0) {
@@ -802,8 +804,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             req.rules.add(chatsRule);
         }
         if (currentType == TYPE_EVERYBODY) {
+            //everybody
             req.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
         } else if (currentType == TYPE_NOBODY) {
+            //nobody
             req.rules.add(new TLRPC.TL_inputPrivacyValueDisallowAll());
         } else if (currentType == TYPE_CONTACTS) {
             req.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
@@ -818,6 +822,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;
+        //sendReq
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             try {
                 if (progressDialogFinal != null) {

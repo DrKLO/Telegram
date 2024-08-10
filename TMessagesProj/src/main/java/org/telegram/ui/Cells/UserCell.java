@@ -56,6 +56,8 @@ import org.telegram.ui.Stories.StoriesUtilities;
 
 public class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
+
+    public ImageView newImageView;
     public BackupImageView avatarImageView;
     protected SimpleTextView nameTextView;
     protected SimpleTextView statusTextView;
@@ -124,6 +126,17 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+
+
+
+        newImageView = new ImageView(context);
+//        newImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+
+//        newImageView.setImageResource(R.drawable.app_ic_background); // Replace with your image resource
+
+        addView(newImageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 0, 15, 20, 0));
+
+
 
         int additionalPadding;
         if (needAddButton) {
@@ -273,6 +286,15 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     }
 
     public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
+
+        TLRPC.User a = (TLRPC.User) object;
+
+        if (a.mutual_contact == true){
+            newImageView.setImageResource(R.drawable.connected_contact_ic);
+        }else {
+            newImageView.setImageResource(0);
+        }
+
         if (object == null && name == null && status == null) {
             currentStatus = null;
             currentName = null;
@@ -466,9 +488,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (currentUser != null) {
-                    newName = AndroidUtilities.removeDiacritics(UserObject.getUserName(currentUser));
+                    newName = UserObject.getUserName(currentUser);
                 } else {
-                    newName = AndroidUtilities.removeDiacritics(currentChat == null ? "" : currentChat.title);
+                    newName = currentChat.title;
                 }
                 if (!newName.equals(lastName)) {
                     continueUpdate = true;
@@ -547,9 +569,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             nameTextView.setText(currentName);
         } else {
             if (currentUser != null) {
-                lastName = AndroidUtilities.removeDiacritics(newName == null ? UserObject.getUserName(currentUser) : newName);
+                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
             } else if (currentChat != null) {
-                lastName = AndroidUtilities.removeDiacritics(newName == null ? currentChat.title : newName);
+                lastName = newName == null ? currentChat.title : newName;
             } else {
                 lastName = "";
             }

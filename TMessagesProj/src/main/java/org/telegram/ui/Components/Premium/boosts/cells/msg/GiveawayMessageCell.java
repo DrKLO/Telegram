@@ -311,8 +311,8 @@ public class GiveawayMessageCell {
         SpannableStringBuilder bottomStringBuilder = new SpannableStringBuilder(dateTitle);
         bottomStringBuilder.setSpan(new RelativeSizeSpan(1.05f), 0, dateTitle.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         Date date = new Date(giveaway.until_date * 1000L);
-        String monthTxt = LocaleController.getInstance().getFormatterGiveawayCard().format(date);
-        String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
+        String monthTxt = LocaleController.getInstance().formatterGiveawayCard.format(date);
+        String timeTxt = LocaleController.getInstance().formatterDay.format(date);
         bottomStringBuilder.append("\n");
         bottomStringBuilder.append(formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
 
@@ -458,7 +458,6 @@ public class GiveawayMessageCell {
 
         if (selectorDrawable == null) {
             selectorDrawable = Theme.createRadSelectorDrawable(selectorColor = Theme.getColor(Theme.key_listSelector), 12, 12);
-            selectorDrawable.setCallback(parentView);
         }
 
         textPaint.setColor(Theme.chat_msgTextPaint.getColor());
@@ -605,8 +604,7 @@ public class GiveawayMessageCell {
                 Theme.setSelectorDrawableColor(selectorDrawable, selectorColor = rippleColor, true);
             }
             selectorDrawable.setBounds(clickRect[pressedPos]);
-            selectorDrawable.setCallback(parentView);
-//            selectorDrawable.draw(canvas);
+            selectorDrawable.draw(canvas);
         }
     }
 

@@ -122,7 +122,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
         titles = new String[]{
-                LocaleController.getString("Page1Title", R.string.Page1Title),
+                LocaleController.getString("Page1Title", R.string.Page1Title) + " Xatirchi",
                 LocaleController.getString("Page2Title", R.string.Page2Title),
                 LocaleController.getString("Page3Title", R.string.Page3Title),
                 LocaleController.getString("Page5Title", R.string.Page5Title),
@@ -130,12 +130,18 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 LocaleController.getString("Page6Title", R.string.Page6Title)
         };
         messages = new String[]{
-                LocaleController.getString("Page1Message", R.string.Page1Message),
-                LocaleController.getString("Page2Message", R.string.Page2Message),
-                LocaleController.getString("Page3Message", R.string.Page3Message),
-                LocaleController.getString("Page5Message", R.string.Page5Message),
-                LocaleController.getString("Page4Message", R.string.Page4Message),
-                LocaleController.getString("Page6Message", R.string.Page6Message)
+//                LocaleController.getString("Page1Message", R.string.Page1Message),
+//                LocaleController.getString("Page2Message", R.string.Page2Message),
+//                LocaleController.getString("Page3Message", R.string.Page3Message),
+//                LocaleController.getString("Page5Message", R.string.Page5Message),
+//                LocaleController.getString("Page4Message", R.string.Page4Message),
+//                LocaleController.getString("Page6Message", R.string.Page6Message)
+                "The world's fastest messaging app.\nIt is free and secure.",
+                "Telegram Xatirchi delivers messages faster than\nany other application.",
+                "Telegram Xatirchi provides free unlimited\ncloud storage for chats and media.",
+                "Telegram Xatirchi keeps your messages safe\nfrom hacker attacks.",
+                "Telegram Xatirchi has no limits on\nthe size of your media and chats.",
+                "Telegram Xatirchi lets you access your messages \nfrom multiple devices."
         };
         return true;
     }
@@ -237,7 +243,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(()->{
+                    eglThread.postRunnable(() -> {
                         float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
                         Intro.setPage(currentViewPagerPage);
                         Intro.setDate(time);
@@ -245,7 +251,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
                             try {
                                 eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
-                            } catch (Exception ignored) {} // If display or surface already destroyed
+                            } catch (Exception ignored) {
+                            } // If display or surface already destroyed
                         }
                     });
                     eglThread.postRunnable(eglThread.drawRunnable);
@@ -381,7 +388,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         loaderDialog.dismiss();
 
                         NotificationCenter.getGlobalInstance().removeObserver(this, id);
-                        AndroidUtilities.runOnUIThread(()->{
+                        AndroidUtilities.runOnUIThread(() -> {
                             presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
                             destroyed = true;
                         }, 100);
@@ -676,7 +683,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             EGLConfig[] configs = new EGLConfig[1];
             int[] configSpec;
             if (EmuDetector.with(getParentActivity()).detect()) {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
                         EGL10.EGL_BLUE_SIZE, 8,
@@ -685,7 +692,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         EGL10.EGL_NONE
                 };
             } else {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
@@ -714,7 +721,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             }
 
-            int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -771,7 +778,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_tg_plane, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                paint.setColor(0xFF2CA5E0); // It's logo color, it should not be colored by the theme
+//                telegram logo
+                paint.setColor(0xFF01D1D7); // It's logo color, it should not be colored by the theme
                 int size = AndroidUtilities.dp(ICON_HEIGHT_DP);
                 Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(bm);
@@ -950,7 +958,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         bottomPages.invalidate();
         if (fromTheme) {
             if (eglThread != null) {
-                eglThread.postRunnable(()->{
+                eglThread.postRunnable(() -> {
                     eglThread.loadTexture(R.drawable.intro_powerful_mask, 17, Theme.getColor(Theme.key_windowBackgroundWhite), true);
                     eglThread.updatePowerfulTextures();
 

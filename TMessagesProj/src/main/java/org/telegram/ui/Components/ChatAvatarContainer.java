@@ -55,7 +55,6 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.ChatActivity;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.TopicsFragment;
@@ -311,9 +310,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment != null && (parentFragment.getChatMode() == 0 || parentFragment.getChatMode() == ChatActivity.MODE_SAVED)) {
             if ((!parentFragment.isThreadChat() || parentFragment.isTopic) && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
-                setOnClickListener(v -> {
-                    openProfile(false);
-                });
+                setOnClickListener(v -> openProfile(false));
             }
 
             TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -369,13 +366,6 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         canvas.scale(s, s, getWidth() / 2f, getHeight() / 2f);
         super.dispatchDraw(canvas);
         canvas.restore();
-    }
-
-    public boolean ignoreTouches;
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ignoreTouches) return false;
-        return super.dispatchTouchEvent(ev);
     }
 
     protected boolean canSearch() {

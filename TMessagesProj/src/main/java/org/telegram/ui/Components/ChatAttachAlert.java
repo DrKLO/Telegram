@@ -8,7 +8,6 @@
 
 package org.telegram.ui.Components;
 
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -102,7 +101,6 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -124,7 +122,6 @@ import org.telegram.ui.PhotoPickerSearchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.WebAppDisclaimerAlert;
 import org.telegram.ui.bots.BotWebViewContainer;
@@ -222,7 +219,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
 
                     @Override
-                    public void onWebAppSetActionBarColor(int colorKey, int color, boolean isOverrideColor) {
+                    public void onWebAppSetActionBarColor(int color, boolean isOverrideColor) {
                         int from = ((ColorDrawable) actionBar.getBackground()).getColor();
                         int to = color;
 
@@ -257,7 +254,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         if (response instanceof TLRPC.TL_payments_paymentFormStars) {
                             final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
                             progressDialog.showDelayed(150);
-                            StarsController.getInstance(currentAccount).openPaymentForm(null, inputInvoice, (TLRPC.TL_payments_paymentFormStars) response, () -> {
+                            StarsController.getInstance(currentAccount).openPaymentForm(inputInvoice, (TLRPC.TL_payments_paymentFormStars) response, () -> {
                                 progressDialog.dismiss();
                             }, status -> {
                                 webViewLayout.getWebViewContainer().onInvoiceStatusUpdate(slug, status);
@@ -2305,7 +2302,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
             if (view instanceof AttachButton) {
                 final Activity activity = lastFragment.getParentActivity();
-                int num = view.getTag() instanceof Integer ? (Integer) view.getTag() : -1;
+                int num = (Integer) view.getTag();
                 if (num == 1) {
                     if (!photosEnabled && !videosEnabled && checkCanRemoveRestrictionsByBoosts()) {
                         return;
@@ -2387,7 +2384,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                 } else if (num == 11) {
                     openQuickRepliesLayout();
-                } else if (view.getTag() instanceof Integer) {
+                } else {
                     delegate.didPressedButton((Integer) view.getTag(), true, true, 0, 0, isCaptionAbove(), false);
                 }
                 int left = view.getLeft();
@@ -2866,7 +2863,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             boolean hasMessageToEffect = false;
             MessageObject messageWithCaption = null;
 
-            boolean canHaveStars = false;
             ArrayList<MessageObject> messageObjects = new ArrayList<>();
             int id = 0;
             if (currentAttachLayout == photoLayout || currentAttachLayout == photoPreviewLayout) {
@@ -2974,7 +2970,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             if (messageWithCaption == null && !TextUtils.isEmpty(msg.message)) {
                                 messageWithCaption = messageObject;
                             }
-                            canHaveStars = true;
                         }
                     }
                 }
@@ -3145,34 +3140,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         dismiss();
                     }
                 });
-            }
-            if (canHaveStars && chatActivity != null && ChatObject.isChannelAndNotMegaGroup(chatActivity.getCurrentChat()) && chatActivity.getCurrentChatInfo() != null && chatActivity.getCurrentChatInfo().paid_media_allowed) {
-                ActionBarMenuSubItem item = options.add(R.drawable.menu_feature_paid, getString(R.string.PaidMediaButton), null).getLast();
-                item.setOnClickListener(v -> {
-                    if (photoLayout == null) return;
-                    StarsIntroActivity.showMediaPriceSheet(context, photoLayout.getStarsPrice(), true, (amount, done) -> {
-                        done.run();
-                        photoLayout.setStarsPrice(amount);
-                        if (amount != null && amount > 0) {
-                            item.setText(getString(R.string.PaidMediaPriceButton));
-                            item.setSubtext(formatPluralString("Stars", (int) (long) amount));
-                            messageSendPreview.setStars(amount);
-                        } else {
-                            item.setText(getString(R.string.PaidMediaButton));
-                            item.setSubtext(null);
-                            messageSendPreview.setStars(0);
-                        }
-                    }, resourcesProvider);
-                });
-                long amount = photoLayout.getStarsPrice();
-                if (amount > 0) {
-                    item.setText(getString(R.string.PaidMediaPriceButton));
-                    item.setSubtext(formatPluralString("Stars", (int) amount));
-                } else {
-                    item.setText(getString(R.string.PaidMediaButton));
-                    item.setSubtext(null);
-                }
-                messageSendPreview.setStars(amount);
             }
             options.setupSelectors();
             messageSendPreview.setItemOptions(options);
@@ -3551,9 +3518,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         currentAttachLayout.setAlpha(0.0f);
-                        currentAttachLayout.setTranslationY(AndroidUtilities.dp(78) + t);
-                        ATTACH_ALERT_LAYOUT_TRANSLATION.set(currentAttachLayout, 1.0f);
-                        actionBar.setAlpha(0f);
                         SpringAnimation springAnimation = new SpringAnimation(nextAttachLayout, DynamicAnimation.TRANSLATION_Y, 0);
                         springAnimation.getSpring().setDampingRatio(0.75f);
                         springAnimation.getSpring().setStiffness(500.0f);
@@ -3565,9 +3529,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             containerView.invalidate();
                         });
                         springAnimation.addEndListener((animation1, canceled, value, velocity) -> {
-                            nextAttachLayout.setTranslationY(0);
-                            nextAttachLayout.onContainerTranslationUpdated(currentPanTranslationY);
-                            containerView.invalidate();
                             onEnd.run();
                             updateSelectedPosition(0);
                         });
@@ -3576,8 +3537,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                 });
                 viewChangeAnimator = animator;
-                ATTACH_ALERT_LAYOUT_TRANSLATION.set(currentAttachLayout, 0f);
                 animator.start();
+                ATTACH_ALERT_LAYOUT_TRANSLATION.set(currentAttachLayout, 0f);
             } else {
                 currentAttachLayout.setAlpha(0.0f);
                 onEnd.run();
@@ -5035,6 +4996,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     quickRepliesButton = buttonsCount++;
                 }
                 musicButton = buttonsCount++;
+
+                if (user != null && user.bot) {
+                    contactButton = buttonsCount++;
+                }
             }
             super.notifyDataSetChanged();
         }

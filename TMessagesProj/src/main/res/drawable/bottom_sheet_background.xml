@@ -1,0 +1,5 @@
+<!-- bottom_sheet_background.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#212D3B" />
+    <corners android:topLeftRadius="20dp" android:topRightRadius="20dp"/>
+</shape>

@@ -716,6 +716,7 @@ public class SpoilerEffect extends Drawable {
             }
             layout.getPaint().setAlpha(wasAlpha);
         } else {
+//            XatirchiText
             layout.draw(canvas);
         }
     }

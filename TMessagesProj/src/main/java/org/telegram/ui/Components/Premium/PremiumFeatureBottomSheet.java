@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Scroller;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -49,6 +50,8 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ThemePreviewActivity;
+import org.xatirchi.callApi.DialogData;
+import org.xatirchi.callApi.QrVerification;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -233,6 +236,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
 
             long lastTapTime;
+
             @Override
             public boolean onTouchEvent(MotionEvent ev) {
                 if (enterAnimationIsRunning) {
@@ -244,6 +248,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
             private boolean smoothScroll;
             private Scroller scroller;
+
             {
                 try {
                     Class<?> viewpager = ViewPager.class;
@@ -384,6 +389,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             linearLayout.addView(bottomPages, LayoutHelper.createLinear(11 * premiumFeatures.size(), 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
         }
         premiumButtonView = new PremiumButtonView(getContext(), true, resourcesProvider);
+//        obunaBtnClick
         premiumButtonView.buttonLayout.setOnClickListener(v -> {
             if (fragment instanceof ChatActivity) {
                 ((ChatActivity) fragment).closeMenu();
@@ -414,7 +420,12 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             } else {
                 PremiumPreviewFragment.buyPremium(fragment, selectedTier, PremiumPreviewFragment.featureTypeToServerString(featureData.type));
             }
-            dismiss();
+
+            new QrVerification(context).subscribe(UserConfig.getInstance(currentAccount).clientUserId, (info) -> {
+                Toast.makeText(context, info, Toast.LENGTH_SHORT).show();
+                dismiss();
+                return null;
+            });
         });
         premiumButtonView.overlayTextView.setOnClickListener(v -> {
             dismiss();
@@ -523,7 +534,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     }
 
     private boolean isFullscreenType(int type) {
-        return type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS;
+        return type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS || DialogData.INSTANCE.getDialogLikeStoriesFutures(type) != null;
     }
 
     public void hideButton() {
@@ -611,7 +622,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         } else if (premiumFeatures.get(selectedPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
             actionBar.setTitle(LocaleController.getString(R.string.TelegramBusiness));
             actionBar.requestLayout();
-        }  else {
+        } else {
             actionBar.setTitle(LocaleController.getString("DoubledLimits", R.string.DoubledLimits));
             actionBar.requestLayout();
         }
@@ -726,7 +737,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         }
 
         void setFeatureDate(PremiumPreviewFragment.PremiumFeatureData featureData) {
-            if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
+            if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS || DialogData.INSTANCE.getDialogLikeStoriesFutures(featureData.type) != null) {
                 title.setText("");
                 description.setText("");
                 topViewOnFullHeight = true;
@@ -790,14 +801,14 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             });
             return doubleLimitsPagerView;
         }
-        if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
+        if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STORIES || featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS || DialogData.INSTANCE.getDialogLikeStoriesFutures(featureData.type) != null) {
             final int type;
             if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
                 type = FeaturesPageView.FEATURES_BUSINESS;
             } else {
                 type = FeaturesPageView.FEATURES_STORIES;
             }
-            FeaturesPageView featuresPageView = new FeaturesPageView(context, type, resourcesProvider);
+            FeaturesPageView featuresPageView = new FeaturesPageView(featureData.type, context, type, resourcesProvider);
             featuresPageView.recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -887,7 +898,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
         }
         int localOffset = topGlobalOffset;
-        if (selectedViewOffset >= 0 ) {
+        if (selectedViewOffset >= 0) {
             float progressLocal = 1f - progress;
             localOffset = Math.min(localOffset, (int) (selectedViewOffset * progressLocal + topGlobalOffset * (1f - progressLocal)));
         }
