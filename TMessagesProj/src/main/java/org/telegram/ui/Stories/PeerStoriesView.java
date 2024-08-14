@@ -827,14 +827,14 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 if (span instanceof URLSpanUserMention) {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(Utilities.parseLong(((URLSpanUserMention) span).getURL()));
                     if (user != null) {
-                        MessagesController.openChatOrProfileWith(user, null, storyViewer.fragment, 0, false);
+                        MessagesController.getInstance(currentAccount).openChatOrProfileWith(user, null, storyViewer.fragment, 0, false);
                     }
                 } else if (span instanceof URLSpanNoUnderline) {
                     String str = ((URLSpanNoUnderline) span).getURL();
-                    if (str != null && str.startsWith("#")) {
+                    if (str != null && (str.startsWith("#") || str.startsWith("$"))) {
                         Bundle args = new Bundle();
                         args.putInt("type", MediaActivity.TYPE_STORIES_SEARCH);
-                        args.putString("hashtag", str.substring(1));
+                        args.putString("hashtag", str);
                         if (storyViewer != null) {
                             storyViewer.presentFragment(new MediaActivity(args, null));
                         }
@@ -891,7 +891,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 try {
                     try {
                         Uri uri = Uri.parse(formattedUrl);
-                        formattedUrl = Browser.replaceHostname(uri, IDN.toUnicode(uri.getHost(), IDN.ALLOW_UNASSIGNED));
+                        formattedUrl = Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null);
                     } catch (Exception e) {
                         FileLog.e(e, false);
                     }
@@ -1158,7 +1158,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 MessagesController.getInstance(currentAccount).getStoriesController().getDraftsController().load();
             }
             final boolean userCanEditStory = isSelf || MessagesController.getInstance(currentAccount).getStoriesController().canEditStory(currentStory.storyItem);
-            final boolean canEditStory = isSelf || (isChannel && userCanEditStory);
+            final boolean canEditStory = isSelf || ((isChannel || isBotsPreview()) && userCanEditStory);
             final boolean speedControl = currentStory.isVideo;
             popupMenu = new CustomPopupMenu(getContext(), resourcesProvider, speedControl) {
                 private boolean edit;
@@ -1290,8 +1290,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
                         }
 
-                        if (!unsupported && MessagesController.getInstance(currentAccount).storiesEnabled() && userCanEditStory) {
-                            editStoryItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_edit, LocaleController.getString("EditStory", R.string.EditStory), false, resourcesProvider);
+                        if (!unsupported && (isBotsPreview() || MessagesController.getInstance(currentAccount).storiesEnabled()) && userCanEditStory) {
+                            editStoryItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_edit, LocaleController.getString(isBotsPreview() ? R.string.EditBotPreview : R.string.EditStory), false, resourcesProvider);
                             editStoryItem.setOnClickListener(v -> {
                                 if (v.getAlpha() < 1) {
                                     AndroidUtilities.shakeViewSpring(v, shiftDp = -shiftDp);
@@ -1319,6 +1319,14 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                     }
                                     if (entry != null) {
                                         entry = entry.copy();
+                                    }
+                                    if (isBotsPreview()) {
+                                        entry.botId = dialogId;
+                                        entry.editingBotPreview = MessagesController.toInputMedia(currentStory.storyItem.media);
+                                        if (storyViewer.storiesList instanceof StoriesController.BotPreviewsList) {
+                                            StoriesController.BotPreviewsList list = (StoriesController.BotPreviewsList) storyViewer.storiesList;
+                                            entry.botLang = list.lang_code;
+                                        }
                                     }
                                     editor.openEdit(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
                                     editor.setOnFullyOpenListener(() -> {
@@ -1368,6 +1376,129 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             if (storiesController.hasUploadingStories(dialogId) && currentStory.isVideo && !SharedConfig.allowPreparingHevcPlayers()) {
                                 editStoryItem.setAlpha(0.5f);
                             }
+                        }
+
+                        if (currentStory.storyItem != null && currentStory.isVideo && (currentStory.storyItem.pinned || isEditBotsPreview())) {
+                            ActionBarMenuSubItem item = ActionBarMenuItem.addItem(popupLayout, R.drawable.menu_cover_stories, LocaleController.getString(R.string.StoryEditCoverMenu), false, resourcesProvider);
+                            item.setOnClickListener(v -> {
+                                File f = currentStory.getPath();
+                                if (f == null || !f.exists()) {
+                                    showDownloadAlert();
+                                    return;
+                                }
+                                Activity activity = AndroidUtilities.findActivity(context);
+                                if (activity == null) {
+                                    return;
+                                }
+                                edit = true;
+                                if (popupMenu != null) {
+                                    popupMenu.dismiss();
+                                }
+                                Runnable openEdit = () -> {
+                                    StoryRecorder editor = StoryRecorder.getInstance(activity, currentAccount);
+                                    long time = 0;
+                                    if (playerSharedScope != null && playerSharedScope.player != null) {
+                                        time = playerSharedScope.player.currentPosition;
+                                    }
+                                    StoryEntry entry = StoryEntry.fromStoryItem(currentStory.getPath(), currentStory.storyItem);
+                                    entry.editStoryPeerId = dialogId;
+                                    entry.cover = StoryEntry.getCoverTime(currentStory.storyItem);
+                                    if (entry != null) {
+                                        entry = entry.copy();
+                                    }
+                                    entry.isEditingCover = true;
+                                    entry.editingCoverDocument = currentStory.storyItem.media.document;
+                                    final TL_stories.StoryItem finalStoryItem = currentStory.storyItem;
+                                    entry.updateDocumentRef = whenDone -> {
+                                        if (finalStoryItem instanceof StoriesController.BotPreview && ((StoriesController.BotPreview) finalStoryItem).list != null) {
+                                            StoriesController.BotPreviewsList list = ((StoriesController.BotPreview) finalStoryItem).list;
+                                            list.reload(() -> {
+                                                for (int i = 0; i < list.messageObjects.size(); ++i) {
+                                                    MessageObject msg = list.messageObjects.get(i);
+                                                    if (msg == null || msg.storyItem == null || msg.storyItem.media == null) continue;
+                                                    if (storyItem.media.document != null) {
+                                                        if (msg.storyItem.media.document == null) continue;
+                                                        if (msg.storyItem.media.document.id == storyItem.media.document.id) {
+                                                            whenDone.run(msg.storyItem.media.document);
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                                whenDone.run(null);
+                                            });
+                                        } else {
+                                            TL_stories.TL_stories_getStoriesByID req = new TL_stories.TL_stories_getStoriesByID();
+                                            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(finalStoryItem.dialogId);
+                                            req.id.add(finalStoryItem.id);
+                                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                                                if (res instanceof TL_stories.TL_stories_stories) {
+                                                    TL_stories.TL_stories_stories stories = (TL_stories.TL_stories_stories) res;
+                                                    MessagesController.getInstance(currentAccount).putUsers(stories.users, false);
+                                                    MessagesController.getInstance(currentAccount).putChats(stories.chats, false);
+                                                    for (int i = 0; i < stories.stories.size(); ++i) {
+                                                        if (stories.stories.get(i).id == finalStoryItem.id) {
+                                                            whenDone.run(stories.stories.get(i).media.document);
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                                whenDone.run(null);
+                                            }));
+                                        }
+                                    };
+                                    if (isBotsPreview()) {
+                                        entry.botId = dialogId;
+                                        entry.editingBotPreview = MessagesController.toInputMedia(currentStory.storyItem.media);
+                                        if (storyViewer.storiesList instanceof StoriesController.BotPreviewsList) {
+                                            StoriesController.BotPreviewsList list = (StoriesController.BotPreviewsList) storyViewer.storiesList;
+                                            entry.botLang = list.lang_code;
+                                        }
+                                    }
+                                    editor.openEdit(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
+                                    editor.setOnFullyOpenListener(() -> {
+                                        editOpened = true;
+                                        setActive(false);
+                                    });
+                                    editor.setOnPrepareCloseListener((t, close, sent, did) -> {
+                                        final long start = System.currentTimeMillis();
+                                        if (playerSharedScope.player == null) {
+                                            delegate.setPopupIsVisible(false);
+                                            setActive(true);
+                                            editOpened = false;
+                                            onImageReceiverThumbLoaded = () -> {
+                                                AndroidUtilities.cancelRunOnUIThread(close);
+                                                AndroidUtilities.runOnUIThread(close);
+                                            };
+                                            if (sent) {
+                                                updatePosition();
+                                            }
+                                            AndroidUtilities.runOnUIThread(close, 400);
+                                            return;
+                                        }
+                                        playerSharedScope.firstFrameRendered = playerSharedScope.player.firstFrameRendered = false;
+                                        playerSharedScope.player.setOnReadyListener(() -> {
+                                            AndroidUtilities.cancelRunOnUIThread(close);
+                                            AndroidUtilities.runOnUIThread(close, Math.max(0, 32L - (System.currentTimeMillis() - start)));
+                                        });
+                                        delegate.setPopupIsVisible(false);
+                                        if (muteIconView != null) {
+                                            muteIconView.setAnimation(sharedResources.muteDrawable);
+                                        }
+                                        if (videoDuration > 0 && t > videoDuration - 1400) {
+                                            t = 0L;
+                                        }
+                                        setActive(t, true);
+                                        editOpened = false;
+                                        AndroidUtilities.runOnUIThread(close, 400);
+                                        if (sent) {
+                                            updatePosition();
+                                        }
+                                    });
+                                };
+                                if (!delegate.releasePlayer(openEdit)) {
+                                    openEdit.run();
+                                }
+                            });
                         }
 
                         if (isSelf || (isChannel && MessagesController.getInstance(currentAccount).getStoriesController().canEditStories(storyItem.dialogId))) {
@@ -1476,7 +1607,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             name = name.substring(0, index);
                         }
                         String finalName = name;
-                        if (!UserObject.isService(dialogId)) {
+                        if (!UserObject.isService(dialogId) && !isBotsPreview()) {
                             if (!muted) {
                                 ActionBarMenuSubItem item = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_mute, LocaleController.getString("NotificationsStoryMute2", R.string.NotificationsStoryMute2), false, resourcesProvider);
                                 item.setOnClickListener(v -> {
@@ -1633,7 +1764,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         addViewStatistics(popupLayout, currentStory.storyItem);
 
                         if (!unsupported) {
-                            if (!UserObject.isService(dialogId)) {
+                            if (!UserObject.isService(dialogId) && !isBotsPreview()) {
                                 ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_report, LocaleController.getString("ReportChat", R.string.ReportChat), false, resourcesProvider).setOnClickListener(v -> {
                                     AlertsCreator.createReportAlert(getContext(), dialogId, 0, currentStory.storyItem.id, storyViewer.fragment, resourcesProvider, null);
                                     if (popupMenu != null) {
@@ -1792,6 +1923,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     }
 
     private void createStealthModeItem(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout) {
+        if (isBotsPreview()) return;
         if (UserConfig.getInstance(currentAccount).isPremium()) {
             ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_stories_stealth2, LocaleController.getString(R.string.StealthModeButton), false, resourcesProvider).setOnClickListener(v -> {
                 if (stealthModeIsActive) {
@@ -2721,6 +2853,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         }
         checkStealthMode(false);
 
+        if (isBotsPreview()) {
+            chatActivityEnterView.setVisibility(View.GONE);
+        }
+
         reactionsContainerIndex = getChildCount();
     }
 
@@ -2773,7 +2909,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 SendMessagesHelper.prepareSendingBotContextResult(storyViewer.fragment, getAccountInstance(), result, params, dialogId, null, null, currentStory.storyItem, null, notify, scheduleDate, null, 0);
                 chatActivityEnterView.setFieldText("");
                 afterMessageSend();
-                MediaDataController.getInstance(currentAccount).increaseInlineRaiting(uid);
+                MediaDataController.getInstance(currentAccount).increaseInlineRating(uid);
             }
         });
         addView(mentionContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
@@ -3295,7 +3431,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
             if (chatActivityEnterView != null) {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                chatActivityEnterView.setVisibility(isGroup && (ChatObject.canSendPlain(chat) || ChatObject.isPossibleRemoveChatRestrictionsByBoosts(chat)) ? View.VISIBLE : View.GONE);
+                chatActivityEnterView.setVisibility(!isBotsPreview() && isGroup && (ChatObject.canSendPlain(chat) || ChatObject.isPossibleRemoveChatRestrictionsByBoosts(chat)) ? View.VISIBLE : View.GONE);
                 chatActivityEnterView.getEditField().setText(storyViewer.getDraft(dialogId, currentStory.storyItem));
                 chatActivityEnterView.setDialogId(dialogId, currentAccount);
                 chatActivityEnterView.updateRecordButton(chat, null);
@@ -3377,7 +3513,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
             updatePosition();
             if (chatActivityEnterView != null) {
-                chatActivityEnterView.setVisibility(UserObject.isService(dialogId) ? View.GONE : View.VISIBLE);
+                chatActivityEnterView.setVisibility(isBotsPreview() || UserObject.isService(dialogId) ? View.GONE : View.VISIBLE);
                 chatActivityEnterView.getEditField().setText(storyViewer.getDraft(dialogId, currentStory.storyItem));
                 chatActivityEnterView.setDialogId(dialogId, currentAccount);
                 TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
@@ -3465,6 +3601,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
     private void updateSelectedPosition() {
         if (day != null) {
+            int offset = 0;
+            if (uploadingStories != null && !uploadingStories.isEmpty()) {
+                offset = uploadingStories.size();
+                for (int i = 0; i < uploadingStories.size(); ++i) {
+                    if (Long.hashCode(uploadingStories.get(i).random_id) == storyViewer.dayStoryId) {
+                        selectedPosition = i;
+                        return;
+                    }
+                }
+            }
             int index = day.indexOf(storyViewer.dayStoryId);
             if (index < 0) {
                 if (!day.isEmpty()) {
@@ -3475,7 +3621,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     }
                 }
             }
-            selectedPosition = index;
+            selectedPosition = offset + index;
         } else {
             selectedPosition = storyViewer.savedPositions.get(dialogId, -1);
             if (selectedPosition == -1) {
@@ -3499,6 +3645,19 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         if (storyViewer.isSingleStory) {
             storyItems.add(storyViewer.singleStory);
         } else if (day != null && storyViewer.storiesList != null) {
+            if (storyViewer.storiesList instanceof StoriesController.BotPreviewsList) {
+                uploadingStories.clear();
+                ArrayList<StoriesController.UploadingStory> list = MessagesController.getInstance(currentAccount).getStoriesController().getUploadingStories(dialogId);
+                final String lang_code = ((StoriesController.BotPreviewsList) storyViewer.storiesList).lang_code;
+                if (list != null) {
+                    for (int i = 0; i < list.size(); ++i) {
+                        StoriesController.UploadingStory story = list.get(i);
+                        if (story.entry != null && !story.entry.isEdit && TextUtils.equals(story.entry.botLang, lang_code)) {
+                            uploadingStories.add(story);
+                        }
+                    }
+                }
+            }
             for (int id : day) {
                 MessageObject messageObject = storyViewer.storiesList.findMessageObject(id);
                 if (messageObject != null && messageObject.storyItem != null) {
@@ -3612,8 +3771,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
     private void deleteStory() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-        builder.setTitle(LocaleController.getString("DeleteStoryTitle", R.string.DeleteStoryTitle));
-        builder.setMessage(LocaleController.getString("DeleteStorySubtitle", R.string.DeleteStorySubtitle));
+        builder.setTitle(LocaleController.getString(isBotsPreview() ? R.string.DeleteBotPreviewTitle : R.string.DeleteStoryTitle));
+        builder.setMessage(LocaleController.getString(isBotsPreview() ? R.string.DeleteBotPreviewSubtitle : R.string.DeleteStorySubtitle));
         builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
             currentStory.cancelOrDelete();
             updateStoryItems();
@@ -3890,15 +4049,23 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         final boolean wasEditing = isEditing;
         final boolean wasFailed = isFailed;
 
+        final StoriesController.UploadingStory uploadingStory;
+        final TL_stories.StoryItem storyItem;
+
+        if (storyViewer != null && storyViewer.storiesList != null && storyViewer.storiesList.type == StoriesController.StoriesList.TYPE_BOTS) {
+            uploadingStory = position >= 0 && position < uploadingStories.size() ? uploadingStories.get(position) : null;
+            int p = position - uploadingStories.size();
+            storyItem = p >= 0 && p < storyItems.size() ? storyItems.get(p) : null;
+        } else {
+            storyItem = position >= 0 && position < storyItems.size() ? storyItems.get(position) : null;
+            int p = position - storyItems.size();
+            uploadingStory = p >= 0 && p < uploadingStories.size() ? uploadingStories.get(p) : null;
+        }
+
         currentStory.editingSourceItem = null;
-        if (!uploadingStories.isEmpty() && position >= storyItems.size()) {
+        if (uploadingStory != null) {
             isUploading = true;
             isEditing = false;
-            position -= storyItems.size();
-            if (position < 0 || position >= uploadingStories.size()) {
-                return;
-            }
-            StoriesController.UploadingStory uploadingStory = uploadingStories.get(position);
             isFailed = uploadingStory.failed;
             isUploading = !isFailed;
             Drawable thumbDrawable = null;
@@ -3921,11 +4088,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             isUploading = false;
             isEditing = false;
             isFailed = false;
-            if (position < 0 || position > storyItems.size() - 1) {
+            if (storyItem == null) {
                 storyViewer.close(true);
                 return;
             }
-            TL_stories.StoryItem storyItem = storyItems.get(position);
             StoriesController.UploadingStory editingStory = storiesController.findEditingStory(dialogId, storyItem);
             if (editingStory != null) {
                 isEditing = true;
@@ -4081,6 +4247,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     subtitle = LocaleController.getString("FailedToUploadStory", R.string.FailedToUploadStory);
                 } else {
                     subtitle = StoriesUtilities.getUploadingStr(headerView.subtitleView[0], false, isEditing);
+                }
+            } else if (isBotsPreview()) {
+                if (currentStory.storyItem == null || currentStory.storyItem.media == null) {
+                    subtitle = "";
+                } else if (currentStory.storyItem.media.document != null) {
+                    subtitle = LocaleController.formatStoryDate(currentStory.storyItem.media.document.date);
+                } else if (currentStory.storyItem.media.photo != null) {
+                    subtitle = LocaleController.formatStoryDate(currentStory.storyItem.media.photo.date);
+                } else {
+                    subtitle = "";
                 }
             } else if (currentStory.storyItem != null) {
                 if (currentStory.storyItem.date == -1) {
@@ -4242,7 +4418,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
         } else {
             TLRPC.Chat chat = dialogId < 0 ? MessagesController.getInstance(currentAccount).getChat(-dialogId) : null;
-            if (UserObject.isService(dialogId) && chatActivityEnterView != null) {
+            if ((UserObject.isService(dialogId) || isBotsPreview()) && chatActivityEnterView != null) {
                 chatActivityEnterView.setVisibility(View.GONE);
             } else if (!isSelf && (!isChannel || isGroup && (ChatObject.canSendPlain(chat) || ChatObject.isPossibleRemoveChatRestrictionsByBoosts(chat))) && chatActivityEnterView != null) {
                 chatActivityEnterView.setVisibility(View.VISIBLE);
@@ -4272,7 +4448,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 replyDisabledTextView.setVisibility(View.GONE);
             }
             if (bottomActionsLinearLayout != null) {
-                bottomActionsLinearLayout.setVisibility(View.VISIBLE);
+                bottomActionsLinearLayout.setVisibility(isBotsPreview() ? View.GONE : View.VISIBLE);
             }
         }
 
@@ -4426,6 +4602,24 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             AndroidUtilities.cancelRunOnUIThread(showTapToSoundHint);
             AndroidUtilities.runOnUIThread(showTapToSoundHint, 250);
         }
+
+        if (optionsIconView != null) {
+            optionsIconView.setVisibility(isBotsPreview() && !isEditBotsPreview() && (currentStory == null || !currentStory.isVideo) ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private boolean isEditBotsPreview() {
+        if (!isBotsPreview()) return false;
+        TLRPC.User bot = MessagesController.getInstance(currentAccount).getUser(storyViewer.storiesList.dialogId);
+        return bot != null && bot.bot && bot.bot_can_edit;
+    }
+
+    private boolean isBotsPreview() {
+        return (
+            storyViewer != null &&
+            storyViewer.storiesList != null &&
+            storyViewer.storiesList.type == StoriesController.StoriesList.TYPE_BOTS
+        );
     }
 
     private final Runnable showTapToSoundHint = () -> {
@@ -5339,11 +5533,18 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             addView(backupImageView, LayoutHelper.createFrame(32, 32, 0, 12, 2, 0, 0));
             setClipChildren(false);
 
-            titleView = new SimpleTextView(context);
+            titleView = new SimpleTextView(context) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                    setPivotY(getMeasuredHeight() / 2f);
+                }
+            };
             titleView.setTextSize(14);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setMaxLines(1);
             titleView.setEllipsizeByGradient(dp(4));
+            titleView.setPivotX(0);
           //  titleView.setSingleLine(true);
           //  titleView.setEllipsize(TextUtils.TruncateAt.END);
             NotificationCenter.listenEmojiLoading(titleView);
@@ -5674,7 +5875,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         }
 
         void cancelOrDelete() {
-            if (storyItem != null) {
+            if (storyItem instanceof StoriesController.BotPreview) {
+                ((StoriesController.BotPreview) storyItem).list.delete(storyItem.media);
+            } else if (storyItem != null) {
                 storiesController.deleteStory(dialogId, storyItem);
             } else if (uploadingStory != null) {
                 uploadingStory.cancel();

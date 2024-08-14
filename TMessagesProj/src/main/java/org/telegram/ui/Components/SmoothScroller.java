@@ -14,6 +14,9 @@ public class SmoothScroller extends LinearSmoothScroller {
 
     private Interpolator interpolator = CubicBezierInterpolator.DEFAULT;
 
+    private int offset;
+    private float durationScale = 1f;
+
     public SmoothScroller(Context context) {
         super(context);
     }
@@ -25,6 +28,14 @@ public class SmoothScroller extends LinearSmoothScroller {
 
     protected void onEnd() {
 
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public void setDurationScale(float scale) {
+        this.durationScale = scale;
     }
 
     @Override
@@ -63,10 +74,15 @@ public class SmoothScroller extends LinearSmoothScroller {
         AndroidUtilities.runOnUIThread(this::onEnd, Math.max(0, time));
     }
 
+    @Override
+    public int calculateDyToMakeVisible(View view, int snapPreference) {
+        return super.calculateDyToMakeVisible(view, snapPreference) - offset;
+    }
+
     protected int calculateTimeForDeceleration(int dx) {
-        return Math.min(super.calculateTimeForDeceleration(dx), 500);
+        return Math.round(Math.min(super.calculateTimeForDeceleration(dx), 500) * durationScale);
     }
     protected int calculateTimeForScrolling(int dx) {
-        return Math.min(super.calculateTimeForScrolling(dx), 150);
+        return Math.round(Math.min(super.calculateTimeForScrolling(dx), 150) * durationScale);
     }
 }

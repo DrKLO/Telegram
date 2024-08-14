@@ -260,6 +260,9 @@ public class StoriesViewPager extends ViewPager {
     }
 
     public void setDays(long dialogId, ArrayList<ArrayList<Integer>> days, int currentAccount) {
+        if (this.daysDialogId == dialogId && eqA(this.days, days) && this.currentAccount == currentAccount) {
+            return;
+        }
         this.daysDialogId = dialogId;
         this.days = days;
         this.currentAccount = currentAccount;
@@ -276,6 +279,27 @@ public class StoriesViewPager extends ViewPager {
         }
         setCurrentItem(position);
         updateDelegate = true;
+    }
+
+    private static boolean eqA(ArrayList<ArrayList<Integer>> a, ArrayList<ArrayList<Integer>> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); ++i) {
+            if (!eq(a.get(i), b.get(i)))
+                return false;
+        }
+        return true;
+    }
+    private static boolean eq(ArrayList<Integer> a, ArrayList<Integer> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); ++i) {
+            if (a.get(i) != b.get(i))
+                return false;
+        }
+        return true;
     }
 
     @Override

@@ -244,6 +244,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        ready = false;
         stopThread();
         return false;
     }
@@ -251,11 +252,11 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     public void stopThread() {
         if (thread != null) {
             isRunning = false;
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                thread.join();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             thread = null;
         }
 
@@ -267,6 +268,13 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
     public void setBackgroundBitmap(Bitmap gradientTextureBitmap) {
         mRenderer.setBackground(gradientTextureBitmap);
+    }
+
+    private volatile boolean ready;
+    private volatile Runnable readyListener;
+    public void whenReady(Runnable whenReady) {
+        if (ready) whenReady.run();
+        else readyListener = whenReady;
     }
 
 
@@ -299,6 +307,11 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
                     float dt = (now - lastFrameTime) / 1000f;
                     lastFrameTime = now;
                     drawSingleFrame(dt);
+                    if (!ready) {
+                        ready = true;
+                        AndroidUtilities.runOnUIThread(readyListener);
+                        readyListener = null;
+                    }
                 }
 
                 try {
@@ -564,7 +577,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     }
 
 
-    private void startIdleAnimation() {
+    protected void startIdleAnimation() {
         if (!attached) {
             return;
         }

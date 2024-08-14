@@ -639,7 +639,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                     break;
                 case 2:
-                    CreationTextCell creationTextCell = new CreationTextCell(context, resourcesProvider);
+                    CreationTextCell creationTextCell = new CreationTextCell(context, 70, resourcesProvider);
                     creationTextCell.startPadding = 61;
                     view = creationTextCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));

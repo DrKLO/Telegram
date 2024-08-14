@@ -105,17 +105,17 @@ public class LinkPreview extends View {
     public int type, color;
     private WebPagePreview webpage;
 
-    private float w, h;
+    public float w, h;
     private float previewHeight;
     private float photoHeight;
 
-    private void setupLayout() {
+    public void setupLayout() {
         if (!relayout || webpage == null) {
             return;
         }
 
-        final String text = TextUtils.isEmpty(webpage.name) ? fromUrl(webpage.url) : webpage.name;
         if (withPreview()) {
+            final String text = TextUtils.isEmpty(webpage.name) ? fromUrl(webpage.url) : webpage.name;
             final TLRPC.WebPage preview = this.webpage.webpage;
             float maxWidth = this.maxWidth - padx - padx;
 
@@ -213,7 +213,7 @@ public class LinkPreview extends View {
             h += 11 * density;
 
         } else {
-
+            final String text = TextUtils.isEmpty(webpage.name) ? fromUrlWithoutSchema(webpage.url).toUpperCase() : webpage.name;
             float maxWidth = this.maxWidth - padx - padx - (padding.left + iconSize + iconPadding + padding.right) * density;
             textScale = 1f;
             layout = new StaticLayout(TextUtils.ellipsize(text, layoutPaint, (int) Math.ceil(maxWidth), TextUtils.TruncateAt.END), layoutPaint, (int) Math.ceil(maxWidth), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
@@ -300,6 +300,13 @@ public class LinkPreview extends View {
     }
 
     public static String fromUrl(String url) {
+        return url;
+    }
+
+    public static String fromUrlWithoutSchema(String url) {
+        if (url.startsWith("https://")) {
+            return url.substring(8);
+        }
         return url;
     }
 

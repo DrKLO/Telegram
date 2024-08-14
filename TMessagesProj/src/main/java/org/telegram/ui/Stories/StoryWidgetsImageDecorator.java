@@ -1,14 +1,20 @@
 package org.telegram.ui.Stories;
 
+import static org.telegram.ui.Stories.StoryMediaAreasView.rgbaToArgb;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.Components.Paint.Views.LocationMarker;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Stories.recorder.Weather;
 
 import java.util.ArrayList;
 
@@ -22,6 +28,11 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
                     drawingObjects = new ArrayList<>();
                 }
                 drawingObjects.add(new ReactionWidget((TL_stories.TL_mediaAreaSuggestedReaction) storyItem.media_areas.get(i)));
+            } else if (storyItem.media_areas.get(i) instanceof TL_stories.TL_mediaAreaWeather) {
+                if (drawingObjects == null) {
+                    drawingObjects = new ArrayList<>();
+                }
+                drawingObjects.add(new WeatherWidget((TL_stories.TL_mediaAreaWeather) storyItem.media_areas.get(i)));
             }
         }
     }
@@ -82,10 +93,10 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
 
     public class ReactionWidget extends DrawingObject {
 
-        StoryReactionWidgetBackground storyReactionWidgetBackground = new StoryReactionWidgetBackground(null);
+        private final StoryReactionWidgetBackground storyReactionWidgetBackground = new StoryReactionWidgetBackground(null);
 
-        TL_stories.TL_mediaAreaSuggestedReaction mediaArea;
-        ReactionImageHolder imageHolder = new ReactionImageHolder(null);
+        private final TL_stories.TL_mediaAreaSuggestedReaction mediaArea;
+        private final ReactionImageHolder imageHolder = new ReactionImageHolder(null);
 
         public ReactionWidget(TL_stories.TL_mediaAreaSuggestedReaction mediaArea) {
             this.mediaArea = mediaArea;
@@ -145,6 +156,72 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
         @Override
         public void setParent(View parentView) {
             imageHolder.setParent(parentView);
+        }
+    }
+
+    public class WeatherWidget extends DrawingObject {
+
+        private final LocationMarker marker;
+        private final TL_stories.TL_mediaAreaWeather mediaArea;
+        private View parentView;
+
+        public WeatherWidget(TL_stories.TL_mediaAreaWeather mediaArea) {
+            this.mediaArea = mediaArea;
+
+            final Weather.State state = new Weather.State();
+            state.emoji = mediaArea.emoji;
+            state.temperature = (float) mediaArea.temperature_c;
+
+            this.marker = new LocationMarker(ApplicationLoader.applicationContext, LocationMarker.VARIANT_WEATHER, AndroidUtilities.density, 0) {
+                @Override
+                public void invalidate() {
+                    if (parentView != null) {
+                        parentView.invalidate();
+                    }
+                }
+            };
+            marker.setMaxWidth(AndroidUtilities.displaySize.x);
+            marker.setIsVideo(false);
+            marker.setCodeEmoji(UserConfig.selectedAccount, state.getEmoji());
+            marker.setText(state.getTemperature());
+            marker.setType(0, mediaArea.color);
+
+            marker.setupLayout();
+        }
+
+        @Override
+        public void draw(Canvas canvas, ImageReceiver imageReceiver, float alpha) {
+            float x = (float) (imageX + imageW * mediaArea.coordinates.x / 100);
+            float y = (float) (imageY + imageH * mediaArea.coordinates.y / 100);
+            float w = (float) (imageW * mediaArea.coordinates.w / 100);
+            float h = (float) (imageH * mediaArea.coordinates.h / 100);
+
+            canvas.save();
+            canvas.translate(x, y);
+            final int markerWidth = marker.getWidthInternal() - marker.getPaddingLeft() - marker.getPaddingRight();
+            final int markerHeight = marker.getHeightInternal() - marker.getPaddingTop() - marker.getPaddingBottom();
+            float scale = Math.min(w / markerWidth, h / markerHeight);
+            canvas.scale(scale, scale);
+            if (mediaArea.coordinates.rotation != 0) {
+                canvas.rotate((float) mediaArea.coordinates.rotation);
+            }
+            canvas.translate(-markerWidth / 2f - marker.getPaddingLeft(), -markerHeight / 2f - marker.getPaddingTop());
+            marker.drawInternal(canvas);
+            canvas.restore();
+        }
+
+        @Override
+        public void onAttachedToWindow(boolean attached) {
+            if (attached) {
+                marker.attachInternal();
+            } else {
+                marker.detachInternal();
+            }
+        }
+
+        @Override
+        public void setParent(View parentView) {
+            this.parentView = parentView;
         }
     }
 }

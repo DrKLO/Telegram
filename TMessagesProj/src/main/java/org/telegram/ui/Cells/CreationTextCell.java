@@ -17,14 +17,15 @@ public class CreationTextCell extends FrameLayout {
     private SimpleTextView textView;
     private ImageView imageView;
     boolean divider;
-    public int startPadding = 70;
+    public int startPadding;
 
     public CreationTextCell(Context context) {
-        this(context, null);
+        this(context, 70, null);
     }
 
-    public CreationTextCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public CreationTextCell(Context context, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.startPadding = padding;
 
         textView = new SimpleTextView(context);
         textView.setTextSize(16);

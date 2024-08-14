@@ -838,7 +838,7 @@ public class SecretVoicePlayer extends Dialog {
             AndroidUtilities.runOnUIThread(this.closeAction);
             this.closeAction = null;
 
-            myCell.setInvalidateCallback(() -> {});
+//            myCell.setOverrideInvalidate(() -> {});
             thanosEffect = new ThanosEffect(context, null);
             windowView.addView(thanosEffect, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
             thanosEffect.animate(myCell, 1.5f, super::dismiss);

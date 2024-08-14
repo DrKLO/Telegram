@@ -16,6 +16,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 public class KeyboardNotifier {
 
     private final View rootView;
+    private View realRootView;
     private final Utilities.Callback<Integer> listener;
     public boolean ignoring;
     private boolean awaitingKeyboard;
@@ -23,8 +24,13 @@ public class KeyboardNotifier {
     private final Rect rect = new Rect();
 
     public KeyboardNotifier(@NonNull View rootView, Utilities.Callback<Integer> listener) {
+        this(rootView, false, listener);
+    }
+
+    public KeyboardNotifier(@NonNull View rootView, boolean getRootView, Utilities.Callback<Integer> listener) {
         this.rootView = rootView;
         this.listener = listener;
+        realRootView = rootView;
 
         if (this.rootView.isAttachedToWindow()) {
             rootView.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener);
@@ -33,6 +39,9 @@ public class KeyboardNotifier {
         this.rootView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             @Override
             public void onViewAttachedToWindow(@NonNull View v) {
+                if (getRootView) {
+                    realRootView = v.getRootView();
+                }
                 rootView.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener);
                 rootView.addOnLayoutChangeListener(onLayoutChangeListener);
             }
@@ -57,7 +66,7 @@ public class KeyboardNotifier {
         }
 
         rootView.getWindowVisibleDisplayFrame(rect);
-        final int screenHeight = rootView.getHeight();
+        final int screenHeight = (realRootView == null ? rootView : realRootView).getHeight();
         keyboardHeight = screenHeight - rect.bottom;
         final boolean unique = lastKeyboardHeight != keyboardHeight;
         lastKeyboardHeight = keyboardHeight;

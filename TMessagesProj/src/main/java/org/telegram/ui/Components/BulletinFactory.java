@@ -406,6 +406,10 @@ public final class BulletinFactory {
        return createUsersBulletin(users, text, null, null);
     }
 
+    public Bulletin createUsersBulletin(List<? extends TLObject> users, CharSequence text, CharSequence subtitle) {
+        return createUsersBulletin(users, text, subtitle, null);
+    }
+
     public Bulletin createUsersBulletin(List<? extends TLObject> users, CharSequence text, CharSequence subtitle, UndoObject undoObject) {
         final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), subtitle != null, resourcesProvider);
         int count = 0;
@@ -436,8 +440,8 @@ public final class BulletinFactory {
             layout.textView.setMaxLines(1);
             layout.textView.setText(text);
             layout.subtitleView.setText(subtitle);
-            layout.subtitleView.setSingleLine(true);
-            layout.subtitleView.setMaxLines(1);
+            layout.subtitleView.setSingleLine(false);
+            layout.subtitleView.setMaxLines(3);
             if (layout.linearLayout.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 int margin = AndroidUtilities.dp(12 + 56 + 2 - (3 - count) * 12);
                 if (count == 1) {
@@ -879,7 +883,7 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
-    private Bulletin create(Bulletin.Layout layout, int duration) {
+    public Bulletin create(Bulletin.Layout layout, int duration) {
         if (fragment != null) {
             return Bulletin.make(fragment, layout, duration);
         } else {

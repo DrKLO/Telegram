@@ -1,5 +1,9 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.animation.LayoutTransition;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -17,14 +21,21 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BillingController;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -33,14 +44,18 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.Stars.StarsController;
+import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
 
@@ -56,18 +71,25 @@ public class LinkEditActivity extends BaseFragment {
 
     TLRPC.TL_chatInviteExported inviteToEdit;
     private TextCheckCell approveCell;
+    private TextInfoPrivacyCell approveHintCell;
+    private TextCheckCell subCell;
+    private EditTextCell subEditPriceCell;
+    private TextView subPriceView;
+    private TextInfoPrivacyCell subInfoCell;
     private TextView timeEditText;
     private HeaderCell timeHeaderCell;
     private TextInfoPrivacyCell divider;
     private HeaderCell usesHeaderCell;
     private EditText usesEditText;
     private TextInfoPrivacyCell dividerUses;
+    private FrameLayout buttonLayout;
     private TextView buttonTextView;
     private TextSettingsCell revokeLink;
     private ScrollView scrollView;
     private EditText nameEditText;
     private TextInfoPrivacyCell dividerName;
     private TextView createTextView;
+    private int shakeDp = -3;
 
     private boolean ignoreSet;
     private boolean finished;
@@ -96,9 +118,9 @@ public class LinkEditActivity extends BaseFragment {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (type == CREATE_TYPE) {
-            actionBar.setTitle(LocaleController.getString("NewLink", R.string.NewLink));
+            actionBar.setTitle(getString("NewLink", R.string.NewLink));
         } else if (type == EDIT_TYPE) {
-            actionBar.setTitle(LocaleController.getString("EditLink", R.string.EditLink));
+            actionBar.setTitle(getString("EditLink", R.string.EditLink));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -116,85 +138,83 @@ public class LinkEditActivity extends BaseFragment {
         createTextView.setOnClickListener(this::onCreateClicked);
         createTextView.setSingleLine();
         if (type == CREATE_TYPE) {
-            createTextView.setText(LocaleController.getString("CreateLinkHeader", R.string.CreateLinkHeader));
+            createTextView.setText(getString("CreateLinkHeader", R.string.CreateLinkHeader));
         } else if (type == EDIT_TYPE) {
-            createTextView.setText(LocaleController.getString("SaveLinkHeader", R.string.SaveLinkHeader));
+            createTextView.setText(getString("SaveLinkHeader", R.string.SaveLinkHeader));
         }
         createTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         createTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
         createTextView.setTypeface(AndroidUtilities.bold());
-        createTextView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(8), AndroidUtilities.dp(18), AndroidUtilities.dp(8));
-        int topSpace = actionBar.getOccupyStatusBar() ? (AndroidUtilities.statusBarHeight / AndroidUtilities.dp(2)) : 0;
+        createTextView.setPadding(dp(18), dp(8), dp(18), dp(8));
+        int topSpace = actionBar.getOccupyStatusBar() ? (AndroidUtilities.statusBarHeight / dp(2)) : 0;
         actionBar.addView(createTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, topSpace, 0, 0));
 
         scrollView = new ScrollView(context);
         SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(context) {
 
-            int oldKeyboardHeight;
-
-            @Override
-            protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
-                AdjustPanLayoutHelper panLayoutHelper = new AdjustPanLayoutHelper(this) {
-
-                    @Override
-                    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
-                        super.onTransitionStart(keyboardVisible, contentHeight);
-                        scrollView.getLayoutParams().height = contentHeight;
-                    }
-
-                    @Override
-                    protected void onTransitionEnd() {
-                        super.onTransitionEnd();
-                        scrollView.getLayoutParams().height = LinearLayout.LayoutParams.MATCH_PARENT;
-                        scrollView.requestLayout();
-                    }
-
-                    @Override
-                    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
-                        super.onPanTranslationUpdate(y, progress, keyboardVisible);
-                        setTranslationY(0);
-                    }
-
-                    @Override
-                    protected boolean heightAnimationEnabled() {
-                        return !finished;
-                    }
-                };
-                panLayoutHelper.setCheckHierarchyHeight(true);
-                return panLayoutHelper;
-            }
-
-            @Override
-            protected void onAttachedToWindow() {
-                super.onAttachedToWindow();
-                adjustPanLayoutHelper.onAttach();
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                adjustPanLayoutHelper.onDetach();
-            }
+//            int oldKeyboardHeight;
+//
+//            @Override
+//            protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
+//                AdjustPanLayoutHelper panLayoutHelper = new AdjustPanLayoutHelper(this) {
+//                    @Override
+//                    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+//                        super.onTransitionStart(keyboardVisible, contentHeight);
+//                        scrollView.getLayoutParams().height = contentHeight;
+//                    }
+//                    @Override
+//                    protected void onTransitionEnd() {
+//                        super.onTransitionEnd();
+//                        scrollView.getLayoutParams().height = LinearLayout.LayoutParams.MATCH_PARENT;
+//                        scrollView.requestLayout();
+//                    }
+//                    @Override
+//                    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+//                        super.onPanTranslationUpdate(y, progress, keyboardVisible);
+//                        setTranslationY(0);
+//                        buttonLayout.setTranslationY(y);
+//                    }
+//                    @Override
+//                    protected boolean heightAnimationEnabled() {
+//                        return !finished;
+//                    }
+//                };
+//                panLayoutHelper.setCheckHierarchyHeight(true);
+//                return panLayoutHelper;
+//            }
+//
+//            @Override
+//            protected void onAttachedToWindow() {
+//                super.onAttachedToWindow();
+//                adjustPanLayoutHelper.onAttach();
+//            }
+//
+//            @Override
+//            protected void onDetachedFromWindow() {
+//                super.onDetachedFromWindow();
+//                adjustPanLayoutHelper.onDetach();
+//            }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 measureKeyboardHeight();
-                boolean isNeedScrollToEnd = usesEditText.isCursorVisible() || nameEditText.isCursorVisible();
-                if (oldKeyboardHeight != keyboardHeight && keyboardHeight > AndroidUtilities.dp(20) && isNeedScrollToEnd) {
-                    scrollToEnd = true;
-                    invalidate();
-                } else if (scrollView.getScrollY() == 0 && !isNeedScrollToEnd) {
-                    scrollToStart = true;
-                    invalidate();
-                }
+//                boolean isNeedScrollToEnd = usesEditText.isCursorVisible() || nameEditText.isCursorVisible();
+//                if (oldKeyboardHeight != keyboardHeight && keyboardHeight > dp(20) && isNeedScrollToEnd) {
+//                    scrollToEnd = true;
+//                    invalidate();
+//                } else if (scrollView.getScrollY() == 0 && !isNeedScrollToEnd) {
+//                    scrollToStart = true;
+//                    invalidate();
+//                }
 
-                if (keyboardHeight != 0 && keyboardHeight < AndroidUtilities.dp(20)) {
+                if (keyboardHeight != 0 && keyboardHeight < dp(20)) {
                     usesEditText.clearFocus();
                     nameEditText.clearFocus();
                 }
+                buttonLayout.setVisibility(keyboardHeight > dp(20) ? GONE : VISIBLE);
 
-                oldKeyboardHeight = keyboardHeight;
+//                oldKeyboardHeight = keyboardHeight;
             }
 
             @Override
@@ -228,33 +248,33 @@ public class LinkEditActivity extends BaseFragment {
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+//                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+//                int elementsHeight = 0;
+//                int h = MeasureSpec.getSize(heightMeasureSpec);
+//                for (int i = 0; i < getChildCount(); i++) {
+//                    View child = getChildAt(i);
+//                    if (child != buttonTextView && child.getVisibility() != View.GONE) {
+//                        elementsHeight += child.getMeasuredHeight();
+//                    }
+//                }
+//                elementsHeight += dp(79);
+//
+//                int topMargin;
+//                int buttonH = dp(48) + dp(24) + dp(16);
+//                if (elementsHeight >= h - buttonH) {
+//                    topMargin = dp(24);
+//                } else {
+//                    topMargin = dp(24) + (h - buttonH) - elementsHeight;
+//                }
+//
+//                if (((LayoutParams) buttonLayout.getLayoutParams()).topMargin != topMargin) {
+//                    int oldMargin = ((LayoutParams) buttonLayout.getLayoutParams()).topMargin;
+//                    ((LayoutParams) buttonLayout.getLayoutParams()).topMargin = topMargin;
+//                    if (!firstLayout) {
+//                        buttonLayout.setTranslationY(oldMargin - topMargin);
+//                        buttonLayout.animate().translationY(0).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start();
+//                    }
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                int elementsHeight = 0;
-                int h = MeasureSpec.getSize(heightMeasureSpec);
-                for (int i = 0; i < getChildCount(); i++) {
-                    View child = getChildAt(i);
-                    if (child != buttonTextView && child.getVisibility() != View.GONE) {
-                        elementsHeight += child.getMeasuredHeight();
-                    }
-                }
-
-                int topMargin;
-                int buttonH = AndroidUtilities.dp(48) + AndroidUtilities.dp(24) + AndroidUtilities.dp(16);
-                if (elementsHeight >= h - buttonH) {
-                    topMargin = AndroidUtilities.dp(24);
-                } else {
-                    topMargin = AndroidUtilities.dp(24) + (h - buttonH) - elementsHeight;
-                }
-
-                if (((LayoutParams) buttonTextView.getLayoutParams()).topMargin != topMargin) {
-                    int oldMargin = ((LayoutParams) buttonTextView.getLayoutParams()).topMargin;
-                    ((LayoutParams) buttonTextView.getLayoutParams()).topMargin = topMargin;
-                    if (!firstLayout) {
-                        buttonTextView.setTranslationY(oldMargin - topMargin);
-                        buttonTextView.animate().translationY(0).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start();
-                    }
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                }
             }
 
             @Override
@@ -264,28 +284,32 @@ public class LinkEditActivity extends BaseFragment {
             }
         };
         LayoutTransition transition = new LayoutTransition();
-        transition.setDuration(100);
+        transition.setDuration(420);
+        transition.setInterpolator(LayoutTransition.APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+        transition.setInterpolator(LayoutTransition.CHANGE_APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+        transition.setInterpolator(LayoutTransition.CHANGING, CubicBezierInterpolator.EASE_OUT_QUINT);
+        transition.setInterpolator(LayoutTransition.CHANGE_DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+        transition.setInterpolator(LayoutTransition.DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
         linearLayout.setLayoutTransition(transition);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.setPadding(0, 0, 0, dp(79));
         scrollView.addView(linearLayout);
 
         buttonTextView = new TextView(context);
 
-        buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        buttonTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
 
         if (type == CREATE_TYPE) {
-            buttonTextView.setText(LocaleController.getString("CreateLink", R.string.CreateLink));
+            buttonTextView.setText(getString("CreateLink", R.string.CreateLink));
         } else if (type == EDIT_TYPE) {
-            buttonTextView.setText(LocaleController.getString("SaveLink", R.string.SaveLink));
+            buttonTextView.setText(getString("SaveLink", R.string.SaveLink));
         }
 
         TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
-        boolean hasApproveCell = false;
         if (chatLocal == null || chatLocal.username == null) {
-            hasApproveCell = true;
             approveCell = new TextCheckCell(context) {
                 @Override
                 protected void onDraw(Canvas canvas) {
@@ -300,37 +324,148 @@ public class LinkEditActivity extends BaseFragment {
             approveCell.setDrawCheckRipple(true);
             approveCell.setHeight(56);
             approveCell.setTag(Theme.key_windowBackgroundUnchecked);
-            approveCell.setTextAndCheck(LocaleController.getString("ApproveNewMembers", R.string.ApproveNewMembers), false, false);
+            approveCell.setTextAndCheck(getString(R.string.ApproveNewMembers), false, false);
             approveCell.setTypeface(AndroidUtilities.bold());
             approveCell.setOnClickListener(view -> {
+                if (subCell != null && subCell.isChecked()) {
+                    AndroidUtilities.shakeViewSpring(subCell, shakeDp = -shakeDp);
+                    return;
+                }
+
                 TextCheckCell cell = (TextCheckCell) view;
                 boolean newIsChecked = !cell.isChecked();
                 cell.setBackgroundColorAnimated(newIsChecked, Theme.getColor(newIsChecked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
                 cell.setChecked(newIsChecked);
                 setUsesVisible(!newIsChecked);
                 firstLayout = true;
+
+                if (subCell != null) {
+                    if (cell.isChecked()) {
+                        subCell.setChecked(false);
+                        subCell.setCheckBoxIcon(R.drawable.permission_locked);
+                        subEditPriceCell.setVisibility(View.GONE);
+                    } else if (inviteToEdit == null) {
+                        subCell.setCheckBoxIcon(0);
+                    }
+                }
             });
             linearLayout.addView(approveCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
-        }
 
-        TextInfoPrivacyCell hintCell = new TextInfoPrivacyCell(context);
-        hintCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-        if (hasApproveCell) {
-            hintCell.setText(LocaleController.getString("ApproveNewMembersDescription", R.string.ApproveNewMembersDescription));
+            approveHintCell = new TextInfoPrivacyCell(context);
+            approveHintCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            approveHintCell.setText(getString(R.string.ApproveNewMembersDescription));
+            linearLayout.addView(approveHintCell);
+
+            TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
+            if (inviteToEdit == null && ChatObject.isChannelAndNotMegaGroup(MessagesController.getInstance(currentAccount).getChat(chatId)) && chatFull != null && chatFull.paid_media_allowed || inviteToEdit != null && inviteToEdit.subscription_pricing != null) {
+                subCell = new TextCheckCell(context);
+                subCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                subCell.setDrawCheckRipple(true);
+                subCell.setTextAndCheck(getString(R.string.RequireMonthlyFee), false, true);
+                if (inviteToEdit != null) {
+                    subCell.setCheckBoxIcon(R.drawable.permission_locked);
+                    subCell.setEnabled(false);
+                }
+                final Runnable[] keyboardUpdate = new Runnable[1];
+                subCell.setOnClickListener(view -> {
+                    if (inviteToEdit != null) {
+                        return;
+                    }
+                    if (approveCell.isChecked()) {
+                        AndroidUtilities.shakeViewSpring(approveCell, shakeDp = -shakeDp);
+                        return;
+                    }
+
+                    TextCheckCell cell = (TextCheckCell) view;
+                    cell.setChecked(!cell.isChecked());
+                    subEditPriceCell.setVisibility(cell.isChecked() ? View.VISIBLE : View.GONE);
+                    AndroidUtilities.cancelRunOnUIThread(keyboardUpdate[0]);
+                    if (cell.isChecked()) {
+                        approveCell.setChecked(false);
+                        approveCell.setCheckBoxIcon(R.drawable.permission_locked);
+                        approveHintCell.setText(getString(R.string.ApproveNewMembersDescriptionFrozen));
+                        AndroidUtilities.runOnUIThread(keyboardUpdate[0] = () -> {
+                            subEditPriceCell.editText.requestFocus();
+                            AndroidUtilities.showKeyboard(subEditPriceCell.editText);
+                        }, 60);
+                    } else {
+                        approveCell.setCheckBoxIcon(0);
+                        approveHintCell.setText(getString(R.string.ApproveNewMembersDescription));
+                        AndroidUtilities.runOnUIThread(keyboardUpdate[0] = () -> {
+                            subEditPriceCell.editText.clearFocus();
+                            AndroidUtilities.hideKeyboard(subEditPriceCell.editText);
+                        });
+                    }
+                });
+                linearLayout.addView(subCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+
+                subPriceView = new TextView(context);
+                subPriceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                subPriceView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+                subEditPriceCell = new EditTextCell(context, getString(getConnectionsManager().isTestBackend() ? R.string.RequireMonthlyFeePriceHintTest5Minutes : R.string.RequireMonthlyFeePriceHint), false, -1, resourceProvider) {
+                    private boolean ignoreTextChanged;
+                    @Override
+                    protected void onTextChanged(CharSequence newText) {
+                        super.onTextChanged(newText);
+                        if (ignoreTextChanged) return;
+                        if (TextUtils.isEmpty(newText)) {
+                            subPriceView.setText("");
+                        } else {
+                            try {
+                                long stars = Long.parseLong(newText.toString());
+                                if (stars > getMessagesController().starsSubscriptionAmountMax) {
+                                    ignoreTextChanged = true;
+                                    stars = getMessagesController().starsSubscriptionAmountMax;
+                                    setText(Long.toString(stars));
+                                    ignoreTextChanged = false;
+                                }
+                                subPriceView.setText(formatString(
+                                    getConnectionsManager().isTestBackend() ? R.string.RequireMonthlyFeePriceTest5Minutes : R.string.RequireMonthlyFeePrice,
+                                    BillingController.getInstance().formatCurrency((long) (stars / 1000.0 * MessagesController.getInstance(currentAccount).starsUsdWithdrawRate1000), "USD")
+                                ));
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    }
+                };
+                subEditPriceCell.editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                subEditPriceCell.editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+                subEditPriceCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                subEditPriceCell.hideKeyboardOnEnter();
+                subEditPriceCell.addView(subPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 19, 0));
+
+                ImageView star = subEditPriceCell.setLeftDrawable(getContext().getResources().getDrawable(R.drawable.star_small_inner).mutate());
+                star.setScaleX(.83f);
+                star.setScaleY(.83f);
+                star.setTranslationY(dp(-1));
+                star.setTranslationX(dp(1));
+                linearLayout.addView(subEditPriceCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                subEditPriceCell.setVisibility(View.GONE);
+
+                subInfoCell = new TextInfoPrivacyCell(context);
+                if (inviteToEdit != null) {
+                    subInfoCell.setText(getString(R.string.RequireMonthlyFeeInfoFrozen));
+                } else {
+                    subInfoCell.setText(AndroidUtilities.withLearnMore(getString(R.string.RequireMonthlyFeeInfo), () -> {
+                        Browser.openUrl(getContext(), getString(R.string.RequireMonthlyFeeInfoLink));
+                    }));
+                }
+                linearLayout.addView(subInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
         }
-        linearLayout.addView(hintCell);
 
         timeHeaderCell = new HeaderCell(context);
-        timeHeaderCell.setText(LocaleController.getString("LimitByPeriod", R.string.LimitByPeriod));
+        timeHeaderCell.setText(getString(R.string.LimitByPeriod));
         linearLayout.addView(timeHeaderCell);
         timeChooseView = new SlideChooseView(context);
         linearLayout.addView(timeChooseView);
         timeEditText = new TextView(context);
-        timeEditText.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
+        timeEditText.setPadding(dp(22), 0, dp(22), 0);
         timeEditText.setGravity(Gravity.CENTER_VERTICAL);
         timeEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        timeEditText.setHint(LocaleController.getString("TimeLimitHint", R.string.TimeLimitHint));
-        timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, LocaleController.getString(R.string.ExpireAfter), LocaleController.getString(R.string.SetTimeLimit), -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
+        timeEditText.setHint(getString("TimeLimitHint", R.string.TimeLimitHint));
+        timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, getString(R.string.ExpireAfter), getString(R.string.SetTimeLimit), -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
 
         timeChooseView.setCallback(index -> {
             if (index < dispalyedDates.size()) {
@@ -344,11 +479,11 @@ public class LinkEditActivity extends BaseFragment {
         linearLayout.addView(timeEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
         divider = new TextInfoPrivacyCell(context);
-        divider.setText(LocaleController.getString("TimeLimitHelp", R.string.TimeLimitHelp));
+        divider.setText(getString("TimeLimitHelp", R.string.TimeLimitHelp));
         linearLayout.addView(divider);
 
         usesHeaderCell = new HeaderCell(context);
-        usesHeaderCell.setText(LocaleController.getString("LimitNumberOfUses", R.string.LimitNumberOfUses));
+        usesHeaderCell.setText(getString("LimitNumberOfUses", R.string.LimitNumberOfUses));
         linearLayout.addView(usesHeaderCell);
         usesChooseView = new SlideChooseView(context);
         usesChooseView.setCallback(index -> {
@@ -373,10 +508,10 @@ public class LinkEditActivity extends BaseFragment {
                 return super.onTouchEvent(event);
             }
         };
-        usesEditText.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
+        usesEditText.setPadding(dp(22), 0, dp(22), 0);
         usesEditText.setGravity(Gravity.CENTER_VERTICAL);
         usesEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        usesEditText.setHint(LocaleController.getString("UsesLimitHint", R.string.UsesLimitHint));
+        usesEditText.setHint(getString("UsesLimitHint", R.string.UsesLimitHint));
         usesEditText.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
         usesEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
         usesEditText.addTextChangedListener(new TextWatcher() {
@@ -416,7 +551,7 @@ public class LinkEditActivity extends BaseFragment {
         linearLayout.addView(usesEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
         dividerUses = new TextInfoPrivacyCell(context);
-        dividerUses.setText(LocaleController.getString("UsesLimitHelp", R.string.UsesLimitHelp));
+        dividerUses.setText(getString("UsesLimitHelp", R.string.UsesLimitHelp));
         linearLayout.addView(dividerUses);
 
         nameEditText = new EditText(context) {
@@ -440,10 +575,10 @@ public class LinkEditActivity extends BaseFragment {
         nameEditText.setCursorVisible(false);
         nameEditText.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(32) });
         nameEditText.setGravity(Gravity.CENTER_VERTICAL);
-        nameEditText.setHint(LocaleController.getString("LinkNameHint", R.string.LinkNameHint));
+        nameEditText.setHint(getString("LinkNameHint", R.string.LinkNameHint));
         nameEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         nameEditText.setLines(1);
-        nameEditText.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
+        nameEditText.setPadding(dp(22), 0, dp(22), 0);
         nameEditText.setSingleLine();
         nameEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -451,23 +586,23 @@ public class LinkEditActivity extends BaseFragment {
 
         dividerName = new TextInfoPrivacyCell(context);
         dividerName.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-        dividerName.setText(LocaleController.getString("LinkNameHelp", R.string.LinkNameHelp));
+        dividerName.setText(getString("LinkNameHelp", R.string.LinkNameHelp));
         linearLayout.addView(dividerName);
 
         if (type == EDIT_TYPE) {
             revokeLink = new TextSettingsCell(context);
             revokeLink.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            revokeLink.setText(LocaleController.getString("RevokeLink", R.string.RevokeLink), false);
+            revokeLink.setText(getString("RevokeLink", R.string.RevokeLink), false);
             revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
             revokeLink.setOnClickListener(view -> {
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
-                builder2.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
-                builder2.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
-                builder2.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), (dialogInterface2, i2) -> {
+                builder2.setMessage(getString("RevokeAlert", R.string.RevokeAlert));
+                builder2.setTitle(getString("RevokeLink", R.string.RevokeLink));
+                builder2.setPositiveButton(getString("RevokeButton", R.string.RevokeButton), (dialogInterface2, i2) -> {
                     callback.revokeLink(inviteToEdit);
                     finishFragment();
                 });
-                builder2.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder2.setNegativeButton(getString("Cancel", R.string.Cancel), null);
                 showDialog(builder2.create());
 
             });
@@ -475,7 +610,14 @@ public class LinkEditActivity extends BaseFragment {
         }
 
         contentView.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        linearLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 15, 16, 16));
+
+        buttonLayout = new FrameLayout(context);
+        buttonLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        new KeyboardNotifier(contentView, keyboardHeight -> {
+//            buttonLayout.setVisibility((keyboardHeight > dp(40)) ? View.GONE : View.VISIBLE);
+        });
+        buttonLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 15, 16, 16));
+        contentView.addView(buttonLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         timeHeaderCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         timeChooseView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -491,7 +633,7 @@ public class LinkEditActivity extends BaseFragment {
 
         dividerUses.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
         divider.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
 
         usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
@@ -522,6 +664,15 @@ public class LinkEditActivity extends BaseFragment {
                 vibrator.vibrate(200);
             }
             return;
+        }
+
+        long stars = 0;
+        if (subCell != null && subCell.isChecked()) {
+            try {
+                stars = Long.parseLong(subEditPriceCell.editText.getText().toString());
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
 
         if (type == CREATE_TYPE) {
@@ -559,6 +710,13 @@ public class LinkEditActivity extends BaseFragment {
             req.title = nameEditText.getText().toString();
             if (!TextUtils.isEmpty(req.title)) {
                 req.flags |= 16;
+            }
+
+            if (stars > 0) {
+                req.flags |= 32;
+                req.subscription_pricing = new TLRPC.TL_starsSubscriptionPricing();
+                req.subscription_pricing.period = getConnectionsManager().isTestBackend() ? StarsController.PERIOD_5MINUTES : StarsController.PERIOD_MONTHLY;
+                req.subscription_pricing.amount = stars;
             }
 
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -685,7 +843,7 @@ public class LinkEditActivity extends BaseFragment {
         String[] options = new String[dispalyedUses.size() + 1];
         for (int i = 0; i < options.length; i++) {
             if (i == options.length - 1) {
-                options[i] = LocaleController.getString("NoLimit", R.string.NoLimit);
+                options[i] = getString("NoLimit", R.string.NoLimit);
             } else {
                 options[i] = dispalyedUses.get(i).toString();
             }
@@ -717,7 +875,7 @@ public class LinkEditActivity extends BaseFragment {
         String[] options = new String[dispalyedDates.size() + 1];
         for (int i = 0; i < options.length; i++) {
             if (i == options.length - 1) {
-                options[i] = LocaleController.getString("NoLimit", R.string.NoLimit);
+                options[i] = getString("NoLimit", R.string.NoLimit);
             } else {
                 if (dispalyedDates.get(i) == defaultDates[0]) {
                     options[i] = LocaleController.formatPluralString("Hours", 1);
@@ -727,7 +885,7 @@ public class LinkEditActivity extends BaseFragment {
                     options[i] = LocaleController.formatPluralString("Weeks", 1);
                 } else {
                     if (selectedDate < 86400L) {
-                        options[i] = LocaleController.getString("MessageScheduleToday", R.string.MessageScheduleToday);
+                        options[i] = getString("MessageScheduleToday", R.string.MessageScheduleToday);
                     } else if (selectedDate < 364 * 86400L) {
                         options[i] = LocaleController.getInstance().getFormatterScheduleDay().format(originDate * 1000L);
                     } else {
@@ -744,7 +902,7 @@ public class LinkEditActivity extends BaseFragment {
         for (int i = 0; i < defaultDates.length; i++) {
             dispalyedDates.add(defaultDates[i]);
         }
-        String[] options = new String[]{ LocaleController.formatPluralString("Hours", 1), LocaleController.formatPluralString("Days", 1), LocaleController.formatPluralString("Weeks", 1), LocaleController.getString("NoLimit", R.string.NoLimit) };
+        String[] options = new String[]{ LocaleController.formatPluralString("Hours", 1), LocaleController.formatPluralString("Days", 1), LocaleController.formatPluralString("Weeks", 1), getString("NoLimit", R.string.NoLimit) };
         timeChooseView.setOptions(options.length - 1, options);
     }
 
@@ -757,7 +915,7 @@ public class LinkEditActivity extends BaseFragment {
         for (int i = 0; i < defaultUses.length; i++) {
             dispalyedUses.add(defaultUses[i]);
         }
-        String[] options = new String[]{ "1", "10", "100", LocaleController.getString("NoLimit", R.string.NoLimit) };
+        String[] options = new String[]{ "1", "10", "100", getString("NoLimit", R.string.NoLimit) };
         usesChooseView.setOptions(options.length - 1, options);
     }
 
@@ -783,6 +941,27 @@ public class LinkEditActivity extends BaseFragment {
                 SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
                 Emoji.replaceEmoji(builder, nameEditText.getPaint().getFontMetricsInt(), (int) nameEditText.getPaint().getTextSize(), false);
                 nameEditText.setText(builder);
+            }
+
+            if (subCell != null) {
+                subCell.setChecked(invite.subscription_pricing != null);
+            }
+            if (invite.subscription_pricing != null) {
+                if (approveCell != null) {
+                    approveCell.setChecked(false);
+                    approveCell.setCheckBoxIcon(R.drawable.permission_locked);
+                }
+                if (approveHintCell != null) {
+                    approveHintCell.setText(getString(R.string.ApproveNewMembersDescriptionFrozen));
+                }
+            }
+            if (subEditPriceCell != null) {
+                subEditPriceCell.setVisibility(invite.subscription_pricing != null ? View.VISIBLE : View.GONE);
+                subEditPriceCell.setText(Long.toString(invite.subscription_pricing.amount));
+                subEditPriceCell.editText.setClickable(false);
+                subEditPriceCell.editText.setFocusable(false);
+                subEditPriceCell.editText.setFocusableInTouchMode(false);
+                subEditPriceCell.editText.setLongClickable(false);
             }
         }
     }
@@ -820,7 +999,7 @@ public class LinkEditActivity extends BaseFragment {
                 Context context = dividerUses.getContext();
                 dividerUses.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 divider.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+                buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
 
                 usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));

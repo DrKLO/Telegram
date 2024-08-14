@@ -528,6 +528,9 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         profile_color_color = stream->readInt32(&error);
         profile_color_background_emoji_id = stream->readInt64(&error);
     }
+    if ((flags2 & 4096) != 0) {
+        bot_active_users = stream->readInt32(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
@@ -604,6 +607,9 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(0xba278146);
         stream->writeInt32(profile_color_color);
         stream->writeInt32(profile_color_background_emoji_id);
+    }
+    if ((flags2 & 4096) != 0) {
+        stream->writeInt32(bot_active_users);
     }
 }
 

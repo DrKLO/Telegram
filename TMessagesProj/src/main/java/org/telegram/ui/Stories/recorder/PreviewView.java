@@ -1,8 +1,8 @@
 package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.getBitmapFromSurface;
 
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Context;
@@ -16,6 +16,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
@@ -25,12 +26,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
@@ -49,7 +48,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
@@ -57,21 +55,16 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.Paint.Texture;
 import org.telegram.ui.Components.Paint.Views.RoundView;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.VideoEditTextureView;
 import org.telegram.ui.Components.VideoPlayer;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 
 public class PreviewView extends FrameLayout {
 
@@ -248,6 +241,7 @@ public class PreviewView extends FrameLayout {
             }
             updateAudioPlayer(true);
         }
+        onAudioChanged();
     }
 
     public void setupAudio(MessageObject messageObject, boolean animated) {
@@ -291,16 +285,99 @@ public class PreviewView extends FrameLayout {
         setupAudio(entry, animated);
     }
 
+    public void onAudioChanged() {}
+
+    private long finalSeekPosition;
+    private boolean slowerSeekScheduled;
+    private Runnable slowerSeek = () -> {
+        seekTo(finalSeekPosition);
+        slowerSeekScheduled = false;
+    };
     private void seekTo(long position) {
+        seekTo(position, false);
+    }
+
+    public void seekTo(long position, boolean fast) {
         if (videoPlayer != null) {
-            videoPlayer.seekTo(position, false);
+            videoPlayer.seekTo(position, fast);
         } else if (roundPlayer != null) {
-            roundPlayer.seekTo(position, false);
+            roundPlayer.seekTo(position, fast);
         } else if (audioPlayer != null) {
-            audioPlayer.seekTo(position, false);
+            audioPlayer.seekTo(position, fast);
         }
         updateAudioPlayer(true);
         updateRoundPlayer(true);
+        if (fast) {
+            if (!slowerSeekScheduled || Math.abs(finalSeekPosition - position) > 450) {
+                slowerSeekScheduled = true;
+                AndroidUtilities.cancelRunOnUIThread(this.slowerSeek);
+                AndroidUtilities.runOnUIThread(this.slowerSeek, 60);
+            }
+            finalSeekPosition = position;
+        }
+    }
+
+    public long getCurrentPosition() {
+        if (videoPlayer != null) {
+            return videoPlayer.getCurrentPosition();
+        } else if (roundPlayer != null) {
+            return roundPlayer.getCurrentPosition();
+        } else if (audioPlayer != null) {
+            return audioPlayer.getCurrentPosition();
+        }
+        return 0;
+    }
+
+    public void getCoverBitmap(Utilities.Callback<Bitmap> whenBitmapDone, View ...views) {
+        int w = (int) (dp(26) * AndroidUtilities.density);
+        int h = (int) (dp(30.33f) * AndroidUtilities.density);
+        int r = (int) (dp(4) * AndroidUtilities.density);
+
+        Bitmap[] bitmaps = new Bitmap[ views.length ];
+        for (int i = 0; i < views.length; ++i) {
+            if (views[i] == null || views[i].getWidth() < 0 || views[i].getHeight() <= 0) continue;
+            if (views[i] == this && textureView != null) {
+                bitmaps[i] = textureView.getBitmap();
+            } else if (views[i] instanceof TextureView) {
+                bitmaps[i] = ((TextureView) views[i]).getBitmap();
+            } else if (views[i] instanceof ViewGroup && ((ViewGroup) views[i]).getChildCount() > 0) {
+                bitmaps[i] = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmaps[i]);
+                canvas.save();
+                final float s = Math.max((float) w / views[i].getWidth(), (float) h / views[i].getHeight());
+                canvas.scale(s, s);
+                views[i].draw(canvas);
+                canvas.restore();
+            }
+        }
+
+        Utilities.globalQueue.postRunnable(() -> {
+            Bitmap cover = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(cover);
+            Path clipPath = new Path();
+            RectF clipRect = new RectF();
+            clipRect.set(0, 0, cover.getWidth(), cover.getHeight());
+            clipPath.addRoundRect(clipRect, r, r, Path.Direction.CW);
+            canvas.clipPath(clipPath);
+
+            for (int i = 0; i < bitmaps.length; ++i) {
+                if (bitmaps[i] == null) continue;
+                canvas.save();
+                canvas.translate(cover.getWidth() / 2f, cover.getHeight() / 2f);
+                final float s = Math.max((float) cover.getWidth() / bitmaps[i].getWidth(), (float) cover.getHeight() / bitmaps[i].getHeight());
+                canvas.scale(s, s);
+                canvas.translate(-bitmaps[i].getWidth() / 2f, -bitmaps[i].getHeight() / 2f);
+                canvas.drawBitmap(bitmaps[i], 0, 0, null);
+                canvas.restore();
+                AndroidUtilities.recycleBitmap(bitmaps[i]);
+            }
+
+            Utilities.stackBlurBitmap(cover, 1);
+
+            AndroidUtilities.runOnUIThread(() -> {
+                whenBitmapDone.run(cover);
+            });
+        });
     }
 
     public void seek(long position) {
@@ -527,7 +604,7 @@ public class PreviewView extends FrameLayout {
                     } else {
                         return BitmapFactory.decodeFile(path, opts);
                     }
-                }, rw, rh, false);
+                }, rw, rh, false, true);
                 if (entry != null && blurManager != null && bitmap != null) {
                     blurManager.resetBitmap();
                     blurManager.setFallbackBlur(entry.buildBitmap(0.2f, bitmap), 0);

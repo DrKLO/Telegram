@@ -286,7 +286,7 @@ public class SessionCell extends FrameLayout {
         }
     }
 
-    public static Drawable createDrawable(int sz, String platform) {
+    public static CombinedDrawable createDrawable(int sz, String platform) {
         TLRPC.TL_authorization auth = new TLRPC.TL_authorization();
         auth.device_model = platform;
         auth.platform = platform;
@@ -294,7 +294,7 @@ public class SessionCell extends FrameLayout {
         return createDrawable(sz, auth);
     }
 
-    public static Drawable createDrawable(int sz, TLRPC.TL_authorization session) {
+    public static CombinedDrawable createDrawable(int sz, TLRPC.TL_authorization session) {
         String platform = session.platform.toLowerCase();
         if (platform.isEmpty()) {
             platform = session.system_version.toLowerCase();

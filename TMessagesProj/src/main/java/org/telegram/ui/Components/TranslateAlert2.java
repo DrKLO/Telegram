@@ -1035,6 +1035,12 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
     }
 
+    public static String languageNameCapital(String locale) {
+        String lng = languageName(locale);
+        if (lng == null) return null;
+        return lng.substring(0, 1).toUpperCase() + lng.substring(1);
+    }
+
     public static String systemLanguageName(String langCode) {
         return systemLanguageName(langCode, false);
     }

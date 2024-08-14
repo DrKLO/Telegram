@@ -4160,6 +4160,11 @@ public class Theme {
     public static final int key_code_comment = colorsCount++;
     public static final int key_code_function = colorsCount++;
 
+    public static final int key_iv_background = colorsCount++;
+    public static final int key_iv_backgroundGray = colorsCount++;
+    public static final int key_iv_ab_progress = colorsCount++;
+    public static final int key_iv_navigationBackground = colorsCount++;
+
     public static final String key_drawable_botInline = "drawableBotInline";
     public static final String key_drawable_botLink = "drawableBotLink";
     public static final String key_drawable_botWebView = "drawableBotWebView";
@@ -4248,6 +4253,10 @@ public class Theme {
     static {
         defaultColors = ThemeColors.createDefaultColors();
 
+        fallbackKeys.put(key_iv_background, key_windowBackgroundWhite);
+        fallbackKeys.put(key_iv_backgroundGray, key_windowBackgroundGray);
+        fallbackKeys.put(key_iv_navigationBackground, key_windowBackgroundGray);
+        fallbackKeys.put(key_iv_ab_progress, key_featuredStickers_addButton);
         fallbackKeys.put(key_chat_inQuote, key_featuredStickers_addButtonPressed);
         fallbackKeys.put(key_chat_outQuote, key_chat_outReplyLine);
         fallbackKeys.put(key_chat_outReplyLine2, key_chat_outReplyLine);
@@ -5222,6 +5231,21 @@ public class Theme {
         return defaultDrawable;
     }
 
+    public static ShapeDrawable createCircleDrawable(int size, int colorTop, int colorBottom) {
+        OvalShape ovalShape = new OvalShape();
+        ovalShape.resize(size, size);
+        ShapeDrawable defaultDrawable = new ShapeDrawable(ovalShape);
+        defaultDrawable.setIntrinsicWidth(size);
+        defaultDrawable.setIntrinsicHeight(size);
+        LinearGradient gradient = new LinearGradient(
+            0, 0, 0, size,
+            colorTop, colorBottom,
+            Shader.TileMode.CLAMP
+        );
+        defaultDrawable.getPaint().setShader(gradient);
+        return defaultDrawable;
+    }
+
     public static CombinedDrawable createCircleDrawableWithIcon(int size, int iconRes) {
         return createCircleDrawableWithIcon(size, iconRes, 0);
     }
@@ -5314,13 +5338,13 @@ public class Theme {
         }
     }
 
-    public static Drawable createRoundRectDrawable(int rad, int defaultColor) {
+    public static ShapeDrawable createRoundRectDrawable(int rad, int defaultColor) {
         ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
     }
 
-    public static Drawable createRoundRectDrawable(int topRad, int bottomRad, int defaultColor) {
+    public static ShapeDrawable createRoundRectDrawable(int topRad, int bottomRad, int defaultColor) {
         ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{topRad, topRad, topRad, topRad, bottomRad, bottomRad, bottomRad, bottomRad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
@@ -10541,6 +10565,10 @@ public class Theme {
             saveAutoNightThemeConfig();
             cancelAutoNightThemeCallbacks();
         }
+    }
+
+    public interface Colorable {
+        public void updateColors();
     }
 
     public static Paint DEBUG_RED = new Paint(); static { DEBUG_RED.setColor(0xffff0000); }

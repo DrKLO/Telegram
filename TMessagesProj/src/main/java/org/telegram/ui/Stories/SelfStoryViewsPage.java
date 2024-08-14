@@ -289,10 +289,11 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     return false;
                 }
 
-                boolean isBlocked = messagesController.blockePeers.indexOfKey(user.id) >= 0;
-                boolean isContact = user != null && (user.contact || ContactsController.getInstance(currentAccount).contactsDict.get(user.id) != null);
-                boolean storiesShown = isStoryShownToUser(viewUser);
-                boolean storiesBlocked = messagesController.getStoriesController().isBlocked(viewUser);
+                final boolean isBlocked = messagesController.blockePeers.indexOfKey(user.id) >= 0;
+                final boolean isContact = user != null && (user.contact || ContactsController.getInstance(currentAccount).contactsDict.get(user.id) != null);
+                final boolean storiesShown = isStoryShownToUser(viewUser);
+                final boolean storiesBlocked = messagesController.getStoriesController().isBlocked(viewUser);
+                final boolean isSelf = UserObject.isUserSelf(user);
 
                 String firstName = TextUtils.isEmpty(user.first_name) ? (TextUtils.isEmpty(user.last_name) ? "" : user.last_name) : user.first_name;
                 int index;
@@ -300,19 +301,22 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     firstName = firstName.substring(0, index);
                 }
                 final String firstNameFinal = firstName;
+                if (isSelf) {
+                    return false;
+                }
 
                 ItemOptions itemOptions = ItemOptions.makeOptions(storyViewer.containerView, resourcesProvider, view)
                         .setGravity(Gravity.LEFT).ignoreX()
                         .setScrimViewBackground(new ColorDrawable(Theme.getColor(Theme.key_dialogBackground, resourcesProvider)))
                         .setDimAlpha(0x85)
-                        .addIf(storiesShown && !storiesBlocked && !isBlocked, R.drawable.msg_stories_myhide, LocaleController.formatString(R.string.StoryHideFrom, firstNameFinal), () -> {
+                        .addIf(storiesShown && !storiesBlocked && !isBlocked && !isSelf, R.drawable.msg_stories_myhide, LocaleController.formatString(R.string.StoryHideFrom, firstNameFinal), () -> {
                             messagesController.getStoriesController().updateBlockUser(user.id, true);
                             BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
                                     .createSimpleBulletin(R.raw.ic_ban, LocaleController.formatString(R.string.StoryHidFromToast, firstNameFinal))
                                     .show();
                             cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
                         }).makeMultiline(false).cutTextInFancyHalf()
-                        .addIf(storiesBlocked && !isBlocked, R.drawable.msg_menu_stories, LocaleController.formatString(R.string.StoryShowBackTo, firstNameFinal), () -> {
+                        .addIf(storiesBlocked && !isBlocked && !isSelf, R.drawable.msg_menu_stories, LocaleController.formatString(R.string.StoryShowBackTo, firstNameFinal), () -> {
                             messagesController.getStoriesController().updateBlockUser(user.id, false);
                             BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider)
                                     .createSimpleBulletin(R.raw.contact_check, LocaleController.formatString(R.string.StoryShownBackToToast, firstNameFinal))
@@ -328,18 +332,18 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 //                                    .show();
 //                            cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
 //                        })
-                        .addIf(!isContact && !isBlocked, R.drawable.msg_user_remove, LocaleController.getString(R.string.BlockUser), true, () -> {
+                        .addIf(!isContact && !isBlocked && !isSelf, R.drawable.msg_user_remove, LocaleController.getString(R.string.BlockUser), true, () -> {
                             messagesController.blockPeer(user.id);
                             BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider).createBanBulletin(true).show();
                             cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
                         })
-                        .addIf(!isContact && isBlocked, R.drawable.msg_block, LocaleController.getString(R.string.Unblock), () -> {
+                        .addIf(!isContact && isBlocked && !isSelf, R.drawable.msg_block, LocaleController.getString(R.string.Unblock), () -> {
                             messagesController.getStoriesController().updateBlockUser(user.id, false);
                             messagesController.unblockPeer(user.id);
                             BulletinFactory.of(SelfStoryViewsPage.this, resourcesProvider).createBanBulletin(false).show();
                             cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
                         })
-                        .addIf(isContact, R.drawable.msg_user_remove, LocaleController.getString(R.string.StoryDeleteContact), true, () -> {
+                        .addIf(isContact && !isSelf, R.drawable.msg_user_remove, LocaleController.getString(R.string.StoryDeleteContact), true, () -> {
                             ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
                             ContactsController.getInstance(currentAccount).deleteContact(users, false);
@@ -349,6 +353,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                             cell.animateAlpha(isStoryShownToUser(viewUser) ? 1 : 0.5f, true);
                         });
 
+                boolean shownCustomEmoji = false;
                 if (viewUser.reaction instanceof TLRPC.TL_reactionCustomEmoji) {
                     TLRPC.TL_reactionCustomEmoji customEmoji = (TLRPC.TL_reactionCustomEmoji) viewUser.reaction;
                     TLRPC.InputStickerSet inputStickerSet = AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).findStickerSet(customEmoji.document_id);
@@ -377,7 +382,12 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                             itemOptions.dismiss();
                         });
                         itemOptions.addView(button);
+                        shownCustomEmoji = true;
                     }
+                }
+
+                if (itemOptions.getItemsCount() <= 0 && !shownCustomEmoji) {
+                    return false;
                 }
 
                 itemOptions.show();

@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -438,6 +440,15 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         if (messageObject.isQuickReply()) {
             QuickRepliesController.QuickReply reply = QuickRepliesController.getInstance(messageObject.currentAccount).findReply(messageObject.getQuickReplyId());
             return reply == null ? "" : reply.name;
+        }
+        if (messageObject.isSponsored()) {
+            if (messageObject.sponsoredCanReport) {
+                return getString(R.string.SponsoredMessageAd);
+            } else if (messageObject.sponsoredRecommended) {
+                return getString(R.string.SponsoredMessage2Recommended);
+            } else {
+                return getString(R.string.SponsoredMessage2);
+            }
         }
         if (arrowSpan[arrowType] == null) {
             arrowSpan[arrowType] = new SpannableStringBuilder(">");
@@ -1102,8 +1113,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 String link = null;
                 if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
                     if (webPage.cached_page != null) {
-                        ArticleViewer.getInstance().setParentActivity(parentActivity, parentFragment);
-                        ArticleViewer.getInstance().open(message);
+                        if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null && LaunchActivity.instance.getBottomSheetTabs().tryReopenTab(message) != null) {
+                            return;
+                        }
+                        parentFragment.createArticleViewer(false).open(message);
                         return;
                     } else if (webPage.embed_url != null && webPage.embed_url.length() != 0) {
                         openWebView(webPage, message);

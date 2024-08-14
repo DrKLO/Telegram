@@ -706,7 +706,7 @@ public class FileLoader extends BaseController {
         for (FileLoadOperation operation : loadOperationPaths.values()) {
             if (operation == null || operation.requestInfos == null) continue;
             for (FileLoadOperation.RequestInfo requestInfo : operation.requestInfos) {
-                if (requestInfo.requestToken == requestToken) {
+                if (requestInfo != null && requestInfo.requestToken == requestToken) {
                     return operation;
                 }
             }

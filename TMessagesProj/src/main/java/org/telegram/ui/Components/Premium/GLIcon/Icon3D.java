@@ -11,13 +11,11 @@ import android.graphics.Paint;
 import android.graphics.Shader;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.util.Log;
 
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,6 +44,7 @@ public class Icon3D {
     private int xOffsetHandle;
     private int alphaHandle;
     private int mTextureDataHandle;
+    private int whiteHandle;
     float xOffset;
 
     int[] trianglesCount;
@@ -174,6 +173,7 @@ public class Icon3D {
         alphaHandle = GLES20.glGetUniformLocation(mProgramObject, "f_alpha");
         mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgramObject, "uMVPMatrix");
         mWorldMatrixHandle = GLES20.glGetUniformLocation(mProgramObject, "world");
+        whiteHandle = GLES20.glGetUniformLocation(mProgramObject, "white");
 
         specHandleTop = GLES20.glGetUniformLocation(mProgramObject, "spec1");
         specHandleBottom = GLES20.glGetUniformLocation(mProgramObject, "spec2");
@@ -314,7 +314,7 @@ public class Icon3D {
 
     private float time = 0f;
 
-    public void draw(float[] mvpMatrix, float[] worldMatrix, int width, int height, float gradientStartX, float gradientScaleX, float gradientStartY, float gradientScaleY, float dt) {
+    public void draw(float[] mvpMatrix, float[] worldMatrix, int width, int height, float gradientStartX, float gradientScaleX, float gradientStartY, float gradientScaleY, float white, float dt) {
         if (backgroundBitmap != null) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, backgroundBitmap, 0);
@@ -323,6 +323,7 @@ public class Icon3D {
         GLES20.glUniform1i(mTextureUniformHandle, 0);
         GLES20.glUniform1f(xOffsetHandle, xOffset);
         GLES20.glUniform1f(alphaHandle, enterAlpha);
+        GLES20.glUniform1f(whiteHandle, white);
         GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
         GLES20.glUniformMatrix4fv(mWorldMatrixHandle, 1, false, worldMatrix, 0);
 

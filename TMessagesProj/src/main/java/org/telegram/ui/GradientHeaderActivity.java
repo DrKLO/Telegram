@@ -87,8 +87,8 @@ public abstract class GradientHeaderActivity extends BaseFragment {
     public int particlesViewHeight = -1;
     protected LinearLayoutManager layoutManager;
     protected boolean useFillLastLayoutManager = true;
-    private boolean isLandscapeMode;
-    private int statusBarHeight;
+    public boolean isLandscapeMode;
+    public int statusBarHeight;
     private int firstViewHeight;
     private final Paint headerBgPaint = new Paint();
 

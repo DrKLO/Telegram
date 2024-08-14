@@ -1,13 +1,14 @@
 package org.telegram.messenger;
 
 import android.os.SystemClock;
-import android.util.Log;
 
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Stories.StoriesController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,7 +71,20 @@ public class FileRefController extends BaseController {
     }
 
     public static String getKeyForParentObject(Object parentObject) {
-        if (parentObject instanceof TL_stories.StoryItem) {
+        if (parentObject instanceof StoriesController.BotPreview) {
+            StoriesController.BotPreview storyItem = (StoriesController.BotPreview) parentObject;
+            if (storyItem.list == null) {
+                FileLog.d("failed request reference can't find list in botpreview");
+                return null;
+            }
+            if (storyItem.media.document != null) {
+                return "botstory_doc_" + storyItem.media.document.id;
+            } else if (storyItem.media.photo != null) {
+                return "botstory_photo_" + storyItem.media.photo.id;
+            } else {
+                return "botstory_" + storyItem.id;
+            }
+        } else if (parentObject instanceof TL_stories.StoryItem) {
             TL_stories.StoryItem storyItem = (TL_stories.StoryItem) parentObject;
             if (storyItem.dialogId == 0) {
                 FileLog.d("failed request reference can't find dialogId");
@@ -81,8 +95,8 @@ public class FileRefController extends BaseController {
             return "premium_promo";
         } else if (parentObject instanceof TLRPC.TL_availableReaction) {
             return "available_reaction_" + ((TLRPC.TL_availableReaction) parentObject).reaction;
-        } else if (parentObject instanceof TLRPC.BotInfo) {
-            TLRPC.BotInfo botInfo = (TLRPC.BotInfo) parentObject;
+        } else if (parentObject instanceof TL_bots.BotInfo) {
+            TL_bots.BotInfo botInfo = (TL_bots.BotInfo) parentObject;
             return "bot_info_" + botInfo.user_id;
         } else if (parentObject instanceof TLRPC.TL_attachMenuBot) {
             TLRPC.TL_attachMenuBot bot = (TLRPC.TL_attachMenuBot) parentObject;
@@ -137,7 +151,21 @@ public class FileRefController extends BaseController {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("start loading request reference parent " + getObjectString(parentObject) + " args = " + args[0]);
         }
-        if (args[0] instanceof TL_stories.TL_storyItem) {
+        if (args[0] instanceof StoriesController.BotPreview) {
+            StoriesController.BotPreview storyItem = (StoriesController.BotPreview) args[0];
+            if (storyItem.media.document != null) {
+                location = new TLRPC.TL_inputDocumentFileLocation();
+                location.id = storyItem.media.document.id;
+                locationKey = "botstory_doc_" + storyItem.media.document.id;
+            } else if (storyItem.media.photo != null) {
+                location = new TLRPC.TL_inputPhotoFileLocation();
+                location.id = storyItem.media.photo.id;
+                locationKey = "botstory_photo_" + storyItem.media.photo.id;
+            } else {
+                locationKey = "botstory_" + storyItem.id;
+                location = new TLRPC.TL_inputDocumentFileLocation();
+            }
+        } else if (args[0] instanceof TL_stories.TL_storyItem) {
             TL_stories.TL_storyItem storyItem = (TL_stories.TL_storyItem) args[0];
             locationKey = "story_" + storyItem.id;
             location = new TLRPC.TL_inputDocumentFileLocation();
@@ -401,7 +429,18 @@ public class FileRefController extends BaseController {
     }
 
     private void requestReferenceFromServer(Object parentObject, String locationKey, String parentKey, Object[] args) {
-        if (parentObject instanceof TL_stories.StoryItem) {
+        if (parentObject instanceof StoriesController.BotPreview) {
+            StoriesController.BotPreview storyItem = (StoriesController.BotPreview) parentObject;
+            if (storyItem.list == null) {
+                sendErrorToObject(args, 0);
+                return;
+            }
+            storyItem.list.requestReference(storyItem, newStoryItem -> {
+                Utilities.stageQueue.postRunnable(() -> {
+                    onRequestComplete(locationKey, parentKey, newStoryItem, null, true, false);
+                });
+            });
+        } else if (parentObject instanceof TL_stories.StoryItem) {
             TL_stories.StoryItem storyItem = (TL_stories.StoryItem) parentObject;
             TL_stories.TL_stories_getStoriesByID req = new TL_stories.TL_stories_getStoriesByID();
             req.peer = getMessagesController().getInputPeer(storyItem.dialogId);
@@ -424,8 +463,8 @@ public class FileRefController extends BaseController {
             TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
             req.hash = 0;
             getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
-        } else if (parentObject instanceof TLRPC.BotInfo) {
-            TLRPC.BotInfo botInfo = (TLRPC.BotInfo) parentObject;
+        } else if (parentObject instanceof TL_bots.BotInfo) {
+            TL_bots.BotInfo botInfo = (TL_bots.BotInfo) parentObject;
             TLRPC.TL_users_getFullUser req = new TLRPC.TL_users_getFullUser();
             req.id = getMessagesController().getInputUser(botInfo.user_id);
             getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
@@ -909,7 +948,14 @@ public class FileRefController extends BaseController {
                 needReplacement = new boolean[1];
             }
             requester.completed = true;
-            if (response instanceof TLRPC.messages_Messages) {
+            if (response instanceof StoriesController.BotPreview) {
+                StoriesController.BotPreview newStoryItem = (StoriesController.BotPreview) response;
+                if (newStoryItem.media.document != null) {
+                    result = getFileReference(newStoryItem.media.document, requester.location, needReplacement, locationReplacement);
+                } else if (newStoryItem.media.photo != null) {
+                    result = getFileReference(newStoryItem.media.photo, requester.location, needReplacement, locationReplacement);
+                }
+            } else if (response instanceof TLRPC.messages_Messages) {
                 TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                 if (!res.messages.isEmpty()) {
                     for (int i = 0, size3 = res.messages.size(); i < size3; i++) {
@@ -1020,7 +1066,7 @@ public class FileRefController extends BaseController {
                 getMessagesController().putUsers(usersFull.users, false);
                 getMessagesController().putChats(usersFull.chats, false);
                 TLRPC.UserFull userFull = usersFull.full_user;
-                TLRPC.BotInfo botInfo = userFull.bot_info;
+                TL_bots.BotInfo botInfo = userFull.bot_info;
                 if (botInfo != null) {
                     getMessagesStorage().updateUserInfo(userFull, true);
 

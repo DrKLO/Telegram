@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
@@ -128,6 +129,7 @@ public class LineProgressView extends View {
             }
             cellFlickerDrawable.setParentWidth(getMeasuredWidth());
             cellFlickerDrawable.draw(canvas, rect, getHeight() / 2f, null);
+            invalidate();
         }
 
         updateAnimation();

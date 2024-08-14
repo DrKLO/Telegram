@@ -1489,7 +1489,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         ArrayList<Long> premiumInviteBlockedUsers
     ) {
         fromChat = chat;
-        canSendLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) || true;
+        canSendLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE);
         restrictedUsers = new ArrayList<>(userRestrictedPrivacy);
         this.premiumMessagingBlockedUsers = premiumMessagingBlockedUsers;
         this.premiumInviteBlockedUsers = premiumInviteBlockedUsers;

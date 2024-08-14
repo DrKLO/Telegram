@@ -83,6 +83,13 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     public RecyclerListView channelsSearchListView;
     public DialogsChannelsAdapter channelsSearchAdapter;
 
+    private DefaultItemAnimator botsItemAnimator;
+    public FrameLayout botsSearchContainer;
+    public StickerEmptyView botsEmptyView;
+    private LinearLayoutManager botsSearchLayoutManager;
+    public RecyclerListView botsSearchListView;
+    public DialogsBotsAdapter botsSearchAdapter;
+
     private NumberTextView selectedMessagesCountTextView;
     private boolean isActionModeShowed;
     private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedFiles = new HashMap<>();
@@ -335,6 +342,77 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
         });
 
+
+        botsSearchContainer = new FrameLayout(context);
+
+        botsItemAnimator = new DefaultItemAnimator() {
+            @Override
+            protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                super.onMoveAnimationUpdate(holder);
+                invalidate();
+            }
+        };
+        botsItemAnimator.setSupportsChangeAnimations(false);
+        botsItemAnimator.setDelayAnimations(false);
+        botsItemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        botsItemAnimator.setDurations(350);
+
+        botsSearchListView = new BlurredRecyclerView(context);
+        botsSearchListView.setItemAnimator(botsItemAnimator);
+        botsSearchListView.setPivotY(0);
+        botsSearchListView.setVerticalScrollBarEnabled(true);
+        botsSearchListView.setInstantClick(true);
+        botsSearchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
+        botsSearchListView.setLayoutManager(botsSearchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        botsSearchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
+
+        loadingView = new FlickerLoadingView(context);
+        loadingView.setViewType(1);
+        botsEmptyView = new StickerEmptyView(context, loadingView, StickerEmptyView.STICKER_TYPE_SEARCH) {
+            @Override
+            public void setVisibility(int visibility) {
+                if (noMediaFiltersSearchView.getTag() != null) {
+                    super.setVisibility(View.GONE);
+                    return;
+                }
+                super.setVisibility(visibility);
+            }
+        };
+        botsEmptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        botsEmptyView.subtitle.setVisibility(View.GONE);
+        botsEmptyView.setVisibility(View.GONE);
+        botsEmptyView.addView(loadingView, 0);
+        botsEmptyView.showProgress(true, false);
+        botsSearchContainer.addView(botsEmptyView);
+        botsSearchContainer.addView(botsSearchListView);
+        botsSearchListView.setEmptyView(botsEmptyView);
+        botsSearchListView.setAdapter(botsSearchAdapter = new DialogsBotsAdapter(botsSearchListView, context, currentAccount, folderId, false, null) {
+            @Override
+            public void update(boolean animated) {
+                super.update(animated);
+                botsEmptyView.showProgress(loadingMessages || loadingBots || searchMessages == null || !searchMessages.isEmpty(), animated);
+                botsEmptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                botsEmptyView.subtitle.setVisibility(View.GONE);
+            }
+
+            @Override
+            protected void hideKeyboard() {
+                AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
+            }
+        });
+        botsSearchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
+                }
+            }
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                botsSearchAdapter.checkBottom();
+            }
+        });
+
         itemsEnterAnimator = new RecyclerItemsEnterAnimator(searchListView, true);
 
         setAdapter(viewPagerAdapter = new ViewPagerAdapter());
@@ -399,6 +477,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             MessagesController.getInstance(currentAccount).getChannelRecommendations(0);
             channelsSearchAdapter.search(query);
             channelsEmptyView.setKeyboardHeight(keyboardSize, false);
+        } else if (view == botsSearchContainer) {
+//            MessagesController.getInstance(currentAccount).getChannelRecommendations(0);
+            botsSearchAdapter.search(query);
+            botsEmptyView.setKeyboardHeight(keyboardSize, false);
         } else if (view == searchContainer) {
             if (dialogId == 0 && minDate == 0 && maxDate == 0 || forumDialogId != 0) {
                 lastSearchScrolledToTop = false;
@@ -869,6 +951,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         if (channelsSearchLayoutManager != null) {
             channelsSearchLayoutManager.scrollToPositionWithOffset(0, 0);
         }
+        if (botsSearchLayoutManager != null) {
+            botsSearchLayoutManager.scrollToPositionWithOffset(0, 0);
+        }
         viewsByType.clear();
     }
 
@@ -967,10 +1052,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.channelRecommendationsLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogDeleted);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogsNeedReload);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.reloadWebappsHints);
         attached = true;
 
         if (channelsSearchAdapter != null) {
             channelsSearchAdapter.update(false);
+        }
+        if (botsSearchAdapter != null) {
+            botsSearchAdapter.update(false);
         }
     }
 
@@ -981,6 +1070,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.channelRecommendationsLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogDeleted);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogsNeedReload);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.reloadWebappsHints);
     }
 
     @Override
@@ -992,6 +1082,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         } else if (id == NotificationCenter.dialogDeleted || id == NotificationCenter.dialogsNeedReload) {
             channelsSearchAdapter.updateMyChannels();
             channelsSearchAdapter.update(true);
+        } else if (id == NotificationCenter.reloadWebappsHints) {
+            botsSearchAdapter.update(true);
         }
     }
 
@@ -1007,7 +1099,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     public void showDownloads() {
-        setPosition(3);
+        setPosition(4);
     }
 
     public int getPositionForType(int initialSearchType) {
@@ -1027,6 +1119,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         private final static int CHANNELS_TYPE = 1;
         private final static int DOWNLOADS_TYPE = 2;
         private final static int FILTER_TYPE = 3;
+        private final static int BOTS_TYPE = 4;
 
         public ViewPagerAdapter() {
             updateItems();
@@ -1036,6 +1129,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             items.clear();
             items.add(new Item(DIALOGS_TYPE));
             items.add(new Item(CHANNELS_TYPE));
+            items.add(new Item(BOTS_TYPE));
             if (!showOnlyDialogsAdapter) {
                 Item item = new Item(FILTER_TYPE);
                 item.filterIndex = 0;
@@ -1064,6 +1158,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 return LocaleController.getString(R.string.SearchAllChatsShort);
             } else if (items.get(position).type == CHANNELS_TYPE) {
                 return LocaleController.getString(R.string.ChannelsTab);
+            } else if (items.get(position).type == BOTS_TYPE) {
+                return LocaleController.getString(R.string.AppsTab);
             } else if (items.get(position).type == DOWNLOADS_TYPE) {
                 return LocaleController.getString(R.string.DownloadsTabs);
             } else {
@@ -1082,6 +1178,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 return searchContainer;
             } else if (viewType == 3) {
                 return channelsSearchContainer;
+            } else if (viewType == 4) {
+                return botsSearchContainer;
             } else if (viewType == 2) {
                 downloadsContainer = new SearchDownloadsContainer(parent, currentAccount);
                 downloadsContainer.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -1115,6 +1213,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
             if (items.get(position).type == CHANNELS_TYPE) {
                 return 3;
+            }
+            if (items.get(position).type == BOTS_TYPE) {
+                return 4;
             }
             if (items.get(position).type == DOWNLOADS_TYPE) {
                 return 2;

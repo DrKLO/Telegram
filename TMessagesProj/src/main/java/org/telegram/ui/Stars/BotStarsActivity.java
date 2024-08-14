@@ -627,6 +627,12 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                         if (innerListView != null && consumed[1] > 0) {
                             innerListView.scrollBy(0, consumed[1]);
                         }
+                    } else if (dy > 0) {
+                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
+                        if (listView.getHeight() - bottom >= 0 && innerListView != null && !innerListView.canScrollVertically(1)) {
+                            consumed[1] = dy;
+                            listView.stopScroll();
+                        }
                     }
                 }
             }

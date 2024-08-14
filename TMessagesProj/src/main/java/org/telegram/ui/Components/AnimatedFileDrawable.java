@@ -663,6 +663,29 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         }
     }
 
+//    public void seekToSync(long ms) {
+//        if (nativePtr != 0) {
+//            if (renderingBitmap == null) {
+//                if (!unusedBitmaps.isEmpty()) {
+//                    renderingBitmap = unusedBitmaps.remove(0);
+//                } else {
+//                    renderingBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+//                }
+//            }
+//            if (decodeQueue == null) {
+//                decodeQueue = new DispatchQueue("decodeQueue" + this);
+//            }
+//            decodeQueue.postRunnable(() -> {
+//                prepareToSeek(nativePtr);
+//                seekToMs(nativePtr, ms, false);
+//                getVideoFrame(nativePtr, renderingBitmap, metaData, renderingBitmap.getRowBytes(), false, startTime, endTime, true);
+//                AndroidUtilities.runOnUIThread(() -> {
+//                    invalidateInternal();
+//                });
+//            });
+//        }
+//    }
+
     public void recycle() {
         if (!secondParentViews.isEmpty()) {
             recycleWithSecond = true;
@@ -1184,13 +1207,13 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             bitmap = Bitmap.createBitmap(renderingWidth, renderingHeight, Bitmap.Config.ARGB_8888);
         }
         Canvas canvas = new Canvas(bitmap);
-        if (generatingCacheBitmap == null) {
-            generatingCacheBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
-        }
 
         long nativePtr = createDecoder(path.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream, false);
         if (nativePtr == 0) {
             return bitmap;
+        }
+        if (generatingCacheBitmap == null) {
+            generatingCacheBitmap = Bitmap.createBitmap(Math.max(1, metaData[0]), Math.max(1, metaData[1]), Bitmap.Config.ARGB_8888);
         }
         getVideoFrame(nativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime, true);
         destroyDecoder(nativePtr);

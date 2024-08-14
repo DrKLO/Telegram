@@ -1430,6 +1430,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                                     userFull.birthday = birthday;
                                     getMessagesStorage().updateUserInfo(userFull, false);
                                 }
+                                getMessagesController().invalidateContentSettings();
                                 getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                                     if (res instanceof TLRPC.TL_boolTrue) {
                                         BulletinFactory.of(PrivacyControlActivity.this)

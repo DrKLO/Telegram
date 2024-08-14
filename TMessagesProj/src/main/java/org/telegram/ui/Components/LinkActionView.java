@@ -1,5 +1,8 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
@@ -25,11 +28,13 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -44,6 +49,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.ManageLinksActivity;
 
 import java.util.ArrayList;
 
@@ -177,10 +183,23 @@ public class LinkActionView extends LinearLayout {
                 if (link == null) {
                     return;
                 }
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_TEXT, link);
-                fragment.startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink)), 500);
+                fragment.showDialog(new ShareAlert(getContext(), null, link, false, link, false, fragment.getResourceProvider()) {
+                    @Override
+                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                        final String str;
+                        if (dids != null && dids.size() == 1) {
+                            long did = dids.valueAt(0).id;
+                            if (did == 0 || did == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                                str = getString(R.string.InvLinkToSavedMessages);
+                            } else {
+                                str = formatString(R.string.InvLinkToUser, MessagesController.getInstance(currentAccount).getPeerName(did, true));
+                            }
+                        } else {
+                            str = formatString(R.string.InvLinkToChats, LocaleController.formatPluralString("Chats", count));
+                        }
+                        showBulletin(R.raw.forward, AndroidUtilities.replaceTags(str));
+                    }
+                });
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -331,6 +350,12 @@ public class LinkActionView extends LinearLayout {
             }
         });
         updateColors();
+    }
+
+    public void showBulletin(int resId, CharSequence str) {
+        Bulletin b = BulletinFactory.of(fragment).createSimpleBulletin(resId, str);
+        b.hideAfterBottomSheet = false;
+        b.show(true);
     }
 
     private void getPointOnScreen(FrameLayout frameLayout, FrameLayout finalContainer, float[] point) {

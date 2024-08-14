@@ -61,26 +61,26 @@ public class TimelineView extends View {
     public static final long MAX_SELECT_DURATION = (long) (59 * 1000L);
 
     interface TimelineDelegate {
-        void onProgressDragChange(boolean dragging);
-        void onProgressChange(long progress, boolean fast);
+        default void onProgressDragChange(boolean dragging) {};
+        default void onProgressChange(long progress, boolean fast) {};
 
-        void onVideoLeftChange(float left);
-        void onVideoRightChange(float right);
-        void onVideoVolumeChange(float volume);
+        default void onVideoLeftChange(float left) {};
+        default void onVideoRightChange(float right) {};
+        default void onVideoVolumeChange(float volume) {};
 
-        void onAudioOffsetChange(long offset);
-        void onAudioLeftChange(float left);
-        void onAudioRightChange(float right);
-        void onAudioVolumeChange(float volume);
-        void onAudioRemove();
+        default void onAudioOffsetChange(long offset) {};
+        default void onAudioLeftChange(float left) {};
+        default void onAudioRightChange(float right) {};
+        default void onAudioVolumeChange(float volume) {};
+        default void onAudioRemove() {};
 
-        void onRoundOffsetChange(long offset);
-        void onRoundLeftChange(float left);
-        void onRoundRightChange(float right);
-        void onRoundVolumeChange(float volume);
-        void onRoundRemove();
+        default void onRoundOffsetChange(long offset) {};
+        default void onRoundLeftChange(float left) {};
+        default void onRoundRightChange(float right) {};
+        default void onRoundVolumeChange(float volume) {};
+        default void onRoundRemove() {};
 
-        void onRoundSelectChange(boolean selected);
+        default void onRoundSelectChange(boolean selected) {};
     }
 
     private TimelineDelegate delegate;
@@ -185,6 +185,11 @@ public class TimelineView extends View {
     private final ViewGroup container;
     private final View previewContainer;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private boolean isCover;
+    public void setCover() {
+        isCover = true;
+    }
 
     private final Runnable onLongPress;
 
@@ -314,6 +319,13 @@ public class TimelineView extends View {
         this.delegate = delegate;
     }
 
+    private long coverStart = -1, coverEnd = -1;
+    public void setCoverVideo(long videoStart, long videoEnd) {
+        coverStart = videoStart;
+        coverEnd = videoEnd;
+        setupVideoThumbs(true);
+    }
+
     public void setVideo(boolean isRound, String videoPath, long videoDuration, float videoVolume) {
         if (TextUtils.equals(this.videoPath, videoPath)) {
             return;
@@ -328,7 +340,7 @@ public class TimelineView extends View {
             this.videoPath = videoPath;
             this.videoDuration = videoDuration;
             this.videoVolume = videoVolume;
-            setupVideoThumbs();
+            setupVideoThumbs(false);
         } else {
             this.videoPath = null;
             this.videoDuration = 1;
@@ -400,11 +412,15 @@ public class TimelineView extends View {
         invalidate();
     }
 
-    private void setupVideoThumbs() {
-        if (getMeasuredWidth() <= 0 || this.thumbs != null) {
+    private void setupVideoThumbs(boolean force) {
+        if (getMeasuredWidth() <= 0 || this.thumbs != null && !force) {
             return;
         }
-        this.thumbs = new VideoThumbsLoader(isMainVideoRound, videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null);
+        if (thumbs != null) {
+            thumbs.destroy();
+            thumbs = null;
+        }
+        this.thumbs = new VideoThumbsLoader(isMainVideoRound, videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null, MAX_SCROLL_DURATION, coverStart, coverEnd);
         if (this.thumbs.getDuration() > 0) {
             videoDuration = this.thumbs.getDuration();
         }
@@ -415,7 +431,7 @@ public class TimelineView extends View {
         if (getMeasuredWidth() <= 0 || this.roundThumbs != null || hasVideo && videoDuration < 1) {
             return;
         }
-        this.roundThumbs = new VideoThumbsLoader(false, roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION);
+        this.roundThumbs = new VideoThumbsLoader(false, roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION, -1, -1);
         if (this.roundThumbs.getDuration() > 0) {
             roundDuration = this.roundThumbs.getDuration();
         }
@@ -533,7 +549,7 @@ public class TimelineView extends View {
         final long scrollWidth = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
         final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (!hasVideo ? audioOffset : 0) - scroll) / (float) scrollWidth;
         final float progressX = px + ph + sw * progressT;
-        if (x >= progressX - dp(12) && x <= progressX + dp(12)) {
+        if (!isCover && x >= progressX - dp(12) && x <= progressX + dp(12)) {
             return HANDLE_PROGRESS;
         }
 
@@ -541,6 +557,10 @@ public class TimelineView extends View {
         final boolean isInRound = hasRound && y > h - py - getVideoHeight() - dp(4) - getRoundHeight() - dp(4) - dp(2) && y < h - py - getVideoHeight() - dp(2);
 
         if (isInVideo) {
+            if (isCover) {
+                return HANDLE_VIDEO_REGION;
+            }
+
             final float leftX = px + ph + (videoLeft * videoDuration - scroll) / (float) scrollWidth * sw;
             final float rightX = px + ph + (videoRight * videoDuration - scroll) / (float) scrollWidth * sw;
 
@@ -734,8 +754,10 @@ public class TimelineView extends View {
             }
             dragged = false;
             lastX = event.getX();
-            AndroidUtilities.cancelRunOnUIThread(this.onLongPress);
-            AndroidUtilities.runOnUIThread(this.onLongPress, ViewConfiguration.getLongPressTimeout());
+            if (!isCover) {
+                AndroidUtilities.cancelRunOnUIThread(this.onLongPress);
+                AndroidUtilities.runOnUIThread(this.onLongPress, ViewConfiguration.getLongPressTimeout());
+            }
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
             final float Δx = event.getX() - lastX;
             final boolean allowDrag = dragged || Math.abs(Δx) > AndroidUtilities.touchSlop;
@@ -975,7 +997,16 @@ public class TimelineView extends View {
             boolean scrollStopped = true;
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (System.currentTimeMillis() - pressTime <= ViewConfiguration.getTapTimeout() && !dragged) {
-                    if (pressType == 2 && !audioSelected) {
+                    if (isCover) {
+                        float d = videoRight - videoLeft;
+                        videoLeft = (event.getX() - px - ph) / sw * (1 - d);
+                        videoRight = videoLeft + d;
+                        if (delegate != null) {
+                            delegate.onVideoLeftChange(videoLeft);
+                            delegate.onVideoRightChange(videoRight);
+                        }
+                        invalidate();
+                    } else if (pressType == 2 && !audioSelected) {
                         audioSelected = true;
                         roundSelected = false;
                         if (delegate != null) {
@@ -1440,19 +1471,21 @@ public class TimelineView extends View {
             }
             selectedVideoClipPath.rewind();
 
-            AndroidUtilities.rectTmp.set(
-                px + ph + (videoLeft * videoDuration - scroll) / (float) scrollDuration * sw - (videoLeft <= 0 ? ph : 0),
-                h - py - videoHeight,
-                px + ph + (videoRight * videoDuration - scroll) / (float) scrollDuration * sw + (videoRight >= 1 ? ph : 0),
-                h - py
-            );
-            selectedVideoClipPath.addRoundRect(
-                AndroidUtilities.rectTmp,
-                selectedVideoRadii,
-                Path.Direction.CW
-            );
-            canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
-            canvas.drawColor(0x50000000);
+            if (!isCover) {
+                AndroidUtilities.rectTmp.set(
+                    px + ph + (videoLeft * videoDuration - scroll) / (float) scrollDuration * sw - (videoLeft <= 0 ? ph : 0),
+                    h - py - videoHeight,
+                    px + ph + (videoRight * videoDuration - scroll) / (float) scrollDuration * sw + (videoRight >= 1 ? ph : 0),
+                    h - py
+                );
+                selectedVideoClipPath.addRoundRect(
+                        AndroidUtilities.rectTmp,
+                        selectedVideoRadii,
+                        Path.Direction.CW
+                );
+                canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
+                canvas.drawColor(0x50000000);
+            }
             canvas.restore();
         }
 
@@ -1770,40 +1803,50 @@ public class TimelineView extends View {
         canvas.saveLayerAlpha(0, 0, w, h, 0xFF, Canvas.ALL_SAVE_FLAG);
         regionPaint.setAlpha((int) (0xFF * alpha));
         canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), regionPaint);
-        AndroidUtilities.rectTmp.inset(dp(10), dp(2));
-        canvas.drawRect(AndroidUtilities.rectTmp, regionCutPaint);
+        AndroidUtilities.rectTmp.inset(dp(isCover ? 2.5f : 10), dp(2));
+        if (isCover) {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(3), dp(3), regionCutPaint);
+        } else {
+            canvas.drawRect(AndroidUtilities.rectTmp, regionCutPaint);
+        }
 
         final float hw = dp(2), hh = dp(10);
         Paint handlePaint = blurPaint != null ? blurPaint : regionHandlePaint;
         regionHandlePaint.setAlpha(0xFF);
         handlePaint.setAlpha((int) (0xFF * alpha));
         AndroidUtilities.rectTmp.set(
-                left - (dp(10) - hw) / 2f,
+                left - (dp(isCover ? 2 : 10) - hw) / 2f,
                 (top + bottom - hh) / 2f,
-                left - (dp(10) + hw) / 2f,
+                left - (dp(isCover ? 2 : 10) + hw) / 2f,
                 (top + bottom + hh) / 2f
         );
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
-        if (blurPaint != null) {
-            regionHandlePaint.setAlpha((int) (0x30 * alpha));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+        if (!isCover) {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
+            if (blurPaint != null && !isCover) {
+                regionHandlePaint.setAlpha((int) (0x30 * alpha));
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+            }
         }
         AndroidUtilities.rectTmp.set(
-                right + (dp(10) - hw) / 2f,
+                right + (dp(isCover ? 2.5f : 10) - hw) / 2f,
                 (top + bottom - hh) / 2f,
-                right + (dp(10) + hw) / 2f,
+                right + (dp(isCover ? 2.5f : 10) + hw) / 2f,
                 (top + bottom + hh) / 2f
         );
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
-        if (blurPaint != null) {
-            regionHandlePaint.setAlpha((int) (0x30 * alpha));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+        if (!isCover) {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), handlePaint);
+            if (blurPaint != null) {
+                regionHandlePaint.setAlpha((int) (0x30 * alpha));
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), regionHandlePaint);
+            }
         }
 
         canvas.restore();
     }
 
     private void drawProgress(Canvas canvas, float y1, float y2, long progress, float scale) {
+        if (isCover) return;
+
         final long scrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
 
         final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (!hasVideo ? audioOffset : 0) - scroll) / (float) scrollDuration;
@@ -1840,7 +1883,7 @@ public class TimelineView extends View {
         ph = dp(10);
         sw = w - 2 * ph - 2 * px;
         if (videoPath != null && this.thumbs == null) {
-            setupVideoThumbs();
+            setupVideoThumbs(false);
         }
         if (audioPath != null && this.waveform == null) {
             setupAudioWaveform();
@@ -1867,6 +1910,10 @@ public class TimelineView extends View {
         }
 
         public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration) {
+            this(isRound, path, uiWidth, uiHeight, overrideDuration, maxDuration, -1, -1);
+        }
+
+        public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration, long startFrom, long endTo) {
             this.isRound = isRound;
             metadataRetriever = new MediaMetadataRetriever();
             long duration = MAX_SCROLL_DURATION;
@@ -1903,6 +1950,9 @@ public class TimelineView extends View {
             if (overrideDuration != null) {
                 this.duration = duration = overrideDuration;
             }
+            if (startFrom != -1 && endTo != -1) {
+                duration = endTo - startFrom;
+            }
             float aspectRatio = 1;
             if (width != 0 && height != 0) {
                 aspectRatio = width / (float) height;
@@ -1914,6 +1964,9 @@ public class TimelineView extends View {
             count = (int) Math.ceil(uiScrollWidth / frameWidth);
             frameIterator = (long) (duration / (float) count);
             nextFrame = -frameIterator;
+            if (startFrom != -1) {
+                nextFrame = startFrom - frameIterator;
+            }
             load();
         }
 

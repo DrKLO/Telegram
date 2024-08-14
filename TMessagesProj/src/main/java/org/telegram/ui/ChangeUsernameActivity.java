@@ -66,6 +66,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -316,7 +317,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                                 toggle.active = reqActive;
                                 req = toggle;
                             } else {
-                                TLRPC.TL_bots_toggleUsername toggle = new TLRPC.TL_bots_toggleUsername();
+                                TL_bots.toggleUsername toggle = new TL_bots.toggleUsername();
                                 toggle.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                                 toggle.username = reqUsername;
                                 toggle.active = reqActive;
@@ -615,7 +616,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             reorder.order = usernames;
             req = reorder;
         } else {
-            TLRPC.TL_bots_reorderUsernames reorder = new TLRPC.TL_bots_reorderUsernames();
+            TL_bots.reorderUsernames reorder = new TL_bots.reorderUsernames();
             reorder.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
             reorder.order = usernames;
             req = reorder;

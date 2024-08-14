@@ -44,7 +44,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private final AnimatedTextView.AnimatedTextDrawable countText;
     private float countAlpha;
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
-    private final View rippleView;
+    public final View rippleView;
     private final boolean filled;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -111,12 +111,12 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     }
 
     public void updateColors() {
+        text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         if (filled) {
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 8, 8));
         } else {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 8, 8));
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
         }
-        text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         subText.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         countText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
     }
@@ -128,6 +128,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     public void setTextColor(int color) {
         text.setTextColor(color);
+        if (!filled) {
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
+        }
     }
 
     private boolean countFilled = true;
@@ -536,5 +539,22 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public boolean wrapContentDynamic;
     public void wrapContentDynamic() {
         wrapContentDynamic = true;
+    }
+
+    private int minWidth;
+    private boolean wrapWidth;
+
+    public void setMinWidth(int px) {
+        this.wrapWidth = true;
+        this.minWidth = px;
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (wrapWidth) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec((int) Math.min(Math.max(getPaddingLeft() + text.getCurrentWidth() + getPaddingRight(), minWidth), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
+        } else {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
     }
 }

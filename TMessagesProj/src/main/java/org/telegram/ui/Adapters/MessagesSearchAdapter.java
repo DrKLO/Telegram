@@ -86,8 +86,8 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
     };
 
     public void searchStories(String hashtag, boolean instant) {
-        if (hashtag.startsWith("$")) hashtag = "";
-        if (hashtag.startsWith("#")) hashtag = hashtag.substring(1);
+//        if (hashtag.startsWith("$")) hashtag = hashtag.substring(1);
+//        if (hashtag.startsWith("#")) hashtag = hashtag.substring(1);
 
         final String currentHashtag = storiesList == null ? "" : storiesList.query;
         if (TextUtils.equals(currentHashtag, hashtag)) return;

@@ -21,6 +21,7 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     public float angleX = 0;
     public float angleX2 = 0;
     public float angleY = 0;
+    public float white = 0;
 
     private static final float Z_NEAR = 1f;
     private static final float Z_FAR = 200f;
@@ -127,7 +128,7 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
             model.night = night;
             model.gradientColor1 = color1;
             model.gradientColor2 = color2;
-            model.draw(mMVPMatrix, mRotationMatrix, mWidth, mHeight, gradientStartX, gradientScaleX, gradientStartY, gradientScaleY, dt);
+            model.draw(mMVPMatrix, mRotationMatrix, mWidth, mHeight, gradientStartX, gradientScaleX, gradientStartY, gradientScaleY, white, dt);
         }
     }
 

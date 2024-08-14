@@ -382,7 +382,7 @@ public class MessagePreviewView extends FrameLayout {
                         cell.drawMessageText(canvas);
                         if ((cell.getCurrentMessagesGroup() == null || cell.getCurrentPosition() != null && ((cell.getCurrentPosition().flags & cell.captionFlag()) != 0 && (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) != 0 || cell.getCurrentMessagesGroup() != null && cell.getCurrentMessagesGroup().isDocuments)) || cell.getTransitionParams().animateBackgroundBoundsInner) {
                             cell.drawCaptionLayout(canvas, false, cell.getAlpha());
-                            cell.drawReactionsLayout(canvas, cell.getAlpha());
+                            cell.drawReactionsLayout(canvas, cell.getAlpha(), null);
                         }
                         if (cell.getCurrentMessagesGroup() != null || cell.getTransitionParams().animateBackgroundBoundsInner) {
                             cell.drawNamesLayout(canvas, cell.getAlpha());
@@ -1471,11 +1471,11 @@ public class MessagePreviewView extends FrameLayout {
                 chatPreviewContainer.setTranslationY(0);
                 menu.setTranslationY(0);
             } else {
-                actionBar.setTranslationY(chatTopOffset);
+                actionBar.setTranslationY(Math.max(0, chatTopOffset));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     chatPreviewContainer.invalidateOutline();
                 }
-                chatPreviewContainer.setTranslationY(yOffset);
+                chatPreviewContainer.setTranslationY(Math.max(0, yOffset));
                 menu.setTranslationY(yOffset + chatPreviewContainer.getMeasuredHeight() - dp(2));
             }
 

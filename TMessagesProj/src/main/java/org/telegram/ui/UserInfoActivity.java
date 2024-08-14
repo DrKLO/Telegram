@@ -438,6 +438,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
                 userFull.birthday = null;
             }
             requests.add(req);
+            getMessagesController().invalidateContentSettings();
 
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumPromoUpdated);
         }

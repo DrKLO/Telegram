@@ -138,6 +138,8 @@ public class EntityView extends FrameLayout {
         updatePosition();
     }
 
+    public void setIsVideo(boolean isVideo) {}
+
     protected float getMaxScale() {
         return 100f;
     }

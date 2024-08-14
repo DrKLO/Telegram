@@ -34,7 +34,6 @@ import android.provider.OpenableColumns;
 import android.text.Spannable;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -85,12 +84,12 @@ import org.telegram.ui.TwoStepVerificationSetupActivity;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,6 +99,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class SendMessagesHelper extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
@@ -3098,7 +3099,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return voteSendTime.get(pollId, 0L);
     }
 
-    public void sendReaction(MessageObject messageObject, ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions, ReactionsLayoutInBubble.VisibleReaction addedReaction, boolean big, boolean addToRecent, BaseFragment parentFragment, Runnable callback) {
+    public void sendReaction(
+        MessageObject messageObject,
+        ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions,
+        ReactionsLayoutInBubble.VisibleReaction addedReaction,
+        boolean big,
+        boolean addToRecent,
+        BaseFragment parentFragment,
+        Runnable callback
+    ) {
         if (messageObject == null || parentFragment == null) {
             return;
         }
@@ -3148,7 +3157,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         TLRPC.TL_messages_requestUrlAuth req = new TLRPC.TL_messages_requestUrlAuth();
         req.url = url;
         req.flags |= 4;
-        getConnectionsManager().sendRequest(req, (response, error) -> {
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
                 if (response instanceof TLRPC.TL_urlAuthResultRequest) {
                     TLRPC.TL_urlAuthResultRequest res = (TLRPC.TL_urlAuthResultRequest) response;
@@ -3162,7 +3171,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else {
                 AlertsCreator.showOpenUrlAlert(parentFragment, url, false, ask);
             }
-        }, ConnectionsManager.RequestFlagFailOnServerErrors);
+        }), ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     public void sendCallback(final boolean cache, final MessageObject messageObject, final TLRPC.KeyboardButton button, final ChatActivity parentFragment) {
@@ -3654,7 +3663,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         user.phone = newMsg.media.phone_number;
                         user.first_name = newMsg.media.first_name;
                         user.last_name = newMsg.media.last_name;
-                        TLRPC.TL_restrictionReason reason = new TLRPC.TL_restrictionReason();
+                        TLRPC.RestrictionReason reason = new TLRPC.RestrictionReason();
                         reason.platform = "";
                         reason.reason = "";
                         reason.text = newMsg.media.vcard;
@@ -3936,7 +3945,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
                 newMsg.local_id = newMsg.id = getUserConfig().getNewMessageId();
                 newMsg.out = true;
-                if (isChannel && sendToPeer != null) {
+                TLRPC.Chat chat = sendToPeer != null ? getMessagesController().getChat(sendToPeer.channel_id) : null;
+                if (isChannel && sendToPeer != null && (chat == null || !chat.signatures)) {
                     newMsg.from_id = new TLRPC.TL_peerChannel();
                     newMsg.from_id.channel_id = sendToPeer.channel_id;
                 } else if (fromPeer != null) {
@@ -4006,10 +4016,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             newMsg.unread = true;
                         } else {
                             newMsg.post = true;
-                            if (chat.signatures) {
-                                newMsg.from_id = new TLRPC.TL_peerUser();
-                                newMsg.from_id.user_id = myId;
-                            }
+//                            if (chat.signatures && !chat.signature_profiles) {
+//                                newMsg.from_id = new TLRPC.TL_peerUser();
+//                                newMsg.from_id.user_id = myId;
+//                            }
                         }
                     }
                 } else {
@@ -7029,7 +7039,46 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     continue;
                 }
 
-                String path = MediaController.copyFileToCache(mediaUri, "txt");
+                String ext = "txt";
+                String filename = FileLoader.fixFileName(MediaController.getFileName(uri));
+                if (filename != null && filename.endsWith(".zip")) {
+                    ext = "zip";
+                }
+
+                String path = MediaController.copyFileToCache(mediaUri, ext);
+                if ("zip".equals(ext)) {
+                    File zipfile = new File(path);
+                    try {
+                        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipfile))) {
+                            ZipEntry zipEntry = zis.getNextEntry();
+                            while (zipEntry != null) {
+                                if (zipEntry.getName().endsWith(".txt")) {
+                                    File newFile = MediaController.createFileInCache(zipEntry.getName(), "txt");
+                                    path = newFile.getAbsolutePath();
+                                    FileOutputStream fos = new FileOutputStream(newFile);
+                                    byte[] buffer = new byte[1024];
+                                    int len;
+                                    while ((len = zis.read(buffer)) > 0) {
+                                        fos.write(buffer, 0, len);
+                                    }
+                                    fos.close();
+                                    break;
+                                }
+                                zipEntry = zis.getNextEntry();
+                            }
+                            zis.closeEntry();
+                        } catch (IOException e) {
+                            FileLog.e(e);
+                        }
+                    } catch (Exception e2) {
+                        FileLog.e(e2);
+                    }
+                    try {
+                        zipfile.delete();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
                 if (path == null) {
                     continue;
                 }
@@ -8064,7 +8113,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             user.phone = result.send_message.phone_number;
             user.first_name = result.send_message.first_name;
             user.last_name = result.send_message.last_name;
-            TLRPC.TL_restrictionReason reason = new TLRPC.TL_restrictionReason();
+            TLRPC.RestrictionReason reason = new TLRPC.RestrictionReason();
             reason.text = result.send_message.vcard;
             reason.platform = "";
             reason.reason = "";

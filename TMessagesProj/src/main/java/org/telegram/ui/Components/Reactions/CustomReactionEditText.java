@@ -30,6 +30,16 @@ public class CustomReactionEditText extends EditTextCaption {
     private final GestureDetectorCompat gestureDetector;
     private Runnable onFocused;
 
+    private int maxLength;
+
+    public void setMaxLength(int maxLength) {
+        if (this.maxLength != maxLength) {
+            InputFilter[] inputFilters = new InputFilter[1];
+            inputFilters[0] = new InputFilter.LengthFilter(this.maxLength = maxLength);
+            setFilters(inputFilters);
+        }
+    }
+
     public CustomReactionEditText(Context context, Theme.ResourcesProvider resourcesProvider, int maxLength) {
         super(context, resourcesProvider);
         this.resourcesProvider = resourcesProvider;
@@ -47,7 +57,7 @@ public class CustomReactionEditText extends EditTextCaption {
         setSingleLine(false);
         setMaxLines(50);
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(maxLength);
+        inputFilters[0] = new InputFilter.LengthFilter(this.maxLength = maxLength);
         setFilters(inputFilters);
         setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
         setGravity(Gravity.BOTTOM);

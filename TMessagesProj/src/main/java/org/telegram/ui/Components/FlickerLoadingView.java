@@ -21,7 +21,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Random;
 
-public class FlickerLoadingView extends View {
+public class FlickerLoadingView extends View implements Theme.Colorable {
 
     public final static int DIALOG_TYPE = 1;
     public final static int PHOTOS_TYPE = 2;
@@ -53,6 +53,8 @@ public class FlickerLoadingView extends View {
     public static final int PROFILE_SEARCH_CELL = 29;
     public static final int GRAY_SECTION = 30;
     public static final int STAR_TIER = 31;
+    public static final int BROWSER_BOOKMARK = 32;
+    public static final int STAR_SUBSCRIPTION = 33;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -465,6 +467,26 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+        } else if (getViewType() == STAR_SUBSCRIPTION) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int r = dp(23);
+                canvas.drawCircle(checkRtl(paddingLeft + dp(13) + r), h + (dp(58) >> 1), r, paint);
+
+                rectF.set(paddingLeft + dp(13+46+13), h + dp(17), paddingLeft + dp(260), h + dp(25));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, dp(4), dp(4), paint);
+
+                rectF.set(paddingLeft + dp(13+46+13), h + dp(39), paddingLeft + dp(140), h + dp(47));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, dp(4), dp(4), paint);
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
         } else if (getViewType() == GRAY_SECTION) {
             int k = 0;
             while (h <= getMeasuredHeight()) {
@@ -805,6 +827,29 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+        } else if (getViewType() == BROWSER_BOOKMARK) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int cellHeight = getCellHeight(getMeasuredWidth());
+
+                rectF.set(paddingLeft + dp(10), h + (cellHeight - dp(32)) / 2f, paddingLeft + dp(10 + 32), h + (cellHeight + dp(32)) / 2f);
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, dp(6), dp(6), paint);
+
+                rectF.set(paddingLeft + dp(64), h + (cellHeight - dp(14) - dp(10)) / 2f, Math.min(paddingLeft + dp(64 + 54), getMeasuredWidth() - dp(19)), h + (cellHeight - dp(14) + dp(10)) / 2f);
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, dp(4), dp(4), paint);
+
+                rectF.set(paddingLeft + dp(64), h + (cellHeight + dp(14) - dp(8)) / 2f, Math.min(paddingLeft + dp(64 + 80), getMeasuredWidth() - dp(19)), h + (cellHeight + dp(14) + dp(8)) / 2f);
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, dp(4), dp(4), paint);
+
+                h += cellHeight;
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
         }
         invalidate();
     }
@@ -849,6 +894,7 @@ public class FlickerLoadingView extends View {
         }
     }
 
+    @Override
     public void updateColors() {
         if (globalGradientView != null) {
             globalGradientView.updateColors();
@@ -930,10 +976,14 @@ public class FlickerLoadingView extends View {
                 return dp(58);
             case PROFILE_SEARCH_CELL:
                 return dp(60) + 1;
+            case STAR_SUBSCRIPTION:
+                return dp(58);
             case GRAY_SECTION:
                 return dp(32);
             case STAR_TIER:
                 return dp(48) + 1;
+            case BROWSER_BOOKMARK:
+                return dp(56) + 1;
         }
         return 0;
     }

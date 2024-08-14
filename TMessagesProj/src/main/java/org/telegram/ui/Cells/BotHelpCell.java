@@ -41,6 +41,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -109,7 +110,7 @@ public class BotHelpCell extends View {
         setText(bot, text, null, null);
     }
 
-    public void setText(boolean bot, String text, TLObject imageOrAnimation, TLRPC.BotInfo botInfo) {
+    public void setText(boolean bot, String text, TLObject imageOrAnimation, TL_bots.BotInfo botInfo) {
         boolean photoVisible = imageOrAnimation != null;
         boolean textVisible = !TextUtils.isEmpty(text);
         if ((text == null || text.length() == 0) && !photoVisible) {

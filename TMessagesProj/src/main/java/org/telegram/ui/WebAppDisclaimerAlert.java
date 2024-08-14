@@ -16,6 +16,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -31,11 +32,12 @@ public class WebAppDisclaimerAlert {
     private AlertDialog alert;
     private TextView positiveButton;
 
-    public static void show(Context context, Consumer<Boolean> consumer, TLRPC.User withSendMessage) {
+    public static void show(Context context, Consumer<Boolean> consumer, TLRPC.User withSendMessage, Runnable dismissed) {
         WebAppDisclaimerAlert alert = new WebAppDisclaimerAlert();
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
         alertDialog.setTitle(LocaleController.getString("TermsOfUse", R.string.TermsOfUse));
+
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         TextView textView = new TextView(context);
@@ -61,6 +63,7 @@ public class WebAppDisclaimerAlert {
 //            });
 //        }
 
+        final boolean[] dismissing = new boolean[1];
         textView.setText(AndroidUtilities.replaceTags(LocaleController.getString("BotWebAppDisclaimerSubtitle", R.string.BotWebAppDisclaimerSubtitle)));
         alert.cell.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("BotWebAppDisclaimerCheck", R.string.BotWebAppDisclaimerCheck), () -> {
             Browser.openUrl(context, LocaleController.getString("WebAppDisclaimerUrl", R.string.WebAppDisclaimerUrl));
@@ -68,6 +71,7 @@ public class WebAppDisclaimerAlert {
         alertDialog.setView(linearLayout);
         alertDialog.setPositiveButton(LocaleController.getString("Continue", R.string.Continue), (dialog, which) -> {
             consumer.accept(true);
+            dismissing[0] = true;
             dialog.dismiss();
         });
         alertDialog.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
@@ -84,5 +88,13 @@ public class WebAppDisclaimerAlert {
             alert.positiveButton.animate().alpha(alert.cell.isChecked() ? 1f : 0.5f).start();
         });
         alert.cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        alert.alert.setOnDismissListener(d -> {
+            if (!dismissing[0]) {
+                dismissing[0] = true;
+                if (dismissed != null) {
+                    dismissed.run();
+                }
+            }
+        });
     }
 }

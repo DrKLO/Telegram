@@ -24,7 +24,6 @@ import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -526,7 +525,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         messageView.drawNamesLayout(canvas, alphaProgress);
         messageView.drawCommentButton(canvas, alphaProgress);
         messageView.drawCaptionLayout(canvas, false, alphaProgress);
-        messageView.drawReactionsLayout(canvas, alphaProgress);
+        messageView.drawReactionsLayout(canvas, alphaProgress, null);
         messageView.drawLinkPreview(canvas, alphaProgress);
         canvas.restore();
 

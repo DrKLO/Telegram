@@ -1,0 +1,66 @@
+uniform shader img;
+
+uniform float density;
+uniform float2 size;
+uniform int count;
+uniform float4 radius;
+
+uniform float[7] t;
+uniform float[7] centerX;
+uniform float[7] centerY;
+uniform float[7] intensity;
+
+float sdfRoundedBox(in float2 p, in float2 s, in float4 r) {
+    r.xy = (p.x > 0.0) ? r.xy : r.zw;
+    r.x  = (p.y > 0.0) ? r.x  : r.y;
+    float2 q = abs(p) - s + r.x;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
+}
+
+float3 rippleOffset_ios(float2 position, float2 center, float intensity, float time) {
+    float speed = (intensity > 1.0 ? 1200.0 : 1500.0) * density;
+    float frequency = (intensity > 1.0 ? 17.0 : 15.0);
+    float amplitude = (intensity > 1.0 ? 15.0 : 30.0) * density * intensity;
+    float decay = intensity > 1.0 ? 5.5 : 10.0;
+
+    float dist = length(position - center);
+    if (dist < 9.0 * density) return float3(0.0);
+
+    float delay = dist / speed;
+    time -= delay;
+    time = max(0.0, time);
+
+    float rippleAmount = amplitude * sin(frequency * time) * exp(-decay * time);
+    float absRippleAmount = abs(rippleAmount);
+    if (rippleAmount < 0.0) {
+        rippleAmount = -absRippleAmount;
+    } else {
+        rippleAmount = absRippleAmount;
+    }
+
+    if (dist <= 80.0 * density) {
+        rippleAmount *= mix(0.4, 1.0, clamp((dist - 60.0 * density) / (20.0 * density), 0.0, 1.0));
+    }
+
+    return float3(
+        normalize(position - center) * rippleAmount,
+        (intensity > 1.0 ? 0.17 : 0.11) * (rippleAmount / amplitude)
+    );
+}
+
+half4 main(in float2 fragCoord) {
+    float add = 0.0;
+    float2 offset = float2(0.0);
+    for (int i = 0; i < 7; ++i) {
+        if (i >= count) break;
+        float3 ripple = rippleOffset_ios(fragCoord, float2(centerX[i], centerY[i]), intensity[i], t[i]);
+        offset += ripple.xy;
+        add += ripple.z;
+    }
+    float2 uv = fragCoord / size;
+    uv *= size;
+    uv += offset;
+    if (sdfRoundedBox(uv - size * .5, size * .5, radius) > 0.0)
+        return half4(0.0, 0.0, 0.0, 1.0);
+    return img.eval(uv) + half4(add, add, add, 1.);
+}

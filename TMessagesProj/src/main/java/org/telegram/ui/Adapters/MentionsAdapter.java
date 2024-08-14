@@ -46,6 +46,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesActivity;
@@ -103,7 +104,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private TLRPC.TL_inlineBotSwitchPM searchResultBotContextSwitch;
     private TLRPC.TL_inlineBotWebView searchResultBotWebViewSwitch;
     private MentionsAdapterDelegate delegate;
-    private LongSparseArray<TLRPC.BotInfo> botInfo;
+    private LongSparseArray<TL_bots.BotInfo> botInfo;
     private int resultStartPosition;
     private int resultLength;
     private String lastText;
@@ -494,7 +495,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         needBotContext = value;
     }
 
-    public void setBotInfo(LongSparseArray<TLRPC.BotInfo> info) {
+    public void setBotInfo(LongSparseArray<TL_bots.BotInfo> info) {
         botInfo = info;
     }
 
@@ -1417,7 +1418,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             ArrayList<TLRPC.User> newResultUsers = new ArrayList<>();
             String command = result.toString().toLowerCase();
             for (int b = 0; b < botInfo.size(); b++) {
-                TLRPC.BotInfo info = botInfo.valueAt(b);
+                TL_bots.BotInfo info = botInfo.valueAt(b);
                 for (int a = 0; a < info.commands.size(); a++) {
                     TLRPC.TL_botCommand botCommand = info.commands.get(a);
                     if (botCommand != null && botCommand.command != null && botCommand.command.startsWith(command)) {

@@ -309,7 +309,7 @@ public class CodeHighlighting {
         for (int i = 0; i < patterns.length; ++i) {
             if (patterns[i].pattern != null && "REST".equals(patterns[i].pattern.patternSource)) {
                 if (result == null) {
-                    result = new ArrayList<>();
+                    result = new ArrayList<TokenPattern>();
                     Collections.addAll(result, patterns);
                 }
                 result.remove(patterns[i]);
@@ -447,7 +447,7 @@ public class CodeHighlighting {
     }
 
     private static Match matchPattern(TokenPattern pattern, int pos, String text) {
-        Matcher matcher = pattern.pattern.getPattern(). matcher(text);
+        Matcher matcher = pattern.pattern.getPattern().matcher(text);
         matcher.region(pos, text.length());
         if (!matcher.find()) {
             return null;

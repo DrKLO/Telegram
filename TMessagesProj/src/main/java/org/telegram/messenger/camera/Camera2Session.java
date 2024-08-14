@@ -355,6 +355,17 @@ public class Camera2Session {
         }
     }
 
+    private boolean flashing;
+    public void setFlash(boolean flash) {
+        if (flashing != flash) {
+            flashing = flash;
+            updateCaptureRequest();
+        }
+    }
+    public boolean getFlash() {
+        return flashing;
+    }
+
     public float getZoom() {
         return currentZoom;
     }
@@ -475,6 +486,8 @@ public class Camera2Session {
             } else if (nightMode) {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE, isFront ? CameraMetadata.CONTROL_SCENE_MODE_NIGHT_PORTRAIT : CameraMetadata.CONTROL_SCENE_MODE_NIGHT);
             }
+
+            captureRequestBuilder.set(CaptureRequest.FLASH_MODE, flashing ? (recordingVideo ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_SINGLE) : CaptureRequest.FLASH_MODE_OFF);
 
             if (recordingVideo) {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));

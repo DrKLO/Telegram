@@ -790,6 +790,11 @@ public class ThemeColors {
         defaultColors[key_code_comment] = 0x80000000;
         defaultColors[key_code_function] = 0xFFF28C39;
 
+        defaultColors[key_iv_background] = 0xFFFFFFFF;
+        defaultColors[key_iv_backgroundGray] = 0xfff0f0f0;
+        defaultColors[key_iv_ab_progress] = 0xff50a8eb;
+        defaultColors[key_iv_navigationBackground] = 0xfff0f0f0;
+
         return defaultColors;
     }
 
@@ -1538,6 +1543,10 @@ public class ThemeColors {
         colorKeysMap.put(key_code_number, "code_number");
         colorKeysMap.put(key_code_comment, "code_comment");
         colorKeysMap.put(key_code_function, "code_function");
+        colorKeysMap.put(key_iv_background, "iv_background");
+        colorKeysMap.put(key_iv_backgroundGray, "iv_backgroundGray");
+        colorKeysMap.put(key_iv_navigationBackground, "iv_navigationBackground");
+        colorKeysMap.put(key_iv_ab_progress, "iv_ab_progress");
         return colorKeysMap;
     }
 

@@ -53,8 +53,11 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
     private boolean isGreenSelector;
     private GraySectionCell topSectionCell;
 
-    public SelectorAdapter(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public boolean needChecks;
+
+    public SelectorAdapter(Context context, boolean needChecks, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
+        this.needChecks = needChecks;
         this.resourcesProvider = resourcesProvider;
         BoostRepository.loadParticipantsCount(result -> {
             chatsParticipantsCount.clear();
@@ -94,7 +97,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         if (viewType == VIEW_TYPE_PAD) {
             view = new View(context);
         } else if (viewType == VIEW_TYPE_USER) {
-            view = new SelectorUserCell(context, resourcesProvider, isGreenSelector);
+            view = new SelectorUserCell(context, needChecks, resourcesProvider, isGreenSelector);
         } else if (viewType == VIEW_TYPE_NO_USERS) {
             StickerEmptyView searchEmptyView = new StickerEmptyView(context, null, StickerEmptyView.STICKER_TYPE_SEARCH, resourcesProvider);
             searchEmptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));

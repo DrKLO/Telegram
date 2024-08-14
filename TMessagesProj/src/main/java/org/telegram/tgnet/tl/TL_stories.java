@@ -3120,12 +3120,20 @@ public class TL_stories {
                 case TL_mediaAreaChannelPost.constructor:
                     result = new TL_mediaAreaChannelPost();
                     break;
-
                 case TL_inputMediaAreaVenue.constructor:
                     result = new TL_inputMediaAreaVenue();
                     break;
                 case TL_inputMediaAreaChannelPost.constructor:
                     result = new TL_inputMediaAreaChannelPost();
+                    break;
+                case TL_mediaAreaWeather.constructor:
+                    result = new TL_mediaAreaWeather();
+                    break;
+                case TL_mediaAreaWeatherOld.constructor:
+                    result = new TL_mediaAreaWeatherOld();
+                    break;
+                case TL_mediaAreaWeather2.constructor:
+                    result = new TL_mediaAreaWeather2();
                     break;
             }
             if (result == null && exception) {
@@ -3230,6 +3238,83 @@ public class TL_stories {
             stream.writeInt32(constructor);
             coordinates.serializeToStream(stream);
             stream.writeString(url);
+        }
+    }
+
+    public static class TL_mediaAreaWeather2 extends MediaArea {
+        public static final int constructor = 0x855f223e;
+
+        public String emoji;
+        public int temperature_c;
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            dark = (flags & 1) != 0;
+            coordinates = MediaAreaCoordinates.TLdeserialize(stream, stream.readInt32(exception), exception);
+            emoji = stream.readString(exception);
+            temperature_c = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = dark ? flags | 1 : flags &~ 1;
+            stream.writeInt32(flags);
+            coordinates.serializeToStream(stream);
+            stream.writeString(emoji);
+            stream.writeInt32(temperature_c);
+        }
+    }
+
+    public static class TL_mediaAreaWeather extends MediaArea {
+        public static final int constructor = 0x49a6549c;
+
+        public String emoji;
+        public double temperature_c;
+        public int color;
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            coordinates = MediaAreaCoordinates.TLdeserialize(stream, stream.readInt32(exception), exception);
+            emoji = stream.readString(exception);
+            temperature_c = stream.readDouble(exception);
+            color = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            coordinates.serializeToStream(stream);
+            stream.writeString(emoji);
+            stream.writeDouble(temperature_c);
+            stream.writeInt32(color);
+        }
+    }
+
+    public static class TL_mediaAreaWeatherOld extends MediaArea {
+        public static final int constructor = 0x4386f849;
+
+        public String emoji;
+        public double temperature_c;
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            dark = (flags & 1) != 0;
+            coordinates = MediaAreaCoordinates.TLdeserialize(stream, stream.readInt32(exception), exception);
+            emoji = stream.readString(exception);
+            temperature_c = stream.readDouble(exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = dark ? flags | 1 : flags &~ 1;
+            stream.writeInt32(flags);
+            coordinates.serializeToStream(stream);
+            stream.writeString(emoji);
+            stream.writeDouble(temperature_c);
         }
     }
 

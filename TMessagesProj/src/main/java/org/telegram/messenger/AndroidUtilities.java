@@ -221,6 +221,7 @@ public class AndroidUtilities {
     public final static int REPLACING_TAG_TYPE_BOLD = 1;
     public final static int REPLACING_TAG_TYPE_LINKBOLD = 2;
     public final static int REPLACING_TAG_TYPE_LINK_NBSP = 3;
+    public final static int REPLACING_TAG_TYPE_UNDERLINE = 4;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
@@ -327,7 +328,7 @@ public class AndroidUtilities {
             final String HOST_NAME = "(" + IRI + "\\.)+" + GTLD;
             final Pattern DOMAIN_NAME = Pattern.compile("(" + HOST_NAME + "|" + IP_ADDRESS + ")");
             WEB_URL = Pattern.compile(
-                    "((?:(http|https|Http|Https|ton|tg):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
+                    "((?:(http|https|Http|Https|ton|tg|tonsite):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
                             + "\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_"
                             + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@)?)?"
                             + "(?:" + DOMAIN_NAME + ")"
@@ -530,13 +531,13 @@ public class AndroidUtilities {
             if (type == REPLACING_TAG_TYPE_LINK_NBSP) {
                 spannableStringBuilder.replace(index, index + len, AndroidUtilities.replaceMultipleCharSequence(" ", spannableStringBuilder.subSequence(index, index + len), " "));
             }
-            if (type == REPLACING_TAG_TYPE_LINK || type == REPLACING_TAG_TYPE_LINK_NBSP || type == REPLACING_TAG_TYPE_LINKBOLD) {
+            if (type == REPLACING_TAG_TYPE_LINK || type == REPLACING_TAG_TYPE_LINK_NBSP || type == REPLACING_TAG_TYPE_LINKBOLD || type == REPLACING_TAG_TYPE_UNDERLINE) {
                 spannableStringBuilder.setSpan(new ClickableSpan() {
 
                     @Override
                     public void updateDrawState(@NonNull TextPaint ds) {
                         super.updateDrawState(ds);
-                        ds.setUnderlineText(false);
+                        ds.setUnderlineText(type == REPLACING_TAG_TYPE_UNDERLINE);
                         if (colorKey >= 0) {
                             ds.setColor(Theme.getColor(colorKey, resourcesProvider));
                         }
@@ -1101,7 +1102,7 @@ public class AndroidUtilities {
             Linkify.addLinks(text, Linkify.PHONE_NUMBERS);
         }
         if ((mask & Linkify.WEB_URLS) != 0) {
-            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://"}, sUrlMatchFilter, internalOnly);
+            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://", "tonsite://"}, sUrlMatchFilter, internalOnly);
         }
         pruneOverlaps(links);
         if (links.size() == 0) {
@@ -1124,6 +1125,7 @@ public class AndroidUtilities {
             if (url != null) {
                 url = url.replaceAll("∕|⁄|%E2%81%84|%E2%88%95", "/");
             }
+            if (Browser.isTonsitePunycode(url)) continue;
             text.setSpan(new URLSpan(url), link.start, link.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return true;
@@ -2105,7 +2107,7 @@ public class AndroidUtilities {
                     user.first_name = vcardData.name;
                     user.last_name = "";
                     user.id = 0;
-                    TLRPC.TL_restrictionReason reason = new TLRPC.TL_restrictionReason();
+                    TLRPC.RestrictionReason reason = new TLRPC.RestrictionReason();
                     reason.text = vcardData.vcard.toString();
                     reason.platform = "";
                     reason.reason = "";
@@ -4003,7 +4005,16 @@ public class AndroidUtilities {
                     stringBuilder.replace(a, a + 1, " ");
                 }
             }
-            return original;
+            return stringBuilder;
+        } else if (original instanceof SpannableString) {
+            if (TextUtils.indexOf(original, '\n') < 0) return original;
+            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(original);
+            for (int a = 0, N = original.length(); a < N; a++) {
+                if (original.charAt(a) == '\n') {
+                    stringBuilder.replace(a, a + 1, " ");
+                }
+            }
+            return stringBuilder;
         }
         return original.toString().replace('\n', ' ');
     }
@@ -4734,6 +4745,21 @@ public class AndroidUtilities {
         }
     }
 
+    public static void scaleRect(RectF rect, float scale) {
+        scaleRect(rect, scale, rect.centerX(), rect.centerY());
+    }
+
+    public static void scaleRect(RectF rect, float scale, float px, float py) {
+        final float wl = px - rect.left, wr = rect.right - px;
+        final float ht = py - rect.top, hb = rect.bottom - py;
+        rect.set(
+            px - wl * scale,
+            py - ht * scale,
+            px + wr * scale,
+            py + hb * scale
+        );
+    }
+
     public static float cascade(float fullAnimationT, float position, float count, float waveLength) {
         if (count <= 0) return fullAnimationT;
         final float waveDuration = 1f / count * Math.min(waveLength, count);
@@ -4775,6 +4801,23 @@ public class AndroidUtilities {
             CertificateFactory cf = CertificateFactory.getInstance("X509");
             X509Certificate c = (X509Certificate) cf.generateCertificate(input);
             return Utilities.bytesToHex(Utilities.computeSHA256(c.getEncoded()));
+        } catch (Throwable ignore) {
+
+        }
+        return "";
+    }
+
+    public static String getCertificateSHA1Fingerprint() {
+        PackageManager pm = ApplicationLoader.applicationContext.getPackageManager();
+        String packageName = ApplicationLoader.applicationContext.getPackageName();
+        try {
+            PackageInfo packageInfo = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+            Signature[] signatures = packageInfo.signatures;
+            byte[] cert = signatures[0].toByteArray();
+            InputStream input = new ByteArrayInputStream(cert);
+            CertificateFactory cf = CertificateFactory.getInstance("X509");
+            X509Certificate c = (X509Certificate) cf.generateCertificate(input);
+            return Utilities.bytesToHex(Utilities.computeSHA1(c.getEncoded()));
         } catch (Throwable ignore) {
 
         }
@@ -5407,11 +5450,25 @@ public class AndroidUtilities {
 
     public static boolean hasDialogOnTop(BaseFragment fragment) {
         if (fragment == null) return false;
-        if (fragment.visibleDialog != null) return true;
+        if (fragment.visibleDialog != null && !(fragment.visibleDialog instanceof AlertDialog) && !(
+            fragment.visibleDialog instanceof BottomSheet && ((BottomSheet) fragment.visibleDialog).attachedFragment != null
+        )) return true;
         if (fragment.getParentLayout() == null) return false;
         List<View> globalViews = allGlobalViews();
         if (globalViews == null || globalViews.isEmpty()) return false;
-        View lastGlobalView = globalViews.get(globalViews.size() - 1);
+        View lastGlobalView = null;
+        for (int i = globalViews.size() - 1; i >= 0; --i) {
+            lastGlobalView = globalViews.get(i);
+            if (fragment.visibleDialog instanceof AlertDialog) {
+                if (lastGlobalView == getRootView((((AlertDialog) fragment.visibleDialog).getContainerView()))) {
+                    continue;
+                }
+            }
+            if (!(
+                lastGlobalView instanceof AlertDialog.AlertDialogView ||
+                lastGlobalView instanceof PipRoundVideoView.PipFrameLayout
+            )) break;
+        }
         return lastGlobalView != getRootView(fragment.getParentLayout().getView());
     }
 
@@ -5464,7 +5521,7 @@ public class AndroidUtilities {
             canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             for (int i = 0; i < finalViews.size(); ++i) {
                 View view = finalViews.get(i);
-                if (view instanceof PipRoundVideoView.PipFrameLayout || view instanceof PipRoundVideoView.PipFrameLayout || (exclude != null && exclude.contains(view))) {
+                if (view instanceof PipRoundVideoView.PipFrameLayout || (exclude != null && exclude.contains(view))) {
                     continue;
                 }
 
@@ -5482,7 +5539,7 @@ public class AndroidUtilities {
                 try {
                     view.draw(canvas);
                 } catch (Exception e) {
-
+                    FileLog.e(e);
                 }
                 canvas.restore();
             }
@@ -5559,7 +5616,7 @@ public class AndroidUtilities {
 
     private static Pattern uriParse;
 
-    private static Pattern getURIParsePattern() {
+    public static Pattern getURIParsePattern() {
         if (uriParse == null) {
             uriParse = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?"); // RFC 3986 B
         }
@@ -5567,6 +5624,10 @@ public class AndroidUtilities {
     }
 
     public static String getHostAuthority(String uri) {
+        return getHostAuthority(uri, false);
+    }
+
+    public static String getHostAuthority(String uri, boolean removeWWW) {
         if (uri == null) {
             return null;
         }
@@ -5576,6 +5637,9 @@ public class AndroidUtilities {
             String authority = matcher.group(4);
             if (authority != null) {
                 authority = authority.toLowerCase();
+            }
+            if (removeWWW && authority != null && authority.startsWith("www.")) {
+                authority = authority.substring(4);
             }
             return authority;
         }
@@ -5587,6 +5651,13 @@ public class AndroidUtilities {
             return null;
         }
         return getHostAuthority(uri.toString());
+    }
+
+    public static String getHostAuthority(Uri uri, boolean removeWWW) {
+        if (uri == null) {
+            return null;
+        }
+        return getHostAuthority(uri.toString(), removeWWW);
     }
 
     public static boolean intersect1d(int x1, int x2, int y1, int y2) {
@@ -5891,27 +5962,56 @@ public class AndroidUtilities {
         } catch (Exception ignore) {}
     }
 
-    public static void applySpring(Animator anim, float stiffness, float damping) {
-        applySpring(anim, stiffness, damping, 1);
+    public static void applySpring(Animator anim, double stiffness, double damping) {
+        applySpring(anim, stiffness, damping, 1, 0);
     }
 
-    public static void applySpring(Animator anim, float stiffness, float damping, float mass) {
-        final double delta = damping / (2.0 * Math.sqrt(stiffness * mass));
-        final double undampedFrequency = Math.sqrt(stiffness / mass);
-        final double omega_0 = Math.sqrt(stiffness / mass);
-        final double zeta = damping / (2 * Math.sqrt(stiffness * mass));
+    public static void applySpring(Animator anim, double stiffness, double damping, double mass) {
+        applySpring(anim, stiffness, damping, mass, 0);
+    }
+
+    public static void applySpring(Animator anim, double stiffness, double damping, double mass, double initialVelocity) {
+        final double w0 = Math.sqrt(stiffness / mass);
+        final double zeta = damping / (2.0 * Math.sqrt(stiffness * mass));
+        final double wd, A, B;
+        if (zeta < 1) {
+            wd = w0 * Math.sqrt(1.0 - zeta * zeta);
+            A = 1.0;
+            B = (zeta * w0 + -initialVelocity) / wd;
+        } else {
+            wd = 0.0;
+            A = 1.0;
+            B = -initialVelocity + w0;
+        }
         final double threshold = 0.0025;
-        final double duration = Math.log(threshold) / (-zeta * omega_0);
+        final double duration = Math.log(threshold) / (-zeta * w0);
         anim.setDuration((long) (duration * 1000L));
         anim.setInterpolator(new Interpolator() {
             @Override
             public float getInterpolation(float t) {
-                if (delta < 1) {
-                    final double dampedFrequency = undampedFrequency * Math.sqrt(1 - delta * delta);
-                    return (float) (1 - Math.exp(-delta * undampedFrequency * t) *
-                            (Math.cos(dampedFrequency * t) + (delta * undampedFrequency / dampedFrequency) * Math.sin(dampedFrequency * t)));
+                if (zeta < 1) {
+                    return (float) (1.0 - Math.exp(-t * zeta * w0) * (A * Math.cos(wd * t) + B * Math.sin(wd * t)));
                 } else {
-                    final double a = -delta * undampedFrequency * t;
+                    return (float) (1.0 - (A + B * t) * Math.exp(-t * w0));
+                }
+            }
+        });
+    }
+
+    public static void applySpring(Animator anim, float stiffness, float damping, float mass, long overrideDuration) {
+        final double zeta = damping / (2 * Math.sqrt(stiffness * mass));
+        final double omega = Math.sqrt(stiffness / mass);
+        final double threshold = 0.0025;
+        anim.setDuration(overrideDuration);
+        anim.setInterpolator(new Interpolator() {
+            @Override
+            public float getInterpolation(float t) {
+                if (zeta < 1) {
+                    final double dampedFrequency = omega * Math.sqrt(1 - zeta * zeta);
+                    return (float) (1 - Math.exp(-zeta * omega * t) *
+                            (Math.cos(dampedFrequency * t) + (zeta * omega / dampedFrequency) * Math.sin(dampedFrequency * t)));
+                } else {
+                    final double a = -zeta * omega * t;
                     return (float) (1 - (1 + a) * Math.exp(a));
                 }
             }
@@ -5942,9 +6042,9 @@ public class AndroidUtilities {
                             if (segments.size() >= 3 && "s".equals(segments.get(1))) {
                                 return false;
                             } else if (segments.size() > 1) {
-                                final String segment = segments.get(1);
-                                if (TextUtils.isEmpty(segment)) return false;
-                                switch (segment) {
+                                final String segment0 = segments.get(0);
+                                if (TextUtils.isEmpty(segment0)) return false;
+                                switch (segment0) {
                                     case "joinchat":
                                     case "login":
                                     case "addstickers":
@@ -5961,6 +6061,9 @@ public class AndroidUtilities {
                                     case "addlist":
                                         return false;
                                 }
+                                final String segment1 = segments.get(1);
+                                if (TextUtils.isEmpty(segment1)) return false;
+                                if (segment1.matches("^\\d+$")) return false;
                                 return true;
                             } else if (segments.size() == 1) {
                                 return !TextUtils.isEmpty(uri.getQueryParameter("startapp"));

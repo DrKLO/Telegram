@@ -1,0 +1,400 @@
+package org.telegram.ui.Components;
+
+import static org.telegram.messenger.LocaleController.getString;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.View;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.R;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.ui.ActionBar.Theme;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+
+public class DialogsBotsAdapter extends UniversalAdapter {
+
+    private final Context context;
+    private final int currentAccount;
+    private final int folderId;
+    private final boolean showOnlyPopular;
+    private final Theme.ResourcesProvider resourcesProvider;
+
+    private String popularBotsNextOffset;
+    private boolean popularBotsLoaded, popularBotsLoading;
+    public final ArrayList<TLRPC.User> popularBots = new ArrayList<>();
+
+    public final ArrayList<TLRPC.User> searchMine = new ArrayList<>();
+    public final ArrayList<TLRPC.User> searchGlobal = new ArrayList<>();
+    public final ArrayList<MessageObject> searchMessages = new ArrayList<>();
+
+    public boolean expandedMyBots;
+    public boolean expandedSearchBots;
+
+    public DialogsBotsAdapter(RecyclerListView listView, Context context, int currentAccount, int folderId, boolean showOnlyPopular, Theme.ResourcesProvider resourcesProvider) {
+        super(listView, context, currentAccount, 0, null, resourcesProvider);
+        super.fillItems = this::fillItems;
+        this.context = context;
+        this.currentAccount = currentAccount;
+        this.folderId = folderId;
+        this.resourcesProvider = resourcesProvider;
+        this.showOnlyPopular = showOnlyPopular;
+        update(false);
+        MediaDataController.getInstance(currentAccount).loadHints(true);
+        loadPopularBots();
+    }
+
+    private int topPeersStart, topPeersEnd;
+    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        HashSet<Long> uids = new HashSet<>();
+
+        if (!TextUtils.isEmpty(query)) {
+            ArrayList<TLRPC.User> foundChannels = new ArrayList<>();
+            foundChannels.addAll(searchMine);
+            foundChannels.addAll(searchGlobal);
+            if (!foundChannels.isEmpty()) {
+                if (foundChannels.size() > 5 && (!searchMessages.isEmpty() && !showOnlyPopular)) {
+                    items.add(UItem.asGraySection(getString(R.string.SearchApps), getString(expandedSearchBots ? R.string.ShowLess : R.string.ShowMore), this::toggleExpandedSearchBots));
+                } else {
+                    items.add(UItem.asGraySection(getString(R.string.SearchApps)));
+                }
+                int count = foundChannels.size();
+                if (!expandedSearchBots && (!searchMessages.isEmpty() && !showOnlyPopular))
+                    count = Math.min(5, count);
+                for (int i = 0; i < count; ++i) {
+                    items.add(UItem.asProfileCell(foundChannels.get(i)));
+                }
+            }
+            if (!searchMessages.isEmpty() && !showOnlyPopular) {
+                items.add(UItem.asGraySection(getString(R.string.SearchMessages)));
+                for (MessageObject message : searchMessages) {
+                    items.add(UItem.asSearchMessage(message));
+                }
+                if (hasMore) {
+                    items.add(UItem.asFlicker(FlickerLoadingView.DIALOG_TYPE));
+                }
+            }
+        } else {
+            ArrayList<TLRPC.TL_topPeer> top_peers = MediaDataController.getInstance(currentAccount).webapps;
+            ArrayList<TLRPC.User> top_peers_bots = new ArrayList<>();
+            if (top_peers != null) {
+                for (int i = 0; i < top_peers.size(); ++i) {
+                    TLRPC.TL_topPeer peer = top_peers.get(i);
+                    long dialogId = DialogObject.getPeerDialogId(peer.peer);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+                    if (user == null || !user.bot) continue;
+                    top_peers_bots.add(user);
+                }
+            }
+            topPeersStart = items.size();
+            if (!top_peers_bots.isEmpty() && !showOnlyPopular) {
+                if (top_peers_bots.size() > 5) {
+                    items.add(UItem.asGraySection(getString(R.string.SearchAppsMine), getString(expandedMyBots ? R.string.ShowLess : R.string.ShowMore), this::toggleExpandedMyBots));
+                } else {
+                    items.add(UItem.asGraySection(getString(R.string.SearchAppsMine)));
+                }
+                for (int i = 0; i < top_peers_bots.size(); ++i) {
+                    if (i >= 5 && !expandedMyBots) break;
+                    final TLRPC.User user = top_peers_bots.get(i);
+                    if (uids.contains(user.id)) continue;
+                    uids.add(user.id);
+                    items.add(UItem.asProfileCell(user).accent());
+                }
+            }
+            topPeersEnd = items.size();
+            if (!popularBots.isEmpty()) {
+                if (!showOnlyPopular) items.add(UItem.asGraySection(getString(R.string.SearchAppsPopular)));
+                for (int i = 0; i < popularBots.size(); ++i) {
+                    final TLRPC.User user = popularBots.get(i);
+                    if (uids.contains(user.id)) continue;
+                    uids.add(user.id);
+                    items.add(UItem.asProfileCell(user).accent());
+                }
+                if (popularBotsNextOffset != null || popularBotsLoading) {
+                    items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                    items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                    items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                }
+            } else if (popularBotsNextOffset != null || popularBotsLoading) {
+                if (!showOnlyPopular) items.add(UItem.asFlicker(FlickerLoadingView.GRAY_SECTION));
+                items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+                items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+            }
+        }
+    }
+
+    private void toggleExpandedMyBots(View view) {
+        expandedMyBots = !expandedMyBots;
+        update(true);
+    }
+
+    private void toggleExpandedSearchBots(View view) {
+        expandedSearchBots = !expandedSearchBots;
+        update(true);
+    }
+
+
+    protected void hideKeyboard() {
+
+    }
+
+    public Object getTopPeerObject(int position) {
+        if (position < topPeersStart || position >= topPeersEnd) {
+            return false;
+        }
+        return getObject(position);
+    }
+
+    public Object getObject(int position) {
+        UItem item = getItem(position);
+        return item != null ? item.object : null;
+    }
+
+    public boolean loadingMessages;
+    public boolean loadingBots;
+
+    private boolean hasMore;
+    private int allCount;
+    private int nextRate;
+    private int searchBotsId;
+    public String query;
+    private void searchMessages(boolean next) {
+        loadingMessages = true;
+        final int searchId = ++searchBotsId;
+        TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
+        req.broadcasts_only = false;
+        if (folderId != 0) {
+            req.flags |= 1;
+            req.folder_id = folderId;
+        }
+        req.q = this.query;
+        req.limit = 25;
+        req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+        if (next && !searchMessages.isEmpty()) {
+            MessageObject lastMessage = searchMessages.get(searchMessages.size() - 1);
+            req.offset_rate = nextRate;
+            req.offset_id = lastMessage.getId();
+            if (lastMessage.messageOwner.peer_id == null) {
+                req.offset_peer = new TLRPC.TL_inputPeerEmpty();
+            } else {
+                req.offset_peer = MessagesController.getInstance(currentAccount).getInputPeer(lastMessage.messageOwner.peer_id);
+            }
+        } else {
+            req.offset_rate = 0;
+            req.offset_id = 0;
+            req.offset_peer = new TLRPC.TL_inputPeerEmpty();
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+            if (searchId != searchBotsId || !TextUtils.equals(req.q, this.query)) return;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (searchId != searchBotsId || !TextUtils.equals(req.q, this.query)) return;
+                loadingMessages = false;
+                if (!next) {
+                    searchMessages.clear();
+                }
+                if (res instanceof TLRPC.messages_Messages) {
+                    TLRPC.messages_Messages response = (TLRPC.messages_Messages) res;
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(response.users, response.chats, true, true);
+                    MessagesController.getInstance(currentAccount).putUsers(response.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(response.chats, false);
+
+                    for (TLRPC.Message message : response.messages) {
+                        MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
+                        messageObject.setQuery(query);
+                        searchMessages.add(messageObject);
+                    }
+
+                    hasMore = response instanceof TLRPC.TL_messages_messagesSlice;
+                    allCount = Math.max(searchMessages.size(), response.count);
+                    nextRate = response.next_rate;
+                }
+                update(true);
+            }));
+        }, next ? 800 : 0);
+
+        if (!next) {
+            loadingBots = true;
+            TLRPC.TL_contacts_search req2 = new TLRPC.TL_contacts_search();
+            req2.limit = 30;
+            req2.q = this.query;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (!TextUtils.equals(req2.q, this.query) || TextUtils.isEmpty(this.query)) return;
+
+                loadingBots = false;
+                TLRPC.TL_contacts_found response = null;
+                if (res instanceof TLRPC.TL_contacts_found) {
+                    response = (TLRPC.TL_contacts_found) res;
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(response.users, response.chats, true, true);
+                    MessagesController.getInstance(currentAccount).putUsers(response.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(response.chats, false);
+                }
+
+                HashSet<Long> userIds = new HashSet<>();
+
+                searchMine.clear();
+                if (response != null) {
+                    for (TLRPC.Peer peer : response.my_results) {
+                        if (!(peer instanceof TLRPC.TL_peerUser)) continue;
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peer.user_id);
+                        if (user == null || !user.bot) continue;
+                        if (userIds.contains(user.id))
+                            continue;
+                        userIds.add(user.id);
+                        searchMine.add(user);
+                    }
+                }
+
+//                searchRecommendedChannels.clear();
+//                String q = this.query.toLowerCase(), qT = AndroidUtilities.translitSafe(q);
+//                MessagesController.ChannelRecommendations recommendations = MessagesController.getInstance(currentAccount).getCachedChannelRecommendations(0);
+//                if (recommendations != null && !recommendations.chats.isEmpty()) {
+//                    for (TLRPC.Chat chat : recommendations.chats) {
+//                        if (chat == null)
+//                            continue;
+//                        if (!ChatObject.isChannelAndNotMegaGroup(chat))
+//                            continue;
+//                        TLRPC.Chat localChat = MessagesController.getInstance(currentAccount).getChat(chat.id);
+//                        if (!(ChatObject.isNotInChat(chat) && (localChat == null || ChatObject.isNotInChat(localChat))))
+//                            continue;
+//                        String t = chat.title.toLowerCase(), tT = AndroidUtilities.translitSafe(t);
+//                        if (
+//                                t.startsWith(q) || t.contains(" " + q) ||
+//                                        tT.startsWith(qT) || tT.contains(" " + qT)
+//                        ) {
+//                            if (chatIds.contains(chat.id))
+//                                continue;
+//                            chatIds.add(chat.id);
+//                            searchRecommendedChannels.add(chat);
+//                        }
+//                    }
+//                }
+
+                searchGlobal.clear();
+                if (response != null) {
+                    for (TLRPC.Peer peer : response.results) {
+                        if (!(peer instanceof TLRPC.TL_peerUser)) continue;
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peer.user_id);
+                        if (user == null || !user.bot) continue;
+                        if (userIds.contains(user.id))
+                            continue;
+                        userIds.add(user.id);
+                        searchGlobal.add(user);
+                    }
+                }
+
+                if (listView != null) {
+                    listView.scrollToPosition(0);
+                }
+                update(true);
+            }));
+        }
+    }
+
+    private Runnable searchMessagesRunnable = () -> searchMessages(false);
+    public void search(String query) {
+        if (TextUtils.equals(query, this.query)) return;
+        this.query = query;
+        AndroidUtilities.cancelRunOnUIThread(searchMessagesRunnable);
+        if (TextUtils.isEmpty(this.query)) {
+            searchMessages.clear();
+            update(true);
+            searchBotsId++;
+            loadingMessages = false;
+            loadingBots = false;
+            hasMore = false;
+            nextRate = 0;
+            if (listView != null) {
+                listView.scrollToPosition(0);
+            }
+            return;
+        }
+
+        searchMessages.clear();
+
+        AndroidUtilities.runOnUIThread(searchMessagesRunnable, 1000);
+        loadingMessages = true;
+        loadingBots = true;
+
+        update(true);
+
+        if (listView != null) {
+            listView.scrollToPosition(0);
+        }
+    }
+
+    public void searchMore() {
+        if (!hasMore || loadingMessages || TextUtils.isEmpty(this.query)) {
+            return;
+        }
+        searchMessages(true);
+    }
+
+    public void checkBottom() {
+        if (!TextUtils.isEmpty(this.query)) {
+            if (hasMore && !loadingMessages && seesLoading()) {
+                searchMore();
+            }
+        } else {
+            if (!popularBotsLoading && !TextUtils.isEmpty(popularBotsNextOffset) && seesLoading()) {
+                loadPopularBots();
+            }
+        }
+    }
+
+    public boolean seesLoading() {
+        if (listView == null) return false;
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            View child = listView.getChildAt(i);
+            if (child instanceof FlickerLoadingView) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean atTop() {
+        if (listView == null) return false;
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            View child = listView.getChildAt(i);
+            if (listView.getChildAdapterPosition(child) == 0)
+                return true;
+        }
+        return false;
+    }
+
+    public void loadPopularBots() {
+        if (popularBotsLoading || popularBotsLoaded && popularBotsNextOffset == null) return;
+
+        popularBotsLoading = true;
+        TL_bots.getPopularAppBots req = new TL_bots.getPopularAppBots();
+        req.offset = popularBotsNextOffset == null ? "" : popularBotsNextOffset;
+        req.limit = 20;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            popularBotsLoading = false;
+            popularBotsLoaded = true;
+            if (res instanceof TL_bots.popularAppBots) {
+                TL_bots.popularAppBots r = (TL_bots.popularAppBots) res;
+                MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                popularBots.addAll(r.users);
+                popularBotsNextOffset = r.next_offset;
+            } else {
+                popularBotsNextOffset = null;
+            }
+            update(true);
+        }));
+    }
+
+
+
+}

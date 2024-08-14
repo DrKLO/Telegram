@@ -21,7 +21,6 @@ import android.graphics.RectF;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.GestureDetector;
@@ -50,7 +49,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -726,13 +724,16 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             if (isClosed && animateAvatar) {
                                 rect2.set(outFromRectAvatar);
                             } else {
-                                while (child != this) {
+                                while (child != this && child != null) {
                                     if (child.getParent() == this) {
                                         toX += child.getLeft();
                                         toY += child.getTop();
                                     } else if (child.getParent() != storiesViewPager) {
                                         toX += child.getX();
                                         toY += child.getY();
+                                    }
+                                    if (!(child.getParent() instanceof View)) {
+                                        break;
                                     }
                                     child = (View) child.getParent();
                                 }
@@ -1058,7 +1059,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     }
 
                     if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
-                        onBackPressed();
+                        onAttachedBackPressed();
                         return true;
                     }
                     return super.dispatchKeyEventPreIme(event);
@@ -2444,8 +2445,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         MessagesController.getInstance(currentAccount).getStoriesController().stopAllPollers();
         if (ATTACH_TO_FRAGMENT) {
             lockOrientation(false);
-            if (fragment != null && fragment.sheetsStack != null) {
-                fragment.sheetsStack.remove(this);
+            if (fragment != null) {
+                fragment.removeSheet(this);
             }
         }
 
@@ -2482,12 +2483,17 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         return ColorUtils.blendARGB(currentColor, Color.BLACK, getBlackoutAlpha());
     }
 
+    @Override
+    public boolean isAttachedLightStatusBar() {
+        return false;
+    }
+
     private float getBlackoutAlpha() {
         return progressToOpen * (0.5f + 0.5f * (1f - progressToDismiss));
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onAttachedBackPressed() {
         if (selfStoriesViewsOffset != 0) {
             if (selfStoryViewsView.onBackPressed()) {
                 return true;

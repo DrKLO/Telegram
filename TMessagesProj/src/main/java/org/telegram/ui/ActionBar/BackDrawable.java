@@ -39,6 +39,10 @@ public class BackDrawable extends Drawable {
     private boolean rotated = true;
     private int arrowRotation;
 
+    public float getRotation() {
+        return finalRotation;
+    }
+
     public BackDrawable(boolean close) {
         super();
         paint.setStrokeWidth(AndroidUtilities.dp(2));

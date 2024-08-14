@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 
 public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
@@ -52,6 +53,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private float shadowAlpha = 1f;
 
     private boolean showHandle = false;
+    protected boolean handleOffset;
     private RectF handleRect = new RectF();
 
     private ActionBarType actionBarType = ActionBarType.FADING;
@@ -417,6 +419,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 }
             }
             top = top - headerHeight - headerPaddingTop - headerPaddingBottom;
+            if (showHandle && handleOffset) {
+                top -= dp(actionBarType == ActionBarType.SLIDING ? 8 : 16);
+            }
 
             float handleAlpha = 1.0f;
             float progressToFullView = 0.0f;
@@ -488,6 +493,16 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     }
 
+    @Override
+    public boolean isAttachedLightStatusBar() {
+        if (actionBar != null && actionBar.getTag() != null) {
+            return isLightStatusBar();
+        } else if (baseFragment != null) {
+            return baseFragment.isLightStatusBar();
+        }
+        return isLightStatusBar();
+    }
+
     private boolean isLightStatusBar() {
         return ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground, resourcesProvider)) > 0.7f;
     }
@@ -518,7 +533,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     private void updateStatusBar() {
-        if (actionBar != null && actionBar.getTag() != null) {
+        if (attachedFragment != null) {
+            LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
+        } else if (actionBar != null && actionBar.getTag() != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), isLightStatusBar());
         } else if (baseFragment != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), baseFragment.isLightStatusBar());

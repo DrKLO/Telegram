@@ -138,22 +138,34 @@ public class CameraSession {
             return;
         }
         currentFlashMode = mode;
-        configurePhotoCamera();
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        if (isRound) {
+            configureRoundCamera(false);
+        } else {
+            configurePhotoCamera();
+            SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
+            sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        }
     }
 
     public void setCurrentFlashMode(String mode) {
         currentFlashMode = mode;
-        configurePhotoCamera();
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        if (isRound) {
+            configureRoundCamera(false);
+        } else {
+            configurePhotoCamera();
+            SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
+            sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        }
     }
 
     public void setTorchEnabled(boolean enabled) {
         try {
             currentFlashMode = enabled ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF;
-            configurePhotoCamera();
+            if (isRound) {
+                configureRoundCamera(false);
+            } else {
+                configurePhotoCamera();
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -262,7 +274,7 @@ public class CameraSession {
                     } catch (Exception e) {
                         //
                     }
-                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    params.setFlashMode(currentFlashMode);
                     params.setZoom((int) (currentZoom * maxZoom));
                     try {
                         camera.setParameters(params);

@@ -213,7 +213,7 @@ public class MessagePreviewParams {
             replyMessageObject = null;
             replyQuote = null;
         }
-        hasSecretMessages = replyMessageObject != null && (replyMessageObject.isVoiceOnce() || replyMessageObject.isRoundOnce());
+        hasSecretMessages = replyMessageObject != null && (replyMessageObject.isVoiceOnce() || replyMessageObject.isRoundOnce() || replyMessageObject.type == MessageObject.TYPE_GIFT_STARS);
         if (replyMessageObject != null || replyQuote != null) {
             if (group != null) {
                 replyMessage = new Messages(null, 1, group.messages, dialogId, null);

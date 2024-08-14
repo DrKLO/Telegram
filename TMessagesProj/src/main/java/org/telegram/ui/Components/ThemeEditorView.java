@@ -872,7 +872,7 @@ public class ThemeEditorView {
             bottomSaveLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             saveButton.setOnClickListener(v -> {
                 Theme.saveCurrentTheme(themeInfo, true, false, false);
-                setOnDismissListener(null);
+                setOnDismissListener((OnDismissListener) null);
                 dismiss();
                 close();
             });

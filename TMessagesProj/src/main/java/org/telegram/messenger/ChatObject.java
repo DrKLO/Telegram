@@ -1782,7 +1782,7 @@ public class ChatObject {
     }
 
     public static boolean canSendAsPeers(TLRPC.Chat chat) {
-        return ChatObject.isChannel(chat) && chat.megagroup && (ChatObject.isPublic(chat) || chat.has_geo || chat.has_link);
+        return ChatObject.isChannel(chat) && (!chat.megagroup && chat.signatures && ChatObject.hasAdminRights(chat) && ChatObject.canWriteToChat(chat) || chat.megagroup && (ChatObject.isPublic(chat) || chat.has_geo || chat.has_link));
     }
 
     public static boolean isChannel(TLRPC.Chat chat) {
@@ -1941,6 +1941,9 @@ public class ChatObject {
             return p.user_id != 0 ? p.user_id : invertChannel ? -p.channel_id : p.channel_id;
         }
         if (chat != null && chat.admin_rights != null && chat.admin_rights.anonymous) {
+            return invertChannel ? -chat.id : chat.id;
+        }
+        if (chat != null && ChatObject.isChannelAndNotMegaGroup(chat) && !chat.signatures) {
             return invertChannel ? -chat.id : chat.id;
         }
         return UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();

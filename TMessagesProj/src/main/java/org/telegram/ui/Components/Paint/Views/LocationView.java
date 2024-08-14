@@ -19,6 +19,8 @@ import org.telegram.ui.Components.Rect;
 public class LocationView extends EntityView {
 
     public final LocationMarker marker;
+
+    private boolean hasColor;
     private int currentColor;
     private int currentType;
 
@@ -68,13 +70,13 @@ public class LocationView extends EntityView {
         return deg(Lat) + (Lat > 0 ? "N" : "S") + " " + deg(Long) + (Long > 0 ? "E" : "W");
     }
 
-    public LocationView(Context context, Point position, int currentAccount, TLRPC.MessageMedia location, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type, int color) {
+    public LocationView(Context context, Point position, int currentAccount, TLRPC.MessageMedia location, TL_stories.MediaArea mediaArea, float density, int maxWidth) {
         super(context, position);
 
-        marker = new LocationMarker(context, density, 0);
+        marker = new LocationMarker(context, LocationMarker.VARIANT_LOCATION, density, 0);
         marker.setMaxWidth(maxWidth);
         setLocation(currentAccount, location, mediaArea);
-        marker.setType(currentType = type, currentColor = color);
+        marker.setType(0, currentColor);
         addView(marker, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
         setClipChildren(false);
@@ -97,7 +99,7 @@ public class LocationView extends EntityView {
         } else {
             title = "";
         }
-        marker.setCountryCodeEmoji(currentAccount, countryCodeEmoji);
+        marker.setCodeEmoji(currentAccount, countryCodeEmoji);
         marker.setText(title);
 
         updateSelectionView();
@@ -119,16 +121,21 @@ public class LocationView extends EntityView {
         updatePosition();
     }
 
+    public void setColor(int color) {
+        hasColor = true;
+        currentColor = color;
+    }
+
+    public boolean hasColor() {
+        return hasColor;
+    }
+
     public void setType(int type) {
         marker.setType(currentType = type, currentColor);
     }
 
-    public void setType(int type, int color) {
-        marker.setType(currentType = type, currentColor = color);
-    }
-
-    public void setColor(int color) {
-        setType(currentType, color);
+    public int getTypesCount() {
+        return marker.getTypesCount() - (hasColor ? 0 : 1);
     }
 
     public int getColor() {

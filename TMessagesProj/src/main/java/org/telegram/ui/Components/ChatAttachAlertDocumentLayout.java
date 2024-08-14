@@ -802,6 +802,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 if (item.file.length() == 0) {
                     return false;
                 }
+                if (parentAlert.storyMediaPicker) {
+
+                }
                 selectedFiles.put(path, item);
                 selectedFilesOrder.add(path);
                 add = true;
@@ -837,7 +840,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         }
         if (file.length() == 0 || mimeType == null || !RingtoneDataStore.ringtoneSupportedMimeType.contains(mimeType)) {
-            BulletinFactory.of(parentAlert.getContainer(), null).createErrorBulletinSubtitle(LocaleController.formatString("InvalidFormatError", R.string.InvalidFormatError), LocaleController.formatString("ErrorInvalidRingtone", R.string.ErrorRingtoneInvalidFormat), null).show();
+            BulletinFactory.of(parentAlert.getContainer(), null).createErrorBulletinSubtitle(LocaleController.formatString("InvalidFormatError", R.string.InvalidFormatError), LocaleController.getString(R.string.ErrorRingtoneInvalidFormat), null).show();
             return false;
         }
         if (file.length() > MessagesController.getInstance(UserConfig.selectedAccount).ringtoneSizeMax) {

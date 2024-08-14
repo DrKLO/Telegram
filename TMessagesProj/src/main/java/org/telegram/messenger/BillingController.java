@@ -192,7 +192,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
 
-        if ((paymentPurpose instanceof TLRPC.TL_inputStorePaymentGiftPremium || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStars) && !checkedConsume) {
+        if ((paymentPurpose instanceof TLRPC.TL_inputStorePaymentGiftPremium || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStarsTopup || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStarsGift) && !checkedConsume) {
             queryPurchases(BillingClient.ProductType.INAPP, (billingResult, list) -> {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     Runnable callback = () -> launchBillingFlow(activity, accountInstance, paymentPurpose, productDetails, subscriptionUpdateParams, true);
@@ -244,7 +244,8 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         if (subscriptionUpdateParams != null) {
             flowParams.setSubscriptionUpdateParams(subscriptionUpdateParams);
         }
-        int responseCode = billingClient.launchBillingFlow(activity, flowParams.build()).getResponseCode();
+        final BillingResult result = billingClient.launchBillingFlow(activity, flowParams.build());
+        int responseCode = result.getResponseCode();
         if (responseCode != BillingClient.BillingResponseCode.OK) {
             FileLog.d("Billing: Launch Error: " + responseCode + ", " + obfuscatedAccountId + ", " + obfuscatedData);
         }
@@ -281,130 +282,42 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 if (!purchase.isAcknowledged()) {
                     requestingTokens.add(purchase.getPurchaseToken());
 
-                    retrievePurpose(purchase, opayload, payload -> {
-                        TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
-                        req.receipt = new TLRPC.TL_dataJSON();
-                        req.receipt.data = purchase.getOriginalJson();
-                        req.purpose = payload.second;
+                    TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
+                    req.receipt = new TLRPC.TL_dataJSON();
+                    req.receipt.data = purchase.getOriginalJson();
+                    req.purpose = opayload.second;
 
-                        final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
-                        AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
+                    final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
+                    AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
 
-                        AccountInstance acc = payload.first;
-                        acc.getConnectionsManager().sendRequest(req, (response, error) -> {
-                            AndroidUtilities.runOnUIThread(progressDialog::dismiss);
+                    AccountInstance acc = opayload.first;
+                    acc.getConnectionsManager().sendRequest(req, (response, error) -> {
+                        AndroidUtilities.runOnUIThread(progressDialog::dismiss);
 
-                            requestingTokens.remove(purchase.getPurchaseToken());
+                        requestingTokens.remove(purchase.getPurchaseToken());
 
-                            if (response instanceof TLRPC.Updates) {
-                                acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                        if (response instanceof TLRPC.Updates) {
+                            acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
 
-                                for (String productId : purchase.getProducts()) {
-                                    Consumer<BillingResult> listener = resultListeners.remove(productId);
-                                    if (listener != null) {
-                                        listener.accept(billing);
-                                    }
+                            for (String productId : purchase.getProducts()) {
+                                Consumer<BillingResult> listener = resultListeners.remove(productId);
+                                if (listener != null) {
+                                    listener.accept(billing);
                                 }
-
-                                consumeGiftPurchase(purchase, req.purpose);
-                            } else if (error != null) {
-                                if (onCanceled != null) {
-                                    onCanceled.run();
-                                    onCanceled = null;
-                                }
-                                NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
                             }
-                        }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
-                    });
+
+                            consumeGiftPurchase(purchase, req.purpose);
+                            BillingUtilities.cleanupPurchase(purchase);
+                        } else if (error != null) {
+                            if (onCanceled != null) {
+                                onCanceled.run();
+                                onCanceled = null;
+                            }
+                            NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
+                        }
+                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
                 } else {
                     consumeGiftPurchase(purchase, opayload.second);
-                }
-            }
-        }
-    }
-
-    private boolean retrievePurpose(Purchase purchase, Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> payload, Utilities.Callback<Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>> whenPayload) {
-        if (payload == null || payload.first == null) {
-            FileLog.d("retrievePurpose: payload or account is null");
-            return false;
-        }
-        if (payload.second != null) {
-            FileLog.d("retrievePurpose: already has purpose");
-            whenPayload.run(payload);
-            return true;
-        }
-        if (purchase == null || purchase.getProducts().isEmpty()) {
-            FileLog.d("retrievePurpose: no products found for purpose!");
-            whenPayload.run(payload);
-            return false;
-        } else {
-            final int currentAccount = payload.first.getCurrentAccount();
-            final String productId = purchase.getProducts().get(0);
-
-            if (productId == null) {
-                FileLog.d("retrievePurpose: first product is null!");
-                whenPayload.run(payload);
-                return false;
-            }
-
-            ArrayList<TLRPC.TL_starsTopupOption> options = StarsController.getInstance(currentAccount).getOptionsCached();
-            if (options == null) {
-                ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_payments_getStarsTopupOptions(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                    ArrayList<TLRPC.TL_starsTopupOption> loadedOptions = new ArrayList<>();
-                    if (res instanceof TLRPC.Vector) {
-                        TLRPC.Vector vector = (TLRPC.Vector) res;
-                        for (Object object : vector.objects) {
-                            if (object instanceof TLRPC.TL_starsTopupOption) {
-                                TLRPC.TL_starsTopupOption option = (TLRPC.TL_starsTopupOption) object;
-                                loadedOptions.add(option);
-                            }
-                        }
-                    } else if (err != null) {
-                        FileLog.d("retrievePopup: getStarsTopupOptions gives error! " + err.code + ": " + err.text);
-                    }
-
-                    TLRPC.TL_starsTopupOption foundOption = null;
-                    for (int i = 0; i < loadedOptions.size(); ++i) {
-                        if (productId.equals(loadedOptions.get(i).store_product)) {
-                            foundOption = loadedOptions.get(i);
-                            break;
-                        }
-                    }
-
-                    if (foundOption != null) {
-                        TLRPC.TL_inputStorePaymentStars purpose = new TLRPC.TL_inputStorePaymentStars();
-                        purpose.amount = foundOption.amount;
-                        purpose.currency = foundOption.currency;
-                        purpose.stars = foundOption.stars;
-                        FileLog.d("retrievePurpose: found stars option of " + productId + " from stars loaded options!");
-                        whenPayload.run(new Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>(payload.first, purpose));
-                    } else {
-                        FileLog.d("retrievePurpose: failed to find option of " + productId + " from stars loaded options");
-                        whenPayload.run(payload);
-                    }
-                }));
-                return true;
-            } else {
-                TLRPC.TL_starsTopupOption foundOption = null;
-                for (int i = 0; i < options.size(); ++i) {
-                    if (productId.equals(options.get(i).store_product)) {
-                        foundOption = options.get(i);
-                        break;
-                    }
-                }
-
-                if (foundOption != null) {
-                    TLRPC.TL_inputStorePaymentStars purpose = new TLRPC.TL_inputStorePaymentStars();
-                    purpose.amount = foundOption.amount;
-                    purpose.currency = foundOption.currency;
-                    purpose.stars = foundOption.stars;
-                    FileLog.d("retrievePurpose: found stars option of " + productId + " from stars options!");
-                    whenPayload.run(new Pair<AccountInstance, TLRPC.InputStorePaymentPurpose>(payload.first, purpose));
-                    return true;
-                } else {
-                    FileLog.d("retrievePurpose: failed to find option of " + productId + " from stars options");
-                    whenPayload.run(payload);
-                    return false;
                 }
             }
         }
@@ -417,7 +330,8 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose) {
         if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
-                || purpose instanceof TLRPC.TL_inputStorePaymentStars
+                || purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup
+                || purpose instanceof TLRPC.TL_inputStorePaymentStarsGift
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
             billingClient.consumeAsync(
                     ConsumeParams.newBuilder()
@@ -510,18 +424,19 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     public static String getResponseCodeString(int code) {
         switch (code) {
-            case -3: return "SERVICE_TIMEOUT";
-            case -2: return "FEATURE_NOT_SUPPORTED";
-            case -1: return "SERVICE_DISCONNECTED";
-            case 0: return "OK";
-            case 1: return "USER_CANCELED";
-            case 2: return "SERVICE_UNAVAILABLE";
-            case 3: return "BILLING_UNAVAILABLE";
-            case 4: return "ITEM_UNAVAILABLE";
-            case 5: return "DEVELOPER_ERROR";
-            case 6: return "ERROR";
-            case 7: return "ITEM_ALREADY_OWNED";
-            case 8: return "ITEM_NOT_OWNED";
+            case BillingClient.BillingResponseCode.SERVICE_TIMEOUT:       return "SERVICE_TIMEOUT";
+            case BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED: return "FEATURE_NOT_SUPPORTED";
+            case BillingClient.BillingResponseCode.SERVICE_DISCONNECTED:  return "SERVICE_DISCONNECTED";
+            case BillingClient.BillingResponseCode.OK:                    return "OK";
+            case BillingClient.BillingResponseCode.USER_CANCELED:         return "USER_CANCELED";
+            case BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE:   return "SERVICE_UNAVAILABLE";
+            case BillingClient.BillingResponseCode.BILLING_UNAVAILABLE:   return "BILLING_UNAVAILABLE";
+            case BillingClient.BillingResponseCode.ITEM_UNAVAILABLE:      return "ITEM_UNAVAILABLE";
+            case BillingClient.BillingResponseCode.DEVELOPER_ERROR:       return "DEVELOPER_ERROR";
+            case BillingClient.BillingResponseCode.ERROR:                 return "ERROR";
+            case BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED:    return "ITEM_ALREADY_OWNED";
+            case BillingClient.BillingResponseCode.ITEM_NOT_OWNED:        return "ITEM_NOT_OWNED";
+            case BillingClient.BillingResponseCode.NETWORK_ERROR:         return "NETWORK_ERROR";
         }
         return null;
     }

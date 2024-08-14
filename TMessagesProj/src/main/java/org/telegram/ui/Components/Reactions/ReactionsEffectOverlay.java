@@ -322,7 +322,7 @@ public class ReactionsEffectOverlay {
                         toY += reactionButton.drawingImageRect.top;
                     }
                     if (chatActivity != null) {
-                        toY += chatActivity.drawingChatLisViewYoffset;
+                        toY += chatActivity.drawingChatListViewYoffset;
                     }
                     if (drawingCell.drawPinnedBottom && !drawingCell.shouldDrawTimeOnMedia()) {
                         toY += AndroidUtilities.dp(2);

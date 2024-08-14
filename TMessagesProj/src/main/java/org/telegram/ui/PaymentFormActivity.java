@@ -106,6 +106,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
@@ -1160,6 +1161,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 };
                 webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDomStorageEnabled(true);
+
+                webView.getSettings().setSupportZoom(true);
+                webView.getSettings().setBuiltInZoomControls(true);
+                webView.getSettings().setDisplayZoomControls(false);
+                webView.getSettings().setUseWideViewPort(true);
 
                 if (Build.VERSION.SDK_INT >= 21) {
                     webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -2410,6 +2416,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 webView.setBackgroundColor(0xffffffff);
                 webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDomStorageEnabled(true);
+
+                webView.getSettings().setSupportZoom(true);
+                webView.getSettings().setBuiltInZoomControls(true);
+                webView.getSettings().setDisplayZoomControls(false);
+                webView.getSettings().setUseWideViewPort(true);
 
                 if (Build.VERSION.SDK_INT >= 21) {
                     webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -4130,9 +4141,15 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                     getMessagesController().processUpdates(updates, false);
                     AndroidUtilities.runOnUIThread(() -> {
+                        Context context = getContext();
+                        if (context == null) context = ApplicationLoader.applicationContext;
+                        if (context == null) context = LaunchActivity.instance;
+                        if (context == null) return;
+
                         paymentStatusSent = true;
                         invoiceStatus = InvoiceStatus.PAID;
                         final boolean isStars = invoiceInput instanceof TLRPC.TL_inputInvoiceStars;
+                        final boolean isStarsGift = isStars && ((TLRPC.TL_inputInvoiceStars) invoiceInput).purpose instanceof TLRPC.TL_inputStorePaymentStarsGift;
                         if (!isStars && paymentFormCallback != null) {
                             paymentFormCallback.onInvoiceStatusChanged(invoiceStatus);
                         }
@@ -4141,21 +4158,46 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         if (isStars && paymentFormCallback != null) {
                             paymentFormCallback.onInvoiceStatusChanged(invoiceStatus);
                         }
+                        final long giftUserId = getStarsGiftUserId();
+                        String giftUser = "";
+                        if (giftUserId != 0) {
+                            giftUser = UserObject.getForcedFirstName(getMessagesController().getUser(giftUserId));
+                        }
+                        long stars = getStars();
+                        int icon = isStars ? (isStarsGift ? R.raw.stars_send : R.raw.stars_topup) : R.raw.payment_success;
+                        CharSequence bulletinTitle = !isStars ? null : (isStarsGift ? getString(R.string.StarsGiftSentPopup) : getString(R.string.StarsAcquired));
                         CharSequence bulletinText = AndroidUtilities.replaceTags(
                             isStars ?
-                                LocaleController.formatPluralString("PaymentInfoHintStars", (int) ((TLRPC.TL_inputInvoiceStars) invoiceInput).option.stars, totalPrice[0]) :
+                                LocaleController.formatPluralString(isStarsGift ? "StarsGiftSentPopupInfo" : "StarsAcquiredInfo", (int) stars, giftUser) :
                                 LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName)
                         );
-                        if (parentFragment instanceof ChatActivity) {
-                            UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
-                            if (undoView != null) {
-                                undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, bulletinText, message[0], null, null);
-                            }
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null) return;
+                        BulletinFactory factory = BulletinFactory.of(lastFragment);
+                        Bulletin bulletin;
+                        if (giftUserId != 0 && bulletinTitle != null) {
+                            bulletin = factory.createSimpleBulletin(icon, bulletinTitle, bulletinText, getString(R.string.ViewInChat), () -> {
+                                BaseFragment lastFragment2 = LaunchActivity.getSafeLastFragment();
+                                if (lastFragment2 != null) {
+                                    lastFragment2.presentFragment(ChatActivity.of(giftUserId));
+                                }
+                            });
+                        } else if (bulletinTitle != null) {
+                            bulletin = factory.createSimpleBulletin(icon, bulletinTitle, bulletinText);
                         } else {
-                            Bulletin bulletin = BulletinFactory.global().createSimpleBulletin(R.raw.payment_success, bulletinText);
-                            if (message[0] != null) {
-                                bulletin.setOnClickListener(v -> {
-                                    bulletin.hide();
+                            bulletin = factory.createSimpleBulletin(icon, bulletinText);
+                        }
+                        bulletin.hideAfterBottomSheet = false;
+                        bulletin.setDuration(Bulletin.DURATION_PROLONG);
+                        if (message[0] != null) {
+                            bulletin.setOnClickListener(v -> {
+                                bulletin.hide();
+                                if (isStarsGift) {
+                                    BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                                    if (fragment != null) {
+                                        fragment.presentFragment(ChatActivity.of(MessageObject.getDialogId(message[0]), message[0].id));
+                                    }
+                                } else {
                                     TLRPC.TL_payments_getPaymentReceipt req2 = new TLRPC.TL_payments_getPaymentReceipt();
                                     req2.msg_id = message[0].id;
                                     req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(message[0].peer_id);
@@ -4163,19 +4205,19 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         if (response2 instanceof TLRPC.TL_payments_paymentReceiptStars) {
                                             StarsIntroActivity.showTransactionSheet(getContext(), false, currentAccount, (TLRPC.TL_payments_paymentReceiptStars) response2, getResourceProvider());
                                         } else if (response2 instanceof TLRPC.PaymentReceipt) {
-                                            BaseFragment lastFragment = LaunchActivity.getLastFragment();
-                                            if (lastFragment != null) {
+                                            BaseFragment lastFragment3 = LaunchActivity.getLastFragment();
+                                            if (lastFragment3 != null) {
                                                 BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
                                                 params.transitionFromLeft = true;
                                                 params.allowNestedScroll = false;
-                                                lastFragment.showAsSheet(new PaymentFormActivity((TLRPC.PaymentReceipt) response2), params);
+                                                lastFragment3.showAsSheet(new PaymentFormActivity((TLRPC.PaymentReceipt) response2), params);
                                             }
                                         }
                                     }), ConnectionsManager.RequestFlagFailOnServerErrors);
-                                });
-                            }
-                            bulletin.show();
+                                }
+                            });
                         }
+                        bulletin.show();
                     });
                 } else if (response instanceof TLRPC.TL_payments_paymentVerificationNeeded) {
                     AndroidUtilities.runOnUIThread(() -> {
@@ -4203,9 +4245,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                                     onCheckoutSuccess(parentLayout, parentActivity);
 
+                                    long stars = getStars();
                                     CharSequence bulletinText = AndroidUtilities.replaceTags(
                                         invoiceInput instanceof TLRPC.TL_inputInvoiceStars ?
-                                            LocaleController.formatPluralString("PaymentInfoHintStars", (int) ((TLRPC.TL_inputInvoiceStars) invoiceInput).option.stars, totalPrice[0]) :
+                                            LocaleController.formatPluralString("PaymentInfoHintStars", (int) stars, totalPrice[0]) :
                                             LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName)
                                     );
                                     if (parentFragment instanceof ChatActivity) {
@@ -4215,6 +4258,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         }
                                     } else {
                                         Bulletin bulletin = BulletinFactory.global().createSimpleBulletin(R.raw.payment_success, bulletinText);
+                                        bulletin.hideAfterBottomSheet = false;
                                         if (message != null) {
                                             bulletin.setOnClickListener(v -> {
                                                 bulletin.hide();
@@ -4270,6 +4314,31 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
+    }
+
+    private long getStars() {
+        if (invoiceInput instanceof TLRPC.TL_inputInvoiceStars) {
+            TLRPC.TL_inputInvoiceStars invoiceInputStars = (TLRPC.TL_inputInvoiceStars) invoiceInput;
+            final TLRPC.InputStorePaymentPurpose purpose = invoiceInputStars.purpose;
+            if (purpose instanceof TLRPC.TL_inputStorePaymentStarsGift) {
+                return ((TLRPC.TL_inputStorePaymentStarsGift) purpose).stars;
+            } else if (purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup) {
+                return ((TLRPC.TL_inputStorePaymentStarsTopup) purpose).stars;
+            }
+        }
+        return 0;
+    }
+
+    private long getStarsGiftUserId() {
+        if (invoiceInput instanceof TLRPC.TL_inputInvoiceStars) {
+            TLRPC.TL_inputInvoiceStars invoiceInputStars = (TLRPC.TL_inputInvoiceStars) invoiceInput;
+            final TLRPC.InputStorePaymentPurpose purpose = invoiceInputStars.purpose;
+            if (purpose instanceof TLRPC.TL_inputStorePaymentStarsGift) {
+                TLRPC.TL_inputStorePaymentStarsGift p = (TLRPC.TL_inputStorePaymentStarsGift) purpose;
+                if (p.user_id != null) return p.user_id.user_id;
+            }
+        }
+        return 0;
     }
 
     private void shakeField(int field) {

@@ -29,7 +29,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.List;
 
-public class GraySectionCell extends FrameLayout {
+public class GraySectionCell extends FrameLayout implements Theme.Colorable {
 
     private AnimatedEmojiSpan.TextViewEmojis textView;
     private AnimatedTextView rightTextView;
@@ -67,6 +67,12 @@ public class GraySectionCell extends FrameLayout {
         addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
 
         ViewCompat.setAccessibilityHeading(this, true);
+    }
+
+    public void updateColors() {
+        setBackgroundColor(getThemedColor(Theme.key_graySection));
+        textView.setTextColor(getThemedColor(Theme.key_graySectionText));
+        rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
     }
 
     @Override

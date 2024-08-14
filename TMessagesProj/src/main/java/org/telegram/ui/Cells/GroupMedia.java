@@ -990,6 +990,10 @@ public class GroupMedia {
                     position.photoWidth = 100;
                     position.photoHeight = 100;
                 }
+                if (position.photoWidth <= 0 || position.photoHeight <= 0) {
+                    position.photoWidth = 50;
+                    position.photoHeight = 50;
+                }
                 position.aspectRatio = position.photoWidth / (float) position.photoHeight;
 
                 if (position.aspectRatio > 1.2f) {

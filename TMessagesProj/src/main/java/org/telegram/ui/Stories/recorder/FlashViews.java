@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -27,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ViewAnimator;
 
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.gms.vision.Frame;
@@ -38,6 +40,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
@@ -57,11 +60,13 @@ public class FlashViews {
 
     private final ArrayList<Invertable> invertableViews = new ArrayList<>();
 
+    @Nullable
     private final WindowManager windowManager;
     private final View windowView;
+    @Nullable
     private final WindowManager.LayoutParams windowViewParams;
 
-    public FlashViews(Context context, WindowManager windowManager, View windowView, WindowManager.LayoutParams windowViewParams) {
+    public FlashViews(Context context, @Nullable WindowManager windowManager, View windowView, @Nullable WindowManager.LayoutParams windowViewParams) {
         this.context = context;
         this.windowManager = windowManager;
         this.windowView = windowView;
@@ -84,7 +89,7 @@ public class FlashViews {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 gradientMatrix.reset();
-                gradientMatrix.postTranslate(-getX(), -getY());
+                gradientMatrix.postTranslate(-getX(), -getY() + AndroidUtilities.statusBarHeight);
                 gradientMatrix.postScale(1f / getScaleX(), 1f / getScaleY(), getPivotX(), getPivotY());
                 drawGradient(canvas, false);
             }
@@ -94,19 +99,35 @@ public class FlashViews {
     }
 
     public void flash(Utilities.Callback<Utilities.Callback<Runnable>> takePicture) {
-        windowViewParams.screenBrightness = intensityValue();
-        windowManager.updateViewLayout(windowView, windowViewParams);
+        setScreenBrightness(intensityValue());
         flashTo(1f, 320, () -> {
             AndroidUtilities.runOnUIThread(() -> {
                 takePicture.run(done -> {
-                    windowViewParams.screenBrightness = -1f;
-                    windowManager.updateViewLayout(windowView, windowViewParams);
+                    setScreenBrightness(-1f);
                     AndroidUtilities.runOnUIThread(() -> {
                         flashTo(0f, 240, done);
                     }, 80);
                 });
             }, 320);
         });
+    }
+
+    private void setScreenBrightness(float value) {
+        if (windowViewParams != null) {
+            windowViewParams.screenBrightness = value;
+            if (windowManager != null) {
+                windowManager.updateViewLayout(windowView, windowViewParams);
+            }
+        } else {
+            Activity activity = AndroidUtilities.findActivity(context);
+            if (activity == null) activity = LaunchActivity.instance;
+            if (activity == null || activity.isFinishing()) return;
+            final Window window = activity.getWindow();
+            if (window == null) return;
+            WindowManager.LayoutParams layoutParams = window.getAttributes();
+            layoutParams.screenBrightness = value;
+            window.setAttributes(layoutParams);
+        }
     }
 
     public void previewStart() {
@@ -118,14 +139,12 @@ public class FlashViews {
     }
 
     public void flashIn(Runnable done) {
-        windowViewParams.screenBrightness = intensityValue();
-        windowManager.updateViewLayout(windowView, windowViewParams);
+        setScreenBrightness(intensityValue());
         flashTo(1f, 320, done);
     }
 
     public void flashOut() {
-        windowViewParams.screenBrightness = -1f;
-        windowManager.updateViewLayout(windowView, windowViewParams);
+        setScreenBrightness(-1f);
         flashTo(0f, 240, null);
     }
 

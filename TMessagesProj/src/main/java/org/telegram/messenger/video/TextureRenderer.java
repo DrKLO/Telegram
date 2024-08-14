@@ -41,11 +41,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.exifinterface.media.ExifInterface;
-
-import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -1342,9 +1338,14 @@ public class TextureRenderer {
     }
 
     private void initLocationEntity(VideoEditedInfo.MediaEntity entity) {
-        LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, entity.density, 0);
+        final int variant = entity.type == VideoEditedInfo.MediaEntity.TYPE_LOCATION ? LocationMarker.VARIANT_LOCATION : LocationMarker.VARIANT_WEATHER;
+        LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, variant, entity.density, 0);
+        marker.setIsVideo(true);
         marker.setText(entity.text);
         marker.setType(entity.subType, entity.color);
+        if (entity.weather != null && entity.entities.isEmpty()) {
+            marker.setCodeEmoji(UserConfig.selectedAccount, entity.weather.getEmoji());
+        }
         marker.setMaxWidth(entity.viewWidth);
         if (entity.entities.size() == 1) {
             marker.forceEmoji();

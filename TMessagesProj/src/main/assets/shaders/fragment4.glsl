@@ -6,6 +6,7 @@ uniform sampler2D u_BackgroundTexture;
 uniform float f_xOffset;
 uniform float f_alpha;
 uniform mat4 world;
+uniform float white;
 
 varying vec3 vNormal;
 varying vec2 vUV;
@@ -89,5 +90,5 @@ void main() {
         clamp(flecksSpec * abs(vNormal.z) * (flecksNormal.z), 0.2, 0.3) - .2
     );
 
-    gl_FragColor = color * f_alpha;
+    gl_FragColor = mix(color * f_alpha, vec4(1.0), white);
 }

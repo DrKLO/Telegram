@@ -252,7 +252,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
                         view = new HeaderCell(context, 22);
                         break;
                     case HOLDER_TYPE_USER:
-                        view = new SelectorUserCell(context, resourcesProvider, true);
+                        view = new SelectorUserCell(context, true, resourcesProvider, true);
                         break;
                     default:
                         view = new View(context);

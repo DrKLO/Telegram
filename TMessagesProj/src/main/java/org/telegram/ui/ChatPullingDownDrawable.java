@@ -670,7 +670,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             TLRPC.Dialog dialog = dialogs.get(i);
             TLRPC.Chat chat = messagesController.getChat(-dialog.id);
             if (chat != null && dialog.id != currentDialogId && dialog.unread_count > 0 && DialogObject.isChannel(dialog) && !chat.megagroup && !messagesController.isPromoDialog(dialog.id, false)) {
-                String reason = MessagesController.getRestrictionReason(chat.restriction_reason);
+                String reason = messagesController.getRestrictionReason(chat.restriction_reason);
                 if (reason == null) {
                     return dialog;
                 }

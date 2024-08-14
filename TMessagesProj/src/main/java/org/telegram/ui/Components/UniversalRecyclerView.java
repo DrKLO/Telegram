@@ -16,12 +16,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.FiltersSetupActivity;
 
 import java.util.ArrayList;
-
-import kotlinx.coroutines.android.AndroidDispatcherFactory;
 
 public class UniversalRecyclerView extends RecyclerListView {
 

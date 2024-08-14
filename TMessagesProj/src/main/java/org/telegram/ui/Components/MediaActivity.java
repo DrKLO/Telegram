@@ -344,7 +344,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         boolean hasAvatar = type == TYPE_MEDIA;
 
         if (type == TYPE_STORIES_SEARCH) {
-            actionBar.setTitle("#" + hashtag);
+            actionBar.setTitle(hashtag);
         } else {
             titlesContainer = new FrameLayout(context);
             avatarContainer.addView(titlesContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));

@@ -41,6 +41,7 @@ public interface INavigationLayout {
     void setFragmentStackChangedListener(Runnable onFragmentStackChanged);
     boolean isTransitionAnimationInProgress();
     void resumeDelayedFragmentAnimation();
+    boolean allowSwipe();
 
     boolean isInPassivePreviewMode();
     void setInBubbleMode(boolean bubbleMode);

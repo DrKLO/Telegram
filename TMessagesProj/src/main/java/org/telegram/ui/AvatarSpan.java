@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.text.Spannable;
 import android.text.style.ReplacementSpan;
 import android.util.Log;
@@ -36,6 +37,7 @@ public class AvatarSpan extends ReplacementSpan {
     public AvatarSpan(View parent, int currentAccount, float sz) {
         this.currentAccount = currentAccount;
         this.imageReceiver = new ImageReceiver(parent);
+        imageReceiver.setInvalidateAll(true);
         this.avatarDrawable = new AvatarDrawable();
         setSize(sz);
 
@@ -110,6 +112,10 @@ public class AvatarSpan extends ReplacementSpan {
     public void setName(String name) {
         avatarDrawable.setInfo(0, name, null, null, null, null);
         imageReceiver.setForUserOrChat(null, avatarDrawable);
+    }
+
+    public void setImageDrawable(Drawable drawable) {
+        imageReceiver.setImageBitmap(drawable);
     }
 
     @Override

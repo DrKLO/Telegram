@@ -64,6 +64,8 @@ public class CheckBoxBase {
     private int backgroundColorKey = Theme.key_chat_serviceBackground;
     private int background2ColorKey = Theme.key_chat_serviceBackground;
 
+    private int backgroundColor;
+
     private boolean useDefaultCheck;
 
     private boolean drawUnchecked = true;
@@ -223,6 +225,11 @@ public class CheckBoxBase {
         invalidate();
     }
 
+    public void setBackgroundColor(int backgroundColor) {
+        this.backgroundColor = backgroundColor;
+        invalidate();
+    }
+
     public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
         messageDrawable = drawable;
     }
@@ -309,6 +316,8 @@ public class CheckBoxBase {
                 } else {
                     backgroundPaint.setColor(AndroidUtilities.getOffsetColor(0xffffffff, getThemedColor(checkColorKey), progress, backgroundAlpha));
                 }
+            } else if (backgroundColor != 0) {
+                backgroundPaint.setColor(0);
             } else {
                 backgroundPaint.setColor(AndroidUtilities.getOffsetColor(0x00ffffff, getThemedColor(background2ColorKey >= 0 ? background2ColorKey : checkColorKey), progress, backgroundAlpha));
             }
@@ -385,7 +394,9 @@ public class CheckBoxBase {
                 paint.setColor(getThemedColor(background2ColorKey));
             } else if (backgroundType == 11 || backgroundType == 6 || backgroundType == 7 || backgroundType == 10 || !drawUnchecked && backgroundColorKey >= 0 || backgroundType == 14) {
                 paint.setColor(getThemedColor(backgroundColorKey));
-            } else {
+            } else if (backgroundColor != 0) {
+                paint.setColor(backgroundColor);
+            } else  {
                 paint.setColor(getThemedColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));
             }
             if (forbidden) {

@@ -10,7 +10,6 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
@@ -21,6 +20,7 @@ public class LinkView extends EntityView {
     public final LinkPreview marker;
     private int currentColor;
     private int currentType;
+    private boolean hasColor;
 
     public LinkPreview.WebPagePreview link;
     public TL_stories.MediaArea mediaArea;
@@ -45,13 +45,13 @@ public class LinkView extends EntityView {
         return marker.pady;
     }
 
-    public LinkView(Context context, Point position, int currentAccount, LinkPreview.WebPagePreview link, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type, int color) {
+    public LinkView(Context context, Point position, int currentAccount, LinkPreview.WebPagePreview link, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type) {
         super(context, position);
 
         marker = new LinkPreview(context, density);
         marker.setMaxWidth(maxWidth);
         setLink(currentAccount, link, mediaArea);
-        marker.setType(currentType = type, currentColor = color);
+        marker.setType(currentType = type, currentColor);
         addView(marker, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
         setClipChildren(false);
@@ -87,12 +87,14 @@ public class LinkView extends EntityView {
         marker.setType(currentType = type, currentColor);
     }
 
-    public void setType(int type, int color) {
-        marker.setType(currentType = type, currentColor = color);
-    }
 
     public void setColor(int color) {
-        setType(currentType, color);
+        hasColor = true;
+        currentColor = color;
+    }
+
+    public boolean hasColor() {
+        return hasColor;
     }
 
     public int getColor() {
@@ -101,6 +103,14 @@ public class LinkView extends EntityView {
 
     public int getType() {
         return currentType;
+    }
+
+    public int getNextType() {
+        int nextType = currentType + 1;
+        if (nextType == 4) {
+            return hasColor ? 0 : 1;
+        }
+        return nextType;
     }
 
     @Override
