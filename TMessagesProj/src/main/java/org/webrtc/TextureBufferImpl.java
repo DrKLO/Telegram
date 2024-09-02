@@ -13,11 +13,11 @@ package org.webrtc;
 import android.graphics.Matrix;
 import android.os.Handler;
 
+import androidx.annotation.Nullable;
+
 import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
-
-import androidx.annotation.Nullable;
 
 /**
  * Android texture buffer that glues together the necessary information together with a generic

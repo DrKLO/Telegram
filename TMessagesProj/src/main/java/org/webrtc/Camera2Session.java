@@ -21,15 +21,16 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.os.Handler;
-import androidx.annotation.Nullable;
 import android.util.Range;
 import android.view.Surface;
+
+import androidx.annotation.Nullable;
+
+import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
 
 @TargetApi(21)
 class Camera2Session implements CameraSession {

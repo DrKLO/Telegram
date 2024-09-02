@@ -1,6 +1,5 @@
 package org.telegram.ui.bots;
 
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -10,17 +9,14 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
-import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;

@@ -12,8 +12,6 @@ package org.webrtc;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.util.Log;
-
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 

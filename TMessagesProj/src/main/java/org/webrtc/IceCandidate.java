@@ -11,8 +11,8 @@
 package org.webrtc;
 
 import androidx.annotation.Nullable;
+
 import java.util.Arrays;
-import org.webrtc.PeerConnection;
 
 /**
  * Representation of a single ICE Candidate, mirroring

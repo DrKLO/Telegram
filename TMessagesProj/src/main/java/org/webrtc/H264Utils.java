@@ -10,8 +10,8 @@
 
 package org.webrtc;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /** Container for static helper functions related to dealing with H264 codecs. */
 class H264Utils {

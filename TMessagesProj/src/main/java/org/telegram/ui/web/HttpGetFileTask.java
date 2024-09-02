@@ -1,23 +1,17 @@
 package org.telegram.ui.web;
 
 
-import android.content.ContentResolver;
 import android.os.AsyncTask;
 import android.webkit.MimeTypeMap;
-import android.webkit.URLUtil;
-
-import com.google.android.exoplayer2.util.MimeTypes;
 
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 

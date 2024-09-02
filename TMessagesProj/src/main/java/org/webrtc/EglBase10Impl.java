@@ -13,11 +13,10 @@ package org.webrtc;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
-
-import androidx.annotation.Nullable;
-
 import android.view.Surface;
 import android.view.SurfaceHolder;
+
+import androidx.annotation.Nullable;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;

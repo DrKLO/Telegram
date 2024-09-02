@@ -16,15 +16,18 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.opengl.GLES20;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
 import android.view.Surface;
+
+import androidx.annotation.Nullable;
+
+import org.webrtc.ThreadUtils.ThreadChecker;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import org.webrtc.ThreadUtils.ThreadChecker;
 
 /**
  * Android hardware video encoder.

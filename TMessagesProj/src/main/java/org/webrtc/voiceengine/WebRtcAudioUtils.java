@@ -20,11 +20,12 @@ import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
-import java.lang.Thread;
-import java.util.Arrays;
-import java.util.List;
+
 import org.webrtc.ContextUtils;
 import org.webrtc.Logging;
+
+import java.util.Arrays;
+import java.util.List;
 
 public final class WebRtcAudioUtils {
   private static final String TAG = "WebRtcAudioUtils";

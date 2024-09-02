@@ -23,9 +23,10 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.MediaRecorder.AudioSource;
 import android.os.Build;
-import java.lang.Thread;
-import java.util.Arrays;
+
 import org.webrtc.Logging;
+
+import java.util.Arrays;
 
 final class WebRtcAudioUtils {
   private static final String TAG = "WebRtcAudioUtilsExternal";

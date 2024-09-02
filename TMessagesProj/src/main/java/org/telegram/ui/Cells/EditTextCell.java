@@ -1,15 +1,12 @@
 package org.telegram.ui.Cells;
 
-import static org.telegram.messenger.AndroidUtilities.decelerateInterpolator;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
-import android.text.InputFilter;
 import android.text.InputType;
-import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -25,16 +22,12 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
-
-import java.util.ArrayList;
 
 public class EditTextCell extends FrameLayout {
 

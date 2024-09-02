@@ -2,7 +2,6 @@ package org.telegram.ui.web;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.app.Activity;
@@ -36,8 +35,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.gms.safetynet.SafeBrowsingThreat;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -70,7 +67,6 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.WrappedResourceProvider;
 
-import java.net.IDN;
 import java.net.URLDecoder;
 import java.text.BreakIterator;
 import java.util.ArrayList;

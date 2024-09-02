@@ -42,7 +42,6 @@ import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.RenderProcessGoneDetail;
-import android.webkit.SafeBrowsingResponse;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
@@ -62,8 +61,6 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
-
-import com.google.android.gms.safetynet.SafetyNet;
 
 import org.json.JSONArray;
 import org.json.JSONException;

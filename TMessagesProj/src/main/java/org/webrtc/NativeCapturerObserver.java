@@ -10,8 +10,6 @@
 
 package org.webrtc;
 
-import org.webrtc.VideoFrame;
-
 /**
  * Used from native api and implements a simple VideoCapturer.CapturerObserver that feeds frames to
  * a webrtc::jni::AndroidVideoTrackSource.

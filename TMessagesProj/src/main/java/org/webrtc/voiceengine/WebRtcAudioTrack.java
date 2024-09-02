@@ -18,7 +18,6 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Process;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 

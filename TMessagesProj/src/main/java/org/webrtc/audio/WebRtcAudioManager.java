@@ -17,8 +17,9 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.os.Build;
-import org.webrtc.Logging;
+
 import org.webrtc.CalledByNative;
+import org.webrtc.Logging;
 
 /**
  * This class contains static functions to query sample rate and input/output audio buffer sizes.

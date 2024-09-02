@@ -17,11 +17,14 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.os.Build;
+
 import androidx.annotation.Nullable;
-import java.util.Timer;
-import java.util.TimerTask;
+
 import org.webrtc.ContextUtils;
 import org.webrtc.Logging;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 // WebRtcAudioManager handles tasks that uses android.media.AudioManager.
 // At construction, storeAudioParameters() is called and it retrieves

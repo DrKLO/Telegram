@@ -11,10 +11,13 @@
 package org.webrtc;
 
 import android.os.SystemClock;
+
 import androidx.annotation.Nullable;
+
+import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
 
 @SuppressWarnings("deprecation")
 public class Camera1Enumerator implements CameraEnumerator {

@@ -18,8 +18,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import androidx.annotation.Nullable;
 import android.view.Surface;
+
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.FileLog;
 

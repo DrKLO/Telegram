@@ -12,8 +12,8 @@ package org.webrtc;
 
 import android.content.Context;
 import android.graphics.Matrix;
-import android.view.WindowManager;
 import android.view.Surface;
+import android.view.WindowManager;
 
 interface CameraSession {
   enum FailureType { ERROR, DISCONNECTED }

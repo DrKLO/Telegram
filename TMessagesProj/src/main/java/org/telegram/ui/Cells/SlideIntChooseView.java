@@ -1,7 +1,6 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
@@ -11,17 +10,13 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.Utilities;

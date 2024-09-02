@@ -12,12 +12,14 @@ package org.webrtc;
 
 import android.content.Context;
 import android.os.Process;
+
 import androidx.annotation.Nullable;
-import java.util.List;
+
 import org.webrtc.Logging.Severity;
-import org.webrtc.PeerConnection;
 import org.webrtc.audio.AudioDeviceModule;
 import org.webrtc.audio.JavaAudioDeviceModule;
+
+import java.util.List;
 
 /**
  * Java wrapper for a C++ PeerConnectionFactoryInterface.  Main entry point to

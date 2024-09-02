@@ -19,16 +19,17 @@ import android.media.MediaRecorder.AudioSource;
 import android.media.projection.MediaProjection;
 import android.os.Build;
 import android.os.Process;
+
 import androidx.annotation.Nullable;
-import java.lang.System;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class WebRtcAudioRecord {
 
