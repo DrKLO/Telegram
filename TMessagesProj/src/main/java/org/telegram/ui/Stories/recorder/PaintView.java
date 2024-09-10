@@ -1967,6 +1967,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 Weather.fetch(true, weather -> {
                     if (weather != null) {
                         alert.dismiss();
+                        onOpenCloseStickersAlert(false);
                         appearAnimation(createWeatherView(weather, false));
                     }
                 });
