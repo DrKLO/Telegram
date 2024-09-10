@@ -15,6 +15,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.KeyguardManager;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -76,7 +77,9 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.EncryptionKeyEmojifier;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VideoCapturerDevice;
+import org.telegram.messenger.voip.VoIPPreNotificationService;
 import org.telegram.messenger.voip.VoIPService;
+import org.telegram.messenger.voip.VoIPServiceState;
 import org.telegram.messenger.voip.VoipAudioManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -287,6 +290,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 instance.callingUserTextureView.renderer.release();
                 instance.currentUserTextureView.renderer.release();
                 instance.callingUserMiniTextureRenderer.release();
+                if (instance.windowView != null) {
+                    instance.windowView.finishImmediate();
+                }
                 instance.destroy();
             }
             instance = null;
@@ -295,7 +301,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             return;
         }
         boolean transitionFromPip = VoIPPiPView.getInstance() != null;
-        if (VoIPService.getSharedInstance() == null || VoIPService.getSharedInstance().getUser() == null) {
+        if (VoIPService.getSharedState() == null) {
+            return;
+        }
+        if (VoIPService.getSharedState().getUser() == null) {
             return;
         }
         VoIPFragment fragment = new VoIPFragment(account);
@@ -318,7 +327,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 }
                 if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
                     if (fragment.currentState == VoIPService.STATE_WAITING_INCOMING) {
-                        final VoIPService service = VoIPService.getSharedInstance();
+                        final VoIPServiceState service = VoIPService.getSharedState();
                         if (service != null) {
                             service.stopRinging();
                             return true;
@@ -484,11 +493,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     public VoIPFragment(int account) {
         currentAccount = account;
         currentUser = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
-        callingUser = VoIPService.getSharedInstance().getUser();
-        VoIPService.getSharedInstance().registerStateListener(this);
-        isOutgoing = VoIPService.getSharedInstance().isOutgoing();
+        final VoIPServiceState state = VoIPService.getSharedState();
+        if (state == null) return;
+        callingUser = state.getUser();
+        if (VoIPService.getSharedInstance() != null) {
+            VoIPService.getSharedInstance().registerStateListener(this);
+        }
+        isOutgoing = state.isOutgoing();
         previousState = -1;
-        currentState = VoIPService.getSharedInstance().getCallState();
+        currentState = state.getCallState();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.voipServiceCreated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
@@ -497,9 +510,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     private void destroy() {
-        final VoIPService service = VoIPService.getSharedInstance();
-        if (service != null) {
-            service.unregisterStateListener(this);
+        if (VoIPService.getSharedInstance() != null) {
+            VoIPService.getSharedInstance().unregisterStateListener(this);
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.voipServiceCreated);
@@ -830,8 +842,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserMiniTextureRenderer.setFpsReduction(30);
         callingUserMiniTextureRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
 
-        View backgroundView = new View(context);
-        backgroundView.setBackgroundColor(0xff1b1f23);
+//        View backgroundView = new View(context);
+//        backgroundView.setBackgroundColor(0xff1b1f23);
         //callingUserMiniFloatingLayout.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         callingUserMiniFloatingLayout.addView(callingUserMiniTextureRenderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         callingUserMiniFloatingLayout.setOnTapListener(view -> {
@@ -869,7 +881,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         emojiLayout.setOrientation(LinearLayout.HORIZONTAL);
         emojiLayout.setPadding(0, 0, 0, AndroidUtilities.dp(30));
         emojiLayout.setClipToPadding(false);
-        emojiLayout.setContentDescription(LocaleController.getString("VoipHintEncryptionKey", R.string.VoipHintEncryptionKey));
+        emojiLayout.setContentDescription(LocaleController.getString(R.string.VoipHintEncryptionKey));
         emojiLayout.setOnClickListener(view -> {
             if (System.currentTimeMillis() - lastContentTapTime < 500) {
                 return;
@@ -899,7 +911,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         emojiRationalLayout.setOrientation(LinearLayout.VERTICAL);
 
         emojiRationalTopTextView = new TextView(context);
-        emojiRationalTopTextView.setText(LocaleController.getString("VoipCallEncryptionEndToEnd", R.string.VoipCallEncryptionEndToEnd));
+        emojiRationalTopTextView.setText(LocaleController.getString(R.string.VoipCallEncryptionEndToEnd));
         emojiRationalTopTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         emojiRationalTopTextView.setTypeface(AndroidUtilities.bold());
         emojiRationalTopTextView.setTextColor(Color.WHITE);
@@ -934,16 +946,16 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
-                final VoIPService service = VoIPService.getSharedInstance();
+                final VoIPServiceState service = VoIPService.getSharedState();
                 final CharSequence callingUserTitleText = callingUserTitle.getText();
                 if (service != null && !TextUtils.isEmpty(callingUserTitleText)) {
                     final StringBuilder builder = new StringBuilder(callingUserTitleText);
 
                     builder.append(", ");
-                    if (service.privateCall != null && service.privateCall.video) {
-                        builder.append(LocaleController.getString("VoipInVideoCallBranding", R.string.VoipInVideoCallBranding));
+                    if (service.getPrivateCall() != null && service.getPrivateCall().video) {
+                        builder.append(LocaleController.getString(R.string.VoipInVideoCallBranding));
                     } else {
-                        builder.append(LocaleController.getString("VoipInCallBranding", R.string.VoipInCallBranding));
+                        builder.append(LocaleController.getString(R.string.VoipInCallBranding));
                     }
 
                     final long callDuration = service.getCallDuration();
@@ -1055,11 +1067,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                         activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 101);
                     } else {
-                        if (VoIPService.getSharedInstance() != null) {
+                        if (VoIPService.getSharedState() != null) {
                             runAcceptCallAnimation(() -> {
-                                if (VoIPService.getSharedInstance() != null) {
-                                    VoIPService.getSharedInstance().acceptIncomingCall();
-                                    if (currentUserIsVideo) {
+                                if (VoIPService.getSharedState() != null) {
+                                    VoIPService.getSharedState().acceptIncomingCall();
+                                    if (currentUserIsVideo && VoIPService.getSharedInstance() != null) {
                                         VoIPService.getSharedInstance().requestVideoCall(false);
                                     }
                                 }
@@ -1074,8 +1086,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (currentState == VoIPService.STATE_BUSY) {
                     windowView.finish();
                 } else {
-                    if (VoIPService.getSharedInstance() != null) {
-                        VoIPService.getSharedInstance().declineIncomingCall();
+                    if (VoIPService.getSharedState() != null) {
+                        VoIPService.getSharedState().declineIncomingCall();
+                    } else {
+                        windowView.finish();
                     }
                 }
             }
@@ -1091,7 +1105,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         backIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
         backIcon.setImageResource(R.drawable.msg_call_minimize_shadow);
         backIcon.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
-        backIcon.setContentDescription(LocaleController.getString("Back", R.string.Back));
+        backIcon.setContentDescription(LocaleController.getString(R.string.Back));
         frameLayout.addView(backIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.LEFT));
 
         speakerPhoneIcon = new ImageView(context) {
@@ -1106,7 +1120,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 }
             }
         };
-        speakerPhoneIcon.setContentDescription(LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker));
+        speakerPhoneIcon.setContentDescription(LocaleController.getString(R.string.VoipSpeaker));
         speakerPhoneIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
         speakerPhoneIcon.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
         frameLayout.addView(speakerPhoneIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
@@ -1157,7 +1171,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 .useScale(true)
                 .setInnerPadding(10, 6, 10, 6)
                 .setRounding(8);
-        tapToVideoTooltip.setText(LocaleController.getString("TapToTurnCamera", R.string.TapToTurnCamera));
+        tapToVideoTooltip.setText(LocaleController.getString(R.string.TapToTurnCamera));
         frameLayout.addView(tapToVideoTooltip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 19, 0, 19, 0));
 
         encryptionTooltip = new VoIpHintView(context, HintView2.DIRECTION_TOP, backgroundProvider, false)
@@ -1169,7 +1183,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 .useScale(true)
                 .setInnerPadding(10, 6, 10, 6)
                 .setRounding(8);
-        encryptionTooltip.setText(LocaleController.getString("VoipHintEncryptionKey", R.string.VoipHintEncryptionKey));
+        encryptionTooltip.setText(LocaleController.getString(R.string.VoipHintEncryptionKey));
         frameLayout.addView(encryptionTooltip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
 
         updateViewState();
@@ -1203,7 +1217,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         acceptDeclineView.getLocationOnScreen(loc);
         acceptDeclineView.stopAnimations();
         //callingUserPhotoView.switchToCallConnected(loc[0] + AndroidUtilities.dp(82), loc[1] + AndroidUtilities.dp(74));
-        bottomEndCallBtn.setData(R.drawable.calls_decline, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall2", R.string.VoipEndCall2), false, false);
+        bottomEndCallBtn.setData(R.drawable.calls_decline, Color.WHITE, 0xFFF01D2C, LocaleController.getString(R.string.VoipEndCall2), false, false);
         bottomSpeakerBtn.setType(VoIpSwitchLayout.Type.SPEAKER, false);
         bottomMuteBtn.setType(VoIpSwitchLayout.Type.MICRO, false);
         bottomVideoBtn.setType(VoIpSwitchLayout.Type.VIDEO, true);
@@ -1687,6 +1701,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         boolean showTimer = false;
         boolean showReconnecting = false;
         int statusLayoutOffset = 0;
+        final VoIPServiceState state = VoIPService.getSharedState();
         final VoIPService service = VoIPService.getSharedInstance();
 
         switch (currentState) {
@@ -1694,39 +1709,39 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 showAcceptDeclineView = true;
                 lockOnScreen = false;
                 acceptDeclineView.setRetryMod(false);
-                if (service != null && service.privateCall != null && service.privateCall.video) {
-                    statusTextView.setText(LocaleController.getString("VoipInVideoCallBranding", R.string.VoipInVideoCallBranding), false, animated);
+                if (state != null && state.getPrivateCall() != null && state.getPrivateCall().video) {
+                    statusTextView.setText(LocaleController.getString(R.string.VoipInVideoCallBranding), false, animated);
                     acceptDeclineView.setTranslationY(-AndroidUtilities.dp(60));
                 } else {
-                    statusTextView.setText(LocaleController.getString("VoipInCallBranding", R.string.VoipInCallBranding), false, animated);
+                    statusTextView.setText(LocaleController.getString(R.string.VoipInCallBranding), false, animated);
                     acceptDeclineView.setTranslationY(0);
                 }
                 break;
             case VoIPService.STATE_WAIT_INIT:
             case VoIPService.STATE_WAIT_INIT_ACK:
-                statusTextView.setText(LocaleController.getString("VoipConnecting", R.string.VoipConnecting), true, animated);
+                statusTextView.setText(LocaleController.getString(R.string.VoipConnecting), true, animated);
                 break;
             case VoIPService.STATE_EXCHANGING_KEYS:
                 if (previousState != VoIPService.STATE_EXCHANGING_KEYS) {
-                    statusTextView.setText(LocaleController.getString("VoipExchangingKeys", R.string.VoipExchangingKeys), true, animated);
+                    statusTextView.setText(LocaleController.getString(R.string.VoipExchangingKeys), true, animated);
                 }
                 break;
             case VoIPService.STATE_WAITING:
-                statusTextView.setText(LocaleController.getString("VoipWaiting", R.string.VoipWaiting), true, animated);
+                statusTextView.setText(LocaleController.getString(R.string.VoipWaiting), true, animated);
                 break;
             case VoIPService.STATE_RINGING:
                 if (previousState != VoIPService.STATE_RINGING) {
-                    statusTextView.setText(LocaleController.getString("VoipRinging", R.string.VoipRinging), true, animated);
+                    statusTextView.setText(LocaleController.getString(R.string.VoipRinging), true, animated);
                 }
                 break;
             case VoIPService.STATE_REQUESTING:
-                statusTextView.setText(LocaleController.getString("VoipRequesting", R.string.VoipRequesting), true, animated);
+                statusTextView.setText(LocaleController.getString(R.string.VoipRequesting), true, animated);
                 break;
             case VoIPService.STATE_HANGING_UP:
                 break;
             case VoIPService.STATE_BUSY:
                 showAcceptDeclineView = true;
-                statusTextView.setText(LocaleController.getString("VoipBusy", R.string.VoipBusy), false, animated);
+                statusTextView.setText(LocaleController.getString(R.string.VoipBusy), false, animated);
                 acceptDeclineView.setRetryMod(true);
                 currentUserIsVideo = false;
                 callingUserIsVideo = false;
@@ -1737,7 +1752,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (currentState == VoIPService.STATE_RECONNECTING) {
                     showReconnecting = wasEstablished;
                     if (!wasEstablished && previousState != VoIPService.STATE_RECONNECTING) {
-                        statusTextView.setText(LocaleController.getString("VoipConnecting", R.string.VoipConnecting), true, animated);
+                        statusTextView.setText(LocaleController.getString(R.string.VoipConnecting), true, animated);
                     }
                 } else {
                     wasEstablished = true;
@@ -1801,7 +1816,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     callingUserTitle.animate().alpha(0f).setDuration(70).setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            callingUserTitle.setText(LocaleController.getString("VoipCallEnded", R.string.VoipCallEnded));
+                            callingUserTitle.setText(LocaleController.getString(R.string.VoipCallEnded));
                             callingUserTitle.animate().alpha(1f).setDuration(70).setListener(null).start();
                         }
                     }).start();
@@ -1826,7 +1841,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 }
                 break;
             case VoIPService.STATE_FAILED:
-                statusTextView.setText(LocaleController.getString("VoipFailed", R.string.VoipFailed), false, animated);
+                statusTextView.setText(LocaleController.getString(R.string.VoipFailed), false, animated);
                 final VoIPService voipService = VoIPService.getSharedInstance();
                 final String lastError = voipService != null ? voipService.getLastError() : Instance.ERROR_UNKNOWN;
                 if (!TextUtils.equals(lastError, Instance.ERROR_UNKNOWN)) {
@@ -1840,10 +1855,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                             final String message = LocaleController.formatString("VoipPeerVideoOutdated", R.string.VoipPeerVideoOutdated, name);
                             boolean[] callAgain = new boolean[1];
                             AlertDialog dlg = new DarkAlertDialog.Builder(activity)
-                                    .setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))
+                                    .setTitle(LocaleController.getString(R.string.VoipFailed))
                                     .setMessage(AndroidUtilities.replaceTags(message))
-                                    .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> windowView.finish())
-                                    .setPositiveButton(LocaleController.getString("VoipPeerVideoOutdatedMakeVoice", R.string.VoipPeerVideoOutdatedMakeVoice), (dialogInterface, i) -> {
+                                    .setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> windowView.finish())
+                                    .setPositiveButton(LocaleController.getString(R.string.VoipPeerVideoOutdatedMakeVoice), (dialogInterface, i) -> {
                                         callAgain[0] = true;
                                         currentState = VoIPService.STATE_BUSY;
                                         Intent intent = new Intent(activity, VoIPService.class);
@@ -1880,7 +1895,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     } else if (TextUtils.equals(lastError, Instance.ERROR_LOCALIZED)) {
                         windowView.finish();
                     } else if (TextUtils.equals(lastError, Instance.ERROR_CONNECTION_SERVICE)) {
-                        showErrorDialog(LocaleController.getString("VoipErrorUnknown", R.string.VoipErrorUnknown));
+                        showErrorDialog(LocaleController.getString(R.string.VoipErrorUnknown));
                     } else {
                         AndroidUtilities.runOnUIThread(() -> windowView.finish(), 1000);
                     }
@@ -2546,7 +2561,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             setVideoAction(bottomVideoBtn, service, false);
             setMicrohoneAction(bottomMuteBtn, service, animated);
 
-            bottomEndCallBtn.setData(R.drawable.calls_decline, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall2", R.string.VoipEndCall2), false, animated);
+            bottomEndCallBtn.setData(R.drawable.calls_decline, Color.WHITE, 0xFFF01D2C, LocaleController.getString(R.string.VoipEndCall2), false, animated);
             bottomEndCallBtn.setOnClickListener(view -> {
                 if (VoIPService.getSharedInstance() != null) {
                     AndroidUtilities.cancelRunOnUIThread(hideUIRunnable);
@@ -2587,9 +2602,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (accessibilityManager.isTouchExplorationEnabled()) {
                     final String text;
                     if (micMute) {
-                        text = LocaleController.getString("AccDescrVoipMicOff", R.string.AccDescrVoipMicOff);
+                        text = LocaleController.getString(R.string.AccDescrVoipMicOff);
                     } else {
-                        text = LocaleController.getString("AccDescrVoipMicOn", R.string.AccDescrVoipMicOn);
+                        text = LocaleController.getString(R.string.AccDescrVoipMicOn);
                     }
                     view.announceForAccessibility(text);
                 }
@@ -2625,12 +2640,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 } else {
                     if (Build.VERSION.SDK_INT < 21 && service.privateCall != null && !service.privateCall.video && !callingUserIsVideo && !service.sharedUIParams.cameraAlertWasShowed) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                        builder.setMessage(LocaleController.getString("VoipSwitchToVideoCall", R.string.VoipSwitchToVideoCall));
-                        builder.setPositiveButton(LocaleController.getString("VoipSwitch", R.string.VoipSwitch), (dialogInterface, i) -> {
+                        builder.setMessage(LocaleController.getString(R.string.VoipSwitchToVideoCall));
+                        builder.setPositiveButton(LocaleController.getString(R.string.VoipSwitch), (dialogInterface, i) -> {
                             service.sharedUIParams.cameraAlertWasShowed = true;
                             toggleCameraInput();
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                         builder.create().show();
                     } else {
                         toggleCameraInput();
@@ -2708,9 +2723,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     if (accessibilityManager.isTouchExplorationEnabled()) {
                         final String text;
                         if (service.isFrontFaceCamera()) {
-                            text = LocaleController.getString("AccDescrVoipCamSwitchedToBack", R.string.AccDescrVoipCamSwitchedToBack);
+                            text = LocaleController.getString(R.string.AccDescrVoipCamSwitchedToBack);
                         } else {
-                            text = LocaleController.getString("AccDescrVoipCamSwitchedToFront", R.string.AccDescrVoipCamSwitchedToFront);
+                            text = LocaleController.getString(R.string.AccDescrVoipCamSwitchedToFront);
                         }
                         view.announceForAccessibility(text);
                     }
@@ -2734,9 +2749,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             if (accessibilityManager.isTouchExplorationEnabled()) {
                 final String text;
                 if (!currentUserIsVideo) {
-                    text = LocaleController.getString("AccDescrVoipCamOn", R.string.AccDescrVoipCamOn);
+                    text = LocaleController.getString(R.string.AccDescrVoipCamOn);
                 } else {
-                    text = LocaleController.getString("AccDescrVoipCamOff", R.string.AccDescrVoipCamOff);
+                    text = LocaleController.getString(R.string.AccDescrVoipCamOff);
                 }
                 fragmentView.announceForAccessibility(text);
             }
@@ -2838,26 +2853,28 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     @TargetApi(Build.VERSION_CODES.M)
     private void onRequestPermissionsResultInternal(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == 101) {
-            if (VoIPService.getSharedInstance() == null) {
+            if (VoIPService.getSharedState() == null) {
                 windowView.finish();
                 return;
             }
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 runAcceptCallAnimation(() -> {
-                    if (VoIPService.getSharedInstance() != null) {
-                        VoIPService.getSharedInstance().acceptIncomingCall();
+                    if (VoIPService.getSharedState() != null) {
+                        VoIPService.getSharedState().acceptIncomingCall();
                     }
                 });
             } else {
                 if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    VoIPService.getSharedInstance().declineIncomingCall();
+                    if (VoIPService.getSharedState() != null) {
+                        VoIPService.getSharedState().declineIncomingCall();
+                    }
                     VoIPHelper.permissionDenied(activity, () -> windowView.finish(), requestCode);
                     return;
                 }
             }
         }
         if (requestCode == 102) {
-            if (VoIPService.getSharedInstance() == null) {
+            if (VoIPService.getSharedState() == null) {
                 windowView.finish();
                 return;
             }
@@ -2932,7 +2949,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 service.setVideoState(false, Instance.VIDEO_STATE_ACTIVE);
             }
             updateViewState();
-        } else {
+        } else if (VoIPService.getSharedState() == null) {
             windowView.finish();
         }
 
@@ -2944,9 +2961,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             return;
         }
         AlertDialog dlg = new DarkAlertDialog.Builder(activity)
-                .setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))
+                .setTitle(LocaleController.getString(R.string.VoipFailed))
                 .setMessage(message)
-                .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
+                .setPositiveButton(LocaleController.getString(R.string.OK), null)
                 .show();
         dlg.setCanceledOnTouchOutside(true);
         dlg.setOnDismissListener(dialog -> windowView.finish());

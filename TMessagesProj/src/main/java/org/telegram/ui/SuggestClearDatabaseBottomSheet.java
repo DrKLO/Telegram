@@ -53,7 +53,7 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
         title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setTypeface(AndroidUtilities.bold());
-        title.setText(LocaleController.getString("SuggestClearDatabaseTitle", R.string.SuggestClearDatabaseTitle));
+        title.setText(LocaleController.getString(R.string.SuggestClearDatabaseTitle));
         linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 30, 21, 0));
 
         TextView description = new TextView(context);
@@ -69,7 +69,7 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
-        buttonTextView.setText(LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase));
+        buttonTextView.setText(LocaleController.getString(R.string.ClearLocalDatabase));
 
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
@@ -78,10 +78,10 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
 
         buttonTextView.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-            builder.setTitle(LocaleController.getString("LocalDatabaseClearTextTitle", R.string.LocalDatabaseClearTextTitle));
-            builder.setMessage(LocaleController.getString("LocalDatabaseClearText", R.string.LocalDatabaseClearText));
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            builder.setPositiveButton(LocaleController.getString("CacheClear", R.string.CacheClear), (dialogInterface, i) -> {
+            builder.setTitle(LocaleController.getString(R.string.LocalDatabaseClearTextTitle));
+            builder.setMessage(LocaleController.getString(R.string.LocalDatabaseClearText));
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            builder.setPositiveButton(LocaleController.getString(R.string.CacheClear), (dialogInterface, i) -> {
                 if (fragment.getParentActivity() == null) {
                     return;
                 }

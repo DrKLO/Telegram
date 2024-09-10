@@ -31,7 +31,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
         TextView textView = new TextView(context);
-        textView.setText(LocaleController.getString("SponsoredMessageInfo", R.string.SponsoredMessageInfo));
+        textView.setText(LocaleController.getString(R.string.SponsoredMessageInfo));
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -89,7 +89,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
         });
 
         button.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
-        button.setText(LocaleController.getString("SponsoredMessageAlertLearnMoreUrl", R.string.SponsoredMessageAlertLearnMoreUrl));
+        button.setText(LocaleController.getString(R.string.SponsoredMessageAlertLearnMoreUrl));
         button.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 4));
         button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

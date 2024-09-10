@@ -103,9 +103,11 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
 
             @Override
             protected Size getSizeForItem(int i) {
+                size.full = false;
                 if (i == 0) {
                     size.width = getWidth();
                     size.height = paddedAdapter.getPadding();
+                    size.full = true;
                     return size;
                 } else {
                     i--;
@@ -181,6 +183,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                 } else if (object instanceof TLRPC.Document) {
                     return 20;
                 } else {
+                    position++;
                     if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                         position--;
                     }

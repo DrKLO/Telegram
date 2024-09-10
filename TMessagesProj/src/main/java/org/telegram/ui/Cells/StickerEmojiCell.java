@@ -360,7 +360,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
-        String descr = LocaleController.getString("AttachSticker", R.string.AttachSticker);
+        String descr = LocaleController.getString(R.string.AttachSticker);
         if (sticker != null) {
             for (int a = 0; a < sticker.attributes.size(); a++) {
                 TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);

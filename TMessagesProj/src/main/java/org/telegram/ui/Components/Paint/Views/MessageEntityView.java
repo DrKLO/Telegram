@@ -329,6 +329,7 @@ public class MessageEntityView extends EntityView {
                                 canvas.translate(canvasOffsetX, canvasOffsetY);
                                 cell.setInvalidatesParent(true);
                                 cell.drawReactionsLayout(canvas, alpha, null);
+                                cell.drawCommentLayout(canvas, alpha);
                                 cell.setInvalidatesParent(false);
                                 canvas.restore();
                             }

@@ -2,6 +2,7 @@ package org.telegram.tgnet;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Utilities;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -503,6 +504,16 @@ public class NativeByteBuffer extends AbstractSerializedData {
                     FileLog.e(e);
                 }
             }
+        }
+    }
+
+    public String hex() {
+        try {
+            byte[] bytes = readData(Math.min(limit(), 1024), true);
+            return Utilities.bytesToHex(bytes);
+        } catch (Exception e) {
+            FileLog.e(e);
+            return "<err>";
         }
     }
 

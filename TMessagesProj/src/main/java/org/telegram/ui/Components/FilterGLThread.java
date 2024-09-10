@@ -7,7 +7,6 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Looper;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -163,9 +162,9 @@ public class FilterGLThread extends DispatchQueue {
         String hdrProcessor = "";
         int hdrType = hdrInfo != null ? hdrInfo.getHDRType() : 0;
         if (hdrType == 1) {
-            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_hlg);
+            hdrProcessor = AndroidUtilities.readRes(R.raw.hdr2sdr_hlg);
         } else if (hdrType == 2) {
-            hdrProcessor = RLottieDrawable.readRes(null, R.raw.hdr2sdr_pq);
+            hdrProcessor = AndroidUtilities.readRes(R.raw.hdr2sdr_pq);
         }
 
         int vertexShader;

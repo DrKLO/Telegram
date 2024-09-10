@@ -1846,7 +1846,7 @@ public class Bulletin {
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 undoTextView.setTypeface(AndroidUtilities.bold());
                 undoTextView.setTextColor(undoCancelColor);
-                undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
+                undoTextView.setText(LocaleController.getString(R.string.Undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);
                 ViewHelper.setPaddingRelative(undoTextView, icon ? 34 : 12, 8, 12, 8);
                 addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 8, 0, 8, 0));

@@ -63,10 +63,10 @@ public class ChecksHintView extends FrameLayout {
 
             if (a == 0) {
                 imageView[a].setAnimation(R.raw.ticks_single, 24, 24);
-                textView[a].setText(LocaleController.getString("HintSent", R.string.HintSent));
+                textView[a].setText(LocaleController.getString(R.string.HintSent));
             } else {
                 imageView[a].setAnimation(R.raw.ticks_double, 24, 24);
-                textView[a].setText(LocaleController.getString("HintRead", R.string.HintRead));
+                textView[a].setText(LocaleController.getString(R.string.HintRead));
             }
             imageView[a].playAnimation();
         }

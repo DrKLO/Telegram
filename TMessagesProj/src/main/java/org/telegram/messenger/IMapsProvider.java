@@ -9,10 +9,12 @@ import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Keep;
 import androidx.core.util.Consumer;
 
 import java.util.List;
 
+@Keep
 public interface IMapsProvider {
     int MAP_TYPE_NORMAL = 0,
         MAP_TYPE_SATELLITE = 1,

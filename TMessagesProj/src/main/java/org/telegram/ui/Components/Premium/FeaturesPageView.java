@@ -69,13 +69,13 @@ public class FeaturesPageView extends BaseListPageView {
         SparseIntArray order = null;
         if (type == FEATURES_STORIES) {
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_order,
-                    LocaleController.getString("PremiumStoriesPriority", R.string.PremiumStoriesPriority),
-                    LocaleController.getString("PremiumStoriesPriorityDescription", R.string.PremiumStoriesPriorityDescription),
+                    LocaleController.getString(R.string.PremiumStoriesPriority),
+                    LocaleController.getString(R.string.PremiumStoriesPriorityDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_PRIORITY_ORDER
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_stealth,
-                    LocaleController.getString("PremiumStoriesStealth", R.string.PremiumStoriesStealth),
-                    LocaleController.getString("PremiumStoriesStealthDescription", R.string.PremiumStoriesStealthDescription),
+                    LocaleController.getString(R.string.PremiumStoriesStealth),
+                    LocaleController.getString(R.string.PremiumStoriesStealthDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_STEALTH_MODE
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.menu_quality_hd,
@@ -84,28 +84,28 @@ public class FeaturesPageView extends BaseListPageView {
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_QUALITY
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_views,
-                    LocaleController.getString("PremiumStoriesViews", R.string.PremiumStoriesViews),
-                    LocaleController.getString("PremiumStoriesViewsDescription", R.string.PremiumStoriesViewsDescription),
+                    LocaleController.getString(R.string.PremiumStoriesViews),
+                    LocaleController.getString(R.string.PremiumStoriesViewsDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_VIEWS_HISTORY
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_timer,
-                    LocaleController.getString("PremiumStoriesExpiration", R.string.PremiumStoriesExpiration),
-                    LocaleController.getString("PremiumStoriesExpirationDescription", R.string.PremiumStoriesExpirationDescription),
+                    LocaleController.getString(R.string.PremiumStoriesExpiration),
+                    LocaleController.getString(R.string.PremiumStoriesExpirationDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_EXPIRATION_DURATION
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_save,
-                    LocaleController.getString("PremiumStoriesSaveToGallery", R.string.PremiumStoriesSaveToGallery),
-                    LocaleController.getString("PremiumStoriesSaveToGalleryDescription", R.string.PremiumStoriesSaveToGalleryDescription),
+                    LocaleController.getString(R.string.PremiumStoriesSaveToGallery),
+                    LocaleController.getString(R.string.PremiumStoriesSaveToGalleryDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_SAVE_TO_GALLERY
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_caption,
-                    LocaleController.getString("PremiumStoriesCaption", R.string.PremiumStoriesCaption),
-                    LocaleController.getString("PremiumStoriesCaptionDescription", R.string.PremiumStoriesCaptionDescription),
+                    LocaleController.getString(R.string.PremiumStoriesCaption),
+                    LocaleController.getString(R.string.PremiumStoriesCaptionDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_CAPTION
             ));
             itemsTmp.add(new Item(VIEW_TYPE_ITEM, R.drawable.msg_stories_link,
-                    LocaleController.getString("PremiumStoriesFormatting", R.string.PremiumStoriesFormatting),
-                    LocaleController.getString("PremiumStoriesFormattingDescription", R.string.PremiumStoriesFormattingDescription),
+                    LocaleController.getString(R.string.PremiumStoriesFormatting),
+                    LocaleController.getString(R.string.PremiumStoriesFormattingDescription),
                     PremiumPreviewFragment.PREMIUM_FEATURE_STORIES_LINKS_AND_FORMATTING
             ));
         } else if (type == FEATURES_BUSINESS) {
@@ -279,7 +279,7 @@ public class FeaturesPageView extends BaseListPageView {
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                textView.setText(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
+                textView.setText(LocaleController.getString(R.string.UpgradedStories));
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 111, 0, 0));
 
                 gradientTools.isLinear = true;

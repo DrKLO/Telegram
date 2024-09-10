@@ -511,6 +511,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                     }
                     if ((cell.getCurrentPosition() != null && ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && (cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_LEFT) != 0 || cell.getCurrentMessagesGroup() != null && cell.getCurrentMessagesGroup().isDocuments))) {
                         cell.drawReactionsLayout(canvas, cell.getAlpha(), null);
+                        cell.drawCommentLayout(canvas, cell.getAlpha());
                     }
                     if (cell.getCurrentPosition() != null) {
                         cell.drawNamesLayout(canvas, cell.getAlpha());

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
-    package="org.telegram.messenger"
     android:installLocation="auto">
 
     <supports-screens android:anyDensity="true"
@@ -24,6 +23,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -407,7 +412,7 @@
         <receiver
             android:name=".AutoMessageReplyReceiver"
             android:exported="false">
-            <intent-filter>
+e            <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_REPLY"/>
             </intent-filter>
         </receiver>
@@ -426,7 +431,11 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".AuthenticatorService" android:exported="true">
+        <service
+            android:name=".AuthenticatorService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        >
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator"/>
             </intent-filter>
@@ -434,7 +443,11 @@
                 android:resource="@xml/auth"/>
         </service>
 
-        <service android:name=".ContactsSyncAdapterService" android:exported="true">
+        <service
+            android:name=".ContactsSyncAdapterService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        >
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
             </intent-filter>
@@ -444,27 +457,80 @@
                 android:resource="@xml/contacts" />
         </service>
 
-        <service android:name=".KeepAliveJob"
-                 android:exported="false"
-                 android:permission="android.permission.BIND_JOB_SERVICE"/>
-        <service android:name=".BringAppForegroundService" android:enabled="true"  android:exported="true"/>
-        <service android:name=".NotificationsService" android:enabled="true"  android:exported="true"/>
-        <service android:name=".NotificationRepeat" android:exported="false"/>
-        <service android:name=".VideoEncodingService" android:enabled="true" android:exported="true"/>
-        <service android:name="org.telegram.ui.Stories.recorder.StoryUploadingService" android:enabled="true" android:exported="true"/>
-        <service android:name=".ImportingService" android:enabled="true" android:exported="true"/>
-        <service android:name=".LocationSharingService"
-            android:foregroundServiceType="location"
+        <service
+            android:name=".KeepAliveJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name=".BringAppForegroundService"
             android:enabled="true"
-            android:exported="true"/>
-        <service android:name=".voip.VoIPService" android:enabled="true" android:foregroundServiceType="mediaProjection|camera|microphone|mediaPlayback"/>
-        <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true" android:foregroundServiceType="mediaPlayback"/>
-        <service android:name=".MusicBrowserService" android:exported="true">
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback"
+        />
+        <service
+            android:name=".NotificationsService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name=".NotificationRepeat"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name=".VideoEncodingService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name="org.telegram.ui.Stories.recorder.StoryUploadingService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name=".ImportingService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
+            android:name=".LocationSharingService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="location|dataSync"
+        />
+        <service
+            android:name=".voip.VoIPService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone|mediaPlayback|mediaProjection"
+        />
+        <service
+            android:name=".MusicPlayerService"
+            android:exported="true"
+            android:enabled="true"
+            android:foregroundServiceType="mediaPlayback"
+        />
+        <service
+            android:name=".MusicBrowserService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback"
+        >
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService"/>
             </intent-filter>
         </service>
-        <service android:name=".voip.TelegramConnectionService" android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE" android:exported="true">
+        <service
+            android:name=".voip.TelegramConnectionService"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        >
             <intent-filter>
                 <action android:name="android.telecom.ConnectionService" />
             </intent-filter>
@@ -545,9 +611,12 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".ChatsWidgetService"
+        <service
+            android:name=".ChatsWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
+            android:foregroundServiceType="dataSync"
+            android:exported="false"
+        />
 
         <receiver android:name=".ContactsWidgetProvider" android:exported="false">
             <meta-data android:name="android.appwidget.provider"
@@ -557,9 +626,12 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".ContactsWidgetService"
+        <service
+            android:name=".ContactsWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+        />
 
 <!--        <receiver android:name=".FeedWidgetProvider">-->
 <!--            <meta-data android:name="android.appwidget.provider"-->
@@ -572,7 +644,11 @@
 <!--        <service android:name=".FeedWidgetService"-->
 <!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
 <!--            android:exported="false" />-->
-        <service android:name=".FilesMigrationService" android:exported="false"/>
+        <service
+            android:name=".FilesMigrationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+        />
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

@@ -1399,7 +1399,11 @@ public class TextureRenderer {
         LinkPreview marker = new LinkPreview(ApplicationLoader.applicationContext, entity.density);
         marker.setVideoTexture();
         marker.set(UserConfig.selectedAccount, entity.linkSettings);
-        marker.setType(entity.subType, entity.color);
+        if (marker.withPreview()) {
+            marker.setPreviewType(entity.subType);
+        } else {
+            marker.setType(entity.subType, entity.color);
+        }
         marker.setMaxWidth(entity.viewWidth + marker.padx + marker.padx);
         marker.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
         marker.layout(0, 0, entity.viewWidth, entity.viewHeight);
@@ -1447,30 +1451,11 @@ public class TextureRenderer {
             if (!TextUtils.isEmpty(entity.segmentedPath) && (entity.subType & 16) != 0) {
                 path = entity.segmentedPath;
             }
-            if (Build.VERSION.SDK_INT >= 19) {
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO) {
-                    opts.inMutable = true;
-                }
-                entity.bitmap = BitmapFactory.decodeFile(path, opts);
-            } else {
-                try {
-                    File filePath = new File(path);
-                    RandomAccessFile file = new RandomAccessFile(filePath, "r");
-                    ByteBuffer buffer = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, filePath.length());
-                    BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-                    bmOptions.inJustDecodeBounds = true;
-                    Utilities.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true);
-                    if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO) {
-                        bmOptions.inMutable = true;
-                    }
-                    entity.bitmap = Bitmaps.createBitmap(bmOptions.outWidth, bmOptions.outHeight, Bitmap.Config.ARGB_8888);
-                    Utilities.loadWebpImage(entity.bitmap, buffer, buffer.limit(), null, true);
-                    file.close();
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO) {
+                opts.inMutable = true;
             }
+            entity.bitmap = BitmapFactory.decodeFile(path, opts);
             if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO && entity.bitmap != null) {
                 entity.roundRadius = AndroidUtilities.dp(12) / (float) Math.min(entity.viewWidth, entity.viewHeight);
                 Pair<Integer, Integer> orientation = AndroidUtilities.getImageOrientation(entity.text);

@@ -171,7 +171,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("DoNotTranslate", R.string.DoNotTranslate));
+        actionBar.setTitle(LocaleController.getString(R.string.DoNotTranslate));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -213,7 +213,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 }
             }
         });
-        item.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
+        item.setSearchFieldHint(LocaleController.getString(R.string.Search));
 
         listAdapter = new ListAdapter(context, false);
         searchListViewAdapter = new ListAdapter(context, true);
@@ -223,7 +223,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         emptyView = new EmptyTextProgressView(context);
-        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        emptyView.setText(LocaleController.getString(R.string.NoResult));
         emptyView.showTextView();
         emptyView.setShowAtCenter(true);
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -432,7 +432,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 case 2:
                     HeaderCell header = new HeaderCell(mContext);
                     header.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    header.setText(LocaleController.getString("ChooseLanguages", R.string.ChooseLanguages));
+                    header.setText(LocaleController.getString(R.string.ChooseLanguages));
                     view = header;
                     break;
                 case 1:

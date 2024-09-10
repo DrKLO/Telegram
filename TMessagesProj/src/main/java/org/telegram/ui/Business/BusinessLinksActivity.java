@@ -195,7 +195,7 @@ public class BusinessLinksActivity extends UniversalFragment implements Notifica
             BusinessLinksController.getInstance(currentAccount).editLinkTitle(link.link, text);
             dialogInterface.dismiss();
         });
-        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> {
             dialogInterface.dismiss();
         });
         if (adaptive) {

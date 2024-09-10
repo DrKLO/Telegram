@@ -189,6 +189,9 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 backgroundMotion = newMotion;
                 themeAnimationValue = 0f;
                 checkMotion();
+            } else if (backgroundMotion != newMotion) {
+                backgroundMotion = newMotion;
+                checkMotion();
             }
             themeAnimationValue = Utilities.clamp(themeAnimationValue + AndroidUtilities.screenRefreshTime / 200, 1f, 0);
             for (int a = 0; a < 2; a++) {
@@ -634,7 +637,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
         float sX = (float) finalBitmap.topBitmap.getWidth() / (float) lastW;
         float sY = (float) (finalBitmap.topBitmap.getHeight() - TOP_CLIP_OFFSET) / (float) lastH;
-        finalBitmap.topCanvas.save();
+        int saveCount = finalBitmap.topCanvas.save();
         finalBitmap.pixelFixOffset = getScrollOffset() % (int) (DOWN_SCALE * 2);
 
         finalBitmap.topCanvas.clipRect(1, 10 * sY, finalBitmap.topBitmap.getWidth(), finalBitmap.topBitmap.getHeight() - 1);
@@ -645,7 +648,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         finalBitmap.topScaleY = 1f / sY;
 
         drawList(finalBitmap.topCanvas, true, null);
-        finalBitmap.topCanvas.restore();
+        try {
+            finalBitmap.topCanvas.restoreToCount(saveCount);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
 
         if (needBlurBottom) {
             sX = (float) finalBitmap.bottomBitmap.getWidth() / (float) lastW;

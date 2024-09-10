@@ -336,7 +336,7 @@ public class SMSSubscribeSheet {
                 }
                 new AlertDialog.Builder(activity)
                     .setMessage(AndroidUtilities.replaceTags(getString(messageResId)))
-                    .setPositiveButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
+                    .setPositiveButton(LocaleController.getString(R.string.Settings), (dialog, which) -> {
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                         Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
                         intent.setData(uri);

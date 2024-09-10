@@ -359,9 +359,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 fullAlbumArt = albumArt;
             }
             if (messageObject.isVoice()) {
-                contentText = LocaleController.getString("AttachAudio", R.string.AttachAudio);
+                contentText = LocaleController.getString(R.string.AttachAudio);
             } else {
-                contentText = LocaleController.getString("AttachRound", R.string.AttachRound);
+                contentText = LocaleController.getString(R.string.AttachRound);
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -402,15 +402,15 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 bldr.setLargeIcon(albumArtPlaceholder);
             }
 
-            final String nextDescription = LocaleController.getString("Next", R.string.Next);
-            final String previousDescription = LocaleController.getString("AccDescrPrevious", R.string.AccDescrPrevious);
+            final String nextDescription = LocaleController.getString(R.string.Next);
+            final String previousDescription = LocaleController.getString(R.string.AccDescrPrevious);
 
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
                 if (messageObject.isMusic()) {
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build());
                 }
-                bldr.addAction(new Notification.Action.Builder(R.drawable.loading_animation2, LocaleController.getString("Loading", R.string.Loading), null).build());
+                bldr.addAction(new Notification.Action.Builder(R.drawable.loading_animation2, LocaleController.getString(R.string.Loading), null).build());
                 if (messageObject.isMusic()) {
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
                 }
@@ -423,7 +423,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                                 MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                                 getPlaybackSpeed(isPlaying, messageObject))
                         .setActions(actions);
-                final String playPauseTitle = isPlaying ? LocaleController.getString("AccActionPause", R.string.AccActionPause) : LocaleController.getString("AccActionPlay", R.string.AccActionPlay);
+                final String playPauseTitle = isPlaying ? LocaleController.getString(R.string.AccActionPause) : LocaleController.getString(R.string.AccActionPlay);
                 if (messageObject.isMusic()) {
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build());
                 }

@@ -62,14 +62,14 @@ public class PhotoAttachPermissionCell extends FrameLayout {
         if (type == 0) {
             imageView.setImageResource(R.drawable.permissions_camera1);
             imageView2.setImageResource(R.drawable.permissions_camera2);
-            textView.setText(LocaleController.getString("CameraPermissionText", R.string.CameraPermissionText));
+            textView.setText(LocaleController.getString(R.string.CameraPermissionText));
 
             imageView.setLayoutParams(LayoutHelper.createFrame(44, 44, Gravity.CENTER, 5, 0, 0, 27));
             imageView2.setLayoutParams(LayoutHelper.createFrame(44, 44, Gravity.CENTER, 5, 0, 0, 27));
         } else {
             imageView.setImageResource(R.drawable.permissions_gallery1);
             imageView2.setImageResource(R.drawable.permissions_gallery2);
-            textView.setText(LocaleController.getString("GalleryPermissionText", R.string.GalleryPermissionText));
+            textView.setText(LocaleController.getString(R.string.GalleryPermissionText));
 
             imageView.setLayoutParams(LayoutHelper.createFrame(44, 44, Gravity.CENTER, 0, 0, 2, 27));
             imageView2.setLayoutParams(LayoutHelper.createFrame(44, 44, Gravity.CENTER, 0, 0, 2, 27));

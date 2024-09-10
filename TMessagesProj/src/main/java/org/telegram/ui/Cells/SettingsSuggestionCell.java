@@ -94,7 +94,7 @@ public class SettingsSuggestionCell extends LinearLayout {
         if (type == TYPE_PHONE) {
             final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).clientUserId);
             textView.setText(LocaleController.formatString("CheckPhoneNumber", R.string.CheckPhoneNumber, PhoneFormat.getInstance().format("+" + user.phone)));
-            String text = LocaleController.getString("CheckPhoneNumberInfo", R.string.CheckPhoneNumberInfo);
+            String text = LocaleController.getString(R.string.CheckPhoneNumberInfo);
             SpannableStringBuilder builder = new SpannableStringBuilder(text);
             int index1 = text.indexOf("**");
             int index2 = text.lastIndexOf("**");
@@ -102,21 +102,21 @@ public class SettingsSuggestionCell extends LinearLayout {
                 builder.replace(index2, index2 + 2, "");
                 builder.replace(index1, index1 + 2, "");
                 try {
-                    builder.setSpan(new URLSpanNoUnderline(LocaleController.getString("CheckPhoneNumberLearnMoreUrl", R.string.CheckPhoneNumberLearnMoreUrl)), index1, index2 - 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    builder.setSpan(new URLSpanNoUnderline(LocaleController.getString(R.string.CheckPhoneNumberLearnMoreUrl)), index1, index2 - 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
             detailTextView.setText(builder);
-            yesButton.setText(LocaleController.getString("CheckPhoneNumberYes", R.string.CheckPhoneNumberYes));
+            yesButton.setText(LocaleController.getString(R.string.CheckPhoneNumberYes));
             noButton.setVisibility(View.VISIBLE);
-            noButton.setText(LocaleController.getString("CheckPhoneNumberNo", R.string.CheckPhoneNumberNo));
+            noButton.setText(LocaleController.getString(R.string.CheckPhoneNumberNo));
         } else if (type == TYPE_PASSWORD) {
-            textView.setText(LocaleController.getString("YourPasswordHeader", R.string.YourPasswordHeader));
-            detailTextView.setText(LocaleController.getString("YourPasswordRemember", R.string.YourPasswordRemember));
-            yesButton.setText(LocaleController.getString("YourPasswordRememberYes", R.string.YourPasswordRememberYes));
+            textView.setText(LocaleController.getString(R.string.YourPasswordHeader));
+            detailTextView.setText(LocaleController.getString(R.string.YourPasswordRemember));
+            yesButton.setText(LocaleController.getString(R.string.YourPasswordRememberYes));
             noButton.setVisibility(View.VISIBLE);
-            noButton.setText(LocaleController.getString("YourPasswordRememberNo", R.string.YourPasswordRememberNo));
+            noButton.setText(LocaleController.getString(R.string.YourPasswordRememberNo));
         } else if (type == TYPE_GRACE) {
             textView.setText(LocaleController.getString(R.string.GraceSuggestionTitle));
             detailTextView.setText(LocaleController.getString(R.string.GraceSuggestionMessage));

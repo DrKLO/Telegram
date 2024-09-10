@@ -1193,6 +1193,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         if (position.y == entitiesView.getMeasuredHeight() / 2f) {
             view.setStickyY(EntityView.STICKY_CENTER);
         }
+        if (colorSwatch != null && colorSwatch.color != 0xFFFF453A) {
+            view.setColor(colorSwatch.color);
+        }
         view.setDelegate(this);
         view.setMaxWidth(maxWidth);
         entitiesView.addView(view, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -1225,6 +1228,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         if (position.y == entitiesView.getMeasuredHeight() / 2f) {
             view.setStickyY(EntityView.STICKY_CENTER);
         }
+        if (colorSwatch != null && colorSwatch.color != 0xFFFF453A) {
+            view.setColor(colorSwatch.color);
+        }
         view.setDelegate(this);
         view.setMaxWidth(maxWidth);
         entitiesView.addView(view, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -1256,6 +1262,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }
         if (position.y == entitiesView.getMeasuredHeight() / 2f) {
             view.setStickyY(EntityView.STICKY_CENTER);
+        }
+        if (colorSwatch != null && colorSwatch.color != 0xFFFF453A) {
+            view.setColor(colorSwatch.color);
         }
         view.setDelegate(this);
         view.setMaxWidth(maxWidth);
@@ -1422,7 +1431,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                         view.setType((view.getType() + 1) % view.getTypesCount());
                     } else if (entityView instanceof LinkView) {
                         LinkView view = (LinkView) entityView;
-                        view.setType(view.getNextType());
+                        if (view.marker.withPreview()) {
+                            view.marker.setPreviewType(view.marker.getPreviewType() == 0 ? 1 : 0);
+                        } else {
+                            view.setType(view.getNextType());
+                        }
                     } else if (!editingText) {
                         if (entityView instanceof TextPaintView) {
                             enteredThroughText = true;
@@ -2414,6 +2427,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     if (entity.color != 0) {
                         linkView.setColor(entity.color);
                     }
+                    if (linkView.marker.withPreview()) {
+                        linkView.marker.setPreviewType(entity.subType);
+                    }
                     if (entity.subType == -1) {
                         linkView.setType(3);
                         linkView.marker.setupLayout();
@@ -2777,7 +2793,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     } else if (entity instanceof LinkView) {
                         LinkView linkView = (LinkView) entity;
                         mediaEntity.type = VideoEditedInfo.MediaEntity.TYPE_LINK;
-                        mediaEntity.subType = (byte) linkView.getType();
+                        if (linkView.marker.withPreview()) {
+                            mediaEntity.subType = (byte) linkView.marker.getPreviewType();
+                        } else {
+                            mediaEntity.subType = (byte) linkView.getType();
+                        }
                         mediaEntity.width = linkView.marker.getWidth();
                         mediaEntity.height = linkView.marker.getHeight();
                         mediaEntity.color = linkView.hasColor() ? linkView.getColor() : 0;

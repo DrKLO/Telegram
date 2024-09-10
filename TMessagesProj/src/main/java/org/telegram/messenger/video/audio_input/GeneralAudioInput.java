@@ -1,5 +1,7 @@
 package org.telegram.messenger.video.audio_input;
 
+import android.util.Log;
+
 import org.telegram.messenger.video.AudioBufferConverter;
 import org.telegram.messenger.video.AudioConversions;
 import org.telegram.messenger.video.AudioDecoder;
@@ -134,9 +136,12 @@ public class GeneralAudioInput extends AudioInput {
         if (buffer == null || buffer.remaining() <= 0) {
             AudioDecoder.DecodedBufferData audioData = decoder.decode();
             if (audioData.index >= 0) {
-                buffer = audioBufferConverter.convert(audioData.byteBuffer.asShortBuffer(),
-                        decoder.getSampleRate(), decoder.getChannelCount(),
-                        outputSampleRate, outputChannelCount);
+                final ShortBuffer inputBuffer = audioData.byteBuffer.asShortBuffer();
+                buffer = audioBufferConverter.convert(
+                    inputBuffer,
+                    decoder.getSampleRate(), decoder.getChannelCount(),
+                    outputSampleRate, outputChannelCount
+                );
                 decoder.releaseOutputBuffer(audioData.index);
             } else {
                 buffer = null;

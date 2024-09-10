@@ -1041,6 +1041,6 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         paint.setTypeface(AndroidUtilities.bold());
         paint.setTextSize(dp(14));
-        memberRequestButtonWidth = dp(17 + 17) + paint.measureText(isChannel ? LocaleController.getString("AddToChannel", R.string.AddToChannel) : LocaleController.getString("AddToGroup", R.string.AddToGroup));
+        memberRequestButtonWidth = dp(17 + 17) + paint.measureText(isChannel ? LocaleController.getString(R.string.AddToChannel) : LocaleController.getString(R.string.AddToGroup));
     }
 }

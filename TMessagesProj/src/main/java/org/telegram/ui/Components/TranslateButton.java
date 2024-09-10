@@ -159,14 +159,14 @@ public class TranslateButton extends FrameLayout {
         final int swipeBackIndex = popupLayout.addViewToSwipeBack(swipeBack);
 
         ActionBarMenuSubItem translateToButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
-        translateToButton.setTextAndIcon(LocaleController.getString("TranslateTo", R.string.TranslateTo), R.drawable.msg_translate);
+        translateToButton.setTextAndIcon(LocaleController.getString(R.string.TranslateTo), R.drawable.msg_translate);
         translateToButton.setSubtext(TranslateAlert2.capitalFirst(TranslateAlert2.languageName(translateController.getDialogTranslateTo(dialogId))));
         translateToButton.setItemHeight(56);
         translateToButton.setOnClickListener(e -> popupLayout.getSwipeBack().openForeground(swipeBackIndex));
         popupLayout.addView(translateToButton);
 
         ActionBarMenuSubItem backButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
-        backButton.setTextAndIcon(LocaleController.getString("Back", R.string.Back), R.drawable.ic_ab_back);
+        backButton.setTextAndIcon(LocaleController.getString(R.string.Back), R.drawable.ic_ab_back);
         backButton.setOnClickListener(e -> popupLayout.getSwipeBack().closeForeground());
         swipeBack.addView(backButton);
 
@@ -231,7 +231,7 @@ public class TranslateButton extends FrameLayout {
 
 //        if (detectedLanguage != null) {
 //            ActionBarMenuSubItem translateFromButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
-//            translateFromButton.setTextAndIcon(LocaleController.getString("DetectedLanguage", R.string.DetectedLanguage), R.drawable.msg_language);
+//            translateFromButton.setTextAndIcon(LocaleController.getString(R.string.DetectedLanguage), R.drawable.msg_language);
 //            translateFromButton.setSubtext(TranslateAlert2.languageName(detectedLanguage));
 //            translateFromButton.setItemHeight(56);
 //            popupLayout.addView(translateFromButton);
@@ -263,7 +263,7 @@ public class TranslateButton extends FrameLayout {
                 BulletinFactory.of(fragment).createSimpleBulletin(
                     R.raw.msg_translate,
                     bulletinText,
-                    LocaleController.getString("Settings", R.string.Settings),
+                    LocaleController.getString(R.string.Settings),
                     () -> fragment.presentFragment(new RestrictedLanguagesSelectActivity())
                 ).show();
                 popupWindow.dismiss();
@@ -272,19 +272,19 @@ public class TranslateButton extends FrameLayout {
         }
 
         ActionBarMenuSubItem hideButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
-        hideButton.setTextAndIcon(LocaleController.getString("Hide", R.string.Hide), R.drawable.msg_cancel);
+        hideButton.setTextAndIcon(LocaleController.getString(R.string.Hide), R.drawable.msg_cancel);
         hideButton.setOnClickListener(e -> {
             translateController.setHideTranslateDialog(dialogId, true);
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             final boolean isChannel = chat != null && ChatObject.isChannelAndNotMegaGroup(chat);
             final CharSequence message = AndroidUtilities.replaceTags(
                 isChannel ?
-                    LocaleController.getString("TranslationBarHiddenForChannel", R.string.TranslationBarHiddenForChannel) :
+                    LocaleController.getString(R.string.TranslationBarHiddenForChannel) :
                     chat != null ?
-                        LocaleController.getString("TranslationBarHiddenForGroup", R.string.TranslationBarHiddenForGroup) :
-                        LocaleController.getString("TranslationBarHiddenForChat", R.string.TranslationBarHiddenForChat)
+                        LocaleController.getString(R.string.TranslationBarHiddenForGroup) :
+                        LocaleController.getString(R.string.TranslationBarHiddenForChat)
             );
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_translate, message, LocaleController.getString("Undo", R.string.Undo), () -> {
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_translate, message, LocaleController.getString(R.string.Undo), () -> {
                 translateController.setHideTranslateDialog(dialogId, false);
             }).show();
             popupWindow.dismiss();
@@ -305,7 +305,7 @@ public class TranslateButton extends FrameLayout {
     public void updateText() {
         TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
         if (translateController.isTranslatingDialog(dialogId)) {
-            textView.setText(TextUtils.concat(translateIcon, " ", LocaleController.getString("ShowOriginalButton", R.string.ShowOriginalButton)));
+            textView.setText(TextUtils.concat(translateIcon, " ", LocaleController.getString(R.string.ShowOriginalButton)));
         } else {
             String lng = translateController.getDialogTranslateTo(dialogId);
             if (lng == null) {

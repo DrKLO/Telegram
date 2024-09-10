@@ -31,6 +31,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
@@ -472,85 +473,14 @@ public class Weather {
         };
     }
 
-    public static int LOCATION_REQUEST = 3332;
-    private static Utilities.Callback<Boolean> latestPermissionCallback;
-
-    public static boolean hasLocationPermission() {
-        Activity _activity = LaunchActivity.instance;
-        if (_activity == null) _activity = AndroidUtilities.findActivity(ApplicationLoader.applicationContext);
-        if (_activity == null) return false;
-        final Activity activity = _activity;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            }
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    public static void ensureLocationPermission(Utilities.Callback<Boolean> ensured) {
-        if (ensured == null) return;
-        Activity _activity = LaunchActivity.instance;
-        if (_activity == null) _activity = AndroidUtilities.findActivity(ApplicationLoader.applicationContext);
-        if (_activity == null) return;
-        final Activity activity = _activity;
-
-        latestPermissionCallback = ensured;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (
-                ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-            ) {
-                ensured.run(true);
-                return;
-            }
-            if (activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION) || activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                new AlertDialog.Builder(activity, null)
-                    .setTopAnimation(R.raw.permission_request_location, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground))
-                    .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PermissionNoLocationStory)))
-                    .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
-                        try {
-                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                            intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                            activity.startActivity(intent);
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    })
-                    .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
-                    .create()
-                    .show();
-                ensured.run(false);
-                return;
-            }
-            activity.requestPermissions(new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION }, LOCATION_REQUEST);
-        } else {
-            ensured.run(true);
-        }
-    }
-
-    public static void receivePermissionIntent(String[] permissions, int[] grantResults) {
-        boolean granted = false;
-        for (int i = 0; i < permissions.length; ++i) {
-            if (Manifest.permission.ACCESS_COARSE_LOCATION.equals(permissions[i]) || Manifest.permission.ACCESS_FINE_LOCATION.equals(permissions[i])) {
-                granted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
-                break;
-            }
-        }
-        if (latestPermissionCallback != null) {
-            Utilities.Callback<Boolean> callback = latestPermissionCallback;
-            latestPermissionCallback = null;
-            callback.run(granted);
-        }
-    }
-
     @SuppressLint("MissingPermission")
     public static void getUserLocation(boolean withProgress, Utilities.Callback<Location> whenGot) {
         if (whenGot == null) return;
 
-        ensureLocationPermission(granted -> {
+        PermissionRequest.ensureEitherPermission(R.raw.permission_request_location, R.string.PermissionNoLocationStory,
+            new String[] { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION },
+            new String[] { Manifest.permission.ACCESS_COARSE_LOCATION }, granted -> {
+
             if (!granted) {
                 whenGot.run(null);
                 return;

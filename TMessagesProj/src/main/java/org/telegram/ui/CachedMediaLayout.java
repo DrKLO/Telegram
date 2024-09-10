@@ -102,12 +102,12 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
         this.parentFragment = parentFragment;
 
         int CacheTabChats;
-        allPages[PAGE_TYPE_CHATS] = new Page(LocaleController.getString("FilterChats", R.string.FilterChats), PAGE_TYPE_CHATS, new DialogsAdapter());
-        //allPages[PAGE_TYPE_STORIES] = new Page(LocaleController.getString("FilterStories", R.string.FilterStories), PAGE_TYPE_STORIES, new MediaAdapter(true));
-        allPages[PAGE_TYPE_MEDIA] = new Page(LocaleController.getString("MediaTab", R.string.MediaTab), PAGE_TYPE_MEDIA, new MediaAdapter(false));
-        allPages[PAGE_TYPE_DOCUMENTS] = new Page(LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), PAGE_TYPE_DOCUMENTS, new DocumentsAdapter());
-        allPages[PAGE_TYPE_MUSIC] = new Page(LocaleController.getString("Music", R.string.Music), PAGE_TYPE_MUSIC, new MusicAdapter());
-        //   allPages[PAGE_TYPE_VOICE] = new Page(LocaleController.getString("Voice", R.string.Voice), PAGE_TYPE_VOICE, new VoiceAdapter());
+        allPages[PAGE_TYPE_CHATS] = new Page(LocaleController.getString(R.string.FilterChats), PAGE_TYPE_CHATS, new DialogsAdapter());
+        //allPages[PAGE_TYPE_STORIES] = new Page(LocaleController.getString(R.string.FilterStories), PAGE_TYPE_STORIES, new MediaAdapter(true));
+        allPages[PAGE_TYPE_MEDIA] = new Page(LocaleController.getString(R.string.MediaTab), PAGE_TYPE_MEDIA, new MediaAdapter(false));
+        allPages[PAGE_TYPE_DOCUMENTS] = new Page(LocaleController.getString(R.string.SharedFilesTab2), PAGE_TYPE_DOCUMENTS, new DocumentsAdapter());
+        allPages[PAGE_TYPE_MUSIC] = new Page(LocaleController.getString(R.string.Music), PAGE_TYPE_MUSIC, new MusicAdapter());
+        //   allPages[PAGE_TYPE_VOICE] = new Page(LocaleController.getString(R.string.Voice), PAGE_TYPE_VOICE, new VoiceAdapter());
 
         for (int i = 0; i < allPages.length; i++) {
             if (allPages[i] == null) {
@@ -185,21 +185,21 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                     if (view instanceof CacheCell || view instanceof SharedPhotoVideoCell2) {
                         ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext());
                         if (view instanceof SharedPhotoVideoCell2) {
-                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_view_file, LocaleController.getString("CacheOpenFile", R.string.CacheOpenFile), false, null).setOnClickListener(v -> {
+                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_view_file, LocaleController.getString(R.string.CacheOpenFile), false, null).setOnClickListener(v -> {
                                 openPhoto(itemInner, (MediaAdapter) adapter, recyclerListView, (SharedPhotoVideoCell2) view);
                                 if (popupWindow != null) {
                                     popupWindow.dismiss();
                                 }
                             });
                         } else if (((CacheCell) view).container.getChildAt(0) instanceof SharedAudioCell) {
-                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_played, LocaleController.getString("PlayFile", R.string.PlayFile), false, null).setOnClickListener(v -> {
+                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_played, LocaleController.getString(R.string.PlayFile), false, null).setOnClickListener(v -> {
                                 openItem(itemInner.file, (CacheCell) view);
                                 if (popupWindow != null) {
                                     popupWindow.dismiss();
                                 }
                             });
                         } else {
-                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_view_file, LocaleController.getString("CacheOpenFile", R.string.CacheOpenFile), false, null).setOnClickListener(v -> {
+                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_view_file, LocaleController.getString(R.string.CacheOpenFile), false, null).setOnClickListener(v -> {
                                 openItem(itemInner.file, (CacheCell) view);
                                 if (popupWindow != null) {
                                     popupWindow.dismiss();
@@ -207,7 +207,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                             });
                         }
                         if (itemInner.file.dialogId != 0 && itemInner.file.messageId != 0) {
-                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_viewintopic, LocaleController.getString("ViewInChat", R.string.ViewInChat), false, null).setOnClickListener(v -> {
+                            ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_viewintopic, LocaleController.getString(R.string.ViewInChat), false, null).setOnClickListener(v -> {
                                 Bundle args = new Bundle();
                                 if (itemInner.file.dialogId > 0) {
                                     args.putLong("user_id", itemInner.file.dialogId);
@@ -223,7 +223,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                             });
                         }
                         ActionBarMenuItem.addItem(popupWindowLayout, R.drawable.msg_select,
-                                !cacheModel.selectedFiles.contains(itemInner.file) ? LocaleController.getString("Select", R.string.Select) : LocaleController.getString("Deselect", R.string.Deselect),
+                                !cacheModel.selectedFiles.contains(itemInner.file) ? LocaleController.getString(R.string.Select) : LocaleController.getString(R.string.Deselect),
                                 false, null).setOnClickListener(v -> {
                             if (delegate != null) {
                                 delegate.onItemSelected(itemInner.entities, itemInner.file, true);
@@ -276,7 +276,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
         closeButton.setImageDrawable(backDrawable = new BackDrawable(true));
         backDrawable.setColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), 1));
-        closeButton.setContentDescription(LocaleController.getString("Close", R.string.Close));
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         actionModeLayout.addView(closeButton, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
         actionModeViews.add(closeButton);
         closeButton.setOnClickListener(v -> {
@@ -292,7 +292,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
 
         clearItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), false);
         clearItem.setIcon(R.drawable.msg_clear);
-        clearItem.setContentDescription(LocaleController.getString("Delete", R.string.Delete));
+        clearItem.setContentDescription(LocaleController.getString(R.string.Delete));
         clearItem.setDuplicateParentStateEnabled(false);
         actionModeLayout.addView(clearItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
         actionModeViews.add(clearItem);
@@ -559,7 +559,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                     String title;
                     boolean animated = userCell.dialogFileEntities != null && userCell.dialogFileEntities.dialogId == dialogFileEntities.dialogId;
                     if (dialogFileEntities.dialogId == UNKNOWN_CHATS_DIALOG_ID) {
-                        title = LocaleController.getString("CacheOtherChats", R.string.CacheOtherChats);
+                        title = LocaleController.getString(R.string.CacheOtherChats);
                         userCell.getImageView().getAvatarDrawable().setAvatarType(AvatarDrawable.AVATAR_TYPE_OTHER_CHATS);
                         userCell.getImageView().setForUserOrChat(null, userCell.getImageView().getAvatarDrawable());
                     } else {
@@ -780,7 +780,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             holder.itemView.setTag(file);
             long date = file.file.lastModified();
 
-            cell.setTextAndValueAndTypeAndThumb(file.messageType == MessageObject.TYPE_ROUND_VIDEO ? LocaleController.getString("AttachRound", R.string.AttachRound) : file.file.getName(), LocaleController.formatDateAudio(date / 1000, true), Utilities.getExtension(file.file.getName()), null, 0, divider);
+            cell.setTextAndValueAndTypeAndThumb(file.messageType == MessageObject.TYPE_ROUND_VIDEO ? LocaleController.getString(R.string.AttachRound) : file.file.getName(), LocaleController.formatDateAudio(date / 1000, true), Utilities.getExtension(file.file.getName()), null, 0, divider);
             if (!animated) {
                 cell.setPhoto(file.file.getPath());
             }

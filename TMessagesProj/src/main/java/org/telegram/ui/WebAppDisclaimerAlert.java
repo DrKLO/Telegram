@@ -36,7 +36,7 @@ public class WebAppDisclaimerAlert {
         WebAppDisclaimerAlert alert = new WebAppDisclaimerAlert();
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
-        alertDialog.setTitle(LocaleController.getString("TermsOfUse", R.string.TermsOfUse));
+        alertDialog.setTitle(LocaleController.getString(R.string.TermsOfUse));
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -64,17 +64,17 @@ public class WebAppDisclaimerAlert {
 //        }
 
         final boolean[] dismissing = new boolean[1];
-        textView.setText(AndroidUtilities.replaceTags(LocaleController.getString("BotWebAppDisclaimerSubtitle", R.string.BotWebAppDisclaimerSubtitle)));
-        alert.cell.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("BotWebAppDisclaimerCheck", R.string.BotWebAppDisclaimerCheck), () -> {
-            Browser.openUrl(context, LocaleController.getString("WebAppDisclaimerUrl", R.string.WebAppDisclaimerUrl));
+        textView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.BotWebAppDisclaimerSubtitle)));
+        alert.cell.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.BotWebAppDisclaimerCheck), () -> {
+            Browser.openUrl(context, LocaleController.getString(R.string.WebAppDisclaimerUrl));
         }), "", false, false);
         alertDialog.setView(linearLayout);
-        alertDialog.setPositiveButton(LocaleController.getString("Continue", R.string.Continue), (dialog, which) -> {
+        alertDialog.setPositiveButton(LocaleController.getString(R.string.Continue), (dialog, which) -> {
             consumer.accept(true);
             dismissing[0] = true;
             dialog.dismiss();
         });
-        alertDialog.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
+        alertDialog.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialog, which) -> {
             dialog.dismiss();
         });
         alert.alert = alertDialog.create();

@@ -54,7 +54,12 @@ public class AudioDecoder {
         decoder.configure(inputFormat, null, null, 0);
 
         startTimeUs = 0;
-        endTimeUs = getDurationUs();
+        try {
+            endTimeUs = extractor.getTrackFormat(trackIndex).getLong(MediaFormat.KEY_DURATION);
+        } catch (Exception e) {
+            FileLog.e(e);
+            endTimeUs = -1;
+        }
     }
 
     private void selectTrack() {
@@ -78,7 +83,26 @@ public class AudioDecoder {
 
     public MediaFormat getMediaFormat() {
         try {
+            if (getOutputMediaFormat() != null) return getOutputMediaFormat();
+            return getInputMediaFormat();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
+    public MediaFormat getInputMediaFormat() {
+        try {
             return extractor.getTrackFormat(trackIndex);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
+    public MediaFormat getOutputMediaFormat() {
+        try {
+            return decoder.getOutputFormat();
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -87,7 +111,12 @@ public class AudioDecoder {
 
     public long getDurationUs() {
         try {
-            return getMediaFormat().getLong(MediaFormat.KEY_DURATION);
+            return getOutputMediaFormat().getLong(MediaFormat.KEY_DURATION);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            return getInputMediaFormat().getLong(MediaFormat.KEY_DURATION);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -96,7 +125,12 @@ public class AudioDecoder {
 
     public int getSampleRate() {
         try {
-            return getMediaFormat().getInteger(MediaFormat.KEY_SAMPLE_RATE);
+            return getOutputMediaFormat().getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            return getInputMediaFormat().getInteger(MediaFormat.KEY_SAMPLE_RATE);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -105,15 +139,22 @@ public class AudioDecoder {
 
     public int getBitrateRate() {
         try {
-            return getMediaFormat().getInteger(MediaFormat.KEY_BIT_RATE);
-        } catch (Exception e) {
-        }
+            return getOutputMediaFormat().getInteger(MediaFormat.KEY_BIT_RATE);
+        } catch (Exception e) {}
+        try {
+            return getInputMediaFormat().getInteger(MediaFormat.KEY_BIT_RATE);
+        } catch (Exception e) {}
         return -1;
     }
 
     public int getChannelCount() {
         try {
-            return getMediaFormat().getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+            return getOutputMediaFormat().getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            return getInputMediaFormat().getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         } catch (Exception e) {
             FileLog.e(e);
         }

@@ -34,6 +34,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -870,13 +871,13 @@ public class MediaDataController extends BaseController {
 
     public void checkFeaturedStickers() {
         if (!loadingFeaturedStickers[0] && (!featuredStickersLoaded[0] || Math.abs(System.currentTimeMillis() / 1000 - loadFeaturedDate[0]) >= 60 * 60)) {
-            loadFeaturedStickers(false, true, false);
+            loadFeaturedStickers(false, true);
         }
     }
 
     public void checkFeaturedEmoji() {
         if (!loadingFeaturedStickers[1] && (!featuredStickersLoaded[1] || Math.abs(System.currentTimeMillis() / 1000 - loadFeaturedDate[1]) >= 60 * 60)) {
-            loadFeaturedStickers(true, true, false);
+            loadFeaturedStickers(true, true);
         }
     }
 
@@ -2177,7 +2178,7 @@ public class MediaDataController extends BaseController {
         loadStickers(type, false, true);
     }
 
-    public void loadFeaturedStickers(boolean emoji, boolean cache, boolean force) {
+    public void loadFeaturedStickers(boolean emoji, boolean cache) {
         if (loadingFeaturedStickers[emoji ? 1 : 0]) {
             return;
         }
@@ -2191,7 +2192,7 @@ public class MediaDataController extends BaseController {
                 boolean premium = false;
                 SQLiteCursor cursor = null;
                 try {
-                    cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, unread, date, hash, premium FROM stickers_featured WHERE emoji = " + (emoji ? 1 : 0));
+                    cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, unread, date, hash, premium FROM stickers_featured WHERE emoji = " + (emoji ? 1 : 0) + " AND id = " + (emoji ? 2 : 1));
                     if (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
@@ -2212,7 +2213,7 @@ public class MediaDataController extends BaseController {
                             data.reuse();
                         }
                         date = cursor.intValue(2);
-                        hash = calcFeaturedStickersHash(emoji, newStickerArray);
+                        hash = cursor.longValue(3); // calcFeaturedStickersHash(emoji, newStickerArray);
                         premium = cursor.intValue(4) == 1;
                     }
                 } catch (Throwable e) {
@@ -2229,17 +2230,25 @@ public class MediaDataController extends BaseController {
             TLObject req;
             if (emoji) {
                 TLRPC.TL_messages_getFeaturedEmojiStickers request = new TLRPC.TL_messages_getFeaturedEmojiStickers();
-                request.hash = hash = force ? 0 : loadFeaturedHash[1];
+                request.hash = hash = loadFeaturedHash[1];
                 req = request;
             } else {
                 TLRPC.TL_messages_getFeaturedStickers request = new TLRPC.TL_messages_getFeaturedStickers();
-                request.hash = hash = force ? 0 : loadFeaturedHash[0];
+                request.hash = hash = loadFeaturedHash[0];
                 req = request;
             }
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response instanceof TLRPC.TL_messages_featuredStickers) {
                     TLRPC.TL_messages_featuredStickers res = (TLRPC.TL_messages_featuredStickers) response;
                     processLoadedFeaturedStickers(emoji, res.sets, res.unread, res.premium, false, (int) (System.currentTimeMillis() / 1000), res.hash);
+                } else if (response instanceof TLRPC.TL_messages_featuredStickersNotModified) {
+                    final int date = (int) (System.currentTimeMillis() / 1000);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        loadingFeaturedStickers[emoji ? 1 : 0] = false;
+                        featuredStickersLoaded[emoji ? 1 : 0] = true;
+                        loadFeaturedDate[emoji ? 1 : 0] = date;
+                    });
+                    putFeaturedStickersToCache(emoji, null, null, date, hash, false);
                 } else {
                     processLoadedFeaturedStickers(emoji, null, null, false, false, (int) (System.currentTimeMillis() / 1000), hash);
                 }
@@ -2259,7 +2268,7 @@ public class MediaDataController extends BaseController {
                         loadFeaturedHash[emoji ? 1 : 0] = hash;
                     }
                     loadingFeaturedStickers[emoji ? 1 : 0] = false;
-                    loadFeaturedStickers(emoji, false, false);
+                    loadFeaturedStickers(emoji, false);
                 }, res == null && !cache ? 1000 : 0);
                 if (res == null) {
                     return;
@@ -2320,7 +2329,7 @@ public class MediaDataController extends BaseController {
                     for (int a = 0; a < unreadStickers.size(); a++) {
                         data2.writeInt64(unreadStickers.get(a));
                     }
-                    state.bindInteger(1, 1);
+                    state.bindInteger(1, emoji ? 2 : 1);
                     state.bindByteBuffer(2, data);
                     state.bindByteBuffer(3, data2);
                     state.bindInteger(4, date);
@@ -2332,9 +2341,11 @@ public class MediaDataController extends BaseController {
                     data2.reuse();
                     state.dispose();
                 } else {
-                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE stickers_featured SET date = ?");
+                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE stickers_featured SET date = ? WHERE id = ? AND emoji = ?");
                     state.requery();
                     state.bindInteger(1, date);
+                    state.bindInteger(2, emoji ? 2 : 1);
+                    state.bindInteger(3, emoji ? 1 : 0);
                     state.step();
                     state.dispose();
                 }
@@ -4892,8 +4903,8 @@ public class MediaDataController extends BaseController {
                 intent.setAction("new_dialog");
                 ArrayList<ShortcutInfoCompat> arrayList = new ArrayList<>();
                 ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, "compose")
-                        .setShortLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
-                        .setLongLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
+                        .setShortLabel(LocaleController.getString(R.string.NewConversationShortcut))
+                        .setLongLabel(LocaleController.getString(R.string.NewConversationShortcut))
                         .setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
                         .setRank(0)
                         .setIntent(intent)
@@ -5511,10 +5522,10 @@ public class MediaDataController extends BaseController {
                         photo = user.photo.photo_small;
                     }
                 } else if (UserObject.isReplyUser(user)) {
-                    name = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                    name = LocaleController.getString(R.string.RepliesTitle);
                     overrideAvatar = true;
                 } else if (UserObject.isUserSelf(user)) {
-                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                    name = LocaleController.getString(R.string.SavedMessages);
                     overrideAvatar = true;
                 } else {
                     name = ContactsController.formatName(user.first_name, user.last_name);

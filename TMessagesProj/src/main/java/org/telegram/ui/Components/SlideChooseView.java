@@ -197,7 +197,7 @@ public class SlideChooseView extends View {
         circleSize = AndroidUtilities.dp(6);
         gapSize = AndroidUtilities.dp(2);
         sideSide = AndroidUtilities.dp(22);
-        lineSize = (getMeasuredWidth() - circleSize * optionsStr.length - gapSize * 2 * (optionsStr.length - 1) - sideSide * 2) / (optionsStr.length - 1);
+        lineSize = (getMeasuredWidth() - circleSize * optionsStr.length - gapSize * 2 * (optionsStr.length - 1) - sideSide * 2) / Math.max(1, optionsStr.length - 1);
     }
 
     @Override

@@ -122,20 +122,20 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
         titles = new String[]{
-                LocaleController.getString("Page1Title", R.string.Page1Title),
-                LocaleController.getString("Page2Title", R.string.Page2Title),
-                LocaleController.getString("Page3Title", R.string.Page3Title),
-                LocaleController.getString("Page5Title", R.string.Page5Title),
-                LocaleController.getString("Page4Title", R.string.Page4Title),
-                LocaleController.getString("Page6Title", R.string.Page6Title)
+                LocaleController.getString(R.string.Page1Title),
+                LocaleController.getString(R.string.Page2Title),
+                LocaleController.getString(R.string.Page3Title),
+                LocaleController.getString(R.string.Page5Title),
+                LocaleController.getString(R.string.Page4Title),
+                LocaleController.getString(R.string.Page6Title)
         };
         messages = new String[]{
-                LocaleController.getString("Page1Message", R.string.Page1Message),
-                LocaleController.getString("Page2Message", R.string.Page2Message),
-                LocaleController.getString("Page3Message", R.string.Page3Message),
-                LocaleController.getString("Page5Message", R.string.Page5Message),
-                LocaleController.getString("Page4Message", R.string.Page4Message),
-                LocaleController.getString("Page6Message", R.string.Page6Message)
+                LocaleController.getString(R.string.Page1Message),
+                LocaleController.getString(R.string.Page2Message),
+                LocaleController.getString(R.string.Page3Message),
+                LocaleController.getString(R.string.Page5Message),
+                LocaleController.getString(R.string.Page4Message),
+                LocaleController.getString(R.string.Page6Message)
         };
         return true;
     }
@@ -341,7 +341,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         };
-        startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging));
+        startMessagingButton.setText(LocaleController.getString(R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTypeface(AndroidUtilities.bold());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);

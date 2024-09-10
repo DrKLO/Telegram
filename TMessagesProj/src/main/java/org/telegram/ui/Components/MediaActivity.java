@@ -191,16 +191,16 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
                         if (!storyItems.isEmpty()) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), getResourceProvider());
-                            builder.setTitle(storyItems.size() > 1 ? LocaleController.getString("DeleteStoriesTitle", R.string.DeleteStoriesTitle) : LocaleController.getString("DeleteStoryTitle", R.string.DeleteStoryTitle));
+                            builder.setTitle(storyItems.size() > 1 ? LocaleController.getString(R.string.DeleteStoriesTitle) : LocaleController.getString(R.string.DeleteStoryTitle));
                             builder.setMessage(LocaleController.formatPluralString("DeleteStoriesSubtitle", storyItems.size()));
-                            builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
+                            builder.setPositiveButton(LocaleController.getString(R.string.Delete), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     getMessagesController().getStoriesController().deleteStories(dialogId, storyItems);
                                     sharedMediaLayout.closeActionMode(false);
                                 }
                             });
-                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (DialogInterface.OnClickListener) (dialog, which) -> {
+                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (DialogInterface.OnClickListener) (dialog, which) -> {
                                 dialog.dismiss();
                             });
                             AlertDialog dialog = builder.create();
@@ -285,7 +285,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             optionsItem.setVisibility(View.GONE);
             optionsItem.setAlpha(0f);
             menu.addView(optionsItem);
-            zoomInItem = optionsItem.addSubItem(8, R.drawable.msg_zoomin, LocaleController.getString("MediaZoomIn", R.string.MediaZoomIn));
+            zoomInItem = optionsItem.addSubItem(8, R.drawable.msg_zoomin, LocaleController.getString(R.string.MediaZoomIn));
             zoomInItem.setOnClickListener(v -> {
                 boolean canZoomOut, canZoomIn;
                 canZoomOut = true;
@@ -299,7 +299,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 zoomInItem.setEnabled(canZoomIn);
                 zoomInItem.animate().alpha(zoomInItem.isEnabled() ? 1f : .5f).start();
             });
-            zoomOutItem = optionsItem.addSubItem(9, R.drawable.msg_zoomout, LocaleController.getString("MediaZoomOut", R.string.MediaZoomOut));
+            zoomOutItem = optionsItem.addSubItem(9, R.drawable.msg_zoomout, LocaleController.getString(R.string.MediaZoomOut));
             zoomOutItem.setOnClickListener(v -> {
                 boolean canZoomOut, canZoomIn;
                 canZoomIn = true;
@@ -313,11 +313,11 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 zoomInItem.setEnabled(canZoomIn);
                 zoomInItem.animate().alpha(zoomInItem.isEnabled() ? 1f : .5f).start();
             });
-            calendarItem = optionsItem.addSubItem(10, R.drawable.msg_calendar2, LocaleController.getString("Calendar", R.string.Calendar));
+            calendarItem = optionsItem.addSubItem(10, R.drawable.msg_calendar2, LocaleController.getString(R.string.Calendar));
             calendarItem.setEnabled(false);
             calendarItem.setAlpha(.5f);
             optionsItem.addColoredGap();
-            showPhotosItem = optionsItem.addSubItem(6, 0, LocaleController.getString("MediaShowPhotos", R.string.MediaShowPhotos), true);
+            showPhotosItem = optionsItem.addSubItem(6, 0, LocaleController.getString(R.string.MediaShowPhotos), true);
             showPhotosItem.setChecked(filterPhotos);
             showPhotosItem.setOnClickListener(e -> {
                 if (filterPhotos && !filterVideos) {
@@ -328,7 +328,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 showPhotosItem.setChecked(filterPhotos = !filterPhotos);
                 sharedMediaLayout.setStoriesFilter(filterPhotos, filterVideos);
             });
-            showVideosItem = optionsItem.addSubItem(7, 0, LocaleController.getString("MediaShowVideos", R.string.MediaShowVideos), true);
+            showVideosItem = optionsItem.addSubItem(7, 0, LocaleController.getString(R.string.MediaShowVideos), true);
             showVideosItem.setChecked(filterVideos);
             showVideosItem.setOnClickListener(e -> {
                 if (filterVideos && !filterPhotos) {
@@ -381,10 +381,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
                 if (getImageReceiver().hasNotThumb()) {
-                    info.setText(LocaleController.getString("AccDescrProfilePicture", R.string.AccDescrProfilePicture));
+                    info.setText(LocaleController.getString(R.string.AccDescrProfilePicture));
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("Open", R.string.Open)));
-                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString("AccDescrOpenInPhotoViewer", R.string.AccDescrOpenInPhotoViewer)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString(R.string.Open)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString(R.string.AccDescrOpenInPhotoViewer)));
                     }
                 } else {
                     info.setVisibleToUser(false);
@@ -420,7 +420,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             buttonContainer.setPadding(dp(10), dp(8), dp(10), dp(8));
             buttonContainer.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
             button = new ButtonWithCounterView(context, getResourceProvider());
-            button.setText(LocaleController.getString("SaveToProfile", R.string.SaveToProfile), false);
+            button.setText(LocaleController.getString(R.string.SaveToProfile), false);
             button.setShowZero(true);
             button.setCount(0, false);
             button.setEnabled(false);
@@ -782,7 +782,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(avatarDialogId);
             if (user != null) {
                 if (user.self) {
-                    nameTextView[0].setText(LocaleController.getString("SavedMessages", R.string.SavedMessages));
+                    nameTextView[0].setText(LocaleController.getString(R.string.SavedMessages));
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                     avatarDrawable.setScaleSize(.8f);
                 } else {
@@ -804,7 +804,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         avatarImageView.setImage(thumbLocation, "50_50", avatarDrawable, avatarObject);
 
         if (nameTextView[0] != null && TextUtils.isEmpty(nameTextView[0].getText())) {
-            nameTextView[0].setText(LocaleController.getString("SharedContentTitle", R.string.SharedContentTitle));
+            nameTextView[0].setText(LocaleController.getString(R.string.SharedContentTitle));
         }
 
         if (sharedMediaLayout.isSearchItemVisible() && type != TYPE_STORIES) {
@@ -921,7 +921,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 if (id == SharedMediaLayout.TAB_STORIES) {
                     button.setText(LocaleController.formatPluralString("ArchiveStories", actionModeMessageObjects == null ? 0 : actionModeMessageObjects.size()), animated2);
                 } else {
-                    button.setText(LocaleController.getString("SaveToProfile", R.string.SaveToProfile), animated2);
+                    button.setText(LocaleController.getString(R.string.SaveToProfile), animated2);
                 }
                 lastTab = id;
             }
@@ -1106,8 +1106,8 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         @Override
         public Tab[] createTabs() {
             Tab[] tabs = new Tab[] {
-                new Tab(0, R.raw.msg_stories_saved, 20, 40, LocaleController.getString("ProfileMyStoriesTab", R.string.ProfileMyStoriesTab)),
-                new Tab(1, R.raw.msg_stories_archive, 0, 0, LocaleController.getString("ProfileStoriesArchiveTab", R.string.ProfileStoriesArchiveTab))
+                new Tab(0, R.raw.msg_stories_saved, 20, 40, LocaleController.getString(R.string.ProfileMyStoriesTab)),
+                new Tab(1, R.raw.msg_stories_archive, 0, 0, LocaleController.getString(R.string.ProfileStoriesArchiveTab))
             };
             return tabs;
         }

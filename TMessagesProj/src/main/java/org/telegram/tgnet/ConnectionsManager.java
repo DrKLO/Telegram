@@ -1477,25 +1477,28 @@ public class ConnectionsManager extends BaseController {
             if (UserConfig.selectedAccount != currentAccount) {
                 return;
             }
-
-            boolean updated = false;
-            if (isUpload) {
-                FileUploadOperation operation = FileLoader.getInstance(currentAccount).findUploadOperationByRequestToken(requestToken);
-                if (operation != null) {
-                    updated = !operation.caughtPremiumFloodWait;
-                    operation.caughtPremiumFloodWait = true;
+            FileLoader.getInstance(currentAccount).getFileLoaderQueue().postRunnable(() -> {
+                boolean updated = false;
+                if (isUpload) {
+                    FileUploadOperation operation = FileLoader.getInstance(currentAccount).findUploadOperationByRequestToken(requestToken);
+                    if (operation != null) {
+                        updated = !operation.caughtPremiumFloodWait;
+                        operation.caughtPremiumFloodWait = true;
+                    }
+                } else {
+                    FileLoadOperation operation = FileLoader.getInstance(currentAccount).findLoadOperationByRequestToken(requestToken);
+                    if (operation != null) {
+                        updated = !operation.caughtPremiumFloodWait;
+                        operation.caughtPremiumFloodWait = true;
+                    }
                 }
-            } else {
-                FileLoadOperation operation = FileLoader.getInstance(currentAccount).findLoadOperationByRequestToken(requestToken);
-                if (operation != null) {
-                    updated = !operation.caughtPremiumFloodWait;
-                    operation.caughtPremiumFloodWait = true;
-                }
-            }
-
-            if (updated) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumFloodWaitReceived);
-            }
+                final boolean finalUpdated = updated;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (finalUpdated) {
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumFloodWaitReceived);
+                    }
+                });
+            });
         });
     }
 

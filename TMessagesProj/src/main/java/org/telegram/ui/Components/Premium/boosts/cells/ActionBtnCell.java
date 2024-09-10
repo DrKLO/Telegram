@@ -21,7 +21,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 @SuppressLint("ViewConstructor")
 public class ActionBtnCell extends FrameLayout {
 
-    private final ButtonWithCounterView button;
+    public final ButtonWithCounterView button;
     private final View backgroundView;
     private final Theme.ResourcesProvider resourcesProvider;
     private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -49,7 +49,7 @@ public class ActionBtnCell extends FrameLayout {
         button.setShowZero(true);
         button.setEnabled(true);
         button.setCount(counter, animated);
-        button.setText(LocaleController.formatString("BoostingStartGiveaway", R.string.BoostingStartGiveaway), animated);
+        button.setText(LocaleController.getString(R.string.BoostingStartGiveaway), animated);
         backgroundView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
     }
 
@@ -59,14 +59,14 @@ public class ActionBtnCell extends FrameLayout {
         button.setShowZero(true);
         button.setEnabled(isEnabled);
         button.setCount(counter, animated);
-        button.setText(LocaleController.formatString("GiftPremium", R.string.GiftPremium), animated);
+        button.setText(LocaleController.getString(R.string.GiftPremium), animated);
         backgroundView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
     }
 
     public void setActivateForFreeStyle() {
         drawDivider = true;
         button.setEnabled(true);
-        button.setText(LocaleController.formatString("GiftPremiumActivateForFree", R.string.GiftPremiumActivateForFree), false);
+        button.setText(LocaleController.getString(R.string.GiftPremiumActivateForFree), false);
         backgroundView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
     }
 

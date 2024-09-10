@@ -31,10 +31,12 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -50,6 +52,7 @@ import org.telegram.ui.bots.BotWebViewSheet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class StarsController {
@@ -91,11 +94,21 @@ public class StarsController {
     private long lastBalanceLoaded;
     private boolean balanceLoading, balanceLoaded;
     public long balance;
+    public long minus;
+
     public long getBalance() {
         return getBalance(null);
     }
 
+    public long getBalance(boolean withMinus) {
+        return getBalance(withMinus, null);
+    }
+
     public long getBalance(Runnable loaded) {
+        return getBalance(true, loaded);
+    }
+
+    public long getBalance(boolean withMinus, Runnable loaded) {
         if ((!balanceLoaded || System.currentTimeMillis() - lastBalanceLoaded > 1000 * 60) && !balanceLoading) {
             balanceLoading = true;
             TLRPC.TL_payments_getStarsStatus req = new TLRPC.TL_payments_getStarsStatus();
@@ -138,6 +151,7 @@ public class StarsController {
                         updatedBalance = true;
                     }
                     this.balance = r.balance;
+                    this.minus = 0;
                 }
                 balanceLoading = false;
                 balanceLoaded = true;
@@ -156,7 +170,7 @@ public class StarsController {
                 }
             }));
         }
-        return balance;
+        return Math.max(0, balance - (withMinus ? minus : 0));
     }
 
     public void invalidateBalance() {
@@ -168,6 +182,10 @@ public class StarsController {
     public void updateBalance(long balance) {
         if (this.balance != balance) {
             this.balance = balance;
+            this.minus = 0;
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
+        } else if (this.minus != 0) {
+            this.minus = 0;
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
         }
     }
@@ -350,6 +368,94 @@ public class StarsController {
             }
         }));
         return giftOptions;
+    }
+
+    private boolean giveawayOptionsLoading, giveawayOptionsLoaded;
+    private ArrayList<TLRPC.TL_starsGiveawayOption> giveawayOptions;
+    public ArrayList<TLRPC.TL_starsGiveawayOption> getGiveawayOptionsCached() {
+        return giveawayOptions;
+    }
+    public ArrayList<TLRPC.TL_starsGiveawayOption> getGiveawayOptions() {
+        if (giveawayOptionsLoading || giveawayOptionsLoaded) {
+            return giveawayOptions;
+        }
+        giveawayOptionsLoading = true;
+        TLRPC.TL_payments_getStarsGiveawayOptions req = new TLRPC.TL_payments_getStarsGiveawayOptions();
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            ArrayList<TLRPC.TL_starsGiveawayOption> loadedOptions = new ArrayList<>();
+            ArrayList<TLRPC.TL_starsGiveawayOption> toLoadStorePrice = new ArrayList<>();
+            if (res instanceof TLRPC.Vector) {
+                TLRPC.Vector vector = (TLRPC.Vector) res;
+                for (Object object : vector.objects) {
+                    if (object instanceof TLRPC.TL_starsGiveawayOption) {
+                        TLRPC.TL_starsGiveawayOption option = (TLRPC.TL_starsGiveawayOption) object;
+                        loadedOptions.add(option);
+                        if (option.store_product != null && !BuildVars.useInvoiceBilling()) {
+                            toLoadStorePrice.add(option);
+                            option.loadingStorePrice = true;
+                        }
+                    }
+                }
+                giveawayOptionsLoaded = true;
+            }
+            giveawayOptions = loadedOptions;
+            giveawayOptionsLoading = false;
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starGiveawayOptionsLoaded);
+            if (!toLoadStorePrice.isEmpty()) {
+                Runnable fetchStorePrices = () -> {
+                    ArrayList<QueryProductDetailsParams.Product> productQueries = new ArrayList<>();
+                    for (int i = 0; i < toLoadStorePrice.size(); ++i) {
+                        productQueries.add(
+                            QueryProductDetailsParams.Product.newBuilder()
+                                .setProductType(BillingClient.ProductType.INAPP)
+                                .setProductId(toLoadStorePrice.get(i).store_product)
+                                .build()
+                        );
+                    }
+                    BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                            bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
+                            return;
+                        }
+                        if (list != null) {
+                            for (int i = 0; i < list.size(); ++i) {
+                                ProductDetails productDetails = list.get(i);
+                                TLRPC.TL_starsGiveawayOption option = null;
+                                for (int j = 0; j < toLoadStorePrice.size(); ++j) {
+                                    if (toLoadStorePrice.get(j).store_product.equals(productDetails.getProductId())) {
+                                        option = toLoadStorePrice.get(j);
+                                        break;
+                                    }
+                                }
+                                if (option == null) continue;
+
+                                ProductDetails.OneTimePurchaseOfferDetails offerDetails = productDetails.getOneTimePurchaseOfferDetails();
+                                if (offerDetails != null) {
+                                    option.currency = offerDetails.getPriceCurrencyCode();
+                                    option.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
+                                    option.loadingStorePrice = false;
+                                }
+                            }
+                        }
+                        if (giveawayOptions != null) {
+                            for (int i = 0; i < giveawayOptions.size(); ++i) {
+                                TLRPC.TL_starsGiveawayOption option = giveawayOptions.get(i);
+                                if (option != null && option.loadingStorePrice) {
+                                    option.missingStorePrice = true;
+                                }
+                            }
+                        }
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starGiveawayOptionsLoaded);
+                    }));
+                };
+                if (!BillingController.getInstance().isReady()) {
+                    BillingController.getInstance().whenSetuped(fetchStorePrices);
+                } else {
+                    fetchStorePrices.run();
+                }
+            }
+        }));
+        return giveawayOptions;
     }
 
     private void bulletinError(TLRPC.TL_error err, String str) {
@@ -788,6 +894,169 @@ public class StarsController {
 
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
+
+            TLRPC.TL_payments_canPurchasePremium checkReq = new TLRPC.TL_payments_canPurchasePremium();
+            checkReq.purpose = payload;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(checkReq, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (res instanceof TLRPC.TL_boolTrue) {
+                    BillingController.getInstance().addResultListener(productDetails.getProductId(), billingResult1 -> {
+                        final boolean success = billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK;
+                        final String error = success ? null : BillingController.getResponseCodeString(billingResult.getResponseCode());
+                        AndroidUtilities.runOnUIThread(() -> whenDone.run(success, error));
+                    });
+                    BillingController.getInstance().setOnCanceled(() -> {
+                        AndroidUtilities.runOnUIThread(() -> whenDone.run(false, null));
+                    });
+                    BillingController.getInstance().launchBillingFlow(
+                            activity, AccountInstance.getInstance(UserConfig.selectedAccount), payload,
+                            Collections.singletonList(BillingFlowParams.ProductDetailsParams.newBuilder()
+                                    .setProductDetails(list.get(0))
+                                    .build())
+                    );
+                } else if (res instanceof TLRPC.TL_boolFalse) {
+                    if (whenDone != null) {
+                        whenDone.run(false, "PURCHASE_FORBIDDEN");
+                    }
+                } else {
+                    if (whenDone != null) {
+                        whenDone.run(false, err != null ? err.text : "SERVER_ERROR");
+                    }
+                }
+            }));
+        }));
+    }
+
+    public void buyGiveaway(
+        Activity activity,
+        TLRPC.Chat chat, List<TLObject> chats,
+        TLRPC.TL_starsGiveawayOption option, int users,
+        List<TLObject> countries,
+        int date,
+        boolean winnersVisible,
+        boolean onlyNewSubscribers,
+        boolean withAdditionPrize, String prizeDescription,
+        Utilities.Callback2<Boolean, String> whenDone
+    ) {
+        if (activity == null) {
+            return;
+        }
+
+        if (!MessagesController.getInstance(currentAccount).starsPurchaseAvailable()) {
+            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+            if (lastFragment != null && lastFragment.getContext() != null) {
+                showNoSupportDialog(lastFragment.getContext(), lastFragment.getResourceProvider());
+            } else {
+                showNoSupportDialog(activity, null);
+            }
+            return;
+        }
+
+        TLRPC.TL_inputStorePaymentStarsGiveaway payload = new TLRPC.TL_inputStorePaymentStarsGiveaway();
+        payload.only_new_subscribers = onlyNewSubscribers;
+        payload.winners_are_visible = winnersVisible;
+        payload.stars = option.stars;
+        payload.boost_peer = MessagesController.getInstance(currentAccount).getInputPeer(chat);
+        if (chats != null && !chats.isEmpty()) {
+            payload.flags |= 2;
+            for (TLObject obj : chats) {
+                payload.additional_peers.add(MessagesController.getInstance(currentAccount).getInputPeer(obj));
+            }
+        }
+        for (TLObject object : countries) {
+            TLRPC.TL_help_country country = (TLRPC.TL_help_country) object;
+            payload.countries_iso2.add(country.iso2);
+        }
+        if (!payload.countries_iso2.isEmpty()) {
+            payload.flags |= 4;
+        }
+        if (withAdditionPrize) {
+            payload.flags |= 16;
+            payload.prize_description = prizeDescription;
+        }
+        payload.random_id = SendMessagesHelper.getInstance(currentAccount).getNextRandomId();
+        payload.until_date = date;
+        payload.currency = option.currency;
+        payload.amount = option.amount;
+        payload.users = users;
+
+        if (BuildVars.useInvoiceBilling() || !BillingController.getInstance().isReady() || option.store_product == null) {
+
+            TLRPC.TL_inputInvoiceStars invoice = new TLRPC.TL_inputInvoiceStars();
+            invoice.purpose = payload;
+
+            TLRPC.TL_payments_getPaymentForm req = new TLRPC.TL_payments_getPaymentForm();
+            final JSONObject themeParams = BotWebViewSheet.makeThemeParams(getResourceProvider());
+            if (themeParams != null) {
+                req.theme_params = new TLRPC.TL_dataJSON();
+                req.theme_params.data = themeParams.toString();
+                req.flags |= 1;
+            }
+            req.invoice = invoice;
+
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (error != null) {
+                    if (whenDone != null) {
+                        whenDone.run(false, error.text);
+                    }
+                    return;
+                }
+                PaymentFormActivity paymentFormActivity = null;
+                if (response instanceof TLRPC.PaymentForm) {
+                    TLRPC.PaymentForm form = (TLRPC.PaymentForm) response;
+                    form.invoice.recurring = true;
+                    MessagesController.getInstance(currentAccount).putUsers(form.users, false);
+                    paymentFormActivity = new PaymentFormActivity(form, invoice, null);
+                } else if (response instanceof TLRPC.PaymentReceipt) {
+                    paymentFormActivity = new PaymentFormActivity((TLRPC.PaymentReceipt) response);
+                }
+                if (paymentFormActivity != null) {
+                    paymentFormActivity.setPaymentFormCallback(status -> {
+                        if (status == PaymentFormActivity.InvoiceStatus.PAID) {
+                            if (whenDone != null) {
+                                whenDone.run(true, null);
+                            }
+                        } else if (status != PaymentFormActivity.InvoiceStatus.PENDING) {
+                            if (whenDone != null) {
+                                whenDone.run(false, null);
+                            }
+                        }
+                    });
+                    BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                    if (lastFragment == null) return;
+                    if (AndroidUtilities.hasDialogOnTop(lastFragment)) {
+                        BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                        bottomSheetParams.transitionFromLeft = true;
+                        bottomSheetParams.allowNestedScroll = false;
+                        lastFragment.showAsSheet(paymentFormActivity, bottomSheetParams);
+                    } else {
+                        lastFragment.presentFragment(paymentFormActivity);
+                    }
+                } else {
+                    if (whenDone != null) {
+                        whenDone.run(false, "UNKNOWN_RESPONSE");
+                    }
+                }
+            }));
+
+            return;
+        }
+
+        QueryProductDetailsParams.Product product = QueryProductDetailsParams.Product.newBuilder()
+                .setProductType(BillingClient.ProductType.INAPP)
+                .setProductId(option.store_product)
+                .build();
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> AndroidUtilities.runOnUIThread(() -> {
+            if (list.isEmpty()) {
+                AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
+                return;
+            }
+
+            ProductDetails productDetails = list.get(0);
+            ProductDetails.OneTimePurchaseOfferDetails offerDetails = productDetails.getOneTimePurchaseOfferDetails();
+            if (offerDetails == null) {
+                AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NO_ONETIME_OFFER_DETAILS"));
+                return;
+            }
 
             TLRPC.TL_payments_canPurchasePremium checkReq = new TLRPC.TL_payments_canPurchasePremium();
             checkReq.purpose = payload;
@@ -1373,7 +1642,8 @@ public class StarsController {
             return new MessageId(did, mid);
         }
         public static MessageId from(MessageObject msg) {
-            if (msg.messageOwner.isThreadMessage && msg.messageOwner.fwd_from != null) {
+            if (msg == null) return null;
+            if (msg.messageOwner != null && (msg.messageOwner.isThreadMessage || msg.isForwardedChannelPost()) && msg.messageOwner.fwd_from != null) {
                 return new MessageId(msg.getFromChatId(), msg.messageOwner.fwd_from.saved_from_msg_id);
             } else {
                 return new MessageId(msg.getDialogId(), msg.getId());
@@ -1402,15 +1672,9 @@ public class StarsController {
         if (messageSettings != null) {
             return messageSettings;
         }
-        final long did = messageObject == null ? 0 : messageObject.getDialogId();
-        final SharedPreferences prefs = MessagesController.getInstance(currentAccount).getMainSettings();
-        if (prefs.contains("anon_react_" + did)) {
-            return prefs.getBoolean("anon_react_" + did, false);
-        }
-        if (prefs.contains("anon_react_" + 0)) {
-            return prefs.getBoolean("anon_react_" + 0, false);
-        }
-        return false;
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        Boolean anonymous = messagesController.arePaidReactionsAnonymous();
+        return anonymous != null ? anonymous : false;
     }
 
     public boolean arePaidReactionsAnonymous(MessageId id, TLRPC.MessageReactions reactions) {
@@ -1421,19 +1685,9 @@ public class StarsController {
         if (messageSettings != null) {
             return messageSettings;
         }
-        final SharedPreferences prefs = MessagesController.getInstance(currentAccount).getMainSettings();
-        if (prefs.contains("anon_react_" + id.did)) {
-            return prefs.getBoolean("anon_react_" + id.did, false);
-        }
-        if (prefs.contains("anon_react_" + 0)) {
-            return prefs.getBoolean("anon_react_" + 0, false);
-        }
-        return false;
-    }
-
-    public void saveAnonymous(MessageObject messageObject, boolean value) {
-        final SharedPreferences prefs = MessagesController.getInstance(currentAccount).getMainSettings();
-        prefs.edit().putBoolean("anon_react_" + (messageObject == null ? 0 : messageObject.getDialogId()), value).putBoolean("anon_react_0", value).apply();
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        Boolean anonymous = messagesController.arePaidReactionsAnonymous();
+        return anonymous != null ? anonymous : false;
     }
 
     public class PendingPaidReactions {
@@ -1456,15 +1710,12 @@ public class StarsController {
 
         public long not_added;
         public boolean applied;
+        public boolean shownBulletin;
 
         public Boolean anonymous = null;
         public boolean isAnonymous() {
             if (anonymous != null) return anonymous;
             return arePaidReactionsAnonymous(messageObject);
-        }
-
-        private void saveAnonymous() {
-            StarsController.this.saveAnonymous(messageObject, isAnonymous());
         }
 
         public StarReactionsOverlay overlay;
@@ -1487,7 +1738,7 @@ public class StarsController {
             final Context context = getContext(chatActivity);
             bulletinLayout = new Bulletin.TwoLineAnimatedLottieLayout(context, chatActivity.themeDelegate);
             bulletinLayout.setAnimation(R.raw.stars_topup);
-            bulletinLayout.titleTextView.setText(LocaleController.getString(R.string.StarsSentTitle));
+            bulletinLayout.titleTextView.setText(LocaleController.getString(isAnonymous() ? R.string.StarsSentAnonymouslyTitle : R.string.StarsSentTitle));
             bulletinButton = new Bulletin.UndoButton(context, true, false, chatActivity.themeDelegate);
             bulletinButton.setText(LocaleController.getString(R.string.StarsSentUndo));
             bulletinButton.setUndoAction(this::cancel);
@@ -1499,7 +1750,10 @@ public class StarsController {
             bulletinLayout.setButton(bulletinButton);
             bulletin = BulletinFactory.of(chatActivity).create(bulletinLayout, -1);
             bulletin.hideAfterBottomSheet = false;
-            if (affect) bulletin.show(true);
+            if (affect) {
+                bulletin.show(true);
+                shownBulletin = true;
+            }
             bulletin.setOnHideListener(closeRunnable);
 
             this.amount = 0;
@@ -1522,14 +1776,18 @@ public class StarsController {
             bulletinLayout.subtitleTextView.cancelAnimation();
             bulletinLayout.subtitleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("StarsSentText", (int) this.amount)), true);
 
-            timerView.timeLeft = REACTIONS_TIMEOUT;
-            AndroidUtilities.cancelRunOnUIThread(closeRunnable);
-            AndroidUtilities.runOnUIThread(closeRunnable, REACTIONS_TIMEOUT);
+            if (shownBulletin) {
+                timerView.timeLeft = REACTIONS_TIMEOUT;
+                AndroidUtilities.cancelRunOnUIThread(closeRunnable);
+                AndroidUtilities.runOnUIThread(closeRunnable, REACTIONS_TIMEOUT);
+            }
 
             if (affect) {
                 applied = true;
                 messageObject.addPaidReactions((int) +amount, true, isAnonymous());
+                minus += amount;
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
             } else {
                 applied = false;
                 if (messageObject.ensurePaidReactionsExist(true)) {
@@ -1538,21 +1796,31 @@ public class StarsController {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
                 not_added += amount;
             }
+
+            bulletinLayout.titleTextView.setText(LocaleController.getString(isAnonymous() ? R.string.StarsSentAnonymouslyTitle : R.string.StarsSentTitle));
         }
 
         public void apply() {
-            if (applied) return;
-            applied = true;
+            if (!applied) {
+                applied = true;
+                messageObject.addPaidReactions((int) +not_added, true, isAnonymous());
+                minus += not_added;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
+                not_added = 0;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
+            }
+            if (!shownBulletin) {
+                shownBulletin = true;
 
-            timerView.timeLeft = REACTIONS_TIMEOUT;
-            AndroidUtilities.cancelRunOnUIThread(closeRunnable);
-            AndroidUtilities.runOnUIThread(closeRunnable, REACTIONS_TIMEOUT);
+                timerView.timeLeft = REACTIONS_TIMEOUT;
+                AndroidUtilities.cancelRunOnUIThread(closeRunnable);
+                AndroidUtilities.runOnUIThread(closeRunnable, REACTIONS_TIMEOUT);
 
-            messageObject.addPaidReactions((int) +not_added, true, isAnonymous());
-            not_added = 0;
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
-            bulletin.show(true);
-            bulletin.setOnHideListener(closeRunnable);
+                bulletin.show(true);
+                bulletin.setOnHideListener(closeRunnable);
+            }
+
+            bulletinLayout.titleTextView.setText(LocaleController.getString(isAnonymous() ? R.string.StarsSentAnonymouslyTitle : R.string.StarsSentTitle));
         }
 
         public final Runnable closeRunnable = this::close;
@@ -1564,6 +1832,8 @@ public class StarsController {
             } else {
                 cancelled = true;
                 messageObject.addPaidReactions((int) -amount, wasChosen, isAnonymous());
+                minus -= amount;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
             }
             bulletin.hide();
             if (overlay != null && overlay.isShowing(messageObject)) {
@@ -1586,6 +1856,8 @@ public class StarsController {
             }
 
             messageObject.addPaidReactions((int) -amount, wasChosen, isAnonymous());
+            minus -= amount;
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
 
             if (currentPendingReactions == this) {
@@ -1607,6 +1879,8 @@ public class StarsController {
                 cancelled = true;
 
                 messageObject.addPaidReactions((int) -amount, wasChosen, isAnonymous());
+                minus = 0;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateReactions, messageObject.getDialogId(), messageObject.getId(), messageObject.messageOwner.reactions);
 
                 String name;
@@ -1635,7 +1909,8 @@ public class StarsController {
             req.random_id = random_id;
             req.count = (int) amount;
             req.isPrivate = isAnonymous();
-            saveAnonymous();
+
+            invalidateBalance();
 
             connectionsManager.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response != null) {
@@ -1710,9 +1985,6 @@ public class StarsController {
             }).show();
             return null;
         }
-        if (messageObject != null && !messageObject.doesPaidReactionExist()) {
-            affect = true;
-        }
         if (currentPendingReactions == null || !currentPendingReactions.message.equals(key)) {
             if (currentPendingReactions != null) {
                 currentPendingReactions.close();
@@ -1725,7 +1997,7 @@ public class StarsController {
             currentPendingReactions = new PendingPaidReactions(key, messageObject, chatActivity, ConnectionsManager.getInstance(currentAccount).getCurrentTime(), affect);
         }
         final long totalStars2 = currentPendingReactions.amount + amount;
-        if (checkBalance && s.balanceAvailable() && s.getBalance() < totalStars2) {
+        if (checkBalance && s.balanceAvailable() && s.getBalance(false) < totalStars2) {
             currentPendingReactions.cancel();
             final long dialogId = chatActivity.getDialogId();
             String name;
@@ -1741,7 +2013,7 @@ public class StarsController {
             }).show();
             return null;
         }
-        currentPendingReactions.add(amount, affect);
+        currentPendingReactions.add(amount, (messageObject != null && !messageObject.doesPaidReactionExist()) || affect);
         currentPendingReactions.anonymous = anonymous;
         return currentPendingReactions;
     }
@@ -1769,7 +2041,7 @@ public class StarsController {
 
     public long getPendingPaidReactions(MessageObject messageObject) {
         if (messageObject == null || messageObject.messageOwner == null) return 0;
-        if (messageObject.messageOwner.isThreadMessage && messageObject.messageOwner.fwd_from != null) {
+        if ((messageObject.messageOwner.isThreadMessage || messageObject.isForwardedChannelPost()) && messageObject.messageOwner.fwd_from != null) {
             return getPendingPaidReactions(messageObject.getFromChatId(), messageObject.messageOwner.fwd_from.saved_from_msg_id);
         } else {
             return getPendingPaidReactions(messageObject.getDialogId(), messageObject.getId());

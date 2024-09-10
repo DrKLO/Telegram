@@ -688,7 +688,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         checkImage.setScaleType(ImageView.ScaleType.CENTER);
         checkImage.setBackgroundResource(R.drawable.bar_selector_lock);
         passwordFrameLayout.addView(checkImage, LayoutHelper.createFrame(BUTTON_SIZE, BUTTON_SIZE, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 10, 4));
-        checkImage.setContentDescription(LocaleController.getString("Done", R.string.Done));
+        checkImage.setContentDescription(LocaleController.getString(R.string.Done));
         checkImage.setOnClickListener(v -> processDone(false));
 
         fingerprintImage = new ImageView(context);
@@ -696,7 +696,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         fingerprintImage.setScaleType(ImageView.ScaleType.CENTER);
         fingerprintImage.setBackgroundResource(R.drawable.bar_selector_lock);
         passwordFrameLayout.addView(fingerprintImage, LayoutHelper.createFrame(BUTTON_SIZE, BUTTON_SIZE, Gravity.BOTTOM | Gravity.LEFT, 10, 0, 0, 4));
-        fingerprintImage.setContentDescription(LocaleController.getString("AccDescrFingerprint", R.string.AccDescrFingerprint));
+        fingerprintImage.setContentDescription(LocaleController.getString(R.string.AccDescrFingerprint));
         fingerprintImage.setOnClickListener(v -> checkFingerprint());
 
         border = new View(context);

@@ -85,6 +85,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.EmbedBottomSheet;
+import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
@@ -1906,7 +1907,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         final boolean accelerometerDetected = raisedToBack == minCount || accelerometerVertical || System.currentTimeMillis() - lastAccelerometerDetected < 60;
         final boolean alreadyPlaying = useFrontSpeaker || raiseToEarRecord;
         final boolean wakelockAllowed = (
-//            proximityDetected ||
             accelerometerDetected ||
             alreadyPlaying
         ) && !forbidRaiseToListen() && !VoIPService.isAnyKindOfCallActive() && (allowRecording || allowListening) && !PhotoViewer.getInstance().isVisible();
@@ -3226,10 +3226,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private void setBluetoothScoOn(boolean scoOn) {
         AudioManager am = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        if (SharedConfig.recordViaSco && !PermissionRequest.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            SharedConfig.recordViaSco = false;
+            SharedConfig.saveConfig();
+        }
         if (am.isBluetoothScoAvailableOffCall() && SharedConfig.recordViaSco || !scoOn) {
             BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
             try {
-                if (btAdapter != null && btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) == BluetoothProfile.STATE_CONNECTED || !scoOn) {
+                if (btAdapter != null && btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) == BluetoothAdapter.STATE_CONNECTED || !scoOn) {
                     if (scoOn && !am.isBluetoothScoOn()) {
                         am.startBluetoothSco();
                     } else if (!scoOn && am.isBluetoothScoOn()) {
@@ -4370,7 +4374,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             currentAccount.getNotificationCenter().addObserver(this, NotificationCenter.fileLoadProgressChanged);
             currentAccount.getNotificationCenter().addObserver(this, NotificationCenter.fileLoadFailed);
             progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_LOADING);
-            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+            progressDialog.setMessage(LocaleController.getString(R.string.Loading));
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.setCancelable(true);
             progressDialog.setOnCancelListener(d -> cancelled = true);
@@ -4668,7 +4672,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (context != null && type != 0) {
                 try {
                     final AlertDialog dialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_LOADING);
-                    dialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                    dialog.setMessage(LocaleController.getString(R.string.Loading));
                     dialog.setCanceledOnTouchOutside(false);
                     dialog.setCancelable(true);
                     dialog.setOnCancelListener(d -> cancelled[0] = true);
@@ -5181,11 +5185,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation, 0, false, width, height, size);
 
                             if (allPhotosAlbum == null) {
-                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllPhotos", R.string.AllPhotos), photoEntry);
+                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString(R.string.AllPhotos), photoEntry);
                                 photoAlbumsSorted.add(0, allPhotosAlbum);
                             }
                             if (allMediaAlbum == null) {
-                                allMediaAlbum = new AlbumEntry(0, LocaleController.getString("AllMedia", R.string.AllMedia), photoEntry);
+                                allMediaAlbum = new AlbumEntry(0, LocaleController.getString(R.string.AllMedia), photoEntry);
                                 mediaAlbumsSorted.add(0, allMediaAlbum);
                             }
                             allPhotosAlbum.addPhoto(photoEntry);
@@ -5275,7 +5279,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation, (int) (duration / 1000), true, width, height, size);
 
                             if (allVideosAlbum == null) {
-                                allVideosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideos", R.string.AllVideos), photoEntry);
+                                allVideosAlbum = new AlbumEntry(0, LocaleController.getString(R.string.AllVideos), photoEntry);
                                 allVideosAlbum.videoOnly = true;
                                 int index = 0;
                                 if (allMediaAlbum != null) {
@@ -5287,7 +5291,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 mediaAlbumsSorted.add(index, allVideosAlbum);
                             }
                             if (allMediaAlbum == null) {
-                                allMediaAlbum = new AlbumEntry(0, LocaleController.getString("AllMedia", R.string.AllMedia), photoEntry);
+                                allMediaAlbum = new AlbumEntry(0, LocaleController.getString(R.string.AllMedia), photoEntry);
                                 mediaAlbumsSorted.add(0, allMediaAlbum);
                             }
                             allVideosAlbum.addPhoto(photoEntry);

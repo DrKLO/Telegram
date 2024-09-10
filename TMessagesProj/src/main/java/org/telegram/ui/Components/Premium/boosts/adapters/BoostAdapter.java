@@ -10,7 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -29,11 +31,13 @@ import org.telegram.ui.Components.Premium.boosts.cells.HeaderCell;
 import org.telegram.ui.Components.Premium.boosts.cells.ParticipantsTypeCell;
 import org.telegram.ui.Components.Premium.boosts.cells.DurationCell;
 import org.telegram.ui.Components.Premium.boosts.cells.SliderCell;
+import org.telegram.ui.Components.Premium.boosts.cells.StarGiveawayOptionCell;
 import org.telegram.ui.Components.Premium.boosts.cells.SubtitleWithCounterCell;
 import org.telegram.ui.Components.Premium.boosts.cells.SwitcherCell;
 import org.telegram.ui.Components.Premium.boosts.cells.TextInfoCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +61,9 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             HOLDER_TYPE_SUBTITLE_WITH_COUNTER = 13,
             HOLDER_TYPE_SINGLE_BOOST_TYPE = 14,
             HOLDER_TYPE_SWITCHER = 15,
-            HOLDER_TYPE_ENTER_PRIZE = 16;
+            HOLDER_TYPE_ENTER_PRIZE = 16,
+            HOLDER_TYPE_STAR_OPTION = 17,
+            HOLDER_TYPE_EXPAND_OPTIONS = 18;
 
     private final Theme.ResourcesProvider resourcesProvider;
     private List<Item> items = new ArrayList<>();
@@ -146,56 +152,56 @@ public class BoostAdapter extends AdapterWithDiffUtils {
         return recyclerListView.getAdapter();
     }
 
-    @Override
-    public void notifyItemChanged(int position) {
-        realAdapter().notifyItemChanged(position + 1);
-    }
-
-    @Override
-    public void notifyItemChanged(int position, @Nullable Object payload) {
-        realAdapter().notifyItemChanged(position + 1, payload);
-    }
-
-    @Override
-    public void notifyItemInserted(int position) {
-        realAdapter().notifyItemInserted(position + 1);
-    }
-
-    @Override
-    public void notifyItemMoved(int fromPosition, int toPosition) {
-        realAdapter().notifyItemMoved(fromPosition + 1, toPosition);
-    }
-
-    @Override
-    public void notifyItemRangeChanged(int positionStart, int itemCount) {
-        realAdapter().notifyItemRangeChanged(positionStart + 1, itemCount);
-    }
-
-    @Override
-    public void notifyItemRangeChanged(int positionStart, int itemCount, @Nullable Object payload) {
-        realAdapter().notifyItemRangeChanged(positionStart + 1, itemCount, payload);
-    }
-
-    @Override
-    public void notifyItemRangeInserted(int positionStart, int itemCount) {
-        realAdapter().notifyItemRangeInserted(positionStart + 1, itemCount);
-    }
-
-    @Override
-    public void notifyItemRangeRemoved(int positionStart, int itemCount) {
-        realAdapter().notifyItemRangeRemoved(positionStart + 1, itemCount);
-    }
-
-    @Override
-    public void notifyItemRemoved(int position) {
-        realAdapter().notifyItemRemoved(position + 1);
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    @Override
-    public void notifyDataSetChanged() {
-        realAdapter().notifyDataSetChanged();
-    }
+//    @Override
+//    public void notifyItemChanged(int position) {
+//        realAdapter().notifyItemChanged(position + 1);
+//    }
+//
+//    @Override
+//    public void notifyItemChanged(int position, @Nullable Object payload) {
+//        realAdapter().notifyItemChanged(position + 1, payload);
+//    }
+//
+//    @Override
+//    public void notifyItemInserted(int position) {
+//        realAdapter().notifyItemInserted(position + 1);
+//    }
+//
+//    @Override
+//    public void notifyItemMoved(int fromPosition, int toPosition) {
+//        realAdapter().notifyItemMoved(fromPosition + 1, toPosition);
+//    }
+//
+//    @Override
+//    public void notifyItemRangeChanged(int positionStart, int itemCount) {
+//        realAdapter().notifyItemRangeChanged(positionStart + 1, itemCount);
+//    }
+//
+//    @Override
+//    public void notifyItemRangeChanged(int positionStart, int itemCount, @Nullable Object payload) {
+//        realAdapter().notifyItemRangeChanged(positionStart + 1, itemCount, payload);
+//    }
+//
+//    @Override
+//    public void notifyItemRangeInserted(int positionStart, int itemCount) {
+//        realAdapter().notifyItemRangeInserted(positionStart + 1, itemCount);
+//    }
+//
+//    @Override
+//    public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+//        realAdapter().notifyItemRangeRemoved(positionStart + 1, itemCount);
+//    }
+//
+//    @Override
+//    public void notifyItemRemoved(int position) {
+//        realAdapter().notifyItemRemoved(position + 1);
+//    }
+//
+//    @SuppressLint("NotifyDataSetChanged")
+//    @Override
+//    public void notifyDataSetChanged() {
+//        realAdapter().notifyDataSetChanged();
+//    }
 
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
@@ -205,7 +211,9 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 || itemViewType == HOLDER_TYPE_ADD_CHANNEL
                 || itemViewType == HOLDER_TYPE_DATE_END
                 || itemViewType == HOLDER_TYPE_SWITCHER
-                || itemViewType == HOLDER_TYPE_DURATION;
+                || itemViewType == HOLDER_TYPE_DURATION
+                || itemViewType == HOLDER_TYPE_STAR_OPTION
+                || itemViewType == HOLDER_TYPE_EXPAND_OPTIONS;
     }
 
     @NonNull
@@ -244,6 +252,11 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             case HOLDER_TYPE_ADD_CHANNEL:
                 view = new AddChannelCell(context, resourcesProvider);
                 break;
+            case HOLDER_TYPE_EXPAND_OPTIONS:
+                StarsIntroActivity.ExpandView expandView = new StarsIntroActivity.ExpandView(context, resourcesProvider);
+                expandView.set(LocaleController.getString(R.string.NotifyMoreOptions), true, true, false);
+                view = expandView;
+                break;
             case HOLDER_TYPE_SLIDER:
                 view = new SliderCell(context, resourcesProvider);
                 break;
@@ -267,6 +280,9 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             case HOLDER_TYPE_DURATION:
                 view = new DurationCell(context, resourcesProvider);
                 break;
+            case HOLDER_TYPE_STAR_OPTION:
+                view = new StarGiveawayOptionCell(context, resourcesProvider);
+                break;
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return new RecyclerListView.Holder(view);
@@ -280,6 +296,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             case HOLDER_TYPE_HEADER: {
                 headerCell = (HeaderCell) holder.itemView;
                 headerCell.setBoostViaGifsText(currentChat);
+                headerCell.setStars(item.boolValue);
                 break;
             }
             case HOLDER_TYPE_BOOST_TYPE: {
@@ -289,7 +306,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             }
             case HOLDER_TYPE_SINGLE_BOOST_TYPE: {
                 BoostTypeSingleCell cell = (BoostTypeSingleCell) holder.itemView;
-                cell.setGiveaway((TL_stories.TL_prepaidGiveaway) item.user);
+                cell.setGiveaway((TL_stories.PrepaidGiveaway) item.user);
                 break;
             }
             case HOLDER_TYPE_SLIDER: {
@@ -301,7 +318,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             case HOLDER_TYPE_SUBTITLE_WITH_COUNTER: {
                 SubtitleWithCounterCell cell = (SubtitleWithCounterCell) holder.itemView;
                 cell.setText(item.text);
-                cell.updateCounter(false, item.intValue);
+                cell.updateCounter(true, item.intValue);
                 break;
             }
             case HOLDER_TYPE_SUBTITLE: {
@@ -345,6 +362,11 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             case HOLDER_TYPE_DURATION: {
                 DurationCell cell = (DurationCell) holder.itemView;
                 cell.setDuration(item.object, item.intValue, item.intValue2, item.longValue, item.text, item.boolValue, item.selectable);
+                break;
+            }
+            case HOLDER_TYPE_STAR_OPTION: {
+                StarGiveawayOptionCell cell = (StarGiveawayOptionCell) holder.itemView;
+                cell.setOption(item.object == null ? null : (TLRPC.TL_starsGiveawayOption) item.object, item.intValue, item.longValue, item.selectable, item.boolValue);
                 break;
             }
             case HOLDER_TYPE_SIMPLE_DIVIDER: {
@@ -395,6 +417,12 @@ public class BoostAdapter extends AdapterWithDiffUtils {
 
         public static Item asHeader() {
             return new Item(HOLDER_TYPE_HEADER, false);
+        }
+
+        public static Item asHeader(boolean golden) {
+            Item item = new Item(HOLDER_TYPE_HEADER, false);
+            item.boolValue = golden;
+            return item;
         }
 
         public static Item asDivider() {
@@ -471,6 +499,10 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             return new Item(HOLDER_TYPE_ADD_CHANNEL, false);
         }
 
+        public static Item asExpandOptions() {
+            return new Item(HOLDER_TYPE_EXPAND_OPTIONS, false);
+        }
+
         public static Item asSubTitle(CharSequence text) {
             Item item = new Item(HOLDER_TYPE_SUBTITLE, false);
             item.text = text;
@@ -495,6 +527,15 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             return item;
         }
 
+        public static Item asOption(TLRPC.TL_starsGiveawayOption option, int index, long starsPerUser, boolean selected, boolean needDivider) {
+            Item item = new Item(HOLDER_TYPE_STAR_OPTION, selected);
+            item.intValue = index;
+            item.longValue = starsPerUser;
+            item.object = option;
+            item.boolValue = needDivider;
+            return item;
+        }
+
         public static Item asParticipants(int subType, int selectedSubType, boolean needDivider, List<TLObject> countries) {
             Item item = new Item(HOLDER_TYPE_PARTICIPANTS, selectedSubType == subType);
             item.subType = subType;
@@ -511,9 +552,20 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             if (viewType != i.viewType) {
                 return false;
             }
+            if (viewType == HOLDER_TYPE_HEADER) {
+                return true;
+            }
+            if (viewType == HOLDER_TYPE_STAR_OPTION) {
+                return intValue == i.intValue && object == i.object;
+            }
+            if (viewType == HOLDER_TYPE_SLIDER) {
+                return eq(values, i.values);
+            }
+            if (viewType == HOLDER_TYPE_SUBTITLE_WITH_COUNTER) {
+                return TextUtils.equals(text, i.text);
+            }
             if (chat != i.chat || user != i.user || peer != i.peer || object != i.object
                     || boolValue != i.boolValue
-                    || values != i.values
                     || intValue != i.intValue || intValue2 != i.intValue2 || intValue3 != i.intValue3
                     || longValue != i.longValue
                     || subType != i.subType
@@ -522,6 +574,38 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 return false;
             }
             return true;
+        }
+
+        public static boolean eq(List<Integer> a, List<Integer> b) {
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
+            if (a.size() != b.size()) return false;
+            for (int i = 0; i < a.size(); ++i) {
+                if ((int) a.get(i) != (int) b.get(i))
+                    return false;
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean contentsEquals(AdapterWithDiffUtils.Item item) {
+            if (this == item) return true;
+            if (item == null || getClass() != item.getClass()) return false;
+            Item i = (Item) item;
+            if (i.viewType != viewType) return false;
+            if (viewType == HOLDER_TYPE_HEADER) {
+                return boolValue == i.boolValue;
+            }
+            if (i.viewType == HOLDER_TYPE_STAR_OPTION) {
+                return intValue == i.intValue && longValue == i.longValue && object == i.object && boolValue == i.boolValue && selectable == i.selectable;
+            }
+            if (viewType == HOLDER_TYPE_SLIDER) {
+                return intValue == i.intValue && eq(values, i.values);
+            }
+            if (viewType == HOLDER_TYPE_SUBTITLE_WITH_COUNTER) {
+                return intValue == i.intValue && TextUtils.equals(text, i.text);
+            }
+            return false;
         }
     }
 }

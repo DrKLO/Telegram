@@ -102,21 +102,21 @@ public class JoinCallByUrlAlert extends BottomSheet {
                 percentTextView.setText(call.call.title);
             }
             if (call.call.participants_count == 0) {
-                infoTextView.setText(LocaleController.getString("NoOneJoinedYet", R.string.NoOneJoinedYet));
+                infoTextView.setText(LocaleController.getString(R.string.NoOneJoinedYet));
             } else {
                 infoTextView.setText(LocaleController.formatPluralString("Participants", call.call.participants_count));
             }
         } else {
             percentTextView.setText(chat.title);
-            infoTextView.setText(LocaleController.getString("NoOneJoinedYet", R.string.NoOneJoinedYet));
+            infoTextView.setText(LocaleController.getString(R.string.NoOneJoinedYet));
         }
 
         BottomSheetCell clearButton = new BottomSheetCell(context);
         clearButton.setBackground(null);
         if (ChatObject.isChannelOrGiga(chat)) {
-            clearButton.setText(LocaleController.getString("VoipChannelJoinVoiceChatUrl", R.string.VoipChannelJoinVoiceChatUrl));
+            clearButton.setText(LocaleController.getString(R.string.VoipChannelJoinVoiceChatUrl));
         } else {
-            clearButton.setText(LocaleController.getString("VoipGroupJoinVoiceChatUrl", R.string.VoipGroupJoinVoiceChatUrl));
+            clearButton.setText(LocaleController.getString(R.string.VoipGroupJoinVoiceChatUrl));
         }
         clearButton.background.setOnClickListener(v -> {
             joinAfterDismiss = true;

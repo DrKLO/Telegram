@@ -23,6 +23,12 @@ public class Timer {
         }
     }
 
+    public static void finish(Timer logger) {
+        if (logger != null) {
+            logger.finish();
+        }
+    }
+
     public static void done(Task task) {
         if (task != null) {
             task.done();
@@ -42,17 +48,17 @@ public class Timer {
 
     public ArrayList<Task> tasks = new ArrayList<>();
 
-    public Task start(String task) {
+    private Task start(String task) {
         Task timer = new Task(task);
         tasks.add(timer);
         return timer;
     }
 
-    public void log(String log) {
+    private void log(String log) {
         tasks.add(new Log(log));
     }
 
-    public void finish() {
+    private void finish() {
         final long totalTime = System.currentTimeMillis() - startTime;
         StringBuilder s = new StringBuilder();
         s.append(name).append(" total=").append(totalTime).append("ms\n");
@@ -79,7 +85,7 @@ public class Timer {
             Timer.this.pad++;
         }
 
-        public void done() {
+        private void done() {
             if (this.endTime < 0)
                 this.pad = Timer.this.pad--;
             this.endTime = System.currentTimeMillis();

@@ -94,7 +94,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("InviteLink", R.string.InviteLink));
+        actionBar.setTitle(LocaleController.getString(R.string.InviteLink));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -144,16 +144,16 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType("text/plain");
                     intent.putExtra(Intent.EXTRA_TEXT, invite.link);
-                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink)), 500);
+                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.InviteToGroupByLink)), 500);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             } else if (position == revokeLinkRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
-                builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
-                builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), (dialogInterface, i) -> generateLink(true));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setMessage(LocaleController.getString(R.string.RevokeAlert));
+                builder.setTitle(LocaleController.getString(R.string.RevokeLink));
+                builder.setPositiveButton(LocaleController.getString(R.string.RevokeButton), (dialogInterface, i) -> generateLink(true));
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 showDialog(builder.create());
             }
         });
@@ -200,9 +200,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("RevokeAlertNewLink", R.string.RevokeAlertNewLink));
-                    builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
-                    builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                    builder.setMessage(LocaleController.getString(R.string.RevokeAlertNewLink));
+                    builder.setTitle(LocaleController.getString(R.string.RevokeLink));
+                    builder.setNegativeButton(LocaleController.getString(R.string.OK), null);
                     showDialog(builder.create());
                 }
             }
@@ -260,11 +260,11 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                 case 0:
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == copyLinkRow) {
-                        textCell.setText(LocaleController.getString("CopyLink", R.string.CopyLink), true);
+                        textCell.setText(LocaleController.getString(R.string.CopyLink), true);
                     } else if (position == shareLinkRow) {
-                        textCell.setText(LocaleController.getString("ShareLink", R.string.ShareLink), false);
+                        textCell.setText(LocaleController.getString(R.string.ShareLink), false);
                     } else if (position == revokeLinkRow) {
-                        textCell.setText(LocaleController.getString("RevokeLink", R.string.RevokeLink), true);
+                        textCell.setText(LocaleController.getString(R.string.RevokeLink), true);
                     }
                     break;
                 case 1:
@@ -275,9 +275,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     } else if (position == linkInfoRow) {
                         TLRPC.Chat chat = getMessagesController().getChat(chatId);
                         if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            privacyCell.setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
+                            privacyCell.setText(LocaleController.getString(R.string.ChannelLinkInfo));
                         } else {
-                            privacyCell.setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                            privacyCell.setText(LocaleController.getString(R.string.LinkInfo));
                         }
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }

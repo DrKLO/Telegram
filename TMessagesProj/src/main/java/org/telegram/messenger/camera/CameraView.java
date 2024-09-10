@@ -72,7 +72,6 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
 import java.io.IOException;
@@ -1219,8 +1218,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             android.opengl.Matrix.setIdentityM(mSTMatrix[0], 0);
 
-            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RLottieDrawable.readRes(null, R.raw.camera_vert));
-            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RLottieDrawable.readRes(null, R.raw.camera_frag));
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, AndroidUtilities.readRes(R.raw.camera_vert));
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, AndroidUtilities.readRes(R.raw.camera_frag));
             if (vertexShader != 0 && fragmentShader != 0) {
                 drawProgram = GLES20.glCreateProgram();
                 GLES20.glAttachShader(drawProgram, vertexShader);
@@ -2817,8 +2816,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
             textureBuffer.put(texData).position(0);
 
-            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RLottieDrawable.readRes(null, R.raw.camera_vert));
-            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RLottieDrawable.readRes(null, R.raw.camera_frag));
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, AndroidUtilities.readRes(R.raw.camera_vert));
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, AndroidUtilities.readRes(R.raw.camera_frag));
             if (vertexShader != 0 && fragmentShader != 0) {
                 drawProgram = GLES20.glCreateProgram();
                 GLES20.glAttachShader(drawProgram, vertexShader);

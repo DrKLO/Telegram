@@ -334,7 +334,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 openKeyboardInternal();
             }
         });
-        emojiButton.setContentDescription(LocaleController.getString("Emoji", R.string.Emoji));
+        emojiButton.setContentDescription(LocaleController.getString(R.string.Emoji));
     }
 
     public void collapseEmojiView() {
@@ -877,10 +877,10 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             @Override
             public void onClearEmojiRecent() {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-                builder.setTitle(LocaleController.getString("ClearRecentEmojiTitle", R.string.ClearRecentEmojiTitle));
-                builder.setMessage(LocaleController.getString("ClearRecentEmojiText", R.string.ClearRecentEmojiText));
-                builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.ClearRecentEmojiTitle));
+                builder.setMessage(LocaleController.getString(R.string.ClearRecentEmojiText));
+                builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 if (parentFragment != null) {
                     parentFragment.showDialog(builder.create());
                 } else {

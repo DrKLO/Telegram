@@ -124,7 +124,7 @@ public class UpdateLayout extends IUpdateLayout {
         updateTextView = new SimpleTextView(activity);
         updateTextView.setTextSize(15);
         updateTextView.setTypeface(AndroidUtilities.bold());
-        updateTextView.setText(LocaleController.getString("AppUpdate", R.string.AppUpdate));
+        updateTextView.setText(LocaleController.getString(R.string.AppUpdate));
         updateTextView.setTextColor(0xffffffff);
         updateTextView.setGravity(Gravity.LEFT);
         updateLayout.addView(updateTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 74, 0, 0, 0));
@@ -150,7 +150,7 @@ public class UpdateLayout extends IUpdateLayout {
             boolean showSize;
             if (path.exists()) {
                 updateLayoutIcon.setIcon(MediaActionDrawable.ICON_UPDATE, true, false);
-                updateTextView.setText(LocaleController.getString("AppUpdateNow", R.string.AppUpdateNow));
+                updateTextView.setText(LocaleController.getString(R.string.AppUpdateNow));
                 showSize = false;
             } else {
                 if (FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
@@ -161,7 +161,7 @@ public class UpdateLayout extends IUpdateLayout {
                     showSize = false;
                 } else {
                     updateLayoutIcon.setIcon(MediaActionDrawable.ICON_DOWNLOAD, true, false);
-                    updateTextView.setText(LocaleController.getString("AppUpdate", R.string.AppUpdate));
+                    updateTextView.setText(LocaleController.getString(R.string.AppUpdate));
                     showSize = true;
                 }
             }

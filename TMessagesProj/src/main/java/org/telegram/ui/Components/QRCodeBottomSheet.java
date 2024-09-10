@@ -105,7 +105,7 @@ public class QRCodeBottomSheet extends BottomSheet {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
-        buttonTextView.setText(LocaleController.getString("ShareQrCode", R.string.ShareQrCode));
+        buttonTextView.setText(LocaleController.getString(R.string.ShareQrCode));
         buttonTextView.setOnClickListener(view -> {
             Uri uri = AndroidUtilities.getBitmapShareUri(qrCode, "qr_tmp.png", Bitmap.CompressFormat.PNG);
             if (uri != null) {
@@ -128,12 +128,12 @@ public class QRCodeBottomSheet extends BottomSheet {
             button2TextView.setGravity(Gravity.CENTER);
             button2TextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             //        button2TextView.setTypeface(AndroidUtilities.medium());
-            button2TextView.setText(LocaleController.getString("ShareLink", R.string.ShareLink));
+            button2TextView.setText(LocaleController.getString(R.string.ShareLink));
             button2TextView.setOnClickListener(view -> {
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 shareIntent.setType("text/plain");
                 shareIntent.putExtra(Intent.EXTRA_TEXT, link);
-                Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString("ShareLink", R.string.ShareLink));
+                Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString(R.string.ShareLink));
                 chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(chooserIntent);
             });

@@ -501,7 +501,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         cancelTextView.setGravity(Gravity.CENTER);
         cancelTextView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
         cancelTextView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
-        cancelTextView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+        cancelTextView.setText(LocaleController.getString(R.string.Cancel).toUpperCase());
         cancelTextView.setTypeface(AndroidUtilities.bold());
         frameLayout.addView(cancelTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
@@ -511,7 +511,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         doneTextView.setGravity(Gravity.CENTER);
         doneTextView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
         doneTextView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
-        doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+        doneTextView.setText(LocaleController.getString(R.string.Done).toUpperCase());
         doneTextView.setTypeface(AndroidUtilities.bold());
         frameLayout.addView(doneTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
@@ -590,22 +590,22 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             curveTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             curveTextView.setGravity(Gravity.CENTER_VERTICAL);
             if (a == 0) {
-                String str = LocaleController.getString("CurvesAll", R.string.CurvesAll);
+                String str = LocaleController.getString(R.string.CurvesAll);
                 curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
                 curveTextView.setTextColor(0xffffffff);
                 curveRadioButton[a].setColor(0xffffffff, 0xffffffff);
             } else if (a == 1) {
-                String str = LocaleController.getString("CurvesRed", R.string.CurvesRed);
+                String str = LocaleController.getString(R.string.CurvesRed);
                 curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
                 curveTextView.setTextColor(0xffe64d4d);
                 curveRadioButton[a].setColor(0xffe64d4d, 0xffe64d4d);
             } else if (a == 2) {
-                String str = LocaleController.getString("CurvesGreen", R.string.CurvesGreen);
+                String str = LocaleController.getString(R.string.CurvesGreen);
                 curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
                 curveTextView.setTextColor(0xff5abb5f);
                 curveRadioButton[a].setColor(0xff5abb5f, 0xff5abb5f);
             } else if (a == 3) {
-                String str = LocaleController.getString("CurvesBlue", R.string.CurvesBlue);
+                String str = LocaleController.getString(R.string.CurvesBlue);
                 curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
                 curveTextView.setTextColor(0xff3dadee);
                 curveRadioButton[a].setColor(0xff3dadee, 0xff3dadee);
@@ -631,7 +631,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         blurOffButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurOffButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurOffButton.setGravity(Gravity.CENTER_HORIZONTAL);
-        blurOffButton.setText(LocaleController.getString("BlurOff", R.string.BlurOff));
+        blurOffButton.setText(LocaleController.getString(R.string.BlurOff));
         blurLayout.addView(blurOffButton, LayoutHelper.createFrame(80, 60));
         blurOffButton.setOnClickListener(v -> {
             blurType = 0;
@@ -646,7 +646,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         blurRadialButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurRadialButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurRadialButton.setGravity(Gravity.CENTER_HORIZONTAL);
-        blurRadialButton.setText(LocaleController.getString("BlurRadial", R.string.BlurRadial));
+        blurRadialButton.setText(LocaleController.getString(R.string.BlurRadial));
         blurLayout.addView(blurRadialButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 100, 0, 0, 0));
         blurRadialButton.setOnClickListener(v -> {
             blurType = 1;
@@ -662,7 +662,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         blurLinearButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurLinearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurLinearButton.setGravity(Gravity.CENTER_HORIZONTAL);
-        blurLinearButton.setText(LocaleController.getString("BlurLinear", R.string.BlurLinear));
+        blurLinearButton.setText(LocaleController.getString(R.string.BlurLinear));
         blurLayout.addView(blurLinearButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 200, 0, 0, 0));
         blurLinearButton.setOnClickListener(v -> {
             blurType = 2;
@@ -1201,7 +1201,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
             View child = recyclerListView.getChildAt(i);
             if (child instanceof PhotoEditToolCell && recyclerListView.getChildAdapterPosition(child) == enhanceTool) {
-                ((PhotoEditToolCell) child).setIconAndTextAndValue(LocaleController.getString("Enhance", R.string.Enhance), enhanceValue, 0, 100);
+                ((PhotoEditToolCell) child).setIconAndTextAndValue(LocaleController.getString(R.string.Enhance), enhanceValue, 0, 100);
                 break;
             }
         }
@@ -1296,29 +1296,29 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                     PhotoEditToolCell cell = (PhotoEditToolCell) holder.itemView;
                     cell.setTag(i);
                     if (i == enhanceTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Enhance", R.string.Enhance), enhanceValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Enhance), enhanceValue, 0, 100);
                     } else if (i == highlightsTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Highlights", R.string.Highlights), highlightsValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Highlights), highlightsValue, -100, 100);
                     } else if (i == contrastTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Contrast", R.string.Contrast), contrastValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Contrast), contrastValue, -100, 100);
                     } else if (i == exposureTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Exposure", R.string.Exposure), exposureValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Exposure), exposureValue, -100, 100);
                     } else if (i == warmthTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Warmth", R.string.Warmth), warmthValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Warmth), warmthValue, -100, 100);
                     } else if (i == saturationTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Saturation", R.string.Saturation), saturationValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Saturation), saturationValue, -100, 100);
                     } else if (i == vignetteTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Vignette", R.string.Vignette), vignetteValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Vignette), vignetteValue, 0, 100);
                     } else if (i == shadowsTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Shadows", R.string.Shadows), shadowsValue, -100, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Shadows), shadowsValue, -100, 100);
                     } else if (i == grainTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Grain", R.string.Grain), grainValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Grain), grainValue, 0, 100);
                     } else if (i == sharpenTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Sharpen), sharpenValue, 0, 100);
                     } else if (i == fadeTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("Fade", R.string.Fade), fadeValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.Fade), fadeValue, 0, 100);
                     } else if (i == softenSkinTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("SoftenSkin", R.string.SoftenSkin), softenSkinValue, 0, 100);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.SoftenSkin), softenSkinValue, 0, 100);
                     }
                     break;
                 }
@@ -1326,9 +1326,9 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                     PhotoEditRadioCell cell = (PhotoEditRadioCell) holder.itemView;
                     cell.setTag(i);
                     if (i == tintShadowsTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("TintShadows", R.string.TintShadows), 0, tintShadowsColor);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.TintShadows), 0, tintShadowsColor);
                     } else if (i == tintHighlightsTool) {
-                        cell.setIconAndTextAndValue(LocaleController.getString("TintHighlights", R.string.TintHighlights), 0, tintHighlightsColor);
+                        cell.setIconAndTextAndValue(LocaleController.getString(R.string.TintHighlights), 0, tintHighlightsColor);
                     }
                     break;
                 }
@@ -1390,7 +1390,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             bottomTextPaint.setTextSize(AndroidUtilities.dp(58));
 
             if (topText == null) {
-                topText = new StaticLayout(LocaleController.getString("Enhance", R.string.Enhance), topTextPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+                topText = new StaticLayout(LocaleController.getString(R.string.Enhance), topTextPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
                 topTextWidth = topText.getLineCount() > 0 ? topText.getLineWidth(0) : 0;
                 topTextLeft = topText.getLineCount() > 0 ? topText.getLineLeft(0) : 0;
             }

@@ -21,8 +21,10 @@ public class UpsampleAudioResampler implements AudioResampler {
         if (channels != 1 && channels != 2) {
             throw new IllegalArgumentException("Illegal use of UpsampleAudioResampler. Channels:" + channels);
         }
+
         final int inputSamples = inputBuffer.remaining() / channels;
         final int outputSamples = (int) Math.ceil(inputSamples * ((double) outputSampleRate / inputSampleRate));
+
         final int fakeSamples = outputSamples - inputSamples;
         int remainingInputSamples = inputSamples;
         int remainingFakeSamples = fakeSamples;

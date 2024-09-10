@@ -47,6 +47,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -521,6 +522,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         }
 
         public static class Factory extends UItem.UItemFactory<WebpagePreviewView> {
+            static { setup(new Factory()); }
             @Override
             public WebpagePreviewView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new WebpagePreviewView(context);

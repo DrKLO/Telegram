@@ -73,7 +73,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("FeaturedStickers", R.string.FeaturedStickers));
+        actionBar.setTitle(LocaleController.getString(R.string.FeaturedStickers));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {

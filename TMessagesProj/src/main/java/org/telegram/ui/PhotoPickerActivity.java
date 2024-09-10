@@ -487,9 +487,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (selectedAlbum != null) {
             actionBar.setTitle(selectedAlbum.bucketName);
         } else if (type == 0) {
-            actionBar.setTitle(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.SearchImagesTitle));
         } else if (type == 1) {
-            actionBar.setTitle(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.SearchGifsTitle));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -521,7 +521,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
                 @Override
                 public void onShowSubMenu() {
-                    showAsListItem.setText(listSort ? LocaleController.getString(R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
+                    showAsListItem.setText(listSort ? LocaleController.getString(R.string.ShowAsGrid) : LocaleController.getString(R.string.ShowAsList));
                     showAsListItem.setIcon(listSort ? R.drawable.msg_media : R.drawable.msg_list);
                 }
 
@@ -529,8 +529,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 public void onHideSubMenu() {
                 }
             });
-            showAsListItem = menuItem.addSubItem(change_sort, R.drawable.msg_list, LocaleController.getString("ShowAsList", R.string.ShowAsList));
-            menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
+            showAsListItem = menuItem.addSubItem(change_sort, R.drawable.msg_list, LocaleController.getString(R.string.ShowAsList));
+            menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString(R.string.OpenInExternalApp));
         }
 
         if (selectedAlbum == null) {
@@ -559,7 +559,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             ConnectionsManager.getInstance(currentAccount).cancelRequest(imageReqId, true);
                             imageReqId = 0;
                         }
-                        emptyView.title.setText(LocaleController.getString("NoRecentSearches", R.string.NoRecentSearches));
+                        emptyView.title.setText(LocaleController.getString(R.string.NoRecentSearches));
                         emptyView.showProgress(false);
                         updateSearchInterface();
                     } else {
@@ -583,9 +583,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         if (selectedAlbum == null) {
             if (type == 0) {
-                searchItem.setSearchFieldHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+                searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchImagesTitle));
             } else if (type == 1) {
-                searchItem.setSearchFieldHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+                searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchGifsTitle));
             }
         }
 
@@ -800,16 +800,16 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     }
                 } else if (position == recentSearches.size() + 1) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("ClearSearchAlertTitle", R.string.ClearSearchAlertTitle));
-                    builder.setMessage(LocaleController.getString("ClearSearchAlert", R.string.ClearSearchAlert));
-                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> {
+                    builder.setTitle(LocaleController.getString(R.string.ClearSearchAlertTitle));
+                    builder.setMessage(LocaleController.getString(R.string.ClearSearchAlert));
+                    builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialogInterface, i) -> {
                         if (searchDelegate != null) {
                             searchDelegate.shouldClearRecentSearch();
                         } else {
                             clearRecentSearch();
                         }
                     });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     AlertDialog dialog = builder.create();
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -934,11 +934,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         emptyView.addView(flickerView, 0);
         if (selectedAlbum != null) {
 //            emptyView.setShowAtCenter(false);
-            emptyView.title.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+            emptyView.title.setText(LocaleController.getString(R.string.NoPhotos));
         } else {
 //            emptyView.setShowAtTop(true);
 //            emptyView.setPadding(0, AndroidUtilities.dp(200), 0, 0);
-            emptyView.title.setText(LocaleController.getString("NoRecentSearches", R.string.NoRecentSearches));
+            emptyView.title.setText(LocaleController.getString(R.string.NoRecentSearches));
         }
         emptyView.showProgress(false, false);
         sizeNotifierFrameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 126, 0, 0));
@@ -992,7 +992,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             InputFilter[] inputFilters = new InputFilter[1];
             inputFilters[0] = new InputFilter.LengthFilter(MessagesController.getInstance(UserConfig.selectedAccount).maxCaptionLength);
             commentTextView.setFilters(inputFilters);
-            commentTextView.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
+            commentTextView.setHint(LocaleController.getString(R.string.AddCaption));
             commentTextView.onResume();
             EditTextBoldCursor editText = commentTextView.getEditText();
             editText.setMaxLines(1);
@@ -1112,12 +1112,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         itemCells[a] = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == 1);
                         if (num == 0) {
                             if (UserObject.isUserSelf(user)) {
-                                itemCells[a].setTextAndIcon(LocaleController.getString("SetReminder", R.string.SetReminder), R.drawable.msg_calendar2);
+                                itemCells[a].setTextAndIcon(LocaleController.getString(R.string.SetReminder), R.drawable.msg_calendar2);
                             } else {
-                                itemCells[a].setTextAndIcon(LocaleController.getString("ScheduleMessage", R.string.ScheduleMessage), R.drawable.msg_calendar2);
+                                itemCells[a].setTextAndIcon(LocaleController.getString(R.string.ScheduleMessage), R.drawable.msg_calendar2);
                             }
                         } else {
-                            itemCells[a].setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
+                            itemCells[a].setTextAndIcon(LocaleController.getString(R.string.SendWithoutSound), R.drawable.input_notify_off);
                         }
                         itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
 
@@ -1358,7 +1358,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         lastSearchString = text;
         if (lastSearchString.length() == 0) {
             lastSearchString = null;
-            emptyView.title.setText(LocaleController.getString("NoRecentSearches", R.string.NoRecentSearches));
+            emptyView.title.setText(LocaleController.getString(R.string.NoRecentSearches));
         } else {
             emptyView.title.setText(LocaleController.formatString("NoResultFoundFor", R.string.NoResultFoundFor, lastSearchString));
         }
@@ -1819,7 +1819,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 TLRPC.Chat chat = chatActivity.getCurrentChat();
                                 if (chat != null && !ChatObject.hasAdminRights(chat) && chat.slowmode_enabled) {
                                     if (alertOnlyOnce != 2) {
-                                        AlertsCreator.showSimpleAlert(PhotoPickerActivity.this, LocaleController.getString("Slowmode", R.string.Slowmode), LocaleController.getString("SlowmodeSelectSendError", R.string.SlowmodeSelectSendError));
+                                        AlertsCreator.showSimpleAlert(PhotoPickerActivity.this, LocaleController.getString(R.string.Slowmode), LocaleController.getString(R.string.SlowmodeSelectSendError));
                                         if (alertOnlyOnce == 1) {
                                             alertOnlyOnce = 2;
                                         }
@@ -1943,7 +1943,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (position < recentSearches.size()) {
                         cell.setTextAndIcon(recentSearches.get(position), R.drawable.msg_recent, false);
                     } else {
-                        cell.setTextAndIcon(LocaleController.getString("ClearRecentHistory", R.string.ClearRecentHistory), R.drawable.msg_clear_recent, false);
+                        cell.setTextAndIcon(LocaleController.getString(R.string.ClearRecentHistory), R.drawable.msg_clear_recent, false);
                     }
                     break;
                 }

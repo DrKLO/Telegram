@@ -264,7 +264,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             return false;
         }
         if (message.storyItem instanceof TL_stories.TL_storyItemDeleted) {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.story_bomb1, LocaleController.getString("StoryNotFound", R.string.StoryNotFound)).show();
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.story_bomb1, LocaleController.getString(R.string.StoryNotFound)).show();
             return true;
         }
         return false;
@@ -279,7 +279,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         emptyView = new EmptyTextProgressView(context);
-        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        emptyView.setText(LocaleController.getString(R.string.NoResult));
         emptyView.setVisibility(View.GONE);
 
         progressLayout = new LinearLayout(context);
@@ -295,14 +295,14 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         loadingTitle.setTypeface(AndroidUtilities.bold());
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
-        loadingTitle.setText(LocaleController.getString("LoadingStats", R.string.LoadingStats));
+        loadingTitle.setText(LocaleController.getString(R.string.LoadingStats));
         loadingTitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         TextView loadingSubtitle = new TextView(context);
         loadingSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
         loadingSubtitle.setTag(Theme.key_player_actionBarSubtitle);
-        loadingSubtitle.setText(LocaleController.getString("LoadingStatsDescription", R.string.LoadingStatsDescription));
+        loadingSubtitle.setText(LocaleController.getString(R.string.LoadingStatsDescription));
         loadingSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         progressLayout.addView(imageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
@@ -355,10 +355,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 final ArrayList<Integer> icons = new ArrayList<>();
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), getResourceProvider());
                 if (message.isStory()) {
-                    items.add(isDialog ? LocaleController.getString("OpenProfile", R.string.OpenProfile) : LocaleController.getString("OpenChannel2", R.string.OpenChannel2));
+                    items.add(isDialog ? LocaleController.getString(R.string.OpenProfile) : LocaleController.getString(R.string.OpenChannel2));
                     icons.add(isDialog ? R.drawable.msg_openprofile : R.drawable.msg_channel);
                 } else {
-                    items.add(LocaleController.getString("ViewMessage", R.string.ViewMessage));
+                    items.add(LocaleController.getString(R.string.ViewMessage));
                     icons.add(R.drawable.msg_msgbubble3);
                 }
                 actions.add(0);
@@ -563,7 +563,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
     private void setAvatarAndTitle() {
         if (messageObject.isStory()) {
-            avatarContainer.setTitle(LocaleController.getString("StoryStatistics", R.string.StoryStatistics));
+            avatarContainer.setTitle(LocaleController.getString(R.string.StoryStatistics));
             avatarContainer.hideSubtitle();
             avatarContainer.allowDrawStories = true;
             avatarContainer.setStoriesForceState(StoriesUtilities.STATE_HAS_UNREAD);
@@ -578,7 +578,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 avatarContainer.getAvatarImageView().setScaleY(0.96f);
             }
         } else {
-            avatarContainer.setTitle(LocaleController.getString("PostStatistics", R.string.PostStatistics));
+            avatarContainer.setTitle(LocaleController.getString(R.string.PostStatistics));
             TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
             if (chatLocal != null && !hasThumb) {
                 avatarContainer.setChatAvatar(chatLocal);
@@ -594,7 +594,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             ActionBarMenu menu = actionBar.createMenu();
             menu.clearItems();
             ActionBarMenuItem headerItem = menu.addItem(0, R.drawable.ic_ab_other);
-            headerItem.addSubItem(1, R.drawable.msg_stats, LocaleController.getString("ViewChannelStats", R.string.ViewChannelStats));
+            headerItem.addSubItem(1, R.drawable.msg_stats, LocaleController.getString(R.string.ViewChannelStats));
         }
     }
 
@@ -744,8 +744,8 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 reactions_by_emotion_graph = res.reactions_by_emotion_graph;
             }
 
-            interactionsViewData = StatisticActivity.createViewData(views_graph, LocaleController.getString("ViewsAndSharesChartTitle", R.string.ViewsAndSharesChartTitle), 1, false);
-            reactionsByEmotionData = StatisticActivity.createViewData(reactions_by_emotion_graph, LocaleController.getString("ReactionsByEmotionChartTitle", R.string.ReactionsByEmotionChartTitle), 2, false);
+            interactionsViewData = StatisticActivity.createViewData(views_graph, LocaleController.getString(R.string.ViewsAndSharesChartTitle), 1, false);
+            reactionsByEmotionData = StatisticActivity.createViewData(reactions_by_emotion_graph, LocaleController.getString(R.string.ReactionsByEmotionChartTitle), 2, false);
             if (interactionsViewData != null && interactionsViewData.chartData.x.length <= 5) {
                 statsLoaded = false;
                 TL_stats.TL_loadAsyncGraph request = new TL_stats.TL_loadAsyncGraph();
@@ -970,7 +970,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                     if (item.isStory()) {
                         object = DialogObject.isUserDialog(did) ? getMessagesController().getUser(did) : getMessagesController().getChat(-did);
                         boolean isZeroViews = item.storyItem.views == null || item.storyItem.views.views_count == 0;
-                        status = isZeroViews ? LocaleController.getString("NoViews", R.string.NoViews) : LocaleController.formatPluralString("Views", item.storyItem.views.views_count);
+                        status = isZeroViews ? LocaleController.getString(R.string.NoViews) : LocaleController.formatPluralString("Views", item.storyItem.views.views_count);
                         userCell.setData(object, null, status, position != endRow - 1);
                         userCell.setStoryItem(item.storyItem, v -> {
                             if (checkIsDeletedStory(item)) {
@@ -1126,7 +1126,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             }
 
             primary[0].setText(AndroidUtilities.formatWholeNumber(views, 0));
-            title[0].setText(LocaleController.getString("StatisticViews", R.string.StatisticViews));
+            title[0].setText(LocaleController.getString(R.string.StatisticViews));
 
             primary[1].setText(AndroidUtilities.formatWholeNumber(publicChats, 0));
             title[1].setText(LocaleController.formatString("PublicShares", R.string.PublicShares));

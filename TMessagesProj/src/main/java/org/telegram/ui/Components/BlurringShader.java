@@ -1,12 +1,9 @@
 package org.telegram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
 import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
@@ -23,7 +20,6 @@ import android.graphics.drawable.Drawable;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -33,7 +29,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -167,8 +162,8 @@ public class BlurringShader {
         uvBuffer.put(texCoords);
         uvBuffer.position(0);
 
-        String vertexShaderSource = RLottieDrawable.readRes(null, R.raw.blur_vrt);
-        String fragmentShaderSource = RLottieDrawable.readRes(null, R.raw.blur_frg);
+        String vertexShaderSource = AndroidUtilities.readRes(R.raw.blur_vrt);
+        String fragmentShaderSource = AndroidUtilities.readRes(R.raw.blur_frg);
         if (vertexShaderSource == null || fragmentShaderSource == null) {
             return false;
         }

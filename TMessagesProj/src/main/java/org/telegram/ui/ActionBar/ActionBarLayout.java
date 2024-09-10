@@ -1532,6 +1532,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             FileLog.d("present fragment " + fragment.getClass().getSimpleName() + " args=" + fragment.getArguments());
         }
         StoryViewer.closeGlobalInstances();
+        LaunchActivity.dismissAllWeb();
         if (inPreviewMode && transitionAnimationPreviewMode) {
             if (delayedOpenAnimationRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);
@@ -2963,8 +2964,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     }
 
     private ValueAnimator bottomTabsAnimator;
-    private float bottomTabsProgress;
-    private int bottomTabsHeight;
+    public float bottomTabsProgress;
+    public int bottomTabsHeight;
 
     public void updateBottomTabsVisibility(boolean animated) {
         if (bottomSheetTabs == null) {

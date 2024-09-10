@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -135,7 +136,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addButton.setTypeface(AndroidUtilities.bold());
             addButton.setBackgroundDrawable(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
-            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setText(getString(R.string.Add));
             addButton.setPadding(dp(17), 0, dp(17), 0);
             addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
             additionalPadding = (int) Math.ceil((addButton.getPaint().measureText(addButton.getText().toString()) + dp(34 + 14)) / AndroidUtilities.density);
@@ -315,11 +316,11 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         String text;
         if (exception.story) {
             if (exception.notify <= 0 && exception.auto) {
-                text = LocaleController.getString("NotificationEnabledAutomatically");
+                text = getString(R.string.NotificationEnabledAutomatically);
             } else if (exception.notify <= 0) {
-                text = LocaleController.getString("NotificationEnabled");
+                text = getString(R.string.NotificationEnabled);
             } else {
-                text = LocaleController.getString("NotificationDisabled");
+                text = getString(R.string.NotificationDisabled);
             }
         } else {
             boolean enabled;
@@ -330,9 +331,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 delta -= ConnectionsManager.getInstance(currentAccount).getCurrentTime();
                 if (delta <= 0) {
                     if (custom) {
-                        text = LocaleController.getString("NotificationsCustom", R.string.NotificationsCustom);
+                        text = getString(R.string.NotificationsCustom);
                     } else {
-                        text = LocaleController.getString("NotificationsUnmuted", R.string.NotificationsUnmuted);
+                        text = getString(R.string.NotificationsUnmuted);
                     }
                 } else if (delta < 60 * 60) {
                     text = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Minutes", delta / 60));
@@ -354,13 +355,13 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                     enabled = false;
                 }
                 if (enabled && custom) {
-                    text = LocaleController.getString("NotificationsCustom", R.string.NotificationsCustom);
+                    text = getString(R.string.NotificationsCustom);
                 } else {
-                    text = enabled ? LocaleController.getString("NotificationsUnmuted", R.string.NotificationsUnmuted) : LocaleController.getString("NotificationsMuted", R.string.NotificationsMuted);
+                    text = getString(enabled ? R.string.NotificationsUnmuted : R.string.NotificationsMuted);
                 }
             }
             if (text == null) {
-                text = LocaleController.getString("NotificationsOff", R.string.NotificationsOff);
+                text = getString(R.string.NotificationsOff);
             }
             if (exception.auto) {
                 text += ", Auto";
@@ -528,7 +529,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             ((LayoutParams) nameTextView.getLayoutParams()).topMargin = dp(10);
             if (currentUser != null) {
                 if (selfAsSavedMessages && UserObject.isUserSelf(currentUser)) {
-                    nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages), true);
+                    nameTextView.setText(getString(R.string.SavedMessages), true);
                     statusTextView.setText(null);
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                     avatarImageView.setImage(null, "50_50", avatarDrawable, currentUser);
@@ -606,14 +607,14 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
                 if (currentUser.bot_chat_history || adminTextView != null && adminTextView.getVisibility() == VISIBLE) {
-                    statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
+                    statusTextView.setText(getString(R.string.BotStatusRead));
                 } else {
-                    statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
+                    statusTextView.setText(getString(R.string.BotStatusCantRead));
                 }
             } else {
                 if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                     statusTextView.setTextColor(statusOnlineColor);
-                    statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                    statusTextView.setText(getString(R.string.Online));
                 } else {
                     statusTextView.setTextColor(statusColor);
                     statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
@@ -710,11 +711,11 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             if (user != null) {
                 String status;
                 if (user.bot) {
-                    status = LocaleController.getString("Bot", R.string.Bot);
+                    status = getString(R.string.Bot);
                 } else if (user.contact) {
-                    status = LocaleController.getString("FilterContact", R.string.FilterContact);
+                    status = getString(R.string.FilterContact);
                 } else {
-                    status = LocaleController.getString("FilterNonContact", R.string.FilterNonContact);
+                    status = getString(R.string.FilterNonContact);
                 }
                 setData(user, null, status, 0, divider);
             }
@@ -730,15 +731,15 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                     }
                 } else if (!ChatObject.isPublic(chat)) {
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        status = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate);
+                        status = getString(R.string.ChannelPrivate);
                     } else {
-                        status = LocaleController.getString("MegaPrivate", R.string.MegaPrivate);
+                        status = getString(R.string.MegaPrivate);
                     }
                 } else {
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        status = LocaleController.getString("ChannelPublic", R.string.ChannelPublic);
+                        status = getString(R.string.ChannelPublic);
                     } else {
-                        status = LocaleController.getString("MegaPublic", R.string.MegaPublic);
+                        status = getString(R.string.MegaPublic);
                     }
                 }
                 setData(chat, null, status, 0, divider);

@@ -79,11 +79,11 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
     public RemoteViews getViewAt(int position) {
         if (deleted) {
             RemoteViews rv = new RemoteViews(mContext.getPackageName(), R.layout.widget_deleted);
-            rv.setTextViewText(R.id.widget_deleted_text, LocaleController.getString("WidgetLoggedOff", R.string.WidgetLoggedOff));
+            rv.setTextViewText(R.id.widget_deleted_text, LocaleController.getString(R.string.WidgetLoggedOff));
             return rv;
         } else if (position >= getCount() - 1) {
             RemoteViews rv = new RemoteViews(mContext.getPackageName(), R.layout.widget_edititem);
-            rv.setTextViewText(R.id.widget_edititem_text, LocaleController.getString("TapToEditWidgetShort", R.string.TapToEditWidgetShort));
+            rv.setTextViewText(R.id.widget_edititem_text, LocaleController.getString(R.string.TapToEditWidgetShort));
             Bundle extras = new Bundle();
             extras.putInt("appWidgetId", appWidgetId);
             extras.putInt("appWidgetType", EditWidgetActivity.TYPE_CONTACTS);
@@ -110,11 +110,11 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                 if (DialogObject.isUserDialog(id)) {
                     user = accountInstance.getMessagesController().getUser(id);
                     if (UserObject.isUserSelf(user)) {
-                        name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                        name = LocaleController.getString(R.string.SavedMessages);
                     } else if (UserObject.isReplyUser(user)) {
-                        name = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                        name = LocaleController.getString(R.string.RepliesTitle);
                     } else if (UserObject.isDeleted(user)) {
-                        name = LocaleController.getString("HiddenName", R.string.HiddenName);
+                        name = LocaleController.getString(R.string.HiddenName);
                     } else {
                         name = UserObject.getFirstName(user);
                     }

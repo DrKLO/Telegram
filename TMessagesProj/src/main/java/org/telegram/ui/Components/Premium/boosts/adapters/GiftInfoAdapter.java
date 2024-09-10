@@ -3,7 +3,6 @@ package org.telegram.ui.Components.Premium.boosts.adapters;
 import static org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode.NO_USER_ID;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.Gravity;
@@ -169,7 +168,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                 if (giftCode.boost != null) {
                     if (slug == null || slug.isEmpty()) {
                         //not activated link
-                        cell.setText(LocaleController.getString("BoostingLinkNotActivated", R.string.BoostingLinkNotActivated));
+                        cell.setText(LocaleController.getString(R.string.BoostingLinkNotActivated));
                     } else {
                         //activated link
                         cell.setFixedSize(14);
@@ -181,8 +180,8 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
                 if (isUnused) {
                     SpannableStringBuilder text = AndroidUtilities.replaceSingleTag(
                             giftCode.to_id == NO_USER_ID ?
-                                    LocaleController.getString("BoostingSendLinkToAnyone", R.string.BoostingSendLinkToAnyone)
-                                    : LocaleController.getString("BoostingSendLinkToFriends", R.string.BoostingSendLinkToFriends),
+                                    LocaleController.getString(R.string.BoostingSendLinkToAnyone)
+                                    : LocaleController.getString(R.string.BoostingSendLinkToFriends),
                             Theme.key_chat_messageLinkIn, 0,
                             this::share,
                             resourcesProvider
@@ -236,7 +235,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
         DialogsActivity dialogFragment = new DialogsActivity(args);
-        dialogFragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
+        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
             long did = 0;
             for (int a = 0; a < dids.size(); a++) {
                 did = dids.get(a).dialogId;

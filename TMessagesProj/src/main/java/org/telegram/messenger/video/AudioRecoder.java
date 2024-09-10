@@ -3,6 +3,7 @@ package org.telegram.messenger.video;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Build;
+import android.util.Log;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;

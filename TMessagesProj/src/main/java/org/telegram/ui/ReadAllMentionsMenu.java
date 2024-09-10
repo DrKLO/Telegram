@@ -26,7 +26,7 @@ public class ReadAllMentionsMenu {
 
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(activity, true,true, resourcesProvider);
         cell.setMinimumWidth(AndroidUtilities.dp(200));
-        cell.setTextAndIcon(type == TYPE_REACTIONS ? LocaleController.getString("ReadAllReactions", R.string.ReadAllReactions) : LocaleController.getString("ReadAllMentions", R.string.ReadAllMentions) , R.drawable.msg_seen);
+        cell.setTextAndIcon(type == TYPE_REACTIONS ? LocaleController.getString(R.string.ReadAllReactions) : LocaleController.getString(R.string.ReadAllMentions) , R.drawable.msg_seen);
         cell.setOnClickListener(view -> {
             if (onRead != null) {
                 onRead.run();

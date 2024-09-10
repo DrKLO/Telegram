@@ -810,9 +810,9 @@ public class StoriesUtilities {
     public static CharSequence getUploadingStr(TextView textView, boolean medium, boolean edit) {
         String str;
         if (edit) {
-            str = LocaleController.getString("StoryEditing", R.string.StoryEditing);
+            str = LocaleController.getString(R.string.StoryEditing);
         } else {
-            str = LocaleController.getString("UploadingStory", R.string.UploadingStory);
+            str = LocaleController.getString(R.string.UploadingStory);
         }
         int index = str.indexOf("…");
         if (index > 0) {
@@ -829,9 +829,9 @@ public class StoriesUtilities {
     public static void applyUploadingStr(SimpleTextView textView, boolean medium, boolean edit) {
         String str;
         if (edit) {
-            str = LocaleController.getString("StoryEditing", R.string.StoryEditing);
+            str = LocaleController.getString(R.string.StoryEditing);
         } else {
-            str = LocaleController.getString("UploadingStory", R.string.UploadingStory);
+            str = LocaleController.getString(R.string.UploadingStory);
         }
         int index = str.indexOf("…");
         if (index > 0) {
@@ -846,7 +846,7 @@ public class StoriesUtilities {
     }
 
     public static void applyUploadingStr(AnimatedTextView textView, boolean medium, boolean animated) {
-        String str = LocaleController.getString("UploadingStory", R.string.UploadingStory);
+        String str = LocaleController.getString(R.string.UploadingStory);
         int index = str.indexOf("…");
         if (index > 0) {
             SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(str);
@@ -878,7 +878,7 @@ public class StoriesUtilities {
 
     public static CharSequence createReplyStoryString() {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-        spannableStringBuilder.append("d ").append(LocaleController.getString("Story", R.string.Story));
+        spannableStringBuilder.append("d ").append(LocaleController.getString(R.string.Story));
         ColoredImageSpan coloredImageSpan = new ColoredImageSpan(R.drawable.msg_mini_replystory2);
         spannableStringBuilder.setSpan(coloredImageSpan, 0, 1, 0);
         return spannableStringBuilder;

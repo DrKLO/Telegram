@@ -441,7 +441,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 }
             }
         };
-        searchField.setHint(LocaleController.getString("Search", R.string.Search));
+        searchField.setHint(LocaleController.getString(R.string.Search));
         topViewsContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 36, 0, 0));
 
         addView(topViewsContainer);
@@ -618,7 +618,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             }
         } else {
             TOP_PADDING = 46;
-            titleView.setText(LocaleController.getString("UploadingStory", R.string.UploadingStory));
+            titleView.setText(LocaleController.getString(R.string.UploadingStory));
             searchField.setVisibility(View.GONE);
             headerView.setVisibility(View.GONE);
         }
@@ -836,11 +836,11 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     textView.setGravity(Gravity.CENTER);
                     textView.setDisablePaddingsOffsetY(true);
                     if (viewType == SUBSCRIBE_TO_PREMIUM_TEXT_HINT) {
-                        textView.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("StoryViewsPremiumHint", R.string.StoryViewsPremiumHint), () -> {
+                        textView.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.StoryViewsPremiumHint), () -> {
                             showPremiumAlert();
                         }));
                     } else {
-                        textView.setText(LocaleController.getString("ServerErrorViewersFull", R.string.ServerErrorViewersFull));
+                        textView.setText(LocaleController.getString(R.string.ServerErrorViewersFull));
                     }
                     textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                     view = textView;
@@ -878,22 +878,22 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     };
                     if (viewType == EMPTY_VIEW_SEARCH) {
                         emptyView.title.setVisibility(View.GONE);
-                        emptyView.setSubtitle(LocaleController.getString("NoResult", R.string.NoResult));
+                        emptyView.setSubtitle(LocaleController.getString(R.string.NoResult));
                     } else if (viewType == EMPTY_VIEW_NO_CONTACTS) {
                         emptyView.title.setVisibility(View.GONE);
-                        emptyView.setSubtitle(LocaleController.getString("NoContactsViewed", R.string.NoContactsViewed));
+                        emptyView.setSubtitle(LocaleController.getString(R.string.NoContactsViewed));
                     } else if (viewType == EMPTY_VIEW_SERVER_CANT_RETURN) {
                         emptyView.title.setVisibility(View.VISIBLE);
-                        emptyView.title.setText(LocaleController.getString("ServerErrorViewersTitle", R.string.ServerErrorViewersTitle));
-                        emptyView.setSubtitle(LocaleController.getString("ServerErrorViewers", R.string.ServerErrorViewers));
+                        emptyView.title.setText(LocaleController.getString(R.string.ServerErrorViewersTitle));
+                        emptyView.setSubtitle(LocaleController.getString(R.string.ServerErrorViewers));
                     } else if (defaultModel.isExpiredViews) {
                         emptyView.title.setVisibility(View.GONE);
                         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                        spannableStringBuilder.append(AndroidUtilities.replaceTags(LocaleController.getString("ExpiredViewsStub", R.string.ExpiredViewsStub)));
+                        spannableStringBuilder.append(AndroidUtilities.replaceTags(LocaleController.getString(R.string.ExpiredViewsStub)));
                         if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
                             spannableStringBuilder.append("\n\n");
-                            spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("ExpiredViewsStubPremiumDescription", R.string.ExpiredViewsStubPremiumDescription), SelfStoryViewsPage.this::showPremiumAlert));
-                            emptyView.createButtonLayout(LocaleController.getString("LearnMore", R.string.LearnMore), SelfStoryViewsPage.this::showPremiumAlert);
+                            spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.ExpiredViewsStubPremiumDescription), SelfStoryViewsPage.this::showPremiumAlert));
+                            emptyView.createButtonLayout(LocaleController.getString(R.string.LearnMore), SelfStoryViewsPage.this::showPremiumAlert);
                         }
                         emptyView.subtitle.setText(spannableStringBuilder);
                     } else {
@@ -1443,14 +1443,14 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
             allViewersView = new TextView(context);
-            allViewersView.setText(LocaleController.getString("AllViewers", R.string.AllViewers));
+            allViewersView.setText(LocaleController.getString(R.string.AllViewers));
             allViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             allViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             allViewersView.setTypeface(AndroidUtilities.bold());
             allViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
 
             contactsViewersView = new TextView(context);
-            contactsViewersView.setText(LocaleController.getString("Contacts", R.string.Contacts));
+            contactsViewersView.setText(LocaleController.getString(R.string.Contacts));
             contactsViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             contactsViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             contactsViewersView.setTypeface(AndroidUtilities.bold());
@@ -1523,7 +1523,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                             }
                         });
 
-                        item = ActionBarMenuItem.addItem(popupLayout, !state.sortByReactions ? R.drawable.menu_views_recent2 : R.drawable.menu_views_recent, LocaleController.getString("SortByTime", R.string.SortByTime), false, resourcesProvider);
+                        item = ActionBarMenuItem.addItem(popupLayout, !state.sortByReactions ? R.drawable.menu_views_recent2 : R.drawable.menu_views_recent, LocaleController.getString(R.string.SortByTime), false, resourcesProvider);
                         if (state.sortByReactions) {
                             item.setAlpha(0.5f);
                         }

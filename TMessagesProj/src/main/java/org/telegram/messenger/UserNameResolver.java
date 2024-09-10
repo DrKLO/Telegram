@@ -72,7 +72,7 @@ public class UserNameResolver {
                 if (error != null && error.text != null && error.text.contains("FLOOD_WAIT")) {
                     BaseFragment fragment = LaunchActivity.getLastFragment();
                     if (fragment != null) {
-                        BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("FloodWait", R.string.FloodWait)).show();
+                        BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString(R.string.FloodWait)).show();
                     }
                 }
                 return;

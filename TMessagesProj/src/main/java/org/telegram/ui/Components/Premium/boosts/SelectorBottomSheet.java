@@ -2,6 +2,7 @@ package org.telegram.ui.Components.Premium.boosts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.translitSafe;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
@@ -30,6 +31,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -137,7 +139,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
 
         containerView.addView(headerView, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, backgroundPaddingLeft, 0, backgroundPaddingLeft, 0));
         containerView.addView(searchField, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, backgroundPaddingLeft, 0, backgroundPaddingLeft, 0));
-        containerView.addView(sectionCell, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, 32, Gravity.TOP | Gravity.FILL_HORIZONTAL, backgroundPaddingLeft, 0, backgroundPaddingLeft, 0));
+//        containerView.addView(sectionCell, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, 32, Gravity.TOP | Gravity.FILL_HORIZONTAL, backgroundPaddingLeft, 0, backgroundPaddingLeft, 0));
 
         buttonContainer = new SelectorBtnCell(getContext(), resourcesProvider, null);
         buttonContainer.setClickable(true);
@@ -160,7 +162,10 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
             }
         });
         recyclerListView.setOnItemClickListener((view, position, x, y) -> {
-            if (view instanceof SelectorUserCell) {
+            if (view instanceof TextCell) {
+                allSelectedObjects.clear();
+                save(true);
+            } else if (view instanceof SelectorUserCell) {
                 TLRPC.User user = ((SelectorUserCell) view).getUser();
                 TLRPC.Chat chat = ((SelectorUserCell) view).getChat();
                 long id = user != null ? user.id : -chat.id;
@@ -464,7 +469,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
                 text = LocaleController.formatPluralString("BoostingSelectUpToWarningChannelsGroupsPlural", (int) BoostRepository.giveawayAddPeersMax());
                 break;
             case TYPE_USER:
-                text = LocaleController.getString("BoostingSelectUpToWarningUsers", R.string.BoostingSelectUpToWarningUsers);
+                text = LocaleController.getString(R.string.BoostingSelectUpToWarningUsers);
                 break;
             case TYPE_COUNTRY:
                 text = LocaleController.formatPluralString("BoostingSelectUpToWarningCountriesPlural", (int) BoostRepository.giveawayCountriesMax());
@@ -513,8 +518,8 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         float fromY = Math.max(top, minTop);
         headerView.setTranslationY(fromY);
         searchField.setTranslationY(headerView.getTranslationY() + headerView.getMeasuredHeight());
-        sectionCell.setTranslationY(searchField.getTranslationY() + searchField.getMeasuredHeight());
-        recyclerListView.setTranslationY(headerView.getMeasuredHeight() + searchField.getMeasuredHeight() + sectionCell.getMeasuredHeight() - AndroidUtilities.dp(16));
+//        sectionCell.setTranslationY(searchField.getTranslationY() + searchField.getMeasuredHeight());
+        recyclerListView.setTranslationY(headerView.getMeasuredHeight() + searchField.getMeasuredHeight() - AndroidUtilities.dp(16));
         drawFilledStatusBar(canvas, top);
     }
 
@@ -533,10 +538,10 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         switch (type) {
             case TYPE_COUNTRY:
             case TYPE_CHANNEL:
-                text = LocaleController.getString("Save", R.string.Save);
+                text = LocaleController.getString(R.string.Save);
                 break;
             case TYPE_USER:
-                text = LocaleController.getString("BoostingSaveRecipients", R.string.BoostingSaveRecipients);
+                text = LocaleController.getString(R.string.BoostingSaveRecipients);
                 break;
             default:
                 text = "";
@@ -597,6 +602,12 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
+
+        if (type == TYPE_USER) {
+            items.add(Item.asButton(1, R.drawable.menu_random, getString(R.string.GiveawayChooseUsersRandomly)));
+        }
+
+        items.add(Item.asCustom(sectionCell));
 
         int h = 0;
         if (type == TYPE_COUNTRY) {
@@ -672,11 +683,11 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
     protected CharSequence getTitle() {
         switch (type) {
             case TYPE_CHANNEL:
-                return LocaleController.getString("BoostingAddChannelOrGroup", R.string.BoostingAddChannelOrGroup);
+                return LocaleController.getString(R.string.BoostingAddChannelOrGroup);
             case TYPE_USER:
-                return LocaleController.getString("GiftPremium", R.string.GiftPremium);
+                return LocaleController.getString(R.string.GiftPremium);
             case TYPE_COUNTRY:
-                return LocaleController.getString("BoostingSelectCountry", R.string.BoostingSelectCountry);
+                return LocaleController.getString(R.string.BoostingSelectCountry);
         }
         return "";
     }

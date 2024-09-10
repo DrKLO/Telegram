@@ -1,6 +1,6 @@
 package org.telegram.ui.Components.Premium.boosts.cells.statistics;
 
-import static org.telegram.tgnet.tl.TL_stories.TL_boost.NO_USER_ID;
+import static org.telegram.tgnet.tl.TL_stories.Boost.NO_USER_ID;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -30,7 +30,7 @@ public class GiftedUserCell extends UserCell {
     private FrameLayout badgeLayout;
     private Drawable giveawayDrawable;
     private Drawable giftDrawable;
-    private TL_stories.TL_boost boost;
+    private TL_stories.Boost boost;
     private CounterDrawable counterDrawable;
 
     public GiftedUserCell(Context context, int padding, int checkbox, boolean admin) {
@@ -60,7 +60,7 @@ public class GiftedUserCell extends UserCell {
         }
     }
 
-    public TL_stories.TL_boost getBoost() {
+    public TL_stories.Boost getBoost() {
         return boost;
     }
 
@@ -87,28 +87,36 @@ public class GiftedUserCell extends UserCell {
         }
     }
 
-    public void setStatus(TL_stories.TL_boost boost) {
+    public void setStatus(TL_stories.Boost boost) {
         this.boost = boost;
         if ((boost.gift || boost.giveaway)) {
             badgeLayout.setVisibility(VISIBLE);
             int months = (boost.expires - boost.date) / 30 / 86400;
-            if (boost.unclaimed) {
-                nameTextView.setText(LocaleController.getString("BoostingUnclaimed", R.string.BoostingUnclaimed));
+            if (boost.stars > 0) {
+                nameTextView.setText(LocaleController.formatPluralString("BoostingBoostStars", (int) boost.stars));
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_STARS);
+                avatarImageView.setForUserOrChat(null, avatarDrawable);
+                nameTextView.setRightDrawable(null);
+            } else if (boost.unclaimed) {
+                nameTextView.setText(LocaleController.getString(R.string.BoostingUnclaimed));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_UNCLAIMED);
                 setAvatarColorByMonths(months);
                 avatarImageView.setForUserOrChat(null, avatarDrawable);
                 nameTextView.setRightDrawable(null);
             } else if (boost.user_id == NO_USER_ID) {
-                nameTextView.setText(LocaleController.getString("BoostingToBeDistributed", R.string.BoostingToBeDistributed));
+                nameTextView.setText(LocaleController.getString(R.string.BoostingToBeDistributed));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_TO_BE_DISTRIBUTED);
                 setAvatarColorByMonths(months);
                 avatarImageView.setForUserOrChat(null, avatarDrawable);
                 nameTextView.setRightDrawable(null);
             }
-            String date = LocaleController.getInstance().getFormatterScheduleDay().format(new Date(boost.expires * 1000L));
-            String time = LocaleController.getInstance().getFormatterDay().format(new Date(boost.expires * 1000L));
 
-            statusTextView.setText(LocaleController.formatString("BoostingShortMonths", R.string.BoostingShortMonths, months) + " • " + LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, date, time));
+            final String date = LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L));
+            if (boost.stars > 0) {
+                statusTextView.setText(LocaleController.formatString(R.string.BoostingStarsExpires, date));
+            } else {
+                statusTextView.setText(LocaleController.formatString(R.string.BoostingExpires, date));
+            }
 
             if (boost.gift) {
                 if (giftDrawable == null) {
@@ -118,7 +126,7 @@ public class GiftedUserCell extends UserCell {
                 badgeTextView.setTextColor(0xFFce8e1f);
                 badgeTextView.setCompoundDrawablesWithIntrinsicBounds(giftDrawable, null, null, null);
                 badgeTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                badgeTextView.setText(LocaleController.getString("BoostingGift", R.string.BoostingGift));
+                badgeTextView.setText(LocaleController.getString(R.string.BoostingGift));
                 badgeLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), AndroidUtilities.dp(12), Theme.multAlpha(0xFFce8e1f, 0.2f)));
             }
             if (boost.giveaway) {
@@ -129,7 +137,7 @@ public class GiftedUserCell extends UserCell {
                 badgeTextView.setTextColor(0XFF3391d4);
                 badgeTextView.setCompoundDrawablesWithIntrinsicBounds(giveawayDrawable, null, null, null);
                 badgeTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                badgeTextView.setText(LocaleController.getString("BoostingGiveaway", R.string.BoostingGiveaway));
+                badgeTextView.setText(LocaleController.getString(R.string.BoostingGiveaway));
                 badgeLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), AndroidUtilities.dp(12), Theme.multAlpha(0XFF3391d4, 0.2f)));
             }
         } else {

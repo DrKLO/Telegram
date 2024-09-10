@@ -101,11 +101,11 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         } else if (inputStickerSets.size() == 1) {
             String string;
             if (type == EMOJI_TYPE) {
-                string = LocaleController.getString("MessageContainsEmojiPack", R.string.MessageContainsEmojiPack);
+                string = LocaleController.getString(R.string.MessageContainsEmojiPack);
             } else if (type == SINGLE_REACTION_TYPE) {
-                string = LocaleController.getString("MessageContainsReactionPack", R.string.MessageContainsReactionPack);
+                string = LocaleController.getString(R.string.MessageContainsReactionPack);
             } else {
-                string = LocaleController.getString("MessageContainsReactionsPack", R.string.MessageContainsReactionsPack);
+                string = LocaleController.getString(R.string.MessageContainsReactionsPack);
             }
             String[] parts = string.split("%s");
             if (parts.length <= 1) {

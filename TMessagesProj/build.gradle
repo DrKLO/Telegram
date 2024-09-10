@@ -43,7 +43,7 @@ dependencies {
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation 'com.google.mlkit:language-id:16.1.1'
     implementation 'com.android.billingclient:billing:6.0.1'
-    implementation 'com.google.code.gson:gson:2.10'
+    implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'com.google.guava:guava:31.1-android'
     implementation 'com.google.android.play:integrity:1.3.0'
     implementation 'com.google.android.gms:play-services-safetynet:18.0.1'
@@ -64,8 +64,8 @@ dependencies {
 
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 android {
-    compileSdkVersion 33
-    buildToolsVersion '33.0.0'
+    compileSdkVersion 34
+    buildToolsVersion '34.0.0'
     ndkVersion "21.4.7075529"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
@@ -93,12 +93,10 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
-        versionName "8.9.0"
+        targetSdkVersion 34
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
@@ -107,14 +105,13 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
             }
         }
     }
 
     buildTypes {
         debug {
-            debuggable true
             jniDebuggable true
             minifyEnabled false
             shrinkResources false
@@ -129,7 +126,6 @@ android {
         }
 
         HA_private {
-            debuggable false
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -143,7 +139,6 @@ android {
         }
 
         HA_public {
-            debuggable false
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -157,7 +152,6 @@ android {
         }
 
         HA_hardcore {
-            debuggable false
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -171,7 +165,6 @@ android {
         }
 
         standalone {
-            debuggable false
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -185,7 +178,6 @@ android {
         }
 
         release {
-            debuggable false
             jniDebuggable false
             minifyEnabled true
             shrinkResources false
@@ -199,6 +191,7 @@ android {
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
     }
+    namespace 'org.telegram.messenger'
 }
 
 

@@ -1809,7 +1809,7 @@ public class TL_stories {
         public int next_level_boosts;
         public TL_statsPercentValue premium_audience;
         public String boost_url;
-        public ArrayList<TL_prepaidGiveaway> prepaid_giveaways = new ArrayList<>();
+        public ArrayList<PrepaidGiveaway> prepaid_giveaways = new ArrayList<>();
         public ArrayList<Integer> my_boost_slots = new ArrayList<>();
 
         public static TL_premium_boostsStatus TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -1851,7 +1851,7 @@ public class TL_stories {
                 }
                 int count = stream.readInt32(exception);
                 for (int a = 0; a < count; a++) {
-                    TL_prepaidGiveaway object = TL_prepaidGiveaway.TLdeserialize(stream, stream.readInt32(exception), exception);
+                    PrepaidGiveaway object = PrepaidGiveaway.TLdeserialize(stream, stream.readInt32(exception), exception);
                     if (object == null) {
                         return;
                     }
@@ -1950,7 +1950,7 @@ public class TL_stories {
         }
     }
 
-    public static class TL_boost extends TLObject {
+    public static class Boost extends TLObject {
         public static int constructor = 0x2a1c8c71;
         public static final long NO_USER_ID = -1L; //custom
 
@@ -1965,19 +1965,85 @@ public class TL_stories {
         public int expires;
         public String used_gift_slug;
         public int multiplier;
+        public long stars;
 
-        public static TL_boost TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
-            if (TL_boost.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_boost", constructor));
-                } else {
-                    return null;
-                }
+        public static Boost TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            Boost result = null;
+            switch (constructor) {
+                case TL_boost.constructor:
+                    result = new TL_boost();
+                    break;
+                case TL_boost_layer186.constructor:
+                    result = new TL_boost_layer186();
+                    break;
             }
-            TL_boost result = new TL_boost();
-            result.readParams(stream, exception);
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in Boost", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
             return result;
         }
+    }
+
+    public static class TL_boost extends Boost {
+        public static final int constructor = 0x4b3e14d6;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            gift = (flags & 2) != 0;
+            giveaway = (flags & 4) != 0;
+            unclaimed = (flags & 8) != 0;
+            id = stream.readString(exception);
+            if ((flags & 1) != 0) {
+                user_id = stream.readInt64(exception);
+            }
+            if ((flags & 4) != 0) {
+                giveaway_msg_id = stream.readInt32(exception);
+            }
+            date = stream.readInt32(exception);
+            expires = stream.readInt32(exception);
+            if ((flags & 16) != 0) {
+                used_gift_slug = stream.readString(exception);
+            }
+            if ((flags & 32) != 0) {
+                multiplier = stream.readInt32(exception);
+            }
+            if ((flags & 64) != 0) {
+                stars = stream.readInt64(exception);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = gift ? (flags | 2) : (flags &~ 2);
+            flags = giveaway ? (flags | 4) : (flags &~ 4);
+            flags = unclaimed ? (flags | 8) : (flags &~ 8);
+            stream.writeInt32(flags);
+            stream.writeString(id);
+            if ((flags & 1) != 0) {
+                stream.writeInt64(user_id);
+            }
+            if ((flags & 4) != 0) {
+                stream.writeInt32(giveaway_msg_id);
+            }
+            stream.writeInt32(date);
+            stream.writeInt32(expires);
+            if ((flags & 16) != 0) {
+                stream.writeString(used_gift_slug);
+            }
+            if ((flags & 32) != 0) {
+                stream.writeInt32(multiplier);
+            }
+            if ((flags & 64) != 0) {
+                stream.writeInt64(stars);
+            }
+        }
+    }
+
+    public static class TL_boost_layer186 extends TL_boost {
+        public static final int constructor = 0x2a1c8c71;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -2030,7 +2096,7 @@ public class TL_stories {
 
         public int flags;
         public int count;
-        public ArrayList<TL_boost> boosts = new ArrayList<>();
+        public ArrayList<Boost> boosts = new ArrayList<>();
         public String next_offset;
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
@@ -2059,7 +2125,7 @@ public class TL_stories {
             }
             int count = stream.readInt32(exception);
             for (int a = 0; a < count; a++) {
-                TL_boost object = TL_boost.TLdeserialize(stream, stream.readInt32(exception), exception);
+                Boost object = Boost.TLdeserialize(stream, stream.readInt32(exception), exception);
                 if (object == null) {
                     return;
                 }
@@ -3467,26 +3533,60 @@ public class TL_stories {
         }
     }
 
-    public static class TL_prepaidGiveaway extends TLObject {
-        public static int constructor = 0xb2539d54;
+    public static class PrepaidGiveaway extends TLObject {
 
         public long id;
-        public int months;
         public int quantity;
         public int date;
+        public int boosts;
 
-        public static TL_prepaidGiveaway TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
-            if (TL_prepaidGiveaway.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_prepaidGiveaway", constructor));
-                } else {
-                    return null;
-                }
+        public static PrepaidGiveaway TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            PrepaidGiveaway result = null;
+            switch (constructor) {
+                case TL_prepaidGiveaway.constructor:
+                    result = new TL_prepaidGiveaway();
+                    break;
+                case TL_prepaidStarsGiveaway.constructor:
+                    result = new TL_prepaidStarsGiveaway();
+                    break;
             }
-            TL_prepaidGiveaway result = new TL_prepaidGiveaway();
-            result.readParams(stream, exception);
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in PrepaidGiveaway", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
             return result;
         }
+    }
+
+    public static class TL_prepaidStarsGiveaway extends PrepaidGiveaway {
+        public static final int constructor = 0x9a9d77e0;
+
+        public long stars;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            id = stream.readInt64(exception);
+            stars = stream.readInt64(exception);
+            quantity = stream.readInt32(exception);
+            boosts = stream.readInt32(exception);
+            date = stream.readInt32(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            stream.writeInt64(stars);
+            stream.writeInt32(quantity);
+            stream.writeInt32(boosts);
+            stream.writeInt32(date);
+        }
+    }
+
+    public static class TL_prepaidGiveaway extends PrepaidGiveaway {
+        public static final int constructor = 0xb2539d54;
+
+        public int months;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             id = stream.readInt64(exception);

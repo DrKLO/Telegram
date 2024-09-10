@@ -60,22 +60,22 @@ public class StoriesIntro extends FrameLayout {
         TextView header = new TextView(context);
         header.setTextColor(Color.WHITE);
         header.setTypeface(AndroidUtilities.bold());
-        header.setText(LocaleController.getString("StoriesIntroHeader", R.string.StoriesIntroHeader));
+        header.setText(LocaleController.getString(R.string.StoriesIntroHeader));
         header.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         linearLayout.addView(header, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         TextView subHeader = new TextView(context);
         subHeader.setTextColor(0x96FFFFFF); // 60%
-        subHeader.setText(LocaleController.getString("StoriesIntroSubHeader", R.string.StoriesIntroSubHeader));
+        subHeader.setText(LocaleController.getString(R.string.StoriesIntroSubHeader));
         subHeader.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subHeader.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(subHeader, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 68, 8, 68, 36));
 
         items = new ArrayList<>(4);
-        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_forward, LocaleController.getString("StoriesIntroGoForwardHeader", R.string.StoriesIntroGoForwardHeader), LocaleController.getString("StoriesIntroGoForwardSubHeader", R.string.StoriesIntroGoForwardSubHeader)));
-        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_pause, LocaleController.getString("StoriesIntroPauseAndSeekHeader", R.string.StoriesIntroPauseAndSeekHeader), LocaleController.getString("StoriesIntroPauseAndSeekSubHeader", R.string.StoriesIntroPauseAndSeekSubHeader)));
-        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_back, LocaleController.getString("StoriesIntroGoBackHeader", R.string.StoriesIntroGoBackHeader), LocaleController.getString("StoriesIntroGoBackSubHeader", R.string.StoriesIntroGoBackSubHeader)));
-        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_to_next, LocaleController.getString("StoriesIntroGoToNextAuthorHeader", R.string.StoriesIntroGoToNextAuthorHeader), LocaleController.getString("StoriesIntroGoToNextAuthorSubHeader", R.string.StoriesIntroGoToNextAuthorSubHeader)));
+        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_forward, LocaleController.getString(R.string.StoriesIntroGoForwardHeader), LocaleController.getString(R.string.StoriesIntroGoForwardSubHeader)));
+        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_pause, LocaleController.getString(R.string.StoriesIntroPauseAndSeekHeader), LocaleController.getString(R.string.StoriesIntroPauseAndSeekSubHeader)));
+        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_back, LocaleController.getString(R.string.StoriesIntroGoBackHeader), LocaleController.getString(R.string.StoriesIntroGoBackSubHeader)));
+        items.add(new StoriesIntroItemView(context, R.raw.stories_intro_go_to_next, LocaleController.getString(R.string.StoriesIntroGoToNextAuthorHeader), LocaleController.getString(R.string.StoriesIntroGoToNextAuthorSubHeader)));
 
         // adjust the width for small devices
         int storiesIntroItemViewWidth = parentView.getMeasuredWidth() - AndroidUtilities.dp(100);
@@ -96,7 +96,7 @@ public class StoriesIntro extends FrameLayout {
         TextView bottomText = new TextView(context);
         bottomText.setTextColor(Color.WHITE);
         bottomText.setTypeface(AndroidUtilities.bold());
-        bottomText.setText(LocaleController.getString("StoriesIntroDismiss", R.string.StoriesIntroDismiss));
+        bottomText.setText(LocaleController.getString(R.string.StoriesIntroDismiss));
         bottomText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         linearLayout.addView(bottomText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 73, 0, 0));
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));

@@ -1189,8 +1189,10 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         public void draw(Canvas canvas) {
             super.draw(canvas);
 
-            float y = getHeight() - bluePaint.getStrokeWidth() / 2f;
-            canvas.drawLine(0, y, getWidth() * loadProgress, y, bluePaint);
+            if (loadProgress > 0) {
+                float y = getHeight() - bluePaint.getStrokeWidth() / 2f;
+                canvas.drawLine(0, y, getWidth() * loadProgress, y, bluePaint);
+            }
         }
     }
 }

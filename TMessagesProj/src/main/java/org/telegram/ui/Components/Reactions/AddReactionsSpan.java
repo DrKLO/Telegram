@@ -38,7 +38,7 @@ public class AddReactionsSpan extends ReplacementSpan {
 
     public void makeLayout() {
         if (layout == null) {
-            layout = new StaticLayout(LocaleController.getString("ReactionAddReactionsHint", R.string.ReactionAddReactionsHint), textPaint, AndroidUtilities.displaySize.x, LocaleController.isRTL ? Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
+            layout = new StaticLayout(LocaleController.getString(R.string.ReactionAddReactionsHint), textPaint, AndroidUtilities.displaySize.x, LocaleController.isRTL ? Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
             width = layout.getLineWidth(0);
             height = layout.getHeight();
         }

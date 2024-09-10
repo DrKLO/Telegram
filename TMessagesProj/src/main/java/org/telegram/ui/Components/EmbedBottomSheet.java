@@ -748,7 +748,7 @@ public class EmbedBottomSheet extends BottomSheet {
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         textView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-        textView.setText(LocaleController.getString("Close", R.string.Close).toUpperCase());
+        textView.setText(LocaleController.getString(R.string.Close).toUpperCase());
         textView.setTypeface(AndroidUtilities.bold());
         frameLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         textView.setOnClickListener(v -> dismiss());
@@ -760,7 +760,7 @@ public class EmbedBottomSheet extends BottomSheet {
         pipButton = new ImageView(context);
         pipButton.setScaleType(ImageView.ScaleType.CENTER);
         pipButton.setImageResource(R.drawable.ic_goinline);
-        pipButton.setContentDescription(LocaleController.getString("AccDescrPipMode", R.string.AccDescrPipMode));
+        pipButton.setContentDescription(LocaleController.getString(R.string.AccDescrPipMode));
         pipButton.setEnabled(false);
         pipButton.setAlpha(0.5f);
         pipButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlue4), PorterDuff.Mode.MULTIPLY));
@@ -843,7 +843,7 @@ public class EmbedBottomSheet extends BottomSheet {
         ImageView copyButton = new ImageView(context);
         copyButton.setScaleType(ImageView.ScaleType.CENTER);
         copyButton.setImageResource(R.drawable.msg_copy);
-        copyButton.setContentDescription(LocaleController.getString("CopyLink", R.string.CopyLink));
+        copyButton.setContentDescription(LocaleController.getString(R.string.CopyLink));
         copyButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlue4), PorterDuff.Mode.MULTIPLY));
         copyButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         imageButtonsContainer.addView(copyButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT));
@@ -857,7 +857,7 @@ public class EmbedBottomSheet extends BottomSheet {
         copyTextButton.setEllipsize(TextUtils.TruncateAt.END);
         copyTextButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         copyTextButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-        copyTextButton.setText(LocaleController.getString("Copy", R.string.Copy).toUpperCase());
+        copyTextButton.setText(LocaleController.getString(R.string.Copy).toUpperCase());
         copyTextButton.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(copyTextButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         copyTextButton.setOnClickListener(copyClickListener);
@@ -870,7 +870,7 @@ public class EmbedBottomSheet extends BottomSheet {
         openInButton.setEllipsize(TextUtils.TruncateAt.END);
         openInButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         openInButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-        openInButton.setText(LocaleController.getString("OpenInBrowser", R.string.OpenInBrowser).toUpperCase());
+        openInButton.setText(LocaleController.getString(R.string.OpenInBrowser).toUpperCase());
         openInButton.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(openInButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         openInButton.setOnClickListener(v -> {

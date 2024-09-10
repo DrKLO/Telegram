@@ -410,16 +410,16 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
         String contentDescription;
         VoIPService voIPService = VoIPService.getSharedInstance();
         if (voIPService != null && ChatObject.isChannelOrGiga(voIPService.getChat())) {
-            contentDescription = LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat);
+            contentDescription = LocaleController.getString(R.string.VoipChannelVoiceChat);
         } else {
-            contentDescription = LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat);
+            contentDescription = LocaleController.getString(R.string.VoipGroupVoiceChat);
         }
         if (state == MUTE_BUTTON_STATE_UNMUTE) {
-            contentDescription +=  ", " + LocaleController.getString("VoipTapToMute", R.string.VoipTapToMute);
+            contentDescription +=  ", " + LocaleController.getString(R.string.VoipTapToMute);
         } else if (state == MUTE_BUTTON_STATE_RECONNECT) {
-            contentDescription += ", " + LocaleController.getString("Connecting", R.string.Connecting);
+            contentDescription += ", " + LocaleController.getString(R.string.Connecting);
         } else if (state == MUTE_BUTTON_STATE_MUTED_BY_ADMIN) {
-            contentDescription += ", " + LocaleController.getString("VoipMutedByAdmin", R.string.VoipMutedByAdmin);
+            contentDescription += ", " + LocaleController.getString(R.string.VoipMutedByAdmin);
         }
         setContentDescription(contentDescription);
         invalidate();
@@ -429,7 +429,7 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && GroupCallPip.getInstance() != null) {
-            final String label = GroupCallPip.getInstance().showAlert ? LocaleController.getString("AccDescrCloseMenu", R.string.AccDescrCloseMenu) : LocaleController.getString("AccDescrOpenMenu2", R.string.AccDescrOpenMenu2);
+            final String label = GroupCallPip.getInstance().showAlert ? LocaleController.getString(R.string.AccDescrCloseMenu) : LocaleController.getString(R.string.AccDescrOpenMenu2);
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, label));
         }
     }

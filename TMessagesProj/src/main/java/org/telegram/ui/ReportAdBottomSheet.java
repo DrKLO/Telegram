@@ -289,7 +289,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                     onBackPressed();
                 }
             });
-            headerView.setText(LocaleController.getString("ReportAd", R.string.ReportAd));
+            headerView.setText(LocaleController.getString(R.string.ReportAd));
             headerView.backDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             headerView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
             addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
@@ -397,7 +397,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                     frameLayout.setBackground(combinedDrawable);
                     LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    textView.setText(AndroidUtilities.replaceLinks(LocaleController.getString("ReportAdLearnMore", R.string.ReportAdLearnMore), resourcesProvider));
+                    textView.setText(AndroidUtilities.replaceLinks(LocaleController.getString(R.string.ReportAdLearnMore), resourcesProvider));
                     textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
                     textView.setGravity(Gravity.CENTER);
                     frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 16, 16, 16));

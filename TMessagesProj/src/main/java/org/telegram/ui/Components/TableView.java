@@ -1,11 +1,18 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,8 +21,20 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
+import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.AvatarSpan;
+import org.telegram.ui.ChatActivity;
+import org.telegram.ui.LaunchActivity;
 
 public class TableView extends TableLayout {
 
@@ -54,6 +73,85 @@ public class TableView extends TableLayout {
         lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
         row.addView(new TableRowContent(this, content, true), lp);
         addView(row);
+    }
+
+    public void addRowUser(CharSequence title, final int currentAccount, final long did, Runnable onClick) {
+        final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext(), resourcesProvider);
+        textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setSingleLine(true);
+        ((LinkSpanDrawable.LinksTextView) textView).setDisablePaddingsOffsetY(true);
+        AvatarSpan avatarSpan = new AvatarSpan(textView, currentAccount, 24);
+        CharSequence username;
+        boolean deleted = false;
+        final boolean unknown;
+        if (UserObject.isService(did)) {
+            deleted = false;
+            unknown = true;
+            username = getString(R.string.StarsTransactionUnknown);
+            CombinedDrawable iconDrawable = getPlatformDrawable("fragment");
+            iconDrawable.setIconSize(dp(16), dp(16));
+            avatarSpan.setImageDrawable(iconDrawable);
+        } else if (did >= 0) {
+            unknown = false;
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
+            deleted = user == null;
+            username = UserObject.getUserName(user);
+            avatarSpan.setUser(user);
+        } else {
+            unknown = false;
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+            deleted = chat == null;
+            username = chat == null ? "" : chat.title;
+            avatarSpan.setChat(chat);
+        }
+        SpannableStringBuilder ssb = new SpannableStringBuilder("x  " + username);
+        ssb.setSpan(avatarSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ssb.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                if (onClick != null) {
+                    onClick.run();
+                }
+            }
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                ds.setUnderlineText(false);
+            }
+        }, 3, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        textView.setText(ssb);
+        if (!deleted) {
+            addRowUnpadded(title, textView);
+        }
+    }
+
+    public void addRowLink(CharSequence title, CharSequence value, Runnable onClick) {
+        final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext(), resourcesProvider);
+        textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setSingleLine(true);
+        ((LinkSpanDrawable.LinksTextView) textView).setDisablePaddingsOffsetY(true);
+        SpannableStringBuilder ssb = new SpannableStringBuilder(value);
+        ssb.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                if (onClick != null) {
+                    onClick.run();
+                }
+            }
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                ds.setUnderlineText(false);
+            }
+        }, 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        textView.setText(ssb);
+        addRowUnpadded(title, textView);
     }
 
     public void addRow(CharSequence title, CharSequence text) {

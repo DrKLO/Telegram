@@ -118,9 +118,9 @@ public class LinkEditActivity extends BaseFragment {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (type == CREATE_TYPE) {
-            actionBar.setTitle(getString("NewLink", R.string.NewLink));
+            actionBar.setTitle(getString(R.string.NewLink));
         } else if (type == EDIT_TYPE) {
-            actionBar.setTitle(getString("EditLink", R.string.EditLink));
+            actionBar.setTitle(getString(R.string.EditLink));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -138,9 +138,9 @@ public class LinkEditActivity extends BaseFragment {
         createTextView.setOnClickListener(this::onCreateClicked);
         createTextView.setSingleLine();
         if (type == CREATE_TYPE) {
-            createTextView.setText(getString("CreateLinkHeader", R.string.CreateLinkHeader));
+            createTextView.setText(getString(R.string.CreateLinkHeader));
         } else if (type == EDIT_TYPE) {
-            createTextView.setText(getString("SaveLinkHeader", R.string.SaveLinkHeader));
+            createTextView.setText(getString(R.string.SaveLinkHeader));
         }
         createTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         createTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
@@ -303,9 +303,9 @@ public class LinkEditActivity extends BaseFragment {
         buttonTextView.setTypeface(AndroidUtilities.bold());
 
         if (type == CREATE_TYPE) {
-            buttonTextView.setText(getString("CreateLink", R.string.CreateLink));
+            buttonTextView.setText(getString(R.string.CreateLink));
         } else if (type == EDIT_TYPE) {
-            buttonTextView.setText(getString("SaveLink", R.string.SaveLink));
+            buttonTextView.setText(getString(R.string.SaveLink));
         }
 
         TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
@@ -464,7 +464,7 @@ public class LinkEditActivity extends BaseFragment {
         timeEditText.setPadding(dp(22), 0, dp(22), 0);
         timeEditText.setGravity(Gravity.CENTER_VERTICAL);
         timeEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        timeEditText.setHint(getString("TimeLimitHint", R.string.TimeLimitHint));
+        timeEditText.setHint(getString(R.string.TimeLimitHint));
         timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, getString(R.string.ExpireAfter), getString(R.string.SetTimeLimit), -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
 
         timeChooseView.setCallback(index -> {
@@ -479,11 +479,11 @@ public class LinkEditActivity extends BaseFragment {
         linearLayout.addView(timeEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
         divider = new TextInfoPrivacyCell(context);
-        divider.setText(getString("TimeLimitHelp", R.string.TimeLimitHelp));
+        divider.setText(getString(R.string.TimeLimitHelp));
         linearLayout.addView(divider);
 
         usesHeaderCell = new HeaderCell(context);
-        usesHeaderCell.setText(getString("LimitNumberOfUses", R.string.LimitNumberOfUses));
+        usesHeaderCell.setText(getString(R.string.LimitNumberOfUses));
         linearLayout.addView(usesHeaderCell);
         usesChooseView = new SlideChooseView(context);
         usesChooseView.setCallback(index -> {
@@ -511,7 +511,7 @@ public class LinkEditActivity extends BaseFragment {
         usesEditText.setPadding(dp(22), 0, dp(22), 0);
         usesEditText.setGravity(Gravity.CENTER_VERTICAL);
         usesEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        usesEditText.setHint(getString("UsesLimitHint", R.string.UsesLimitHint));
+        usesEditText.setHint(getString(R.string.UsesLimitHint));
         usesEditText.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
         usesEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
         usesEditText.addTextChangedListener(new TextWatcher() {
@@ -551,7 +551,7 @@ public class LinkEditActivity extends BaseFragment {
         linearLayout.addView(usesEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
         dividerUses = new TextInfoPrivacyCell(context);
-        dividerUses.setText(getString("UsesLimitHelp", R.string.UsesLimitHelp));
+        dividerUses.setText(getString(R.string.UsesLimitHelp));
         linearLayout.addView(dividerUses);
 
         nameEditText = new EditText(context) {
@@ -575,7 +575,7 @@ public class LinkEditActivity extends BaseFragment {
         nameEditText.setCursorVisible(false);
         nameEditText.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(32) });
         nameEditText.setGravity(Gravity.CENTER_VERTICAL);
-        nameEditText.setHint(getString("LinkNameHint", R.string.LinkNameHint));
+        nameEditText.setHint(getString(R.string.LinkNameHint));
         nameEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         nameEditText.setLines(1);
         nameEditText.setPadding(dp(22), 0, dp(22), 0);
@@ -586,23 +586,23 @@ public class LinkEditActivity extends BaseFragment {
 
         dividerName = new TextInfoPrivacyCell(context);
         dividerName.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-        dividerName.setText(getString("LinkNameHelp", R.string.LinkNameHelp));
+        dividerName.setText(getString(R.string.LinkNameHelp));
         linearLayout.addView(dividerName);
 
         if (type == EDIT_TYPE) {
             revokeLink = new TextSettingsCell(context);
             revokeLink.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            revokeLink.setText(getString("RevokeLink", R.string.RevokeLink), false);
+            revokeLink.setText(getString(R.string.RevokeLink), false);
             revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
             revokeLink.setOnClickListener(view -> {
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
-                builder2.setMessage(getString("RevokeAlert", R.string.RevokeAlert));
-                builder2.setTitle(getString("RevokeLink", R.string.RevokeLink));
-                builder2.setPositiveButton(getString("RevokeButton", R.string.RevokeButton), (dialogInterface2, i2) -> {
+                builder2.setMessage(getString(R.string.RevokeAlert));
+                builder2.setTitle(getString(R.string.RevokeLink));
+                builder2.setPositiveButton(getString(R.string.RevokeButton), (dialogInterface2, i2) -> {
                     callback.revokeLink(inviteToEdit);
                     finishFragment();
                 });
-                builder2.setNegativeButton(getString("Cancel", R.string.Cancel), null);
+                builder2.setNegativeButton(getString(R.string.Cancel), null);
                 showDialog(builder2.create());
 
             });
@@ -843,7 +843,7 @@ public class LinkEditActivity extends BaseFragment {
         String[] options = new String[dispalyedUses.size() + 1];
         for (int i = 0; i < options.length; i++) {
             if (i == options.length - 1) {
-                options[i] = getString("NoLimit", R.string.NoLimit);
+                options[i] = getString(R.string.NoLimit);
             } else {
                 options[i] = dispalyedUses.get(i).toString();
             }
@@ -875,7 +875,7 @@ public class LinkEditActivity extends BaseFragment {
         String[] options = new String[dispalyedDates.size() + 1];
         for (int i = 0; i < options.length; i++) {
             if (i == options.length - 1) {
-                options[i] = getString("NoLimit", R.string.NoLimit);
+                options[i] = getString(R.string.NoLimit);
             } else {
                 if (dispalyedDates.get(i) == defaultDates[0]) {
                     options[i] = LocaleController.formatPluralString("Hours", 1);
@@ -885,7 +885,7 @@ public class LinkEditActivity extends BaseFragment {
                     options[i] = LocaleController.formatPluralString("Weeks", 1);
                 } else {
                     if (selectedDate < 86400L) {
-                        options[i] = getString("MessageScheduleToday", R.string.MessageScheduleToday);
+                        options[i] = getString(R.string.MessageScheduleToday);
                     } else if (selectedDate < 364 * 86400L) {
                         options[i] = LocaleController.getInstance().getFormatterScheduleDay().format(originDate * 1000L);
                     } else {
@@ -902,7 +902,7 @@ public class LinkEditActivity extends BaseFragment {
         for (int i = 0; i < defaultDates.length; i++) {
             dispalyedDates.add(defaultDates[i]);
         }
-        String[] options = new String[]{ LocaleController.formatPluralString("Hours", 1), LocaleController.formatPluralString("Days", 1), LocaleController.formatPluralString("Weeks", 1), getString("NoLimit", R.string.NoLimit) };
+        String[] options = new String[]{ LocaleController.formatPluralString("Hours", 1), LocaleController.formatPluralString("Days", 1), LocaleController.formatPluralString("Weeks", 1), getString(R.string.NoLimit) };
         timeChooseView.setOptions(options.length - 1, options);
     }
 
@@ -915,7 +915,7 @@ public class LinkEditActivity extends BaseFragment {
         for (int i = 0; i < defaultUses.length; i++) {
             dispalyedUses.add(defaultUses[i]);
         }
-        String[] options = new String[]{ "1", "10", "100", getString("NoLimit", R.string.NoLimit) };
+        String[] options = new String[]{ "1", "10", "100", getString(R.string.NoLimit) };
         usesChooseView.setOptions(options.length - 1, options);
     }
 

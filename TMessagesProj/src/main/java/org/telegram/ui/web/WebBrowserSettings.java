@@ -58,7 +58,8 @@ import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
-
+import org.telegram.ui.Stars.StarsIntroActivity;
+import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
@@ -239,6 +240,7 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         }
         if (BuildVars.DEBUG_PRIVATE_VERSION) {
             items.add(UItem.asCheck(12, "adaptable colors").setChecked(SharedConfig.adaptableColorInBrowser));
+            items.add(UItem.asCheck(13, "only local IV").setChecked(SharedConfig.onlyLocalInstantView));
         }
     }
 
@@ -247,6 +249,9 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         if (item.id == 12) {
             SharedConfig.toggleBrowserAdaptableColors();
             ((TextCheckCell) view).setChecked(SharedConfig.adaptableColorInBrowser);
+        } else if (item.id == 13) {
+            SharedConfig.toggleLocalInstantView();
+            ((TextCheckCell) view).setChecked(SharedConfig.onlyLocalInstantView);
         } else if (item.id == BUTTON_TOGGLE) {
             SharedConfig.toggleInappBrowser();
             ((TextCheckCell) view).setChecked(SharedConfig.inappBrowser);
@@ -485,7 +490,7 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             b.setPositiveButton(LocaleController.getString(R.string.Done), (dialogInterface, i) -> {
                 done.run();
             });
-            b.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+            b.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> {
                 dialogInterface.dismiss();
             });
 
@@ -619,6 +624,7 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         }
 
         public static class Factory extends UItem.UItemFactory<WebsiteView> {
+            static { setup(new Factory()); }
             @Override
             public WebsiteView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new WebsiteView(context);

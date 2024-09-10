@@ -123,7 +123,7 @@ public class ManageChatUserCell extends FrameLayout {
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
             addView(optionsButton, LayoutHelper.createFrame(60, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
             optionsButton.setOnClickListener(v -> delegate.onOptionsButtonCheck(ManageChatUserCell.this, true));
-            optionsButton.setContentDescription(LocaleController.getString("AccDescrUserOptions", R.string.AccDescrUserOptions));
+            optionsButton.setContentDescription(LocaleController.getString(R.string.AccDescrUserOptions));
         }
     }
 
@@ -281,14 +281,14 @@ public class ManageChatUserCell extends FrameLayout {
                 if (currentUser.bot) {
                     statusTextView.setTextColor(statusColor);
                     if (currentUser.bot_chat_history || isAdmin) {
-                        statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
+                        statusTextView.setText(LocaleController.getString(R.string.BotStatusRead));
                     } else {
-                        statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
+                        statusTextView.setText(LocaleController.getString(R.string.BotStatusCantRead));
                     }
                 } else {
                     if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                         statusTextView.setTextColor(statusOnlineColor);
-                        statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                        statusTextView.setText(LocaleController.getString(R.string.Online));
                     } else {
                         statusTextView.setTextColor(statusColor);
                         statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
@@ -345,11 +345,11 @@ public class ManageChatUserCell extends FrameLayout {
                         statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
                     }
                 } else if (currentChat.has_geo) {
-                    statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
+                    statusTextView.setText(LocaleController.getString(R.string.MegaLocation));
                 } else if (!ChatObject.isPublic(currentChat)) {
-                    statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
+                    statusTextView.setText(LocaleController.getString(R.string.MegaPrivate));
                 } else {
-                    statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
+                    statusTextView.setText(LocaleController.getString(R.string.MegaPublic));
                 }
             }
             lastAvatar = photo;

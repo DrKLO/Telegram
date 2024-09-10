@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -332,7 +333,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
         lastCount = count;
         countAlpha = count != 0 || showZero ? 1f : 0f;
-        countText.setText("" + count, animated);
+        countText.setText(LocaleController.formatNumber(count, ' '), animated);
         invalidate();
     }
 

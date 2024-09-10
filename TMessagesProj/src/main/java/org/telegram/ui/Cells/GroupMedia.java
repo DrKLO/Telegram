@@ -445,7 +445,7 @@ public class GroupMedia {
                 canvas.save();
                 canvas.clipPath(clipPath);
                 drawBlurred(canvas, hiddenAlpha);
-                canvas.drawColor(Theme.multAlpha(0x30000000, hiddenAlpha));
+                canvas.drawColor(Theme.multAlpha(0x50000000, hiddenAlpha));
                 buttonText.draw(canvas, x + width / 2f - buttonWidth / 2f + dp(14), y + height / 2f, 0xFFFFFFFF, hiddenAlpha);
                 canvas.restore();
 

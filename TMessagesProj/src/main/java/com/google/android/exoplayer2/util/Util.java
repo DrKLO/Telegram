@@ -1937,7 +1937,7 @@ public final class Util {
       default:
         try {
           return UUID.fromString(drmScheme);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
           return null;
         }
     }

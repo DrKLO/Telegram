@@ -320,13 +320,13 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
             closeIcon = new ImageView(context);
             closeIcon.setImageResource(R.drawable.pip_close);
             closeIcon.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-            closeIcon.setContentDescription(LocaleController.getString("Close", R.string.Close));
+            closeIcon.setContentDescription(LocaleController.getString(R.string.Close));
             floatingView.addView(closeIcon, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 4, 4, 4, 0));
 
             enlargeIcon = new ImageView(context);
             enlargeIcon.setImageResource(R.drawable.pip_enlarge);
             enlargeIcon.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-            enlargeIcon.setContentDescription(LocaleController.getString("Open", R.string.Open));
+            enlargeIcon.setContentDescription(LocaleController.getString(R.string.Open));
             floatingView.addView(enlargeIcon, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.LEFT, 4, 4, 4, 0));
 
             closeIcon.setOnClickListener((v) -> {

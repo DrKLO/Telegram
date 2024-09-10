@@ -45,6 +45,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.bots.BotButtons;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.web.BotWebViewContainer;
 import org.telegram.ui.bots.BotWebViewSheet;
@@ -557,6 +558,10 @@ public class BottomSheetTabs extends FrameLayout {
         final ArrayList<WebTabData> tabs = getTabs();
         final ArrayList<TabDrawable> tabDrawables = getTabDrawables();
 
+        if (actionBarLayout != null && actionBarLayout.bottomTabsProgress <= 0) {
+            return;
+        }
+
         backgroundPaint.setColor(backgroundColorAnimated.set(backgroundColor));
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
         super.dispatchDraw(canvas);
@@ -835,10 +840,13 @@ public class BottomSheetTabs extends FrameLayout {
         public int actionBarColor;
         public int backgroundColor;
 
+        public int navigationBarColor;
+
         public boolean ready;
         public boolean backButton;
         public boolean settings;
         public BotWebViewAttachedSheet.MainButtonSettings main;
+        public BotButtons.ButtonsState buttons;
         public String lastUrl;
         public boolean confirmDismiss;
 

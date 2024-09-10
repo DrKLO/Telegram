@@ -1275,7 +1275,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 //            builder.setTitle(link.getURL());
 //        }
 //        final int finalTimestamp = timestamp;
-//        builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+//        builder.setItems(new CharSequence[]{LocaleController.getString(R.string.Open), LocaleController.getString(R.string.Copy)}, (dialog, which) -> {
 //            if (which == 0) {
 //                onLinkClick(link, widget);
 //            } else if (which == 1) {
@@ -1324,13 +1324,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 //                AndroidUtilities.addToClipboard(url1);
 //                String bulletinMessage;
 //                if (tel) {
-//                    bulletinMessage = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
+//                    bulletinMessage = LocaleController.getString(R.string.PhoneCopied);
 //                } else if (url1.startsWith("#")) {
-//                    bulletinMessage = LocaleController.getString("HashtagCopied", R.string.HashtagCopied);
+//                    bulletinMessage = LocaleController.getString(R.string.HashtagCopied);
 //                } else if (url1.startsWith("@")) {
-//                    bulletinMessage = LocaleController.getString("UsernameCopied", R.string.UsernameCopied);
+//                    bulletinMessage = LocaleController.getString(R.string.UsernameCopied);
 //                } else {
-//                    bulletinMessage = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+//                    bulletinMessage = LocaleController.getString(R.string.LinkCopied);
 //                }
 //                if (AndroidUtilities.shouldShowClipboardToast()) {
 //                    BulletinFactory.of(containerView, resourcesProvider).createSimpleBulletin(R.raw.voip_invite, bulletinMessage).show();
@@ -1520,7 +1520,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 }
             }
             if (MessageObject.isGifDocument(document)) {
-                actionBar.setTitle(LocaleController.getString("DisappearingGif", R.string.DisappearingGif));
+                actionBar.setTitle(LocaleController.getString(R.string.DisappearingGif));
                 ImageLocation location;
                 if (messageObject.messageOwner.attachPath != null && messageObject.attachPathExists) {
                     location = ImageLocation.getForPath(messageObject.messageOwner.attachPath);
@@ -1530,7 +1530,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 centerImage.setImage(location, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 1);
             } else {
                 playerRetryPlayCount = 1;
-                actionBar.setTitle(LocaleController.getString("DisappearingVideo", R.string.DisappearingVideo));
+                actionBar.setTitle(LocaleController.getString(R.string.DisappearingVideo));
                 File f = new File(messageObject.messageOwner.attachPath);
                 if (f.exists()) {
                     preparePlayer(f);
@@ -1547,7 +1547,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 centerImage.setImage(null, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 2);
             }
         } else {
-            actionBar.setTitle(LocaleController.getString("DisappearingPhoto", R.string.DisappearingPhoto));
+            actionBar.setTitle(LocaleController.getString(R.string.DisappearingPhoto));
             TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
             centerImage.setImage(ImageLocation.getForObject(sizeFull, messageObject.photoThumbsObject), null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 2);
 

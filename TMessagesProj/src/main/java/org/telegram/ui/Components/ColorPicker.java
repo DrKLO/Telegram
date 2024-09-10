@@ -195,7 +195,7 @@ public class ColorPicker extends FrameLayout {
         @Override
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
-            info.setText(LocaleController.getString("ColorPickerMainColor", R.string.ColorPickerMainColor));
+            info.setText(LocaleController.getString(R.string.ColorPickerMainColor));
             info.setClassName(Button.class.getName());
             info.setChecked(checked);
             info.setCheckable(true);
@@ -476,7 +476,7 @@ public class ColorPicker extends FrameLayout {
             });
             colorsAnimator.start();
         });
-        addButton.setContentDescription(LocaleController.getString("Add", R.string.Add));
+        addButton.setContentDescription(LocaleController.getString(R.string.Add));
         addView(addButton, LayoutHelper.createFrame(30, 30, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 36, 1, 0, 0));
 
         clearButton = new ImageView(getContext()) {
@@ -564,7 +564,7 @@ public class ColorPicker extends FrameLayout {
             });
             colorsAnimator.start();
         });
-        clearButton.setContentDescription(LocaleController.getString("ClearButton", R.string.ClearButton));
+        clearButton.setContentDescription(LocaleController.getString(R.string.ClearButton));
         addView(clearButton, LayoutHelper.createFrame(30, 30, Gravity.TOP | Gravity.LEFT, 97, 1, 0, 0));
 
         resetButton = new TextView(context);
@@ -587,10 +587,10 @@ public class ColorPicker extends FrameLayout {
             menuItem = new ActionBarMenuItem(context, null, 0, getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             menuItem.setLongClickEnabled(false);
             menuItem.setIcon(R.drawable.ic_ab_other);
-            menuItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
-            menuItem.addSubItem(item_edit, R.drawable.msg_edit, LocaleController.getString("OpenInEditor", R.string.OpenInEditor));
-            menuItem.addSubItem(item_share, R.drawable.msg_share, LocaleController.getString("ShareTheme", R.string.ShareTheme));
-            menuItem.addSubItem(item_delete, R.drawable.msg_delete, LocaleController.getString("DeleteTheme", R.string.DeleteTheme));
+            menuItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            menuItem.addSubItem(item_edit, R.drawable.msg_edit, LocaleController.getString(R.string.OpenInEditor));
+            menuItem.addSubItem(item_share, R.drawable.msg_share, LocaleController.getString(R.string.ShareTheme));
+            menuItem.addSubItem(item_delete, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteTheme));
             menuItem.setMenuYOffset(-AndroidUtilities.dp(80));
             menuItem.setSubMenuOpenSide(2);
             menuItem.setDelegate(id -> {

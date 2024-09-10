@@ -133,17 +133,17 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             case TYPE_ADDED:
                 if (stickerSet != null) {
                     if (stickerSet.masks) {
-                        titleTextView.setText(LocaleController.getString("AddMasksInstalled", R.string.AddMasksInstalled));
+                        titleTextView.setText(LocaleController.getString(R.string.AddMasksInstalled));
                         subtitleTextView.setText(LocaleController.formatString("AddMasksInstalledInfo", R.string.AddMasksInstalledInfo, stickerSet.title));
                     } else if (stickerSet.emojis) {
-                        titleTextView.setText(LocaleController.getString("AddEmojiInstalled", R.string.AddEmojiInstalled));
+                        titleTextView.setText(LocaleController.getString(R.string.AddEmojiInstalled));
                         if (count > 1) {
                             subtitleTextView.setText(LocaleController.formatPluralString("AddEmojiMultipleInstalledInfo", count));
                         } else {
                             subtitleTextView.setText(LocaleController.formatString("AddEmojiInstalledInfo", R.string.AddEmojiInstalledInfo, stickerSet.title));
                         }
                     } else {
-                        titleTextView.setText(LocaleController.getString("AddStickersInstalled", R.string.AddStickersInstalled));
+                        titleTextView.setText(LocaleController.getString(R.string.AddStickersInstalled));
                         subtitleTextView.setText(LocaleController.formatString("AddStickersInstalledInfo", R.string.AddStickersInstalledInfo, stickerSet.title));
                     }
                 }
@@ -151,17 +151,17 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             case TYPE_REMOVED:
                 if (stickerSet != null) {
                     if (stickerSet.masks) {
-                        titleTextView.setText(LocaleController.getString("MasksRemoved", R.string.MasksRemoved));
+                        titleTextView.setText(LocaleController.getString(R.string.MasksRemoved));
                         subtitleTextView.setText(LocaleController.formatString("MasksRemovedInfo", R.string.MasksRemovedInfo, stickerSet.title));
                     } else if (stickerSet.emojis) {
-                        titleTextView.setText(LocaleController.getString("EmojiRemoved", R.string.EmojiRemoved));
+                        titleTextView.setText(LocaleController.getString(R.string.EmojiRemoved));
                         if (count > 1) {
                             subtitleTextView.setText(LocaleController.formatPluralString("EmojiRemovedMultipleInfo", count));
                         } else {
                             subtitleTextView.setText(LocaleController.formatString("EmojiRemovedInfo", R.string.EmojiRemovedInfo, stickerSet.title));
                         }
                     } else {
-                        titleTextView.setText(LocaleController.getString("StickersRemoved", R.string.StickersRemoved));
+                        titleTextView.setText(LocaleController.getString(R.string.StickersRemoved));
                         subtitleTextView.setText(LocaleController.formatString("StickersRemovedInfo", R.string.StickersRemovedInfo, stickerSet.title));
                     }
                 }
@@ -169,23 +169,23 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             case TYPE_ARCHIVED:
                 if (stickerSet != null) {
                     if (stickerSet.masks) {
-                        titleTextView.setText(LocaleController.getString("MasksArchived", R.string.MasksArchived));
+                        titleTextView.setText(LocaleController.getString(R.string.MasksArchived));
                         subtitleTextView.setText(LocaleController.formatString("MasksArchivedInfo", R.string.MasksArchivedInfo, stickerSet.title));
                     } else if (stickerSet.emojis) {
-                        titleTextView.setText(LocaleController.getString("EmojiArchived", R.string.EmojiArchived));
+                        titleTextView.setText(LocaleController.getString(R.string.EmojiArchived));
                         subtitleTextView.setText(LocaleController.formatString("EmojiArchivedInfo", R.string.EmojiArchivedInfo, stickerSet.title));
                     } else {
-                        titleTextView.setText(LocaleController.getString("StickersArchived", R.string.StickersArchived));
+                        titleTextView.setText(LocaleController.getString(R.string.StickersArchived));
                         subtitleTextView.setText(LocaleController.formatString("StickersArchivedInfo", R.string.StickersArchivedInfo, stickerSet.title));
                     }
                 }
                 break;
             case TYPE_REMOVED_FROM_FAVORITES:
-                titleTextView.setText(LocaleController.getString("RemovedFromFavorites", R.string.RemovedFromFavorites));
+                titleTextView.setText(LocaleController.getString(R.string.RemovedFromFavorites));
                 subtitleTextView.setVisibility(ViewPagerFixed.GONE);
                 break;
             case TYPE_ADDED_TO_FAVORITES:
-                titleTextView.setText(LocaleController.getString("AddedToFavorites", R.string.AddedToFavorites));
+                titleTextView.setText(LocaleController.getString(R.string.AddedToFavorites));
                 subtitleTextView.setVisibility(ViewPagerFixed.GONE);
                 break;
             case TYPE_REPLACED_TO_FAVORITES:
@@ -220,7 +220,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 }
                 break;
             case TYPE_REMOVED_FROM_RECENT:
-                titleTextView.setText(LocaleController.getString("RemovedFromRecent", R.string.RemovedFromRecent));
+                titleTextView.setText(LocaleController.getString(R.string.RemovedFromRecent));
                 subtitleTextView.setVisibility(ViewPagerFixed.GONE);
                 break;
         }

@@ -1235,8 +1235,8 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
                 new Integer[]{16, 9}
         };
 
-        actions[0] = LocaleController.getString("CropOriginal", R.string.CropOriginal);
-        actions[1] = LocaleController.getString("CropSquare", R.string.CropSquare);
+        actions[0] = LocaleController.getString(R.string.CropOriginal);
+        actions[1] = LocaleController.getString(R.string.CropSquare);
 
         int i = 2;
         for (Integer[] ratioPair : ratios) {

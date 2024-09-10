@@ -514,14 +514,14 @@ public class PhonebookShareAlert extends BottomSheet {
                             Browser.openUrl(this.parentFragment.getParentActivity(), url);
                         } else {
                             AlertDialog.Builder builder = new AlertDialog.Builder(this.parentFragment.getParentActivity());
-                            builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
+                            builder.setItems(new CharSequence[]{LocaleController.getString(R.string.Copy)}, (dialogInterface, i) -> {
                                 if (i == 0) {
                                     try {
                                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                         android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
                                         clipboard.setPrimaryClip(clip);
                                         if (AndroidUtilities.shouldShowClipboardToast()) {
-                                            Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString(R.string.TextCopied), Toast.LENGTH_SHORT).show();
                                         }
                                     } catch (Exception e) {
                                         FileLog.e(e);
@@ -569,13 +569,13 @@ public class PhonebookShareAlert extends BottomSheet {
                         } else {
                             final Bulletin.SimpleLayout layout = new Bulletin.SimpleLayout(context, resourcesProvider);
                             if (item.type == 0) {
-                                layout.textView.setText(LocaleController.getString("PhoneCopied", R.string.PhoneCopied));
+                                layout.textView.setText(LocaleController.getString(R.string.PhoneCopied));
                                 layout.imageView.setImageResource(R.drawable.msg_calls);
                             } else if (item.type == 1) {
-                                layout.textView.setText(LocaleController.getString("EmailCopied", R.string.EmailCopied));
+                                layout.textView.setText(LocaleController.getString(R.string.EmailCopied));
                                 layout.imageView.setImageResource(R.drawable.msg_mention);
                             } else {
-                                layout.textView.setText(LocaleController.getString("TextCopied", R.string.TextCopied));
+                                layout.textView.setText(LocaleController.getString(R.string.TextCopied));
                                 layout.imageView.setImageResource(R.drawable.msg_info);
                             }
                             if (AndroidUtilities.shouldShowClipboardToast()) {
@@ -603,9 +603,9 @@ public class PhonebookShareAlert extends BottomSheet {
         actionBar.setOccupyStatusBar(false);
         actionBar.setAlpha(0.0f);
         if (isImport) {
-            actionBar.setTitle(LocaleController.getString("AddContactPhonebookTitle", R.string.AddContactPhonebookTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.AddContactPhonebookTitle));
         } else {
-            actionBar.setTitle(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.ShareContactTitle));
         }
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -633,9 +633,9 @@ public class PhonebookShareAlert extends BottomSheet {
         buttonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         if (isImport) {
-            buttonTextView.setText(LocaleController.getString("AddContactPhonebookTitle", R.string.AddContactPhonebookTitle));
+            buttonTextView.setText(LocaleController.getString(R.string.AddContactPhonebookTitle));
         } else {
-            buttonTextView.setText(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
+            buttonTextView.setText(LocaleController.getString(R.string.ShareContactTitle));
         }
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
@@ -643,11 +643,11 @@ public class PhonebookShareAlert extends BottomSheet {
         buttonTextView.setOnClickListener(v -> {
             if (isImport) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.AddContactTitle));
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder.setItems(new CharSequence[]{
-                        LocaleController.getString("CreateNewContact", R.string.CreateNewContact),
-                        LocaleController.getString("AddToExistingContact", R.string.AddToExistingContact)
+                        LocaleController.getString(R.string.CreateNewContact),
+                        LocaleController.getString(R.string.AddToExistingContact)
                 }, new DialogInterface.OnClickListener() {
 
                     private void fillRowWithType(String type, ContentValues row) {

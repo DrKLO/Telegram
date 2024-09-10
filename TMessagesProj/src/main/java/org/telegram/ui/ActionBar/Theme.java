@@ -10,6 +10,7 @@ package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -2370,15 +2371,15 @@ public class Theme {
 
         public String getName() {
             if ("Blue".equals(name)) {
-                return LocaleController.getString("ThemeClassic", R.string.ThemeClassic);
+                return getString(R.string.ThemeClassic);
             } else if ("Dark Blue".equals(name)) {
-                return LocaleController.getString("ThemeDark", R.string.ThemeDark);
+                return getString(R.string.ThemeDark);
             } else if ("Arctic Blue".equals(name)) {
-                return LocaleController.getString("ThemeArcticBlue", R.string.ThemeArcticBlue);
+                return getString(R.string.ThemeArcticBlue);
             } else if ("Day".equals(name)) {
-                return LocaleController.getString("ThemeDay", R.string.ThemeDay);
+                return getString(R.string.ThemeDay);
             } else if ("Night".equals(name)) {
-                return LocaleController.getString("ThemeNight", R.string.ThemeNight);
+                return getString(R.string.ThemeNight);
             }
             return info != null ? info.title : name;
         }
@@ -3106,7 +3107,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable[] avatarDrawables = new Drawable[22];
+    public static Drawable[] avatarDrawables = new Drawable[24];
 
     public static Drawable moveUpDrawable;
 
@@ -4118,6 +4119,7 @@ public class Theme {
     public static final int key_chat_inReactionButtonText = colorsCount++;
     public static final int key_chat_inReactionButtonTextSelected = colorsCount++;
     public static final int key_chat_outReactionButtonTextSelected = colorsCount++;
+    public static final int key_reactionStarSelector = colorsCount++;
 
     public static final int key_premiumGradient0 = colorsCount++;
     public static final int key_premiumGradient1 = colorsCount++;
@@ -8214,6 +8216,8 @@ public class Theme {
             avatarDrawables[19] = resources.getDrawable(R.drawable.large_notes);
             avatarDrawables[20] = resources.getDrawable(R.drawable.filled_folder_new);
             avatarDrawables[21] = resources.getDrawable(R.drawable.filled_folder_existing);
+            avatarDrawables[22] = resources.getDrawable(R.drawable.filled_giveaway_premium);
+            avatarDrawables[23] = resources.getDrawable(R.drawable.filled_giveaway_stars);
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
@@ -10528,9 +10532,9 @@ public class Theme {
                     BulletinFactory.of(fragment).createSimpleBulletin(
                         R.raw.auto_night_off,
                         selectedAutoNightType == AUTO_NIGHT_TYPE_SYSTEM ?
-                                LocaleController.getString("AutoNightSystemModeOff", R.string.AutoNightSystemModeOff) :
-                                LocaleController.getString("AutoNightModeOff", R.string.AutoNightModeOff),
-                        LocaleController.getString("Settings", R.string.Settings),
+                                getString("AutoNightSystemModeOff", R.string.AutoNightSystemModeOff) :
+                                getString("AutoNightModeOff", R.string.AutoNightModeOff),
+                        getString("Settings", R.string.Settings),
                         Bulletin.DURATION_PROLONG,
                         () -> fragment.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT))
                     ).show();
@@ -10551,9 +10555,9 @@ public class Theme {
                     BulletinFactory.of(container, null).createSimpleBulletin(
                         R.raw.auto_night_off,
                         selectedAutoNightType == AUTO_NIGHT_TYPE_SYSTEM ?
-                            LocaleController.getString("AutoNightSystemModeOff", R.string.AutoNightSystemModeOff) :
-                            LocaleController.getString("AutoNightModeOff", R.string.AutoNightModeOff),
-                        LocaleController.getString("Settings", R.string.Settings),
+                            getString("AutoNightSystemModeOff", R.string.AutoNightSystemModeOff) :
+                            getString("AutoNightModeOff", R.string.AutoNightModeOff),
+                        getString("Settings", R.string.Settings),
                         Bulletin.DURATION_PROLONG,
                         openSettings
                     ).show();

@@ -48,6 +48,7 @@ public class StarReactionsOverlay extends View {
     private final RectF reactionBounds = new RectF();
     private final RectF clickBounds = new RectF();
     private final Paint shadowPaint = new Paint();
+    private final Paint redPaint = new Paint();
 
     private boolean counterShown;
 //    private final AnimatedFloat counterX = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -72,26 +73,7 @@ public class StarReactionsOverlay extends View {
         hideCounterRunnable = () -> {
             counterShown = false;
             invalidate();
-            if (cell != null && cell.getPrimaryMessageObject() != null) {
-                final MessageObject msg = cell.getPrimaryMessageObject();
-                final StarsController starsController = StarsController.getInstance(chatActivity.getCurrentAccount());
-                final long totalStars = starsController.getPendingPaidReactions(msg);
-                if (starsController.balanceAvailable() && starsController.getBalance() < totalStars) {
-                    StarsController.getInstance(chatActivity.getCurrentAccount()).undoPaidReaction();
-                    final long dialogId = chatActivity.getDialogId();
-                    String name;
-                    if (dialogId >= 0) {
-                        TLRPC.User user = chatActivity.getMessagesController().getUser(dialogId);
-                        name = UserObject.getForcedFirstName(user);
-                    } else {
-                        TLRPC.Chat chat = chatActivity.getMessagesController().getChat(-dialogId);
-                        name = chat == null ? "" : chat.title;
-                    }
-                    new StarsIntroActivity.StarsNeededSheet(chatActivity.getContext(), chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
-                        starsController.sendPaidReaction(msg, chatActivity, totalStars, true, true, null);
-                    }).show();
-                }
-            }
+            checkBalance();
             hide();
         };
 
@@ -110,10 +92,34 @@ public class StarReactionsOverlay extends View {
 
             StarsController.getInstance(msg.currentAccount).commitPaidReaction();
 
-            StarsReactionsSheet sheet = new StarsReactionsSheet(getContext(), chatActivity.getCurrentAccount(), chatActivity.getDialogId(), chatActivity, msg, reactors, chatActivity.getResourceProvider());
+            final TLRPC.ChatFull chatFull = chatActivity.getCurrentChatInfo();
+            final StarsReactionsSheet sheet = new StarsReactionsSheet(getContext(), chatActivity.getCurrentAccount(), chatActivity.getDialogId(), chatActivity, msg, reactors, chatFull == null || chatFull.paid_reactions_available, chatActivity.getResourceProvider());
             sheet.setMessageCell(chatActivity, msg.getId(), cell);
             sheet.show();
         };
+    }
+
+    private void checkBalance() {
+        if (cell != null && cell.getPrimaryMessageObject() != null) {
+            final MessageObject msg = cell.getPrimaryMessageObject();
+            final StarsController starsController = StarsController.getInstance(chatActivity.getCurrentAccount());
+            final long totalStars = starsController.getPendingPaidReactions(msg);
+            if (starsController.balanceAvailable() && starsController.getBalance(false) < totalStars) {
+                StarsController.getInstance(chatActivity.getCurrentAccount()).undoPaidReaction();
+                final long dialogId = chatActivity.getDialogId();
+                String name;
+                if (dialogId >= 0) {
+                    TLRPC.User user = chatActivity.getMessagesController().getUser(dialogId);
+                    name = UserObject.getForcedFirstName(user);
+                } else {
+                    TLRPC.Chat chat = chatActivity.getMessagesController().getChat(-dialogId);
+                    name = chat == null ? "" : chat.title;
+                }
+                new StarsIntroActivity.StarsNeededSheet(chatActivity.getContext(), chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
+                    starsController.sendPaidReaction(msg, chatActivity, totalStars, true, true, null);
+                }).show();
+            }
+        }
     }
 
     public void setMessageCell(ChatMessageCell cell) {
@@ -121,10 +127,12 @@ public class StarReactionsOverlay extends View {
         if (this.cell != null) {
             this.cell.setScrimReaction(null);
             this.cell.setInvalidateListener(null);
+            this.cell.invalidate();
         }
         this.cell = cell;
         this.messageId = cell != null && cell.getPrimaryMessageObject() != null ? cell.getPrimaryMessageObject().getId() : 0;
         if (this.cell != null) {
+            this.cell.invalidate();
             this.cell.setInvalidateListener(this::invalidate);
         }
         invalidate();
@@ -169,7 +177,8 @@ public class StarReactionsOverlay extends View {
         }
         canvas.translate(pos[0] - pos2[0], pos[1] - pos2[1]);
         cell.setScrimReaction(null);
-        cell.drawReactionsLayout(canvas, 0f, hash);
+        cell.drawReactionsLayout(canvas, 1f, hash);
+        cell.drawReactionsLayoutOverlay(canvas, 1f);
         cell.setScrimReaction(hash);
 //        AndroidUtilities.rectTmp.set(cell.getBackgroundDrawableRight() - dp(24), 0, cell.getBackgroundDrawableRight(), cell.getHeight());
 //        clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, 1f);
@@ -223,6 +232,10 @@ public class StarReactionsOverlay extends View {
             counter.draw(canvas);
             canvas.restore();
 
+        }
+
+        if (!counterShown) {
+            checkBalance();
         }
 
         invalidate();

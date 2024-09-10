@@ -327,7 +327,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
                             DialogsActivity dialogsActivity = new DialogsActivity(args);
                             OverlayActionBarLayoutDialog overlayActionBarLayoutDialog = new OverlayActionBarLayoutDialog(getContext(), resourcesProvider);
-                            dialogsActivity.setDelegate((fragment, dids, message1, param, topicsFragment) -> {
+                            dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, topicsFragment) -> {
                                 long did = dids.get(0).dialogId;
 
                                 Bundle args1 = new Bundle();
@@ -356,7 +356,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
 
                     @Override
-                    public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible) {
+                    public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
+
+                    }
+
+                    @Override
+                    public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
                         if (currentAttachLayout != webViewLayout || !webViewLayout.isBotButtonAvailable() && startCommand == null) {
                             return;
                         }

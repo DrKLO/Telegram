@@ -40,7 +40,7 @@ public class DatabaseMigrationHint extends FrameLayout {
 
         title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        title.setText(LocaleController.getString("OptimizingTelegram", R.string.OptimizingTelegram));
+        title.setText(LocaleController.getString(R.string.OptimizingTelegram));
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setGravity(Gravity.CENTER_HORIZONTAL);
         container.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 50, 32, 50, 0));
@@ -48,14 +48,14 @@ public class DatabaseMigrationHint extends FrameLayout {
         description1 = new TextView(context);
         description1.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
         description1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        description1.setText(LocaleController.getString("OptimizingTelegramDescription1", R.string.OptimizingTelegramDescription1));
+        description1.setText(LocaleController.getString(R.string.OptimizingTelegramDescription1));
         description1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         description1.setGravity(Gravity.CENTER_HORIZONTAL);
         container.addView(description1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 36, 20, 36, 0));
 
         description2 = new TextView(context);
         description2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        description2.setText(LocaleController.getString("OptimizingTelegramDescription2", R.string.OptimizingTelegramDescription2));
+        description2.setText(LocaleController.getString(R.string.OptimizingTelegramDescription2));
         description2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         description2.setGravity(Gravity.CENTER_HORIZONTAL);
         container.addView(description2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 36, 24, 36, 0));

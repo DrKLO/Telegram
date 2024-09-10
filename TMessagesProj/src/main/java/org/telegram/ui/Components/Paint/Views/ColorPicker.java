@@ -91,7 +91,7 @@ public class ColorPicker extends FrameLayout {
         swatchStrokePaint.setStrokeWidth(AndroidUtilities.dp(1));
 
         settingsButton = new ImageView(context);
-        settingsButton.setContentDescription(LocaleController.getString("AccDescrBrushType", R.string.AccDescrBrushType));
+        settingsButton.setContentDescription(LocaleController.getString(R.string.AccDescrBrushType));
         settingsButton.setScaleType(ImageView.ScaleType.CENTER);
         settingsButton.setImageResource(R.drawable.photo_paint_brush);
         addView(settingsButton, LayoutHelper.createFrame(46, 52));
@@ -102,7 +102,7 @@ public class ColorPicker extends FrameLayout {
         });
 
         undoButton = new ImageView(context);
-        undoButton.setContentDescription(LocaleController.getString("Undo", R.string.Undo));
+        undoButton.setContentDescription(LocaleController.getString(R.string.Undo));
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
         undoButton.setImageResource(R.drawable.photo_undo);
         addView(undoButton, LayoutHelper.createFrame(46, 52));

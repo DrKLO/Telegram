@@ -59,7 +59,7 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        titleTextView.setText(LocaleController.getString("NoContactsYet", R.string.NoContactsYet));
+        titleTextView.setText(LocaleController.getString(R.string.NoContactsYet));
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setMaxWidth(AndroidUtilities.dp(260));
         addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 14));
@@ -69,6 +69,7 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
         addView(linesContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
         for (int a = 0; a < 3; a++) {
+            if (a == 1) continue;
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
             linesContainer.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 8, 0, 0));
@@ -87,13 +88,10 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
 
             switch (a) {
                 case 0:
-                    textView.setText(LocaleController.getString("NoContactsYetLine1", R.string.NoContactsYetLine1));
-                    break;
-                case 1:
-                    textView.setText(LocaleController.getString("NoContactsYetLine2", R.string.NoContactsYetLine2));
+                    textView.setText(LocaleController.getString(R.string.NoContactsYetLine1));
                     break;
                 case 2:
-                    textView.setText(LocaleController.getString("NoContactsYetLine3", R.string.NoContactsYetLine3));
+                    textView.setText(LocaleController.getString(R.string.NoContactsYetLine3));
                     break;
             }
             if (LocaleController.isRTL) {

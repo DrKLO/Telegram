@@ -599,13 +599,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 break;
             case VIEW_TYPE_RECENTLY_VIEWED: {
                 HeaderCell headerCell = new HeaderCell(mContext);
-                headerCell.setText(LocaleController.getString("RecentlyViewed", R.string.RecentlyViewed));
+                headerCell.setText(LocaleController.getString(R.string.RecentlyViewed));
 
                 TextView textView = new TextView(mContext);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
-                textView.setText(LocaleController.getString("RecentlyViewedHide", R.string.RecentlyViewedHide));
+                textView.setText(LocaleController.getString(R.string.RecentlyViewedHide));
                 textView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
                 headerCell.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 17, 15, 17, 0));
                 textView.setOnClickListener(view1 -> {
@@ -816,9 +816,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                                 subtitle = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
                             } else {
                                 if (!ChatObject.isPublic(chat)) {
-                                    subtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
+                                    subtitle = LocaleController.getString(R.string.ChannelPrivate).toLowerCase();
                                 } else {
-                                    subtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
+                                    subtitle = LocaleController.getString(R.string.ChannelPublic).toLowerCase();
                                 }
                             }
                         } else {
@@ -826,11 +826,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                                 subtitle = LocaleController.formatPluralStringComma("Members", chat.participants_count);
                             } else {
                                 if (chat.has_geo) {
-                                    subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
+                                    subtitle = LocaleController.getString(R.string.MegaLocation);
                                 } else if (!ChatObject.isPublic(chat)) {
-                                    subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+                                    subtitle = LocaleController.getString(R.string.MegaPrivate).toLowerCase();
                                 } else {
-                                    subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+                                    subtitle = LocaleController.getString(R.string.MegaPublic).toLowerCase();
                                 }
                             }
                         }
@@ -842,7 +842,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                             title = UserObject.getUserName(user);
                             if (!UserObject.isReplyUser(user)) {
                                 if (user.bot) {
-                                    subtitle = LocaleController.getString("Bot", R.string.Bot);
+                                    subtitle = LocaleController.getString(R.string.Bot);
                                 } else {
                                     subtitle = LocaleController.formatUserStatus(currentAccount, user);
                                 }
@@ -922,9 +922,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                                 dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY
                 ) {
                     if (i == 0) {
-                        cell.setText(LocaleController.getString("ImportHeader", R.string.ImportHeader));
+                        cell.setText(LocaleController.getString(R.string.ImportHeader));
                     } else {
-                        cell.setText(LocaleController.getString("ImportHeaderContacts", R.string.ImportHeaderContacts));
+                        cell.setText(LocaleController.getString(R.string.ImportHeaderContacts));
                     }
                 } else {
                     cell.setText(LocaleController.getString(dialogsCount == 0 && forceUpdatingContacts ? R.string.ConnectingYourContacts : R.string.YourContacts));
@@ -938,20 +938,20 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 cell.setBackgroundColor(Theme.getColor(Theme.key_graySection));
                 switch (((DialogsActivity.DialogsHeader) getItem(i)).headerType) {
                     case DialogsActivity.DialogsHeader.HEADER_TYPE_MY_CHANNELS:
-                        cell.setText(LocaleController.getString("MyChannels", R.string.MyChannels));
+                        cell.setText(LocaleController.getString(R.string.MyChannels));
                         break;
                     case DialogsActivity.DialogsHeader.HEADER_TYPE_MY_GROUPS:
-                        cell.setText(LocaleController.getString("MyGroups", R.string.MyGroups));
+                        cell.setText(LocaleController.getString(R.string.MyGroups));
                         break;
                     case DialogsActivity.DialogsHeader.HEADER_TYPE_GROUPS:
-                        cell.setText(LocaleController.getString("FilterGroups", R.string.FilterGroups));
+                        cell.setText(LocaleController.getString(R.string.FilterGroups));
                         break;
                 }
                 break;
             }
             case VIEW_TYPE_NEW_CHAT_HINT: {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                cell.setText(LocaleController.getString("TapOnThePencil", R.string.TapOnThePencil));
+                cell.setText(LocaleController.getString(R.string.TapOnThePencil));
                 if (arrowDrawable == null) {
                     arrowDrawable = mContext.getResources().getDrawable(R.drawable.arrow_newchat);
                     arrowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4), PorterDuff.Mode.MULTIPLY));
@@ -970,12 +970,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
                 if (requestPeerType != null) {
                     if (requestPeerType instanceof TLRPC.TL_requestPeerTypeBroadcast) {
-                        cell.setTextAndIcon(LocaleController.getString("CreateChannelForThis", R.string.CreateChannelForThis), R.drawable.msg_channel_create, true);
+                        cell.setTextAndIcon(LocaleController.getString(R.string.CreateChannelForThis), R.drawable.msg_channel_create, true);
                     } else {
-                        cell.setTextAndIcon(LocaleController.getString("CreateGroupForThis", R.string.CreateGroupForThis), R.drawable.msg_groups_create, true);
+                        cell.setTextAndIcon(LocaleController.getString(R.string.CreateGroupForThis), R.drawable.msg_groups_create, true);
                     }
                 } else {
-                    cell.setTextAndIcon(LocaleController.getString("CreateGroupForImport", R.string.CreateGroupForImport), R.drawable.msg_groups_create, dialogsCount != 0);
+                    cell.setTextAndIcon(LocaleController.getString(R.string.CreateGroupForImport), R.drawable.msg_groups_create, dialogsCount != 0);
                 }
                 cell.setIsInDialogs();
                 cell.setOffsetFromImage(75);

@@ -139,14 +139,14 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
 
         if (filter != null && filter.isMyChatlist()) {
             AlertDialog alertDialog = new AlertDialog.Builder(fragment.getContext())
-                .setTitle(LocaleController.getString("FilterDelete", R.string.FilterDelete))
-                .setMessage(LocaleController.getString("FilterDeleteAlertLinks", R.string.FilterDeleteAlertLinks))
-                .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (d, w) -> {
+                .setTitle(LocaleController.getString(R.string.FilterDelete))
+                .setMessage(LocaleController.getString(R.string.FilterDeleteAlertLinks))
+                .setNegativeButton(LocaleController.getString(R.string.Cancel), (d, w) -> {
                     if (whenDone != null) {
                         whenDone.run(false);
                     }
                 })
-                .setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (d, w) -> {
+                .setPositiveButton(LocaleController.getString(R.string.Delete), (d, w) -> {
                     showDeleteAlert.run();
                 })
                 .create();
@@ -610,9 +610,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                         } else {
                             TLRPC.Chat chat = getBaseFragment().getMessagesController().getChat(-did);
                             if (ChatObject.isChannelAndNotMegaGroup(chat)) {
-                                text = LocaleController.getString("FolderLinkAlreadySubscribed", R.string.FolderLinkAlreadySubscribed);
+                                text = LocaleController.getString(R.string.FolderLinkAlreadySubscribed);
                             } else {
-                                text = LocaleController.getString("FolderLinkAlreadyJoined", R.string.FolderLinkAlreadyJoined);
+                                text = LocaleController.getString(R.string.FolderLinkAlreadyJoined);
                             }
                             array.add(chat);
                         }
@@ -641,13 +641,13 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
         int count = selectedPeers.size();
         if (button != null) {
             if (deleting) {
-                button.setText(count > 0 ? LocaleController.getString("FolderLinkButtonRemoveChats", R.string.FolderLinkButtonRemoveChats) : LocaleController.getString("FolderLinkButtonRemove", R.string.FolderLinkButtonRemove), animated);
+                button.setText(count > 0 ? LocaleController.getString(R.string.FolderLinkButtonRemoveChats) : LocaleController.getString(R.string.FolderLinkButtonRemove), animated);
             } else if (peers == null || peers.isEmpty()) {
-                button.setText(LocaleController.getString("OK", R.string.OK), animated);
+                button.setText(LocaleController.getString(R.string.OK), animated);
             } else if (invite instanceof TL_chatlists.TL_chatlists_chatlistInvite) {
                 button.setText(LocaleController.formatString("FolderLinkButtonAdd", R.string.FolderLinkButtonAdd, title), animated);
             } else {
-                button.setText(count > 0 ? LocaleController.formatPluralString("FolderLinkButtonJoinPlural", count) : LocaleController.getString("FolderLinkButtonNone", R.string.FolderLinkButtonNone), animated);
+                button.setText(count > 0 ? LocaleController.formatPluralString("FolderLinkButtonJoinPlural", count) : LocaleController.getString(R.string.FolderLinkButtonNone), animated);
             }
             button.setCount(count, animated);
             if (invite instanceof TL_chatlists.TL_chatlists_chatlistInvite) {
@@ -905,13 +905,13 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
     @Override
     protected CharSequence getTitle() {
         if (deleting) {
-            return LocaleController.getString("FolderLinkTitleRemove", R.string.FolderLinkTitleRemove);
+            return LocaleController.getString(R.string.FolderLinkTitleRemove);
         } else if (invite instanceof TL_chatlists.TL_chatlists_chatlistInvite) {
-            return LocaleController.getString("FolderLinkTitleAdd", R.string.FolderLinkTitleAdd);
+            return LocaleController.getString(R.string.FolderLinkTitleAdd);
         } else if (peers == null || peers.isEmpty()) {
-            return LocaleController.getString("FolderLinkTitleAlready", R.string.FolderLinkTitleAlready);
+            return LocaleController.getString(R.string.FolderLinkTitleAlready);
         } else {
-            return LocaleController.getString("FolderLinkTitleAddChats", R.string.FolderLinkTitleAddChats);
+            return LocaleController.getString(R.string.FolderLinkTitleAddChats);
         }
     }
 
@@ -972,9 +972,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                             object = user;
                             name = UserObject.getUserName(user);
                             if (user != null && user.bot) {
-                                status = LocaleController.getString("FilterInviteBot", R.string.FilterInviteBot);
+                                status = LocaleController.getString(R.string.FilterInviteBot);
                             } else {
-                                status = LocaleController.getString("FilterInviteUser", R.string.FilterInviteUser);
+                                status = LocaleController.getString(R.string.FilterInviteUser);
                             }
                         } else if (peer instanceof TLRPC.TL_peerChat) {
                             did = -peer.chat_id;
@@ -995,9 +995,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                             }
                         } else {
                             if (ChatObject.isChannelAndNotMegaGroup(chat)) {
-                                status = LocaleController.getString("ChannelPublic", R.string.ChannelPublic);
+                                status = LocaleController.getString(R.string.ChannelPublic);
                             } else {
-                                status = LocaleController.getString("MegaPublic", R.string.MegaPublic);
+                                status = LocaleController.getString(R.string.MegaPublic);
                             }
                         }
                     }
@@ -1008,7 +1008,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                 } else if (viewType == VIEW_TYPE_HEADER) {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == alreadyHeaderRow) {
-                        headerCell.setText(LocaleController.getString("FolderLinkHeaderAlready", R.string.FolderLinkHeaderAlready), false);
+                        headerCell.setText(LocaleController.getString(R.string.FolderLinkHeaderAlready), false);
                         headerCell.setAction("", null);
                     } else {
                         FolderBottomSheet.this.headerCell = headerCell;
@@ -1023,9 +1023,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                     } else {
                         hintCell.setFixedSize(0);
                         if (deleting) {
-                            hintCell.setText(LocaleController.getString("FolderLinkHintRemove", R.string.FolderLinkHintRemove));
+                            hintCell.setText(LocaleController.getString(R.string.FolderLinkHintRemove));
                         } else {
-                            hintCell.setText(LocaleController.getString("FolderLinkHint", R.string.FolderLinkHint));
+                            hintCell.setText(LocaleController.getString(R.string.FolderLinkHint));
                         }
                     }
                 } else if (viewType == VIEW_TYPE_TITLE) {
@@ -1057,7 +1057,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
         if (filter == null)
             return null;
         if (filter.isDefault())
-            return LocaleController.getString("FilterAllChats", R.string.FilterAllChats);
+            return LocaleController.getString(R.string.FilterAllChats);
         return filter.name;
     }
 
@@ -1289,7 +1289,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
 
             private StaticLayout makeLayout(CharSequence text, boolean selected) {
                 if (text == null || "ALL_CHATS".equals(text.toString())) {
-                    text = LocaleController.getString("FilterAllChats", R.string.FilterAllChats);
+                    text = LocaleController.getString(R.string.FilterAllChats);
                 }
                 return new StaticLayout(text, selected ? selectedTextPaint : paint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1f, 0, false);
             }

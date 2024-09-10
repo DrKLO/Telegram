@@ -307,7 +307,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         bottomTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         bottomTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         bottomTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        bottomTextView.setText(LocaleController.getString("YourEmailInfo", R.string.YourEmailInfo));
+        bottomTextView.setText(LocaleController.getString(R.string.YourEmailInfo));
         linearLayout.addView(bottomTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 40, 30, 40, 0));
 
         resetWaitView = new TextView(context);
@@ -334,7 +334,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         cancelResetButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         cancelResetButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         cancelResetButton.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
-        cancelResetButton.setText(LocaleController.getString("CancelReset", R.string.CancelReset));
+        cancelResetButton.setText(LocaleController.getString(R.string.CancelReset));
         cancelResetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         cancelResetButton.setVisibility(View.GONE);
         frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 56 : 60, Gravity.BOTTOM, 0, 0, 0, 16));
@@ -401,17 +401,17 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             } else if (position == turnPasswordOffRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
-                String text = LocaleController.getString("TurnPasswordOffQuestion", R.string.TurnPasswordOffQuestion);
+                String text = LocaleController.getString(R.string.TurnPasswordOffQuestion);
                 if (currentPassword.has_secure_values) {
-                    text += "\n\n" + LocaleController.getString("TurnPasswordOffPassport", R.string.TurnPasswordOffPassport);
+                    text += "\n\n" + LocaleController.getString(R.string.TurnPasswordOffPassport);
                 }
-                String title = LocaleController.getString("TurnPasswordOffQuestionTitle", R.string.TurnPasswordOffQuestionTitle);
-                String buttonText = LocaleController.getString("Disable", R.string.Disable);
+                String title = LocaleController.getString(R.string.TurnPasswordOffQuestionTitle);
+                String buttonText = LocaleController.getString(R.string.Disable);
 
                 builder.setMessage(text);
                 builder.setTitle(title);
                 builder.setPositiveButton(buttonText, (dialogInterface, i) -> clearPassword());
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 AlertDialog alertDialog = builder.create();
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -439,7 +439,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         updateRows();
 
         if (passwordEntered && delegate == null) {
-            actionBar.setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.TwoStepVerificationTitle));
         } else {
             actionBar.setTitle(null);
         }
@@ -477,7 +477,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setPositiveButton(LocaleController.getString("CancelPasswordResetYes", R.string.CancelPasswordResetYes), (dialog, which) -> {
+        builder.setPositiveButton(LocaleController.getString(R.string.CancelPasswordResetYes), (dialog, which) -> {
             TLRPC.TL_account_declinePasswordReset req = new TLRPC.TL_account_declinePasswordReset();
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response instanceof TLRPC.TL_boolTrue) {
@@ -486,9 +486,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 }
             }));
         });
-        builder.setNegativeButton(LocaleController.getString("CancelPasswordResetNo", R.string.CancelPasswordResetNo), null);
-        builder.setTitle(LocaleController.getString("CancelReset", R.string.CancelReset));
-        builder.setMessage(LocaleController.getString("CancelPasswordReset", R.string.CancelPasswordReset));
+        builder.setNegativeButton(LocaleController.getString(R.string.CancelPasswordResetNo), null);
+        builder.setTitle(LocaleController.getString(R.string.CancelReset));
+        builder.setMessage(LocaleController.getString(R.string.CancelPasswordReset));
         showDialog(builder.create());
     }
 
@@ -503,9 +503,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             needHideProgress();
             if (response instanceof TLRPC.TL_account_resetPasswordOk) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
-                builder.setTitle(LocaleController.getString("ResetPassword", R.string.ResetPassword));
-                builder.setMessage(LocaleController.getString("RestorePasswordResetPasswordOk", R.string.RestorePasswordResetPasswordOk));
+                builder.setNegativeButton(LocaleController.getString(R.string.OK), null);
+                builder.setTitle(LocaleController.getString(R.string.ResetPassword));
+                builder.setMessage(LocaleController.getString(R.string.RestorePasswordResetPasswordOk));
                 showDialog(builder.create(), dialog -> {
                     getNotificationCenter().postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword);
                     finishFragment();
@@ -527,7 +527,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 } else {
                     timeString = LocaleController.formatPluralString("Seconds", Math.max(1, time));
                 }
-                showAlertWithText(LocaleController.getString("ResetPassword", R.string.ResetPassword), LocaleController.formatString("ResetPasswordWait", R.string.ResetPasswordWait, timeString));
+                showAlertWithText(LocaleController.getString(R.string.ResetPassword), LocaleController.formatString("ResetPasswordWait", R.string.ResetPasswordWait, timeString));
             }
         }));
     }
@@ -539,11 +539,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 resetWaitView.setVisibility(View.GONE);
             }
             if (currentPassword.pending_reset_date == 0) {
-                bottomButton.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
+                bottomButton.setText(LocaleController.getString(R.string.ForgotPassword));
                 cancelResetButton.setVisibility(View.GONE);
                 bottomButton.setVisibility(View.VISIBLE);
             } else {
-                bottomButton.setText(LocaleController.getString("ResetPassword", R.string.ResetPassword));
+                bottomButton.setText(LocaleController.getString(R.string.ResetPassword));
                 cancelResetButton.setVisibility(View.VISIBLE);
                 bottomButton.setVisibility(View.VISIBLE);
             }
@@ -607,9 +607,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                         } else {
                             timeString = LocaleController.formatPluralString("Minutes", time / 60);
                         }
-                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        showAlertWithText(LocaleController.getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                     } else {
-                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                        showAlertWithText(LocaleController.getString(R.string.AppName), error.text);
                     }
                 }
             }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
@@ -620,10 +620,10 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             if (currentPassword.pending_reset_date != 0) {
                 if (getConnectionsManager().getCurrentTime() > currentPassword.pending_reset_date) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialog, which) -> resetPassword());
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    builder.setTitle(LocaleController.getString("ResetPassword", R.string.ResetPassword));
-                    builder.setMessage(LocaleController.getString("RestorePasswordResetPasswordText", R.string.RestorePasswordResetPasswordText));
+                    builder.setPositiveButton(LocaleController.getString(R.string.Reset), (dialog, which) -> resetPassword());
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                    builder.setTitle(LocaleController.getString(R.string.ResetPassword));
+                    builder.setMessage(LocaleController.getString(R.string.RestorePasswordResetPasswordText));
                     AlertDialog dialog = builder.create();
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -635,10 +635,10 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 }
             } else {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialog, which) -> resetPassword());
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                builder.setTitle(LocaleController.getString("ResetPassword", R.string.ResetPassword));
-                builder.setMessage(LocaleController.getString("RestorePasswordNoEmailText2", R.string.RestorePasswordNoEmailText2));
+                builder.setPositiveButton(LocaleController.getString(R.string.Reset), (dialog, which) -> resetPassword());
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.ResetPassword));
+                builder.setMessage(LocaleController.getString(R.string.RestorePasswordNoEmailText2));
                 showDialog(builder.create());
             }
         }
@@ -725,7 +725,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 loading = false;
                 currentPassword = (TLRPC.account_Password) response;
                 if (!canHandleCurrentPassword(currentPassword, false)) {
-                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString(R.string.UpdateAppAlert), true);
                     return;
                 }
                 if (!silent || first) {
@@ -906,7 +906,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
         builder.setTitle(title);
         builder.setMessage(text);
         showDialog(builder.create());
@@ -978,9 +978,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                         } else {
                             timeString = LocaleController.formatPluralString("Minutes", time / 60);
                         }
-                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        showAlertWithText(LocaleController.getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                     } else {
-                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                        showAlertWithText(LocaleController.getString(R.string.AppName), error.text);
                     }
                 }
             });
@@ -1088,7 +1088,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                         }
                                     }
                                 } else {
-                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString(R.string.UpdateAppAlert), true);
                                 }
                             });
                         });
@@ -1117,9 +1117,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                 } else {
                                     timeString = LocaleController.formatPluralString("Minutes", time / 60);
                                 }
-                                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                showAlertWithText(LocaleController.getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                             } else {
-                                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                showAlertWithText(LocaleController.getString(R.string.AppName), error.text);
                             }
                         });
                     }
@@ -1205,24 +1205,24 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
                     textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     if (position == changePasswordRow) {
-                        textCell.setText(LocaleController.getString("ChangePassword", R.string.ChangePassword), true);
+                        textCell.setText(LocaleController.getString(R.string.ChangePassword), true);
                     } else if (position == setPasswordRow) {
-                        textCell.setText(LocaleController.getString("SetAdditionalPassword", R.string.SetAdditionalPassword), true);
+                        textCell.setText(LocaleController.getString(R.string.SetAdditionalPassword), true);
                     } else if (position == turnPasswordOffRow) {
-                        textCell.setText(LocaleController.getString("TurnPasswordOff", R.string.TurnPasswordOff), true);
+                        textCell.setText(LocaleController.getString(R.string.TurnPasswordOff), true);
                     } else if (position == changeRecoveryEmailRow) {
-                        textCell.setText(LocaleController.getString("ChangeRecoveryEmail", R.string.ChangeRecoveryEmail), false);
+                        textCell.setText(LocaleController.getString(R.string.ChangeRecoveryEmail), false);
                     } else if (position == setRecoveryEmailRow) {
-                        textCell.setText(LocaleController.getString("SetRecoveryEmail", R.string.SetRecoveryEmail), false);
+                        textCell.setText(LocaleController.getString(R.string.SetRecoveryEmail), false);
                     }
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == setPasswordDetailRow) {
-                        privacyCell.setText(LocaleController.getString("SetAdditionalPasswordInfo", R.string.SetAdditionalPasswordInfo));
+                        privacyCell.setText(LocaleController.getString(R.string.SetAdditionalPasswordInfo));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == passwordEnabledDetailRow) {
-                        privacyCell.setText(LocaleController.getString("EnabledPasswordText", R.string.EnabledPasswordText));
+                        privacyCell.setText(LocaleController.getString(R.string.EnabledPasswordText));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
@@ -1289,11 +1289,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
     private void showSetForcePasswordAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(LocaleController.getString("Warning", R.string.Warning));
+        builder.setTitle(LocaleController.getString(R.string.Warning));
         builder.setMessage(LocaleController.formatPluralString("ForceSetPasswordAlertMessageShort", otherwiseReloginDays));
-        builder.setPositiveButton(LocaleController.getString("TwoStepVerificationSetPassword", R.string.TwoStepVerificationSetPassword), null);
+        builder.setPositiveButton(LocaleController.getString(R.string.TwoStepVerificationSetPassword), null);
 
-        builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
+        builder.setNegativeButton(LocaleController.getString(R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
         AlertDialog alertDialog = builder.show();
         ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_text_RedBold));
     }

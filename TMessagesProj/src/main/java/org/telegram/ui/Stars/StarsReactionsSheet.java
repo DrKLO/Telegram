@@ -122,6 +122,7 @@ public class StarsReactionsSheet extends BottomSheet {
         ChatActivity chatActivity,
         MessageObject messageObject,
         ArrayList<TLRPC.MessageReactor> reactors,
+        boolean sendEnabled,
         Theme.ResourcesProvider resourcesProvider
     ) {
         super(context, false, resourcesProvider);
@@ -178,7 +179,9 @@ public class StarsReactionsSheet extends BottomSheet {
         steps_arr = new int[ steps.size() ];
         for (int i = 0; i < steps.size(); ++i) steps_arr[i] = steps.get(i);
         slider.setSteps(100, steps_arr);
-        topLayout.addView(slider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        if (sendEnabled) {
+            topLayout.addView(slider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
 
         titleView = new TextView(context) {
             @Override
@@ -211,7 +214,7 @@ public class StarsReactionsSheet extends BottomSheet {
 
         LinearLayout topLayoutTextLayout = new LinearLayout(context);
         topLayoutTextLayout.setOrientation(LinearLayout.VERTICAL);
-        topLayout.addView(topLayoutTextLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0,  135 + 44, 0, 15));
+        topLayout.addView(topLayoutTextLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, sendEnabled ? 135 + 44 : 45, 0, 15));
 
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         statusView = new TextView(context);
@@ -221,7 +224,9 @@ public class StarsReactionsSheet extends BottomSheet {
         statusView.setSingleLine(false);
         statusView.setMaxLines(3);
         statusView.setText(AndroidUtilities.replaceTags(me != null ? LocaleController.formatPluralStringComma("StarsReactionTextSent", me.count) : LocaleController.formatString(R.string.StarsReactionText, chat == null ? "" : chat.title)));
-        topLayoutTextLayout.addView(statusView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 40,  0, 40, 0));
+        if (sendEnabled) {
+            topLayoutTextLayout.addView(statusView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 40,  0, 40, 0));
+        }
 
         if (withTopSenders) {
             separatorView = new View(context) {
@@ -272,7 +277,9 @@ public class StarsReactionsSheet extends BottomSheet {
 
             checkSeparatorView = new View(context);
             checkSeparatorView.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
-            layout.addView(checkSeparatorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
+            if (sendEnabled || me != null) {
+                layout.addView(checkSeparatorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
+            }
         } else {
             separatorView = null;
             topSendersView = null;
@@ -308,10 +315,14 @@ public class StarsReactionsSheet extends BottomSheet {
         ScaleStateListAnimator.apply(checkLayout, .05f, 1.2f);
         checkLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
 
-        layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
+        if (sendEnabled || me != null) {
+            layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
+        }
 
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
-        layout.addView(buttonView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 14, 0, 14, 0));
+        if (sendEnabled) {
+            layout.addView(buttonView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 14, 0, 14, 0));
+        }
         updateSenders(0);
         buttonView.setText(StarsIntroActivity.replaceStars(LocaleController.formatString(R.string.StarsReactionSend, LocaleController.formatNumber(50, ',')), starRef), true);
         buttonView.setOnClickListener(v -> {
@@ -323,9 +334,6 @@ public class StarsReactionsSheet extends BottomSheet {
 
             final Runnable send = () -> {
                 Boolean currentAnonymous = messageObject == null ? null : messageObject.isMyPaidReactionAnonymous();
-                if (currentAnonymous == null && messageObject != null) {
-                    StarsController.getInstance(currentAccount).saveAnonymous(messageObject, anonymous);
-                }
                 StarsController.PendingPaidReactions pending = starsController.sendPaidReaction(messageObject, chatActivity, totalStars, false, true, !checkBox.isChecked());
                 if (pending == null) {
                     return;
@@ -352,7 +360,9 @@ public class StarsReactionsSheet extends BottomSheet {
         }));
         termsView.setGravity(Gravity.CENTER);
         termsView.setLinkTextColor(getThemedColor(Theme.key_dialogTextLink));
-        layout.addView(termsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 14, 14, 14, 12));
+        if (sendEnabled) {
+            layout.addView(termsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 14, 14, 14, 12));
+        }
 
         setCustomView(layout);
 
@@ -424,7 +434,6 @@ public class StarsReactionsSheet extends BottomSheet {
         checkedVisiblity = true;
         if (messageObject == null) return;
         Boolean currentAnonymous = messageObject.isMyPaidReactionAnonymous();
-        StarsController.getInstance(currentAccount).saveAnonymous(messageObject, anonymous);
         if (currentAnonymous == null || currentAnonymous != anonymous) {
             messageObject.setMyPaidReactionAnonymous(anonymous);
 
@@ -469,11 +478,11 @@ public class StarsReactionsSheet extends BottomSheet {
 
     private ValueAnimator iconAnimator;
     private void animate3dIcon(Runnable pushed) {
-        if (messageCell == null || !messageCell.isCellAttachedToWindow() || messageCell.getPrimaryMessageObject() == null || messageCell.getPrimaryMessageObject().getId() != messageId) return;
+        if (messageObject == null || chatActivity.fragmentView == null || !chatActivity.fragmentView.isAttachedToWindow()) return;
         ChatMessageCell _cell = messageCell;
-        ReactionsLayoutInBubble.ReactionButton _button = _cell.reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar());
+        ReactionsLayoutInBubble.ReactionButton _button = _cell != null ? _cell.reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar()) : null;
         if (_button == null) {
-            MessageObject.GroupedMessages group = chatActivity.getValidGroupedMessage(messageCell.getPrimaryMessageObject());
+            MessageObject.GroupedMessages group = chatActivity.getValidGroupedMessage(messageObject);
             if (group != null && !group.posArray.isEmpty()) {
                 MessageObject msg = null;
                 for (MessageObject m : group.messages) {
@@ -567,7 +576,9 @@ public class StarsReactionsSheet extends BottomSheet {
                 icon3dView.setVisibility(View.INVISIBLE);
                 icon3dView.setPaused(true);
                 button.drawImage = true;
-                messageCell.invalidate();
+                if (cell != null) {
+                    cell.invalidate();
+                }
 
                 StarsReactionsSheet.super.dismissInternal();
 

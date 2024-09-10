@@ -603,7 +603,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     int months = messageObject.messageOwner.action.months;
                     String monthsEmoticon;
                     if (messageObject.type == MessageObject.TYPE_GIFT_STARS) {
-                        final long stars = ((TLRPC.TL_messageActionGiftStars) messageObject.messageOwner.action).stars;
+                        final long stars;
+                        if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftStars) {
+                            stars = ((TLRPC.TL_messageActionGiftStars) messageObject.messageOwner.action).stars;
+                        } else {
+                            stars = ((TLRPC.TL_messageActionPrizeStars) messageObject.messageOwner.action).stars;
+                        }
                         String emoji;
                         if (stars <= 1000) {
                             emoji = "2⃣";
@@ -1026,8 +1031,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private void openStarsGiftTransaction() {
         if (currentMessageObject == null || currentMessageObject.messageOwner == null) return;
-        if (!(currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftStars)) return;
-        StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, currentMessageObject.messageOwner.date, currentMessageObject.messageOwner.from_id, currentMessageObject.messageOwner.peer_id, (TLRPC.TL_messageActionGiftStars) currentMessageObject.messageOwner.action, avatarStoryParams.resourcesProvider);
+        if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftStars) {
+            StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, currentMessageObject.messageOwner.date, currentMessageObject.messageOwner.from_id, currentMessageObject.messageOwner.peer_id, (TLRPC.TL_messageActionGiftStars) currentMessageObject.messageOwner.action, avatarStoryParams.resourcesProvider);
+        } else if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionPrizeStars) {
+            StarsIntroActivity.showTransactionSheet(getContext(), currentAccount, currentMessageObject.messageOwner.date, currentMessageObject.messageOwner.from_id, currentMessageObject.messageOwner.peer_id, (TLRPC.TL_messageActionPrizeStars) currentMessageObject.messageOwner.action, avatarStoryParams.resourcesProvider);
+        }
     }
 
     private void openLink(CharacterStyle link) {
@@ -1295,15 +1303,30 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             } else if (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM_CHANNEL) {
                 createGiftPremiumChannelLayouts();
             } else if (messageObject.type == MessageObject.TYPE_GIFT_STARS) {
-                final TLRPC.TL_messageActionGiftStars action = (TLRPC.TL_messageActionGiftStars) messageObject.messageOwner.action;
                 final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentMessageObject.getDialogId());
-                createGiftPremiumLayouts(
-                    formatPluralStringComma("ActionGiftStarsTitle", (int) action.stars),
-                    AndroidUtilities.replaceTags(currentMessageObject.isOutOwner() ? formatString(R.string.ActionGiftStarsSubtitle, UserObject.getForcedFirstName(user)) : getString(R.string.ActionGiftStarsSubtitleYou)),
-                    getString(R.string.ActionGiftStarsView),
-                    giftRectSize,
-                    true
-                );
+                final long stars;
+                if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftStars) {
+                    stars = ((TLRPC.TL_messageActionGiftStars) messageObject.messageOwner.action).stars;
+                    createGiftPremiumLayouts(
+                        formatPluralStringComma("ActionGiftStarsTitle", (int) stars),
+                        AndroidUtilities.replaceTags(currentMessageObject.isOutOwner() ? formatString(R.string.ActionGiftStarsSubtitle, UserObject.getForcedFirstName(user)) : getString(R.string.ActionGiftStarsSubtitleYou)),
+                        getString(R.string.ActionGiftStarsView),
+                        giftRectSize,
+                        true
+                    );
+                } else {
+                    stars = ((TLRPC.TL_messageActionPrizeStars) messageObject.messageOwner.action).stars;
+                    createGiftPremiumLayouts(
+                        getString(R.string.ActionStarGiveawayPrizeTitle),
+                        currentMessageObject.messageText,
+                        getString(R.string.ActionGiftStarsView),
+                        giftRectSize,
+                        true
+                    );
+                    textLayout = null;
+                    textHeight = 0;
+                    textY = 0;
+                }
             } else if (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM) {
                 String actionName = getString(isGiftCode() && !isSelfGiftCode() ? R.string.GiftPremiumUseGiftBtn : R.string.ActionGiftPremiumView);
                 createGiftPremiumLayouts(getString(R.string.ActionGiftPremiumTitle), formatString(R.string.ActionGiftPremiumSubtitle, LocaleController.formatPluralString("Months", messageObject.messageOwner.action.months)), actionName, giftRectSize, true);

@@ -385,7 +385,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layout.addView(new Space(context), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 15));
 
                 emptyTextView = new TextView(context);
-                emptyTextView.setText(LocaleController.getString("NoStickersFound", R.string.NoStickersFound));
+                emptyTextView.setText(LocaleController.getString(R.string.NoStickersFound));
                 emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 emptyTextView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelEmptyText));
                 layout.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));

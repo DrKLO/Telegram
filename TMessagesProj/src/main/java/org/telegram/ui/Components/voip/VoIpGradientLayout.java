@@ -328,7 +328,8 @@ public class VoIpGradientLayout extends FrameLayout {
         float halfWidth = getWidth() / 2f;
         float halfHeight = getHeight() / 2f;
         canvas.save();
-        canvas.scale(backgroundProvider.scale, backgroundProvider.scale, halfWidth, halfHeight);
+        final float scale = (float) Math.sqrt(halfWidth * halfWidth + halfHeight * halfWidth) / Math.min(halfHeight, halfWidth);
+        canvas.scale(scale, scale, halfWidth, halfHeight);
         canvas.rotate(backgroundProvider.getDegree(), halfWidth, halfHeight);
 
         backgroundProvider.getLightCanvas().drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);

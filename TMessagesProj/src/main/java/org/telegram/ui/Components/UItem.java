@@ -588,6 +588,16 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static int factoryViewTypeStartsWith = 10_000;
     private static int factoryViewType = 10_000;
     public static abstract class UItemFactory<V extends View> {
+        public static void setup(UItemFactory factory) {
+            if (factoryInstances == null) factoryInstances = new HashMap<>();
+            if (factories == null) factories = new LongSparseArray<>();
+            final Class factoryClass = factory.getClass();
+            if (!factoryInstances.containsKey(factoryClass)) {
+                factoryInstances.put(factoryClass, factory);
+                factories.put(factory.viewType, factory);
+            }
+        };
+
         public final int viewType;
 
         private ArrayList<V> cache;
@@ -656,15 +666,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
         if (factoryInstances == null) factoryInstances = new HashMap<>();
         if (factories == null) factories = new LongSparseArray<>();
         UItemFactory<?> factory = factoryInstances.get(factoryClass);
-        if (factory == null) {
-            try {
-                factoryInstances.put(factoryClass, factory = factoryClass.getDeclaredConstructor().newInstance());
-                factories.put(factory.viewType, factory);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }
-        if (factory == null) throw new RuntimeException("couldnt create factory of " + factoryClass);
+        if (factory == null) throw new RuntimeException("UItemFactory was not setuped: " + factoryClass);
         return factory;
     }
 }

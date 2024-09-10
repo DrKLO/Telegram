@@ -34,7 +34,7 @@ public class ChatListCell extends LinearLayout {
             setWillNotDraw(false);
 
             isThreeLines = threeLines;
-            setContentDescription(threeLines ? LocaleController.getString("ChatListExpanded", R.string.ChatListExpanded) : LocaleController.getString("ChatListDefault", R.string.ChatListDefault));
+            setContentDescription(threeLines ? LocaleController.getString(R.string.ChatListExpanded) : LocaleController.getString(R.string.ChatListDefault));
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
 
@@ -67,7 +67,7 @@ public class ChatListCell extends LinearLayout {
             Theme.dialogs_onlineCirclePaint.setColor(Color.argb((int) (31 * (1.0f - button.getProgress())), r, g, b));
             canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.dialogs_onlineCirclePaint);
 
-            String text = isThreeLines ? LocaleController.getString("ChatListExpanded", R.string.ChatListExpanded) : LocaleController.getString("ChatListDefault", R.string.ChatListDefault);
+            String text = isThreeLines ? LocaleController.getString(R.string.ChatListExpanded) : LocaleController.getString(R.string.ChatListDefault);
             int width = (int) Math.ceil(textPaint.measureText(text));
 
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -97,7 +97,7 @@ public class ChatListCell extends LinearLayout {
             info.setClassName(RadioButton.class.getName());
             info.setChecked(button.isChecked());
             info.setCheckable(true);
-            info.setContentDescription(isThreeLines ? LocaleController.getString("ChatListExpanded", R.string.ChatListExpanded) : LocaleController.getString("ChatListDefault", R.string.ChatListDefault));
+            info.setContentDescription(isThreeLines ? LocaleController.getString(R.string.ChatListExpanded) : LocaleController.getString(R.string.ChatListDefault));
         }
     }
 

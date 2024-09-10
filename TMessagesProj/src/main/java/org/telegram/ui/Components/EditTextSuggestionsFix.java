@@ -15,7 +15,7 @@ import android.util.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-// 😡😡😡 some systems (especially samsung) puts suggestions into the text
+// 😡😡😡 some systems (especially samsung) put suggestions into the text
 // using editable.commitText, this completely removes all of our spans
 public class EditTextSuggestionsFix implements TextWatcher {
 

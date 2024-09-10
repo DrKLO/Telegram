@@ -398,7 +398,7 @@ public final class BulletinFactory {
             layout = singleLineLayout;
         }
         layout.setTimer();
-        layout.setButton(new Bulletin.UndoButton(getContext(), true, textAndIcon, resourcesProvider).setText(LocaleController.getString("Undo", R.string.Undo)).setUndoAction(onUndo).setDelayedAction(onAction));
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, textAndIcon, resourcesProvider).setText(LocaleController.getString(R.string.Undo)).setUndoAction(onUndo).setDelayedAction(onAction));
         return create(layout, Bulletin.DURATION_PROLONG);
     }
 
@@ -472,7 +472,7 @@ public final class BulletinFactory {
         }
 
         if (undoObject != null) {
-            layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(LocaleController.getString("Undo", R.string.Undo)).setUndoAction(undoObject.onUndo).setDelayedAction(undoObject.onAction));
+            layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(LocaleController.getString(R.string.Undo)).setUndoAction(undoObject.onUndo).setDelayedAction(undoObject.onAction));
         }
 
         return create(layout, Bulletin.DURATION_PROLONG);
@@ -662,7 +662,7 @@ public final class BulletinFactory {
             }
             final long startTime = System.currentTimeMillis();
             final long minDuration = 750;
-            Bulletin bulletin = createEmojiLoadingBulletin(document, stringBuilder, LocaleController.getString("ViewAction", R.string.ViewAction), () -> openSet.run(inputStickerSet));
+            Bulletin bulletin = createEmojiLoadingBulletin(document, stringBuilder, LocaleController.getString(R.string.ViewAction), () -> openSet.run(inputStickerSet));
             if (loadingSpan != null && bulletin.getLayout() instanceof Bulletin.LoadingLottieLayout) {
                 loadingSpan.setView(((Bulletin.LoadingLottieLayout) bulletin.getLayout()).textLoadingView);
             }
@@ -677,7 +677,7 @@ public final class BulletinFactory {
                         message = AndroidUtilities.replaceTags(LocaleController.formatString("MessageContainsEmojiPackSingle", R.string.MessageContainsEmojiPackSingle, set.set.title));
                     }
                 } else {
-                    message = LocaleController.getString("AddEmojiNotFound", R.string.AddEmojiNotFound);
+                    message = LocaleController.getString(R.string.AddEmojiNotFound);
                 }
                 AndroidUtilities.runOnUIThread(() -> {
                     bulletin.onLoaded(message);
@@ -693,7 +693,7 @@ public final class BulletinFactory {
             } else {
                 message = AndroidUtilities.replaceTags(LocaleController.formatString("MessageContainsEmojiPackSingle", R.string.MessageContainsEmojiPackSingle, cachedSet.set.title));
             }
-            return createEmojiBulletin(document, message, LocaleController.getString("ViewAction", R.string.ViewAction), () -> openSet.run(inputStickerSet));
+            return createEmojiBulletin(document, message, LocaleController.getString(R.string.ViewAction), () -> openSet.run(inputStickerSet));
         }
     }
 
@@ -715,7 +715,7 @@ public final class BulletinFactory {
     public Bulletin createReportSent(Theme.ResourcesProvider resourcesProvider) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(R.raw.chats_infotip);
-        layout.textView.setText(LocaleController.getString("ReportChatSent", R.string.ReportChatSent));
+        layout.textView.setText(LocaleController.getString(R.string.ReportChatSent));
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
@@ -861,13 +861,13 @@ public final class BulletinFactory {
         if (isPrivate) {
             final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
             layout.setAnimation(R.raw.voip_invite, 36, 36, "Wibe", "Circle");
-            layout.titleTextView.setText(LocaleController.getString("LinkCopied", R.string.LinkCopied));
-            layout.subtitleTextView.setText(LocaleController.getString("LinkCopiedPrivateInfo", R.string.LinkCopiedPrivateInfo));
+            layout.titleTextView.setText(LocaleController.getString(R.string.LinkCopied));
+            layout.subtitleTextView.setText(LocaleController.getString(R.string.LinkCopiedPrivateInfo));
             return create(layout, Bulletin.DURATION_LONG);
         } else {
             final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
             layout.setAnimation(R.raw.voip_invite, 36, 36, "Wibe", "Circle");
-            layout.textView.setText(LocaleController.getString("LinkCopied", R.string.LinkCopied));
+            layout.textView.setText(LocaleController.getString(R.string.LinkCopied));
             return create(layout, Bulletin.DURATION_SHORT);
         }
     }
@@ -941,11 +941,11 @@ public final class BulletinFactory {
                 mute = true;
                 break;
             case NotificationsController.SETTING_MUTE_FOREVER:
-                text = LocaleController.getString("NotificationsMutedHint", R.string.NotificationsMutedHint);
+                text = LocaleController.getString(R.string.NotificationsMutedHint);
                 mute = true;
                 break;
             case NotificationsController.SETTING_MUTE_UNMUTE:
-                text = LocaleController.getString("NotificationsUnmutedHint", R.string.NotificationsUnmutedHint);
+                text = LocaleController.getString(R.string.NotificationsUnmutedHint);
                 mute = false;
                 break;
             default:
@@ -1005,8 +1005,8 @@ public final class BulletinFactory {
         if (hide) {
             final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(fragment.getParentActivity(), resourcesProvider);
             layout.setAnimation(R.raw.ic_unpin, 28, 28, "Pin", "Line");
-            layout.titleTextView.setText(LocaleController.getString("PinnedMessagesHidden", R.string.PinnedMessagesHidden));
-            layout.subtitleTextView.setText(LocaleController.getString("PinnedMessagesHiddenInfo", R.string.PinnedMessagesHiddenInfo));
+            layout.titleTextView.setText(LocaleController.getString(R.string.PinnedMessagesHidden));
+            layout.subtitleTextView.setText(LocaleController.getString(R.string.PinnedMessagesHiddenInfo));
             buttonLayout = layout;
         } else {
             final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), resourcesProvider);
@@ -1061,7 +1061,7 @@ public final class BulletinFactory {
         int hapticDelay = -1;
         if (dialogsCount <= 1) {
             if (did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
-                text = AndroidUtilities.replaceTags(LocaleController.getString("InvLinkToSavedMessages", R.string.InvLinkToSavedMessages));
+                text = AndroidUtilities.replaceTags(LocaleController.getString(R.string.InvLinkToSavedMessages));
                 layout.setAnimation(R.raw.saved_messages, 30, 30);
             } else {
                 if (DialogObject.isChatDialog(did)) {
@@ -1194,10 +1194,10 @@ public final class BulletinFactory {
         final String text;
         if (banned) {
             layout.setAnimation(R.raw.ic_ban, "Hand");
-            text = LocaleController.getString("UserBlocked", R.string.UserBlocked);
+            text = LocaleController.getString(R.string.UserBlocked);
         } else {
             layout.setAnimation(R.raw.ic_unban, "Main", "Finger 1", "Finger 2", "Finger 3", "Finger 4");
-            text = LocaleController.getString("UserUnblocked", R.string.UserUnblocked);
+            text = LocaleController.getString(R.string.UserUnblocked);
         }
         layout.textView.setText(AndroidUtilities.replaceTags(text));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
@@ -1209,10 +1209,10 @@ public final class BulletinFactory {
         final String text;
         if (banned) {
             layout.setAnimation(R.raw.ic_ban, "Hand");
-            text = LocaleController.getString("UserBlocked", R.string.UserBlocked);
+            text = LocaleController.getString(R.string.UserBlocked);
         } else {
             layout.setAnimation(R.raw.ic_unban, "Main", "Finger 1", "Finger 2", "Finger 3", "Finger 4");
-            text = LocaleController.getString("UserUnblocked", R.string.UserUnblocked);
+            text = LocaleController.getString(R.string.UserUnblocked);
         }
         layout.textView.setText(AndroidUtilities.replaceTags(text));
         return create(layout, Bulletin.DURATION_SHORT);
@@ -1258,11 +1258,11 @@ public final class BulletinFactory {
 
         switch (setting) {
             case NotificationsController.SETTING_SOUND_ON:
-                text = LocaleController.getString("SoundOnHint", R.string.SoundOnHint);
+                text = LocaleController.getString(R.string.SoundOnHint);
                 soundOn = true;
                 break;
             case NotificationsController.SETTING_SOUND_OFF:
-                text = LocaleController.getString("SoundOffHint", R.string.SoundOffHint);
+                text = LocaleController.getString(R.string.SoundOffHint);
                 soundOn = false;
                 break;
             default:

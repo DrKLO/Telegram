@@ -423,6 +423,35 @@ public class ScrimOptions extends Dialog {
             layoutOriginalWidth = textblock.originalWidth;
         }
 
+        if (blockNum == -1 && cell.getDescriptionlayout() != null) {
+            StaticLayout textlayout = cell.getDescriptionlayout();
+            for (int i = 0; i == 0; ++i) {
+                if (textlayout == null) continue;
+                if (!(textlayout.getText() instanceof Spanned)) continue;
+
+                CharacterStyle[] spans = ((Spanned) textlayout.getText()).getSpans(0, textlayout.getText().length(), CharacterStyle.class);
+                if (spans == null) continue;
+                boolean found = false;
+                for (int j = 0; j < spans.length; ++j) {
+                    if (spans[j] == link) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) continue;
+
+                layout = textlayout;
+
+                start = ((Spanned) textlayout.getText()).getSpanStart(link);
+                end = ((Spanned) textlayout.getText()).getSpanEnd(link);
+
+                x = cell.getDescriptionLayoutX();
+                y = cell.getDescriptionLayoutY();
+
+                layoutOriginalWidth = textlayout.getWidth();
+            }
+        }
+
         if (layout == null) return;
 
         RectF realPathBounds = null;
@@ -512,7 +541,6 @@ public class ScrimOptions extends Dialog {
             }
         }
         final StaticLayout finalLayout = MessageObject.makeStaticLayout(text, paint, layoutOriginalWidth, 1f, messageObject.totalAnimatedEmojiCount >= 4 ? -1 : 0, false);
-        final int finalBlockNum = blockNum;
         final int[] pos = new int[2];
         cell.getLocationOnScreen(pos);
         final int[] pos2 = new int[2];
@@ -555,13 +583,7 @@ public class ScrimOptions extends Dialog {
                 }
                 canvas.clipPath(path);
 
-                canvas.save();
                 finalLayout.draw(canvas);
-//                if (cell != null && cell.linkBlockNum == finalBlockNum) {
-//                    cell.links.draw(canvas);
-//                }
-//                cell.drawProgressLoadingLink(canvas, finalBlockNum);
-                canvas.restore();
 
                 canvas.restore();
             }
@@ -586,8 +608,8 @@ public class ScrimOptions extends Dialog {
             if (left + pathBounds.width() > AndroidUtilities.displaySize.x - dp(8)) {
                 scrimDrawableTx2 -= (left + pathBounds.width()) - (AndroidUtilities.displaySize.x - dp(8));
             }
-            if (top + pathBounds.height() > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight - dp(8)) {
-                scrimDrawableTy2 -= (top + pathBounds.height()) - (AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight - dp(8));
+            if (top + pathBounds.height() > AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.navigationBarHeight - dp(8)) {
+                scrimDrawableTy2 -= (top + pathBounds.height()) - (AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.navigationBarHeight - dp(8));
             }
             if (realPathBounds != null) {
                 scrimDrawableSw = realPathBounds.width() / pathBounds.width();

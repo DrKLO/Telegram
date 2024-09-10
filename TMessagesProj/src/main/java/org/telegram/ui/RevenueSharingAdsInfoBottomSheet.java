@@ -64,7 +64,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         linearLayout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 28, 0, 0));
 
         TextView topTitle = new TextView(context);
-        topTitle.setText(LocaleController.getString("AboutRevenueSharingAds", R.string.AboutRevenueSharingAds));
+        topTitle.setText(LocaleController.getString(R.string.AboutRevenueSharingAds));
         topTitle.setTypeface(AndroidUtilities.bold());
         topTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         topTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -72,16 +72,16 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         linearLayout.addView(topTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 14, 22, 0));
 
         TextView topSubtitle = new TextView(context);
-        topSubtitle.setText(LocaleController.getString("RevenueSharingAdsAlertSubtitle", R.string.RevenueSharingAdsAlertSubtitle));
+        topSubtitle.setText(LocaleController.getString(R.string.RevenueSharingAdsAlertSubtitle));
         topSubtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         topSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         topSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(topSubtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 8, 22, 0));
 
-        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString("RevenueSharingAdsInfo1Title", R.string.RevenueSharingAdsInfo1Title), LocaleController.getString("RevenueSharingAdsInfo1Subtitle", R.string.RevenueSharingAdsInfo1Subtitle));
+        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString(R.string.RevenueSharingAdsInfo1Title), LocaleController.getString(R.string.RevenueSharingAdsInfo1Subtitle));
         linearLayout.addView(info1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 20, 0, 0));
 
-        FrameLayout info2 = new FeatureCell(context, R.drawable.menu_feature_split, LocaleController.getString("RevenueSharingAdsInfo2Title", R.string.RevenueSharingAdsInfo2Title), LocaleController.getString("RevenueSharingAdsInfo2Subtitle", R.string.RevenueSharingAdsInfo2Subtitle));
+        FrameLayout info2 = new FeatureCell(context, R.drawable.menu_feature_split, LocaleController.getString(R.string.RevenueSharingAdsInfo2Title), LocaleController.getString(R.string.RevenueSharingAdsInfo2Subtitle));
         linearLayout.addView(info2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16, 0, 0));
 
         String info3DescriptionString = LocaleController.formatString("RevenueSharingAdsInfo3Subtitle", R.string.RevenueSharingAdsInfo3Subtitle, MessagesController.getInstance(baseFragment.getCurrentAccount()).channelRestrictSponsoredLevelMin);
@@ -91,7 +91,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
             dismiss();
         });
 
-        FrameLayout info3 = new FeatureCell(context, R.drawable.menu_feature_noads, LocaleController.getString("RevenueSharingAdsInfo3Title", R.string.RevenueSharingAdsInfo3Title), info3Description);
+        FrameLayout info3 = new FeatureCell(context, R.drawable.menu_feature_noads, LocaleController.getString(R.string.RevenueSharingAdsInfo3Title), info3Description);
         linearLayout.addView(info3, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16, 0, 0));
 
         View divider = new View(getContext());
@@ -101,7 +101,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         linearLayout.addView(divider, dividerLayoutParams);
 
         TextView textViewDescription4 = new TextView(context);
-        textViewDescription4.setText(LocaleController.getString("RevenueSharingAdsInfo4Title", R.string.RevenueSharingAdsInfo4Title));
+        textViewDescription4.setText(LocaleController.getString(R.string.RevenueSharingAdsInfo4Title));
         textViewDescription4.setTypeface(AndroidUtilities.bold());
         textViewDescription4.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textViewDescription4.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -110,7 +110,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
 
         SpannableStringBuilder bottomSubtitle1 = AndroidUtilities.replaceTags(LocaleController.getString(R.string.RevenueSharingAdsInfo4Subtitle2));
         String bottomSubtitle2 = getString(R.string.RevenueSharingAdsInfo4SubtitleLearnMore);
-        SpannableStringBuilder stringBuilder2 = AndroidUtilities.replaceSingleTag(bottomSubtitle2, Theme.key_chat_messageLinkIn, 0, () -> Browser.openUrl(getContext(), LocaleController.getString("PromoteUrl", R.string.PromoteUrl)));
+        SpannableStringBuilder stringBuilder2 = AndroidUtilities.replaceSingleTag(bottomSubtitle2, Theme.key_chat_messageLinkIn, 0, () -> Browser.openUrl(getContext(), LocaleController.getString(R.string.PromoteUrl)));
         SpannableString arrowStr = new SpannableString(">");
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.attach_arrow_right);
         span.setOverrideColor(Theme.getColor(Theme.key_chat_messageLinkIn));
@@ -135,7 +135,7 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setText(LocaleController.getString("RevenueSharingAdsAlertButton", R.string.RevenueSharingAdsAlertButton));
+        buttonTextView.setText(LocaleController.getString(R.string.RevenueSharingAdsAlertButton));
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 6));
         buttonTextView.setOnClickListener(e -> dismiss());
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 14, 22, 14, 14));

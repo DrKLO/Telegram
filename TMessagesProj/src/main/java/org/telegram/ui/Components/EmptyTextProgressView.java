@@ -78,7 +78,7 @@ public class EmptyTextProgressView extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTextColor(getThemedColor(Theme.key_emptyListPlaceholder));
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
-        textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        textView.setText(LocaleController.getString(R.string.NoResult));
         textViewLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         addView(textViewLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));

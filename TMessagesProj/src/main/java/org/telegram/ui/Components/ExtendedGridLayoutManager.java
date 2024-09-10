@@ -85,9 +85,17 @@ public class ExtendedGridLayoutManager extends GridLayoutManager {
             } else {
                 requiredSpan = Math.min(spanCount, (int) Math.floor(spanCount * (size.width / size.height * preferredRowSize / viewPortAvailableSize)));
                 moveToNewRow = spanLeft < requiredSpan || requiredSpan > 33 && spanLeft < requiredSpan - 15;
+                if (size.full) {
+                    itemSpans.put(a, spanLeft);
+                    rowsCount++;
+                    currentItemsSpanAmount = 0;
+                    currentItemsInRow = 0;
+                    spanLeft = spanCount;
+                    continue;
+                }
             }
             if (moveToNewRow) {
-                if (spanLeft != 0) {
+                if (spanLeft != 0 && currentItemsInRow != 0) {
                     int spanPerItem = spanLeft / currentItemsInRow;
                     for (int start = a - currentItemsInRow, b = start; b < start + currentItemsInRow; b++) {
                         if (b == start + currentItemsInRow - 1) {

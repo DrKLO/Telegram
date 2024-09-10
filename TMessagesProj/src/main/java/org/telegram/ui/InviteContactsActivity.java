@@ -323,7 +323,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("InviteFriends", R.string.InviteFriends));
+        actionBar.setTitle(LocaleController.getString(R.string.InviteFriends));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -432,7 +432,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         spansContainer.addView(editText);
-        editText.setHintText(LocaleController.getString("SearchFriends", R.string.SearchFriends));
+        editText.setHintText(LocaleController.getString(R.string.SearchFriends));
         editText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
             public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
                 return false;
@@ -495,8 +495,8 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                     listView.setVerticalScrollBarEnabled(true);
                     emptyView.showProgress(true);
                     emptyView.setStickerType(StickerEmptyView.STICKER_TYPE_SEARCH);
-                    emptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                    emptyView.subtitle.setText(LocaleController.getString("SearchEmptyViewFilteredSubtitle2", R.string.SearchEmptyViewFilteredSubtitle2));
+                    emptyView.title.setText(LocaleController.getString(R.string.NoResult));
+                    emptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
                 } else {
                     closeSearch();
                 }
@@ -510,7 +510,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         emptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_NO_CONTACTS);
         emptyView.addView(flickerLoadingView, 0);
         emptyView.setAnimateLayoutChange(true);
-        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
         emptyView.subtitle.setText("");
         emptyView.showProgress(ContactsController.getInstance(currentAccount).isLoadingContacts());
 
@@ -594,7 +594,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         infoTextView.setBackgroundColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         infoTextView.setTextColor(Theme.getColor(Theme.key_contacts_inviteText));
         infoTextView.setGravity(Gravity.CENTER);
-        infoTextView.setText(LocaleController.getString("InviteFriendsHelp", R.string.InviteFriendsHelp));
+        infoTextView.setText(LocaleController.getString(R.string.InviteFriendsHelp));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         infoTextView.setTypeface(AndroidUtilities.bold());
         infoTextView.setPadding(AndroidUtilities.dp(17), AndroidUtilities.dp(9), AndroidUtilities.dp(17), AndroidUtilities.dp(9));
@@ -646,7 +646,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         textView.setTextColor(Theme.getColor(Theme.key_contacts_inviteText));
         textView.setGravity(Gravity.CENTER);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        textView.setText(LocaleController.getString("InviteToTelegram", R.string.InviteToTelegram).toUpperCase());
+        textView.setText(LocaleController.getString(R.string.InviteToTelegram).toUpperCase());
         textView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
@@ -722,7 +722,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         listView.setVerticalScrollBarEnabled(false);
         emptyView.showProgress(false);
         emptyView.setStickerType(StickerEmptyView.STICKER_TYPE_NO_CONTACTS);
-        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
         emptyView.subtitle.setText("");
     }
 
@@ -778,7 +778,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             switch (viewType) {
                 case 1:
                     view = new InviteTextCell(context);
-                    ((InviteTextCell) view).setTextAndIcon(LocaleController.getString("ShareTelegram", R.string.ShareTelegram), R.drawable.share);
+                    ((InviteTextCell) view).setTextAndIcon(LocaleController.getString(R.string.ShareTelegram), R.drawable.share);
                     break;
                 default:
                     view = new InviteUserCell(context, true);
