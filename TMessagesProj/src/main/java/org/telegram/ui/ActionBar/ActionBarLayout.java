@@ -1532,7 +1532,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             FileLog.d("present fragment " + fragment.getClass().getSimpleName() + " args=" + fragment.getArguments());
         }
         StoryViewer.closeGlobalInstances();
-        LaunchActivity.dismissAllWeb();
+        if (bottomSheetTabs != null && !bottomSheetTabs.doNotDismiss) {
+            LaunchActivity.dismissAllWeb();
+        }
         if (inPreviewMode && transitionAnimationPreviewMode) {
             if (delayedOpenAnimationRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);

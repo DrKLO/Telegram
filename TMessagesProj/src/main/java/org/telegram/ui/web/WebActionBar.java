@@ -21,6 +21,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -80,6 +81,8 @@ public class WebActionBar extends FrameLayout {
     public int textColor, iconColor;
     public int addressBackgroundColor, addressTextColor;
 
+    public final TextPaint titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
     public boolean isMenuShown = false;
 
     public int height = dp(56);
@@ -129,6 +132,9 @@ public class WebActionBar extends FrameLayout {
     public WebActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+
+        titlePaint.setTypeface(AndroidUtilities.bold());
+        titlePaint.setTextSize(dp(18.33f));
 
         for (int i = 0; i < 2; ++i) {
             backgroundPaint[i] = new Paint(Paint.ANTI_ALIAS_FLAG);

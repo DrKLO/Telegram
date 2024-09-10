@@ -78,6 +78,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     private long dialogId;
     private long topicId;
     private String hashtag;
+    private int storiesCount;
     private FrameLayout titlesContainer;
     private FrameLayout[] titles = new FrameLayout[2];
     private SimpleTextView[] nameTextView = new SimpleTextView[2];
@@ -113,6 +114,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         dialogId = getArguments().getLong("dialog_id");
         topicId = getArguments().getLong("topic_id", 0);
         hashtag = getArguments().getString("hashtag", "");
+        storiesCount = getArguments().getInt("storiesCount", -1);
         int defaultTab = SharedMediaLayout.TAB_PHOTOVIDEO;
         if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             defaultTab = SharedMediaLayout.TAB_ARCHIVED_STORIES;
@@ -343,36 +345,32 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
         boolean hasAvatar = type == TYPE_MEDIA;
 
-        if (type == TYPE_STORIES_SEARCH) {
-            actionBar.setTitle(hashtag);
-        } else {
-            titlesContainer = new FrameLayout(context);
-            avatarContainer.addView(titlesContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-            for (int i = 0; i < (type == TYPE_STORIES ? 2 : 1); ++i) {
-                titles[i] = new FrameLayout(context);
-                titlesContainer.addView(titles[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        titlesContainer = new FrameLayout(context);
+        avatarContainer.addView(titlesContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        for (int i = 0; i < (type == TYPE_STORIES ? 2 : 1); ++i) {
+            titles[i] = new FrameLayout(context);
+            titlesContainer.addView(titles[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-                nameTextView[i] = new SimpleTextView(context);
-                nameTextView[i].setPivotX(0);
-                nameTextView[i].setPivotY(dp(9));
+            nameTextView[i] = new SimpleTextView(context);
+            nameTextView[i].setPivotX(0);
+            nameTextView[i].setPivotY(dp(9));
 
-                nameTextView[i].setTextSize(18);
-                nameTextView[i].setGravity(Gravity.LEFT);
-                nameTextView[i].setTypeface(AndroidUtilities.bold());
-                nameTextView[i].setLeftDrawableTopPadding(-dp(1.3f));
-                nameTextView[i].setScrollNonFitText(true);
-                nameTextView[i].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-                titles[i].addView(nameTextView[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, hasAvatar ? 118 : 72, 0, 56, 0));
+            nameTextView[i].setTextSize(18);
+            nameTextView[i].setGravity(Gravity.LEFT);
+            nameTextView[i].setTypeface(AndroidUtilities.bold());
+            nameTextView[i].setLeftDrawableTopPadding(-dp(1.3f));
+            nameTextView[i].setScrollNonFitText(true);
+            nameTextView[i].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            titles[i].addView(nameTextView[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, hasAvatar ? 118 : 72, 0, 56, 0));
 
-                subtitleTextView[i] = new AnimatedTextView(context, true, true, true);
-                subtitleTextView[i].setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
-                subtitleTextView[i].setTextSize(AndroidUtilities.dp(14));
-                subtitleTextView[i].setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
-                titles[i].addView(subtitleTextView[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, hasAvatar ? 118 : 72, 0, 56, 0));
+            subtitleTextView[i] = new AnimatedTextView(context, true, true, true);
+            subtitleTextView[i].setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+            subtitleTextView[i].setTextSize(AndroidUtilities.dp(14));
+            subtitleTextView[i].setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+            titles[i].addView(subtitleTextView[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, hasAvatar ? 118 : 72, 0, 56, 0));
 
-                if (i != 0) {
-                    titles[i].setAlpha(0f);
-                }
+            if (i != 0) {
+                titles[i].setAlpha(0f);
             }
         }
 
@@ -754,7 +752,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         }
         TLObject avatarObject = null;
         if (type == TYPE_STORIES_SEARCH) {
-
+            nameTextView[0].setText(hashtag);
+            if (storiesCount != -1) {
+                subtitleTextView[0].setText(LocaleController.formatPluralStringSpaced("FoundStories", storiesCount));
+            }
         } else if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
             nameTextView[0].setText(LocaleController.getString("ProfileStoriesArchive"));
         } else if (type == TYPE_STORIES) {
@@ -868,6 +869,9 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             return;
         }
         int id = sharedMediaLayout.getClosestTab();
+        if (type == TYPE_STORIES_SEARCH && id != SharedMediaLayout.TAB_STORIES) {
+            return;
+        }
         int[] mediaCount = sharedMediaPreloader.getLastMediaCount();
         final boolean animated = !LocaleController.isRTL;
         int i;
@@ -888,8 +892,15 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             int count = sharedMediaLayout.getStoriesCount(SharedMediaLayout.TAB_STORIES);
             if (count > 0) {
-                showSubtitle(0, true, true);
-                subtitleTextView[0].setText(LocaleController.formatPluralString("ProfileMyStoriesCount", count), animated);
+                if (type == TYPE_STORIES_SEARCH) {
+                    if (TextUtils.isEmpty(subtitleTextView[0].getText())) {
+                        showSubtitle(0, true, true);
+                        subtitleTextView[0].setText(LocaleController.formatPluralStringSpaced("FoundStories", count), animated);
+                    }
+                } else {
+                    showSubtitle(0, true, true);
+                    subtitleTextView[0].setText(LocaleController.formatPluralString("ProfileMyStoriesCount", count), animated);
+                }
             } else {
                 showSubtitle(0, false, true);
             }

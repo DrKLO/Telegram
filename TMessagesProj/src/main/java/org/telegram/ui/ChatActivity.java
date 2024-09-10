@@ -7092,6 +7092,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     Bundle args = new Bundle();
                     args.putInt("type", MediaActivity.TYPE_STORIES_SEARCH);
                     args.putString("hashtag", messagesSearchAdapter.storiesList.query);
+                    args.putInt("storiesCount", messagesSearchAdapter.storiesList.getCount());
                     presentFragment(new MediaActivity(args, null));
                 } else if (obj instanceof MessageObject) {
                     openMessageInOriginalDialog((MessageObject) obj);
@@ -35401,7 +35402,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             if (!asForward && chat != null && chat.signature_profiles) {
                 MessageObject msg = cell.getMessageObject();
-                if (msg != null) {
+                if (msg != null && msg.getDialogId() != UserObject.REPLY_BOT) {
                     long did = DialogObject.getPeerDialogId(msg.messageOwner.from_id);
                     openUserProfile(did);
                     return;
@@ -35915,6 +35916,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 						popupLayout.addView(removeTag);
 						scrimPopupContainerLayout.addView(popupLayout);
 					} else if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.reactions != null && messageObject.messageOwner.reactions.can_see_list || dialog_id >= 0) {
+                        if (reaction.reaction instanceof TLRPC.TL_reactionCustomEmoji) {
+                            button.stopAnimation();
+                        }
 						scrimPopupContainerLayout.addView(new ReactedUsersListView(getParentActivity(), themeDelegate, currentAccount, messageObject, reaction, false, false)
 								.setOnCustomEmojiSelectedListener((reactedUsersListView1, customEmojiStickerSets) -> {
 									EmojiPacksAlert alert = new EmojiPacksAlert(ChatActivity.this, getParentActivity(), themeDelegate, customEmojiStickerSets) {
@@ -35946,6 +35950,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         TLRPC.TL_reactionCustomEmoji customEmoji = (TLRPC.TL_reactionCustomEmoji) reaction.reaction;
                         TLRPC.InputStickerSet inputStickerSet = AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).findStickerSet(customEmoji.document_id);
                         if (inputStickerSet != null) {
+                            button.stopAnimation();
                             ArrayList<TLRPC.InputStickerSet> arr = new ArrayList<TLRPC.InputStickerSet>();
                             arr.add(inputStickerSet);
                             MessageContainsEmojiButton setButton = new MessageContainsEmojiButton(currentAccount, getContext(), themeDelegate, arr, MessageContainsEmojiButton.SINGLE_REACTION_TYPE);

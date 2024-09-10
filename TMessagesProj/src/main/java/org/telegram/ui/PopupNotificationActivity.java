@@ -536,6 +536,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         AndroidUtilities.checkDisplaySize(this, newConfig);
+        AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         fixLayout();
     }
 

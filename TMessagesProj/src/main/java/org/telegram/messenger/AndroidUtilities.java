@@ -272,6 +272,7 @@ public class AndroidUtilities {
     public static float density = 1;
     public static Point displaySize = new Point();
     public static float screenRefreshRate = 60;
+    public static float screenMaxRefreshRate = 60;
     public static float screenRefreshTime = 1000 / screenRefreshRate;
     public static int roundMessageSize;
     public static int roundPlayingMessageSize;
@@ -2565,6 +2566,17 @@ public class AndroidUtilities {
                     display.getMetrics(displayMetrics);
                     display.getSize(displaySize);
                     screenRefreshRate = display.getRefreshRate();
+                    screenMaxRefreshRate = screenRefreshRate;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        float[] rates = display.getSupportedRefreshRates();
+                        if (rates != null) {
+                            for (int i = 0; i < rates.length; ++i) {
+                                if (rates[i] > screenMaxRefreshRate) {
+                                    screenMaxRefreshRate = rates[i];
+                                }
+                            }
+                        }
+                    }
                     screenRefreshTime = 1000 / screenRefreshRate;
                 }
             }
@@ -2598,6 +2610,35 @@ public class AndroidUtilities {
             touchSlop = vc.getScaledTouchSlop();
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public static void setPreferredMaxRefreshRate(Window window) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        if (window == null) return;
+        final WindowManager wm = window.getWindowManager();
+        if (wm == null) return;
+        WindowManager.LayoutParams params = window.getAttributes();
+        params.preferredRefreshRate = screenMaxRefreshRate;
+        try {
+            wm.updateViewLayout(window.getDecorView(), params);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static void setPreferredMaxRefreshRate(WindowManager wm, View windowView, WindowManager.LayoutParams params) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        if (wm == null) return;
+        if (Math.abs(params.preferredRefreshRate - screenMaxRefreshRate) > 0.2) {
+            params.preferredRefreshRate = screenMaxRefreshRate;
+            if (windowView.isAttachedToWindow()) {
+                try {
+                    wm.updateViewLayout(windowView, params);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
         }
     }
 
@@ -3504,6 +3545,9 @@ public class AndroidUtilities {
             wholeString = name2;
         } else if (name2 != null && name2.length() != 0) {
             wholeString += " " + name2;
+        }
+        if (wholeString == null) {
+            return "";
         }
         wholeString = wholeString.trim();
         String lower = " " + wholeString.toLowerCase();

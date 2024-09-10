@@ -8,9 +8,7 @@
 
 package org.telegram.ui.Adapters;
 
-import static org.telegram.messenger.AndroidUtilities.checkAndroidTheme;
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.statusBarHeight;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -317,7 +315,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
             avatarsDrawable.setCount(actualCount);
             avatarsDrawable.commitTransition(false);
 
-            titleTextView.setText(LocaleController.formatPluralString("HashtagStoriesFound", list.getCount()));
+            titleTextView.setText(LocaleController.formatPluralStringSpaced("HashtagStoriesFound", list.getCount()));
             subtitleTextView.setText(LocaleController.formatString(R.string.HashtagStoriesFoundSubtitle, list.query));
         }
 

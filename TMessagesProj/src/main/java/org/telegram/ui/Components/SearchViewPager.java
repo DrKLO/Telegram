@@ -481,6 +481,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 //            MessagesController.getInstance(currentAccount).getChannelRecommendations(0);
             botsSearchAdapter.search(query);
             botsEmptyView.setKeyboardHeight(keyboardSize, false);
+            if (TextUtils.isEmpty(query)) {
+                botsSearchAdapter.checkBottom();
+            }
         } else if (view == searchContainer) {
             if (dialogId == 0 && minDate == 0 && maxDate == 0 || forumDialogId != 0) {
                 lastSearchScrolledToTop = false;

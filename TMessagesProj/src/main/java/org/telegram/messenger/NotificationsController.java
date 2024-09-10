@@ -963,6 +963,7 @@ public class NotificationsController extends BaseController {
     }
 
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast, boolean isFcm, CountDownLatch countDownLatch) {
+        FileLog.d("NotificationsController: processNewMessages msgs.size()=" + (messageObjects == null ? "null" : messageObjects.size()) + " isLast=" + isLast + " isFcm=" + isFcm + ")");
         if (messageObjects.isEmpty()) {
             if (countDownLatch != null) {
                 countDownLatch.countDown();
@@ -988,6 +989,7 @@ public class NotificationsController extends BaseController {
                         messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetMessagesTTL ||
                         messageObject.messageOwner.silent && (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionContactSignUp || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined)) ||
                         MessageObject.isTopicActionMessage(messageObject)) {
+                    FileLog.d("skipped message because 1");
                     continue;
                 }
                 if (messageObject.isStoryPush) {
@@ -1062,9 +1064,11 @@ public class NotificationsController extends BaseController {
                             getMessagesStorage().putPushMessage(messageObject);
                         }
                     }
+                    FileLog.d("skipped message because old message with same dialog and message ids exist: did=" + did + ", mid="+mid);
                     continue;
                 }
                 if (edited) {
+                    FileLog.d("skipped message because edited");
                     continue;
                 }
                 if (isFcm) {
@@ -1077,10 +1081,12 @@ public class NotificationsController extends BaseController {
                     if (!isFcm) {
                         playInChatSound();
                     }
+                    FileLog.d("skipped message because chat is already opened (openedDialogId = " + openedDialogId + ")");
                     continue;
                 }
                 if (messageObject.messageOwner.mentioned) {
                     if (!allowPinned && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
+                        FileLog.d("skipped message because message is mention of pinned");
                         continue;
                     }
                     dialogId = messageObject.getFromChatId();
@@ -1099,6 +1105,7 @@ public class NotificationsController extends BaseController {
                     int notifyOverride = getNotifyOverride(preferences, dialogId, topicId);
                     if (notifyOverride == -1) {
                         value = isGlobalNotificationsEnabled(dialogId, isChannel, messageObject.isReactionPush, messageObject.isStoryReactionPush);
+                        FileLog.d("NotificationsController: process new messages, isGlobalNotificationsEnabled("+dialogId+", "+isChannel+", "+messageObject.isReactionPush+", "+messageObject.isStoryReactionPush+") = " + value);
                         /*if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
                             FileLog.d("global notify settings for " + dialog_id + " = " + value);
                         }*/
@@ -1109,6 +1116,7 @@ public class NotificationsController extends BaseController {
                     settingsCache.put(dialogId, value);
                 }
 
+                FileLog.d("NotificationsController: process new messages, value is " + value + " ("+dialogId+", "+isChannel+", "+messageObject.isReactionPush+", "+messageObject.isStoryReactionPush+")");
                 if (value) {
                     if (!isFcm) {
                         popup = addToPopupMessages(popupArrayAdd, messageObject, dialogId, isChannel, preferences);
@@ -1162,9 +1170,11 @@ public class NotificationsController extends BaseController {
             }
             if (isFcm || hasScheduled) {
                 if (edited) {
+                    FileLog.d("NotificationsController processNewMessages: edited branch, showOrUpdateNotification " + notifyCheck);
                     delayedPushMessages.clear();
                     showOrUpdateNotification(notifyCheck);
                 } else if (added) {
+                    FileLog.d("NotificationsController processNewMessages: added branch");
                     MessageObject messageObject = messageObjects.get(0);
                     long dialog_id = messageObject.getDialogId();
                     long topicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(dialog_id));
@@ -1210,6 +1220,7 @@ public class NotificationsController extends BaseController {
                     }
                     if (old_unread_count != total_unread_count || storiesUpdated) {
                         delayedPushMessages.clear();
+                        FileLog.d("NotificationsController processNewMessages: added branch: " + notifyCheck);
                         showOrUpdateNotification(notifyCheck);
                         int pushDialogsCount = pushDialogs.size();
                         AndroidUtilities.runOnUIThread(() -> {
@@ -3045,6 +3056,7 @@ public class NotificationsController extends BaseController {
     }
 
     private void dismissNotification() {
+        FileLog.d("NotificationsController dismissNotification");
         try {
             notificationManager.cancel(notificationId);
             pushMessages.clear();
@@ -4501,6 +4513,7 @@ public class NotificationsController extends BaseController {
     }
 
     private void resetNotificationSound(NotificationCompat.Builder notificationBuilder, long dialogId, long topicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+        FileLog.d("resetNotificationSound");
         Uri defaultSound = Settings.System.DEFAULT_RINGTONE_URI;
         if (defaultSound != null && sound != null && !TextUtils.equals(defaultSound.toString(), sound.toString())) {
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
@@ -4546,6 +4559,7 @@ public class NotificationsController extends BaseController {
 
     @SuppressLint("InlinedApi")
     private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+        FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
         if (Build.VERSION.SDK_INT >= 26) {
             notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
         }
@@ -4571,6 +4585,7 @@ public class NotificationsController extends BaseController {
             long topicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(messageObject));
             int dismissDate = preferences.getInt("dismissDate" + dialog_id, 0);
             if (!messageObject.isStoryPush && messageObject.messageOwner.date <= dismissDate) {
+                FileLog.d("showExtraNotifications: dialog " + dialog_id + " is skipped, message date (" + messageObject.messageOwner.date + " <= " + dismissDate + ")");
                 continue;
             }
 
@@ -4578,6 +4593,7 @@ public class NotificationsController extends BaseController {
             if (arrayList == null) {
                 arrayList = new ArrayList<>();
                 messagesByDialogs.put(dialog_id, arrayList);
+                FileLog.d("showExtraNotifications: sortedDialogs += " + dialog_id);
                 sortedDialogs.add(new DialogKey(dialog_id, topicId, false));
             }
             arrayList.add(messageObject);
@@ -4633,11 +4649,13 @@ public class NotificationsController extends BaseController {
         long selfUserId = getUserConfig().getClientUserId();
         boolean waitingForPasscode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
         boolean passcode = SharedConfig.passcodeHash.length() > 0;
+        FileLog.d("showExtraNotifications: passcode="+passcode+" waitingForPasscode=" + waitingForPasscode + " selfUserId=" + selfUserId + " useSummaryNotification=" + useSummaryNotification);
 
         int maxCount = 7;
         LongSparseArray<Person> personCache = new LongSparseArray<>();
         for (int b = 0, size = sortedDialogs.size(); b < size; b++) {
             if (holders.size() >= maxCount) {
+                FileLog.d("showExtraNotifications: break from holders, count over " + maxCount);
                 break;
             }
             DialogKey dialogKey = sortedDialogs.get(b);
@@ -4649,6 +4667,7 @@ public class NotificationsController extends BaseController {
             if (dialogKey.story) {
                 messageObjects = new ArrayList<>();
                 if (storyPushMessages.isEmpty()) {
+                    FileLog.d("showExtraNotifications: ["+dialogKey.dialogId+"] continue; story but storyPushMessages is empty");
                     continue;
                 }
                 dialogId = storyPushMessages.get(0).dialogId;
@@ -4915,6 +4934,7 @@ public class NotificationsController extends BaseController {
                 if (hidden) {
                     text.append(LocaleController.formatPluralString("StoryNotificationHidden", storiesCount));
                 } else if (names.isEmpty()) {
+                    FileLog.d("showExtraNotifications: ["+dialogKey.dialogId+"] continue; story but names is empty");
                     continue;
                 } else if (names.size() == 1) {
                     if (storiesCount == 1) {
@@ -4943,9 +4963,11 @@ public class NotificationsController extends BaseController {
                 }
             } else {
                 for (int a = messageObjects.size() - 1; a >= 0; a--) {
-                    MessageObject messageObject = messageObjects.get(a);
-                    long messageTopicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(messageObject));
+                    final MessageObject messageObject = messageObjects.get(a);
+                    final boolean isForum = getMessagesController().isForum(messageObject);
+                    final long messageTopicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, isForum);
                     if (topicId != messageTopicId) {
+                        FileLog.d("showExtraNotifications: ["+dialogKey.dialogId+"] continue; topic id is not equal: topicId=" + topicId + " messageTopicId=" + messageTopicId + "; selfId=" + getUserConfig().getClientUserId());
                         continue;
                     }
                     String message = getShortStringForMessage(messageObject, senderName, preview);
@@ -5303,6 +5325,7 @@ public class NotificationsController extends BaseController {
             if (Build.VERSION.SDK_INT >= 26) {
                 setNotificationChannel(mainNotification, builder, useSummaryNotification);
             }
+            FileLog.d("showExtraNotifications: holders.add " + dialogId);
             holders.add(new NotificationHolder(internalId, dialogId, dialogKey.story, topicId, name, user, chat, builder));
             wearNotificationsIds.put(dialogId, internalId);
         }
@@ -5319,6 +5342,9 @@ public class NotificationsController extends BaseController {
             }
         } else {
             if (openedInBubbleDialogs.isEmpty()) {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("cancel summary with id " + notificationId);
+                }
                 notificationManager.cancel(notificationId);
             }
         }
@@ -5336,6 +5362,7 @@ public class NotificationsController extends BaseController {
         }
 
         ArrayList<String> ids = new ArrayList<>(holders.size());
+        FileLog.d("showExtraNotifications: holders.size()=" + holders.size());
         for (int a = 0, size = holders.size(); a < size; a++) {
             NotificationHolder holder = holders.get(a);
             ids.clear();
@@ -5345,6 +5372,7 @@ public class NotificationsController extends BaseController {
                     ids.add(shortcutId);
                 }
             }
+            FileLog.d("showExtraNotifications: holders["+a+"].call()");
             holder.call();
             if (!unsupportedNotificationShortcut() && !ids.isEmpty()) {
                 ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, ids);

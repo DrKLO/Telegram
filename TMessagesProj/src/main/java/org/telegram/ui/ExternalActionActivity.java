@@ -601,6 +601,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         AndroidUtilities.checkDisplaySize(this, newConfig);
+        AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         super.onConfigurationChanged(newConfig);
         fixLayout();
     }

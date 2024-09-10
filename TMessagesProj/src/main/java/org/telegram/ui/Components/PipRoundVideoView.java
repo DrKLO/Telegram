@@ -290,6 +290,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             windowLayoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
             windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
         } catch (Exception e) {
             FileLog.e(e);

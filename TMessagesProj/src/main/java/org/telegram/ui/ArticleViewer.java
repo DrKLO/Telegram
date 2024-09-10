@@ -200,6 +200,7 @@ import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.WebPlayerView;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 import org.telegram.ui.web.AddressBarList;
 import org.telegram.ui.web.BookmarksFragment;
@@ -13284,7 +13285,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             try {
                                 try {
                                     Uri uri2 = Uri.parse(url);
-                                    url = Browser.replace(uri2, null, "", Browser.IDN_toUnicode(uri2.getHost()), null);
+                                    String hostname = Browser.IDN_toUnicode(uri2.getHost());
+                                    String[] levels = hostname.split("\\.");
+                                    if (levels.length > 2 && actionBar != null && HintView2.measureCorrectly(hostname, actionBar.titlePaint) > AndroidUtilities.displaySize.x - dp(3 * 54)) {
+                                        hostname = levels[levels.length - 2] + '.' + levels[levels.length - 1];
+                                    }
+                                    url = Browser.replace(uri2, null, "", hostname, null);
                                 } catch (Exception e) {
                                     FileLog.e(e, false);
                                 }

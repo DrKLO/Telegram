@@ -492,7 +492,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 if (MessagesController.isSupportUser(user)) {
                     statusString = LocaleController.getString(R.string.SupportStatus);
                 } else if (user.bot && user.bot_active_users != 0) {
-                    statusString = LocaleController.formatPluralStringComma("BotUsers", user.bot_active_users, ' ');
+                    statusString = LocaleController.formatPluralStringSpaced("BotUsers", user.bot_active_users);
                 } else if (user.bot) {
                     statusString = LocaleController.getString(R.string.Bot);
                 } else if (UserObject.isService(user.id)) {

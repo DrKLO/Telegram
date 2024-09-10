@@ -3,6 +3,7 @@ package org.telegram.ui.Stars;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
+import static org.telegram.messenger.LocaleController.formatPluralStringSpaced;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
@@ -53,9 +54,6 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.exoplayer2.scheduler.RequirementsWatcher;
-import com.google.common.collect.Lists;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
@@ -118,7 +116,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.StarAppsSheet;
-import org.telegram.ui.Components.TableLayout;
 import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UItem;
@@ -135,7 +132,6 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -823,7 +819,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 item.id = id;
                 item.intValue = index;
                 item.longValue = option.stars;
-                item.text = formatPluralStringComma("StarsCount", (int) option.stars, ' ');
+                item.text = formatPluralStringSpaced("StarsCount", (int) option.stars);
                 item.subtext = option.loadingStorePrice ? null : BillingController.getInstance().formatCurrency(option.amount, option.currency);
                 item.object = option;
                 return item;
@@ -834,7 +830,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 item.id = id;
                 item.intValue = index;
                 item.longValue = option.stars;
-                item.text = formatPluralStringComma("StarsCount", (int) option.stars, ' ');
+                item.text = formatPluralStringSpaced("StarsCount", (int) option.stars);
                 item.subtext = option.loadingStorePrice ? null : BillingController.getInstance().formatCurrency(option.amount, option.currency);
                 item.object = option;
                 return item;
@@ -3654,7 +3650,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setGravity(Gravity.CENTER);
-        textView.setText(LocaleController.formatPluralStringComma("BoostStars", (int) boost.stars, ' '));
+        textView.setText(LocaleController.formatPluralStringSpaced("BoostStars", (int) boost.stars));
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 4));
 
         textView = new TextView(context);
@@ -3664,7 +3660,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         textView.setPadding(dp(4), 0, dp(8.33f), 0);
         textView.setGravity(Gravity.CENTER);
         textView.setTypeface(AndroidUtilities.bold());
-        final SpannableStringBuilder sb = new SpannableStringBuilder("x" + LocaleController.formatPluralStringComma("BoostingBoostsCount", boost.multiplier == 0 ? 1 : boost.multiplier, ' '));
+        final SpannableStringBuilder sb = new SpannableStringBuilder("x" + LocaleController.formatPluralStringSpaced("BoostingBoostsCount", boost.multiplier == 0 ? 1 : boost.multiplier));
         final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_boost_badge, ColoredImageSpan.ALIGN_CENTER);
         span.translate(0, dp(0.66f));
         sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

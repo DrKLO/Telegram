@@ -462,6 +462,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
             @Override
             protected void onConfigurationChanged(Configuration newConfig) {
                 AndroidUtilities.checkDisplaySize(getContext(), newConfig);
+                AndroidUtilities.setPreferredMaxRefreshRate(windowManager, contentView, windowLayoutParams);
                 bindTextureView();
             }
 
@@ -612,6 +613,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
         contentView.setAlpha(0f);
         contentView.setScaleX(0.1f);
         contentView.setScaleY(0.1f);
+        AndroidUtilities.setPreferredMaxRefreshRate(windowManager, contentView, windowLayoutParams);
         windowManager.addView(contentView, windowLayoutParams);
 
         AnimatorSet set = new AnimatorSet();

@@ -756,6 +756,7 @@ public class ReactionsEffectOverlay {
             lp.format = PixelFormat.TRANSLUCENT;
 
             reactionsEffectOverlay.windowManager = baseFragment.getParentActivity().getWindowManager();
+            AndroidUtilities.setPreferredMaxRefreshRate(reactionsEffectOverlay.windowManager, reactionsEffectOverlay.windowView, lp);
             reactionsEffectOverlay.windowManager.addView(reactionsEffectOverlay.windowView, lp);
         } else {
             reactionsEffectOverlay.decorView = (FrameLayout) baseFragment.getParentActivity().getWindow().getDecorView();

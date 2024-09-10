@@ -38,6 +38,7 @@ public class ShareActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         ApplicationLoader.postInitApplication();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
+        AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTheme(R.style.Theme_TMessages_Transparent);
         super.onCreate(savedInstanceState);

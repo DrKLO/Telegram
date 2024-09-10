@@ -1488,8 +1488,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             if (!isSavedDialog && user != null && user.self && !message.isOutOwner()) {
                                 triedMessageName = AndroidUtilities.removeDiacritics(getMessageNameString());
                             }
-                            if (isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() || triedMessageName != null || chat != null && chat.id > 0 && fromChat == null && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message)) {
-                                messageNameString =  AndroidUtilities.removeDiacritics(triedMessageName != null ? triedMessageName : getMessageNameString());
+                            if (isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() || triedMessageName != null || chat != null && chat.id > 0 && (fromChat == null || fromChat.id != chat.id) && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message)) {
+                                messageNameString = AndroidUtilities.removeDiacritics(triedMessageName != null ? triedMessageName : getMessageNameString());
                                 if (chat != null && chat.forum && !isTopic && !useFromUserAsAvatar) {
                                     CharSequence topicName = MessagesController.getInstance(currentAccount).getTopicsController().getTopicIconName(chat, message, currentMessagePaint);
                                     if (!TextUtils.isEmpty(topicName)) {
@@ -5078,7 +5078,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 return AndroidUtilities.removeDiacritics(fromChat.title.replace("\n", ""));
             }
             return null;
-        } else if (message.isOutOwner()) {
+        } else if (message.isOutOwner() && fromUser != null) {
             return LocaleController.getString(R.string.FromYou);
         } else if (!isSavedDialog && message != null && message.messageOwner != null && message.messageOwner.from_id instanceof TLRPC.TL_peerUser && (user = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id)) != null) {
             return AndroidUtilities.removeDiacritics(UserObject.getFirstName(user).replace("\n", ""));

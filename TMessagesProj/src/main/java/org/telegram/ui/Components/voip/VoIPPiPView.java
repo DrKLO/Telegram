@@ -687,6 +687,7 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
                 layoutParams.x = (int) (windowLayoutParams.x - (widthExpanded - widthNormal) * cX);
                 layoutParams.y = (int) (windowLayoutParams.y - (heightExpanded - heightNormal) * cY);
 
+                AndroidUtilities.setPreferredMaxRefreshRate(windowManager, pipViewExpanded.windowView, layoutParams);
                 windowManager.addView(pipViewExpanded.windowView, layoutParams);
                 pipViewExpanded.windowView.setAlpha(1f);
                 pipViewExpanded.windowLayoutParams = layoutParams;
@@ -784,6 +785,7 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
                         }
                         swapRender(expandedInstance, instance);
                         instance.windowView.setAlpha(1f);
+                        AndroidUtilities.setPreferredMaxRefreshRate(windowManager, instance.windowView, instance.windowLayoutParams);
                         windowManager.addView(instance.windowView, instance.windowLayoutParams);
                         AndroidUtilities.runOnUIThread(() -> {
                             if (instance == null || expandedInstance == null) {

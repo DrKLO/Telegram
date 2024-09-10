@@ -342,7 +342,7 @@ public class GiveawayResultsMessageCell {
         }
         isStars = (giveaway.flags & 32) != 0;
         if (isStars) {
-            bottomStringBuilder.append(LocaleController.formatPluralStringComma("BoostingStarsGiveawayResultsMsgAllWinnersReceivedLinks", (int) giveaway.stars, ' '));
+            bottomStringBuilder.append(LocaleController.formatPluralStringSpaced("BoostingStarsGiveawayResultsMsgAllWinnersReceivedLinks", (int) giveaway.stars));
         } else {
             bottomStringBuilder.append(LocaleController.getString(R.string.BoostingGiveawayResultsMsgAllWinnersReceivedLinks));
         }

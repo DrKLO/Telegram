@@ -274,6 +274,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                     }
+                    AndroidUtilities.setPreferredMaxRefreshRate(windowManager, bulletinContainer, params);
                     windowManager.addView(bulletinContainer, params);
                 }
 

@@ -1216,6 +1216,25 @@ public class ReactionsLayoutInBubble {
             }
         }
 
+        public void stopAnimation() {
+            ImageReceiver imageReceiver;
+            if (animatedEmojiDrawable != null && animatedEmojiDrawable.getImageReceiver() != null) {
+                imageReceiver = animatedEmojiDrawable.getImageReceiver();
+            } else {
+                imageReceiver = this.imageReceiver;
+            }
+            if (imageReceiver != null) {
+                RLottieDrawable rLottieDrawable = imageReceiver.getLottieAnimation();
+                if (rLottieDrawable != null) {
+                    rLottieDrawable.stop();
+                } else {
+                    AnimatedFileDrawable animatedFileDrawable = imageReceiver.getAnimation();
+                    if (animatedFileDrawable != null) {
+                        animatedFileDrawable.stop();
+                    }
+                }
+            }
+        }
 
         public ImageReceiver previewImageReceiver;
         public AnimatedEmojiDrawable previewAnimatedEmojiDrawable;

@@ -2968,7 +2968,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (url == null) return false;
-                    if (url.startsWith("tel:")) {
+                    if (url.trim().startsWith("sms:")) {
+                        return false;
+                    }
+                    if (url.trim().startsWith("tel:")) {
                         if (opener != null) {
                             if (botWebViewContainer.delegate != null) {
                                 botWebViewContainer.delegate.onInstantClose();

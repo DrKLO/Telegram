@@ -1319,6 +1319,7 @@ public class PushListenerController {
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);
                                     canRelease = false;
+                                    FileLog.d("PushListenerController push notification to NotificationsController of " + messageOwner.dialog_id);
                                     NotificationsController.getInstance(currentAccount).processNewMessages(arrayList, true, true, countDownLatch);
                                 }
                             }

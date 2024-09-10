@@ -291,6 +291,7 @@ public class CustomEmojiReactionsWindow {
         } else {
             WindowManager.LayoutParams lp = createLayoutParams(false);
             windowManager = AndroidUtilities.findActivity(context).getWindowManager();
+            AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, lp);
             windowManager.addView(windowView, lp);
         }
 

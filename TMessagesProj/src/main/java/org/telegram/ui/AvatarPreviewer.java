@@ -125,6 +125,7 @@ public class AvatarPreviewer {
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                         WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
             }
+            AndroidUtilities.setPreferredMaxRefreshRate(windowManager, layout, layoutParams);
             windowManager.addView(layout, layoutParams);
             parentContainer.requestDisallowInterceptTouchEvent(true);
             visible = true;

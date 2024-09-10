@@ -1610,9 +1610,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (chat != null && chat.participants_count != 0) {
                     String membersString;
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        membersString = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count, ' ');
+                        membersString = LocaleController.formatPluralStringSpaced("Subscribers", chat.participants_count);
                     } else {
-                        membersString = LocaleController.formatPluralStringComma("Members", chat.participants_count, ' ');
+                        membersString = LocaleController.formatPluralStringSpaced("Members", chat.participants_count);
                     }
                     if (username instanceof SpannableStringBuilder) {
                         ((SpannableStringBuilder) username).append(", ").append(membersString);

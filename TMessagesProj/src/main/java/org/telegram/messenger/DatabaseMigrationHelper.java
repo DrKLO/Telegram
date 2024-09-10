@@ -1516,6 +1516,12 @@ public class DatabaseMigrationHelper {
             version = 155;
         }
 
+        if (version == 155) {
+            database.executeFast("CREATE TABLE popular_bots(uid INTEGER PRIMARY KEY, time INTEGER, offset TEXT);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 156").stepThis().dispose();
+            version = 156;
+        }
+
         return version;
     }
 

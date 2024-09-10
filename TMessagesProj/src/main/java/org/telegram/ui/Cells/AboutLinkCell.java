@@ -521,7 +521,7 @@ public class AboutLinkCell extends FrameLayout {
         } : null;
         if (pressedLink instanceof URLSpanNoUnderline) {
             String url = ((URLSpanNoUnderline) pressedLink).getURL();
-            if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
+            if (url.startsWith("@") || url.startsWith("#") || url.startsWith("$") || url.startsWith("/")) {
                 didPressUrl(url, currentProgress);
             }
         } else {

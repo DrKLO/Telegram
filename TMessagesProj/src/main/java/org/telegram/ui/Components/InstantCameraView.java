@@ -694,7 +694,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (cancelled) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
                 startAnimation(false, false);
-                MediaController.getInstance().requestAudioFocus(false);
+                MediaController.getInstance().requestRecordAudioFocus(false);
             } else {
                 videoEncoder.pause();
             }
@@ -765,8 +765,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         if (MediaController.getInstance().getPlayingMessageObject() != null) {
             if (MediaController.getInstance().getPlayingMessageObject().isVideo() || MediaController.getInstance().getPlayingMessageObject().isRoundVideo()) {
                 MediaController.getInstance().cleanupPlayer(true, true);
-            } else {
-                MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
+            } else if (SharedConfig.pauseMusicOnRecord) {
+                MediaController.getInstance().pauseByRewind();
             }
         }
 
@@ -874,7 +874,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         setVisibility(VISIBLE);
 
         startAnimation(true, fromPaused);
-        MediaController.getInstance().requestAudioFocus(true);
+        MediaController.getInstance().requestRecordAudioFocus(true);
     }
 
     public InstantViewCameraContainer getCameraContainer() {
@@ -1020,7 +1020,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (scheduleDate != 0) {
                 startAnimation(false, false);
             }
-            MediaController.getInstance().requestAudioFocus(false);
+            MediaController.getInstance().requestRecordAudioFocus(false);
         } else {
             cancelled = recordedTime < 800;
             recording = false;
@@ -1049,7 +1049,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (cancelled) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
                 startAnimation(false, false);
-                MediaController.getInstance().requestAudioFocus(false);
+                MediaController.getInstance().requestRecordAudioFocus(false);
             }
         }
     }
@@ -1101,7 +1101,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             AutoDeleteMediaTask.unlockFile(cameraFile);
             cameraFile = null;
         }
-        MediaController.getInstance().requestAudioFocus(false);
+        MediaController.getInstance().requestRecordAudioFocus(false);
         startAnimation(false, false);
         blurBehindDrawable.show(false);
         invalidate();
@@ -1129,7 +1129,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         textureOverlayView.setTranslationX(0);
         animationTranslationY = 0;
         updateTranslationY();
-        MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
+        MediaController.getInstance().resumeByRewind();
 
         if (textureView != null) {
             ViewGroup parent = (ViewGroup) textureView.getParent();
@@ -3106,7 +3106,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         videoEditedInfo.notReadyYet = false;
                     }
                     didWriteData(videoFile, 0, true);
-                    MediaController.getInstance().requestAudioFocus(false);
+                    MediaController.getInstance().requestRecordAudioFocus(false);
                 });
             }
             EGL14.eglDestroySurface(eglDisplay, eglSurface);
@@ -3633,7 +3633,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     "   float radius = 0.51 * resolution.x;\n" +
                     "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
                     "   float t = clamp(d, 0.0, 1.0);\n" +
-                    "   vec3 color = mix(textColor.rgb, vec3(0, 0, 0), t);\n" +
+                    "   vec3 color = mix(textColor.rgb, vec3(1, 1, 1), t);\n" +
                     "   gl_FragColor = vec4(color * alpha, alpha);\n" +
                     "}\n";
         }
@@ -3669,7 +3669,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 "       vec4 x2 = mix(bl, br, frac.x);\n" +
                 "       gl_FragColor = mix(x1, x2, frac.y) * alpha;" +
                 "   } else {\n" +
-                "       gl_FragColor = vec4(0, 0, 0, alpha);\n" +
+                "       gl_FragColor = vec4(1, 1, 1, alpha);\n" +
                 "   }\n" +
                 "}\n";
     }

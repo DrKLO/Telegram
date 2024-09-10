@@ -6095,6 +6095,8 @@
     <string name="StorySavedSubtitle">Saved stories can be viewed by others on your profile until you remove them.</string>
     <string name="StoryArchived_one">%d story is hidden from your profile</string>
     <string name="StoryArchived_other">%d stories are hidden from your profile</string>
+    <string name="FoundStories_one">%d story</string>
+    <string name="FoundStories_other">%d stories</string>
     <string name="OpenLink">Open Link</string>
     <string name="StorySharedToEveryone">This story is shown to everyone.</string>
     <string name="StorySharedToCloseFriends">This story is shown to your close friends.</string>
@@ -7956,7 +7958,8 @@
     <string name="StarsSubscriptionExpiredInfo">Your subscription expired on %s.</string>
     <string name="StarsSubscriptionRefulfill">Join Channel</string>
     <string name="StarsSubscriptionRefulfillInfo">You left channel, but you can still get back until %s.</string>
-    <string name="StarsSubscriptionExpiredHintTitle">⭐️%1$d Stars needed for %2$s</string>
+    <string name="StarsSubscriptionExpiredHintTitle2_one">⭐️%1$d Star needed for %2$s</string>
+    <string name="StarsSubscriptionExpiredHintTitle2_other">⭐️%1$d Stars needed for %2$s</string>
     <string name="StarsSubscriptionExpiredHintText">Insufficient funds to cover your subscription.</string>
     <string name="StarsParticipantSubscription">Subscriber</string>
     <string name="StarsParticipantSubscriptionApproxMonth">appx. %1$s per month</string>
