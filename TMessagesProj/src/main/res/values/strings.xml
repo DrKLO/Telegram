@@ -314,6 +314,7 @@
     <string name="NotificationsPermissionAlert2">Learn when you are mentioned in groups</string>
     <string name="NotificationsPermissionAlert3">Mute specific chats and types of chats</string>
     <string name="NotificationsPermissionContinue">Continue</string>
+    <string name="NotificationsPermissionSettings">Open Settings</string>
     <string name="YourContacts">Your contacts on Telegram</string>
     <string name="ConnectingYourContacts">Connecting your contacts...</string>
     <string name="ArchiveHintHeader1">This is your Archive</string>
@@ -3784,6 +3785,7 @@
     <string name="PermissionDrawAboveOtherAppsGroupCall">Overlay mode lets you use push-to-talk and see who is talking even when you are outside of Telegram.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
     <string name="PermissionXiaomiLockscreen">Please allow Telegram to be shown on the lock screen so that calls can work properly.</string>
+    <string name="PermissionFSILockscreen">Please allow Telegram to be shown on the lock screen so that calls can work properly.</string>
     <string name="PermissionBackgroundLocation">To share your live location in this chat, Telegram needs access to your location all the time, including while the app is in the background.\n\nWe will access your location only for the duration you choose, and you can stop sharing it any time. We won\'t use your location for any purpose other than sharing it in this chat.</string>
     <string name="PermissionDrawAboveOtherAppsTitle">Picture-in-Picture</string>
     <string name="PermissionDrawAboveOtherAppsGroupCallTitle">Voice Chat Overlay</string>
@@ -6445,7 +6447,6 @@
     <string name="BoostingBoostsCountTitle_other">%d boosts</string>
     <string name="BoostingSubscriptionsCountPlural_one">%2$s subscription</string>
     <string name="BoostingSubscriptionsCountPlural_other">%2$s subscriptions</string>
-    <string name="BoostingStarsPrepaidGiveawayTitle">Prepaid giveaway</string>
     <string name="BoostingStarsCountPlural_one">%1$d Star</string>
     <string name="BoostingStarsCountPlural_other">%1$d Stars</string>
     <string name="BoostingTelegramPremiumCountPlural_one">%1$d Telegram Premium</string>

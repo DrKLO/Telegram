@@ -295,8 +295,8 @@ public class ChannelBoostLayout extends FrameLayout {
                     giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
                 } else if (prepaidGiveaway instanceof TL_stories.TL_prepaidStarsGiveaway) {
                     TL_stories.TL_prepaidStarsGiveaway starsGiveaway = (TL_stories.TL_prepaidStarsGiveaway) prepaidGiveaway;
-                    String name = LocaleController.getString(R.string.BoostingStarsPrepaidGiveawayTitle);
-                    String info = LocaleController.formatPluralStringComma("BoostingStarsCountPlural", (int) starsGiveaway.stars);
+                    String name = LocaleController.formatPluralStringComma("BoostingStarsCountPlural", (int) starsGiveaway.stars);
+                    String info = LocaleController.formatPluralString("AmongWinners", starsGiveaway.quantity);
                     giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
                 }
                 giveawayCell.setImage(prepaidGiveaway);

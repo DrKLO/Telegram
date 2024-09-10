@@ -78501,18 +78501,6 @@ public class TLRPC {
     public static class TL_messageMediaGiveawayResults_layer186 extends TL_messageMediaGiveawayResults {
         public static final int constructor = 0xc6991068;
 
-        public boolean only_new_subscribers;
-        public boolean refunded;
-        public long channel_id;
-        public int additional_peers_count;
-        public int launch_msg_id;
-        public int winners_count;
-        public int unclaimed_count;
-        public ArrayList<Long> winners = new ArrayList<>();
-        public int months;
-        public String prize_description;
-        public int until_date;
-
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             only_new_subscribers = (flags & 1) != 0;

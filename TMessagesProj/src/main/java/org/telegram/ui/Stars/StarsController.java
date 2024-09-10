@@ -1875,7 +1875,7 @@ public class StarsController {
             final ConnectionsManager connectionsManager = ConnectionsManager.getInstance(currentAccount);
 
             final long totalStars = amount;
-            if (starsController.balanceAvailable() && starsController.getBalance() < totalStars) {
+            if (starsController.balanceAvailable() && starsController.getBalance(false) < totalStars) {
                 cancelled = true;
 
                 messageObject.addPaidReactions((int) -amount, wasChosen, isAnonymous());
@@ -1970,7 +1970,7 @@ public class StarsController {
         final long totalStars = amount;
         final Context context = getContext(chatActivity);
         if (context == null) return null;
-        if (checkBalance && s.balanceAvailable() && s.getBalance() <= 0) {
+        if (checkBalance && s.balanceAvailable() && s.getBalance(false) <= 0) {
             final long dialogId = chatActivity.getDialogId();
             String name;
             if (dialogId >= 0) {

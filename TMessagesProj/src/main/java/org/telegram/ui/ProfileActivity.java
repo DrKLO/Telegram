@@ -11318,17 +11318,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         long ton_balance = BotStarsController.getInstance(currentAccount).getChannelBalance(did);
                         SpannableStringBuilder ssb = new SpannableStringBuilder();
                         if (ton_balance > 0) {
-                            DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-                            symbols.setDecimalSeparator('.');
-                            DecimalFormat formatterTON = new DecimalFormat("#.##", symbols);
-                            formatterTON.setMinimumFractionDigits(2);
-                            formatterTON.setMaximumFractionDigits(3);
-                            formatterTON.setGroupingUsed(false);
-                            ssb.append("TON ").append(formatterTON.format(ton_balance / 1_000_000_000.0));
+                            if (ton_balance / 1_000_000_000.0 > 1000.0) {
+                                ssb.append("TON ").append(AndroidUtilities.formatWholeNumber((int) (ton_balance / 1_000_000_000.0), 0));
+                            } else {
+                                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                                symbols.setDecimalSeparator('.');
+                                DecimalFormat formatterTON = new DecimalFormat("#.##", symbols);
+                                formatterTON.setMinimumFractionDigits(2);
+                                formatterTON.setMaximumFractionDigits(3);
+                                formatterTON.setGroupingUsed(false);
+                                ssb.append("TON ").append(formatterTON.format(ton_balance / 1_000_000_000.0));
+                            }
                         }
                         if (stars_balance > 0) {
                             if (ssb.length() > 0) ssb.append(" ");
-                            ssb.append("XTR ").append(LocaleController.formatNumber(stars_balance, ','));
+                            ssb.append("XTR ").append(AndroidUtilities.formatWholeNumber((int) stars_balance, 0));
                         }
                         textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelStars), ChannelMonetizationLayout.replaceTON(StarsIntroActivity.replaceStarsWithPlain(ssb, .7f), textCell.getTextView().getPaint()), R.drawable.menu_feature_paid, true);
                     } else if (position == blockedUsersRow) {

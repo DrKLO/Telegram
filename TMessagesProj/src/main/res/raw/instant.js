@@ -6,9 +6,35 @@ function Readability(e,t){if(t&&t.documentElement)e=t,t=arguments[2];else if(!e|
 
 (async function () {
     try {
-        const dirty_html = await (await fetch('index.html')).text()
-        const html = DOMPurify.sanitize(dirty_html, { WHOLE_DOCUMENT: true, ADD_TAGS: ['iframe'] })
-        const document = new DOMParser().parseFromString(html, 'text/html')
+        const getCharset = document => {
+            let meta = document.querySelector('meta[charset]')
+            if (meta) return meta.getAttribute('charset') || 'utf-8'
+            meta = document.querySelector('meta[http-equiv="Content-Type"]')
+            if (!meta) return 'utf-8'
+            const props = Object.fromEntries((meta.getAttribute('content') || '').split(/; */g).map(s => {
+                const index = s.indexOf('=')
+                if (index < 0) return [s, true]
+                return [s.substring(0, index), s.substring(index + 1)]
+            }))
+            return props.charset || 'utf-8'
+        }
+        let dirty_html = await (await fetch('/index.html')).text()
+        let html = DOMPurify.sanitize(dirty_html, {
+            WHOLE_DOCUMENT: true,
+            ADD_TAGS: ['iframe', 'meta'],
+            ADD_ATTR: ['http-equiv', 'content']
+        })
+        let document = new DOMParser().parseFromString(html, 'text/html')
+        const charset = getCharset(document)
+        if (['utf-8', 'utf8'].indexOf((charset || '').toLowerCase()) < 0) {
+            dirty_html = new TextDecoder(charset).decode(await (await fetch('/index.html')).arrayBuffer())
+            html = DOMPurify.sanitize(dirty_html, {
+                WHOLE_DOCUMENT: true,
+                ADD_TAGS: ['iframe', 'meta'],
+                ADD_ATTR: ['http-equiv', 'content']
+            })
+            document = new DOMParser().parseFromString(html, 'text/html')
+        }
 
         if (!isProbablyReaderable(document)) {
             console.error('isProbablyReaderable = false')

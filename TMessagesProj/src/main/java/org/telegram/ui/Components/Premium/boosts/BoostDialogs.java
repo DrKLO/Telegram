@@ -3,6 +3,7 @@ package org.telegram.ui.Components.Premium.boosts;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceTags;
 import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Components.Premium.boosts.SelectorBottomSheet.TYPE_CHANNEL;
@@ -514,7 +515,7 @@ public class BoostDialogs {
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
 
         if (isStars) {
-            stringBuilder.append(replaceTags(formatPluralString(isChannel ? "BoostingStarsGiveawayHowItWorksText" : "BoostingStarsGiveawayHowItWorksTextGroup", (int) giveaway.stars, from)));
+            stringBuilder.append(replaceTags(formatPluralStringComma(isChannel ? "BoostingStarsGiveawayHowItWorksText" : "BoostingStarsGiveawayHowItWorksTextGroup", (int) giveaway.stars, from)));
         } else {
             stringBuilder.append(replaceTags(formatPluralString(isChannel ? "BoostingGiveawayHowItWorksText" : "BoostingGiveawayHowItWorksTextGroup", quantity, from, quantity, months)));
         }
@@ -787,6 +788,10 @@ public class BoostDialogs {
                 giveaway.quantity = giveawayResults.winners_count + giveawayResults.unclaimed_count;
                 giveaway.only_new_subscribers = giveawayResults.only_new_subscribers;
                 giveaway.until_date = giveawayResults.until_date;
+                if ((giveawayResults.flags & 32) != 0) {
+                    giveaway.flags |= 32;
+                    giveaway.stars = giveawayResults.stars;
+                }
             } else {
                 giveaway = (TLRPC.TL_messageMediaGiveaway) messageObject.messageOwner.media;
             }

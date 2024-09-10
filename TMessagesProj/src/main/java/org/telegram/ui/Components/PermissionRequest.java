@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -115,10 +116,10 @@ public class PermissionRequest {
                 if (whenDone != null) whenDone.run(true);
                 return;
             }
-            boolean needsPermissionRationale = true;
+            boolean needsPermissionRationale = false;
             for (String permission : checkPermissions) {
-                if (!activity.shouldShowRequestPermissionRationale(permission)) {
-                    needsPermissionRationale = false;
+                if (activity.shouldShowRequestPermissionRationale(permission)) {
+                    needsPermissionRationale = true;
                     break;
                 }
             }
@@ -156,32 +157,46 @@ public class PermissionRequest {
         }
     }
 
+    public static void requestPermission(String permission, Utilities.Callback<Boolean> whenDone) {
+        requestPermissions(new String[] { permission }, whenDone != null ? res -> {
+            whenDone.run(res.length >= 1 && res[0] == PackageManager.PERMISSION_GRANTED);
+        } : null);
+    }
+
     public static void requestPermissions(String[] permissions, Utilities.Callback<int[]> whenDone) {
         Activity _activity = LaunchActivity.instance;
         if (_activity == null) _activity = AndroidUtilities.findActivity(ApplicationLoader.applicationContext);
         if (_activity == null) return;
         final Activity activity = _activity;
 
-        final int code = lastId++;
-        NotificationCenter.NotificationCenterDelegate[] observer = new NotificationCenter.NotificationCenterDelegate[1];
-        observer[0] = new NotificationCenter.NotificationCenterDelegate() {
-            @Override
-            public void didReceivedNotification(int id, int account, Object... args) {
-                if (id == NotificationCenter.activityPermissionsGranted) {
-                    int requestCode = (int) args[0];
-                    String[] permissions = (String[]) args[1];
-                    int[] grantResults = (int[]) args[2];
-                    if (requestCode == code) {
-                        if (whenDone != null) {
-                            whenDone.run(grantResults);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            final int code = lastId++;
+            NotificationCenter.NotificationCenterDelegate[] observer = new NotificationCenter.NotificationCenterDelegate[1];
+            observer[0] = new NotificationCenter.NotificationCenterDelegate() {
+                @Override
+                public void didReceivedNotification(int id, int account, Object... args) {
+                    if (id == NotificationCenter.activityPermissionsGranted) {
+                        int requestCode = (int) args[0];
+                        String[] permissions = (String[]) args[1];
+                        int[] grantResults = (int[]) args[2];
+                        if (requestCode == code) {
+                            if (whenDone != null) {
+                                whenDone.run(grantResults);
+                            }
+                            NotificationCenter.getGlobalInstance().removeObserver(observer[0], NotificationCenter.activityPermissionsGranted);
                         }
-                        NotificationCenter.getGlobalInstance().removeObserver(observer[0], NotificationCenter.activityPermissionsGranted);
                     }
                 }
+            };
+            NotificationCenter.getGlobalInstance().addObserver(observer[0], NotificationCenter.activityPermissionsGranted);
+            activity.requestPermissions(permissions, code);
+        } else if (whenDone != null) {
+            int[] res = new int[ permissions.length ];
+            for (int i = 0; i < permissions.length; ++i) {
+                res[i] = hasPermission(permissions[i]) ? PackageManager.PERMISSION_GRANTED : PackageManager.PERMISSION_DENIED;
             }
-        };
-        NotificationCenter.getGlobalInstance().addObserver(observer[0], NotificationCenter.activityPermissionsGranted);
-        activity.requestPermissions(permissions, code);
+            whenDone.run(res);
+        }
     }
 
     public static boolean hasPermission(String permission) {
@@ -194,6 +209,34 @@ public class PermissionRequest {
             return activity.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
         } else {
             return true;
+        }
+    }
+
+    public static boolean canAskPermission(String permission) {
+        Activity _activity = LaunchActivity.instance;
+        if (_activity == null) _activity = AndroidUtilities.findActivity(ApplicationLoader.applicationContext);
+        if (_activity == null) return false;
+        final Activity activity = _activity;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return activity.shouldShowRequestPermissionRationale(permission);
+        } else {
+            return false;
+        }
+    }
+
+    public static void showPermissionSettings(String permission) {
+        Activity _activity = LaunchActivity.instance;
+        if (_activity == null) _activity = AndroidUtilities.findActivity(ApplicationLoader.applicationContext);
+        if (_activity == null) return;
+        final Activity activity = _activity;
+
+        final Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+        try {
+            activity.startActivity(intent);
+        } catch (Exception x) {
+            FileLog.e(x);
         }
     }
 

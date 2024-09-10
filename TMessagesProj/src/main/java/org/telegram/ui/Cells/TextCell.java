@@ -46,6 +46,7 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Switch;
 import org.telegram.ui.FilterCreateActivity;
 import org.telegram.ui.PeerColorActivity;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 public class TextCell extends FrameLayout {
 
@@ -534,11 +535,16 @@ public class TextCell extends FrameLayout {
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         textView.setRightDrawable(null);
-        valueTextView.setText(value == null ? "" : TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
+        imageView.setVisibility(VISIBLE);
+        if (value != null) {
+            int availableWidth = (int) Math.max(1, AndroidUtilities.displaySize.x - (dp(offsetFromImage) + HintView2.measureCorrectly(text, textView.getTextPaint()) + dp(16)));
+            valueTextView.setText(value == null ? "" : TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), availableWidth, TextUtils.TruncateAt.END), animated);
+        } else {
+            valueTextView.setText("", animated);
+        }
         valueTextView.setVisibility(VISIBLE);
         valueSpoilersTextView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
-        imageView.setVisibility(VISIBLE);
         imageView.setTranslationX(0);
         imageView.setTranslationY(0);
         imageView.setPadding(0, dp(7), 0, 0);

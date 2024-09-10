@@ -24,13 +24,13 @@ public class BoostTypeSingleCell extends BoostTypeCell {
 
     public void setGiveaway(TL_stories.PrepaidGiveaway prepaidGiveaway) {
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
-        titleTextView.setText(LocaleController.getString(R.string.BoostingPreparedGiveawayOne));
         if (prepaidGiveaway instanceof TL_stories.TL_prepaidStarsGiveaway) {
             TL_stories.TL_prepaidStarsGiveaway prepaid = (TL_stories.TL_prepaidStarsGiveaway) prepaidGiveaway;
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_STARS);
-            String subtitle = LocaleController.formatPluralStringComma("BoostingStarsPreparedGiveawaySubscriptionsPlural", (int) prepaid.stars);
-            setSubtitle(subtitle);
+            titleTextView.setText(LocaleController.formatPluralStringComma("BoostingStarsPreparedGiveawaySubscriptionsPlural", (int) prepaid.stars));
+            setSubtitle(LocaleController.formatPluralString("AmongWinners", prepaid.quantity));
         } else if (prepaidGiveaway instanceof TL_stories.TL_prepaidGiveaway) {
+            titleTextView.setText(LocaleController.getString(R.string.BoostingPreparedGiveawayOne));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_GIFT);
             TL_stories.TL_prepaidGiveaway prepaid = (TL_stories.TL_prepaidGiveaway) prepaidGiveaway;
             if (prepaid.months == 12) {

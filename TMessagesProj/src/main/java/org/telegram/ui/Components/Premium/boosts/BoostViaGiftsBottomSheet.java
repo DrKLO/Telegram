@@ -731,7 +731,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 items.add(Item.asDivider(LocaleController.getString(R.string.BoostingGiveawayShowWinnersHint), false));
             } else {
                 items.add(Item.asDivider(AndroidUtilities.replaceSingleTag(
-                        LocaleController.getString(R.string.BoostingGiveawayShowWinnersHint) + "\n\n" + getString(R.string.BoostingStoriesFeaturesAndTerms),
+                        LocaleController.getString(R.string.BoostingGiveawayShowWinnersHint) + (selectedBoostType != BoostTypeCell.TYPE_STARS ? "\n\n" + getString(R.string.BoostingStoriesFeaturesAndTerms) : ""),
                         Theme.key_chat_messageLinkIn, 0, () -> {
                             PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, resourcesProvider);
                             previewBottomSheet.setOnDismissListener(dialog -> adapter.setPausedStars(false));

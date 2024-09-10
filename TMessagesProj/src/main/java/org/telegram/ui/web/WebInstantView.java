@@ -376,6 +376,7 @@ public class WebInstantView {
 
         webView.setWebViewClient(new WebViewClient() {
             private boolean firstLoad = true;
+            private boolean streamLoaded;
             @androidx.annotation.Nullable
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
@@ -387,7 +388,24 @@ public class WebInstantView {
                     final String html = "<script>\n" + script + "\n</script>";
                     return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
                 } else if (url != null && url.endsWith("/index.html")) {
-                    requestStream = stream;
+                    mime = "application/octet-stream";
+                    if (streamLoaded) {
+                        MHTML.Entry entry = mhtml != null ? mhtml.entries.get(0) : null;
+                        if (entry == null) {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return new WebResourceResponse(mime, "UTF-8", null);
+                            return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", null, null);
+                        }
+                        try {
+                            requestStream = entry.getInputStream();
+                        } catch (IOException e) {
+                            FileLog.e(e);
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return new WebResourceResponse(mime, "UTF-8", null);
+                            return new WebResourceResponse("text/plain", "utf-8", 503, "Server error", null, null);
+                        }
+                    } else {
+                        requestStream = stream;
+                        streamLoaded = true;
+                    }
                 } else {
                     MHTML.Entry entry = mhtml != null ? mhtml.entriesByLocation.get(url) : null;
                     if (entry == null) {
@@ -407,7 +425,7 @@ public class WebInstantView {
                         return new WebResourceResponse("text/plain", "utf-8", 503, "Server error", null, null);
                     }
                 }
-                return new WebResourceResponse(mime, "UTF-8", requestStream);
+                return new WebResourceResponse(mime, null, requestStream);
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
