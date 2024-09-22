@@ -4329,28 +4329,24 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private int getCurrentForegroundType() {
 		return getCurrentForegroundType(this, gotMediaProjection);
 	}
-	private static int getCurrentForegroundType(ContextWrapper context, boolean gotMediaProjection) {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-			return (
-				ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA |
-				ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE |
-				ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION |
-				ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-			);
-		}
-		int type = 0;
-		if (context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-			type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
-		}
-		if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-			type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
-		}
-		if (gotMediaProjection) {
-			type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-		}
-		type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-		return type;
-	}
+private static int getCurrentForegroundType(ContextWrapper context, boolean gotMediaProjection) {
+    int type = 0;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
+    }
+    if (context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+    }
+    if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+    }
+    if (gotMediaProjection) {
+        type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+    }
+    type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
+    return type;
+}
+
 
 	public void updateCurrentForegroundType() {
 		if (lastForegroundType != getCurrentForegroundType() && foregroundStarted) {
