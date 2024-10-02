@@ -1,0 +1,16 @@
+Issue Report — Rogue Feature Discovered on Telegram Android Source Affecting Many Client Apps
+=============================================================================================
+
+DESCRIPTION:
+
+It has been observed that a rogue feature which automatically adds the token that automatically logs the user into the Telegram Web application, is believed to be designed within the Telegram Android client. Because no user notices are given prior to starting this behaviour, this is a rogue feature.
+
+HOW TO REPRODUCE:
+
+1. Send a message in Telegram containing the link to the official Telegram Web application: https://web.telegram.org .
+
+2. Click on the link in the message, the rogue behaviour will start. Not actually the URL sent but with tokens to the signed-in user is appended, which results in unsoliticited data sharing.
+
+ADVICE:
+
+This rogue feature should be removed.
