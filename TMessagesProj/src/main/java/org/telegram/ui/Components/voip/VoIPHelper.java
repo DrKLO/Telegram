@@ -145,20 +145,7 @@ public class VoIPHelper {
 			return;
 		}
 
-		if (Build.VERSION.SDK_INT >= 23) {
-			ArrayList<String> permissions = new ArrayList<>();
-			ChatObject.Call call = accountInstance.getMessagesController().getGroupCall(chat.id, false);
-			if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && !(call != null && call.call.rtmp_stream)) {
-				permissions.add(Manifest.permission.RECORD_AUDIO);
-			}
-			if (permissions.isEmpty()) {
-				initiateCall(null, chat, hash, false, false, createCall, checkJoiner, activity, fragment, accountInstance);
-			} else {
-				activity.requestPermissions(permissions.toArray(new String[0]), 103);
-			}
-		} else {
-			initiateCall(null, chat, hash, false, false, createCall, checkJoiner, activity, fragment, accountInstance);
-		}
+		initiateCall(null, chat, hash, false, false, createCall, checkJoiner, activity, fragment, accountInstance);
 	}
 
 	private static void initiateCall(TLRPC.User user, TLRPC.Chat chat, String hash, boolean videoCall, boolean canVideoCall, boolean createCall, Boolean checkJoiner, final Activity activity, BaseFragment fragment, AccountInstance accountInstance) {
@@ -227,6 +214,10 @@ public class VoIPHelper {
 	}
 
 	private static void doInitiateCall(TLRPC.User user, TLRPC.Chat chat, String hash, TLRPC.InputPeer peer, boolean hasFewPeers, boolean videoCall, boolean canVideoCall, boolean createCall, Activity activity, BaseFragment fragment, AccountInstance accountInstance, boolean checkJoiner, boolean checkAnonymous) {
+		doInitiateCall(user, chat, hash, peer, hasFewPeers, videoCall, canVideoCall, createCall, activity, fragment, accountInstance,checkJoiner, checkAnonymous, false);
+	}
+
+	private static void doInitiateCall(TLRPC.User user, TLRPC.Chat chat, String hash, TLRPC.InputPeer peer, boolean hasFewPeers, boolean videoCall, boolean canVideoCall, boolean createCall, Activity activity, BaseFragment fragment, AccountInstance accountInstance, boolean checkJoiner, boolean checkAnonymous, boolean isRtmpStream) {
 		if (activity == null || user == null && chat == null) {
 			return;
 		}
@@ -257,21 +248,21 @@ public class VoIPHelper {
 			}
 		}
 		if (checkJoiner && chat != null) {
-			JoinCallAlert.open(activity, -chat.id, accountInstance, fragment, createCall ? JoinCallAlert.TYPE_CREATE : JoinCallAlert.TYPE_JOIN, null, (selectedPeer, hasFew, schedule) -> {
+			JoinCallAlert.open(activity, -chat.id, accountInstance, fragment, createCall ? JoinCallAlert.TYPE_CREATE : JoinCallAlert.TYPE_JOIN, null, (selectedPeer, hasFew, schedule, rtmp) -> {
 				if (createCall && schedule) {
 					GroupCallActivity.create((LaunchActivity) activity, accountInstance, chat, selectedPeer, hasFew, hash);
 				} else if (!hasFew && hash != null) {
 					JoinCallByUrlAlert alert = new JoinCallByUrlAlert(activity, chat) {
 						@Override
 						protected void onJoin() {
-							doInitiateCall(user, chat, hash, selectedPeer, false, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, true);
+							doInitiateCall(user, chat, hash, selectedPeer, false, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, true, rtmp);
 						}
 					};
 					if (fragment != null) {
 						fragment.showDialog(alert);
 					}
 				} else {
-					doInitiateCall(user, chat, hash, selectedPeer, hasFew, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, true);
+					doInitiateCall(user, chat, hash, selectedPeer, hasFew, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, true, rtmp);
 				}
 			});
 			return;
@@ -321,6 +312,7 @@ public class VoIPHelper {
 			intent.putExtra("chat_id", chat.id);
 			intent.putExtra("createGroupCall", createCall);
 			intent.putExtra("hasFewPeers", hasFewPeers);
+			intent.putExtra("isRtmpStream", isRtmpStream);
 			intent.putExtra("hash", hash);
 			if (peer != null) {
 				intent.putExtra("peerChannelId", peer.channel_id);

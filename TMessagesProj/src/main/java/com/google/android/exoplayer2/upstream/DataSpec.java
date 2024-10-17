@@ -319,7 +319,7 @@ public final class DataSpec {
   }
 
   /** A {@link Uri} from which data belonging to the resource can be read. */
-  public final Uri uri;
+  public Uri uri;
 
   /**
    * The offset of the data located at {@link #uri} within the resource.

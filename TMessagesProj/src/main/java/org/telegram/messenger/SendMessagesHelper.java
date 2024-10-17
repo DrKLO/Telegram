@@ -7052,8 +7052,17 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipfile))) {
                             ZipEntry zipEntry = zis.getNextEntry();
                             while (zipEntry != null) {
-                                if (zipEntry.getName().endsWith(".txt")) {
-                                    File newFile = MediaController.createFileInCache(zipEntry.getName(), "txt");
+                                String name = zipEntry.getName();
+                                if (name == null) {
+                                    zipEntry = zis.getNextEntry();
+                                    continue;
+                                }
+                                int idx = name.lastIndexOf("/");
+                                if (idx >= 0) {
+                                    name = name.substring(idx + 1);
+                                }
+                                if (name.endsWith(".txt")) {
+                                    File newFile = MediaController.createFileInCache(name, "txt");
                                     path = newFile.getAbsolutePath();
                                     FileOutputStream fos = new FileOutputStream(newFile);
                                     byte[] buffer = new byte[1024];

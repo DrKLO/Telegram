@@ -95,6 +95,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.Components.voip.AcceptDeclineView;
 import org.telegram.ui.Components.voip.EmojiRationalLayout;
 import org.telegram.ui.Components.voip.HideEmojiTextView;
@@ -124,6 +125,7 @@ import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;
 
 import java.io.ByteArrayOutputStream;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -2600,12 +2602,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 hideUiRunnableWaiting = false;
                 final boolean micMute = !serviceInstance.isMicMute();
                 if (accessibilityManager.isTouchExplorationEnabled()) {
-                    final String text;
-                    if (micMute) {
-                        text = LocaleController.getString(R.string.AccDescrVoipMicOff);
-                    } else {
-                        text = LocaleController.getString(R.string.AccDescrVoipMicOn);
-                    }
+                    final String text = LocaleController.getString(micMute ? R.string.AccDescrVoipMicOff : R.string.AccDescrVoipMicOn);
                     view.announceForAccessibility(text);
                 }
                 serviceInstance.setMicMute(micMute, false, true);

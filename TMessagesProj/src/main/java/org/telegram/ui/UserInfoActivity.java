@@ -29,18 +29,14 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.LocationActivity;
 import org.telegram.ui.Business.OpeningHoursActivity;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
-import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
@@ -86,7 +82,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
     @Override
     public View createView(Context context) {
-        firstNameEdit = new EditTextCell(context, getString(R.string.EditProfileFirstName), false, -1, resourceProvider) {
+        firstNameEdit = new EditTextCell(context, getString(R.string.EditProfileFirstName), false, false, -1, resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
@@ -96,7 +92,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         firstNameEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         firstNameEdit.setDivider(true);
         firstNameEdit.hideKeyboardOnEnter();
-        lastNameEdit = new EditTextCell(context, getString(R.string.EditProfileLastName), false, -1, resourceProvider) {
+        lastNameEdit = new EditTextCell(context, getString(R.string.EditProfileLastName), false, false, -1, resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
@@ -105,7 +101,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         };
         lastNameEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         lastNameEdit.hideKeyboardOnEnter();
-        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint), true, getMessagesController().getAboutLimit(), resourceProvider) {
+        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint), true, false, getMessagesController().getAboutLimit(), resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);

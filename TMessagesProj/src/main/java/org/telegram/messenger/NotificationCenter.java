@@ -264,6 +264,9 @@ public class NotificationCenter {
     public static final int channelStarsUpdated = totalEvents++;
     public static final int webViewResolved = totalEvents++;
     public static final int updateAllMessages = totalEvents++;
+    public static final int starGiftsLoaded = totalEvents++;
+    public static final int starUserGiftsLoaded = totalEvents++;
+    public static final int starGiftSoldOut = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;
@@ -543,7 +546,7 @@ public class NotificationCenter {
         AndroidUtilities.runOnUIThread(() -> postNotificationName(id, args));
     }
 
-    public void postNotificationName(int id, Object... args) {
+    public void postNotificationName(final int id, Object... args) {
         boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache || id == closeChats || id == invalidateMotionBackground || id == needCheckSystemBarColors;
         ArrayList<Integer> expiredIndices = null;
         if (!allowDuringAnimation && allowedNotifications.size() > 0) {
@@ -592,20 +595,20 @@ public class NotificationCenter {
         }
     }
 
-    SparseArray<Runnable> alreadyPostedRannubles = new SparseArray<>();
+    SparseArray<Runnable> alreadyPostedRunnubles = new SparseArray<>();
 
     private void postNotificationDebounced(int id, Object[] args) {
         int hash = id + (Arrays.hashCode(args) << 16);
-        if (alreadyPostedRannubles.indexOfKey(hash) >= 0) {
+        if (alreadyPostedRunnubles.indexOfKey(hash) >= 0) {
             //skip
-        } else {
-            Runnable runnable = () -> {
-                postNotificationNameInternal(id, false, args);
-                alreadyPostedRannubles.remove(hash);
-            };
-            alreadyPostedRannubles.put(hash, runnable);
-            AndroidUtilities.runOnUIThread(runnable, 250);
+            return;
         }
+        final Runnable runnable = () -> {
+            postNotificationNameInternal(id, false, args);
+            alreadyPostedRunnubles.remove(hash);
+        };
+        alreadyPostedRunnubles.put(hash, runnable);
+        AndroidUtilities.runOnUIThread(runnable, 250);
     }
 
     private boolean shouldDebounce(int id, Object[] args) {

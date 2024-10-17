@@ -9,6 +9,8 @@
 package org.telegram.messenger.secretmedia;
 
 import android.content.Context;
+import android.net.Uri;
+import android.util.LongSparseArray;
 
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSource;
@@ -53,8 +55,15 @@ public final class ExtendedDefaultDataSourceFactory implements DataSource.Factor
         this.baseDataSourceFactory = baseDataSourceFactory;
     }
 
+    private final LongSparseArray<Uri> mtprotoUris = new LongSparseArray<>();
+
     @Override
     public ExtendedDefaultDataSource createDataSource() {
-        return new ExtendedDefaultDataSource(context, listener, baseDataSourceFactory.createDataSource());
+        return new ExtendedDefaultDataSource(context, listener, baseDataSourceFactory.createDataSource(), mtprotoUris);
     }
+
+    public void putDocumentUri(long docId, Uri uri) {
+        mtprotoUris.put(docId, uri);
+    }
+
 }

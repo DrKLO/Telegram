@@ -58,6 +58,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -1627,7 +1628,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         private final ArrayList<TL_stats.BroadcastRevenueTransaction> tonTransactions = new ArrayList<>();
         private int tonTransactionsTotalCount;
 
-        private final ArrayList<TLRPC.StarsTransaction> starsTransactions = new ArrayList<>();
+        private final ArrayList<TL_stars.StarsTransaction> starsTransactions = new ArrayList<>();
         private String starsLastOffset = "";
 
         private class PageAdapter extends ViewPagerFixed.Adapter {
@@ -1803,12 +1804,12 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 if (starsLastOffset == null || !starsRevenueAvailable)
                     return;
                 loadingTransactions[type] = true;
-                TLRPC.TL_payments_getStarsTransactions req = new TLRPC.TL_payments_getStarsTransactions();
+                TL_stars.TL_payments_getStarsTransactions req = new TL_stars.TL_payments_getStarsTransactions();
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
                 req.offset = starsLastOffset;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (res instanceof TLRPC.TL_payments_starsStatus) {
-                        TLRPC.TL_payments_starsStatus r = (TLRPC.TL_payments_starsStatus) res;
+                    if (res instanceof TL_stars.TL_payments_starsStatus) {
+                        TL_stars.TL_payments_starsStatus r = (TL_stars.TL_payments_starsStatus) res;
                         MessagesController.getInstance(currentAccount).putUsers(r.users, false);
                         MessagesController.getInstance(currentAccount).putChats(r.chats, false);
                         starsTransactions.addAll(r.history);
@@ -1880,7 +1881,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
 
             private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
                 if (type == STARS_TRANSACTIONS) {
-                    for (TLRPC.StarsTransaction t : starsTransactions) {
+                    for (TL_stars.StarsTransaction t : starsTransactions) {
                         items.add(StarsIntroActivity.StarsTransactionView.Factory.asTransaction(t, true));
                     }
                     if (!TextUtils.isEmpty(starsLastOffset)) {
@@ -1901,8 +1902,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             }
 
             private void onClick(UItem item, View view, int position, float x, float y) {
-                if (item.object instanceof TLRPC.StarsTransaction) {
-                    StarsIntroActivity.showTransactionSheet(getContext(), true, dialogId, currentAccount, (TLRPC.StarsTransaction) item.object, resourcesProvider);
+                if (item.object instanceof TL_stars.StarsTransaction) {
+                    StarsIntroActivity.showTransactionSheet(getContext(), true, dialogId, currentAccount, (TL_stars.StarsTransaction) item.object, resourcesProvider);
                 } else if (item.object instanceof TL_stats.BroadcastRevenueTransaction) {
                     showTransactionSheet(getContext(), currentAccount, (TL_stats.BroadcastRevenueTransaction) item.object, dialogId, resourcesProvider);
                 }

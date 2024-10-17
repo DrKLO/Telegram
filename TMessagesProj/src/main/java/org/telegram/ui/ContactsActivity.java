@@ -329,7 +329,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     floatingButtonContainer.setTranslationY(AndroidUtilities.dp(100));
                     hideFloatingButton(false);
                 }
-                if (sortItem != null) {
+                if (sortItem != null && !listViewAdapter.isEmpty) {
                     sortItem.setVisibility(View.VISIBLE);
                 }
             }
@@ -400,6 +400,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         //emptyView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
                         listView.setFastScrollVisible(count != 0);
                     }
+                }
+                if (sortItem != null) {
+                    sortItem.setVisibility(!isEmpty && !item.isSearchFieldVisible() ? View.VISIBLE : View.GONE);
                 }
             }
         };

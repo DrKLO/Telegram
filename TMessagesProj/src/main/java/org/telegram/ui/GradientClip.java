@@ -72,4 +72,15 @@ public class GradientClip {
         return paint[dir];
     }
 
+    public void clipOut(Canvas canvas, RectF rect, float alpha) {
+        final int dir = 0;
+        if (paint[dir] == null) {
+            paint[dir] = new Paint(Paint.ANTI_ALIAS_FLAG);
+            if (!DEBUG) paint[dir].setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        }
+        paint[dir].setShader(gradient);
+        paint[dir].setAlpha((int) (0xFF * alpha));
+        canvas.drawRect(rect, paint[dir]);
+    }
+
 }

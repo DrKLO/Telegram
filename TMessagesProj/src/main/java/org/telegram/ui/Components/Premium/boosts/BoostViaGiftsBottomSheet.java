@@ -1,6 +1,5 @@
 package org.telegram.ui.Components.Premium.boosts;
 
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -25,6 +24,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -206,7 +206,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 }
             } else if (view instanceof StarGiveawayOptionCell) {
                 StarGiveawayOptionCell cell = (StarGiveawayOptionCell) view;
-                TLRPC.TL_starsGiveawayOption option = cell.getOption();
+                TL_stars.TL_starsGiveawayOption option = cell.getOption();
                 if (option != null) {
                     selectedStars = option.stars;
                     updateRows(true, true);
@@ -282,7 +282,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 if (activity == null) activity = LaunchActivity.instance;
                 if (activity == null || activity.isFinishing()) return;
 
-                final TLRPC.TL_starsGiveawayOption option = getSelectedStarsOption();
+                final TL_stars.TL_starsGiveawayOption option = getSelectedStarsOption();
                 final int users = getSelectedSliderValue();
                 if (option == null) return;
 
@@ -341,7 +341,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                             return;
                         }
                         actionBtn.updateLoading(true);
-                        BoostRepository.payGiftCode(selectedUsers, option, currentChat, fragment, result -> {
+                        BoostRepository.payGiftCode(selectedUsers, option, currentChat, null, fragment, result -> {
                             dismiss();
                             AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, false), 220);
                         }, error -> {
@@ -412,7 +412,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
     private void loadOptions() {
-        BoostRepository.loadGiftOptions(currentChat, arg -> {
+        BoostRepository.loadGiftOptions(currentAccount, currentChat, arg -> {
             giftCodeOptions.clear();
             giftCodeOptions.addAll(arg);
             updateRows(true, true);
@@ -465,7 +465,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
         if (selectedBoostType == BoostTypeCell.TYPE_PREMIUM) {
             return sliderValues.get(selectedSliderIndex) * BoostRepository.giveawayBoostsPerPremium();
         } else {
-            TLRPC.TL_starsGiveawayOption selectedGiveawayOption = getSelectedStarsOption();
+            TL_stars.TL_starsGiveawayOption selectedGiveawayOption = getSelectedStarsOption();
             return (selectedGiveawayOption != null ? selectedGiveawayOption.yearly_boosts : getSelectedSliderValue() * BoostRepository.giveawayBoostsPerPremium());
         }
     }
@@ -486,15 +486,15 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
         return values.get(Utilities.clamp(selectedStarsSliderIndex, values.size() - 1, 0));
     }
 
-    public TLRPC.TL_starsGiveawayOption getSelectedStarsOption() {
+    public TL_stars.TL_starsGiveawayOption getSelectedStarsOption() {
         return getSelectedStarsOption(selectedStars);
     }
 
-    public TLRPC.TL_starsGiveawayOption getSelectedStarsOption(long stars) {
-        final ArrayList<TLRPC.TL_starsGiveawayOption> options = StarsController.getInstance(currentAccount).getGiveawayOptions();
+    public TL_stars.TL_starsGiveawayOption getSelectedStarsOption(long stars) {
+        final ArrayList<TL_stars.TL_starsGiveawayOption> options = StarsController.getInstance(currentAccount).getGiveawayOptions();
         if (options != null) {
             for (int i = 0; i < options.size(); ++i) {
-                final TLRPC.TL_starsGiveawayOption option = options.get(i);
+                final TL_stars.TL_starsGiveawayOption option = options.get(i);
                 if (option != null && option.stars == stars) {
                     return option;
                 }
@@ -508,10 +508,10 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             return sliderValues;
         }
         final ArrayList<Integer> possibleCounts = new ArrayList<>();
-        TLRPC.TL_starsGiveawayOption option = getSelectedStarsOption();
+        TL_stars.TL_starsGiveawayOption option = getSelectedStarsOption();
         if (option != null) {
             for (int i = 0; i < option.winners.size(); ++i) {
-                final TLRPC.TL_starsGiveawayWinnersOption winnersOption = option.winners.get(i);
+                final TL_stars.TL_starsGiveawayWinnersOption winnersOption = option.winners.get(i);
                 if (option != null && !possibleCounts.contains(winnersOption.users)) {
                     possibleCounts.add(winnersOption.users);
                 }
@@ -526,10 +526,10 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     private List<Long> getPerUserStarsValues(long selectedStars) {
         final ArrayList<Integer> possibleCounts = new ArrayList<>();
         final ArrayList<Long> stars = new ArrayList<>();
-        TLRPC.TL_starsGiveawayOption option = getSelectedStarsOption(selectedStars);
+        TL_stars.TL_starsGiveawayOption option = getSelectedStarsOption(selectedStars);
         if (option != null) {
             for (int i = 0; i < option.winners.size(); ++i) {
-                final TLRPC.TL_starsGiveawayWinnersOption winnersOption = option.winners.get(i);
+                final TL_stars.TL_starsGiveawayWinnersOption winnersOption = option.winners.get(i);
                 if (option != null && !possibleCounts.contains(winnersOption.users)) {
                     possibleCounts.add(winnersOption.users);
                     stars.add(winnersOption.per_user_stars);
@@ -540,11 +540,11 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
     private List<Long> getStarsOptions() {
-        final ArrayList<TLRPC.TL_starsGiveawayOption> options = StarsController.getInstance(currentAccount).getGiveawayOptions();
+        final ArrayList<TL_stars.TL_starsGiveawayOption> options = StarsController.getInstance(currentAccount).getGiveawayOptions();
         final ArrayList<Long> possibleStars = new ArrayList<>();
         if (options != null) {
             for (int i = 0; i < options.size(); ++i) {
-                final TLRPC.TL_starsGiveawayOption option = options.get(i);
+                final TL_stars.TL_starsGiveawayOption option = options.get(i);
                 if (option != null && !possibleStars.contains(option.stars)) {
                     possibleStars.add(option.stars);
                 }
@@ -578,7 +578,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                 int optionsCount = 0;
                 for (int i = 0; i < starOptions.size(); ++i) {
                     final long stars = starOptions.get(i);
-                    TLRPC.TL_starsGiveawayOption option = getSelectedStarsOption(stars);
+                    TL_stars.TL_starsGiveawayOption option = getSelectedStarsOption(stars);
                     if (option.missingStorePrice) continue;
                     if (selectedStars == 0 && option.isDefault) {
                         selectedStars = option.stars;

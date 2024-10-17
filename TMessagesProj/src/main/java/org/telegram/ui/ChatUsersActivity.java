@@ -692,8 +692,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         progressBar.setVisibility(View.GONE);
 
         emptyView = new StickerEmptyView(context, progressLayout, StickerEmptyView.STICKER_TYPE_SEARCH);
-        emptyView.title.setText(getString("NoResult", R.string.NoResult));
-        emptyView.subtitle.setText(getString("SearchEmptyViewFilteredSubtitle2", R.string.SearchEmptyViewFilteredSubtitle2));
+        emptyView.title.setText(getString(R.string.NoResult));
+        emptyView.subtitle.setText(getString(R.string.SearchEmptyViewFilteredSubtitle2));
         emptyView.setVisibility(View.GONE);
         emptyView.setAnimateLayoutChange(true);
         emptyView.showProgress(true, false);
@@ -1101,7 +1101,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     }
                     if (checkCell.hasIcon()) {
                         if (ChatObject.isPublic(currentChat) && (position == pinMessagesRow || position == changeInfoRow)) {
-                            BulletinFactory.of(this).createErrorBulletin(getString("EditCantEditPermissionsPublic", R.string.EditCantEditPermissionsPublic)).show();
+                            BulletinFactory.of(this).createErrorBulletin(getString(R.string.EditCantEditPermissionsPublic)).show();
+                        } else if (ChatObject.isDiscussionGroup(currentAccount, chatId) && (position == pinMessagesRow || position == changeInfoRow)) {
+                            BulletinFactory.of(this).createErrorBulletin(getString(R.string.EditCantEditPermissionsDiscussion)).show();
                         } else {
                             BulletinFactory.of(this).createErrorBulletin(getString("EditCantEditPermissions", R.string.EditCantEditPermissions)).show();
                         }
@@ -3486,7 +3488,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     } else if (position == manageTopicsRow) {
                         checkCell.setTextAndCheck(getString("CreateTopicsPermission", R.string.CreateTopicsPermission), !defaultBannedRights.manage_topics, false, animated);
                     }
-                    if (ChatObject.canBlockUsers(currentChat)) {
+                    if ((position == pinMessagesRow || position == changeInfoRow) && ChatObject.isDiscussionGroup(currentAccount, chatId)) {
+                        checkCell.setIcon(R.drawable.permission_locked);
+                    } else if (ChatObject.canBlockUsers(currentChat)) {
                         if (position == addUsersRow && !ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_INVITE) ||
                                 position == pinMessagesRow && !ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_PIN) ||
                                 position == changeInfoRow && !ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_CHANGE_INFO) ||

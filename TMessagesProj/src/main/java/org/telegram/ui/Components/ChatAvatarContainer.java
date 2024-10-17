@@ -164,7 +164,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             parentFragment = (ChatActivity) baseFragment;
         }
 
-        final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
+        final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && (parentFragment.getCurrentUser() == null || parentFragment.getCurrentUser().id != UserObject.VERIFY);
         avatarImageView = new BackupImageView(context) {
 
             StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true) {
@@ -325,7 +325,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         if (parentFragment != null && (parentFragment.getChatMode() == 0 || parentFragment.getChatMode() == ChatActivity.MODE_SAVED)) {
-            if ((!parentFragment.isThreadChat() || parentFragment.isTopic) && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
+            if ((!parentFragment.isThreadChat() || parentFragment.isTopic || parentFragment.isComments) && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && (parentFragment.getCurrentUser() == null || parentFragment.getCurrentUser().id != UserObject.VERIFY)) {
                 setOnClickListener(v -> {
                     openProfile(false);
                 });
@@ -375,6 +375,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         }
         return super.onTouchEvent(ev);
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        bounce.setPressed(pressed);
     }
 
     @Override
@@ -509,7 +515,16 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         }
 
+        if (parentFragment.isComments) {
+            if (chat == null) return;
+            parentFragment.presentFragment(ProfileActivity.of(-chat.id), removeLast);
+            return;
+        }
+
         if (user != null) {
+            if (user.id == UserObject.VERIFY) {
+                return;
+            }
             Bundle args = new Bundle();
             if (UserObject.isUserSelf(user)) {
                 if (!sharedMediaPreloader.hasSharedMedia()) {
@@ -940,7 +955,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             return;
         }
         TLRPC.User user = parentFragment.getCurrentUser();
-        if ((UserObject.isUserSelf(user) || UserObject.isReplyUser(user) || parentFragment.getChatMode() != 0) && parentFragment.getChatMode() != ChatActivity.MODE_SAVED) {
+        if ((UserObject.isUserSelf(user) || UserObject.isReplyUser(user) || user != null && user.id == UserObject.VERIFY || parentFragment.getChatMode() != 0) && parentFragment.getChatMode() != ChatActivity.MODE_SAVED) {
             if (getSubtitleTextView().getVisibility() != GONE) {
                 getSubtitleTextView().setVisibility(GONE);
             }
@@ -1017,6 +1032,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 String newStatus;
                 if (UserObject.isReplyUser(user)) {
                     newStatus = "";
+                } else if (user.id == UserObject.VERIFY) {
+                    newStatus = "";//LocaleController.getString(R.string.VerifyCodesNotifications);
                 } else if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                     newStatus = LocaleController.getString(R.string.ChatYourSelf);
                 } else if (user.id == 333000 || user.id == 777000 || user.id == 42777) {

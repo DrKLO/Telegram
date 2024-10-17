@@ -432,6 +432,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private float animateToClipHorizontal;
     private int[] animateFromRadius;
     private boolean animateToRadius;
+    @Keep
     private float animationValue;
     private int currentRotation;
     private long animationStartTime;
@@ -886,6 +887,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         actionBar.setBackgroundColor(Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
         actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21);
         actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
+        actionBar.setItemsColor(Color.WHITE, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitleRightMargin(dp(70));
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -1611,7 +1613,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 ObjectAnimator.ofFloat(captionScrollView, View.ALPHA, 0, 1f),
                 ObjectAnimator.ofFloat(secretHint, View.ALPHA, 0, 1.0f),
                 ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0, 255),
-                ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
+                ObjectAnimator.ofFloat(this, ANIMATION_VALUE, 0, 1),
                 ObjectAnimator.ofFloat(seekbarContainer, seekbarContainer.SEEKBAR_ALPHA, 1.0f),
                 ObjectAnimator.ofFloat(seekbarContainer, View.ALPHA, isVideo ? 1f : 0f)
         );
@@ -1946,6 +1948,18 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         canvas.restore();
     }
 
+    public final Property<SecretMediaViewer, Float> VIDEO_CROSSFADE_ALPHA = new AnimationProperties.FloatProperty<SecretMediaViewer>("videoCrossfadeAlpha") {
+        @Override
+        public void setValue(SecretMediaViewer object, float value) {
+            object.setVideoCrossfadeAlpha(value);
+        }
+
+        @Override
+        public Float get(SecretMediaViewer object) {
+            return object.getVideoCrossfadeAlpha();
+        }
+    };
+
     @Keep
     public float getVideoCrossfadeAlpha() {
         return videoCrossfadeAlpha;
@@ -2068,27 +2082,27 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 textureUploaded = false;
                 imageMoveAnimation.playTogether(
                         ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
-                        ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
+                        ObjectAnimator.ofFloat(this, ANIMATION_VALUE, 0, 1),
                         ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(captionScrollView, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(navigationBar, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(seekbarContainer, seekbarContainer.SEEKBAR_ALPHA, 0f),
                         ObjectAnimator.ofFloat(seekbarContainer, View.ALPHA, 0f),
                         ObjectAnimator.ofFloat(secretHint, View.ALPHA, 0),
-                        ObjectAnimator.ofFloat(this, "videoCrossfadeAlpha", 0)
+                        ObjectAnimator.ofFloat(this, VIDEO_CROSSFADE_ALPHA, 0)
                 );
             } else {
                 centerImage.setManualAlphaAnimator(true);
                 imageMoveAnimation.playTogether(
                         ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
-                        ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
+                        ObjectAnimator.ofFloat(this, ANIMATION_VALUE, 0, 1),
                         ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(captionScrollView, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(navigationBar, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(seekbarContainer, seekbarContainer.SEEKBAR_ALPHA, 0f),
                         ObjectAnimator.ofFloat(seekbarContainer, View.ALPHA, 0f),
                         ObjectAnimator.ofFloat(secretHint, View.ALPHA, 0),
-                        ObjectAnimator.ofFloat(centerImage, "currentAlpha", 0.0f)
+                        ObjectAnimator.ofFloat(centerImage, AnimationProperties.IMAGE_RECEIVER_ALPHA, 0.0f)
                 );
             }
 
@@ -2437,6 +2451,18 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         });
         imageMoveAnimation.start();
     }
+
+    public final Property<SecretMediaViewer, Float> ANIMATION_VALUE = new AnimationProperties.FloatProperty<SecretMediaViewer>("animationValue") {
+        @Override
+        public void setValue(SecretMediaViewer object, float value) {
+            object.setAnimationValue(value);
+        }
+
+        @Override
+        public Float get(SecretMediaViewer object) {
+            return object.getAnimationValue();
+        }
+    };
 
     @Keep
     public void setAnimationValue(float value) {

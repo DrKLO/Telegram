@@ -152,6 +152,7 @@ public class PushListenerController {
                     buffer.readBytes(strBytes, true);
                     jsonString = new String(strBytes);
                     JSONObject json = new JSONObject(jsonString);
+//                    FileLog.d("FCM DATA: " + jsonString);
 
                     if (ApplicationLoader.applicationLoaderInstance != null && ApplicationLoader.applicationLoaderInstance.consumePush(currentAccount, json)) {
                         countDownLatch.countDown();
@@ -499,6 +500,12 @@ public class PushListenerController {
                                         case "CHANNEL_MESSAGE_TEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, args[0], args[1]);
                                             message1 = args[1];
+                                            break;
+                                        }
+                                        case "MESSAGE_STARGIFT": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatPluralStringComma("NotificationMessageStarGift", Integer.parseInt(args[1]), args[0]);
+                                            message1 = LocaleController.formatPluralStringComma("Gift2Notification", Integer.parseInt(args[1]));
                                             break;
                                         }
                                         case "MESSAGE_PAID_MEDIA": {

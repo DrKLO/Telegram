@@ -151,7 +151,10 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             return;
         }
         boolean isGif = videoConvertMessage.messageObject != null && MessageObject.isGifMessage(videoConvertMessage.messageObject.messageOwner);
-        if (isGif) {
+        if (videoConvertMessage.foregroundConversion) {
+            builder.setTicker(LocaleController.getString(R.string.ConvertingVideo));
+            builder.setContentText(LocaleController.getString(R.string.ConvertingVideo));
+        } else if (isGif) {
             builder.setTicker(LocaleController.getString(R.string.SendingGif));
             builder.setContentText(LocaleController.getString(R.string.SendingGif));
         } else {

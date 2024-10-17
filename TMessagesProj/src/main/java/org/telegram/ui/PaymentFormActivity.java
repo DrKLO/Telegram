@@ -3855,8 +3855,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 try {
                                     JSONObject jsonObject2 = new JSONObject(paymentForm.native_params.data);
                                     overrideSmartGlocalConnectionUrl = jsonObject2.getString("tokenize_url");
-                                    if (overrideSmartGlocalConnectionUrl != null && (
-                                        !overrideSmartGlocalConnectionUrl.startsWith("https://") ||
+                                    if (overrideSmartGlocalConnectionUrl != null && !(
+                                        overrideSmartGlocalConnectionUrl.startsWith("https://") &&
                                         overrideSmartGlocalConnectionUrl.endsWith(".smart-glocal.com/cds/v1/tokenize/card")
                                     )) {
                                         overrideSmartGlocalConnectionUrl = null;
@@ -4245,9 +4245,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                                     paymentStatusSent = true;
                                     invoiceStatus = InvoiceStatus.PAID;
-                                    if (paymentFormCallback != null) {
-                                        paymentFormCallback.onInvoiceStatusChanged(invoiceStatus);
-                                    }
 
                                     onCheckoutSuccess(parentLayout, parentActivity);
 

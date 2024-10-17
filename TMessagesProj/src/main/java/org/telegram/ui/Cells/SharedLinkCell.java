@@ -801,7 +801,7 @@ public class SharedLinkCell extends FrameLayout {
             descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
-            SpoilerEffect.renderWithRipple(this, false, descriptionTextPaint.getColor(), -AndroidUtilities.dp(2), patchedDescriptionLayout, descriptionLayout, descriptionLayoutSpoilers, canvas, false);
+            SpoilerEffect.renderWithRipple(this, false, descriptionTextPaint.getColor(), -AndroidUtilities.dp(2), patchedDescriptionLayout, 0, descriptionLayout, descriptionLayoutSpoilers, canvas, false);
             canvas.restore();
         }
 
@@ -809,7 +809,7 @@ public class SharedLinkCell extends FrameLayout {
             descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), description2Y);
-            SpoilerEffect.renderWithRipple(this, false, descriptionTextPaint.getColor(), -AndroidUtilities.dp(2), patchedDescriptionLayout2, descriptionLayout2, descriptionLayout2Spoilers, canvas, false);
+            SpoilerEffect.renderWithRipple(this, false, descriptionTextPaint.getColor(), -AndroidUtilities.dp(2), patchedDescriptionLayout2, 0, descriptionLayout2, descriptionLayout2Spoilers, canvas, false);
             canvas.restore();
         }
 

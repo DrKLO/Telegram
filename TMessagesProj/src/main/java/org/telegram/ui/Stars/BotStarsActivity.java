@@ -44,6 +44,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -386,7 +387,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
     private void onItemClick(UItem item, View view, int pos, float x, float y) {
         if (item.instanceOf(StarsIntroActivity.StarsTransactionView.Factory.class)) {
-            TLRPC.StarsTransaction t = (TLRPC.StarsTransaction) item.object;
+            TL_stars.StarsTransaction t = (TL_stars.StarsTransaction) item.object;
             StarsIntroActivity.showTransactionSheet(getContext(), true, bot_id, currentAccount, t, getResourceProvider());
         }
     }

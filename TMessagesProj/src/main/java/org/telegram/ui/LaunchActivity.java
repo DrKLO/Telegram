@@ -36,6 +36,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.os.StatFs;
 import android.os.StrictMode;
@@ -116,6 +117,7 @@ import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.SharedPrefsHelper;
 import org.telegram.messenger.TopicsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -3098,11 +3100,21 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else if (open_settings == 7) {
                     bulletinText = "Logs enabled.";
                     ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE).edit().putBoolean("logsEnabled", BuildVars.LOGS_ENABLED = true).commit();
+                    Thread.setDefaultUncaughtExceptionHandler(BuildVars.LOGS_ENABLED ? (thread, exception) -> {
+                        if (thread == Looper.getMainLooper().getThread()) {
+                            FileLog.fatal(exception, true);
+                        }
+                    } : null);
                 } else if (open_settings == 8) {
                     ProfileActivity.sendLogs(LaunchActivity.this, false);
                 } else if (open_settings == 9) {
                     bulletinText = "Logs disabled.";
                     ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE).edit().putBoolean("logsEnabled", BuildVars.LOGS_ENABLED = false).commit();
+                    Thread.setDefaultUncaughtExceptionHandler(BuildVars.LOGS_ENABLED ? (thread, exception) -> {
+                        if (thread == Looper.getMainLooper().getThread()) {
+                            FileLog.fatal(exception, true);
+                        }
+                    } : null);
                 }
 
                 if (bulletinText != null) {
@@ -3564,7 +3576,16 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 try (ZipInputStream zis = new ZipInputStream(getContentResolver().openInputStream(uri))) {
                     ZipEntry zipEntry = zis.getNextEntry();
                     while (zipEntry != null) {
-                        if (zipEntry.getName().endsWith(".txt")) {
+                        String name = zipEntry.getName();
+                        if (name == null) {
+                            zipEntry = zis.getNextEntry();
+                            continue;
+                        }
+                        int idx = name.lastIndexOf("/");
+                        if (idx >= 0) {
+                            name = name.substring(idx + 1);
+                        }
+                        if (name.endsWith(".txt")) {
                             try {
                                 int linesCount = 0;
                                 BufferedReader r = new BufferedReader(new InputStreamReader(zis));
@@ -4083,6 +4104,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             } else if (attachBot.request_write_access || forceNotInternalForApps) {
                                                 AtomicBoolean allowWrite = new AtomicBoolean(true);
                                                 AlertsCreator.createBotLaunchAlert(getLastFragment(), allowWrite, user, () -> {
+                                                    SharedPrefsHelper.setWebViewConfirmShown(currentAccount, peerId, true);
+
                                                     attachBot.inactive = false;
                                                     attachBot.request_write_access = !allowWrite.get();
 
@@ -4121,7 +4144,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         if (botAppStartParam != null) {
                             TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             if (user != null && user.bot) {
-                                MessagesController.getInstance(intentAccount).openApp(null, user, 0, progress);
+                                MessagesController.getInstance(intentAccount).openApp(null, user, botAppStartParam, 0, progress);
                             }
                         } else if (setAsAttachBot != null && attachMenuBotToOpen == null) {
                             TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
@@ -4432,6 +4455,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         } else {
                                             Bundle bundle = new Bundle();
                                             bundle.putLong("chat_id", -dialog_id);
+                                            if (voicechat != null) {
+                                                bundle.putString("voicechat", voicechat);
+                                            }
+                                            if (videochat) {
+                                                bundle.putBoolean("videochat", true);
+                                            }
                                             presentFragment(TopicsFragment.getTopicsOrChat(this, bundle));
                                             try {
                                                 dismissLoading.run();
@@ -5185,6 +5214,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         if (getBottomSheetTabs() != null && getBottomSheetTabs().tryReopenTab(props) != null) {
                             return;
                         }
+                        SharedPrefsHelper.setWebViewConfirmShown(currentAccount, user.id, true);
                         if (AndroidUtilities.isTablet()) {
                             BotWebViewSheet sheet = new BotWebViewSheet(LaunchActivity.this, lastFragment != null ? lastFragment.getResourceProvider() : null);
                             sheet.setWasOpenedByLinkIntent(openedTelegram);
@@ -5908,6 +5938,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             if (photosEditorOpened) {
                                 sendingText = null;
                             }
+                        } else if (videoPath != null) {
+                            if (sendingText != null && sendingText.length() <= 1024) {
+                                captionToSend = sendingText;
+                                sendingText = null;
+                            }
+                            ArrayList<String> arrayList = new ArrayList<>();
+                            arrayList.add(videoPath);
+                            SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, captionToSend, null, did, replyToMsg, replyToMsg, null, null, null, notify, scheduleDate, null, null, 0, 0, false);
+                        } else if (photoPathsArray != null && photoPathsArray.size() > 0 && !photosEditorOpened) {
+                            if (sendingText != null && sendingText.length() <= 1024 && photoPathsArray.size() == 1) {
+                                photoPathsArray.get(0).caption = sendingText;
+                                sendingText = null;
+                            }
+                            SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, replyToMsg, replyToMsg, null, null, false, false, null, notify, scheduleDate, 0, false, null, null, 0, 0, false);
                         }
                     } else {
                         if (videoPath != null) {

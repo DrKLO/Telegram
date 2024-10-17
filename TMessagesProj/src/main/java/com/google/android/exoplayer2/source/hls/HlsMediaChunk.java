@@ -427,7 +427,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
         initDataSource,
         initDataSpec,
         initSegmentEncrypted,
-        /* initializeTimestampAdjuster= */ false);
+        /* initializeTimestampAdjuster= */ true);
     nextLoadPosition = 0;
     initDataLoadRequired = false;
   }

@@ -452,6 +452,12 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     private void search(View view, int position, String query, boolean reset) {
+        if (TextUtils.isEmpty(query)) {
+            emptyView.subtitle.setVisibility(View.GONE);
+        } else {
+            emptyView.subtitle.setVisibility(View.VISIBLE);
+            emptyView.subtitle.setText(LocaleController.formatString(R.string.NoResultFoundFor2, query));
+        }
         long forumDialogId = dialogsSearchAdapter.delegate != null ? dialogsSearchAdapter.delegate.getSearchForumDialogId() : 0;
         long dialogId = position == 0 ? 0 : forumDialogId;
         long minDate = 0;

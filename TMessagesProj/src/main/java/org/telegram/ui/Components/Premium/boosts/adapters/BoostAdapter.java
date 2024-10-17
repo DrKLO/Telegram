@@ -1,13 +1,11 @@
 package org.telegram.ui.Components.Premium.boosts.adapters;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.LocaleController;
@@ -16,6 +14,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -366,7 +365,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             }
             case HOLDER_TYPE_STAR_OPTION: {
                 StarGiveawayOptionCell cell = (StarGiveawayOptionCell) holder.itemView;
-                cell.setOption(item.object == null ? null : (TLRPC.TL_starsGiveawayOption) item.object, item.intValue, item.longValue, item.selectable, item.boolValue);
+                cell.setOption(item.object == null ? null : (TL_stars.TL_starsGiveawayOption) item.object, item.intValue, item.longValue, item.selectable, item.boolValue);
                 break;
             }
             case HOLDER_TYPE_SIMPLE_DIVIDER: {
@@ -527,7 +526,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
             return item;
         }
 
-        public static Item asOption(TLRPC.TL_starsGiveawayOption option, int index, long starsPerUser, boolean selected, boolean needDivider) {
+        public static Item asOption(TL_stars.TL_starsGiveawayOption option, int index, long starsPerUser, boolean selected, boolean needDivider) {
             Item item = new Item(HOLDER_TYPE_STAR_OPTION, selected);
             item.intValue = index;
             item.longValue = starsPerUser;

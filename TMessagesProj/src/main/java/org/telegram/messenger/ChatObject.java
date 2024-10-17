@@ -1801,6 +1801,15 @@ public class ChatObject {
         return isChannel(chat) && !isMegagroup(chat);
     }
 
+    public static boolean isDiscussionGroup(int currentAccount, long chatId) {
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        return isDiscussionGroup(messagesController.getChat(chatId), messagesController.getChatFull(chatId));
+    }
+
+    public static boolean isDiscussionGroup(TLRPC.Chat chat, TLRPC.ChatFull chatFull) {
+        return isMegagroup(chat) && chatFull != null && chatFull.linked_chat_id != 0;
+    }
+
     public static boolean isBoostSupported(TLRPC.Chat chat) {
         return isChannelAndNotMegaGroup(chat) || isMegagroup(chat);
     }
@@ -1906,6 +1915,9 @@ public class ChatObject {
     }
 
     public static boolean canSendMessages(TLRPC.Chat chat) {
+        if (isNotInChat(chat) && chat != null && chat.join_to_send) {
+            return false;
+        }
         if (isIgnoredChatRestrictionsForBoosters(chat)) {
             return true;
         }

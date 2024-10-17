@@ -167,6 +167,7 @@ import org.telegram.ui.NotificationsCustomSettingsActivity;
 import org.telegram.ui.PinchToZoomHelper;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -1766,7 +1767,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         if (!unsupported) {
                             if (!UserObject.isService(dialogId) && !isBotsPreview()) {
                                 ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat), false, resourcesProvider).setOnClickListener(v -> {
-                                    AlertsCreator.createReportAlert(getContext(), dialogId, 0, currentStory.storyItem.id, storyViewer.fragment, resourcesProvider, null);
+                                    if (storyViewer != null) storyViewer.setOverlayVisible(true);
+                                    ReportBottomSheet.openStory(currentAccount, getContext(), currentStory.storyItem, BulletinFactory.of(storyContainer, resourcesProvider), resourcesProvider, status -> {
+                                        if (storyViewer != null) storyViewer.setOverlayVisible(false);
+                                    });
                                     if (popupMenu != null) {
                                         popupMenu.dismiss();
                                     }

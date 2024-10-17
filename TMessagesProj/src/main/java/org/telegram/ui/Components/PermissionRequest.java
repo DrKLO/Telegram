@@ -55,7 +55,7 @@ public class PermissionRequest {
             }
             boolean needsPermissionRationale = false;
             for (String permission : checkPermissions) {
-                if (activity.shouldShowRequestPermissionRationale(permission)) {
+                if (!activity.shouldShowRequestPermissionRationale(permission)) {
                     needsPermissionRationale = true;
                     break;
                 }

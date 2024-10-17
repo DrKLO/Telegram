@@ -2285,8 +2285,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         }
                         long timestamp;
                         if (shouldUseTimestamp) {
-                            audioRecorder.getTimestamp(audioTimestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
-                            timestamp = audioTimestamp.nanoTime / 1000;
+                            try {
+                                audioRecorder.getTimestamp(audioTimestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
+                                timestamp = audioTimestamp.nanoTime / 1000;
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                                shouldUseTimestamp = false;
+                                timestamp = audioPresentationTimeUs = System.nanoTime() / 1000;
+                            }
                         } else {
                             timestamp = audioPresentationTimeUs;
                         }

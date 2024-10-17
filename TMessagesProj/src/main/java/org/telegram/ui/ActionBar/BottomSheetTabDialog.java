@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
@@ -139,14 +140,22 @@ public class BottomSheetTabDialog extends Dialog {
     public void attach() {
         if (attached) return;
         attached = true;
-        super.show();
+        try {
+            super.show();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     public void detach() {
         sheet.setDialog(null);
         if (!attached) return;
         attached = false;
-        super.dismiss();
+        try {
+            super.dismiss();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     @Override

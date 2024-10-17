@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.spoilers;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
@@ -18,17 +20,13 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
-import android.graphics.text.LineBreaker;
 import android.os.Build;
 import android.text.Layout;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
-import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ReplacementSpan;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -46,10 +44,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.CachedStaticLayout;
 import org.telegram.ui.Cells.BaseCell;
-import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.QuoteSpan;
-import org.telegram.ui.Components.Size;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TextStyleSpan;
 
@@ -722,11 +718,13 @@ public class SpoilerEffect extends Drawable {
 
     /**
      * Optimized version of text layout double-render
-     *  @param v                        View to use as a parent view
+     *
+     * @param v                        View to use as a parent view
      * @param invalidateSpoilersParent Set to invalidate parent or not
      * @param spoilersColor            Spoilers' color
      * @param verticalOffset           Additional vertical offset
      * @param patchedLayoutRef         Patched layout reference
+     * @param patchedLayoutType
      * @param textLayout               Layout to render
      * @param spoilers                 Spoilers list to render
      * @param canvas                   Canvas to render
@@ -734,8 +732,8 @@ public class SpoilerEffect extends Drawable {
      */
     @SuppressLint("WrongConstant")
     @MainThread
-    public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas, boolean useParentWidth) {
-        if (spoilers.isEmpty()) {
+    public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, int patchedLayoutType, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas, boolean useParentWidth) {
+        if (spoilers == null || spoilers.isEmpty()) {
             layoutDrawMaybe(textLayout, canvas);
             return;
         }
@@ -769,7 +767,9 @@ public class SpoilerEffect extends Drawable {
             }
 
             Layout layout;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (patchedLayoutType == 1) {
+                layout = new StaticLayout(sb, textLayout.getPaint(), textLayout.getWidth(), Layout.Alignment.ALIGN_CENTER, 1.0f, dp(1.66f), false);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 layout = StaticLayout.Builder.obtain(sb, 0, sb.length(), textLayout.getPaint(), textLayout.getWidth())
                         .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                         .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
@@ -826,7 +826,7 @@ public class SpoilerEffect extends Drawable {
                 eff.setInvalidateParent(invalidateSpoilersParent);
                 if (eff.getParentView() != v) eff.setParentView(v);
                 if (eff.shouldInvalidateColor()) {
-                    eff.setColor(ColorUtils.blendARGB(spoilersColor, Theme.chat_msgTextPaint.getColor(), Math.max(0, eff.getRippleProgress())));
+                    eff.setColor(ColorUtils.blendARGB(spoilersColor, patchedLayoutType == 1 ? textLayout.getPaint().getColor() : Theme.chat_msgTextPaint.getColor(), Math.max(0, eff.getRippleProgress())));
                 } else {
                     eff.setColor(spoilersColor);
                 }

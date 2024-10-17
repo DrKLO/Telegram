@@ -4572,6 +4572,8 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 backgroundImage.setBackground(backgroundDrawable);
                 themeDelegate.applyChatServiceMessageColor(AndroidUtilities.calcDrawableColor(backgroundDrawable), checkBlur(backgroundDrawable), backgroundDrawable, currentIntensity);
             }
+        } else if (accent == null) {
+            backgroundImage.setBackground(Theme.getCachedWallpaper());
         } else {
             if (backgroundGradientDisposable != null) {
                 backgroundGradientDisposable.dispose();

@@ -18,6 +18,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -321,6 +322,12 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
+    private static String capitalizeFirst(String str) {
+        if (str == null) return "";
+        if (str.length() <= 1) return str.toUpperCase();
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     private void setupWebView(MyWebView replaceWith, Object proxy) {
         if (webView != null) {
@@ -376,6 +383,12 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             useragent = useragent.replace("; wv)", ")");
             useragent = useragent.replaceAll("\\(Linux; Android.+;[^)]+\\)", "(Linux; Android " + Build.VERSION.RELEASE + "; K)");
             useragent = useragent.replaceAll("Version/[\\d\\.]+ ", "");
+            if (bot) {
+                final PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                final int perf = SharedConfig.getDevicePerformanceClass();
+                final String perfName = perf == SharedConfig.PERFORMANCE_CLASS_LOW ? "LOW" : perf == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? "AVERAGE" : "HIGH";
+                useragent += " Telegram-Android/" + packageInfo.versionName + " (" + capitalizeFirst(Build.MANUFACTURER) + " " + Build.MODEL + "; Android " + Build.VERSION.RELEASE + "; SDK " + Build.VERSION.SDK_INT + "; " + perfName + ")";
+            }
             settings.setUserAgentString(useragent);
         } catch (Exception e) {
             FileLog.e(e);
@@ -1322,21 +1335,27 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         PopupButton btn = buttonsList.get(0);
                         if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                            textView.setTextColor(getColor(btn.textColorKey));
+                            if (textView != null) {
+                                textView.setTextColor(getColor(btn.textColorKey));
+                            }
                         }
                     }
                     if (buttonsList.size() >= 2) {
                         PopupButton btn = buttonsList.get(1);
                         if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                            textView.setTextColor(getColor(btn.textColorKey));
+                            if (textView != null) {
+                                textView.setTextColor(getColor(btn.textColorKey));
+                            }
                         }
                     }
                     if (buttonsList.size() == 3) {
                         PopupButton btn = buttonsList.get(2);
                         if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-                            textView.setTextColor(getColor(btn.textColorKey));
+                            if (textView != null) {
+                                textView.setTextColor(getColor(btn.textColorKey));
+                            }
                         }
                     }
                 } catch (JSONException e) {
@@ -1366,7 +1385,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 try {
                     JSONObject jsonObject = new JSONObject(eventData);
                     delegate.onWebAppSetBackgroundColor(Color.parseColor(jsonObject.optString("color", "#ffffff")) | 0xFF000000);
-                } catch (JSONException | IllegalArgumentException e) {
+                } catch (Exception e) {
                     FileLog.e(e);
                 }
                 break;
@@ -1397,7 +1416,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                             delegate.onWebAppSetActionBarColor(themeKey, Theme.getColor(themeKey, resourcesProvider), false);
                         }
                     }
-                } catch (JSONException e) {
+                } catch (Exception e) {
                     FileLog.e(e);
                 }
                 break;
@@ -1609,7 +1628,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     buttonData = eventData;
 
                     delegate.onSetupMainButton(isVisible, isActive, text, color, textColor, isProgressVisible, hasShineEffect);
-                } catch (JSONException | IllegalArgumentException e) {
+                } catch (Exception e) {
                     FileLog.e(e);
                 }
                 break;
@@ -1634,7 +1653,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     secondaryButtonData = eventData;
 
                     delegate.onSetupSecondaryButton(isVisible, isActive, text, color, textColor, isProgressVisible, hasShineEffect, position);
-                } catch (JSONException | IllegalArgumentException e) {
+                } catch (Exception e) {
                     FileLog.e(e);
                 }
                 break;
@@ -2695,116 +2714,121 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 public boolean onLongClick(View v) {
                     WebView.HitTestResult result = getHitTestResult();
                     if (result.getType() == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
-                        String url = result.getExtra();
+                        final String url = result.getExtra();
+                        AndroidUtilities.runOnUIThread(() -> {
 
-                        BottomSheet.Builder builder = new BottomSheet.Builder(getContext(), false, null);
-                        String formattedUrl = url;
-                        try {
+                            BottomSheet.Builder builder = new BottomSheet.Builder(getContext(), false, null);
+                            String formattedUrl = url;
                             try {
-                                Uri uri = Uri.parse(formattedUrl);
-                                formattedUrl = Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null);
-                            } catch (Exception e) {
-                                FileLog.e(e, false);
-                            }
-                            formattedUrl = URLDecoder.decode(formattedUrl.replaceAll("\\+", "%2b"), "UTF-8");
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        builder.setTitleMultipleLines(true);
-                        builder.setTitle(formattedUrl);
-                        builder.setItems(new CharSequence[]{
-                            LocaleController.getString(R.string.OpenInTelegramBrowser),
-                            LocaleController.getString(R.string.OpenInSystemBrowser),
-                            LocaleController.getString(R.string.Copy)
-                        }, (dialog, which) -> {
-                            if (which == 0) {
-                                loadUrl(url);
-                            } else if (which == 1) {
                                 try {
-                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                    intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
-                                    intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                                    getContext().startActivity(intent);
+                                    Uri uri = Uri.parse(formattedUrl);
+                                    formattedUrl = Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null);
                                 } catch (Exception e) {
-                                    FileLog.e(e);
-                                    loadUrl(url);
+                                    FileLog.e(e, false);
                                 }
-                            } else if (which == 2) {
-                                AndroidUtilities.addToClipboard(url);
-                                if (botWebViewContainer != null) {
-                                    botWebViewContainer.showLinkCopiedBulletin();
-                                }
+                                formattedUrl = URLDecoder.decode(formattedUrl.replaceAll("\\+", "%2b"), "UTF-8");
+                            } catch (Exception e) {
+                                FileLog.e(e);
                             }
+                            builder.setTitleMultipleLines(true);
+                            builder.setTitle(formattedUrl);
+                            builder.setItems(new CharSequence[]{
+                                    LocaleController.getString(R.string.OpenInTelegramBrowser),
+                                    LocaleController.getString(R.string.OpenInSystemBrowser),
+                                    LocaleController.getString(R.string.Copy)
+                            }, (dialog, which) -> {
+                                if (which == 0) {
+                                    loadUrl(url);
+                                } else if (which == 1) {
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                        intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
+                                        intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
+                                        getContext().startActivity(intent);
+                                    } catch (Exception e) {
+                                        FileLog.e(e);
+                                        loadUrl(url);
+                                    }
+                                } else if (which == 2) {
+                                    AndroidUtilities.addToClipboard(url);
+                                    if (botWebViewContainer != null) {
+                                        botWebViewContainer.showLinkCopiedBulletin();
+                                    }
+                                }
+                            });
+                            builder.show();
                         });
-                        builder.show();
 
                         return true;
                     } else if (result.getType() == HitTestResult.IMAGE_TYPE) {
-                        String imageUrl = result.getExtra();
+                        final String imageUrl = result.getExtra();
 
-                        BottomSheet.Builder builder = new BottomSheet.Builder(getContext(), false, null);
-                        String formattedUrl = imageUrl;
-                        try {
+                        AndroidUtilities.runOnUIThread(() -> {
+
+                            BottomSheet.Builder builder = new BottomSheet.Builder(getContext(), false, null);
+                            String formattedUrl = imageUrl;
                             try {
-                                Uri uri = Uri.parse(formattedUrl);
-                                formattedUrl = Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null);
-                            } catch (Exception e) {
-                                FileLog.e(e, false);
-                            }
-                            formattedUrl = URLDecoder.decode(formattedUrl.replaceAll("\\+", "%2b"), "UTF-8");
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        builder.setTitleMultipleLines(true);
-                        builder.setTitle(formattedUrl);
-                        builder.setItems(new CharSequence[]{
-                                LocaleController.getString(R.string.OpenInSystemBrowser),
-                                LocaleController.getString(R.string.AccActionDownload),
-                                LocaleController.getString(R.string.CopyLink)
-                        }, (dialog, which) -> {
-                            if (which == 0) {
                                 try {
-                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(imageUrl));
-                                    intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
-                                    intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                                    getContext().startActivity(intent);
+                                    Uri uri = Uri.parse(formattedUrl);
+                                    formattedUrl = Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null);
                                 } catch (Exception e) {
-                                    FileLog.e(e);
-                                    loadUrl(imageUrl);
+                                    FileLog.e(e, false);
                                 }
-                            } else if (which == 1) {
-                                try {
-                                    String filename = URLUtil.guessFileName(imageUrl, null, "image/*");
-                                    if (filename == null) {
-                                        filename = "image.png";
-                                    }
-
-                                    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(imageUrl));
-                                    request.setMimeType("image/*");
-                                    request.setDescription(getString(R.string.WebDownloading));
-                                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
-                                    DownloadManager downloadManager = (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE);
-                                    if (downloadManager != null) {
-                                        downloadManager.enqueue(request);
-                                    }
-
-                                    if (botWebViewContainer != null) {
-                                        BulletinFactory.of(botWebViewContainer, botWebViewContainer.resourcesProvider)
-                                                .createSimpleBulletin(R.raw.ic_download, AndroidUtilities.replaceTags(formatString(R.string.WebDownloadingFile, filename)))
-                                                .show(true);
-                                    }
-                                } catch (Exception e2) {
-                                    FileLog.e(e2);
-                                }
-                            } else if (which == 2) {
-                                AndroidUtilities.addToClipboard(imageUrl);
-                                if (botWebViewContainer != null) {
-                                    botWebViewContainer.showLinkCopiedBulletin();
-                                }
+                                formattedUrl = URLDecoder.decode(formattedUrl.replaceAll("\\+", "%2b"), "UTF-8");
+                            } catch (Exception e) {
+                                FileLog.e(e);
                             }
+                            builder.setTitleMultipleLines(true);
+                            builder.setTitle(formattedUrl);
+                            builder.setItems(new CharSequence[]{
+                                    LocaleController.getString(R.string.OpenInSystemBrowser),
+                                    LocaleController.getString(R.string.AccActionDownload),
+                                    LocaleController.getString(R.string.CopyLink)
+                            }, (dialog, which) -> {
+                                if (which == 0) {
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(imageUrl));
+                                        intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
+                                        intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
+                                        getContext().startActivity(intent);
+                                    } catch (Exception e) {
+                                        FileLog.e(e);
+                                        loadUrl(imageUrl);
+                                    }
+                                } else if (which == 1) {
+                                    try {
+                                        String filename = URLUtil.guessFileName(imageUrl, null, "image/*");
+                                        if (filename == null) {
+                                            filename = "image.png";
+                                        }
+
+                                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(imageUrl));
+                                        request.setMimeType("image/*");
+                                        request.setDescription(getString(R.string.WebDownloading));
+                                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+                                        DownloadManager downloadManager = (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE);
+                                        if (downloadManager != null) {
+                                            downloadManager.enqueue(request);
+                                        }
+
+                                        if (botWebViewContainer != null) {
+                                            BulletinFactory.of(botWebViewContainer, botWebViewContainer.resourcesProvider)
+                                                    .createSimpleBulletin(R.raw.ic_download, AndroidUtilities.replaceTags(formatString(R.string.WebDownloadingFile, filename)))
+                                                    .show(true);
+                                        }
+                                    } catch (Exception e2) {
+                                        FileLog.e(e2);
+                                    }
+                                } else if (which == 2) {
+                                    AndroidUtilities.addToClipboard(imageUrl);
+                                    if (botWebViewContainer != null) {
+                                        botWebViewContainer.showLinkCopiedBulletin();
+                                    }
+                                }
+                            });
+                            builder.show();
                         });
-                        builder.show();
 
                         return true;
                     }

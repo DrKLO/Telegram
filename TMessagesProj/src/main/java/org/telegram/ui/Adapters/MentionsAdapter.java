@@ -1778,9 +1778,11 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         int type = holder.getItemViewType();
         if (type == 4) {
             StickerCell stickerCell = (StickerCell) holder.itemView;
-            StickerResult result = stickers.get(position);
-            stickerCell.setSticker(result.sticker, result.parent);
-            stickerCell.setClearsInputField(true);
+            if (position >= 0 && position < stickers.size()) {
+                StickerResult result = stickers.get(position);
+                stickerCell.setSticker(result.sticker, result.parent);
+                stickerCell.setClearsInputField(true);
+            }
         } else if (type == 3) {
             TextView textView = (TextView) holder.itemView;
             TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -1808,7 +1810,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 if (hasTop) {
                     position--;
                 }
-                ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
+                if (position >= 0 && position < searchResultBotContext.size()) {
+                    ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
+                }
             }
         } else {
             MentionCell cell = (MentionCell) holder.itemView;
@@ -1819,12 +1823,14 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 } else if (object instanceof TLRPC.Chat) {
                     cell.setChat((TLRPC.Chat) object);
                 }
-            } else if (searchResultHashtags != null) {
+            } else if (searchResultHashtags != null && position >= 0 && position < searchResultHashtags.size()) {
                 cell.setText(searchResultHashtags.get(position));
-            } else if (searchResultSuggestions != null) {
+            } else if (searchResultSuggestions != null && position >= 0 && position < searchResultSuggestions.size()) {
                 cell.setEmojiSuggestion(searchResultSuggestions.get(position));
-            } else if (searchResultCommands != null) {
-                cell.setBotCommand(searchResultCommands.get(position), searchResultCommandsHelp.get(position), searchResultCommandsUsers != null ? searchResultCommandsUsers.get(position) : null);
+            } else if (searchResultCommands != null && position >= 0 && position < searchResultCommands.size()) {
+                final String help = searchResultCommandsHelp != null && position >= 0 && position < searchResultCommandsHelp.size() ? searchResultCommandsHelp.get(position) : null;
+                final TLRPC.User user = searchResultCommandsUsers != null && position >= 0 && position < searchResultCommandsUsers.size() ? searchResultCommandsUsers.get(position) : null;
+                cell.setBotCommand(searchResultCommands.get(position), help, user);
             }
             cell.setDivider(USE_DIVIDERS && (isReversed ? position > 0 : position < getItemCount() - 1));
         }

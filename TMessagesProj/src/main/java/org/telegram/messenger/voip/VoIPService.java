@@ -267,6 +267,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private int scheduleDate;
 	private TLRPC.InputPeer groupCallPeer;
 	public boolean hasFewPeers;
+	public boolean isRtmpStream;
 	private String joinHash;
 
 	private int remoteVideoState = Instance.VIDEO_STATE_INACTIVE;
@@ -714,6 +715,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		long chatID = intent.getLongExtra("chat_id", 0);
 		createGroupCall = intent.getBooleanExtra("createGroupCall", false);
 		hasFewPeers = intent.getBooleanExtra("hasFewPeers", false);
+		isRtmpStream = intent.getBooleanExtra("isRtmpStream", false);
 		joinHash = intent.getStringExtra("hash");
 		long peerChannelId = intent.getLongExtra("peerChannelId", 0);
 		long peerChatId = intent.getLongExtra("peerChatId", 0);
@@ -1766,6 +1768,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			groupCall.call.version = 1;
 			groupCall.call.can_start_video = true;
 			groupCall.call.can_change_join_muted = true;
+			groupCall.call.rtmp_stream = isRtmpStream;
 			groupCall.chatId = chat.id;
 			groupCall.currentAccount = AccountInstance.getInstance(currentAccount);
 			groupCall.setSelfPeer(groupCallPeer);
@@ -1778,6 +1781,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (scheduleDate != 0) {
 				req.schedule_date = scheduleDate;
 				req.flags |= 2;
+			}
+			if (isRtmpStream) {
+				req.flags |= 4;
 			}
 			groupCallBottomSheetLatch = new CountDownLatch(1);
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {

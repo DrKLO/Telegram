@@ -873,7 +873,7 @@ void Handshake::processHandshakeResponse_serverDHParamsAnswer(TLObject *message,
                     request->encrypted_message = currentDatacenter->createRequestsData(array, nullptr, connection, true);
                 };
 
-                authKeyPendingRequestId = ConnectionsManager::getInstance(currentDatacenter->instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+                authKeyPendingRequestId = ConnectionsManager::getInstance(currentDatacenter->instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
                     authKeyPendingMessageId = 0;
                     authKeyPendingRequestId = 0;
                     if (response != nullptr && typeid(*response) == typeid(TL_boolTrue)) {
@@ -989,7 +989,7 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
     loadingCdnKeys = true;
     auto request = new TL_help_getCdnConfig();
 
-    ConnectionsManager::getInstance(datacenter->instanceNum).sendRequest(request, [&, datacenter](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    ConnectionsManager::getInstance(datacenter->instanceNum).sendRequest(request, [&, datacenter](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         if (response != nullptr) {
             auto config = (TL_cdnConfig *) response;
             size_t count = config->public_keys.size();

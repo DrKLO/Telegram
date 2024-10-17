@@ -21,7 +21,7 @@ import org.telegram.messenger.BillingController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -82,10 +82,10 @@ public class StarGiveawayOptionCell extends FrameLayout {
         addView(radioButton, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.CENTER_VERTICAL, 22, 0, 0, 0));
     }
 
-    private TLRPC.TL_starsGiveawayOption currentOption;
+    private TL_stars.TL_starsGiveawayOption currentOption;
     private long currentOptionStarsPerUser;
 
-    public void setOption(TLRPC.TL_starsGiveawayOption option, int index, long per_user_stars, boolean selected, boolean needDivider) {
+    public void setOption(TL_stars.TL_starsGiveawayOption option, int index, long per_user_stars, boolean selected, boolean needDivider) {
         final boolean animated = currentOption == option;
         radioButton.setChecked(selected, animated);
 
@@ -114,7 +114,7 @@ public class StarGiveawayOptionCell extends FrameLayout {
 
     }
 
-    public TLRPC.TL_starsGiveawayOption getOption() {
+    public TL_stars.TL_starsGiveawayOption getOption() {
         return currentOption;
     }
 

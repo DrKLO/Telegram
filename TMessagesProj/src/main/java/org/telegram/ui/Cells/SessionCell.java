@@ -346,6 +346,10 @@ public class SessionCell extends FrameLayout {
             iconId = R.drawable.fragment;
             colorKey = -1;
             colorKey2 = -1;
+        } else if (platform.contains("anonymous")) {
+            iconId = R.drawable.large_hidden;
+            colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("premiumbot")) {
             iconId = R.drawable.filled_star_plus;
             colorKey = Theme.key_color_yellow;

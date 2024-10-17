@@ -397,14 +397,14 @@ public class FactCheckController {
                     menu.removeItem(android.R.id.shareText);
                 }
                 int order = 6;
-                SpannableStringBuilder stringBuilder = new SpannableStringBuilder(getString("Bold", R.string.Bold));
+                SpannableStringBuilder stringBuilder = new SpannableStringBuilder(getString(R.string.Bold));
                 stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 menu.add(R.id.menu_groupbolditalic, R.id.menu_bold, order++, stringBuilder);
-                stringBuilder = new SpannableStringBuilder(getString("Italic", R.string.Italic));
-                stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/ritalic.ttf")), 0, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                stringBuilder = new SpannableStringBuilder(getString(R.string.Italic));
+                stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC)), 0, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 menu.add(R.id.menu_groupbolditalic, R.id.menu_italic, order++, stringBuilder);
-                menu.add(R.id.menu_groupbolditalic, R.id.menu_link, order++, getString("CreateLink", R.string.CreateLink));
-                menu.add(R.id.menu_groupbolditalic, R.id.menu_regular, order++, getString("Regular", R.string.Regular));
+                menu.add(R.id.menu_groupbolditalic, R.id.menu_link, order++, getString(R.string.CreateLink));
+                menu.add(R.id.menu_groupbolditalic, R.id.menu_regular, order++, getString(R.string.Regular));
             }
 
             @Override

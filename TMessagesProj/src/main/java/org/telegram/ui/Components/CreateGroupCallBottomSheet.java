@@ -1,9 +1,12 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Build;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -28,7 +31,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +39,7 @@ import java.util.List;
 public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView {
     private static final int
             HOLDER_TYPE_HEADER = 0,
-            HOLDER_TYPE_DIVIDER = 1,
+            HOLDER_TYPE_SHADOW_TEXT = 1,
             HOLDER_TYPE_SUBTITLE = 2,
             HOLDER_TYPE_USER = 3;
 
@@ -62,10 +65,14 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
     private boolean isScheduleSelected;
     private TLRPC.Peer selectedPeer;
     private TLRPC.InputPeer selectAfterDismiss;
+    private final BaseFragment fragment;
+    private final long dialogId;
 
     public CreateGroupCallBottomSheet(BaseFragment fragment, ArrayList<TLRPC.Peer> arrayList, long dialogId, JoinCallAlert.JoinCallAlertDelegate joinCallDelegate) {
         super(fragment, false, false);
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        this.fragment = fragment;
+        this.dialogId = dialogId;
         this.topPadding = 0.26f;
         this.chats = new ArrayList<>(arrayList);
         this.joinCallDelegate = joinCallDelegate;
@@ -152,7 +159,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
     public void dismissInternal() {
         super.dismissInternal();
         if (selectAfterDismiss != null) {
-            joinCallDelegate.didSelectChat(selectAfterDismiss, chats.size() > 1, isScheduleSelected);
+            joinCallDelegate.didSelectChat(selectAfterDismiss, chats.size() > 1, isScheduleSelected, false);
         }
     }
 
@@ -183,14 +190,18 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                     case HOLDER_TYPE_HEADER:
                         view = new TopCell(context, isChannelOrGiga);
                         break;
-                    case HOLDER_TYPE_DIVIDER:
-                        view = new ShadowSectionCell(context, 12, Theme.getColor(Theme.key_windowBackgroundGray));
-                        break;
                     case HOLDER_TYPE_SUBTITLE:
                         view = new HeaderCell(context, 22);
                         break;
                     case HOLDER_TYPE_USER:
                         view = new GroupCreateUserCell(context, 1, 0, false);
+                        break;
+                    case HOLDER_TYPE_SHADOW_TEXT:
+                        TextInfoPrivacyCell cell = new TextInfoPrivacyCell(context);
+                        cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                        cell.setTopPadding(17);
+                        cell.setBottomPadding(17);
+                        view = cell;
                         break;
                 }
                 view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -219,6 +230,12 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                     cell.setTextSize(15);
                     cell.setPadding(0, 0, 0, AndroidUtilities.dp(2));
                     cell.setText(LocaleController.getString(R.string.VoipChatDisplayedAs).replace(":", ""));
+                } else if (holder.getItemViewType() == HOLDER_TYPE_SHADOW_TEXT) {
+                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                    CharSequence text = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.VoipChatStreamWithAnotherApp), Theme.key_windowBackgroundWhiteBlueHeader, AndroidUtilities.REPLACING_TAG_TYPE_LINK, () -> {
+                        CreateRtmpStreamBottomSheet.show(selectedPeer, fragment, dialogId, chats.size() > 1, joinCallDelegate);
+                    }), true, dp(1), dp(1f));
+                    cell.setText(text);
                 }
             }
 
@@ -228,7 +245,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                     case 0:
                         return HOLDER_TYPE_HEADER;
                     case 1:
-                        return HOLDER_TYPE_DIVIDER;
+                        return HOLDER_TYPE_SHADOW_TEXT;
                     case 2:
                         return HOLDER_TYPE_SUBTITLE;
                     default:

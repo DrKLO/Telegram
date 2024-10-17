@@ -210,6 +210,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public ReactionHolderView nextRecentReaction;
 
+    public boolean channelReactions;
+
     float pullingLeftOffset;
 
     HashSet<View> lastVisibleViews = new HashSet<>();
@@ -1044,6 +1046,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             }
         }
         hitLimit = type == TYPE_DEFAULT && messageObject != null && chosenCount >= MessagesController.getInstance(currentAccount).getChatMaxUniqReactions(messageObject.getDialogId());
+        channelReactions = type == TYPE_DEFAULT && messageObject != null && ChatObject.isChannelAndNotMegaGroup(MessagesController.getInstance(currentAccount).getChat(-messageObject.getDialogId()));
         TLRPC.ChatFull reactionsChat = chatFull;
         List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions = new ArrayList<>();
         if (message != null && message.isForwardedChannelPost()) {

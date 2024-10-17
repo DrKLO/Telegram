@@ -105,7 +105,7 @@ public class JoinCallAlert extends BottomSheet {
     }
 
     public interface JoinCallAlertDelegate {
-        void didSelectChat(TLRPC.InputPeer peer, boolean hasFewPeers, boolean schedule);
+        void didSelectChat(TLRPC.InputPeer peer, boolean hasFewPeers, boolean schedule, boolean isRtmpStream);
     }
 
     public class BottomSheetCell extends FrameLayout {
@@ -237,7 +237,7 @@ public class JoinCallAlert extends BottomSheet {
         if (lastCachedAccount == accountInstance.getCurrentAccount() && lastCacheDid == did && cachedChats != null && SystemClock.elapsedRealtime() - lastCacheTime < 5 * 60 * 1000) {
             if (cachedChats.size() == 1 && type != TYPE_CREATE) {
                 TLRPC.InputPeer peer = accountInstance.getMessagesController().getInputPeer(MessageObject.getPeerId(cachedChats.get(0)));
-                delegate.didSelectChat(peer, false, false);
+                delegate.didSelectChat(peer, false, false, false);
             } else {
                 showAlert(context, did, cachedChats, fragment, type, scheduledPeer, delegate);
             }
@@ -255,7 +255,7 @@ public class JoinCallAlert extends BottomSheet {
                     TLRPC.TL_phone_joinAsPeers res = (TLRPC.TL_phone_joinAsPeers) response;
                     if (res.peers.size() == 1) {
                         TLRPC.InputPeer peer = accountInstance.getMessagesController().getInputPeer(MessageObject.getPeerId(res.peers.get(0)));
-                        delegate.didSelectChat(peer, false, false);
+                        delegate.didSelectChat(peer, false, false, false);
                         return;
                     }
                     cachedChats = res.peers;
@@ -591,7 +591,7 @@ public class JoinCallAlert extends BottomSheet {
             TLRPC.InputPeer peer = MessagesController.getInstance(currentAccount).getInputPeer(MessageObject.getPeerId(selectedPeer));
             if (currentType == TYPE_DISPLAY) {
                 if (selectedPeer != currentPeer) {
-                    delegate.didSelectChat(peer, chats.size() > 1, false);
+                    delegate.didSelectChat(peer, chats.size() > 1, false, false);
                 }
             } else {
                 selectAfterDismiss = peer;
@@ -663,7 +663,7 @@ public class JoinCallAlert extends BottomSheet {
     public void dismissInternal() {
         super.dismissInternal();
         if (selectAfterDismiss != null) {
-            delegate.didSelectChat(selectAfterDismiss, chats.size() > 1, schedule);
+            delegate.didSelectChat(selectAfterDismiss, chats.size() > 1, schedule, false);
         }
     }
 

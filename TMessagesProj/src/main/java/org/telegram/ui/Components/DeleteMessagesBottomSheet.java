@@ -762,9 +762,18 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
         }
     }
 
+    private boolean banChecked;
     private void onRestrictionsChanged() {
+        if (restrict && banOrRestrict.isPresent()) {
+            banChecked = banOrRestrict.selectedCount > 0;
+        }
         if (restrict && banOrRestrict.isPresent() && banOrRestrict.selectedCount == 0) {
             banOrRestrict.toggleAllChecks();
+        } else if (!restrict && banOrRestrict.isPresent() && banChecked != (banOrRestrict.selectedCount > 0)) {
+            banOrRestrict.toggleAllChecks();
+        }
+        if (!restrict && banOrRestrict.isPresent()) {
+            banChecked = banOrRestrict.selectedCount > 0;
         }
     }
 

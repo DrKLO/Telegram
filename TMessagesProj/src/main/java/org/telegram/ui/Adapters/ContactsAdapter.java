@@ -66,7 +66,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     private int sortType;
     private boolean isChannel;
     private boolean disableSections;
-    private boolean isEmpty;
+    public boolean isEmpty;
     public boolean hasStories;
     public ArrayList<TL_stories.PeerStories> userStories = new ArrayList<>();
 

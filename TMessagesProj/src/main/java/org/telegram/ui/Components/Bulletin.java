@@ -1329,6 +1329,14 @@ public class Bulletin {
             }
         }
 
+        public void setAnimation(TLRPC.Document document, int w, int h, String... layers) {
+            imageView.setAutoRepeat(true);
+            imageView.setAnimation(document, w, h);
+            for (String layer : layers) {
+                imageView.setLayerColor(layer + ".**", textColor);
+            }
+        }
+
         public CharSequence getAccessibilityText() {
             return titleTextView.getText() + ".\n" + subtitleTextView.getText();
         }

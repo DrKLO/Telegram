@@ -402,6 +402,14 @@
         </receiver>
 
         <receiver
+            android:name=".CopyCodeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.telegram.messenger.ACTION_COPY_CODE"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".NotificationsDisabledReceiver"
             android:exported="false">
             <intent-filter>

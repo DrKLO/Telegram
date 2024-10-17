@@ -55,6 +55,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
     public static final int STAR_TIER = 31;
     public static final int BROWSER_BOOKMARK = 32;
     public static final int STAR_SUBSCRIPTION = 33;
+    public static final int STAR_GIFT = 34;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -160,6 +161,10 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
                 globalGradientView.setParentSize(parent.getMeasuredWidth(), parent.getMeasuredHeight(), -getX());
             }
             paint = globalGradientView.paint;
+        }
+
+        if (getViewType() == STAR_GIFT) {
+            parentXOffset = -getX();
         }
 
         updateColors();
@@ -850,6 +855,10 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
                     break;
                 }
             }
+        } else if (getViewType() == STAR_GIFT) {
+            rectF.set(paddingLeft, paddingTop, getMeasuredWidth() - paddingLeft, getMeasuredHeight() - paddingTop);
+            rectF.inset(dp(3.33f), dp(4));
+            canvas.drawRoundRect(rectF, dp(11), dp(11), paint);
         }
         invalidate();
     }
@@ -870,6 +879,9 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         int width = parentWidth;
         if (width == 0) {
             width = getMeasuredWidth();
+        }
+        if (viewType == STAR_GIFT) {
+            width = Math.max(width, AndroidUtilities.displaySize.x);
         }
         int height = parentHeight;
         if (height == 0) {
@@ -905,10 +917,17 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         if (this.color1 != color1 || this.color0 != color0) {
             this.color0 = color0;
             this.color1 = color1;
-            if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || viewType == CHAT_THEMES_TYPE || viewType == QR_TYPE) {
-                gradient = new LinearGradient(0, 0, gradientWidth = dp(200), 0, new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
+            if (viewType == STAR_GIFT) {
+                gradientWidth = AndroidUtilities.displaySize.x;
+            } else if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || viewType == CHAT_THEMES_TYPE || viewType == QR_TYPE) {
+                gradientWidth = dp(200);
             } else {
-                gradient = new LinearGradient(0, 0, 0, gradientWidth = dp(600), new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
+                gradientWidth = dp(600);
+            }
+            if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || viewType == CHAT_THEMES_TYPE || viewType == QR_TYPE) {
+                gradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
+            } else {
+                gradient = new LinearGradient(0, 0, 0, gradientWidth, new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
             }
             paint.setShader(gradient);
         }
@@ -984,6 +1003,8 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
                 return dp(48) + 1;
             case BROWSER_BOOKMARK:
                 return dp(56) + 1;
+            case STAR_GIFT:
+                return dp(140);
         }
         return 0;
     }

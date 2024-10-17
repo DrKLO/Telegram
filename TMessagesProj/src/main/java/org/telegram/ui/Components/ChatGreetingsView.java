@@ -100,15 +100,19 @@ public class ChatGreetingsView extends LinearLayout {
 
         updateColors();
 
-        titleView.setText(getString(R.string.NoMessages));
-        descriptionView.setText(getString(R.string.NoMessagesGreetingsDescription));
-        descriptionView.setMaxWidth(HintView2.cutInFancyHalf(descriptionView.getText(), descriptionView.getPaint()));
-        stickerToSendView.setContentDescription(descriptionView.getText());
+        setText(getString(R.string.NoMessages), getString(R.string.NoMessagesGreetingsDescription));
 
         preloadedGreetingsSticker = sticker;
         if (preloadedGreetingsSticker == null) {
             preloadedGreetingsSticker = MediaDataController.getInstance(currentAccount).getGreetingsSticker();
         }
+    }
+
+    public void setText(CharSequence title, CharSequence description) {
+        titleView.setText(title);
+        descriptionView.setText(description);
+        descriptionView.setMaxWidth(HintView2.cutInFancyHalf(descriptionView.getText(), descriptionView.getPaint()));
+        stickerToSendView.setContentDescription(descriptionView.getText());
     }
 
     private RLottieImageView premiumIconView;

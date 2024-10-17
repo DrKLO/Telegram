@@ -102,6 +102,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     private boolean[] shadowVisibility = new boolean[2];
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private int customViewOffset = 12;
+    private boolean withCancelDialog;
 
     private int dialogButtonColorKey = Theme.key_dialogButton;
 
@@ -290,6 +291,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
             shadowDrawable.getPadding(backgroundPaddings);
         }
+        withCancelDialog = progressViewStyle == ALERT_TYPE_SPINNER;
 
         progressViewStyle = progressStyle;
     }
@@ -313,6 +315,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         shownAt = System.currentTimeMillis();
     }
 
+    public void setCancelDialog(boolean enable) {
+        withCancelDialog = enable;
+    }
+
     public class AlertDialogView extends LinearLayout {
         public AlertDialogView(Context context) {
             super(context);
@@ -322,7 +328,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            if (progressViewStyle == ALERT_TYPE_SPINNER) {
+            if (withCancelDialog) {
                 showCancelAlert();
                 return false;
             }
@@ -331,7 +337,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         @Override
         public boolean onInterceptTouchEvent(MotionEvent ev) {
-            if (progressViewStyle == ALERT_TYPE_SPINNER) {
+            if (withCancelDialog) {
                 showCancelAlert();
                 return false;
             }
@@ -1218,7 +1224,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
     }
 
-    private void showCancelAlert() {
+    public void showCancelAlert() {
         if (!canCacnel || cancelDialog != null) {
             return;
         }

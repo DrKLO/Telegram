@@ -382,11 +382,11 @@ public class BottomSheetTabsOverlay extends FrameLayout {
     }
 
     public float getScrollWindow() {
-        return Math.min(SharedConfig.botTabs3DEffect ? 3 : 6, getScrollRange());
+        return Math.min(3, getScrollRange());
     }
 
     public float getScrollWindow(boolean animated) {
-        return Math.min(SharedConfig.botTabs3DEffect ? 3 : 6, getScrollRange(animated));
+        return Math.min(3, getScrollRange(animated));
     }
 
     public float getScrollMin() {
@@ -522,11 +522,17 @@ public class BottomSheetTabsOverlay extends FrameLayout {
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                sheet.getWindowView().setDrawingFromOverlay(false);
                 View view = tab.webView != null ? tab.webView : tab.view2;
                 if (view != null && tab.previewBitmap == null && tab.viewWidth > 0 && tab.viewHeight > 0) {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        renderHardwareViewToBitmap(view, -tab.viewScroll, b -> tab.previewBitmap = b);
+                        renderHardwareViewToBitmap(view, -tab.viewScroll, b -> {
+                            tab.previewBitmap = b;
+                            sheet.getWindowView().setDrawingFromOverlay(false);
+                            sheet.release();
+                        });
+                        dismissingSheet = null;
+                        invalidate();
+                        return;
                     } else {
                         tab.previewBitmap = Bitmap.createBitmap(tab.viewWidth, tab.viewHeight, Bitmap.Config.RGB_565);
                         Canvas canvas = new Canvas(tab.previewBitmap);
@@ -534,6 +540,7 @@ public class BottomSheetTabsOverlay extends FrameLayout {
                         view.draw(canvas);
                     }
                 }
+                sheet.getWindowView().setDrawingFromOverlay(false);
                 sheet.release();
                 dismissingSheet = null;
                 invalidate();
@@ -796,17 +803,10 @@ public class BottomSheetTabsOverlay extends FrameLayout {
 
             float alpha = 1f;
             float top, bottom, y;
-            if (SharedConfig.botTabs3DEffect) {
-                top = paddingTop + dp(6) * Math.min(5, position);
-                bottom = thisHeight - paddingBottom - height * .26f;// - dp(6) * Math.min(5, count - position);
-                y = top + (bottom - top) * scroll;
-                alpha = 1f; // Utilities.clamp(oscrollT * 4f + 1f, 1f, 0f);
-            } else {
-                top = paddingTop + dp(20) * ((float) Math.pow(1.1f, position) - 1f);
-                bottom = thisHeight - paddingBottom - height * .26f;
-                y = top + (bottom - top) * (float) (Math.pow(scrollT, 2));
-                y = Math.min(y, thisHeight);
-            }
+            top = paddingTop + dp(6) * Math.min(5, position);
+            bottom = thisHeight - paddingBottom - height * .26f;// - dp(6) * Math.min(5, count - position);
+            y = top + (bottom - top) * scroll;
+            alpha = 1f; // Utilities.clamp(oscrollT * 4f + 1f, 1f, 0f);
 
             if (alpha <= 0) continue;
 
@@ -831,65 +831,49 @@ public class BottomSheetTabsOverlay extends FrameLayout {
 
             canvas.save();
             tab.clickBounds.set(rect2);
-            if (SharedConfig.botTabs3DEffect) {
-                Canvas tabCanvas = canvas;
-                tab.matrix.reset();
 
-                final int p = 0;
-                final float Sh = 1f;
-                tab.src[0] = rect2.left;
-                tab.src[1] = rect2.top;
-                tab.src[2] = rect2.right;
-                tab.src[3] = rect2.top;
-                tab.src[4] = rect2.right;
-                tab.src[5] = rect2.top + rect2.height() * Sh;
-                tab.src[6] = rect2.left;
-                tab.src[7] = rect2.top + rect2.height() * Sh;
+            Canvas tabCanvas = canvas;
+            tab.matrix.reset();
 
-                tab.dst[0] = rect2.left;
-                tab.dst[1] = rect2.top - dp(p);
-                tab.dst[2] = rect2.right;
-                tab.dst[3] = rect2.top - dp(p);
-                final float s1 = .83f, s2 = .6f;
-                tab.dst[4] = rect2.centerX() + rect2.width() / 2f * lerp(1f, s1, tabOpen * (1f - opening));
-                tab.dst[5] = rect2.top - dp(p) + (rect2.height() * Sh + dp(p + p)) * lerp(1f, s2, tabOpen * (1f - opening));
-                tab.dst[6] = rect2.centerX() - rect2.width() / 2f * lerp(1f, s1, tabOpen * (1f - opening));
-                tab.dst[7] = rect2.top - dp(p) + (rect2.height() * Sh + dp(p + p)) * lerp(1f, s2, tabOpen * (1f - opening));
+            final int p = 0;
+            final float Sh = 1f;
+            tab.src[0] = rect2.left;
+            tab.src[1] = rect2.top;
+            tab.src[2] = rect2.right;
+            tab.src[3] = rect2.top;
+            tab.src[4] = rect2.right;
+            tab.src[5] = rect2.top + rect2.height() * Sh;
+            tab.src[6] = rect2.left;
+            tab.src[7] = rect2.top + rect2.height() * Sh;
 
-                tab.matrix.setPolyToPoly(tab.src, 0, tab.dst, 0, 4);
-                tabCanvas.concat(tab.matrix);
+            tab.dst[0] = rect2.left;
+            tab.dst[1] = rect2.top - dp(p);
+            tab.dst[2] = rect2.right;
+            tab.dst[3] = rect2.top - dp(p);
+            final float s1 = .83f, s2 = .6f;
+            tab.dst[4] = rect2.centerX() + rect2.width() / 2f * lerp(1f, s1, tabOpen * (1f - opening));
+            tab.dst[5] = rect2.top - dp(p) + (rect2.height() * Sh + dp(p + p)) * lerp(1f, s2, tabOpen * (1f - opening));
+            tab.dst[6] = rect2.centerX() - rect2.width() / 2f * lerp(1f, s1, tabOpen * (1f - opening));
+            tab.dst[7] = rect2.top - dp(p) + (rect2.height() * Sh + dp(p + p)) * lerp(1f, s2, tabOpen * (1f - opening));
 
-                tab.draw(
-                    tabCanvas,
-                    rect2,
-                    drawSimple,
-                    tab.tabDrawable == openingTab ? 1f : lerp(tab.tabDrawable.getAlpha(), alpha, openProgress),
-                    tab.tabDrawable == openingTab ? 1f : tabOpen * (1f - opening),
-                    opening,
-                    lerp(clamp01(position - count + 2),1f, clamp01((tabOpen - .1f) / .8f))
-                );
+            tab.matrix.setPolyToPoly(tab.src, 0, tab.dst, 0, 4);
+            tabCanvas.concat(tab.matrix);
 
-                if (openingSheet != null && tab.tabDrawable == openingTab) {
-                    openingSheet.getWindowView().drawInto(canvas, rect2, 1f, rect2, opening, true);
-                }
+            tab.draw(
+                tabCanvas,
+                rect2,
+                drawSimple,
+                tab.tabDrawable == openingTab ? 1f : lerp(tab.tabDrawable.getAlpha(), alpha, openProgress),
+                tab.tabDrawable == openingTab ? 1f : tabOpen * (1f - opening),
+                opening,
+                lerp(clamp01(position - count + 2),1f, clamp01((tabOpen - .1f) / .8f))
+            );
 
-                canvas.restore();
-            } else {
-                final float s = lerp(
-                        1f,
-                        lerp(
-                                lerp(1f, 1f - Utilities.clamp(count * .1f, .5f, .25f), 1f - scrollT),
-                                Math.min(1, (float) Math.pow(0.7f, 1f - oscrollT)),
-                                Utilities.clamp(count - 3, 1, 0)
-                        ),
-                        openProgress
-                );
-                canvas.scale(s, s, rect2.centerX(), rect2.top);
-                scaleRect(tab.clickBounds, s, rect.centerX(), rect2.top);
-
-                tab.draw(canvas, rect2, drawSimple, lerp(tab.tabDrawable.getAlpha(), 1f, openProgress), open, 0f, lerp(clamp01(position - count + 2), 1f, clamp01((open - .1f) / .8f)));
-                canvas.restore();
+            if (openingSheet != null && tab.tabDrawable == openingTab) {
+                openingSheet.getWindowView().drawInto(canvas, rect2, 1f, rect2, opening, true);
             }
+
+            canvas.restore();
         }
         canvas.save();
         if (gradientClip == null) {
@@ -1019,10 +1003,7 @@ public class BottomSheetTabsOverlay extends FrameLayout {
             if (alpha <= 0)
                 return;
 
-            float tabScaleY = 1f;
-            if (SharedConfig.botTabs3DEffect) {
-                tabScaleY = lerp(1f, 1.3f, expandProgress * (1f - openingProgress));
-            }
+            float tabScaleY = lerp(1f, 1.3f, expandProgress * (1f - openingProgress));
 
             final float tabTranslateY = openingProgress * (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() - dp(50));
             canvas.save();

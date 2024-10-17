@@ -428,7 +428,7 @@ public class MediaDataController extends BaseController {
     }
 
     public void checkPremiumPromo() {
-        if (!isLoadingPremiumPromo && Math.abs(System.currentTimeMillis() / 1000 - premiumPromoUpdateDate) >= 60 * 60) {
+        if (!isLoadingPremiumPromo && (premiumPromo == null || Math.abs(System.currentTimeMillis() / 1000 - premiumPromoUpdateDate) >= 60 * 60)) {
             loadPremiumPromo(true);
         }
     }
@@ -654,9 +654,7 @@ public class MediaDataController extends BaseController {
                         c.dispose();
                     }
                 }
-                if (premiumPromo != null) {
-                    processLoadedPremiumPromo(premiumPromo, date, true);
-                }
+                processLoadedPremiumPromo(premiumPromo, date, true);
             });
         } else {
             TLRPC.TL_help_getPremiumPromo req = new TLRPC.TL_help_getPremiumPromo();
@@ -671,15 +669,24 @@ public class MediaDataController extends BaseController {
     }
 
     public void processLoadedPremiumPromo(TLRPC.TL_help_premiumPromo premiumPromo, int date, boolean cache) {
-        this.premiumPromo = premiumPromo;
-        premiumPromoUpdateDate = date;
-        getMessagesController().putUsers(premiumPromo.users, cache);
-        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.premiumPromoUpdated));
+        if (premiumPromo != null) {
+            this.premiumPromo = premiumPromo;
+            premiumPromoUpdateDate = date;
+            getMessagesController().putUsers(premiumPromo.users, cache);
+            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.premiumPromoUpdated));
+        }
 
         if (!cache) {
-            putPremiumPromoToCache(premiumPromo, date);
-        } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60 * 24 || BuildVars.DEBUG_PRIVATE_VERSION) {
-            loadPremiumPromo(false);
+            if (premiumPromo != null) {
+                putPremiumPromoToCache(premiumPromo, date);
+            }
+            isLoadingPremiumPromo = false;
+        } else {
+            if (premiumPromo == null || Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60 * 24) {
+                loadPremiumPromo(false);
+            } else {
+                isLoadingPremiumPromo = false;
+            }
         }
     }
 
@@ -793,7 +800,7 @@ public class MediaDataController extends BaseController {
         isLoadingReactions = false;
         if (!cache) {
             putReactionsToCache(reactions, hash, date);
-        } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) {
+        } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60 || true) {
             loadReactions(false, hash);
         }
     }
@@ -841,7 +848,7 @@ public class MediaDataController extends BaseController {
                     getMessagesStorage().getDatabase().executeFast("DELETE FROM reactions").stepThis().dispose();
                     SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO reactions VALUES(?, ?, ?)");
                     state.requery();
-                    int size = 4; // Integer.BYTES
+                    int size = 4;
                     for (int a = 0; a < reactionsFinal.size(); a++) {
                         size += reactionsFinal.get(a).getObjectSize();
                     }
@@ -8778,8 +8785,10 @@ public class MediaDataController extends BaseController {
                                 String emoticon = MessageObject.findAnimatedEmojiEmoticon(document, null);
                                 if (document != null &&
                                     emoticon != null && emoticon.contains(emoji) &&
-                                    (isPremium || MessageObject.isFreeEmoji(document))
+                                    (isPremium || MessageObject.isFreeEmoji(document)) &&
+                                    !foundEmojis.contains(document.id)
                                 ) {
+                                    foundEmojis.add(document.id);
                                     animatedEmoji.add(document);
                                 }
                             } catch (Exception ignore) {

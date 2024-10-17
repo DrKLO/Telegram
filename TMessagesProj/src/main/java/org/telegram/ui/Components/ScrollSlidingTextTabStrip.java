@@ -35,6 +35,8 @@ import android.widget.TextView;
 import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.ui.ActionBar.Theme;
 
 public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
@@ -288,7 +290,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
             viewsCache.delete(id);
         }
         if (tab == null) {
-            tab = new TextView(getContext()) {
+            tab = new AnimatedEmojiSpan.TextViewEmojis(getContext()) {
                 @Override
                 public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                     super.onInitializeAccessibilityNodeInfo(info);
@@ -306,7 +308,9 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
                 int position1 = tabsContainer.indexOfChild(v);
                 scrollTo(id, position1, v);
             });
+            NotificationCenter.listenEmojiLoading(tab);
         }
+        text = Emoji.replaceEmoji(text, tab.getPaint().getFontMetricsInt(), false);
         tab.setText(text);
         int tabWidth = (int) Math.ceil(tab.getPaint().measureText(text, 0, text.length())) + tab.getPaddingLeft() + tab.getPaddingRight();
         tabsContainer.addView(tab, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT));

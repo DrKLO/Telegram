@@ -3404,6 +3404,9 @@ public class Theme {
     public static final int key_dialogEmptyText = colorsCount++;
     public static final int key_dialogSwipeRemove = colorsCount++;
     public static final int key_dialogReactionMentionBackground = colorsCount++;
+    public static final int key_dialogCardShadow = colorsCount++;
+    public static final int key_dialogGiftsBackground = colorsCount++;
+    public static final int key_dialogGiftsTabText = colorsCount++;
 
     public static final int key_windowBackgroundWhite = colorsCount++;
     public static final int key_windowBackgroundUnchecked = colorsCount++;
@@ -3950,6 +3953,7 @@ public class Theme {
     public static final int key_voipgroup_unmuteButton = colorsCount++;
     public static final int key_voipgroup_unmuteButton2 = colorsCount++;
     public static final int key_voipgroup_disabledButton = colorsCount++;
+    public static final int key_voipgroup_rtmpButton = colorsCount++;
     public static final int key_voipgroup_disabledButtonActive = colorsCount++;
     public static final int key_voipgroup_disabledButtonActiveScrolled = colorsCount++;
     public static final int key_voipgroup_connectingProgress = colorsCount++;
@@ -4259,6 +4263,8 @@ public class Theme {
         fallbackKeys.put(key_iv_backgroundGray, key_windowBackgroundGray);
         fallbackKeys.put(key_iv_navigationBackground, key_windowBackgroundGray);
         fallbackKeys.put(key_iv_ab_progress, key_featuredStickers_addButton);
+        fallbackKeys.put(key_dialogGiftsBackground, key_windowBackgroundGray);
+        fallbackKeys.put(key_dialogGiftsTabText, key_windowBackgroundWhiteGrayText2);
         fallbackKeys.put(key_chat_inQuote, key_featuredStickers_addButtonPressed);
         fallbackKeys.put(key_chat_outQuote, key_chat_outReplyLine);
         fallbackKeys.put(key_chat_outReplyLine2, key_chat_outReplyLine);
@@ -4473,6 +4479,7 @@ public class Theme {
         themeAccentExclusionKeys.add(key_voipgroup_leaveButtonScrolled);
         themeAccentExclusionKeys.add(key_voipgroup_connectingProgress);
         themeAccentExclusionKeys.add(key_voipgroup_disabledButton);
+        themeAccentExclusionKeys.add(key_voipgroup_rtmpButton);
         themeAccentExclusionKeys.add(key_voipgroup_disabledButtonActive);
         themeAccentExclusionKeys.add(key_voipgroup_disabledButtonActiveScrolled);
         themeAccentExclusionKeys.add(key_voipgroup_unmuteButton);
