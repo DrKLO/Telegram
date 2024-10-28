@@ -41,6 +41,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -406,6 +407,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             }
         });
         recyclerListView.setOnItemClickListener((view, position) -> {
+            Toast.makeText(context, "clicked", Toast.LENGTH_SHORT).show();
             if (delegate != null && view instanceof ReactionHolderView) {
                 ReactionHolderView reactionHolderView = (ReactionHolderView) view;
                 delegate.onReactionClicked(this, reactionHolderView.currentReaction, false, false);
@@ -430,7 +432,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         int size = recyclerListView.getLayoutParams().height - recyclerListView.getPaddingTop() - recyclerListView.getPaddingBottom();
         nextRecentReaction.getLayoutParams().width = size - dp(12);
         nextRecentReaction.getLayoutParams().height = size;
-
+        System.out.println("ReactionContainerLayout Recycle size:  " + size );
         if (type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
             bgPaint.setColor(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.13f));
         } else {

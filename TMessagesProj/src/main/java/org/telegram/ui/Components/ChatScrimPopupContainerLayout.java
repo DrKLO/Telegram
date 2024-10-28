@@ -10,10 +10,12 @@ import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.Components.Share.ShareContainerLayout;
 
 public class ChatScrimPopupContainerLayout extends LinearLayout {
 
     private ReactionsContainerLayout reactionsLayout;
+    private ShareContainerLayout shareLayout;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout;
     private View bottomView;
     private int maxHeight;
@@ -119,6 +121,48 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
                 }
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        } else if (shareLayout != null) {
+            shareLayout.getLayoutParams().width = LayoutHelper.WRAP_CONTENT;
+            ((LayoutParams) shareLayout.getLayoutParams()).rightMargin = 0;
+            popupLayoutLeftOffset = 0;
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+            int maxWidth = shareLayout.getMeasuredWidth();
+            int shareLayoutTotalWidth = shareLayout.getTotalWidth();
+            int maxShareLayoutWidth = maxWidth;
+
+            if (shareLayoutTotalWidth > maxShareLayoutWidth) {
+                int maxFullCount = ((maxShareLayoutWidth - dp(16)) / dp(36)) + 1;
+                int newWidth = maxFullCount * dp(36) + dp(8);
+                if (newWidth > shareLayoutTotalWidth || maxFullCount == shareLayout.getItemsCount()) {
+                    newWidth = shareLayoutTotalWidth;
+                }
+                shareLayout.getLayoutParams().width = newWidth;
+            } else {
+                shareLayout.getLayoutParams().width = LayoutHelper.WRAP_CONTENT;
+            }
+
+            int widthDiff = 0;
+            if (shareLayout.getMeasuredWidth() != maxWidth) {
+                if (shareLayout.getLayoutParams().width != LayoutHelper.WRAP_CONTENT && shareLayout.getLayoutParams().width + widthDiff > maxWidth) {
+                    widthDiff = maxWidth - shareLayout.getLayoutParams().width + dp(8);
+                }
+                if (widthDiff < 0) {
+                    widthDiff = 0;
+                }
+                ((LayoutParams) shareLayout.getLayoutParams()).rightMargin = widthDiff;
+                popupLayoutLeftOffset = 0;
+                updatePopupTranslation();
+            } else {
+                popupLayoutLeftOffset = 0;
+                updatePopupTranslation();
+            }
+
+            if (bottomView != null) {
+                bottomView.getLayoutParams().width = LayoutHelper.MATCH_PARENT;
+                ((LayoutParams) bottomView.getLayoutParams()).rightMargin = dp(36);
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
@@ -141,6 +185,13 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
         this.reactionsLayout = reactionsLayout;
         if (reactionsLayout != null) {
             reactionsLayout.setChatScrimView(this);
+        }
+    }
+
+    public void setShareLayout(ShareContainerLayout shareLayout) {
+        this.shareLayout = shareLayout;
+        if (shareLayout != null) {
+            shareLayout.setChatScrimView(this);
         }
     }
 
@@ -183,6 +234,20 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
         popupWindowLayout.setAlpha(alpha);
         if (bottomView != null) {
             bottomView.setAlpha(alpha);
+        }
+    }
+
+    public void setShareTransitionProgress(float v) {
+        popupWindowLayout.setShareTransitionProgress(v);
+        if (bottomView != null) {
+            bottomView.setAlpha(v);
+            float scale = 0.5f + v * 0.5f;
+            bottomView.setPivotX(bottomView.getMeasuredWidth());
+            bottomView.setPivotY(0);
+            bottomViewReactionsOffset = -popupWindowLayout.getMeasuredHeight() * (1f - v);
+            updateBottomViewPosition();
+            bottomView.setScaleX(scale);
+            bottomView.setScaleY(scale);
         }
     }
 

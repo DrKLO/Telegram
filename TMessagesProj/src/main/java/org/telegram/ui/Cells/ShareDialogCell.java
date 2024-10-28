@@ -12,6 +12,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.app.Notification;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -21,8 +22,13 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -30,6 +36,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -91,9 +98,13 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
     public static final int TYPE_SHARE = 0;
     public static final int TYPE_CALL = 1;
     public static final int TYPE_CREATE = 2;
+    public static final int TYPE_QUICK_SHARE = 3;
 
     private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean premiumBlocked;
+    private Bitmap originalBitmap;
+    private View originalView;
+    private boolean isBlurred = false;
 
     public boolean isBlocked() {
         return premiumBlocked;
@@ -114,6 +125,8 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
         imageView.setRoundRadius(dp(28));
         if (type == TYPE_CREATE) {
             addView(imageView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
+        } else if (type == TYPE_QUICK_SHARE) {
+            addView(imageView, LayoutHelper.createFrame(50, 50, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 2, 4, 2, 0));
         } else {
             addView(imageView, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
         }
@@ -132,7 +145,10 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
         nameTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         nameTextView.setLines(2);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
+        if (type != TYPE_QUICK_SHARE) {
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
+        }
+
 
         topicTextView = new SimpleTextView(context);
         topicTextView.setTextColor(getThemedColor(type == TYPE_CALL ? Theme.key_voipgroup_nameText : Theme.key_dialogTextBlack));
@@ -140,8 +156,9 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
         topicTextView.setMaxLines(2);
         topicTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         topicTextView.setAlignment(Layout.Alignment.ALIGN_CENTER);
-        addView(topicTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
-
+        if (type != TYPE_QUICK_SHARE) {
+            addView(topicTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
+        }
         checkBox = new CheckBox2(context, 21, resourcesProvider);
         checkBox.setColor(Theme.key_dialogRoundCheckBox, type == TYPE_CALL ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
         checkBox.setDrawUnchecked(false);
@@ -152,11 +169,29 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
             imageView.setScaleY(scale);
             invalidate();
         });
-        addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, currentType == TYPE_CREATE ? -40 : 42, 0, 0));
-
+        if (type != TYPE_QUICK_SHARE) {
+            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, currentType == TYPE_CREATE ? -40 : 42, 0, 0));
+        }
         setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), dp(2), dp(2)));
     }
 
+    public void applyBlur() {
+        if (!isBlurred) {
+            Bitmap blurredBitmap = AndroidUtilities.makeBlurBitmap(originalView, 1f, 6);
+            imageView.setImageBitmap(blurredBitmap);
+            invalidate();
+            isBlurred = true;
+        }
+    }
+
+    // Method to remove blur effect
+    public void removeBlur() {
+        if (isBlurred && originalBitmap != null) {
+            imageView.setImageBitmap(originalBitmap);
+            invalidate();
+            isBlurred = false;
+        }
+    }
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -191,6 +226,7 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
     }
 
     public void setDialog(long uid, boolean checked, CharSequence name) {
+        System.out.println("Dialog Cell: setDialog: " + uid + " " + checked + " " + name);
         if (uid == Long.MAX_VALUE) {
             nameTextView.setText(repostToCustomName());
             if (repostStoryDrawable == null) {
@@ -389,6 +425,10 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
         int radius = dp(currentType == TYPE_CREATE ? 24 : 28);
         AndroidUtilities.rectTmp.set(cx - radius, cy - radius, cx + radius, cy + radius);
         canvas.drawRoundRect(AndroidUtilities.rectTmp, imageView.getRoundRadius()[0], imageView.getRoundRadius()[0], Theme.checkboxSquare_checkPaint);
+        if (originalBitmap == null || originalView == null) {
+            originalBitmap = imageView.getImageReceiver().getBitmap();
+            originalView = imageView;
+        }
         super.onDraw(canvas);
     }
 

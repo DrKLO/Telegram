@@ -117,6 +117,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private Rect bgPaddings = new Rect();
         private onSizeChangedListener onSizeChangedListener;
         private float reactionsEnterProgress = 1f;
+        private float shareEnterProgress = 1f;
 
         private PopupSwipeBackLayout swipeBackLayout;
         private ScrollView scrollView;
@@ -513,6 +514,14 @@ public class ActionBarPopupWindow extends PopupWindow {
                         rect.set(AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top);
                         AndroidUtilities.lerp(rect, AndroidUtilities.rectTmp2, reactionsEnterProgress, AndroidUtilities.rectTmp2);
                     }
+
+                    if (shareEnterProgress != 1f) {
+                        if (rect == null) {
+                            rect = new Rect();
+                        }
+                        rect.set(AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top);
+                        AndroidUtilities.lerp(rect, AndroidUtilities.rectTmp2, shareEnterProgress, AndroidUtilities.rectTmp2);
+                    }
                     backgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
                     backgroundDrawable.draw(canvas);
                     if (clipChildren) {
@@ -560,6 +569,12 @@ public class ActionBarPopupWindow extends PopupWindow {
             if (reactionsEnterProgress != 1f) {
                 canvas.saveLayerAlpha((float) AndroidUtilities.rectTmp2.left, (float) AndroidUtilities.rectTmp2.top, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.bottom, (int) (255 * reactionsEnterProgress), Canvas.ALL_SAVE_FLAG);
                 float scale = 0.5f + reactionsEnterProgress * 0.5f;
+                canvas.scale(scale, scale, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top);
+                super.dispatchDraw(canvas);
+                canvas.restore();
+            } else if (shareEnterProgress != 1f) {
+                canvas.saveLayerAlpha((float) AndroidUtilities.rectTmp2.left, (float) AndroidUtilities.rectTmp2.top, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.bottom, (int) (255 * shareEnterProgress), Canvas.ALL_SAVE_FLAG);
+                float scale = 0.5f + shareEnterProgress * 0.5f;
                 canvas.scale(scale, scale, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top);
                 super.dispatchDraw(canvas);
                 canvas.restore();
@@ -661,6 +676,11 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public void setReactionsTransitionProgress(float transitionEnterProgress) {
             this.reactionsEnterProgress = transitionEnterProgress;
+            invalidate();
+        }
+
+        public void setShareTransitionProgress(float transitionEnterProgress) {
+            this.shareEnterProgress = transitionEnterProgress;
             invalidate();
         }
     }

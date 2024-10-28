@@ -2641,7 +2641,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         navbarContainer.addView(modeSwitcherView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         flashViews.add(modeSwitcherView);
 
-        hintTextView = new HintTextView(context);
+        hintTextView = new HintTextView(context, 0);
         navbarContainer.addView(hintTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER, 8, 0, 8, 8));
         flashViews.add(hintTextView);
 

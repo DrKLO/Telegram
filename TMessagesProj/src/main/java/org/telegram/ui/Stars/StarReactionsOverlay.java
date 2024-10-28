@@ -358,8 +358,8 @@ public class StarReactionsOverlay extends View {
     }
 
     public void show() {
-        hidden = false;
-        focusTo(1f, null);
+//        hidden = false;
+//        focusTo(1f, null);
     }
 
     private final ArrayList<RLottieDrawable> effects = new ArrayList<>();

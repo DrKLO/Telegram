@@ -560,6 +560,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressSideButton(ChatMessageCell cell) {
         }
 
+        default void didLongPressSideButton(ChatMessageCell cell, float x, float y) {
+        }
+
         default void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
         }
 
@@ -9917,6 +9920,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return span instanceof URLSpanMono || span instanceof URLSpan;
     }
 
+    private enum SideButtonLongPressState {
+        INITIAL, // 1.Initiate the animation onLongPress
+        PRESSED, // 2.Convert the background to OvalShape with transparent/white bg
+        POPUP_EXPAND_1, // 3. Start rotating the share arrow to the top while having bg as white
+        POPUP_EXPAND_2, // 4. Start the initial expand for the share popup
+        FULL_POPUP, // 5. Start expanding/fetching friends list while rotating the arrow down and setting the bg to transparent
+        SHOW_FRIENDS, // 6. Start showing more firends while setting the bg to of share button to initial state
+        ADDITIONAL_FRIEND, // 7. Load all friends list
+        FINAL_POPUP // 8. Final state then reset it to initial state again.
+    }
+
+    private SideButtonLongPressState currentSideButtonLongPressState = SideButtonLongPressState.INITIAL;
+
     @Override
     protected boolean onLongPress() {
         if (isRoundVideo && isPlayingRound && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
@@ -10046,6 +10062,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 delegate.didPressUrl(this, pressedLink.getSpan(), true);
                 return true;
             }
+        }
+        if (sideButtonPressed) {
+            if (currentSideButtonLongPressState == SideButtonLongPressState.INITIAL) {
+                currentSideButtonLongPressState = SideButtonLongPressState.PRESSED;
+            }
+
+            if (delegate != null) {
+                delegate.didLongPressSideButton(this, sideStartX, sideStartY);
+            }
+            return true;
         }
         resetPressedLink(-1);
         if (buttonPressed != 0 || miniButtonPressed != 0 || videoButtonPressed != 0 || pressedBotButton != -1) {
@@ -18307,6 +18333,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             drawAnimatedEmojiMessageText(captionX, captionY, canvas, captionLayout != null ? captionLayout.textLayoutBlocks : null, animatedEmojiStack, true, alpha, captionLayout != null ? captionLayout.textXOffset : 0, true);
         }
     }
+
 
     private void drawSideButton(Canvas canvas) {
         if (drawSideButton != 0) {
