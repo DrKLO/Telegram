@@ -156,7 +156,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
         textView.setLayoutParams(layoutParams);
         setPadding(dp(LocaleController.isRTL ? 8 : 18), 0, dp(LocaleController.isRTL ? 18 : 8), 0);
-        rightIcon.setImageResource(icon);
+        if (icon == 0) {
+            rightIcon.setVisibility(View.GONE);
+        } else {
+            rightIcon.setVisibility(View.VISIBLE);
+            rightIcon.setImageResource(icon);
+        }
     }
 
     public void setTextAndIcon(CharSequence text, int icon) {

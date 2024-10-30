@@ -166,6 +166,7 @@ public class StoryWaveEffectView extends TextureView implements TextureView.Surf
     }
 
     public StoryWaveEffectView start() {
+        AndroidUtilities.setPreferredMaxRefreshRate(windowManager, this, layoutParams);
         windowManager.addView(this, layoutParams);
         return this;
     }

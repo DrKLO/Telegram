@@ -2271,7 +2271,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 getConnectionsManager().sendRequest(req, (res, err) -> {
                     AndroidUtilities.runOnUIThread(() -> {
                         if (res instanceof TLRPC.TL_boolTrue) {
-                            BulletinFactory.of(this).createSimpleBulletin(R.raw.msg_antispam, getString("ChannelAntiSpamFalsePositiveReported", R.string.ChannelAntiSpamFalsePositiveReported)).show();
+                            BulletinFactory.of(this).createSimpleBulletin(R.raw.msg_antispam, getString(R.string.ChannelAntiSpamFalsePositiveReported)).show();
                         } else if (res instanceof TLRPC.TL_boolFalse) {
                             BulletinFactory.of(this).createSimpleBulletin(R.raw.error, getString("UnknownError", R.string.UnknownError)).show();
                         } else {

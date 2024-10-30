@@ -4,8 +4,10 @@ import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 
+import androidx.annotation.Keep;
 import androidx.core.util.Consumer;
 
+@Keep
 public interface ILocationServiceProvider {
     int PRIORITY_HIGH_ACCURACY = 0,
             PRIORITY_BALANCED_POWER_ACCURACY = 1,

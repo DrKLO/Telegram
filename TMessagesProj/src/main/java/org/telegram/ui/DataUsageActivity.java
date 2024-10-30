@@ -88,7 +88,7 @@ public class DataUsageActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString("NetworkUsage", R.string.NetworkUsage));
+        actionBar.setTitle(LocaleController.getString(R.string.NetworkUsage));
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
         }
@@ -472,13 +472,13 @@ public class DataUsageActivity extends BaseFragment {
                 ListAdapter adapter = (ListAdapter) listView.getAdapter();
                 if (position == adapter.resetRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("ResetStatisticsAlertTitle", R.string.ResetStatisticsAlertTitle));
-                    builder.setMessage(LocaleController.getString("ResetStatisticsAlert", R.string.ResetStatisticsAlert));
-                    builder.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialogInterface, i) -> {
+                    builder.setTitle(LocaleController.getString(R.string.ResetStatisticsAlertTitle));
+                    builder.setMessage(LocaleController.getString(R.string.ResetStatisticsAlert));
+                    builder.setPositiveButton(LocaleController.getString(R.string.Reset), (dialogInterface, i) -> {
                         StatsController.getInstance(currentAccount).resetStats(adapter.currentType);
                         adapter.notifyDataSetChanged();
                     });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     AlertDialog dialog = builder.create();
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -568,9 +568,9 @@ public class DataUsageActivity extends BaseFragment {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString("NetworkUsageMobileTab", R.string.NetworkUsageMobileTab));
-        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString("NetworkUsageWiFiTab", R.string.NetworkUsageWiFiTab));
-        scrollSlidingTextTabStrip.addTextTab(2, LocaleController.getString("NetworkUsageRoamingTab", R.string.NetworkUsageRoamingTab));
+        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString(R.string.NetworkUsageMobileTab));
+        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString(R.string.NetworkUsageWiFiTab));
+        scrollSlidingTextTabStrip.addTextTab(2, LocaleController.getString(R.string.NetworkUsageRoamingTab));
         scrollSlidingTextTabStrip.setVisibility(View.VISIBLE);
         actionBar.setExtraHeight(AndroidUtilities.dp(44));
         int id = scrollSlidingTextTabStrip.getCurrentTabId();
@@ -745,7 +745,7 @@ public class DataUsageActivity extends BaseFragment {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == resetRow) {
                         textCell.setTag(Theme.key_text_RedRegular);
-                        textCell.setText(LocaleController.getString("ResetStatistics", R.string.ResetStatistics), false);
+                        textCell.setText(LocaleController.getString(R.string.ResetStatistics), false);
                         textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     } else {
                         int type;
@@ -767,20 +767,20 @@ public class DataUsageActivity extends BaseFragment {
                             type = StatsController.TYPE_TOTAL;
                         }
                         if (position == callsSentRow) {
-                            textCell.setTextAndValue(LocaleController.getString("OutgoingCalls", R.string.OutgoingCalls), String.format("%d", StatsController.getInstance(currentAccount).getSentItemsCount(currentType, type)), true);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.OutgoingCalls), String.format("%d", StatsController.getInstance(currentAccount).getSentItemsCount(currentType, type)), true);
                         } else if (position == callsReceivedRow) {
-                            textCell.setTextAndValue(LocaleController.getString("IncomingCalls", R.string.IncomingCalls), String.format("%d", StatsController.getInstance(currentAccount).getRecivedItemsCount(currentType, type)), true);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.IncomingCalls), String.format("%d", StatsController.getInstance(currentAccount).getRecivedItemsCount(currentType, type)), true);
                         } else if (position == callsTotalTimeRow) {
                             String time = AndroidUtilities.formatShortDuration(StatsController.getInstance(currentAccount).getCallsTotalTime(currentType));
-                            textCell.setTextAndValue(LocaleController.getString("CallsTotalTime", R.string.CallsTotalTime), time, false);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.CallsTotalTime), time, false);
                         } else if (position == messagesSentRow || position == photosSentRow || position == videosSentRow || position == audiosSentRow || position == filesSentRow) {
-                            textCell.setTextAndValue(LocaleController.getString("CountSent", R.string.CountSent), String.format("%d", StatsController.getInstance(currentAccount).getSentItemsCount(currentType, type)), true);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.CountSent), String.format("%d", StatsController.getInstance(currentAccount).getSentItemsCount(currentType, type)), true);
                         } else if (position == messagesReceivedRow || position == photosReceivedRow || position == videosReceivedRow || position == audiosReceivedRow || position == filesReceivedRow) {
-                            textCell.setTextAndValue(LocaleController.getString("CountReceived", R.string.CountReceived), String.format("%d", StatsController.getInstance(currentAccount).getRecivedItemsCount(currentType, type)), true);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.CountReceived), String.format("%d", StatsController.getInstance(currentAccount).getRecivedItemsCount(currentType, type)), true);
                         } else if (position == messagesBytesSentRow || position == photosBytesSentRow || position == videosBytesSentRow || position == audiosBytesSentRow || position == filesBytesSentRow || position == callsBytesSentRow || position == totalBytesSentRow) {
-                            textCell.setTextAndValue(LocaleController.getString("BytesSent", R.string.BytesSent), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getSentBytesCount(currentType, type)), true);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.BytesSent), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getSentBytesCount(currentType, type)), true);
                         } else if (position == messagesBytesReceivedRow || position == photosBytesReceivedRow || position == videosBytesReceivedRow || position == audiosBytesReceivedRow || position == filesBytesReceivedRow || position == callsBytesReceivedRow || position == totalBytesReceivedRow) {
-                            textCell.setTextAndValue(LocaleController.getString("BytesReceived", R.string.BytesReceived), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getReceivedBytesCount(currentType, type)), position == callsBytesReceivedRow);
+                            textCell.setTextAndValue(LocaleController.getString(R.string.BytesReceived), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getReceivedBytesCount(currentType, type)), position == callsBytesReceivedRow);
                         }
                     }
                     break;
@@ -788,19 +788,19 @@ public class DataUsageActivity extends BaseFragment {
                 case 2: {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == totalSectionRow) {
-                        headerCell.setText(LocaleController.getString("TotalDataUsage", R.string.TotalDataUsage));
+                        headerCell.setText(LocaleController.getString(R.string.TotalDataUsage));
                     } else if (position == callsSectionRow) {
-                        headerCell.setText(LocaleController.getString("CallsDataUsage", R.string.CallsDataUsage));
+                        headerCell.setText(LocaleController.getString(R.string.CallsDataUsage));
                     } else if (position == filesSectionRow) {
-                        headerCell.setText(LocaleController.getString("FilesDataUsage", R.string.FilesDataUsage));
+                        headerCell.setText(LocaleController.getString(R.string.FilesDataUsage));
                     } else if (position == audiosSectionRow) {
-                        headerCell.setText(LocaleController.getString("LocalAudioCache", R.string.LocalAudioCache));
+                        headerCell.setText(LocaleController.getString(R.string.LocalAudioCache));
                     } else if (position == videosSectionRow) {
-                        headerCell.setText(LocaleController.getString("LocalVideoCache", R.string.LocalVideoCache));
+                        headerCell.setText(LocaleController.getString(R.string.LocalVideoCache));
                     } else if (position == photosSectionRow) {
-                        headerCell.setText(LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache));
+                        headerCell.setText(LocaleController.getString(R.string.LocalPhotoCache));
                     } else if (position == messagesSectionRow) {
-                        headerCell.setText(LocaleController.getString("MessagesDataUsage", R.string.MessagesDataUsage));
+                        headerCell.setText(LocaleController.getString(R.string.MessagesDataUsage));
                     }
                     break;
                 }

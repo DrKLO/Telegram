@@ -465,7 +465,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
             }
             dialogInterface.dismiss();
         });
-        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> {
             dialogInterface.dismiss();
         });
         if (adaptive) {

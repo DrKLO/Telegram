@@ -337,7 +337,7 @@ public abstract class BaseLocationAdapter extends AdapterWithDiffUtils {
                                 streetLocation.query_id = -1;
                                 streetLocation.title = streetBuilder.toString();
                                 streetLocation.icon = "pin";
-                                streetLocation.address = onlyCity ? LocaleController.getString("PassportCity", R.string.PassportCity) : LocaleController.getString("PassportStreet1", R.string.PassportStreet1);
+                                streetLocation.address = onlyCity ? LocaleController.getString(R.string.PassportCity) : LocaleController.getString(R.string.PassportStreet1);
                                 boolean isUnnamed = false;
                                 if (engAddress != null) {
                                     streetLocation.geoAddress = new TL_stories.TL_geoPointAddress();
@@ -418,7 +418,7 @@ public abstract class BaseLocationAdapter extends AdapterWithDiffUtils {
                                 cityLocation.icon = "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
                                 cityLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
                                 cities.add(cityLocation.title);
-                                cityLocation.address = LocaleController.getString("PassportCity", R.string.PassportCity);
+                                cityLocation.address = LocaleController.getString(R.string.PassportCity);
                                 if (engAddress != null) {
                                     cityLocation.geoAddress = new TL_stories.TL_geoPointAddress();
                                     cityLocation.geoAddress.country_iso2 = engAddress.getCountryCode();
@@ -460,7 +460,7 @@ public abstract class BaseLocationAdapter extends AdapterWithDiffUtils {
                                 countryLocation.icon = "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png";
                                 countryLocation.emoji = LocationController.countryCodeToEmoji(address.getCountryCode());
                                 countries.add(countryLocation.title);
-                                countryLocation.address = LocaleController.getString("Country", R.string.Country);
+                                countryLocation.address = LocaleController.getString(R.string.Country);
                                 if (engAddress != null) {
                                     countryLocation.geoAddress = new TL_stories.TL_geoPointAddress();
                                     countryLocation.geoAddress.country_iso2 = engAddress.getCountryCode();

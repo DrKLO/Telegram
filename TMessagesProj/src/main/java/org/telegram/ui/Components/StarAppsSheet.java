@@ -2,14 +2,12 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.app.Dialog;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 
@@ -37,7 +35,7 @@ public class StarAppsSheet extends BottomSheetWithRecyclerListView {
             position--;
             Object obj = adapter.getObject(position);
             if (obj instanceof TLRPC.User) {
-                MessagesController.getInstance(currentAccount).openApp(attachedFragment, (TLRPC.User) obj, 0, null);
+                MessagesController.getInstance(currentAccount).openApp(attachedFragment, (TLRPC.User) obj, null, 0, null);
             }
         });
     }

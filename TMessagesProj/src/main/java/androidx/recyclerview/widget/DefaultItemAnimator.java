@@ -63,6 +63,11 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     ArrayList<RecyclerView.ViewHolder> mChangeAnimations = new ArrayList<>();
 
     protected boolean delayAnimations = true;
+    private long delayIncrement = 0;
+
+    public void setDelayIncrement(long increment) {
+        this.delayIncrement = increment;
+    }
 
     protected static class MoveInfo {
         public RecyclerView.ViewHolder holder;
@@ -121,6 +126,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         for (RecyclerView.ViewHolder holder : mPendingRemovals) {
             animateRemoveImpl(holder);
         }
+        final long[] delay = new long[] { 0 };
         mPendingRemovals.clear();
         // Next, move stuff
         if (movesPending) {
@@ -179,8 +185,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             Runnable adder = new Runnable() {
                 @Override
                 public void run() {
-                    for (RecyclerView.ViewHolder holder : additions) {
-                        animateAddImpl(holder);
+                    for (int i = additions.size() - 1; i >= 0; --i) {
+//                    for (int i = 0; i < additions.size(); ++i) {
+                        final RecyclerView.ViewHolder holder = additions.get(i);
+                        animateAddImpl(holder, delay[0] += delayIncrement);
                     }
                     additions.clear();
                     mAdditionsList.remove(additions);
@@ -224,6 +232,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     protected void animateRemoveImpl(final RecyclerView.ViewHolder holder) {
+        animateRemoveImpl(holder, 0);
+    }
+
+    public void animateRemoveImpl(final RecyclerView.ViewHolder holder, long delay) {
         final View view = holder.itemView;
         final ViewPropertyAnimator animation = view.animate();
         mRemoveAnimations.add(holder);
@@ -233,7 +245,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         }
         animation
             .setDuration(getRemoveDuration())
-            .setStartDelay(getRemoveDelay())
+            .setStartDelay(getRemoveDelay() + delay)
             .setInterpolator(getRemoveInterpolator())
             .alpha(0)
             .scaleX(1f - animateByScale(view))
@@ -280,6 +292,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     public void animateAddImpl(final RecyclerView.ViewHolder holder) {
+        animateAddImpl(holder, 0);
+    }
+
+    public void animateAddImpl(final RecyclerView.ViewHolder holder, long delay) {
         final View view = holder.itemView;
         final ViewPropertyAnimator animation = view.animate();
         mAddAnimations.add(holder);
@@ -288,7 +304,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             .scaleX(1f)
             .scaleY(1f)
             .setDuration(getAddDuration())
-            .setStartDelay(getAddDelay())
+            .setStartDelay(getAddDelay() + delay)
             .setInterpolator(getAddInterpolator());
         if (Build.VERSION.SDK_INT >= 19) {
             animation.setUpdateListener(animation1 -> onAddAnimationUpdate(holder));
@@ -376,6 +392,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     protected void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
+        animateMoveImpl(holder, moveInfo, 0);
+    }
+
+    public void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo, long delay) {
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
         int toX = moveInfo.toX;
@@ -405,7 +425,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         beforeAnimateMoveImpl(holder);
         animation
             .setDuration(getMoveDuration())
-            .setStartDelay(getMoveDelay())
+            .setStartDelay(getMoveDelay() + delay)
             .setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -470,6 +490,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     public void animateChangeImpl(final ChangeInfo changeInfo) {
+        animateChangeImpl(changeInfo, 0);
+    }
+
+    public void animateChangeImpl(final ChangeInfo changeInfo, long delay) {
         final RecyclerView.ViewHolder holder = changeInfo.oldHolder;
         final View view = holder == null ? null : holder.itemView;
         final RecyclerView.ViewHolder newHolder = changeInfo.newHolder;
@@ -491,6 +515,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 oldViewAnim.setUpdateListener(animation1 -> onChangeAnimationUpdate(changeInfo.oldHolder));
             }
             oldViewAnim
+                .setStartDelay(delay)
                 .setInterpolator(getChangeInterpolator())
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -520,7 +545,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             newViewAnimation
                 .translationX(0).translationY(0)
                 .setDuration(getChangeAddDuration())
-                .setStartDelay(getChangeDelay() + (getChangeDuration() - getChangeAddDuration()))
+                .setStartDelay(getChangeDelay() + (getChangeDuration() - getChangeAddDuration()) + delay)
                 .setInterpolator(getChangeInterpolator())
                 .alpha(1);
             if (animateByScale(newView) > 0) {

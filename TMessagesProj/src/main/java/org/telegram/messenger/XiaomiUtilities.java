@@ -8,8 +8,6 @@ import android.text.TextUtils;
 
 import java.lang.reflect.Method;
 
-// MIUI. Redefining Android.
-// (not in the very best way I'd say)
 public class XiaomiUtilities {
 
 	// custom permissions
@@ -60,14 +58,14 @@ public class XiaomiUtilities {
 		if (prop != null) {
 			try {
 				return Integer.parseInt(prop.replace("V", ""));
-			} catch (NumberFormatException ignore) {
-			}
+			} catch (NumberFormatException ignore) {}
 		}
 		return -1;
 	}
 
 	public static Intent getPermissionManagerIntent() {
 		Intent intent = new Intent("miui.intent.action.APP_PERM_EDITOR");
+		intent.setPackage("com.miui.securitycenter");
 		intent.putExtra("extra_package_uid", android.os.Process.myUid());
 		intent.putExtra("extra_pkgname", ApplicationLoader.applicationContext.getPackageName());
 		return intent;

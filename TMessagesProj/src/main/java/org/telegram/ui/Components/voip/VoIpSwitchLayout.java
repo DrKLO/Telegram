@@ -78,26 +78,26 @@ public class VoIpSwitchLayout extends FrameLayout {
         switch (type) {
             case MICRO:
                 if (isSelectedState) {
-                    newText = LocaleController.getString("VoipUnmute", R.string.VoipUnmute);
+                    newText = LocaleController.getString(R.string.VoipUnmute);
                 } else {
-                    newText = LocaleController.getString("VoipMute", R.string.VoipMute);
+                    newText = LocaleController.getString(R.string.VoipMute);
                 }
                 break;
             case CAMERA:
-                newText = LocaleController.getString("VoipFlip", R.string.VoipFlip);
+                newText = LocaleController.getString(R.string.VoipFlip);
                 break;
             case VIDEO:
                 if (isSelectedState) {
-                    newText = LocaleController.getString("VoipStartVideo", R.string.VoipStartVideo);
+                    newText = LocaleController.getString(R.string.VoipStartVideo);
                 } else {
-                    newText = LocaleController.getString("VoipStopVideo", R.string.VoipStopVideo);
+                    newText = LocaleController.getString(R.string.VoipStopVideo);
                 }
                 break;
             case BLUETOOTH:
-                newText = LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth);
+                newText = LocaleController.getString(R.string.VoipAudioRoutingBluetooth);
                 break;
             case SPEAKER:
-                newText = LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker);
+                newText = LocaleController.getString(R.string.VoipSpeaker);
                 break;
             default:
                 newText = "";
@@ -272,6 +272,11 @@ public class VoIpSwitchLayout extends FrameLayout {
         private final VoIPBackgroundProvider backgroundProvider;
 
         public void setSelectedState(boolean selectedState, boolean animate, Type type) {
+            if (animator != null && animator.isRunning()) {
+                animator.removeAllUpdateListeners();
+                animator.cancel();
+                animate = false;
+            }
             if (animate) {
                 if (singleIcon != null) {
                     if (animator != null) {

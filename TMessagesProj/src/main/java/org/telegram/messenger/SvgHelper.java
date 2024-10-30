@@ -443,7 +443,21 @@ public class SvgHelper {
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, color, false, scale);
-           ///handler.alphaOnly = true;
+            xr.setContentHandler(handler);
+            xr.parse(new InputSource(stream));
+            return handler.getBitmap();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    public static Bitmap getBitmap(InputStream stream, int width, int height, boolean white) {
+        try {
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser sp = spf.newSAXParser();
+            XMLReader xr = sp.getXMLReader();
+            SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();

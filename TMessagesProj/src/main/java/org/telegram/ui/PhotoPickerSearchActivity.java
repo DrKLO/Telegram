@@ -141,7 +141,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 gifsSearch.getActionBar().onSearchPressed();
             }
         });
-        searchItem.setSearchFieldHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+        searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchImagesTitle));
         EditTextBoldCursor editText = searchItem.getSearchField();
         editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         editText.setCursorColor(Theme.getColor(Theme.key_dialogTextBlack));
@@ -163,9 +163,9 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 switchToCurrentSelectedMode(true);
                 animatingForward = forward;
                 if (id == 0) {
-                    searchItem.setSearchFieldHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+                    searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchImagesTitle));
                 } else {
-                    searchItem.setSearchFieldHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+                    searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchGifsTitle));
                 }
             }
 
@@ -780,8 +780,8 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString("ImagesTab2", R.string.ImagesTab2));
-        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString("GifsTab2", R.string.GifsTab2));
+        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString(R.string.ImagesTab2));
+        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString(R.string.GifsTab2));
         scrollSlidingTextTabStrip.setVisibility(View.VISIBLE);
         actionBar.setExtraHeight(AndroidUtilities.dp(44));
         int id = scrollSlidingTextTabStrip.getCurrentTabId();

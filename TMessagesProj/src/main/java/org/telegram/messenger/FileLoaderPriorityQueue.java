@@ -109,17 +109,17 @@ public class FileLoaderPriorityQueue {
                 //operation will not use connections
                 //just skip
                 max++;
-                if (BuildVars.DEBUG_PRIVATE_VERSION)
-                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " "+operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => skip");
+//                if (BuildVars.DEBUG_PRIVATE_VERSION)
+//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " "+operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => skip");
                 continue;
             } else if (!pauseAllNextOperations && i < max) {
-                if (BuildVars.DEBUG_PRIVATE_VERSION)
-                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => start");
+//                if (BuildVars.DEBUG_PRIVATE_VERSION)
+//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => start");
                 tmpListOperations.add(operation);
                 activeCount++;
             } else {
-                if (BuildVars.DEBUG_PRIVATE_VERSION)
-                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => pause");
+//                if (BuildVars.DEBUG_PRIVATE_VERSION)
+//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => pause");
                 if (operation.wasStarted()) {
                     operation.pause();
                 }

@@ -2630,7 +2630,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon));
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_text_RedRegular));
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
-        arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ManageChatUserCell.class, ManageChatTextCell.class, HeaderCell.class, TextView.class, PeopleNearbyActivity.HintInnerCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
 
         if (isMegagroup) {
             for (int i = 0; i < 6; i++) {

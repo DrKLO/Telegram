@@ -147,14 +147,14 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 			emptyTextView1 = new TextView(context);
 			emptyTextView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-			emptyTextView1.setText(LocaleController.getString("NoRecentCalls", R.string.NoRecentCalls));
+			emptyTextView1.setText(LocaleController.getString(R.string.NoRecentCalls));
 			emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
 			emptyTextView1.setTypeface(AndroidUtilities.bold());
 			emptyTextView1.setGravity(Gravity.CENTER);
 			addView(emptyTextView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 17, 40, 17, 0));
 
 			emptyTextView2 = new TextView(context);
-			String help = LocaleController.getString("NoRecentCallsInfo", R.string.NoRecentCallsInfo);
+			String help = LocaleController.getString(R.string.NoRecentCallsInfo);
 			if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
 				help = help.replace('\n', ' ');
 			}
@@ -319,7 +319,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				TLRPC.UserFull userFull = getMessagesController().getUserFull(row.user.id);
 				VoIPHelper.startCall(lastCallUser = row.user, row.video, row.video || userFull != null && userFull.video_calls_available, getParentActivity(), null, getAccountInstance());
 			});
-			imageView.setContentDescription(LocaleController.getString("Call", R.string.Call));
+			imageView.setContentDescription(LocaleController.getString(R.string.Call));
 			addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
 
 			checkBox = new CheckBox2(context, 21);
@@ -348,7 +348,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 			setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
-			String text = LocaleController.getString("VoipChatJoin", R.string.VoipChatJoin);
+			String text = LocaleController.getString(R.string.VoipChatJoin);
 			button = new ProgressButton(context);
 			int width = (int) Math.ceil(button.getPaint().measureText(text));
 
@@ -424,7 +424,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 		actionBar.setBackButtonDrawable(new BackDrawable(false));
 		actionBar.setAllowOverlayTitle(true);
-		actionBar.setTitle(LocaleController.getString("Calls", R.string.Calls));
+		actionBar.setTitle(LocaleController.getString(R.string.Calls));
 		actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
 			@Override
 			public void onItemClick(int id) {
@@ -444,8 +444,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 		ActionBarMenu menu = actionBar.createMenu();
 		otherItem = menu.addItem(10, R.drawable.ic_ab_other);
-		otherItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
-		otherItem.addSubItem(delete_all_calls, R.drawable.msg_delete, LocaleController.getString("DeleteAllCalls", R.string.DeleteAllCalls));
+		otherItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+		otherItem.addSubItem(delete_all_calls, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteAllCalls));
 
 		fragmentView = new FrameLayout(context);
 		fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -551,7 +551,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		floatingButton.setBackgroundDrawable(drawable);
 		floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
 		floatingButton.setImageResource(R.drawable.ic_call);
-		floatingButton.setContentDescription(LocaleController.getString("Call", R.string.Call));
+		floatingButton.setContentDescription(LocaleController.getString(R.string.Call));
 		if (Build.VERSION.SDK_INT >= 21) {
 			StateListAnimator animator = new StateListAnimator();
 			animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
@@ -587,17 +587,17 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
 		if (all) {
-			builder.setTitle(LocaleController.getString("DeleteAllCalls", R.string.DeleteAllCalls));
-			builder.setMessage(LocaleController.getString("DeleteAllCallsText", R.string.DeleteAllCallsText));
+			builder.setTitle(LocaleController.getString(R.string.DeleteAllCalls));
+			builder.setMessage(LocaleController.getString(R.string.DeleteAllCallsText));
 		} else {
-			builder.setTitle(LocaleController.getString("DeleteCalls", R.string.DeleteCalls));
-			builder.setMessage(LocaleController.getString("DeleteSelectedCallsText", R.string.DeleteSelectedCallsText));
+			builder.setTitle(LocaleController.getString(R.string.DeleteCalls));
+			builder.setMessage(LocaleController.getString(R.string.DeleteSelectedCallsText));
 		}
 		final boolean[] checks = new boolean[]{false};
 		FrameLayout frameLayout = new FrameLayout(getParentActivity());
 		CheckBoxCell cell = new CheckBoxCell(getParentActivity(), 1);
 		cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-		cell.setText(LocaleController.getString("DeleteCallsForEveryone", R.string.DeleteCallsForEveryone), "", false, false);
+		cell.setText(LocaleController.getString(R.string.DeleteCallsForEveryone), "", false, false);
 		cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(8) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(8), 0);
 		frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 8, 0, 8, 0));
 		cell.setOnClickListener(v -> {
@@ -606,7 +606,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			cell1.setChecked(checks[0], true);
 		});
 		builder.setView(frameLayout);
-		builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+		builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, i) -> {
 			if (all) {
 				deleteAllMessages(checks[0]);
 				calls.clear();
@@ -619,7 +619,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			}
 			hideActionMode(false);
 		});
-		builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+		builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
 		AlertDialog alertDialog = builder.create();
 		showDialog(alertDialog);
 		TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -681,7 +681,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		actionMode.addView(selectedDialogsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
 		selectedDialogsCountTextView.setOnTouchListener((v, event) -> true);
 
-		actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString("Delete", R.string.Delete)));
+		actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString(R.string.Delete)));
 	}
 
 	private boolean addOrRemoveSelectedDialog(ArrayList<TLRPC.Message> messages, CallCell cell) {
@@ -1034,15 +1034,15 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					switch (row.type) {
 						case TYPE_OUT:
 							subtitle.setSpan(iconOut, ldir.length(), ldir.length() + 1, 0);
-							//cell.setContentDescription(LocaleController.getString("CallMessageOutgoing", R.string.CallMessageOutgoing));
+							//cell.setContentDescription(LocaleController.getString(R.string.CallMessageOutgoing));
 							break;
 						case TYPE_IN:
 							subtitle.setSpan(iconIn, ldir.length(), ldir.length() + 1, 0);
-							//cell.setContentDescription(LocaleController.getString("CallMessageIncoming", R.string.CallMessageIncoming));
+							//cell.setContentDescription(LocaleController.getString(R.string.CallMessageIncoming));
 							break;
 						case TYPE_MISSED:
 							subtitle.setSpan(iconMissed, ldir.length(), ldir.length() + 1, 0);
-							//cell.setContentDescription(LocaleController.getString("CallMessageIncomingMissed", R.string.CallMessageIncomingMissed));
+							//cell.setContentDescription(LocaleController.getString(R.string.CallMessageIncomingMissed));
 							break;
 					}
 					cell.profileSearchCell.setData(row.user, null, null, subtitle, false, false);
@@ -1053,9 +1053,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				case 3: {
 					HeaderCell cell = (HeaderCell) holder.itemView;
 					if (position == activeHeaderRow) {
-						cell.setText(LocaleController.getString("VoipChatActiveChats", R.string.VoipChatActiveChats));
+						cell.setText(LocaleController.getString(R.string.VoipChatActiveChats));
 					} else if (position == callsHeaderRow) {
-						cell.setText(LocaleController.getString("VoipChatRecentCalls", R.string.VoipChatRecentCalls));
+						cell.setText(LocaleController.getString(R.string.VoipChatRecentCalls));
 					}
 					break;
 				}
@@ -1069,17 +1069,17 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					String text;
 					if (ChatObject.isChannel(chat) && !chat.megagroup) {
 						if (!ChatObject.isPublic(chat)) {
-							text = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
+							text = LocaleController.getString(R.string.ChannelPrivate).toLowerCase();
 						} else {
-							text = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
+							text = LocaleController.getString(R.string.ChannelPublic).toLowerCase();
 						}
 					} else {
 						if (chat.has_geo) {
-							text = LocaleController.getString("MegaLocation", R.string.MegaLocation);
+							text = LocaleController.getString(R.string.MegaLocation);
 						} else if (!ChatObject.isPublic(chat)) {
-							text = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+							text = LocaleController.getString(R.string.MegaPrivate).toLowerCase();
 						} else {
-							text = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+							text = LocaleController.getString(R.string.MegaPublic).toLowerCase();
 						}
 					}
 					cell.profileSearchCell.useSeparator = position != activeGroupCalls.size() - 1 && !endReached;

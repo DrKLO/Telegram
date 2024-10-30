@@ -80,7 +80,7 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
         avatarImageReceiver.setParentView(this);
 
         if (dialogId == CacheControlActivity.UNKNOWN_CHATS_DIALOG_ID) {
-            dialogText = LocaleController.getString("CacheOtherChats", R.string.CacheOtherChats);
+            dialogText = LocaleController.getString(R.string.CacheOtherChats);
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_OTHER_CHATS);
             avatarImageReceiver.setForUserOrChat(null, avatarDrawable);
         } else {

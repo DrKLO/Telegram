@@ -194,7 +194,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 searchAdapter.search(text);
             }
         };
-        searchView.setHint(LocaleController.getString("SearchTrendingStickersHint", R.string.SearchTrendingStickersHint));
+        searchView.setHint(LocaleController.getString(R.string.SearchTrendingStickersHint));
         searchLayout.addView(searchView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP));
 
         listView = new RecyclerListView(context) {
@@ -763,7 +763,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                     bindStickerSetCell(holder.itemView, position, false);
                     break;
                 case 4:
-                    ((GraySectionCell) holder.itemView).setText(LocaleController.getString("OtherStickers", R.string.OtherStickers));
+                    ((GraySectionCell) holder.itemView).setText(LocaleController.getString(R.string.OtherStickers));
                     break;
             }
         }

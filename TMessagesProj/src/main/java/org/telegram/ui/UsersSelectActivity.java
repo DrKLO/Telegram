@@ -459,9 +459,9 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         actionBar.setAllowOverlayTitle(true);
         if (type == TYPE_FILTER || type == TYPE_PRIVATE) {
             if (isInclude) {
-                actionBar.setTitle(LocaleController.getString("FilterAlwaysShow", R.string.FilterAlwaysShow));
+                actionBar.setTitle(LocaleController.getString(R.string.FilterAlwaysShow));
             } else {
-                actionBar.setTitle(LocaleController.getString("FilterNeverShow", R.string.FilterNeverShow));
+                actionBar.setTitle(LocaleController.getString(R.string.FilterNeverShow));
             }
         } else if (type == TYPE_AUTO_DELETE_EXISTING_CHATS){
             updateHint();
@@ -580,7 +580,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         spansContainer.addView(editText);
-        editText.setHintText(LocaleController.getString("SearchForPeopleAndGroups", R.string.SearchForPeopleAndGroups));
+        editText.setHintText(LocaleController.getString(R.string.SearchForPeopleAndGroups));
 
         editText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
             public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
@@ -669,7 +669,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                         adapter.setSearching(true);
                         listView.setFastScrollVisible(false);
                         listView.setVerticalScrollBarEnabled(true);
-                        emptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        emptyView.title.setText(LocaleController.getString(R.string.NoResult));
                     }
                     emptyView.showProgress(true);
                     adapter.searchDialogs(editText.getText().toString());
@@ -696,7 +696,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             }
         };
         emptyView.showProgress(ContactsController.getInstance(currentAccount).isLoadingContacts());
-        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
         frameLayout.addView(emptyView);
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
@@ -771,7 +771,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                     } else if (object instanceof TLRPC.Chat) {
                         id = -((TLRPC.Chat) object).id;
                         if (type == TYPE_AUTO_DELETE_EXISTING_CHATS && !ChatObject.canUserDoAdminAction((TLRPC.Chat) object, ChatObject.ACTION_DELETE_MESSAGES)) {
-                            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("NeedAdminRightForSetAutoDeleteTimer", R.string.NeedAdminRightForSetAutoDeleteTimer)).show();
+                            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString(R.string.NeedAdminRightForSetAutoDeleteTimer)).show();
                             return;
                         }
                     } else {
@@ -853,7 +853,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         floatingButton.setScaleX(0.0f);
         floatingButton.setScaleY(0.0f);
         floatingButton.setAlpha(0.0f);*/
-        floatingButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
+        floatingButton.setContentDescription(LocaleController.getString(R.string.Next));
 
         for (int position = 1, N = (isInclude ? 5 : 3); position <= N; position++) {
             int id;
@@ -1063,7 +1063,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         adapter.searchDialogs(null);
         listView.setFastScrollVisible(true);
         listView.setVerticalScrollBarEnabled(false);
-        emptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
     }
 
     private void updateHint() {
@@ -1079,11 +1079,11 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             actionBar.setSubtitle("");
 
             if (selectedCount == 0) {
-                animatedAvatarContainer.getTitle().setText(LocaleController.getString("SelectChats", R.string.SelectChats), true);
+                animatedAvatarContainer.getTitle().setText(LocaleController.getString(R.string.SelectChats), true);
                 if (ttlPeriod > 0) {
-                    animatedAvatarContainer.getSubtitleTextView().setText(LocaleController.getString("SelectChatsForAutoDelete", R.string.SelectChatsForAutoDelete), true);
+                    animatedAvatarContainer.getSubtitleTextView().setText(LocaleController.getString(R.string.SelectChatsForAutoDelete), true);
                 } else {
-                    animatedAvatarContainer.getSubtitleTextView().setText(LocaleController.getString("SelectChatsForDisableAutoDelete", R.string.SelectChatsForDisableAutoDelete), true);
+                    animatedAvatarContainer.getSubtitleTextView().setText(LocaleController.getString(R.string.SelectChatsForDisableAutoDelete), true);
                 }
             } else {
                 animatedAvatarContainer.getTitle().setText(LocaleController.formatPluralString("Chats", selectedCount, selectedCount));
@@ -1316,37 +1316,37 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                                 }
                             } else if (isInclude) {
                                 if (position == 1) {
-                                    name = LocaleController.getString("FilterContacts", R.string.FilterContacts);
+                                    name = LocaleController.getString(R.string.FilterContacts);
                                     object = "contacts";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
                                 } else if (position == 2) {
-                                    name = LocaleController.getString("FilterNonContacts", R.string.FilterNonContacts);
+                                    name = LocaleController.getString(R.string.FilterNonContacts);
                                     object = "non_contacts";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
                                 } else if (position == 3) {
-                                    name = LocaleController.getString("FilterGroups", R.string.FilterGroups);
+                                    name = LocaleController.getString(R.string.FilterGroups);
                                     object = "groups";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_GROUPS;
                                 } else if (position == 4) {
-                                    name = LocaleController.getString("FilterChannels", R.string.FilterChannels);
+                                    name = LocaleController.getString(R.string.FilterChannels);
                                     object = "channels";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
                                 } else {
-                                    name = LocaleController.getString("FilterBots", R.string.FilterBots);
+                                    name = LocaleController.getString(R.string.FilterBots);
                                     object = "bots";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_BOTS;
                                 }
                             } else {
                                 if (position == 1) {
-                                    name = LocaleController.getString("FilterMuted", R.string.FilterMuted);
+                                    name = LocaleController.getString(R.string.FilterMuted);
                                     object = "muted";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
                                 } else if (position == 2) {
-                                    name = LocaleController.getString("FilterRead", R.string.FilterRead);
+                                    name = LocaleController.getString(R.string.FilterRead);
                                     object = "read";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
                                 } else {
-                                    name = LocaleController.getString("FilterArchived", R.string.FilterArchived);
+                                    name = LocaleController.getString(R.string.FilterArchived);
                                     object = "archived";
                                     flag = MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
                                 }
@@ -1425,9 +1425,9 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                 case 2: {
                     GraySectionCell cell = (GraySectionCell) holder.itemView;
                     if (position == 0 && !noChatTypes) {
-                        cell.setText(LocaleController.getString("FilterChatTypes", R.string.FilterChatTypes));
+                        cell.setText(LocaleController.getString(R.string.FilterChatTypes));
                     } else {
-                        cell.setText(LocaleController.getString("FilterChats", R.string.FilterChats));
+                        cell.setText(LocaleController.getString(R.string.FilterChats));
                     }
                     break;
                 }
@@ -1527,10 +1527,10 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                                 names[0] = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
                                 username = UserObject.getPublicUsername(user);
                                 if (UserObject.isReplyUser(user)) {
-                                    names[2] = LocaleController.getString("RepliesTitle", R.string.RepliesTitle).toLowerCase();
+                                    names[2] = LocaleController.getString(R.string.RepliesTitle).toLowerCase();
                                 } else if (UserObject.isUserSelf(user)) {
                                     if (!allowSelf) continue;
-                                    names[2] = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
+                                    names[2] = LocaleController.getString(R.string.SavedMessages).toLowerCase();
                                 } else if (user.bot && !allowBots) {
                                     continue;
                                 }

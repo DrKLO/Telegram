@@ -37,9 +37,9 @@ public class UnlockPremiumView extends FrameLayout {
         descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         descriptionTextView.setGravity(Gravity.CENTER);
         if (type == TYPE_STICKERS) {
-            descriptionTextView.setText(LocaleController.getString("UnlockPremiumStickersDescription", R.string.UnlockPremiumStickersDescription));
+            descriptionTextView.setText(LocaleController.getString(R.string.UnlockPremiumStickersDescription));
         } else if (type == TYPE_REACTIONS) {
-            descriptionTextView.setText(LocaleController.getString("UnlockPremiumReactionsDescription", R.string.UnlockPremiumReactionsDescription));
+            descriptionTextView.setText(LocaleController.getString(R.string.UnlockPremiumReactionsDescription));
         }
         linearLayout.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 17, 17, 16));
 
@@ -47,9 +47,9 @@ public class UnlockPremiumView extends FrameLayout {
 
         String text;
         if (type == TYPE_STICKERS) {
-            text = LocaleController.getString("UnlockPremiumStickers", R.string.UnlockPremiumStickers);
+            text = LocaleController.getString(R.string.UnlockPremiumStickers);
         } else {
-            text = LocaleController.getString("UnlockPremiumReactions", R.string.UnlockPremiumReactions);
+            text = LocaleController.getString(R.string.UnlockPremiumReactions);
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("d ").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_premium_normal)), 0, 1, 0);

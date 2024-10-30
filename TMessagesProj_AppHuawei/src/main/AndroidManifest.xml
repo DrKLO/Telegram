@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="org.telegram.messenger.huawei"
     android:installLocation="auto">
 
     <uses-permission android:name="com.huawei.appmarket.service.commondata.permission.GET_COMMON_DATA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
 
     <queries>
         <package android:name="com.huawei.maps.app"/>
     </queries>
 
     <application android:name="org.telegram.messenger.HuaweiApplicationLoader" tools:replace="name">
-        <service android:name="org.telegram.messenger.GoogleVoiceClientService" android:exported="true"/>
+        <service
+            android:name="org.telegram.messenger.GoogleVoiceClientService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+        />
         <activity
             android:name="org.telegram.messenger.GoogleVoiceClientActivity"
             android:exported="true">
@@ -22,7 +26,11 @@
             </intent-filter>
         </activity>
 
-        <service android:name="org.telegram.messenger.HuaweiPushListenerService" android:exported="false">
+        <service
+            android:name="org.telegram.messenger.HuaweiPushListenerService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|remoteMessaging"
+        >
             <intent-filter>
                 <action android:name="com.huawei.push.action.MESSAGING_EVENT"/>
             </intent-filter>

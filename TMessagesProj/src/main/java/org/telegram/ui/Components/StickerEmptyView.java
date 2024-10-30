@@ -22,6 +22,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -267,6 +268,11 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     }
 
     private void setSticker() {
+        if (stickerType == STICKER_TYPE_NO_CONTACTS || stickerType == STICKER_TYPE_SEARCH) {
+            stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
+            return;
+        }
+
         String imageFilter = null;
         TLRPC.Document document = null;
         TLRPC.TL_messages_stickerSet set = null;

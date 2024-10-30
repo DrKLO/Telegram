@@ -74,7 +74,7 @@ public class ProfileChannelCell extends FrameLayout {
         headerLayout.addView(subscribersView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17, Gravity.LEFT | Gravity.TOP, 4, 2, 4, 0));
 
         dialogCell = new DialogCell(null, context, false, true, UserConfig.selectedAccount, resourcesProvider);
-        dialogCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        dialogCell.setBackgroundColor(0);
         dialogCell.setDialogCellDelegate(new DialogCell.DialogCellDelegate() {
             @Override
             public void onButtonClicked(DialogCell dialogCell) {

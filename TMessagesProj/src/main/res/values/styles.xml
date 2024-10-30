@@ -194,14 +194,6 @@
         <item name="widgetPreviewImage">@drawable/widget_avatar_7</item>
     </style>
 
-    <style name="Theme.TMessages.AppWidget.Preview3">
-        <item name="widgetPreviewTitle">Dolph Ingman</item>
-        <item name="widgetPreviewContent">&#128517; Sticker</item>
-        <item name="widgetPreviewTime">11:00</item>
-        <item name="widgetPreviewDot">2</item>
-        <item name="widgetPreviewImage">@drawable/widget_avatar_6</item>
-    </style>
-
     <style name="Theme.TMessages.AppWidget.Preview4">
         <item name="widgetPreviewTitle">Doge</item>
         <item name="widgetPreviewDot">0</item>

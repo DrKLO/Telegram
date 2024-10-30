@@ -220,7 +220,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
                 File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
-                String json = readRes(path, 0);
+                String json = AndroidUtilities.readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;
                     AndroidUtilities.runOnUIThread(() -> {
@@ -330,7 +330,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
                 File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
-                String json = readRes(path, 0);
+                String json = AndroidUtilities.readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;
                     AndroidUtilities.runOnUIThread(() -> {

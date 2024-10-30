@@ -25,7 +25,7 @@ public class UpdateReactionsButton extends ButtonWithCounterView {
     }
 
     public void setDefaultState() {
-        setText(new SpannableStringBuilder(LocaleController.getString("ReactionUpdateReactionsBtn", R.string.ReactionUpdateReactionsBtn)), false);
+        setText(new SpannableStringBuilder(LocaleController.getString(R.string.ReactionUpdateReactionsBtn)), false);
         lock = new SpannableStringBuilder("l");
         ColoredImageSpan coloredImageSpan = new ColoredImageSpan(R.drawable.mini_switch_lock);
         coloredImageSpan.setTopOffset(1);

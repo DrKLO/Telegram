@@ -265,13 +265,13 @@ public class GroupCallRenderersContainer extends FrameLayout {
         pinTextView.setTextColor(Color.WHITE);
         pinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         pinTextView.setTypeface(AndroidUtilities.bold());
-        pinTextView.setText(LocaleController.getString("CallVideoPin", R.string.CallVideoPin));
+        pinTextView.setText(LocaleController.getString(R.string.CallVideoPin));
 
         unpinTextView = new TextView(context);
         unpinTextView.setTextColor(Color.WHITE);
         unpinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         unpinTextView.setTypeface(AndroidUtilities.bold());
-        unpinTextView.setText(LocaleController.getString("CallVideoUnpin", R.string.CallVideoUnpin));
+        unpinTextView.setText(LocaleController.getString(R.string.CallVideoUnpin));
 
 
         addView(pinTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));

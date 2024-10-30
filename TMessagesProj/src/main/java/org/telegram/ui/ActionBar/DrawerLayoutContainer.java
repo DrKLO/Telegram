@@ -89,7 +89,7 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     private float drawerPosition;
     private boolean drawerOpened;
-    private boolean allowDrawContent = true;
+    public boolean allowDrawContent = true;
 
     private boolean firstLayout = true;
 

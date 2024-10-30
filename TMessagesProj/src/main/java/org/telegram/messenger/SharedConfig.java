@@ -86,9 +86,9 @@ public class SharedConfig {
 
                     readOnlyStorageDirAlertShowed = true;
                     AlertDialog.Builder dialog = new AlertDialog.Builder(fragment.getParentActivity());
-                    dialog.setTitle(LocaleController.getString("SdCardError", R.string.SdCardError));
-                    dialog.setSubtitle(LocaleController.getString("SdCardErrorDescription", R.string.SdCardErrorDescription));
-                    dialog.setPositiveButton(LocaleController.getString("DoNotUseSDCard", R.string.DoNotUseSDCard), (dialog1, which) -> {
+                    dialog.setTitle(LocaleController.getString(R.string.SdCardError));
+                    dialog.setSubtitle(LocaleController.getString(R.string.SdCardErrorDescription));
+                    dialog.setPositiveButton(LocaleController.getString(R.string.DoNotUseSDCard), (dialog1, which) -> {
 
                     });
                     Dialog dialogFinal = dialog.create();
@@ -285,6 +285,7 @@ public class SharedConfig {
     public static boolean customTabs = true;
     public static boolean inappBrowser = true;
     public static boolean adaptableColorInBrowser = true;
+    public static boolean onlyLocalInstantView = false;
     public static boolean directShare = true;
     public static boolean inappCamera = true;
     public static boolean roundCamera16to9 = true;
@@ -304,6 +305,7 @@ public class SharedConfig {
     public static boolean playOrderReversed;
     public static boolean hasCameraCache;
     public static boolean showNotificationsForAllAccounts = true;
+    public static boolean debugVideoQualities = false;
     public static int repeatMode;
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
@@ -317,7 +319,6 @@ public class SharedConfig {
     public static int emojiInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
     public static int callEncryptionHintDisplayedCount;
-    public static boolean botTabs3DEffect;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
@@ -590,6 +591,7 @@ public class SharedConfig {
             customTabs = preferences.getBoolean("custom_tabs", true);
             inappBrowser = preferences.getBoolean("inapp_browser", true);
             adaptableColorInBrowser = preferences.getBoolean("adaptableBrowser", false);
+            onlyLocalInstantView = preferences.getBoolean("onlyLocalInstantView", BuildVars.DEBUG_PRIVATE_VERSION);
             directShare = preferences.getBoolean("direct_share", true);
             shuffleMusic = preferences.getBoolean("shuffleMusic", false);
             playOrderReversed = !shuffleMusic && preferences.getBoolean("playOrderReversed", false);
@@ -605,7 +607,7 @@ public class SharedConfig {
             useSystemEmoji = preferences.getBoolean("useSystemEmoji", false);
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
-            pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", false);
+            pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", true);
             pauseMusicOnMedia = preferences.getBoolean("pauseMusicOnMedia", false);
             forceDisableTabletMode = preferences.getBoolean("forceDisableTabletMode", false);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
@@ -660,7 +662,7 @@ public class SharedConfig {
             photoViewerBlur = preferences.getBoolean("photoViewerBlur", true);
             multipleReactionsPromoShowed = preferences.getBoolean("multipleReactionsPromoShowed", false);
             callEncryptionHintDisplayedCount = preferences.getInt("callEncryptionHintDisplayedCount", 0);
-            botTabs3DEffect = preferences.getBoolean("botTabs3DEffect", true);
+            debugVideoQualities = preferences.getBoolean("debugVideoQualities", false);
 
             loadDebugConfig(preferences);
 
@@ -1090,13 +1092,6 @@ public class SharedConfig {
         editor.apply();
     }
 
-    public static void setBotTabs3DEffect(boolean value) {
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean("botTabs3DEffect", botTabs3DEffect = value);
-        editor.apply();
-    }
-
     public static void toggleLoopStickers() {
         LiteMode.toggleFlag(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
     }
@@ -1260,6 +1255,22 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("adaptableBrowser", adaptableColorInBrowser);
+        editor.apply();
+    }
+
+    public static void toggleDebugVideoQualities() {
+        debugVideoQualities = !debugVideoQualities;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("debugVideoQualities", debugVideoQualities);
+        editor.apply();
+    }
+
+    public static void toggleLocalInstantView() {
+        onlyLocalInstantView = !onlyLocalInstantView;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("onlyLocalInstantView", onlyLocalInstantView);
         editor.apply();
     }
 
@@ -1672,7 +1683,7 @@ public class SharedConfig {
             performanceClass = PERFORMANCE_CLASS_HIGH;
         }
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("device performance info selected_class = " + performanceClass + " (cpu_count = " + cpuCount + ", freq = " + maxCpuFreq + ", memoryClass = " + memoryClass + ", android version " + androidVersion + ", manufacture " + Build.MANUFACTURER + ", screenRefreshRate=" + AndroidUtilities.screenRefreshRate + ")");
+            FileLog.d("device performance info selected_class = " + performanceClass + " (cpu_count = " + cpuCount + ", freq = " + maxCpuFreq + ", memoryClass = " + memoryClass + ", android version " + androidVersion + ", manufacture " + Build.MANUFACTURER + ", screenRefreshRate=" + AndroidUtilities.screenRefreshRate + ", screenMaxRefreshRate=" + AndroidUtilities.screenMaxRefreshRate + ")");
         }
 
         return performanceClass;

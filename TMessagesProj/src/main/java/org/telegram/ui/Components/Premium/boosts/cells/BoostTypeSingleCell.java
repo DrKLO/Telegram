@@ -13,6 +13,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 
 @SuppressLint("ViewConstructor")
 public class BoostTypeSingleCell extends BoostTypeCell {
@@ -21,18 +22,26 @@ public class BoostTypeSingleCell extends BoostTypeCell {
         super(context, resourcesProvider);
     }
 
-    public void setGiveaway(TL_stories.TL_prepaidGiveaway prepaidGiveaway) {
+    public void setGiveaway(TL_stories.PrepaidGiveaway prepaidGiveaway) {
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
-        avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_GIFT);
-        titleTextView.setText(LocaleController.formatString("BoostingPreparedGiveawayOne", R.string.BoostingPreparedGiveawayOne));
-        String subtitle = LocaleController.formatPluralString("BoostingPreparedGiveawaySubscriptionsPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("Months", prepaidGiveaway.months));
-        setSubtitle(subtitle);
-        if (prepaidGiveaway.months == 12) {
-            avatarDrawable.setColor(0xFFff8560, 0xFFd55246);
-        } else if (prepaidGiveaway.months == 6) {
-            avatarDrawable.setColor(0xFF5caefa, 0xFF418bd0);
-        } else {
-            avatarDrawable.setColor(0xFF9ad164, 0xFF49ba44);
+        if (prepaidGiveaway instanceof TL_stories.TL_prepaidStarsGiveaway) {
+            TL_stories.TL_prepaidStarsGiveaway prepaid = (TL_stories.TL_prepaidStarsGiveaway) prepaidGiveaway;
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_STARS);
+            titleTextView.setText(LocaleController.formatPluralStringComma("BoostingStarsPreparedGiveawaySubscriptionsPlural", (int) prepaid.stars));
+            setSubtitle(LocaleController.formatPluralString("AmongWinners", prepaid.quantity));
+        } else if (prepaidGiveaway instanceof TL_stories.TL_prepaidGiveaway) {
+            titleTextView.setText(LocaleController.getString(R.string.BoostingPreparedGiveawayOne));
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_GIFT);
+            TL_stories.TL_prepaidGiveaway prepaid = (TL_stories.TL_prepaidGiveaway) prepaidGiveaway;
+            if (prepaid.months == 12) {
+                avatarDrawable.setColor(0xFFff8560, 0xFFd55246);
+            } else if (prepaid.months == 6) {
+                avatarDrawable.setColor(0xFF5caefa, 0xFF418bd0);
+            } else {
+                avatarDrawable.setColor(0xFF9ad164, 0xFF49ba44);
+            }
+            String subtitle = LocaleController.formatPluralString("BoostingPreparedGiveawaySubscriptionsPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("Months", prepaid.months));
+            setSubtitle(subtitle);
         }
         imageView.setImageDrawable(avatarDrawable);
         imageView.setRoundRadius(dp(20));

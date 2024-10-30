@@ -102,6 +102,7 @@ public class LinkPreview extends View {
         this.video = true;
     }
 
+    public int previewType;
     public int type, color;
     private WebPagePreview webpage;
 
@@ -285,6 +286,15 @@ public class LinkPreview extends View {
         invalidate();
     }
 
+    public void setPreviewType(int type) {
+        previewType = type;
+        invalidate();
+    }
+
+    public int getPreviewType() {
+        return previewType;
+    }
+
     public void set(int currentAccount, WebPagePreview webpage) {
         set(currentAccount, webpage, false);
     }
@@ -323,6 +333,7 @@ public class LinkPreview extends View {
     private final AnimatedFloat photoAlphaProgress = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat photoSmallProgress = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat previewProgress = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat previewTheme = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat previewHeightProgress = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat width = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat height = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -341,11 +352,12 @@ public class LinkPreview extends View {
 
         final float w = width.set(this.w);
         final float h = height.set(this.h);
+        final float previewDark = previewTheme.set(previewType == 0);
         final float preview = previewProgress.set(withPreview());
         final float r = AndroidUtilities.lerp(.2f * h, 16.66f * density, preview);
 
         bounds.set(padx, pady, padx + w, pady + h);
-        outlinePaint.setColor(ColorUtils.blendARGB(backgroundColor, 0xFF202429, preview));
+        outlinePaint.setColor(ColorUtils.blendARGB(backgroundColor, ColorUtils.blendARGB(0xFFFFFFFF, 0xFF202429, previewDark), preview));
 
         path2.rewind();
         path2.addRoundRect(bounds, r, r, Path.Direction.CW);
@@ -388,14 +400,14 @@ public class LinkPreview extends View {
 
             if (hasTitle && titleText != null) {
                 titleText
-                    .draw(canvas, 20 * density, y + titleText.getHeight() / 2f, 0xFFFFFFFF, preview);
+                    .draw(canvas, 20 * density, y + titleText.getHeight() / 2f, ColorUtils.blendARGB(0xFF333333, 0xFFFFFFFF, previewDark), preview);
                 y += titleText.getHeight() + 2.66f * density;
             }
 
             if (hasDescription && descriptionLayout != null) {
                 canvas.save();
                 canvas.translate(20 * density - descriptionLayoutLeft, y);
-                descriptionPaint.setColor(0xFFFFFFFF);
+                descriptionPaint.setColor(ColorUtils.blendARGB(0xFF333333, 0xFFFFFFFF, previewDark));
                 descriptionPaint.setAlpha((int) (0xFF * preview));
                 descriptionLayout.draw(canvas);
                 canvas.restore();

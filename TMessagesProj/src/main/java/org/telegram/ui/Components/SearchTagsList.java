@@ -491,7 +491,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
             MessagesController.getInstance(currentAccount).renameSavedReactionTag(ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction), text);
             dialogInterface.dismiss();
         });
-        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> {
             dialogInterface.dismiss();
         });
         if (adaptive) {

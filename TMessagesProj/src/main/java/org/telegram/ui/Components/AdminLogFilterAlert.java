@@ -343,7 +343,7 @@ public class AdminLogFilterAlert extends BottomSheet {
 
         saveButton = new BottomSheet.BottomSheetCell(context, 1);
         saveButton.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-        saveButton.setTextAndIcon(LocaleController.getString("Save", R.string.Save).toUpperCase(), 0);
+        saveButton.setTextAndIcon(LocaleController.getString(R.string.Save).toUpperCase(), 0);
         saveButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         saveButton.setOnClickListener(v -> {
             delegate.didSelectRights(currentFilter, selectedAdmins);
@@ -456,33 +456,33 @@ public class AdminLogFilterAlert extends BottomSheet {
                 case 0: {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == 0) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterAll", R.string.EventLogFilterAll), currentFilter == null, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterAll), currentFilter == null, true);
                     } else if (position == restrictionsRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterNewRestrictions", R.string.EventLogFilterNewRestrictions), currentFilter == null || currentFilter.kick && currentFilter.ban && currentFilter.unkick && currentFilter.unban, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterNewRestrictions), currentFilter == null || currentFilter.kick && currentFilter.ban && currentFilter.unkick && currentFilter.unban, true);
                     } else if (position == adminsRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterNewAdmins", R.string.EventLogFilterNewAdmins), currentFilter == null || currentFilter.promote && currentFilter.demote, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterNewAdmins), currentFilter == null || currentFilter.promote && currentFilter.demote, true);
                     } else if (position == membersRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterNewMembers", R.string.EventLogFilterNewMembers), currentFilter == null || currentFilter.invite && currentFilter.join, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterNewMembers), currentFilter == null || currentFilter.invite && currentFilter.join, true);
                     } else if (position == infoRow) {
                         if (isMegagroup) {
-                            cell.setTextAndCheck(LocaleController.getString("EventLogFilterGroupInfo", R.string.EventLogFilterGroupInfo), currentFilter == null || currentFilter.info, true);
+                            cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterGroupInfo), currentFilter == null || currentFilter.info, true);
                         } else {
-                            cell.setTextAndCheck(LocaleController.getString("EventLogFilterChannelInfo", R.string.EventLogFilterChannelInfo), currentFilter == null || currentFilter.info, true);
+                            cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterChannelInfo), currentFilter == null || currentFilter.info, true);
                         }
                     } else if (position == deleteRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterDeletedMessages", R.string.EventLogFilterDeletedMessages), currentFilter == null || currentFilter.delete, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterDeletedMessages), currentFilter == null || currentFilter.delete, true);
                     } else if (position == editRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterEditedMessages", R.string.EventLogFilterEditedMessages), currentFilter == null || currentFilter.edit, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterEditedMessages), currentFilter == null || currentFilter.edit, true);
                     } else if (position == pinnedRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterPinnedMessages", R.string.EventLogFilterPinnedMessages), currentFilter == null || currentFilter.pinned, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterPinnedMessages), currentFilter == null || currentFilter.pinned, true);
                     } else if (position == leavingRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterLeavingMembers", R.string.EventLogFilterLeavingMembers), currentFilter == null || currentFilter.leave, callsRow != -1);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterLeavingMembers), currentFilter == null || currentFilter.leave, callsRow != -1);
                     } else if (position == callsRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterCalls", R.string.EventLogFilterCalls), currentFilter == null || currentFilter.group_call, false);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterCalls), currentFilter == null || currentFilter.group_call, false);
                     } else if (position == invitesRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogFilterInvites", R.string.EventLogFilterInvites), currentFilter == null || currentFilter.invites, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogFilterInvites), currentFilter == null || currentFilter.invites, true);
                     } else if (position == allAdminsRow) {
-                        cell.setTextAndCheck(LocaleController.getString("EventLogAllAdmins", R.string.EventLogAllAdmins), selectedAdmins == null, true);
+                        cell.setTextAndCheck(LocaleController.getString(R.string.EventLogAllAdmins), selectedAdmins == null, true);
                     }
                     break;
                 }

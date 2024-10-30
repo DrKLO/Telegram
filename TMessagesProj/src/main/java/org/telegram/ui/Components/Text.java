@@ -23,16 +23,22 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class Text {
 
-    private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private final TextPaint paint;
     private StaticLayout layout;
     private float width, left;
     private float maxWidth = 999999;
+
+    public Text(CharSequence text, TextPaint paint) {
+        this.paint = paint;
+        setText(text);
+    }
 
     public Text(CharSequence text, float textSizeDp) {
         this(text, textSizeDp, null);
     }
 
     public Text(CharSequence text, float textSizeDp, Typeface typeface) {
+        paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         paint.setTextSize(dp(textSizeDp));
         paint.setTypeface(typeface);
         setText(text);

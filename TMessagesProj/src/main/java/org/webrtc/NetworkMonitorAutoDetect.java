@@ -442,8 +442,14 @@ public class NetworkMonitorAutoDetect extends BroadcastReceiver implements Netwo
     }
 
     String getWifiSSID() {
-      final Intent intent = context.registerReceiver(
-          null, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION));
+      final Intent intent;
+      if (Build.VERSION.SDK_INT >= 33) {
+        intent = context.registerReceiver(
+                null, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION), Context.RECEIVER_NOT_EXPORTED);
+      } else {
+        intent = context.registerReceiver(
+                null, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION));
+      }
       if (intent != null) {
         final WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
         if (wifiInfo != null) {
@@ -474,7 +480,11 @@ public class NetworkMonitorAutoDetect extends BroadcastReceiver implements Netwo
       IntentFilter intentFilter = new IntentFilter();
       intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
       intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-      context.registerReceiver(this, intentFilter);
+      if (Build.VERSION.SDK_INT >= 33) {
+        context.registerReceiver(this, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+      } else {
+        context.registerReceiver(this, intentFilter);
+      }
       if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
         // Starting with Android Q (10), WIFI_P2P_CONNECTION_CHANGED_ACTION is no longer sticky.
         // This means we have to explicitly request WifiP2pGroup info during initialization in order
@@ -672,7 +682,11 @@ public class NetworkMonitorAutoDetect extends BroadcastReceiver implements Netwo
       return;
 
     isRegistered = true;
-    context.registerReceiver(this, intentFilter);
+    if (Build.VERSION.SDK_INT >= 33) {
+      context.registerReceiver(this, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+    } else {
+      context.registerReceiver(this, intentFilter);
+    }
   }
 
   /**

@@ -249,7 +249,7 @@ public class RateCallLayout extends FrameLayout {
             setWillNotDraw(false);
             titleTextView = new TextView(context);
             titleTextView.setTextColor(Color.WHITE);
-            titleTextView.setText(LocaleController.getString("VoipRateCallTitle", R.string.VoipRateCallTitle));
+            titleTextView.setText(LocaleController.getString(R.string.VoipRateCallTitle));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
             titleTextView.setTypeface(AndroidUtilities.bold());
@@ -257,7 +257,7 @@ public class RateCallLayout extends FrameLayout {
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setTextColor(Color.WHITE);
             messageTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            messageTextView.setText(LocaleController.getString("VoipRateCallDescription", R.string.VoipRateCallDescription));
+            messageTextView.setText(LocaleController.getString(R.string.VoipRateCallDescription));
 
             addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 24, 0, 0));
             addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 50, 0, 0));

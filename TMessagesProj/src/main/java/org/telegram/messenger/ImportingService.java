@@ -89,13 +89,13 @@ public class ImportingService extends Service implements NotificationCenter.Noti
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
-            builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setContentTitle(LocaleController.getString(R.string.AppName));
             if (hasImportingHistory()) {
-                builder.setTicker(LocaleController.getString("ImporImportingService", R.string.ImporImportingService));
-                builder.setContentText(LocaleController.getString("ImporImportingService", R.string.ImporImportingService));
+                builder.setTicker(LocaleController.getString(R.string.ImporImportingService));
+                builder.setContentText(LocaleController.getString(R.string.ImporImportingService));
             } else {
-                builder.setTicker(LocaleController.getString("ImporImportingStickersService", R.string.ImporImportingStickersService));
-                builder.setContentText(LocaleController.getString("ImporImportingStickersService", R.string.ImporImportingStickersService));
+                builder.setTicker(LocaleController.getString(R.string.ImporImportingStickersService));
+                builder.setContentText(LocaleController.getString(R.string.ImporImportingStickersService));
             }
         }
         builder.setProgress(100, 0, true);

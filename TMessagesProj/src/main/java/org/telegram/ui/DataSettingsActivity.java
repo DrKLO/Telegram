@@ -257,7 +257,7 @@ public class DataSettingsActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString("DataSettings", R.string.DataSettings));
+        actionBar.setTitle(LocaleController.getString(R.string.DataSettings));
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
         }
@@ -374,9 +374,9 @@ public class DataSettingsActivity extends BaseFragment {
                     return;
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("ResetAutomaticMediaDownloadAlertTitle", R.string.ResetAutomaticMediaDownloadAlertTitle));
-                builder.setMessage(LocaleController.getString("ResetAutomaticMediaDownloadAlert", R.string.ResetAutomaticMediaDownloadAlert));
-                builder.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialogInterface, i) -> {
+                builder.setTitle(LocaleController.getString(R.string.ResetAutomaticMediaDownloadAlertTitle));
+                builder.setMessage(LocaleController.getString(R.string.ResetAutomaticMediaDownloadAlert));
+                builder.setPositiveButton(LocaleController.getString(R.string.Reset), (dialogInterface, i) -> {
                     DownloadController.Preset preset;
                     DownloadController.Preset defaultPreset;
                     String key;
@@ -411,7 +411,7 @@ public class DataSettingsActivity extends BaseFragment {
                     listAdapter.notifyItemRangeChanged(mobileRow, 4);
                     updateRows(false);
                 });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 AlertDialog dialog = builder.create();
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -438,11 +438,11 @@ public class DataSettingsActivity extends BaseFragment {
                         break;
                 }
                 Dialog dlg = AlertsCreator.createSingleChoiceDialog(getParentActivity(), new String[]{
-                                LocaleController.getString("UseLessDataNever", R.string.UseLessDataNever),
-                                LocaleController.getString("UseLessDataOnRoaming", R.string.UseLessDataOnRoaming),
-                                LocaleController.getString("UseLessDataOnMobile", R.string.UseLessDataOnMobile),
-                                LocaleController.getString("UseLessDataAlways", R.string.UseLessDataAlways)},
-                        LocaleController.getString("VoipUseLessData", R.string.VoipUseLessData), selected, (dialog, which) -> {
+                                LocaleController.getString(R.string.UseLessDataNever),
+                                LocaleController.getString(R.string.UseLessDataOnRoaming),
+                                LocaleController.getString(R.string.UseLessDataOnMobile),
+                                LocaleController.getString(R.string.UseLessDataAlways)},
+                        LocaleController.getString(R.string.VoipUseLessData), selected, (dialog, which) -> {
                             int val = -1;
                             switch (which) {
                                 case 0:
@@ -472,7 +472,7 @@ public class DataSettingsActivity extends BaseFragment {
                 presentFragment(new DataUsage2Activity());
             } else if (position == storageNumRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("StoragePath", R.string.StoragePath));
+                builder.setTitle(LocaleController.getString(R.string.StoragePath));
                 final LinearLayout linearLayout = new LinearLayout(getParentActivity());
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
                 builder.setView(linearLayout);
@@ -512,7 +512,7 @@ public class DataSettingsActivity extends BaseFragment {
                     }
 
                     cell.setValue(
-                            isInternal ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard),
+                            isInternal ? LocaleController.getString(R.string.InternalStorage) : LocaleController.getString(R.string.SdCard),
                             description
                     );
                     cell.setLanguageSelected(storageDir.startsWith(dir), false);
@@ -522,16 +522,16 @@ public class DataSettingsActivity extends BaseFragment {
                         if (!TextUtils.equals(SharedConfig.storageCacheDir, storageDir)) {
                             if (!isInternal) {
                                 AlertDialog.Builder confirAlert = new AlertDialog.Builder(getContext());
-                                confirAlert.setTitle(LocaleController.getString("DecreaseSpeed", R.string.DecreaseSpeed));
-                                confirAlert.setMessage(LocaleController.getString("SdCardAlert", R.string.SdCardAlert));
-                                confirAlert.setPositiveButton(LocaleController.getString("Proceed", R.string.Proceed), new DialogInterface.OnClickListener() {
+                                confirAlert.setTitle(LocaleController.getString(R.string.DecreaseSpeed));
+                                confirAlert.setMessage(LocaleController.getString(R.string.SdCardAlert));
+                                confirAlert.setPositiveButton(LocaleController.getString(R.string.Proceed), new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                        setStorageDirectory(storageDir);
                                        builder.getDismissRunnable().run();
                                     }
                                 });
-                                confirAlert.setNegativeButton(LocaleController.getString("Back", R.string.Back), null);
+                                confirAlert.setNegativeButton(LocaleController.getString(R.string.Back), null);
                                 confirAlert.show();
                             } else {
                                 setStorageDirectory(storageDir);
@@ -541,7 +541,7 @@ public class DataSettingsActivity extends BaseFragment {
                         }
                     });
                 }
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 showDialog(builder.create());
             } else if (position == proxyRow) {
                 presentFragment(new ProxyListActivity());
@@ -575,13 +575,13 @@ public class DataSettingsActivity extends BaseFragment {
                 }
             } else if (position == clearDraftsRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("AreYouSureClearDraftsTitle", R.string.AreYouSureClearDraftsTitle));
-                builder.setMessage(LocaleController.getString("AreYouSureClearDrafts", R.string.AreYouSureClearDrafts));
-                builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+                builder.setTitle(LocaleController.getString(R.string.AreYouSureClearDraftsTitle));
+                builder.setMessage(LocaleController.getString(R.string.AreYouSureClearDrafts));
+                builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, i) -> {
                     TLRPC.TL_messages_clearAllDrafts req = new TLRPC.TL_messages_clearAllDrafts();
                     getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> getMediaDataController().clearAllDrafts(true)));
                 });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 AlertDialog alertDialog = builder.create();
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -654,10 +654,10 @@ public class DataSettingsActivity extends BaseFragment {
                     TextCell textCell = (TextCell) holder.itemView;
                     if (position == storageUsageRow) {
                         if (storageUsageLoading) {
-                            textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("StorageUsage", R.string.StorageUsage), "", false, R.drawable.msg_filled_storageusage, getThemedColor(Theme.key_color_lightblue), true);
+                            textCell.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.StorageUsage), "", false, R.drawable.msg_filled_storageusage, getThemedColor(Theme.key_color_lightblue), true);
                             textCell.setDrawLoading(true, 45, updateStorageUsageAnimated);
                         } else {
-                            textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("StorageUsage", R.string.StorageUsage), storageUsageSize <= 0 ? "" : AndroidUtilities.formatFileSize(storageUsageSize), true, R.drawable.msg_filled_storageusage, getThemedColor(Theme.key_color_lightblue), true);
+                            textCell.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.StorageUsage), storageUsageSize <= 0 ? "" : AndroidUtilities.formatFileSize(storageUsageSize), true, R.drawable.msg_filled_storageusage, getThemedColor(Theme.key_color_lightblue), true);
                             textCell.setDrawLoading(false, 45, updateStorageUsageAnimated);
                         }
                         updateStorageUsageAnimated = false;
@@ -671,7 +671,7 @@ public class DataSettingsActivity extends BaseFragment {
                             statsController.getSentBytesCount(1, StatsController.TYPE_TOTAL) +
                             statsController.getSentBytesCount(2, StatsController.TYPE_TOTAL)
                         );
-                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), AndroidUtilities.formatFileSize(size), true, R.drawable.msg_filled_datausage, getThemedColor(Theme.key_color_green), storageNumRow != -1);
+                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.NetworkUsage), AndroidUtilities.formatFileSize(size), true, R.drawable.msg_filled_datausage, getThemedColor(Theme.key_color_green), storageNumRow != -1);
                     } else if (position == storageNumRow) {
                         String dir = storageDirs.get(0).getAbsolutePath();
                         if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
@@ -683,8 +683,8 @@ public class DataSettingsActivity extends BaseFragment {
                                 }
                             }
                         }
-                        final String value = dir == null || dir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard);
-                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("StoragePath", R.string.StoragePath), value, true, R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
+                        final String value = dir == null || dir.contains("/storage/emulated/") ? LocaleController.getString(R.string.InternalStorage) : LocaleController.getString(R.string.SdCard);
+                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.StoragePath), value, true, R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
                     }
                     break;
                 }
@@ -698,77 +698,77 @@ public class DataSettingsActivity extends BaseFragment {
                         String value = null;
                         switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
                             case Instance.DATA_SAVING_NEVER:
-                                value = LocaleController.getString("UseLessDataNever", R.string.UseLessDataNever);
+                                value = LocaleController.getString(R.string.UseLessDataNever);
                                 break;
                             case Instance.DATA_SAVING_MOBILE:
-                                value = LocaleController.getString("UseLessDataOnMobile", R.string.UseLessDataOnMobile);
+                                value = LocaleController.getString(R.string.UseLessDataOnMobile);
                                 break;
                             case Instance.DATA_SAVING_ROAMING:
-                                value = LocaleController.getString("UseLessDataOnRoaming", R.string.UseLessDataOnRoaming);
+                                value = LocaleController.getString(R.string.UseLessDataOnRoaming);
                                 break;
                             case Instance.DATA_SAVING_ALWAYS:
-                                value = LocaleController.getString("UseLessDataAlways", R.string.UseLessDataAlways);
+                                value = LocaleController.getString(R.string.UseLessDataAlways);
                                 break;
                         }
-                        textCell.setTextAndValue(LocaleController.getString("VoipUseLessData", R.string.VoipUseLessData), value, updateVoipUseLessData, true);
+                        textCell.setTextAndValue(LocaleController.getString(R.string.VoipUseLessData), value, updateVoipUseLessData, true);
                         updateVoipUseLessData = false;
                     } else if (position == proxyRow) {
                         textCell.setIcon(0);
-                        textCell.setText(LocaleController.getString("ProxySettings", R.string.ProxySettings), false);
+                        textCell.setText(LocaleController.getString(R.string.ProxySettings), false);
                     } else if (position == resetDownloadRow) {
                         textCell.setIcon(0);
                         textCell.setCanDisable(true);
                         textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-                        textCell.setText(LocaleController.getString("ResetAutomaticMediaDownload", R.string.ResetAutomaticMediaDownload), false);
+                        textCell.setText(LocaleController.getString(R.string.ResetAutomaticMediaDownload), false);
                     } else if (position == quickRepliesRow){
                         textCell.setIcon(0);
-                        textCell.setText(LocaleController.getString("VoipQuickReplies", R.string.VoipQuickReplies), false);
+                        textCell.setText(LocaleController.getString(R.string.VoipQuickReplies), false);
                     } else if (position == clearDraftsRow) {
                         textCell.setIcon(0);
-                        textCell.setText(LocaleController.getString("PrivacyDeleteCloudDrafts", R.string.PrivacyDeleteCloudDrafts), false);
+                        textCell.setText(LocaleController.getString(R.string.PrivacyDeleteCloudDrafts), false);
                     }
                     break;
                 }
                 case 2: {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == mediaDownloadSectionRow) {
-                        headerCell.setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
+                        headerCell.setText(LocaleController.getString(R.string.AutomaticMediaDownload));
                     } else if (position == usageSectionRow) {
-                        headerCell.setText(LocaleController.getString("DataUsage", R.string.DataUsage));
+                        headerCell.setText(LocaleController.getString(R.string.DataUsage));
                     } else if (position == callsSectionRow) {
-                        headerCell.setText(LocaleController.getString("Calls", R.string.Calls));
+                        headerCell.setText(LocaleController.getString(R.string.Calls));
                     } else if (position == proxySectionRow) {
-                        headerCell.setText(LocaleController.getString("Proxy", R.string.Proxy));
+                        headerCell.setText(LocaleController.getString(R.string.Proxy));
                     } else if (position == streamSectionRow) {
-                        headerCell.setText(LocaleController.getString("Streaming", R.string.Streaming));
+                        headerCell.setText(LocaleController.getString(R.string.Streaming));
                     } else if (position == autoplayHeaderRow) {
-                        headerCell.setText(LocaleController.getString("AutoplayMedia", R.string.AutoplayMedia));
+                        headerCell.setText(LocaleController.getString(R.string.AutoplayMedia));
                     } else if (position == saveToGallerySectionRow) {
-                        headerCell.setText(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings));
+                        headerCell.setText(LocaleController.getString(R.string.SaveToGallerySettings));
                     }
                     break;
                 }
                 case 3: {
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
                     if (position == enableStreamRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("EnableStreaming", R.string.EnableStreaming), SharedConfig.streamMedia, enableAllStreamRow != -1);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.EnableStreaming), SharedConfig.streamMedia, enableAllStreamRow != -1);
                     } else if (position == enableCacheStreamRow) {
-                        //checkCell.setTextAndCheck(LocaleController.getString("CacheStreamFile", R.string.CacheStreamFile), SharedConfig.saveStreamMedia, true);
+                        //checkCell.setTextAndCheck(LocaleController.getString(R.string.CacheStreamFile), SharedConfig.saveStreamMedia, true);
                     } else if (position == enableMkvRow) {
                         checkCell.setTextAndCheck("(beta only) Show MKV as Video", SharedConfig.streamMkv, true);
                     } else if (position == enableAllStreamRow) {
                         checkCell.setTextAndCheck("(beta only) Stream All Videos", SharedConfig.streamAllVideo, false);
                     } else if (position == autoplayGifsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayGIF", R.string.AutoplayGIF), SharedConfig.isAutoplayGifs(), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.AutoplayGIF), SharedConfig.isAutoplayGifs(), true);
                     } else if (position == autoplayVideoRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayVideo", R.string.AutoplayVideo), SharedConfig.isAutoplayVideo(), false);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.AutoplayVideo), SharedConfig.isAutoplayVideo(), false);
                     }
                     break;
                 }
                 case 4: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == enableAllStreamInfoRow) {
-                        cell.setText(LocaleController.getString("EnableAllStreamingInfo", R.string.EnableAllStreamingInfo));
+                        cell.setText(LocaleController.getString(R.string.EnableAllStreamingInfo));
                     }
                     break;
                 }
@@ -780,28 +780,28 @@ public class DataSettingsActivity extends BaseFragment {
                     DownloadController.Preset preset = null;
                     boolean enabled, divider = true;
                     if (position == saveToGalleryPeerRow) {
-                        text = LocaleController.getString("SaveToGalleryPrivate", R.string.SaveToGalleryPrivate);
+                        text = LocaleController.getString(R.string.SaveToGalleryPrivate);
                         description = SaveToGallerySettingsHelper.user.createDescription(currentAccount);
                         enabled = SaveToGallerySettingsHelper.user.enabled();
                     } else if (position == saveToGalleryGroupsRow) {
-                        text = LocaleController.getString("SaveToGalleryGroups", R.string.SaveToGalleryGroups);
+                        text = LocaleController.getString(R.string.SaveToGalleryGroups);
                         description = SaveToGallerySettingsHelper.groups.createDescription(currentAccount);
                         enabled = SaveToGallerySettingsHelper.groups.enabled();
                     } else if (position == saveToGalleryChannelsRow) {
-                        text = LocaleController.getString("SaveToGalleryChannels", R.string.SaveToGalleryChannels);
+                        text = LocaleController.getString(R.string.SaveToGalleryChannels);
                         description = SaveToGallerySettingsHelper.channels.createDescription(currentAccount);
                         enabled = SaveToGallerySettingsHelper.channels.enabled();
                         divider = false;
                     } else if (position == mobileRow) {
-                        text = LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData);
+                        text = LocaleController.getString(R.string.WhenUsingMobileData);
                         enabled = DownloadController.getInstance(currentAccount).mobilePreset.enabled;
                         preset = DownloadController.getInstance(currentAccount).getCurrentMobilePreset();
                     } else if (position == wifiRow) {
-                        text = LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi);
+                        text = LocaleController.getString(R.string.WhenConnectedOnWiFi);
                         enabled = DownloadController.getInstance(currentAccount).wifiPreset.enabled;
                         preset = DownloadController.getInstance(currentAccount).getCurrentWiFiPreset();
                     } else {
-                        text = LocaleController.getString("WhenRoaming", R.string.WhenRoaming);
+                        text = LocaleController.getString(R.string.WhenRoaming);
                         enabled = DownloadController.getInstance(currentAccount).roamingPreset.enabled;
                         preset = DownloadController.getInstance(currentAccount).getCurrentRoamingPreset();
                         divider = resetDownloadRow >= 0;
@@ -829,24 +829,24 @@ public class DataSettingsActivity extends BaseFragment {
                         }
                         if (preset.enabled && count != 0) {
                             if (photos) {
-                                builder.append(LocaleController.getString("AutoDownloadPhotosOn", R.string.AutoDownloadPhotosOn));
+                                builder.append(LocaleController.getString(R.string.AutoDownloadPhotosOn));
                             }
                             if (videos) {
                                 if (builder.length() > 0) {
                                     builder.append(", ");
                                 }
-                                builder.append(LocaleController.getString("AutoDownloadVideosOn", R.string.AutoDownloadVideosOn));
+                                builder.append(LocaleController.getString(R.string.AutoDownloadVideosOn));
                                 builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_VIDEO)], true, false)));
                             }
                             if (files) {
                                 if (builder.length() > 0) {
                                     builder.append(", ");
                                 }
-                                builder.append(LocaleController.getString("AutoDownloadFilesOn", R.string.AutoDownloadFilesOn));
+                                builder.append(LocaleController.getString(R.string.AutoDownloadFilesOn));
                                 builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT)], true, false)));
                             }
                         } else {
-                            builder.append(LocaleController.getString("NoMediaAutoDownload", R.string.NoMediaAutoDownload));
+                            builder.append(LocaleController.getString(R.string.NoMediaAutoDownload));
                         }
                         checked = (photos || videos || files) && enabled;
                         description = builder;

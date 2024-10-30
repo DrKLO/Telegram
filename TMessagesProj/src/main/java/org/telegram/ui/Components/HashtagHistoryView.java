@@ -156,13 +156,13 @@ public class HashtagHistoryView extends FrameLayout {
         if (item.id != 0) {
             String hashtag = history.get(item.id - 1);
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-            builder.setTitle(LocaleController.getString("ClearSearchSingleAlertTitle", R.string.ClearSearchSingleAlertTitle));
+            builder.setTitle(LocaleController.getString(R.string.ClearSearchSingleAlertTitle));
             builder.setMessage(LocaleController.formatString(R.string.ClearSearchSingleHashtagAlertText, hashtag));
-            builder.setPositiveButton(LocaleController.getString("ClearSearchRemove", R.string.ClearSearchRemove), (dialogInterface, i) -> {
+            builder.setPositiveButton(LocaleController.getString(R.string.ClearSearchRemove), (dialogInterface, i) -> {
                 HashtagSearchController.getInstance(currentAccount).removeHashtagFromHistory(hashtag);
                 update();
             });
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
             AlertDialog alertDialog = builder.create();
             alertDialog.show();
             return true;

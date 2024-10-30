@@ -111,9 +111,9 @@ public class AcceptDeclineView extends View {
         textPaint.setTextSize(AndroidUtilities.dp(11));
         textPaint.setColor(Color.WHITE);
 
-        String acceptStr = LocaleController.getString("AcceptCall", R.string.AcceptCall);
-        String declineStr = LocaleController.getString("DeclineCall", R.string.DeclineCall);
-        String retryStr = LocaleController.getString("RetryCall", R.string.RetryCall);
+        String acceptStr = LocaleController.getString(R.string.AcceptCall);
+        String declineStr = LocaleController.getString(R.string.DeclineCall);
+        String retryStr = LocaleController.getString(R.string.RetryCall);
 
         acceptLayout = new StaticLayout(acceptStr, textPaint, (int) textPaint.measureText(acceptStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         declineLayout = new StaticLayout(declineStr, textPaint, (int) textPaint.measureText(declineStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

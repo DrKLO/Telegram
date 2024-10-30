@@ -1114,7 +1114,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
             if (ChatObject.isChannel(currentChat) || currentChat.gigagroup) {
                 logCell = new TextCell(context);
-                logCell.setTextAndIcon(LocaleController.getString("EventLog", R.string.EventLog), R.drawable.msg_log, false);
+                logCell.setTextAndIcon(LocaleController.getString(R.string.EventLog), R.drawable.msg_log, false);
                 logCell.setBackground(Theme.getSelectorDrawable(false));
                 logCell.setOnClickListener(v -> presentFragment(new ChannelAdminLogActivity(currentChat)));
             }

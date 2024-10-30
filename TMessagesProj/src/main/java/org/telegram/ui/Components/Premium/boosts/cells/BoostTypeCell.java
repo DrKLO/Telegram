@@ -1,6 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -13,6 +14,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -21,6 +23,9 @@ public class BoostTypeCell extends BaseCell {
 
     public static int TYPE_GIVEAWAY = 0;
     public static int TYPE_SPECIFIC_USERS = 1;
+
+    public static int TYPE_PREMIUM = 2;
+    public static int TYPE_STARS = 3;
 
     private int selectedType;
 
@@ -47,17 +52,18 @@ public class BoostTypeCell extends BaseCell {
     }
 
     public void setType(int type, int count, TLRPC.User singleUser, boolean isSelected) {
+        final boolean animated = selectedType == type;
         selectedType = type;
         if (type == TYPE_GIVEAWAY) {
-            titleTextView.setText(LocaleController.formatString("BoostingCreateGiveaway", R.string.BoostingCreateGiveaway));
-            setSubtitle(LocaleController.formatString("BoostingWinnersRandomly", R.string.BoostingWinnersRandomly));
+            titleTextView.setText(getString(R.string.BoostingCreateGiveaway));
+            setSubtitle(getString(R.string.BoostingWinnersRandomly));
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_GIFT);
             avatarDrawable.setColor(0xFF16A5F2, 0xFF1180F7);
             setDivider(true);
             setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
         } else if (type == TYPE_SPECIFIC_USERS) {
-            titleTextView.setText(LocaleController.formatString("BoostingAwardSpecificUsers", R.string.BoostingAwardSpecificUsers));
+            titleTextView.setText(LocaleController.getString(R.string.BoostingAwardSpecificUsers));
             if (count == 1 && singleUser != null) {
                 CharSequence text = UserObject.getUserName(singleUser);
                 text = Emoji.replaceEmoji(text, subtitleTextView.getPaint().getFontMetricsInt(), false);
@@ -65,15 +71,39 @@ public class BoostTypeCell extends BaseCell {
             } else if (count > 0) {
                 setSubtitle(withArrow(LocaleController.formatPluralString("Recipient", count)));
             } else {
-                setSubtitle(withArrow(LocaleController.getString("BoostingSelectRecipients", R.string.BoostingSelectRecipients)));
+                setSubtitle(withArrow(getString(R.string.BoostingSelectRecipients)));
             }
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
             avatarDrawable.setColor(0xFFC468F2, 0xFF965CFA);
             setDivider(false);
             setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+        } else if (type == TYPE_PREMIUM) {
+            titleTextView.setText(getString(R.string.BoostingPremium));
+            if (count == 1 && singleUser != null) {
+                CharSequence text = UserObject.getUserName(singleUser);
+                text = Emoji.replaceEmoji(text, subtitleTextView.getPaint().getFontMetricsInt(), false);
+                setSubtitle(withArrow(text));
+            } else if (count > 0) {
+                setSubtitle(withArrow(LocaleController.formatPluralString("Recipient", count)));
+            } else {
+                setSubtitle(withArrow(getString(R.string.BoostingWinnersRandomly)));
+            }
+            subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_PREMIUM);
+            avatarDrawable.setColor(0xFFC468F2, 0xFF965CFA);
+            setDivider(true);
+            setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        } else if (type == TYPE_STARS) {
+            titleTextView.setText(TextCell.applyNewSpan(getString(R.string.BoostingStars)));
+            setSubtitle(getString(R.string.BoostingWinnersRandomly));
+            subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_STARS);
+            avatarDrawable.setColor(0xFFFDC21B, 0xFFF67447);
+            setDivider(false);
+            setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
         }
-        radioButton.setChecked(isSelected, false);
+        radioButton.setChecked(isSelected, animated);
         imageView.setImageDrawable(avatarDrawable);
         imageView.setRoundRadius(dp(20));
     }

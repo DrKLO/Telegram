@@ -84,7 +84,7 @@ public class GigagroupConvertAlert extends BottomSheet {
         percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        percentTextView.setText(LocaleController.getString("GigagroupConvertTitle", R.string.GigagroupConvertTitle));
+        percentTextView.setText(LocaleController.getString(R.string.GigagroupConvertTitle));
         linearLayout.addView(percentTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 18, 17, 0));
 
         LinearLayout container = new LinearLayout(context);
@@ -108,13 +108,13 @@ public class GigagroupConvertAlert extends BottomSheet {
 
             switch (a) {
                 case 0:
-                    textView.setText(LocaleController.getString("GigagroupConvertInfo1", R.string.GigagroupConvertInfo1));
+                    textView.setText(LocaleController.getString(R.string.GigagroupConvertInfo1));
                     break;
                 case 1:
-                    textView.setText(LocaleController.getString("GigagroupConvertInfo2", R.string.GigagroupConvertInfo2));
+                    textView.setText(LocaleController.getString(R.string.GigagroupConvertInfo2));
                     break;
                 case 2:
-                    textView.setText(LocaleController.getString("GigagroupConvertInfo3", R.string.GigagroupConvertInfo3));
+                    textView.setText(LocaleController.getString(R.string.GigagroupConvertInfo3));
                     break;
             }
 
@@ -129,14 +129,14 @@ public class GigagroupConvertAlert extends BottomSheet {
 
         BottomSheetCell clearButton = new BottomSheetCell(context);
         clearButton.setBackground(null);
-        clearButton.setText(LocaleController.getString("GigagroupConvertProcessButton", R.string.GigagroupConvertProcessButton));
+        clearButton.setText(LocaleController.getString(R.string.GigagroupConvertProcessButton));
         clearButton.background.setOnClickListener(v -> {
             dismiss();
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(LocaleController.getString("GigagroupConvertAlertTitle", R.string.GigagroupConvertAlertTitle));
-            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("GigagroupConvertAlertText", R.string.GigagroupConvertAlertText)));
-            builder.setPositiveButton(LocaleController.getString("GigagroupConvertAlertConver", R.string.GigagroupConvertAlertConver), (dialogInterface, i) -> onCovert());
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.setTitle(LocaleController.getString(R.string.GigagroupConvertAlertTitle));
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.GigagroupConvertAlertText)));
+            builder.setPositiveButton(LocaleController.getString(R.string.GigagroupConvertAlertConver), (dialogInterface, i) -> onCovert());
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
             parentFragment.showDialog(builder.create());
         });
         linearLayout.addView(clearButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 29, 0, 0));
@@ -144,7 +144,7 @@ public class GigagroupConvertAlert extends BottomSheet {
         TextView cancelTextView = new TextView(context);
         cancelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
-        cancelTextView.setText(LocaleController.getString("GigagroupConvertCancelButton", R.string.GigagroupConvertCancelButton));
+        cancelTextView.setText(LocaleController.getString(R.string.GigagroupConvertCancelButton));
         cancelTextView.setGravity(Gravity.CENTER);
         linearLayout.addView(cancelTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 0, 17, 16));
         cancelTextView.setOnClickListener(v -> {

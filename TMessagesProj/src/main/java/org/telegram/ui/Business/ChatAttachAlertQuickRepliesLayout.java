@@ -173,7 +173,7 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
                 statusTextView.setText(currentStatus);
             } else if (currentUser != null) {
                 if (TextUtils.isEmpty(currentUser.phone)) {
-                    statusTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
+                    statusTextView.setText(LocaleController.getString(R.string.NumberUnknown));
                 } else {
                     if (formattedPhoneNumberUser != currentUser && formattedPhoneNumber != null) {
                         statusTextView.setText(formattedPhoneNumber);
@@ -300,7 +300,7 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
             public void onTextChange(String text) {
                 if (text.length() != 0) {
                     if (emptyView != null) {
-                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        emptyView.setText(LocaleController.getString(R.string.NoResult));
                     }
                 } else {
                     if (listView.getAdapter() != listAdapter) {
@@ -442,7 +442,7 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
     }
 
     private void showErrorBox(String error) {
-        new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString("AppName", R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString("OK", R.string.OK), null).show();
+        new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString(R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString(R.string.OK), null).show();
     }
 
     @Override

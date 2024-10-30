@@ -125,7 +125,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                     Spannable spannable = SpannableStringBuilder.valueOf(MessageObject.findAnimatedEmojiEmoticon(document));
                     spannable.setSpan(new AnimatedEmojiSpan(document, null), 0, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     if (AndroidUtilities.addToClipboard(spannable) && enterView != null) {
-                        BulletinFactory.of(enterView.getParentFragment()).createCopyBulletin(LocaleController.getString("EmojiCopied", R.string.EmojiCopied)).show();
+                        BulletinFactory.of(enterView.getParentFragment()).createCopyBulletin(LocaleController.getString(R.string.EmojiCopied)).show();
                     }
                 }
 
@@ -167,14 +167,14 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                     if (fragment != null) {
                         if (document == null) {
                             final Bulletin.SimpleLayout layout = new Bulletin.SimpleLayout(getContext(), resourcesProvider);
-                            layout.textView.setText(LocaleController.getString("RemoveStatusInfo", R.string.RemoveStatusInfo));
+                            layout.textView.setText(LocaleController.getString(R.string.RemoveStatusInfo));
                             layout.imageView.setImageResource(R.drawable.msg_settings_premium);
                             Bulletin.UndoButton undoButton = new Bulletin.UndoButton(getContext(), true, resourcesProvider);
                             undoButton.setUndoAction(undoAction);
                             layout.setButton(undoButton);
                             Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT).show();
                         } else {
-                            BulletinFactory.of(fragment).createEmojiBulletin(document, LocaleController.getString("SetAsEmojiStatusInfo", R.string.SetAsEmojiStatusInfo), LocaleController.getString("Undo", R.string.Undo), undoAction).show();
+                            BulletinFactory.of(fragment).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.Undo), undoAction).show();
                         }
                     }
                 }

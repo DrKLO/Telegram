@@ -1,5 +1,7 @@
 package org.telegram.messenger.video;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.video.remix.AudioRemixer;
@@ -61,14 +63,15 @@ public class AudioBufferConverter {
         resampleSize += 10;
 
         ShortBuffer outputBuffer = createBuffer(resampleSize);
-        mResampler.resample(remixedBuffer, inputSampleRate, outputBuffer, outputSampleRate, inputChannelCount);
+        mResampler.resample(remixedBuffer, inputSampleRate, outputBuffer, outputSampleRate, outputChannelCount);
         outputBuffer.limit(outputBuffer.position());
         outputBuffer.rewind();
+
         return outputBuffer;
     }
 
     private void checkChannels(int inputChannelCount, int outputChannelCount){
-        if (inputChannelCount == 6 && outputChannelCount == 2) {
+        if (inputChannelCount == 6 && (outputChannelCount == 1 || outputChannelCount == 2)) {
             return;
         }
         if (inputChannelCount != 1 && inputChannelCount != 2) {

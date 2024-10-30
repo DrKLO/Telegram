@@ -62,7 +62,7 @@ public class ChangeBioActivity extends BaseFragment {
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("UserBio", R.string.UserBio));
+        actionBar.setTitle(LocaleController.getString(R.string.UserBio));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -76,7 +76,7 @@ public class ChangeBioActivity extends BaseFragment {
 
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56));
-        doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
+        doneButton.setContentDescription(LocaleController.getString(R.string.Done));
 
         fragmentView = new LinearLayout(context);
         LinearLayout linearLayout = (LinearLayout) fragmentView;
@@ -127,7 +127,7 @@ public class ChangeBioActivity extends BaseFragment {
         };
         firstNameField.setFilters(inputFilters);
         firstNameField.setMinHeight(AndroidUtilities.dp(36));
-        firstNameField.setHint(LocaleController.getString("UserBio", R.string.UserBio));
+        firstNameField.setHint(LocaleController.getString(R.string.UserBio));
         firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
@@ -170,7 +170,7 @@ public class ChangeBioActivity extends BaseFragment {
         helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         helpTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
         helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UserBioInfo", R.string.UserBioInfo)));
+        helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.UserBioInfo)));
         linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
         TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());

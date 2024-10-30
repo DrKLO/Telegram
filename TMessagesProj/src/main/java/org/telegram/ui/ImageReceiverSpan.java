@@ -82,22 +82,29 @@ public class ImageReceiverSpan extends ReplacementSpan {
         return dp(sz);
     }
 
+    private boolean shadowEnabled = true;
     private float translateX, translateY;
     private int shadowPaintAlpha = 0xFF;
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-        if (shadowPaintAlpha != paint.getAlpha()) {
+        if (shadowEnabled && shadowPaintAlpha != paint.getAlpha()) {
             shadowPaint.setAlpha(shadowPaintAlpha = paint.getAlpha());
             shadowPaint.setShadowLayer(dp(1), 0, dp(.66f), Theme.multAlpha(0x33000000, shadowPaintAlpha / 255f));
         }
         final float l = translateX + x;
         final float t = translateY + (top + bottom) / 2f - dp(sz) / 2f;
-        AndroidUtilities.rectTmp.set(l, t, l + dp(sz), t + dp(sz));
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, shadowPaint);
+        if (shadowEnabled) {
+            AndroidUtilities.rectTmp.set(l, t, l + dp(sz), t + dp(sz));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, shadowPaint);
+        }
         imageReceiver.setImageCoords(l, t, dp(sz), dp(sz));
         imageReceiver.setAlpha(paint.getAlpha() / 255f);
         imageReceiver.draw(canvas);
+    }
+
+    public void enableShadow(boolean enable) {
+        shadowEnabled = enable;
     }
 
     public void translate(float x, float y) {

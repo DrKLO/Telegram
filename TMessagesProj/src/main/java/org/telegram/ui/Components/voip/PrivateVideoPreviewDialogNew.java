@@ -225,7 +225,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
                 if (positiveButtonDrawText) {
                     int xPos = (getWidth() / 2);
                     int yPos = (int) ((getHeight() / 2) - ((positiveButton.getPaint().descent() + positiveButton.getPaint().ascent()) / 2));
-                    canvas.drawText(LocaleController.getString("VoipShareVideo", R.string.VoipShareVideo), xPos, yPos, positiveButton.getPaint());
+                    canvas.drawText(LocaleController.getString(R.string.VoipShareVideo), xPos, yPos, positiveButton.getPaint());
                 }
             }
         };
@@ -238,7 +238,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
         positiveButton.setGravity(Gravity.CENTER);
         positiveButton.setTypeface(AndroidUtilities.bold());
         positiveButton.getPaint().setTextAlign(Paint.Align.CENTER);
-        positiveButton.setContentDescription(LocaleController.getString("VoipShareVideo", R.string.VoipShareVideo));
+        positiveButton.setContentDescription(LocaleController.getString(R.string.VoipShareVideo));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             positiveButton.setForeground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_nameText), (int) (255 * 0.3f))));
@@ -296,11 +296,11 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
         for (int i = 0; i < titles.length; i++) {
             String text;
             if (i == 0) {
-                text = LocaleController.getString("VoipPhoneScreen", R.string.VoipPhoneScreen);
+                text = LocaleController.getString(R.string.VoipPhoneScreen);
             } else if (i == 1) {
-                text = LocaleController.getString("VoipFrontCamera", R.string.VoipFrontCamera);
+                text = LocaleController.getString(R.string.VoipFrontCamera);
             } else {
-                text = LocaleController.getString("VoipBackCamera", R.string.VoipBackCamera);
+                text = LocaleController.getString(R.string.VoipBackCamera);
             }
             titles[i] = new VoIpBitmapTextView(context, text);
             titles[i].setContentDescription(text);
@@ -497,7 +497,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
             frameLayout.addView(imageView, LayoutHelper.createFrame(82, 82, Gravity.CENTER, 0, 0, 0, 60));
 
             TextView textView = new TextView(getContext());
-            textView.setText(LocaleController.getString("VoipVideoPrivateScreenSharing", R.string.VoipVideoPrivateScreenSharing));
+            textView.setText(LocaleController.getString(R.string.VoipVideoPrivateScreenSharing));
             textView.setGravity(Gravity.CENTER);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             textView.setTextColor(0xffffffff);

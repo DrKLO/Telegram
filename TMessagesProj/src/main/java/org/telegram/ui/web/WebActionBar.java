@@ -21,6 +21,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -45,6 +46,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.OKLCH;
 import org.telegram.ui.ActionBar.Theme;
@@ -77,6 +80,10 @@ public class WebActionBar extends FrameLayout {
     public final Paint addressRoundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     public int textColor, iconColor;
     public int addressBackgroundColor, addressTextColor;
+
+    public final TextPaint titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
+    public boolean isMenuShown = false;
 
     public int height = dp(56);
     public float scale = 1f;
@@ -120,10 +127,14 @@ public class WebActionBar extends FrameLayout {
     public static final int bookmarks_item = 7;
     public static final int history_item = 8;
     public static final int forward_item = 9;
+    public static final int instant_item = 10;
 
     public WebActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+
+        titlePaint.setTypeface(AndroidUtilities.bold());
+        titlePaint.setTextSize(dp(18.33f));
 
         for (int i = 0; i < 2; ++i) {
             backgroundPaint[i] = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -208,6 +219,18 @@ public class WebActionBar extends FrameLayout {
                 if (hasForward) {
                     o.add(R.drawable.msg_arrow_forward, getString(R.string.WebForward), click.run(forward_item));
                 }
+                final WebInstantView.Loader instantView = getInstantViewLoader();
+                if (instantView != null && !(instantView.isDone() && instantView.getWebPage() == null)) {
+                    o.add(R.drawable.menu_instant_view, getString(R.string.OpenLocalInstantView), click.run(instant_item));
+                    ActionBarMenuSubItem item = o.getLast();
+                    item.setEnabled(instantView.getWebPage() != null);
+                    item.setAlpha(item.isEnabled() ? 1f : 0.5f);
+                    Runnable cancel = instantView.listen(() -> {
+                        item.setEnabled(instantView.getWebPage() != null);
+                        item.animate().alpha(item.isEnabled() ? 1f : 0.5f);
+                    });
+                    o.setOnDismiss(cancel);
+                }
                 o.add(R.drawable.msg_reset, getString(R.string.Refresh), click.run(reload_item));
                 o.add(R.drawable.msg_search, getString(R.string.Search), click.run(search_item));
                 o.add(R.drawable.msg_saved, getString(R.string.WebBookmark), click.run(bookmark_item));
@@ -219,7 +242,11 @@ public class WebActionBar extends FrameLayout {
                 o.add(R.drawable.menu_browser_bookmarks, getString(R.string.WebBookmarks), click.run(bookmarks_item));
                 o.add(R.drawable.msg_settings_old, getString(R.string.Settings), click.run(settings_item));
             }
+            o.setOnDismiss(() -> {
+                isMenuShown = false;
+            });
             o.show();
+            isMenuShown = true;
         });
         menuButton.setBackground(menuButtonSelector = Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         menuButton.setContentDescription(getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
@@ -328,6 +355,10 @@ public class WebActionBar extends FrameLayout {
 
         setColors(Theme.getColor(Theme.key_iv_background, resourcesProvider), false);
         setMenuColors(Theme.getColor(Theme.key_iv_background, resourcesProvider));
+    }
+
+    protected WebInstantView.Loader getInstantViewLoader() {
+        return null;
     }
 
     private boolean occupyStatusBar;
@@ -461,10 +492,15 @@ public class WebActionBar extends FrameLayout {
     public int menuTextColor;
     public int menuIconColor;
     public boolean hasForward;
+    public boolean hasLoaded;
     public boolean isTonsite;
 
     public void setHasForward(boolean value) {
         this.hasForward = value;
+    }
+
+    public void setIsLoaded(boolean value) {
+        this.hasLoaded = value;
     }
 
     public void setMenuColors(int backgroundColor) {

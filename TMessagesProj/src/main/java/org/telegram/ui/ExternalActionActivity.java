@@ -285,9 +285,9 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
                     }
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(ExternalActionActivity.this);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("PleaseLoginPassport", R.string.PleaseLoginPassport));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                    builder.setTitle(LocaleController.getString(R.string.AppName));
+                    builder.setMessage(LocaleController.getString(R.string.PleaseLoginPassport));
+                    builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
                     builder.show();
 
                     return true;
@@ -361,7 +361,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
                         try {
                             progressDialog.dismiss();
                             if ("APP_VERSION_OUTDATED".equals(error.text)) {
-                                AlertDialog dialog = AlertsCreator.showUpdateAppAlert(ExternalActionActivity.this, LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                AlertDialog dialog = AlertsCreator.showUpdateAppAlert(ExternalActionActivity.this, LocaleController.getString(R.string.UpdateAppAlert), true);
                                 if (dialog != null) {
                                     dialog.setOnDismissListener(dialog1 -> {
                                         setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
@@ -601,6 +601,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         AndroidUtilities.checkDisplaySize(this, newConfig);
+        AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         super.onConfigurationChanged(newConfig);
         fixLayout();
     }

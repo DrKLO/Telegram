@@ -731,17 +731,17 @@ public class ContactsController extends BaseController {
 
                         if (type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM) {
                             String custom = pCur.getString(3);
-                            contact.phoneTypes.add(custom != null ? custom : LocaleController.getString("PhoneMobile", R.string.PhoneMobile));
+                            contact.phoneTypes.add(custom != null ? custom : LocaleController.getString(R.string.PhoneMobile));
                         } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_HOME) {
-                            contact.phoneTypes.add(LocaleController.getString("PhoneHome", R.string.PhoneHome));
+                            contact.phoneTypes.add(LocaleController.getString(R.string.PhoneHome));
                         } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE) {
-                            contact.phoneTypes.add(LocaleController.getString("PhoneMobile", R.string.PhoneMobile));
+                            contact.phoneTypes.add(LocaleController.getString(R.string.PhoneMobile));
                         } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_WORK) {
-                            contact.phoneTypes.add(LocaleController.getString("PhoneWork", R.string.PhoneWork));
+                            contact.phoneTypes.add(LocaleController.getString(R.string.PhoneWork));
                         } else if (type == ContactsContract.CommonDataKinds.Phone.TYPE_MAIN) {
-                            contact.phoneTypes.add(LocaleController.getString("PhoneMain", R.string.PhoneMain));
+                            contact.phoneTypes.add(LocaleController.getString(R.string.PhoneMain));
                         } else {
-                            contact.phoneTypes.add(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+                            contact.phoneTypes.add(LocaleController.getString(R.string.PhoneOther));
                         }
                         shortContacts.put(shortNumber, contact);
                     }
@@ -889,7 +889,7 @@ public class ContactsController extends BaseController {
                                     contact.phones.add(phoneBookContact.phone);
                                     contact.shortPhones.add(shortNumber);
                                     contact.phoneDeleted.add(0);
-                                    contact.phoneTypes.add(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+                                    contact.phoneTypes.add(LocaleController.getString(R.string.PhoneOther));
                                     if (contactsMap == null) {
                                         contactsMap = new HashMap<>();
                                     }
@@ -2997,7 +2997,7 @@ public class ContactsController extends BaseController {
     @NonNull
     public static String formatName(String firstName, String lastName, int maxLength) {
         /*if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
-            return LocaleController.getString("HiddenName", R.string.HiddenName);
+            return LocaleController.getString(R.string.HiddenName);
         }*/
         if (firstName != null) {
             firstName = firstName.trim();

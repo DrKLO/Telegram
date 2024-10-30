@@ -103,7 +103,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
         addButton = new ProgressButton(context);
-        addButton.setText(LocaleController.getString("Add", R.string.Add));
+        addButton.setText(LocaleController.getString(R.string.Add));
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addView(addButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 18, 14, 0));
 
@@ -112,12 +112,12 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         delButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
         delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         delButton.setTypeface(AndroidUtilities.bold());
-        delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
+        delButton.setText(LocaleController.getString(R.string.StickersRemove));
         addView(delButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
 
         unlockButton = new PremiumButtonView(context, AndroidUtilities.dp(4), false, resourcesProvider);
         unlockButton.setIcon(R.raw.unlock_icon);
-        unlockButton.setButton(LocaleController.getString("Unlock", R.string.Unlock), e -> onPremiumButtonClick());
+        unlockButton.setButton(LocaleController.getString(R.string.Unlock), e -> onPremiumButtonClick());
         unlockButton.setVisibility(View.GONE);
         try {
             MarginLayoutParams iconLayout = (MarginLayoutParams) unlockButton.getIconView().getLayoutParams();

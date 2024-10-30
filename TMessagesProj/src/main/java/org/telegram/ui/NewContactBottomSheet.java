@@ -131,7 +131,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         firstNameField = new OutlineEditText(context);
         firstNameField.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         firstNameField.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
+        firstNameField.setHint(LocaleController.getString(R.string.FirstName));
         if (initialFirstName != null) {
             firstNameField.getEditText().setText(initialFirstName);
             initialFirstName = null;
@@ -150,7 +150,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         lastNameField.setBackground(null);
         lastNameField.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         lastNameField.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
+        lastNameField.setHint(LocaleController.getString(R.string.LastName));
         if (initialLastName != null) {
             lastNameField.getEditText().setText(initialLastName);
             initialLastName = null;
@@ -604,7 +604,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         doneButton.setGravity(Gravity.CENTER);
         doneButton.setLines(1);
         doneButton.setSingleLine(true);
-        doneButton.setText(LocaleController.getString("CreateContact", R.string.CreateContact));
+        doneButton.setText(LocaleController.getString(R.string.CreateContact));
         doneButton.setTextColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         doneButton.setTypeface(AndroidUtilities.bold());

@@ -28,7 +28,7 @@ public class DownMixAudioRemixer implements AudioRemixer {
         return inputSize / 2;
     }
 
-    private short mix(short input1, short input2) {
+    public static short mix(short input1, short input2) {
         // Down-mix stereo to mono
         // Viktor Toth's algorithm -
         // See: http://www.vttoth.com/CMS/index.php/technical-notes/68

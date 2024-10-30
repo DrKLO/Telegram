@@ -133,7 +133,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
-            builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setContentTitle(LocaleController.getString(R.string.AppName));
         }
         setCurrentMessage(videoConvertMessage);
         try {
@@ -151,12 +151,15 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             return;
         }
         boolean isGif = videoConvertMessage.messageObject != null && MessageObject.isGifMessage(videoConvertMessage.messageObject.messageOwner);
-        if (isGif) {
-            builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));
-            builder.setContentText(LocaleController.getString("SendingGif", R.string.SendingGif));
+        if (videoConvertMessage.foregroundConversion) {
+            builder.setTicker(LocaleController.getString(R.string.ConvertingVideo));
+            builder.setContentText(LocaleController.getString(R.string.ConvertingVideo));
+        } else if (isGif) {
+            builder.setTicker(LocaleController.getString(R.string.SendingGif));
+            builder.setContentText(LocaleController.getString(R.string.SendingGif));
         } else {
-            builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
-            builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            builder.setTicker(LocaleController.getString(R.string.SendingVideo));
+            builder.setContentText(LocaleController.getString(R.string.SendingVideo));
         }
         int currentProgress = 0;
         builder.setProgress(100, currentProgress, true);

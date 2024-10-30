@@ -886,7 +886,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             updateSearchResults(resultArray, resultArrayNames, encUsers, contacts, searchId);
             FiltersView.fillTipDates(q, localTipDates);
             localTipArchive = false;
-            if (q.length() >= 3 && (LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter).toLowerCase().startsWith(q) || "archive".startsWith(query))) {
+            if (q.length() >= 3 && (LocaleController.getString(R.string.ArchiveSearchFilter).toLowerCase().startsWith(q) || "archive".startsWith(query))) {
                 localTipArchive = true;
             }
             AndroidUtilities.runOnUIThread(() -> {
@@ -1603,16 +1603,16 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 cell.setChecked(false, false);
                 boolean savedMessages = false;
                 if (user != null && user.id == selfUserId) {
-                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                    name = LocaleController.getString(R.string.SavedMessages);
                     username = null;
                     savedMessages = true;
                 }
                 if (chat != null && chat.participants_count != 0) {
                     String membersString;
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        membersString = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count, ' ');
+                        membersString = LocaleController.formatPluralStringSpaced("Subscribers", chat.participants_count);
                     } else {
-                        membersString = LocaleController.formatPluralStringComma("Members", chat.participants_count, ' ');
+                        membersString = LocaleController.formatPluralStringSpaced("Members", chat.participants_count);
                     }
                     if (username instanceof SpannableStringBuilder) {
                         ((SpannableStringBuilder) username).append(", ").append(membersString);
@@ -1629,7 +1629,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             case VIEW_TYPE_GRAY_SECTION: {
                 final GraySectionCell cell = (GraySectionCell) holder.itemView;
                 if (!searchResultHashtags.isEmpty()) {
-                    cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags), LocaleController.getString("ClearButton", R.string.ClearButton), v -> {
+                    cell.setText(LocaleController.getString(R.string.Hashtags), LocaleController.getString(R.string.ClearButton), v -> {
                         if (delegate != null) {
                             delegate.needClearList();
                         }
@@ -1639,17 +1639,17 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (isRecentSearchDisplayed() || !searchTopics.isEmpty() || !searchContacts.isEmpty()) {
                         int offset = hasHints() ? 1 : 0;
                         if (position < offset) {
-                            cell.setText(LocaleController.getString("ChatHints", R.string.ChatHints));
+                            cell.setText(LocaleController.getString(R.string.ChatHints));
                             return;
                         } else if (position == offset && isRecentSearchDisplayed()) {
                             if (!searchWas) {
-                                cell.setText(LocaleController.getString("Recent", R.string.Recent), LocaleController.getString("ClearButton", R.string.ClearButton), v -> {
+                                cell.setText(LocaleController.getString(R.string.Recent), LocaleController.getString(R.string.ClearButton), v -> {
                                     if (delegate != null) {
                                         delegate.needClearList();
                                     }
                                 });
                             } else {
-                                cell.setText(LocaleController.getString("Recent", R.string.Recent), LocaleController.getString("Clear", R.string.Clear), v -> {
+                                cell.setText(LocaleController.getString(R.string.Recent), LocaleController.getString(R.string.Clear), v -> {
                                     if (delegate != null) {
                                         delegate.needClearList();
                                     }
@@ -1657,7 +1657,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             }
                             return;
                         } else if (position == getRecentItemsCount() + (searchTopics.isEmpty() ? 0 : searchTopics.size() + 1) + (searchContacts.isEmpty() ? 0 : searchContacts.size() + 1)) {
-                            cell.setText(LocaleController.getString("SearchAllChatsShort", R.string.SearchAllChatsShort));
+                            cell.setText(LocaleController.getString(R.string.SearchAllChatsShort));
                             return;
                         } else {
                             position -= getRecentItemsCount();
@@ -1681,32 +1681,32 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     Runnable onClick = null;
                     if (!searchTopics.isEmpty()) {
                         if (position == 0) {
-                            title = LocaleController.getString("Topics", R.string.Topics);
+                            title = LocaleController.getString(R.string.Topics);
                         }
                         position -= 1 + searchTopics.size();
                     }
                     if (!searchContacts.isEmpty()) {
                         if (position == 0) {
-                            title = LocaleController.getString("InviteToTelegramShort", R.string.InviteToTelegramShort);
+                            title = LocaleController.getString(R.string.InviteToTelegramShort);
                         }
                         position -= 1 + searchContacts.size();
                     }
                     if (title == null) {
                         position -= localCount + localServerCount;
                         if (position >= 0 && position < phoneCount) {
-                            title = LocaleController.getString("PhoneNumberSearch", R.string.PhoneNumberSearch);
+                            title = LocaleController.getString(R.string.PhoneNumberSearch);
                             if (searchAdapterHelper.getPhoneSearch().size() > 3) {
                                 showMore = phoneCollapsed;
                                 onClick = () -> {
                                     phoneCollapsed = !phoneCollapsed;
-                                    cell.setRightText(phoneCollapsed ? LocaleController.getString("ShowMore", R.string.ShowMore) : LocaleController.getString("ShowLess", R.string.ShowLess));
+                                    cell.setRightText(phoneCollapsed ? LocaleController.getString(R.string.ShowMore) : LocaleController.getString(R.string.ShowLess));
                                     notifyDataSetChanged();
                                 };
                             }
                         } else {
                             position -= phoneCount;
                             if (position >= 0 && position < globalCount) {
-                                title = LocaleController.getString("GlobalSearch", R.string.GlobalSearch);
+                                title = LocaleController.getString(R.string.GlobalSearch);
                                 if (searchAdapterHelper.getGlobalSearch().size() > 3) {
                                     showMore = globalSearchCollapsed;
                                     onClick = () -> {
@@ -1724,7 +1724,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                             itemAnimator.setRemoveDelay(disableRemoveAnimation ? 270 : 0);
                                         }
                                         globalSearchCollapsed = !globalSearchCollapsed;
-                                        cell.setRightText(globalSearchCollapsed ? LocaleController.getString("ShowMore", R.string.ShowMore) : LocaleController.getString("ShowLess", R.string.ShowLess), globalSearchCollapsed);
+                                        cell.setRightText(globalSearchCollapsed ? LocaleController.getString(R.string.ShowMore) : LocaleController.getString(R.string.ShowLess), globalSearchCollapsed);
                                         showMoreHeader = null;
                                         View parent = (View) cell.getParent();
                                         if (parent instanceof RecyclerView) {
@@ -1771,7 +1771,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-delegate.getSearchForumDialogId());
                                 title = LocaleController.formatString("SearchMessagesIn", R.string.SearchMessagesIn, (chat == null ? "null" : chat.title));
                             } else {
-                                title = LocaleController.getString("SearchMessages", R.string.SearchMessages);
+                                title = LocaleController.getString(R.string.SearchMessages);
                             }
                         }
                     }
@@ -1780,7 +1780,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         cell.setText(title);
                     } else {
                         final Runnable finalOnClick = onClick;
-                        cell.setText(title, showMore ? LocaleController.getString("ShowMore", R.string.ShowMore) : LocaleController.getString("ShowLess", R.string.ShowLess), e -> finalOnClick.run());
+                        cell.setText(title, showMore ? LocaleController.getString(R.string.ShowMore) : LocaleController.getString(R.string.ShowLess), e -> finalOnClick.run());
                     }
                 }
                 break;

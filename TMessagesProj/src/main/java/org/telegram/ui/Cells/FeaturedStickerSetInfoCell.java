@@ -105,7 +105,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         if (canAddRemove) {
             addButton = new ProgressButton(context);
             addButton.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setText(LocaleController.getString(R.string.Add));
             if (supportRtl) {
                 lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0);
             } else {
@@ -118,7 +118,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
             delButton.setTextColor(getThemedColor(Theme.key_featuredStickers_removeButtonText));
             delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             delButton.setTypeface(AndroidUtilities.bold());
-            delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
+            delButton.setText(LocaleController.getString(R.string.StickersRemove));
             if (supportRtl) {
                 lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0);
             } else {

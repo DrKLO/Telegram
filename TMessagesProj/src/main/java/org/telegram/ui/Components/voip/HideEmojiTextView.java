@@ -24,8 +24,8 @@ public class HideEmojiTextView extends TextView {
         super(context);
         this.backgroundProvider = backgroundProvider;
         backgroundProvider.attach(this);
-        setText(LocaleController.getString("VoipHideEmoji", R.string.VoipHideEmoji));
-        setContentDescription(LocaleController.getString("VoipHideEmoji", R.string.VoipHideEmoji));
+        setText(LocaleController.getString(R.string.VoipHideEmoji));
+        setContentDescription(LocaleController.getString(R.string.VoipHideEmoji));
         setTextColor(Color.WHITE);
         setTypeface(AndroidUtilities.bold());
         setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));

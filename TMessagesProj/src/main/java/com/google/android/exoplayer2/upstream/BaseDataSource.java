@@ -19,6 +19,9 @@ import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
 import static com.google.android.exoplayer2.util.Util.castNonNull;
 
 import androidx.annotation.Nullable;
+
+import com.google.android.exoplayer2.util.Log;
+
 import java.util.ArrayList;
 
 /**

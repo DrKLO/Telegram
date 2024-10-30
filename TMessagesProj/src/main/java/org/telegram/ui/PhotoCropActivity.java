@@ -420,7 +420,7 @@ public class PhotoCropActivity extends BaseFragment {
         actionBar.setItemsColor(0xffffffff, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));
+        actionBar.setTitle(LocaleController.getString(R.string.CropImage));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -441,7 +441,7 @@ public class PhotoCropActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
+        menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56), LocaleController.getString(R.string.Done));
 
         fragmentView = view = new PhotoCropView(context);
         ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);

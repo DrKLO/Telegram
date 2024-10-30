@@ -663,9 +663,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         info.setEnabled(true);
         StringBuilder sb = new StringBuilder();
         if (photoEntry != null && photoEntry.isVideo) {
-            sb.append(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
+            sb.append(LocaleController.getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
         } else {
-            sb.append(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+            sb.append(LocaleController.getString(R.string.AttachPhoto));
         }
         if (photoEntry != null) {
             sb.append(". ");
@@ -676,7 +676,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             info.setSelected(true);
         }
         if (Build.VERSION.SDK_INT >= 21) {
-            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, LocaleController.getString("Open", R.string.Open)));
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, LocaleController.getString(R.string.Open)));
         }
     }
 

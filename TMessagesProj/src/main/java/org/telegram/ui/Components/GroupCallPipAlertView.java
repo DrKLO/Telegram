@@ -78,9 +78,9 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     VoIPService service = VoIPService.getSharedInstance();
                     if (service != null && ChatObject.isChannelOrGiga(service.getChat())) {
-                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("VoipChannelOpenVoiceChat", R.string.VoipChannelOpenVoiceChat)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString(R.string.VoipChannelOpenVoiceChat)));
                     } else {
-                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("VoipGroupOpenVoiceChat", R.string.VoipGroupOpenVoiceChat)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString(R.string.VoipGroupOpenVoiceChat)));
                     }
                 }
             }
@@ -153,7 +153,7 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
 
         leaveButton = new VoIPToggleButton(context, 44f);
         leaveButton.setTextSize(12);
-        leaveButton.setData(R.drawable.calls_decline, 0xffffffff, 0xFFCE4A4A, 0.3f, false, LocaleController.getString("VoipGroupLeave", R.string.VoipGroupLeave), false, false);
+        leaveButton.setData(R.drawable.calls_decline, 0xffffffff, 0xFFCE4A4A, 0.3f, false, LocaleController.getString(R.string.VoipGroupLeave), false, false);
         leaveButton.setOnClickListener(v -> GroupCallActivity.onLeaveClick(getContext(), () -> GroupCallPip.updateVisibility(context), Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(context)));
 
         VoIPButtonsLayout buttonsContainer = new VoIPButtonsLayout(context);
@@ -350,21 +350,21 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
         soundButton.setChecked(checked, animated);
 
         if (bluetooth) {
-            soundButton.setData(R.drawable.calls_bluetooth, Color.WHITE, 0, 0.1f, true, LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth), false, animated);
+            soundButton.setData(R.drawable.calls_bluetooth, Color.WHITE, 0, 0.1f, true, LocaleController.getString(R.string.VoipAudioRoutingBluetooth), false, animated);
         } else if (checked) {
-            soundButton.setData(R.drawable.calls_speaker, Color.WHITE, 0, 0.3f, true, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
+            soundButton.setData(R.drawable.calls_speaker, Color.WHITE, 0, 0.3f, true, LocaleController.getString(R.string.VoipSpeaker), false, animated);
         } else {
             if (service.isHeadsetPlugged()) {
-                soundButton.setData(R.drawable.calls_headphones, Color.WHITE, 0, 0.1f, true, LocaleController.getString("VoipAudioRoutingHeadset", R.string.VoipAudioRoutingHeadset), false, animated);
+                soundButton.setData(R.drawable.calls_headphones, Color.WHITE, 0, 0.1f, true, LocaleController.getString(R.string.VoipAudioRoutingHeadset), false, animated);
             } else {
-                soundButton.setData(R.drawable.calls_speaker, Color.WHITE, 0, 0.1f, true, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
+                soundButton.setData(R.drawable.calls_speaker, Color.WHITE, 0, 0.1f, true, LocaleController.getString(R.string.VoipSpeaker), false, animated);
             }
         }
 
         if (service.mutedByAdmin()) {
-            muteButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f)), 0.1f, true, LocaleController.getString("VoipMutedByAdminShort", R.string.VoipMutedByAdminShort), true, animated);
+            muteButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f)), 0.1f, true, LocaleController.getString(R.string.VoipMutedByAdminShort), true, animated);
         } else {
-            muteButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * (service.isMicMute() ? 0.3f : 0.15f))), 0.1f, true, service.isMicMute() ? LocaleController.getString("VoipUnmute", R.string.VoipUnmute) : LocaleController.getString("VoipMute", R.string.VoipMute), service.isMicMute(), animated);
+            muteButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * (service.isMicMute() ? 0.3f : 0.15f))), 0.1f, true, service.isMicMute() ? LocaleController.getString(R.string.VoipUnmute) : LocaleController.getString(R.string.VoipMute), service.isMicMute(), animated);
         }
         invalidate();
     }

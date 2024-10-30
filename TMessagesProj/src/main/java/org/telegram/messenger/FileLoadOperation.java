@@ -8,8 +8,6 @@
 
 package org.telegram.messenger;
 
-import android.util.Log;
-
 import org.telegram.messenger.utils.ImmutableByteArrayOutputStream;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -51,7 +49,7 @@ public class FileLoadOperation {
 
     public volatile boolean caughtPremiumFloodWait;
     public void setStream(FileLoadOperationStream stream, boolean streamPriority, long streamOffset) {
-        FileLog.e("FileLoadOperation " + getFileName() + " setStream(" + stream + ")");
+//        FileLog.e("FileLoadOperation " + getFileName() + " setStream(" + stream + ")");
         this.stream = stream;
         this.streamOffset = streamOffset;
         this.streamPriority = streamPriority;
@@ -240,6 +238,7 @@ public class FileLoadOperation {
     private byte[] cdnCheckBytes;
     private boolean requestingCdnOffsets;
 
+    public final ArrayList<Integer> uiRequestTokens = new ArrayList<>();
     public ArrayList<RequestInfo> requestInfos;
     private ArrayList<RequestInfo> cancelledRequestInfos;
     private ArrayList<RequestInfo> delayedRequestInfos;
@@ -249,6 +248,7 @@ public class FileLoadOperation {
     private File cacheFileFinal;
     private File cacheIvTemp;
     private File cacheFileParts;
+    private boolean cacheFileFinalReady;
 
     private String ext;
     private RandomAccessFile fileOutputStream;
@@ -686,7 +686,7 @@ public class FileLoadOperation {
     }
 
     protected File getCurrentFileFast() {
-        if (state == stateFinished && !preloadFinished) {
+        if (state == stateFinished && !preloadFinished && cacheFileFinalReady) {
             return cacheFileFinal;
         } else {
             return cacheFileTemp;
@@ -836,7 +836,9 @@ public class FileLoadOperation {
                 if (streamPriority) {
                     long offset = (streamOffset / (long) currentDownloadChunkSize) * (long) currentDownloadChunkSize;
                     if (priorityRequestInfo != null && priorityRequestInfo.offset != offset) {
+                        final int requestToken = priorityRequestInfo.requestToken;
                         requestInfos.remove(priorityRequestInfo);
+                        AndroidUtilities.runOnUIThread(() -> uiRequestTokens.remove((Integer) requestToken));
                         requestedBytesCount -= currentDownloadChunkSize;
                         removePart(notRequestedBytesRanges, priorityRequestInfo.offset, priorityRequestInfo.offset + currentDownloadChunkSize);
                         if (priorityRequestInfo.requestToken != 0) {
@@ -978,7 +980,7 @@ public class FileLoadOperation {
                 cacheFileFinal = new File(storePath, fileNameFinal);
             }
         }
-        boolean finalFileExist = cacheFileFinal.exists();
+        boolean finalFileExist = cacheFileFinalReady = cacheFileFinal.exists();
         if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || (totalBytesCount != 0 && !ungzip && totalBytesCount != cacheFileFinal.length())) && !delegate.isLocallyCreatedFile(cacheFileFinal.toString())) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("debug_loading: delete existing file cause file size mismatch " + cacheFileFinal.getName() + " totalSize=" + totalBytesCount + " existingFileSize=" + cacheFileFinal.length());
@@ -1626,7 +1628,9 @@ public class FileLoadOperation {
                                 return;
                             }
                             cacheFileFinal = cacheFileTempLocal;
+                            cacheFileFinalReady = false;
                         } else {
+                            cacheFileFinalReady = true;
                             if (pathSaveData != null && cacheFileFinal.exists()) {
                                 delegate.saveFilePath(pathSaveData, cacheFileFinal);
                             }
@@ -1779,7 +1783,9 @@ public class FileLoadOperation {
             }
             return false;
         }
+        final int requestToken = requestInfo.requestToken;
         requestInfos.remove(requestInfo);
+        AndroidUtilities.runOnUIThread(() -> uiRequestTokens.remove((Integer) requestToken));
         if (error == null) {
             try {
                 if (notLoadedBytesRanges == null && downloadedBytes != requestInfo.offset) {
@@ -2149,6 +2155,7 @@ public class FileLoadOperation {
             }
         }
         requestInfos.clear();
+        AndroidUtilities.runOnUIThread(() -> uiRequestTokens.clear());
         for (int a = 0; a < delayedRequestInfos.size(); a++) {
             RequestInfo info = delayedRequestInfos.get(a);
             if (isPreloadVideoOperation) {
@@ -2406,7 +2413,7 @@ public class FileLoadOperation {
             }
             flags |= ConnectionsManager.RequestFlagListenAfterCancel;
             int datacenterId = isCdn ? cdnDatacenterId : this.datacenterId;
-            requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequestSync(request, (response, error) -> {
+            final int requestToken = requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequestSync(request, (response, error) -> {
                 if (requestInfo.cancelled) {
                     FileLog.e("received chunk but definitely cancelled offset=" + requestInfo.offset + " size=" + requestInfo.chunkSize + " token=" + requestInfo.requestToken);
                     return;
@@ -2573,6 +2580,7 @@ public class FileLoadOperation {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("debug_loading: " + cacheFileFinal.getName() + " dc=" + datacenterId + " send reqId " + requestInfo.requestToken + " offset=" + requestInfo.offset + " conType=" + connectionType + " priority=" + priority);
             }
+            AndroidUtilities.runOnUIThread(() -> uiRequestTokens.add(requestToken));
             requestsCount++;
         }
     }

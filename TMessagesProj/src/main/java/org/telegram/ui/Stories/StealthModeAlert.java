@@ -87,7 +87,7 @@ public class StealthModeAlert extends BottomSheet {
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        title.setText(LocaleController.getString("StealthModeTitle", R.string.StealthModeTitle));
+        title.setText(LocaleController.getString(R.string.StealthModeTitle));
         linearLayout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         SimpleTextView subtitle = new SimpleTextView(getContext());
@@ -96,24 +96,24 @@ public class StealthModeAlert extends BottomSheet {
         subtitle.setMaxLines(100);
         subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
         if (UserConfig.getInstance(currentAccount).isPremium()) {
-            subtitle.setText(LocaleController.getString("StealthModeHint", R.string.StealthModeHint));
+            subtitle.setText(LocaleController.getString(R.string.StealthModeHint));
         } else {
-            subtitle.setText(LocaleController.getString("StealthModePremiumHint", R.string.StealthModePremiumHint));
+            subtitle.setText(LocaleController.getString(R.string.StealthModePremiumHint));
         }
         linearLayout.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 36, 10, 36, 0));
 
         ItemCell itemCell = new ItemCell(getContext());
         itemCell.imageView.setImageResource(R.drawable.msg_stealth_5min);
-        itemCell.textView.setText(LocaleController.getString("HideRecentViews", R.string.HideRecentViews));
-        itemCell.description.setText(LocaleController.getString("HideRecentViewsDescription", R.string.HideRecentViewsDescription));
+        itemCell.textView.setText(LocaleController.getString(R.string.HideRecentViews));
+        itemCell.description.setText(LocaleController.getString(R.string.HideRecentViewsDescription));
 
         linearLayout.addView(itemCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,0, 0, 20, 0, 0));
 
 
         ItemCell itemCell2 = new ItemCell(getContext());
         itemCell2.imageView.setImageResource(R.drawable.msg_stealth_25min);
-        itemCell2.textView.setText(LocaleController.getString("HideNextViews", R.string.HideNextViews));
-        itemCell2.description.setText(LocaleController.getString("HideNextViewsDescription", R.string.HideNextViewsDescription));
+        itemCell2.textView.setText(LocaleController.getString(R.string.HideNextViews));
+        itemCell2.description.setText(LocaleController.getString(R.string.HideNextViewsDescription));
 
         linearLayout.addView(itemCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,0, 0, 10, 0, 0));
 
@@ -125,7 +125,7 @@ public class StealthModeAlert extends BottomSheet {
         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
         if (!user.premium) {
             button.setIcon(R.raw.unlock_icon);
-            button.setButton(LocaleController.getString("UnlockStealthMode", R.string.UnlockStealthMode), v -> {
+            button.setButton(LocaleController.getString(R.string.UnlockStealthMode), v -> {
                 dismiss();
                 BaseFragment baseFragment = LaunchActivity.getLastFragment();
                 if (baseFragment != null) {
@@ -188,7 +188,7 @@ public class StealthModeAlert extends BottomSheet {
                     BulletinFactory factory = BulletinFactory.of(container, resourcesProvider);
                     if (factory != null) {
                         factory.createErrorBulletin(
-                                AndroidUtilities.replaceTags(LocaleController.getString("StealthModeCooldownHint", R.string.StealthModeCooldownHint))
+                                AndroidUtilities.replaceTags(LocaleController.getString(R.string.StealthModeCooldownHint))
                         ).show(true);
                     }
                 }
@@ -210,8 +210,8 @@ public class StealthModeAlert extends BottomSheet {
         }
         if (factory != null) {
             factory.createSimpleLargeBulletin(R.drawable.msg_stories_stealth2,
-                    LocaleController.getString("StealthModeOn", R.string.StealthModeOn),
-                    LocaleController.getString("StealthModeOnHint", R.string.StealthModeOnHint)
+                    LocaleController.getString(R.string.StealthModeOn),
+                    LocaleController.getString(R.string.StealthModeOnHint)
             ).show();
         }
     }
@@ -227,11 +227,11 @@ public class StealthModeAlert extends BottomSheet {
         TL_stories.TL_storiesStealthMode stealthMode = storiesController.getStealthMode();
         if (stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
             stealthModeIsActive = true;
-            button.setOverlayText(LocaleController.getString("StealthModeIsActive", R.string.StealthModeIsActive), true, animated);
+            button.setOverlayText(LocaleController.getString(R.string.StealthModeIsActive), true, animated);
             button.overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         } else if (stealthMode == null || ConnectionsManager.getInstance(currentAccount).getCurrentTime() > stealthMode.cooldown_until_date) {
             if (type == TYPE_FROM_STORIES) {
-                button.setOverlayText(LocaleController.getString("EnableStealthMode", R.string.EnableStealthMode), true, animated);
+                button.setOverlayText(LocaleController.getString(R.string.EnableStealthMode), true, animated);
             } else if (type == TYPE_FROM_DIALOGS) {
                 button.setOverlayText(LocaleController.getString(R.string.EnableStealthModeAndOpenStory), true, animated);
             }

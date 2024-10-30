@@ -47,7 +47,7 @@ class NativeByteBuffer;
 class Handshake;
 class ConnectionSocket;
 
-typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId)> onCompleteFunc;
+typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
 typedef std::function<void()> onWriteToSocketFunc;
 typedef std::function<void()> onRequestClearFunc;

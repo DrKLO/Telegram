@@ -160,12 +160,11 @@ import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
-import org.telegram.ui.Components.Premium.boosts.PremiumPreviewGiftToUsersBottomSheet;
 import org.telegram.ui.ContentPreviewViewer;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.GroupStickersActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.MessageSendPreview;
@@ -569,6 +568,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             info.setLongClickable(true);
         }
     };
+
+    boolean ctrlPressed = false;
+    boolean shiftPressed = false;
 
     @Nullable
     protected EditTextCaption messageEditText;
@@ -3250,20 +3252,18 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             ArrayList<TLRPC.TL_premiumGiftOption> options = new ArrayList<>(getParentFragment().getCurrentUserInfo().premium_gifts);
             if (options.isEmpty()) {
                 final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
-                final int reqId = BoostRepository.loadGiftOptions(null, loadedOptions -> {
+                final int reqId = BoostRepository.loadGiftOptions(currentAccount, null, loadedOptions -> {
                     progressDialog.dismiss();
                     loadedOptions = BoostRepository.filterGiftOptions(loadedOptions, 1);
                     loadedOptions = BoostRepository.filterGiftOptionsByBilling(loadedOptions);
-                    ArrayList<TLRPC.User> users = new ArrayList<>();
-                    users.add(user);
-                    PremiumPreviewGiftToUsersBottomSheet.show(users, loadedOptions);
+                    new GiftSheet(getContext(), currentAccount, user.id, loadedOptions, null).show();
                 });
                 progressDialog.setOnCancelListener(di -> {
                     parentFragment.getConnectionsManager().cancelRequest(reqId, true);
                 });
                 progressDialog.showDelayed(200);
             } else {
-                new GiftPremiumBottomSheet(getParentFragment(), getParentFragment().getCurrentUser()).show();
+                new GiftSheet(getContext(), currentAccount, user.id, null, null).show();
             }
         });
     }
@@ -3980,9 +3980,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             if (AndroidUtilities.isWebAppLink(botMenuWebViewUrl)) {
                 Browser.Progress progress = new Browser.Progress();
                 progress.onEnd(() -> {
-                    if (botCommandsMenuButton != null) {
-                        botCommandsMenuButton.setOpened(false);
-                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (botCommandsMenuButton != null) {
+                            botCommandsMenuButton.setOpened(false);
+                        }
+                    });
                 });
                 Browser.openAsInternalIntent(getContext(), botMenuWebViewUrl, false, progress);
                 return;
@@ -3992,7 +3994,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 webViewSheet.setDefaultFullsize(false);
                 webViewSheet.setNeedsContext(true);
                 webViewSheet.setParentActivity(parentActivity);
-                webViewSheet.requestWebView(null, props);
+                webViewSheet.requestWebView(parentFragment, props);
                 webViewSheet.show();
 
                 if (botCommandsMenuButton != null) {
@@ -4004,7 +4006,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     sheet.setDefaultFullsize(false);
                     sheet.setNeedsContext(false);
                     sheet.setParentActivity(parentFragment.getParentActivity());
-                    sheet.requestWebView(null, props);
+                    sheet.requestWebView(parentFragment, props);
                     sheet.show();
 
                     if (botCommandsMenuButton != null) {
@@ -4228,9 +4230,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 if (scheduleButtonValue) {
                     actionScheduleButton = new ActionBarMenuSubItem(getContext(), true, !sendWithoutSoundButtonValue, resourcesProvider);
                     if (self) {
-                        actionScheduleButton.setTextAndIcon(LocaleController.getString("SetReminder", R.string.SetReminder), R.drawable.msg_calendar2);
+                        actionScheduleButton.setTextAndIcon(LocaleController.getString(R.string.SetReminder), R.drawable.msg_calendar2);
                     } else {
-                        actionScheduleButton.setTextAndIcon(LocaleController.getString("ScheduleMessage", R.string.ScheduleMessage), R.drawable.msg_calendar2);
+                        actionScheduleButton.setTextAndIcon(LocaleController.getString(R.string.ScheduleMessage), R.drawable.msg_calendar2);
                     }
                     actionScheduleButton.setMinimumWidth(dp(196));
                     actionScheduleButton.setOnClickListener(v -> {
@@ -4248,7 +4250,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     SharedConfig.removeScheduledHint();
                     if (!self && dialog_id > 0) {
                         sendWhenOnlineButton = new ActionBarMenuSubItem(getContext(), true, !sendWithoutSoundButtonValue, resourcesProvider);
-                        sendWhenOnlineButton.setTextAndIcon(LocaleController.getString("SendWhenOnline", R.string.SendWhenOnline), R.drawable.msg_online);
+                        sendWhenOnlineButton.setTextAndIcon(LocaleController.getString(R.string.SendWhenOnline), R.drawable.msg_online);
                         sendWhenOnlineButton.setMinimumWidth(dp(196));
                         sendWhenOnlineButton.setOnClickListener(v -> {
                             if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
@@ -4261,7 +4263,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 }
                 if (sendWithoutSoundButtonValue) {
                     ActionBarMenuSubItem sendWithoutSoundButton = new ActionBarMenuSubItem(getContext(), !scheduleButtonValue, true, resourcesProvider);
-                    sendWithoutSoundButton.setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
+                    sendWithoutSoundButton.setTextAndIcon(LocaleController.getString(R.string.SendWithoutSound), R.drawable.input_notify_off);
                     sendWithoutSoundButton.setMinimumWidth(dp(196));
                     sendWithoutSoundButton.setOnClickListener(v -> {
                         if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
@@ -5085,10 +5087,12 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         messageEditTextContainer.addView(messageEditText, 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 1.5f));
         messageEditText.setOnKeyListener(new OnKeyListener() {
 
-            boolean ctrlPressed = false;
-
             @Override
             public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
+                if (keyEvent != null) {
+                    shiftPressed = keyEvent.isShiftPressed();
+                    ctrlPressed = keyEvent.isCtrlPressed();
+                }
                 if (keyCode == KeyEvent.KEYCODE_BACK && !keyboardVisible && isPopupShowing() && keyEvent.getAction() == KeyEvent.ACTION_UP) {
                     if (ContentPreviewViewer.hasInstance() && ContentPreviewViewer.getInstance().isVisible()) {
                         ContentPreviewViewer.getInstance().closeWithMenu();
@@ -5123,11 +5127,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                         }
                     }
                     return true;
-                } else if (keyCode == KeyEvent.KEYCODE_ENTER && (ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
+                } else if (keyCode == KeyEvent.KEYCODE_ENTER && !keyEvent.isShiftPressed() && (sendByEnter ? !keyEvent.isCtrlPressed() : keyEvent.isCtrlPressed()) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
                     sendMessage();
-                    return true;
-                } else if (keyCode == KeyEvent.KEYCODE_CTRL_LEFT || keyCode == KeyEvent.KEYCODE_CTRL_RIGHT) {
-                    ctrlPressed = keyEvent.getAction() == KeyEvent.ACTION_DOWN;
                     return true;
                 }
                 return false;
@@ -5135,15 +5136,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         });
         messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 
-            boolean ctrlPressed = false;
-
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 if (i == EditorInfo.IME_ACTION_SEND) {
                     sendMessage();
                     return true;
                 } else if (keyEvent != null && i == EditorInfo.IME_NULL) {
-                    if ((ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
+                    if (!keyEvent.isShiftPressed() && (sendByEnter ? !keyEvent.isCtrlPressed() : keyEvent.isCtrlPressed()) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
                         sendMessage();
                         return true;
                     }
@@ -5202,7 +5201,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 if (innerTextChange == 1) {
                     return;
                 }
-                if (sendByEnter && !ignoreTextChange && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
+                if (sendByEnter && !ctrlPressed && !shiftPressed && !ignoreTextChange && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
                     nextChangeIsSend = true;
                 }
                 isPaste = false;
@@ -6100,7 +6099,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-dialog_id);
                 TLRPC.ChatFull chatFull = accountInstance.getMessagesController().getChatFull(-dialog_id);
                 isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
-                anonymously = isChannel ? chat != null && !chat.signatures && !chat.signature_profiles : ChatObject.getSendAsPeerId(chat, chatFull) == -dialog_id;
+                anonymously = !isChannel && ChatObject.getSendAsPeerId(chat, chatFull) == -dialog_id;
             }
             if (anonymously) {
                 messageEditText.setHintText(getString("SendAnonymously", R.string.SendAnonymously));
@@ -7549,6 +7548,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                             animators.add(ObjectAnimator.ofFloat(scheduledButton, View.ALPHA, 1.0f));
                             animators.add(ObjectAnimator.ofFloat(scheduledButton, View.SCALE_X, 1.0f));
                             animators.add(ObjectAnimator.ofFloat(scheduledButton, View.TRANSLATION_X, giftButton != null && giftButton.getVisibility() == VISIBLE ? -dp(48) : 0));
+                            if (notifyButton != null && notifyButton.getVisibility() == View.VISIBLE) {
+                                notifyButton.setVisibility(View.GONE);
+                            }
                         } else {
                             scheduledButton.setAlpha(1.0f);
                             scheduledButton.setScaleX(1.0f);
@@ -9872,7 +9874,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return false;
         }
         if (parentFragment != null && parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES) return false;
-        if (button instanceof TLRPC.TL_keyboardButton) {
+        if (button instanceof TLRPC.TL_keyboardButtonCopy) {
+            final TLRPC.TL_keyboardButtonCopy btn = (TLRPC.TL_keyboardButtonCopy) button;
+            AndroidUtilities.addToClipboard(btn.copy_text);
+            BulletinFactory.of(parentFragment).createCopyBulletin(LocaleController.formatString(R.string.ExactTextCopied, btn.copy_text)).show(true);
+        } else if (button instanceof TLRPC.TL_keyboardButton) {
             SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(button.text, dialog_id, replyMessageObject, getThreadMessage(), null, false, null, null, null, true, 0, null, false);
             params.quick_reply_shortcut = parentFragment != null ? parentFragment.quickReplyShortcut : null;
             params.quick_reply_shortcut_id = parentFragment != null ? parentFragment.getQuickReplyId() : 0;
@@ -9907,7 +9913,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                         return;
                     }
 
-                    WebViewRequestProps props = WebViewRequestProps.of(currentAccount, messageObject.messageOwner.dialog_id, botId, button.text, button.url, button instanceof TLRPC.TL_keyboardButtonSimpleWebView ? BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON : BotWebViewSheet.TYPE_WEB_VIEW_BUTTON, replyMessageObject != null ? replyMessageObject.messageOwner.id : 0, false, null, false, null, null, 0, false);
+                    final WebViewRequestProps props = WebViewRequestProps.of(currentAccount, messageObject.messageOwner.dialog_id, botId, button.text, button.url, button instanceof TLRPC.TL_keyboardButtonSimpleWebView ? BotWebViewAttachedSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON : BotWebViewAttachedSheet.TYPE_WEB_VIEW_BUTTON, replyMessageObject != null ? replyMessageObject.messageOwner.id : 0, false, null, false, null, null, 0, false);
                     if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null && LaunchActivity.instance.getBottomSheetTabs().tryReopenTab(props) != null) {
                         if (botCommandsMenuButton != null) {
                             botCommandsMenuButton.setOpened(false);
@@ -9917,14 +9923,14 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     if (AndroidUtilities.isTablet()) {
                         BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), resourcesProvider);
                         webViewSheet.setParentActivity(parentActivity);
-                        webViewSheet.requestWebView(null, props);
+                        webViewSheet.requestWebView(parentFragment, props);
                         webViewSheet.show();
                     } else {
                         BotWebViewAttachedSheet webViewSheet = parentFragment.createBotViewer();
                         webViewSheet.setDefaultFullsize(false);
                         webViewSheet.setNeedsContext(true);
                         webViewSheet.setParentActivity(parentActivity);
-                        webViewSheet.requestWebView(null, props);
+                        webViewSheet.requestWebView(parentFragment, props);
                         webViewSheet.show();
                     }
                 }
@@ -9996,7 +10002,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 }
 
                 DialogsActivity fragment = new DialogsActivity(args);
-                fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
+                fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
                     long uid = messageObject.messageOwner.from_id.user_id;
                     if (messageObject.messageOwner.via_bot_id != 0) {
                         uid = messageObject.messageOwner.via_bot_id;
@@ -10077,7 +10083,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     FileLog.e(e);
                 }
                 DialogsActivity fragment = new DialogsActivity(args);
-                fragment.setDelegate((dialogFragment, dids, message, param, topicsFragment) -> {
+                fragment.setDelegate((dialogFragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
                     if (dids != null && !dids.isEmpty()) {
                         TLRPC.TL_messages_sendBotRequestedPeer req = new TLRPC.TL_messages_sendBotRequestedPeer();
                         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(messageObject.messageOwner.peer_id);
@@ -10348,7 +10354,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity, resourcesProvider);
                 builder.setTitle(getString(R.string.ClearRecentEmojiTitle));
                 builder.setMessage(getString(R.string.ClearRecentEmojiText));
-                builder.setPositiveButton(getString(R.string.ClearForAll), (dialogInterface, i) -> emojiView.clearRecentEmoji());
+                builder.setPositiveButton(getString(R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
                 builder.setNegativeButton(getString(R.string.Cancel), null);
                 parentFragment.showDialog(builder.create());
             }

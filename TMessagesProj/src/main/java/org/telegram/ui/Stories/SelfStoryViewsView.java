@@ -229,7 +229,7 @@ public class SelfStoryViewsView extends FrameLayout {
 //
 //        buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 10, 10, 10, 10));
 //        viewPagerContainer.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
-//        button.setText(LocaleController.getString("Close", R.string.Close), false);
+//        button.setText(LocaleController.getString(R.string.Close), false);
 //        button.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {

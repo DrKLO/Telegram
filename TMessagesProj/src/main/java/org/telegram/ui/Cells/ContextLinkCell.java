@@ -1039,28 +1039,28 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         StringBuilder sbuf = new StringBuilder();
         switch (documentAttachType) {
             case DOCUMENT_ATTACH_TYPE_DOCUMENT:
-                sbuf.append(LocaleController.getString("AttachDocument", R.string.AttachDocument));
+                sbuf.append(LocaleController.getString(R.string.AttachDocument));
                 break;
             case DOCUMENT_ATTACH_TYPE_GIF:
-                sbuf.append(LocaleController.getString("AttachGif", R.string.AttachGif));
+                sbuf.append(LocaleController.getString(R.string.AttachGif));
                 break;
             case DOCUMENT_ATTACH_TYPE_AUDIO:
-                sbuf.append(LocaleController.getString("AttachAudio", R.string.AttachAudio));
+                sbuf.append(LocaleController.getString(R.string.AttachAudio));
                 break;
             case DOCUMENT_ATTACH_TYPE_VIDEO:
-                sbuf.append(LocaleController.getString("AttachVideo", R.string.AttachVideo));
+                sbuf.append(LocaleController.getString(R.string.AttachVideo));
                 break;
             case DOCUMENT_ATTACH_TYPE_MUSIC:
-                sbuf.append(LocaleController.getString("AttachMusic", R.string.AttachMusic));
+                sbuf.append(LocaleController.getString(R.string.AttachMusic));
                 break;
             case DOCUMENT_ATTACH_TYPE_STICKER:
-                sbuf.append(LocaleController.getString("AttachSticker", R.string.AttachSticker));
+                sbuf.append(LocaleController.getString(R.string.AttachSticker));
                 break;
             case DOCUMENT_ATTACH_TYPE_PHOTO:
-                sbuf.append(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+                sbuf.append(LocaleController.getString(R.string.AttachPhoto));
                 break;
             case DOCUMENT_ATTACH_TYPE_GEO:
-                sbuf.append(LocaleController.getString("AttachLocation", R.string.AttachLocation));
+                sbuf.append(LocaleController.getString(R.string.AttachLocation));
                 break;
         }
         final boolean hasTitle = titleLayout != null && !TextUtils.isEmpty(titleLayout.getText());

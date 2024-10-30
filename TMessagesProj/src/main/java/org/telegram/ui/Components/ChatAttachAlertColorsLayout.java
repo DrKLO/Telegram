@@ -276,7 +276,7 @@ public class ChatAttachAlertColorsLayout extends ChatAttachAlert.AttachAlertLayo
         try {
             parentAlert.actionBar.getTitleTextView().setBuildFullLayout(true);
         } catch (Exception ignore) {}
-        parentAlert.actionBar.setTitle(LocaleController.getString("SelectColor", R.string.SelectColor));
+        parentAlert.actionBar.setTitle(LocaleController.getString(R.string.SelectColor));
         layoutManager.scrollToPositionWithOffset(0, 0);
     }
 }

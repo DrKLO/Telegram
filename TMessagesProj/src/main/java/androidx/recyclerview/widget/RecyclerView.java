@@ -774,10 +774,16 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * hitting an exception.
      */
     String exceptionLabel() {
-        return " " + super.toString()
-                + ", adapter:" + mAdapter
-                + ", layout:" + mLayout
-                + ", context:" + getContext();
+        final StringBuilder sb = new StringBuilder();
+        sb.append(" ").append(super.toString())
+          .append(", adapter:").append(mAdapter)
+          .append(", layout:").append(mLayout)
+          .append(", context:").append(getContext());
+        final String lastNotifies = mAdapterHelper.getLastNotifies();
+        if (lastNotifies != null) {
+            sb.append(", last notifies:\n").append(lastNotifies);
+        }
+        return sb.toString();
     }
 
     /**

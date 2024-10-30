@@ -179,7 +179,7 @@ public class WebviewActivity extends BaseFragment {
         progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54));
         if (type == TYPE_GAME) {
             ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-            menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
+            menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString(R.string.OpenInExternalApp));
 
             actionBar.setTitle(currentGame);
             actionBar.setSubtitle("@" + currentBot);
@@ -197,7 +197,7 @@ public class WebviewActivity extends BaseFragment {
             actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
             actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
             actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
-            actionBar.setTitle(LocaleController.getString("Statistics", R.string.Statistics));
+            actionBar.setTitle(LocaleController.getString(R.string.Statistics));
 
             progressView = new ContextProgressView(context, 3);
             progressItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));

@@ -1,40 +1,31 @@
 package org.telegram.ui.Components.spoilers;
 
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
-import android.hardware.HardwareBuffer;
 import android.opengl.EGL14;
 import android.opengl.EGLExt;
 import android.opengl.GLES20;
 import android.opengl.GLES31;
 import android.os.Build;
-import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
-import androidx.collection.LongSparseArray;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -219,12 +210,10 @@ public class SpoilerEffect2 {
         if ((index % 4) == 3) {
             canvas.scale(1, -1, ow / 2f, oh / 2f);
         }
-        canvas.translate(w / 2f, h / 2f);
         if (w > ow || h > oh) {
             final float scale = Math.max(w / (float) ow, h / (float) oh);
             canvas.scale(scale, scale);
         }
-        canvas.translate(-w / 2f, -h / 2f);
         if (toBitmap) {
             Bitmap bitmap = textureView.getBitmap();
             if (bitmap != null) {
@@ -468,7 +457,7 @@ public class SpoilerEffect2 {
                 running = false;
                 return;
             }
-            GLES31.glShaderSource(vertexShader, RLottieDrawable.readRes(null, R.raw.spoiler_vertex) + "\n// " + Math.random());
+            GLES31.glShaderSource(vertexShader, AndroidUtilities.readRes(R.raw.spoiler_vertex) + "\n// " + Math.random());
             GLES31.glCompileShader(vertexShader);
             int[] status = new int[1];
             GLES31.glGetShaderiv(vertexShader, GLES31.GL_COMPILE_STATUS, status, 0);
@@ -478,7 +467,7 @@ public class SpoilerEffect2 {
                 running = false;
                 return;
             }
-            GLES31.glShaderSource(fragmentShader, RLottieDrawable.readRes(null, R.raw.spoiler_fragment) + "\n// " + Math.random());
+            GLES31.glShaderSource(fragmentShader, AndroidUtilities.readRes(R.raw.spoiler_fragment) + "\n// " + Math.random());
             GLES31.glCompileShader(fragmentShader);
             GLES31.glGetShaderiv(fragmentShader, GLES31.GL_COMPILE_STATUS, status, 0);
             if (status[0] == 0) {

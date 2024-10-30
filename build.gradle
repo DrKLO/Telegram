@@ -6,9 +6,9 @@ buildscript {
         maven { url 'https://developer.huawei.com/repo/' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
-        classpath 'com.google.gms:google-services:4.3.10'
-        classpath 'com.huawei.agconnect:agcp:1.6.0.300'
+        classpath 'com.android.tools.build:gradle:8.4.2'
+        classpath 'com.google.gms:google-services:4.3.15'
+        classpath 'com.huawei.agconnect:agcp:1.9.1.301'
     }
 }
 repositories {

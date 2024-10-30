@@ -184,7 +184,7 @@ public class StoryWidgetsImageDecorator extends ImageReceiver.Decorator {
             marker.setIsVideo(false);
             marker.setCodeEmoji(UserConfig.selectedAccount, state.getEmoji());
             marker.setText(state.getTemperature());
-            marker.setType(0, mediaArea.color);
+            marker.setType(3, mediaArea.color);
 
             marker.setupLayout();
         }

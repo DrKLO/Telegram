@@ -66,7 +66,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 	@Override
 	public View createView(Context context) {
 		actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-		actionBar.setTitle(LocaleController.getString("VoipQuickReplies", R.string.VoipQuickReplies));
+		actionBar.setTitle(LocaleController.getString(R.string.VoipQuickReplies));
 		if (AndroidUtilities.isTablet()) {
 			actionBar.setOccupyStatusBar(false);
 		}
@@ -139,7 +139,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 				case 0: {
 					TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
 					cell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-					cell.setText(LocaleController.getString("VoipQuickRepliesExplain", R.string.VoipQuickRepliesExplain));
+					cell.setText(LocaleController.getString(R.string.VoipQuickRepliesExplain));
 					break;
 				}
 				case 1: {
@@ -155,16 +155,16 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 					String defValue = null;
 					if (position == reply1Row) {
 						settingsKey = "quick_reply_msg1";
-						defValue = LocaleController.getString("QuickReplyDefault1", R.string.QuickReplyDefault1);
+						defValue = LocaleController.getString(R.string.QuickReplyDefault1);
 					} else if (position == reply2Row) {
 						settingsKey = "quick_reply_msg2";
-						defValue = LocaleController.getString("QuickReplyDefault2", R.string.QuickReplyDefault2);
+						defValue = LocaleController.getString(R.string.QuickReplyDefault2);
 					} else if (position == reply3Row) {
 						settingsKey = "quick_reply_msg3";
-						defValue = LocaleController.getString("QuickReplyDefault3", R.string.QuickReplyDefault3);
+						defValue = LocaleController.getString(R.string.QuickReplyDefault3);
 					} else if (position == reply4Row) {
 						settingsKey = "quick_reply_msg4";
-						defValue = LocaleController.getString("QuickReplyDefault4", R.string.QuickReplyDefault4);
+						defValue = LocaleController.getString(R.string.QuickReplyDefault4);
 					}
 					textCell.setTextAndHint(getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE).getString(settingsKey, ""), defValue, position != reply4Row);
 
@@ -172,7 +172,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 				}
 				case 4: {
 					TextCheckCell cell = (TextCheckCell) holder.itemView;
-					cell.setTextAndCheck(LocaleController.getString("AllowCustomQuickReply", R.string.AllowCustomQuickReply), getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE).getBoolean("quick_reply_allow_custom", true), false);
+					cell.setTextAndCheck(LocaleController.getString(R.string.AllowCustomQuickReply), getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE).getBoolean("quick_reply_allow_custom", true), false);
 				}
 			}
 		}

@@ -138,7 +138,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public View createView(Context context) {
-        actionBar.setTitle(LocaleController.getString("Reactions", R.string.Reactions));
+        actionBar.setTitle(LocaleController.getString(R.string.Reactions));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
 
@@ -179,11 +179,11 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         infoCell.setTopPadding(12);
         infoCell.setBottomPadding(16);
-        infoCell.setText(LocaleController.getString("ReactionAddEmojiFromAnyPack", R.string.ReactionAddEmojiFromAnyPack));
+        infoCell.setText(LocaleController.getString(R.string.ReactionAddEmojiFromAnyPack));
         contentLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         HeaderCell headerCell = new HeaderCell(context);
-        headerCell.setText(LocaleController.getString("AvailableReactions", R.string.AvailableReactions));
+        headerCell.setText(LocaleController.getString(R.string.AvailableReactions));
         headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         headerCell.setTextSize(15);
         headerCell.setTopMargin(14);
@@ -384,7 +384,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             setCheckedEnableReactionCell(SELECT_TYPE_NONE, paid, false);
         }
 
-        enableReactionsCell.setTextAndCheck(LocaleController.getString("EnableReactions", R.string.EnableReactions), selectedType != SELECT_TYPE_NONE || paid, false);
+        enableReactionsCell.setTextAndCheck(LocaleController.getString(R.string.EnableReactions), selectedType != SELECT_TYPE_NONE || paid, false);
         editText.addReactionsSpan();
 
         if (info.paid_media_allowed && info.paid_reactions_available) {

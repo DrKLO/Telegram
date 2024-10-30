@@ -66,8 +66,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     private int sortType;
     private boolean isChannel;
     private boolean disableSections;
-    private boolean hasGps;
-    private boolean isEmpty;
+    public boolean isEmpty;
     public boolean hasStories;
     public ArrayList<TL_stories.PeerStories> userStories = new ArrayList<>();
 
@@ -82,7 +81,6 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         this.selectedContacts = selectedContacts;
         isAdmin = flags != 0;
         isChannel = flags == 2;
-        hasGps = gps;
         this.fragment = fragment;
     }
 
@@ -277,7 +275,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 if (isAdmin) {
                     return row != 1;
                 } else if (needPhonebook) {
-                    return hasGps && row != 2 || !hasGps && row != 1;
+                    return row != 1;
                 } else {
                     return row != 3;
                 }
@@ -361,7 +359,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 if (isAdmin) {
                     return 2;
                 } else if (needPhonebook) {
-                    return hasGps ? 3 : 2;
+                    return 2;
                 } else {
                     return 4;
                 }
@@ -459,9 +457,6 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                         }
                         int cellHeight = AndroidUtilities.dp(50);
                         int totalHeight = onlyUsers != 0 ? 0 : cellHeight + AndroidUtilities.dp(30);
-                        if (hasGps) {
-                            totalHeight += cellHeight;
-                        }
                         if (!isAdmin && !needPhonebook) {
                             totalHeight += cellHeight;
                         }
@@ -528,11 +523,11 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 case 2:
                     GraySectionCell sectionCell = (GraySectionCell) holder.itemView;
                     if (sortType == SORT_TYPE_NONE) {
-                        sectionCell.setText(LocaleController.getString("Contacts", R.string.Contacts));
+                        sectionCell.setText(LocaleController.getString(R.string.Contacts));
                     } else if (sortType == SORT_TYPE_BY_NAME) {
-                        sectionCell.setText(LocaleController.getString("SortedByName", R.string.SortedByName));
+                        sectionCell.setText(LocaleController.getString(R.string.SortedByName));
                     } else {
-                        sectionCell.setText(LocaleController.getString("SortedByLastSeen", R.string.SortedByLastSeen));
+                        sectionCell.setText(LocaleController.getString(R.string.SortedByLastSeen));
                     }
                     break;
             }
@@ -569,23 +564,21 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 if (section == 0) {
                     if (needPhonebook) {
                         if (position == 0) {
-                            textCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.msg_invite, false);
-                        } else if (position == 1) {
-                            textCell.setTextAndIcon(LocaleController.getString("AddPeopleNearby", R.string.AddPeopleNearby), R.drawable.msg_location, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.InviteFriends), R.drawable.msg_invite, false);
                         }
                     } else if (isAdmin) {
                         if (isChannel) {
-                            textCell.setTextAndIcon(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), R.drawable.msg_link2, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.ChannelInviteViaLink), R.drawable.msg_link2, false);
                         } else {
-                            textCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.msg_link2, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.InviteToGroupByLink), R.drawable.msg_link2, false);
                         }
                     } else {
                         if (position == 0) {
-                            textCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.msg_groups, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.NewGroup), R.drawable.msg_groups, false);
                         } else if (position == 1) {
-                            textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.msg_secret, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.NewContact), R.drawable.msg_addcontact, false);
                         } else if (position == 2) {
-                            textCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.msg_channel, false);
+                            textCell.setTextAndIcon(LocaleController.getString(R.string.NewChannel), R.drawable.msg_channel, false);
                         }
                     }
                 } else {
@@ -602,13 +595,13 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
             case 2:
                 GraySectionCell sectionCell = (GraySectionCell) holder.itemView;
                 if (hasStories) {
-                    sectionCell.setText(LocaleController.getString("HiddenStories", R.string.HiddenStories));
+                    sectionCell.setText(LocaleController.getString(R.string.HiddenStories));
                 } else if (sortType == SORT_TYPE_NONE) {
-                    sectionCell.setText(LocaleController.getString("Contacts", R.string.Contacts));
+                    sectionCell.setText(LocaleController.getString(R.string.Contacts));
                 } else if (sortType == SORT_TYPE_BY_NAME) {
-                    sectionCell.setText(LocaleController.getString("SortedByName", R.string.SortedByName));
+                    sectionCell.setText(LocaleController.getString(R.string.SortedByName));
                 } else {
-                    sectionCell.setText(LocaleController.getString("SortedByLastSeen", R.string.SortedByLastSeen));
+                    sectionCell.setText(LocaleController.getString(R.string.SortedByLastSeen));
                 }
                 break;
         }
@@ -640,7 +633,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                         return 2;
                     }
                 } else if (needPhonebook) {
-                    if (hasGps && position == 2 || !hasGps && position == 1) {
+                    if (position == 1) {
                         return isEmpty ? 5 : 2;
                     }
                 } else if (position == 3) {

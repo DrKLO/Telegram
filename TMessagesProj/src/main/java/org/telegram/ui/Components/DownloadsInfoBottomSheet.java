@@ -63,7 +63,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         title.setGravity(Gravity.CENTER_HORIZONTAL);
         title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        title.setText(LocaleController.getString("DownloadedFiles", R.string.DownloadedFiles));
+        title.setText(LocaleController.getString(R.string.DownloadedFiles));
         linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 20, 21, 0));
 
         TextView description = new TextView(context);
@@ -80,7 +80,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         storageBtn.setSingleLine(true);
         storageBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         storageBtn.setTypeface(AndroidUtilities.bold());
-        storageBtn.setText(LocaleController.getString("ManageDeviceStorage", R.string.ManageDeviceStorage));
+        storageBtn.setText(LocaleController.getString(R.string.ManageDeviceStorage));
         storageBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         storageBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
         linearLayout.addView(storageBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 14, 28, 14, 6));
@@ -91,7 +91,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         clearBtn.setSingleLine(true);
         clearBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         clearBtn.setTypeface(AndroidUtilities.bold());
-        clearBtn.setText(LocaleController.getString("ClearDownloadsList", R.string.ClearDownloadsList));
+        clearBtn.setText(LocaleController.getString(R.string.ClearDownloadsList));
         clearBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         clearBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

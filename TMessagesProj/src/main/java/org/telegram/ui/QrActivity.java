@@ -363,7 +363,7 @@ public class QrActivity extends BaseFragment {
 
         themesViewController.onCreate();
         themesViewController.setItemSelectedListener((theme, position) -> QrActivity.this.onItemSelected(theme, position, true));
-        themesViewController.titleView.setText(LocaleController.getString("QrCode", R.string.QrCode));
+        themesViewController.titleView.setText(LocaleController.getString(R.string.QrCode));
         themesViewController.progressView.setViewType(FlickerLoadingView.QR_TYPE);
         themesViewController.shareButton.setOnClickListener(v -> {
             themesViewController.shareButton.setClickable(false);
@@ -747,7 +747,7 @@ public class QrActivity extends BaseFragment {
                     .setType("image/*")
                     .putExtra(Intent.EXTRA_STREAM, uri);
             try {
-                Intent chooserIntent = Intent.createChooser(intent, LocaleController.getString("InviteByQRCode", R.string.InviteByQRCode));
+                Intent chooserIntent = Intent.createChooser(intent, LocaleController.getString(R.string.InviteByQRCode));
                 getParentActivity().startActivityForResult(chooserIntent, 500);
             } catch (ActivityNotFoundException ex) {
                 ex.printStackTrace();
@@ -1398,9 +1398,9 @@ public class QrActivity extends BaseFragment {
                 public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                     super.onInitializeAccessibilityNodeInfo(info);
                     if (isCurrentThemeDark) {
-                        info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));
+                        info.setText(LocaleController.getString(R.string.AccDescrSwitchToDayTheme));
                     } else {
-                        info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
+                        info.setText(LocaleController.getString(R.string.AccDescrSwitchToNightTheme));
                     }
                 }
             };
@@ -1457,7 +1457,7 @@ public class QrActivity extends BaseFragment {
             shareButton.setGravity(Gravity.CENTER);
             shareButton.setLines(1);
             shareButton.setSingleLine(true);
-            shareButton.setText(LocaleController.getString("ShareQrCode", R.string.ShareQrCode));
+            shareButton.setText(LocaleController.getString(R.string.ShareQrCode));
             shareButton.setTextColor(fragment.getThemedColor(Theme.key_featuredStickers_buttonText));
             shareButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             shareButton.setTypeface(AndroidUtilities.bold());

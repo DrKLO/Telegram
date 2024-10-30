@@ -606,12 +606,18 @@ public class PinchToZoomHelper {
             if (!isHardwareVideo) {
                 if (childImage != null) {
                     if (progressToFullView != 1f) {
+                        if (childImage.getLottieAnimation() != null || childImage.getAnimation() != null || fullImage.getLottieAnimation() != null || fullImage.getAnimation() != null) {
+                            invalidate();
+                        }
                         childImage.draw(canvas);
                         fullImage.setImageCoords(childImage.getImageX(), childImage.getImageY(), childImage.getImageWidth(), childImage.getImageHeight());
                         fullImage.draw(canvas);
                     } else {
                         fullImage.setImageCoords(childImage.getImageX(), childImage.getImageY(), childImage.getImageWidth(), childImage.getImageHeight());
                         fullImage.draw(canvas);
+                        if (fullImage.getLottieAnimation() != null || fullImage.getAnimation() != null) {
+                            invalidate();
+                        }
                     }
                 }
                 if (childTextureViewContainer != null) {

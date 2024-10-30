@@ -86,17 +86,20 @@ LIBS=" -L${PREFIX}/lib"
 --enable-swscale \
 --enable-protocol=file \
 --enable-decoder=h264 \
+--enable-decoder=h265 \
 --enable-decoder=mpeg4 \
 --enable-decoder=mjpeg \
 --enable-decoder=gif \
 --enable-decoder=alac \
 --enable-decoder=opus \
 --enable-decoder=mp3 \
+--enable-decoder=aac \
 --enable-demuxer=mov \
 --enable-demuxer=gif \
 --enable-demuxer=ogg \
 --enable-demuxer=matroska \
 --enable-demuxer=mp3 \
+--enable-demuxer=aac \
 --enable-hwaccels \
 --enable-runtime-cpudetect \
 $ADDITIONAL_CONFIGURE_FLAG

@@ -36,4 +36,6 @@ public interface AudioRemixer {
     AudioRemixer UPMIX = new UpMixAudioRemixer();
 
     AudioRemixer PASSTHROUGH = new PassThroughAudioRemixer();
+
+    AudioRemixer SURROUND = new SurroundAudioRemixer();
 }

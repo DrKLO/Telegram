@@ -1516,6 +1516,25 @@ public class DatabaseMigrationHelper {
             version = 155;
         }
 
+        if (version == 155) {
+            database.executeFast("CREATE TABLE popular_bots(uid INTEGER PRIMARY KEY, time INTEGER, offset TEXT);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 156").stepThis().dispose();
+            version = 156;
+        }
+
+        if (version == 156 || version == 157) {
+            database.executeFast("CREATE TABLE star_gifts2(id INTEGER PRIMARY KEY, data BLOB, hash INTEGER, time INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 158").stepThis().dispose();
+            version = 158;
+        }
+
+        if (version == 158) {
+            database.executeFast("DELETE FROM star_gifts2").stepThis().dispose();
+            database.executeFast("ALTER TABLE star_gifts2 ADD COLUMN pos INTEGER default 0;").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 159").stepThis().dispose();
+            version = 159;
+        }
+
         return version;
     }
 

@@ -619,7 +619,7 @@ public class ActionBarMenuItem extends FrameLayout {
         return cell;
     }
 
-   public ActionBarMenuSubItem addSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
+    public ActionBarMenuSubItem addSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
         createPopupLayout();
 
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), false, false, false, resourcesProvider);
@@ -1617,7 +1617,7 @@ public class ActionBarMenuItem extends FrameLayout {
                 searchField.requestFocus();
                 AndroidUtilities.showKeyboard(searchField);
             });
-            clearButton.setContentDescription(LocaleController.getString("ClearButton", R.string.ClearButton));
+            clearButton.setContentDescription(LocaleController.getString(R.string.ClearButton));
             if (wrapSearchInScrollView) {
                 wrappedSearchFrameLayout.addView(clearButton, LayoutHelper.createFrame(48, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
             } else {
@@ -2536,11 +2536,11 @@ public class ActionBarMenuItem extends FrameLayout {
         lazyList.clear();
     }
 
-    public static ActionBarMenuSubItem addItem(ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
+    public static ActionBarMenuSubItem addItem(ViewGroup windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
         return addItem(false, false, windowLayout, icon, text, needCheck, resourcesProvider);
     }
 
-    public static ActionBarMenuSubItem addItem(boolean first, boolean last, ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
+    public static ActionBarMenuSubItem addItem(boolean first, boolean last, ViewGroup windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(windowLayout.getContext(), needCheck, first, last, resourcesProvider);
         cell.setTextAndIcon(text, icon);
         cell.setMinimumWidth(AndroidUtilities.dp(196));

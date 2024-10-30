@@ -202,9 +202,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
                 if (Theme.isCurrentThemeDark()) {
-                    info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));
+                    info.setText(LocaleController.getString(R.string.AccDescrSwitchToDayTheme));
                 } else {
-                    info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
+                    info.setText(LocaleController.getString(R.string.AccDescrSwitchToNightTheme));
                 }
             }
         };
@@ -748,7 +748,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             arrowView.animate().cancel();
             arrowView.setRotation(rotation);
         }
-        arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+        arrowView.setContentDescription(accountsShown ? LocaleController.getString(R.string.AccDescrHideAccounts) : LocaleController.getString(R.string.AccDescrShowAccounts));
     }
 
     @Override

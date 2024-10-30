@@ -73,39 +73,39 @@ public class TimerDrawable extends Drawable {
             if (time >= 1 && time < 60) {
                 timeString = "" + value;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerSeconds", R.string.SecretChatTimerSeconds);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerSeconds);
                 }
             } else if (time >= 60 && time < 60 * 60) {
                 timeString = "" + value / 60;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerMinutes", R.string.SecretChatTimerMinutes);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerMinutes);
                 }
             } else if (time >= 60 * 60 && time < 60 * 60 * 24) {
                 timeString = "" + value / 60 / 60;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerHours", R.string.SecretChatTimerHours);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerHours);
                 }
             } else if (time >= 60 * 60 * 24 && time < 60 * 60 * 24 * 7) {
                 timeString = "" + value / 60 / 60 / 24;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerDays", R.string.SecretChatTimerDays);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerDays);
                 }
             } else if (time < 60 * 60 * 24 * 31) {
                 timeString = "" + value / 60 / 60 / 24 / 7;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerWeeks", R.string.SecretChatTimerWeeks);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerWeeks);
                 } else if (timeString.length() > 2) {
                     timeString = "c";
                 }
             } else if (time < 60 * 60 * 24 * 364){
                 timeString = "" + value / 60 / 60 / 24 / 30;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerMonths", R.string.SecretChatTimerMonths);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerMonths);
                 }
             } else {
                 timeString = "" + value / 60 / 60 / 24 / 364;
                 if (timeString.length() < 2) {
-                    timeString += LocaleController.getString("SecretChatTimerYears", R.string.SecretChatTimerYears);
+                    timeString += LocaleController.getString(R.string.SecretChatTimerYears);
                 }
             }
 

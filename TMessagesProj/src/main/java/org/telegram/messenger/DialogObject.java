@@ -115,7 +115,7 @@ public class DialogObject {
         if (dialog instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) dialog;
             if (UserObject.isReplyUser(user)) {
-                title = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                title = LocaleController.getString(R.string.RepliesTitle);
                 if (avatarDrawable != null) {
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
                 }
@@ -123,7 +123,7 @@ public class DialogObject {
                     imageReceiver.setForUserOrChat(null, avatarDrawable);
                 }
             } else if (UserObject.isUserSelf(user)) {
-                title = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                title = LocaleController.getString(R.string.SavedMessages);
                 if (avatarDrawable != null) {
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                 }
@@ -169,6 +169,9 @@ public class DialogObject {
     }
 
     public static long getEmojiStatusDocumentId(TLRPC.EmojiStatus emojiStatus) {
+        if (MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
+            return 0;
+        }
         if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
             return ((TLRPC.TL_emojiStatus) emojiStatus).document_id;
         } else if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {

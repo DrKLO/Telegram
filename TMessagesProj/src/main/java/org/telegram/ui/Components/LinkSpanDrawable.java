@@ -739,6 +739,16 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             super.setTextColor(colors);
             emojiColorFilter = new PorterDuffColorFilter(getPaint().linkColor, PorterDuff.Mode.SRC_IN);
         }
+
+        public boolean hasLinks() {
+            Layout textLayout = getLayout();
+            if (textLayout == null) return false;
+            CharSequence text = textLayout.getText();
+            if (!(text instanceof Spanned)) return false;
+            Spanned spanned = (Spanned) text;
+            ClickableSpan[] spans = spanned.getSpans(0, spanned.length(), ClickableSpan.class);
+            return spans != null && spans.length > 0;
+        }
     }
 
     public static class ClickableSmallTextView extends SimpleTextView {

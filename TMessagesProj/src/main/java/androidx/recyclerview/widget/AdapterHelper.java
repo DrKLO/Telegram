@@ -16,12 +16,16 @@
 
 package androidx.recyclerview.widget;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.core.util.Pools;
 
+import org.telegram.messenger.BuildVars;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -67,6 +71,29 @@ class AdapterHelper implements OpReorderer.Callback {
     final OpReorderer mOpReorderer;
 
     private int mExistingUpdateTypes = 0;
+
+    private final ArrayList<String> lastNotifies = BuildVars.DEBUG_VERSION ? new ArrayList<String>() : null;
+    private void logNotify(String name) {
+        if (lastNotifies == null) return;
+        while (lastNotifies.size() > 5) lastNotifies.remove(0);
+        final StringBuilder sb = new StringBuilder();
+        sb.append(new Date().toString()).append("  ").append(name).append("\n");
+        final StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0, j = 0; i < trace.length && j < 5; ++i) {
+            final String traceElement = trace[i].toString();
+            if (traceElement.startsWith("androidx.recyclerview.widget.") && j == 0) {
+                continue;
+            }
+            sb.append("\n").append(traceElement).append("\n");
+            j++;
+        }
+        lastNotifies.add(sb.toString());
+    }
+
+    public String getLastNotifies() {
+        if (lastNotifies == null) return null;
+        return TextUtils.join("\n\n", lastNotifies);
+    }
 
     AdapterHelper(Callback callback) {
         this(callback, false);
@@ -504,6 +531,9 @@ class AdapterHelper implements OpReorderer.Callback {
         if (itemCount < 1) {
             return false;
         }
+        if (BuildVars.DEBUG_VERSION) {
+            logNotify("onItemRangeChanged(" + positionStart + ", " + itemCount + ", " + payload + ")");
+        }
         mPendingUpdates.add(obtainUpdateOp(UpdateOp.UPDATE, positionStart, itemCount, payload));
         mExistingUpdateTypes |= UpdateOp.UPDATE;
         return mPendingUpdates.size() == 1;
@@ -516,6 +546,9 @@ class AdapterHelper implements OpReorderer.Callback {
         if (itemCount < 1) {
             return false;
         }
+        if (BuildVars.DEBUG_VERSION) {
+            logNotify("onItemRangeInserted(" + positionStart + ", " + itemCount + ")");
+        }
         mPendingUpdates.add(obtainUpdateOp(UpdateOp.ADD, positionStart, itemCount, null));
         mExistingUpdateTypes |= UpdateOp.ADD;
         return mPendingUpdates.size() == 1;
@@ -527,6 +560,9 @@ class AdapterHelper implements OpReorderer.Callback {
     boolean onItemRangeRemoved(int positionStart, int itemCount) {
         if (itemCount < 1) {
             return false;
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            logNotify("onItemRangeRemoved(" + positionStart + ", " + itemCount + ")");
         }
         mPendingUpdates.add(obtainUpdateOp(UpdateOp.REMOVE, positionStart, itemCount, null));
         mExistingUpdateTypes |= UpdateOp.REMOVE;
@@ -542,6 +578,9 @@ class AdapterHelper implements OpReorderer.Callback {
         }
         if (itemCount != 1) {
             throw new IllegalArgumentException("Moving more than 1 item is not supported yet");
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            logNotify("onItemRangeMoved(" + from + ", " + to + ", " + itemCount + ")");
         }
         mPendingUpdates.add(obtainUpdateOp(UpdateOp.MOVE, from, to, null));
         mExistingUpdateTypes |= UpdateOp.MOVE;

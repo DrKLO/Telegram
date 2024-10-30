@@ -85,7 +85,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
         Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
         checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
         doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
-        doneButton = actionBar.createMenu().addItemWithWidth(done_button, doneButtonDrawable, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
+        doneButton = actionBar.createMenu().addItemWithWidth(done_button, doneButtonDrawable, AndroidUtilities.dp(56), LocaleController.getString(R.string.Done));
         checkDone(false);
 
         FrameLayout contentView = new FrameLayout(context);

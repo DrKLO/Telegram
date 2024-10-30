@@ -634,7 +634,7 @@ public final class MediaCodecUtil {
    * The result of {@link android.media.MediaCodecInfo#isHardwareAccelerated()} for API levels 29+,
    * or a best-effort approximation for lower levels.
    */
-  private static boolean isHardwareAccelerated(
+  public static boolean isHardwareAccelerated(
       android.media.MediaCodecInfo codecInfo, String mimeType) {
     if (Util.SDK_INT >= 29) {
       return isHardwareAcceleratedV29(codecInfo);

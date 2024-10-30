@@ -538,7 +538,7 @@ public class ManageLinksActivity extends BaseFragment {
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(getString("InviteLinks", R.string.InviteLinks));
+        actionBar.setTitle(getString(R.string.InviteLinks));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -626,9 +626,9 @@ public class ManageLinksActivity extends BaseFragment {
                 }
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(getString("DeleteAllRevokedLinks", R.string.DeleteAllRevokedLinks));
-                builder.setMessage(getString("DeleteAllRevokedLinkHelp", R.string.DeleteAllRevokedLinkHelp));
-                builder.setPositiveButton(getString("Delete", R.string.Delete), (dialogInterface2, i2) -> {
+                builder.setTitle(getString(R.string.DeleteAllRevokedLinks));
+                builder.setMessage(getString(R.string.DeleteAllRevokedLinkHelp));
+                builder.setPositiveButton(getString(R.string.Delete), (dialogInterface2, i2) -> {
                     TLRPC.TL_messages_deleteRevokedExportedChatInvites req = new TLRPC.TL_messages_deleteRevokedExportedChatInvites();
                     req.peer = getMessagesController().getInputPeer(-currentChatId);
                     if (adminId == getUserConfig().getClientUserId()) {
@@ -646,7 +646,7 @@ public class ManageLinksActivity extends BaseFragment {
                         }
                     }));
                 });
-                builder.setNegativeButton(getString("Cancel", R.string.Cancel), null);
+                builder.setNegativeButton(getString(R.string.Cancel), null);
                 showDialog(builder.create());
             } else if (position >= adminsStartRow && position < adminsEndRow) {
                 int p = position - adminsStartRow;
@@ -711,7 +711,7 @@ public class ManageLinksActivity extends BaseFragment {
             messageTextView.setTextColor(Theme.getColor(Theme.key_chats_message));
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             messageTextView.setGravity(Gravity.CENTER);
-            messageTextView.setText(isChannel ? getString("PrimaryLinkHelpChannel", R.string.PrimaryLinkHelpChannel) : getString("PrimaryLinkHelp", R.string.PrimaryLinkHelp));
+            messageTextView.setText(getString(isChannel ? R.string.PrimaryLinkHelpChannel : R.string.PrimaryLinkHelp));
 
             addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 143, 52, 18));
         }
@@ -810,7 +810,7 @@ public class ManageLinksActivity extends BaseFragment {
                 case 8:
                     TextSettingsCell revokeAll = new TextSettingsCell(mContext);
                     revokeAll.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    revokeAll.setText(getString("DeleteAllRevokedLinks", R.string.DeleteAllRevokedLinks), false);
+                    revokeAll.setText(getString(R.string.DeleteAllRevokedLinks), false);
                     revokeAll.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     view = revokeAll;
                     break;
@@ -860,18 +860,18 @@ public class ManageLinksActivity extends BaseFragment {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == permanentLinkHeaderRow) {
                         if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
-                            headerCell.setText(getString("PublicLink", R.string.PublicLink));
+                            headerCell.setText(getString(R.string.PublicLink));
                         } else if (adminId == getAccountInstance().getUserConfig().clientUserId) {
-                            headerCell.setText(getString("ChannelInviteLinkTitle", R.string.ChannelInviteLinkTitle));
+                            headerCell.setText(getString(R.string.ChannelInviteLinkTitle));
                         } else {
-                            headerCell.setText(getString("PermanentLinkForThisAdmin", R.string.PermanentLinkForThisAdmin));
+                            headerCell.setText(getString(R.string.PermanentLinkForThisAdmin));
                         }
                     } else if (position == revokedHeader) {
-                        headerCell.setText(getString("RevokedLinks", R.string.RevokedLinks));
+                        headerCell.setText(getString(R.string.RevokedLinks));
                     } else if (position == linksHeaderRow) {
-                        headerCell.setText(getString("LinksCreatedByThisAdmin", R.string.LinksCreatedByThisAdmin));
+                        headerCell.setText(getString(R.string.LinksCreatedByThisAdmin));
                     } else if (position == adminsHeaderRow) {
-                        headerCell.setText(getString("LinksCreatedByOtherAdmins", R.string.LinksCreatedByOtherAdmins));
+                        headerCell.setText(getString(R.string.LinksCreatedByOtherAdmins));
                     }
                     break;
                 case 3:
@@ -882,7 +882,7 @@ public class ManageLinksActivity extends BaseFragment {
                     drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
                     CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
 
-                    textCell.setTextAndIcon(getString("CreateNewLink", R.string.CreateNewLink), combinedDrawable, !invites.isEmpty());
+                    textCell.setTextAndIcon(getString(R.string.CreateNewLink), combinedDrawable, !invites.isEmpty());
                     break;
                 case 5:
                     TLRPC.TL_chatInviteExported invite;
@@ -1012,7 +1012,7 @@ public class ManageLinksActivity extends BaseFragment {
                     DiffCallback callback = saveListState();
                     revokedInvites.add(0, oldInvite);
                     updateRecyclerViewAnimated(callback);
-                    BulletinFactory.of(this).createSimpleBulletin(R.raw.linkbroken, getString("InviteRevokedHint", R.string.InviteRevokedHint)).show();
+                    BulletinFactory.of(this).createSimpleBulletin(R.raw.linkbroken, getString(R.string.InviteRevokedHint)).show();
                 }
 
             }));
@@ -1095,10 +1095,10 @@ public class ManageLinksActivity extends BaseFragment {
                     options.add(R.drawable.msg_delete, getString(R.string.Delete), true, () -> {
                         TLRPC.TL_chatInviteExported inviteFinal = invite;
                         new AlertDialog.Builder(getParentActivity())
-                            .setTitle(getString("DeleteLink", R.string.DeleteLink))
-                            .setMessage(getString("DeleteLinkHelp", R.string.DeleteLinkHelp))
-                            .setPositiveButton(getString("Delete", R.string.Delete), (dialogInterface2, i2) -> deleteLink(inviteFinal))
-                            .setNegativeButton(getString("Cancel", R.string.Cancel), null)
+                            .setTitle(getString(R.string.DeleteLink))
+                            .setMessage(getString(R.string.DeleteLinkHelp))
+                            .setPositiveButton(getString(R.string.Delete), (dialogInterface2, i2) -> deleteLink(inviteFinal))
+                            .setNegativeButton(getString(R.string.Cancel), null)
                             .show();
                     });
                 } else {
@@ -1143,10 +1143,10 @@ public class ManageLinksActivity extends BaseFragment {
                     options.addIf(canEdit, R.drawable.msg_delete, getString(R.string.RevokeLink), true, () -> {
                         TLRPC.TL_chatInviteExported inviteFinal = invite;
                         new AlertDialog.Builder(getParentActivity())
-                            .setMessage(getString("RevokeAlert", R.string.RevokeAlert))
-                            .setTitle(getString("RevokeLink", R.string.RevokeLink))
-                            .setPositiveButton(getString("RevokeButton", R.string.RevokeButton), (dialogInterface2, i2) -> revokeLink(inviteFinal))
-                            .setNegativeButton(getString("Cancel", R.string.Cancel), null)
+                            .setMessage(getString(R.string.RevokeAlert))
+                            .setTitle(getString(R.string.RevokeLink))
+                            .setPositiveButton(getString(R.string.RevokeButton), (dialogInterface2, i2) -> revokeLink(inviteFinal))
+                            .setNegativeButton(getString(R.string.Cancel), null)
                             .show();
                     });
                 }
@@ -1399,7 +1399,7 @@ public class ManageLinksActivity extends BaseFragment {
                 DotDividerSpan dotDividerSpan = new DotDividerSpan();
                 dotDividerSpan.setTopPadding(dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
-                spannableStringBuilder.append(getString("Permanent", R.string.Permanent));
+                spannableStringBuilder.append(getString(R.string.Permanent));
                 subtitleView.setText(spannableStringBuilder);
             } else if (invite.expired || invite.revoked) {
                 if (invite.revoked && invite.usage == 0) {
@@ -1410,9 +1410,9 @@ public class ManageLinksActivity extends BaseFragment {
                 dotDividerSpan.setTopPadding(dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
                 if (!invite.revoked && invite.usage_limit > 0 && invite.usage >= invite.usage_limit) {
-                    spannableStringBuilder.append(getString("LinkLimitReached", R.string.LinkLimitReached));
+                    spannableStringBuilder.append(getString(R.string.LinkLimitReached));
                 } else {
-                    spannableStringBuilder.append(invite.revoked ? getString("Revoked", R.string.Revoked) : getString("Expired", R.string.Expired));
+                    spannableStringBuilder.append(getString(invite.revoked ? R.string.Revoked : R.string.Expired));
                 }
                 subtitleView.setText(spannableStringBuilder);
             } else if (invite.expire_date > 0) {
@@ -1495,7 +1495,7 @@ public class ManageLinksActivity extends BaseFragment {
                     }
                 }
                 if (getParentActivity() != null) {
-                    BulletinFactory.of(this).createSimpleBulletin(R.raw.linkbroken, getString("InviteRevokedHint", R.string.InviteRevokedHint)).show();
+                    BulletinFactory.of(this).createSimpleBulletin(R.raw.linkbroken, getString(R.string.InviteRevokedHint)).show();
                 }
             }
         }));

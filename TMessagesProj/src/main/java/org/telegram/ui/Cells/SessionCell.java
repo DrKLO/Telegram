@@ -207,7 +207,7 @@ public class SessionCell extends FrameLayout {
             String timeText;
             if ((session.flags & 1) != 0) {
                 setTag(Theme.key_windowBackgroundWhiteValueText);
-                timeText = LocaleController.getString("Online", R.string.Online);
+                timeText = LocaleController.getString(R.string.Online);
             } else {
                 setTag(Theme.key_windowBackgroundWhiteGrayText3);
                 timeText = LocaleController.stringForMessageListDate(session.date_active);
@@ -346,6 +346,10 @@ public class SessionCell extends FrameLayout {
             iconId = R.drawable.fragment;
             colorKey = -1;
             colorKey2 = -1;
+        } else if (platform.contains("anonymous")) {
+            iconId = R.drawable.large_hidden;
+            colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("premiumbot")) {
             iconId = R.drawable.filled_star_plus;
             colorKey = Theme.key_color_yellow;

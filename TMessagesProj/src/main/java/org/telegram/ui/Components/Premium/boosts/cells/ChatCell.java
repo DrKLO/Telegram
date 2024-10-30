@@ -37,7 +37,7 @@ public class ChatCell extends BaseCell {
         deleteImageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
         deleteImageView.setImageResource(R.drawable.poll_remove);
         deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
-        deleteImageView.setContentDescription(LocaleController.getString("Delete", R.string.Delete));
+        deleteImageView.setContentDescription(LocaleController.getString(R.string.Delete));
         addView(deleteImageView, LayoutHelper.createFrame(48, 50, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER, LocaleController.isRTL ? 3 : 0, 0, LocaleController.isRTL ? 0 : 3, 0));
         titleTextView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0), 0, AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24), 0);
     }

@@ -624,7 +624,8 @@ void ConnectionsManager::cleanUp(bool resetKeys, int32_t datacenterId) {
                 auto error = new TL_error();
                 error->code = -1000;
                 error->text = "";
-                request->onComplete(nullptr, error, 0, 0, request->messageId);
+                int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
+                request->onComplete(nullptr, error, 0, 0, request->messageId, dcId);
                 delete error;
             }
             iter = requestsQueue.erase(iter);
@@ -646,7 +647,8 @@ void ConnectionsManager::cleanUp(bool resetKeys, int32_t datacenterId) {
                 auto error = new TL_error();
                 error->code = -1000;
                 error->text = "";
-                request->onComplete(nullptr, error, 0, 0, request->messageId);
+                int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
+                request->onComplete(nullptr, error, 0, 0, request->messageId, dcId);
                 delete error;
             }
             DEBUG_D("1) erase request %d 0x%" PRIx64, request->requestToken, request->messageId);
@@ -1205,7 +1207,8 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
         for (auto iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
             Request *request = iter->get();
             if (request->respondsToMessageId(requestMid)) {
-                request->onComplete(response, nullptr, connection->currentNetworkType, timeMessage, requestMid);
+                int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
+                request->onComplete(response, nullptr, connection->currentNetworkType, timeMessage, requestMid, dcId);
                 request->completed = true;
                 DEBUG_D("4) erase request %d 0x%" PRIx64, request->requestToken, request->messageId);
                 runningRequests.erase(iter);
@@ -1450,12 +1453,13 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                     }
 
                     if (!discardResponse) {
+                        int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
                         if (implicitError != nullptr || error2 != nullptr) {
                             isError = true;
-                            request->onComplete(nullptr, implicitError != nullptr ? implicitError : error2, connection->currentNetworkType, timeMessage, request->messageId);
+                            request->onComplete(nullptr, implicitError != nullptr ? implicitError : error2, connection->currentNetworkType, timeMessage, request->messageId, dcId);
                             delete error2;
                         } else {
-                            request->onComplete(response->result.get(), nullptr, connection->currentNetworkType, timeMessage, request->messageId);
+                            request->onComplete(response->result.get(), nullptr, connection->currentNetworkType, timeMessage, request->messageId, dcId);
                         }
                     }
 
@@ -2104,7 +2108,7 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
                 auto dropAnswer = new TL_rpc_drop_answer();
                 dropAnswer->req_msg_id = request->messageId;
                 if (onCancelled != nullptr) {
-                    sendRequest(dropAnswer, ([onCancelled](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) -> void {
+                    sendRequest(dropAnswer, ([onCancelled](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) -> void {
                         if (onCancelled != nullptr) {
                             onCancelled();
                         }
@@ -2161,7 +2165,8 @@ void ConnectionsManager::failNotRunningRequest(int32_t token) {
                 auto error = new TL_error();
                 error->code = -2000;
                 error->text = "CANCELLED_REQUEST";
-                request->onComplete(nullptr, error, 0, 0, request->messageId);
+                int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
+                request->onComplete(nullptr, error, 0, 0, request->messageId, dcId);
 
                 request->cancelled = true;
                 if (LOGS_ENABLED) DEBUG_D("cancelled queued rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
@@ -2304,7 +2309,7 @@ void ConnectionsManager::requestSaltsForDatacenter(Datacenter *datacenter, bool 
     requestingSaltsForDc.push_back(id);
     auto request = new TL_get_future_salts();
     request->num = 32;
-    sendRequest(request, [&, datacenter, id, media](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    sendRequest(request, [&, datacenter, id, media](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         auto iter = std::find(requestingSaltsForDc.begin(), requestingSaltsForDc.end(), id);
         if (iter != requestingSaltsForDc.end()) {
             requestingSaltsForDc.erase(iter);
@@ -2339,7 +2344,7 @@ void ConnectionsManager::registerForInternalPushUpdates() {
     request->token_type = 7;
     request->token = to_string_uint64((uint64_t) pushSessionId);
 
-    sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         if (error == nullptr) {
             registeredForInternalPush = true;
             if (LOGS_ENABLED) DEBUG_D("registered for internal push");
@@ -2562,7 +2567,8 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         auto error = new TL_error();
                         error->code = -123;
                         error->text = "RETRY_LIMIT";
-                        request->onComplete(nullptr, error, connection->currentNetworkType, 0, request->messageId);
+                        int32_t dcId = request->datacenterId != DEFAULT_DATACENTER_ID ? request->datacenterId : currentDatacenterId;
+                        request->onComplete(nullptr, error, connection->currentNetworkType, 0, request->messageId, dcId);
                         delete error;
                         DEBUG_D("12) erase request %d 0x%" PRIx64, request->requestToken, request->messageId);
                         iter = runningRequests.erase(iter);
@@ -2754,8 +2760,6 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
 
         if (request->connectionType & ConnectionTypeGeneric && connection->getConnectionToken() == 0) {
             iter++;
-            if (LOGS_ENABLED)
-                DEBUG_D("skip queue, token = %d: generic && connectionToken == 0", request->requestToken);
             continue;
         }
 
@@ -2764,8 +2768,8 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
             case ConnectionTypeGenericMedia:
                 if (!canUseUnboundKey && genericRunningRequestCount >= MAX_GENERAL_REQUESTS) {
                     iter++;
-                    if (LOGS_ENABLED)
-                        DEBUG_D("skip queue, token = %d: generic type: running generic requests >= 60", request->requestToken);
+//                    if (LOGS_ENABLED)
+//                        DEBUG_D("skip queue, token = %d: generic type: running generic requests >= %d", request->requestToken, MAX_GENERAL_REQUESTS);
                     continue;
                 }
                 genericRunningRequestCount++;
@@ -3275,7 +3279,7 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround, bool 
     }
 
     auto request = new TL_help_getConfig();
-    sendRequest(request, [&, workaround](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    sendRequest(request, [&, workaround](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         if ((!workaround && !updatingDcSettings) || (workaround && !updatingDcSettingsWorkaround)) {
             return;
         }
@@ -3424,7 +3428,7 @@ void ConnectionsManager::authorizeOnMovingDatacenter() {
         auto request = new TL_auth_importAuthorization();
         request->id = currentUserId;
         request->bytes = std::move(movingAuthorization);
-        sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+        sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
             if (error == nullptr) {
                 authorizedOnMovingDatacenter();
             } else {

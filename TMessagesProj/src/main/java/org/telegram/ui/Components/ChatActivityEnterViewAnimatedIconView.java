@@ -63,10 +63,10 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
 
         switch (state) {
             case VOICE:
-                setContentDescription(LocaleController.getString("AccDescrVoiceMessage", R.string.AccDescrVoiceMessage));
+                setContentDescription(LocaleController.getString(R.string.AccDescrVoiceMessage));
                 break;
             case VIDEO:
-                setContentDescription(LocaleController.getString("AccDescrVideoMessage", R.string.AccDescrVideoMessage));
+                setContentDescription(LocaleController.getString(R.string.AccDescrVideoMessage));
                 break;
         }
     }

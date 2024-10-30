@@ -1,10 +1,7 @@
 package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.ActionBar.Theme.key_statisticChartLine_golden;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,28 +9,23 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.method.PasswordTransformationMethod;
 import android.text.style.RelativeSizeSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Space;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.core.view.NestedScrollingParent3;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
@@ -51,25 +43,20 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stats;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChannelMonetizationLayout;
-import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatAvatarContainer;
-import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -77,16 +64,12 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.GradientHeaderActivity;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.TwoStepVerificationActivity;
 import org.telegram.ui.TwoStepVerificationSetupActivity;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 public class BotStarsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -109,6 +92,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
     private int balanceBlockedUntil;
     private LinearLayout balanceLayout;
+    private LinearLayout balanceButtonsLayout;
     private RelativeSizeSpan balanceTitleSizeSpan;
     private AnimatedTextView balanceTitle;
     private AnimatedTextView balanceSubtitle;
@@ -277,7 +261,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         balanceLayout.addView(balanceEditTextContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 18, 14, 18, 2));
         balanceEditTextContainer.setVisibility(View.GONE);
 
-        LinearLayout balanceButtonsLayout = new LinearLayout(context);
+        balanceButtonsLayout = new LinearLayout(context);
         balanceButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         balanceButton = new ButtonWithCounterView(context, getResourceProvider()) {
@@ -388,6 +372,8 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             totalProceedsValue.currency = "USD";
             totalProceedsValue.amount = (long) (stats.status.overall_revenue * rate * 100.0);
             setBalance(stats.status.available_balance, stats.status.next_withdrawal_at);
+
+            balanceButtonsLayout.setVisibility(stats.status.withdrawal_enabled ? View.VISIBLE : View.GONE);
         }
         items.add(UItem.asProceedOverview(availableValue));
         items.add(UItem.asProceedOverview(totalValue));
@@ -401,7 +387,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
     private void onItemClick(UItem item, View view, int pos, float x, float y) {
         if (item.instanceOf(StarsIntroActivity.StarsTransactionView.Factory.class)) {
-            TLRPC.StarsTransaction t = (TLRPC.StarsTransaction) item.object;
+            TL_stars.StarsTransaction t = (TL_stars.StarsTransaction) item.object;
             StarsIntroActivity.showTransactionSheet(getContext(), true, bot_id, currentAccount, t, getResourceProvider());
         }
     }
@@ -457,7 +443,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             AndroidUtilities.runOnUIThread(this.setBalanceButtonText, 1000);
         } else {
             balanceButton.setSubText(null, true);
-            balanceButton.setText(StarsIntroActivity.replaceStars(balanceEditTextAll ? getString(R.string.BotStarsButtonWithdrawShortAll) : LocaleController.formatPluralStringComma("BotStarsButtonWithdrawShort", (int) balanceEditTextValue, ' '), starRef), true);
+            balanceButton.setText(StarsIntroActivity.replaceStars(balanceEditTextAll ? getString(R.string.BotStarsButtonWithdrawShortAll) : LocaleController.formatPluralStringSpaced("BotStarsButtonWithdrawShort", (int) balanceEditTextValue), starRef), true);
         }
     };
 
@@ -676,7 +662,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                         passwordFragment.needHideProgress();
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-                    builder.setTitle(LocaleController.getString("EditAdminTransferAlertTitle", R.string.EditAdminTransferAlertTitle));
+                    builder.setTitle(LocaleController.getString(R.string.EditAdminTransferAlertTitle));
 
                     LinearLayout linearLayout = new LinearLayout(parentActivity);
                     linearLayout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(2), AndroidUtilities.dp(24), 0);
@@ -703,7 +689,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("EditAdminTransferAlertText1", R.string.EditAdminTransferAlertText1)));
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
                     if (LocaleController.isRTL) {
                         linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                         linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
@@ -725,7 +711,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("EditAdminTransferAlertText2", R.string.EditAdminTransferAlertText2)));
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
                     if (LocaleController.isRTL) {
                         linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                         linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
@@ -735,17 +721,17 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     }
 
                     if ("PASSWORD_MISSING".equals(error.text)) {
-                        builder.setPositiveButton(LocaleController.getString("EditAdminTransferSetPassword", R.string.EditAdminTransferSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setPositiveButton(LocaleController.getString(R.string.EditAdminTransferSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
+                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     } else {
                         messageTextView = new TextView(parentActivity);
                         messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                        messageTextView.setText(LocaleController.getString("EditAdminTransferAlertText3", R.string.EditAdminTransferAlertText3));
+                        messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));
                         linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
 
-                        builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                        builder.setNegativeButton(LocaleController.getString(R.string.OK), null);
                     }
                     if (passwordFragment != null) {
                         passwordFragment.showDialog(builder.create());

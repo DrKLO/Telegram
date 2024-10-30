@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.voip.VoIPPreNotificationService;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
@@ -19,8 +20,10 @@ public class VoIPPermissionActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		VoIPService service = VoIPService.getSharedInstance();
-		boolean isVideoCall = service != null && service.privateCall != null && service.privateCall.video;
+		final VoIPService service = VoIPService.getSharedInstance();
+		final boolean isVideoCall = service != null ?
+			service.privateCall != null && service.privateCall.video :
+			VoIPPreNotificationService.isVideo();
 
 		ArrayList<String> permissions = new ArrayList<>();
 		if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -51,6 +54,8 @@ public class VoIPPermissionActivity extends Activity {
 			if (grantResults.length > 0 && allGranted) {
 				if (VoIPService.getSharedInstance() != null) {
 					VoIPService.getSharedInstance().acceptIncomingCall();
+				} else {
+					VoIPPreNotificationService.answer(this);
 				}
 				finish();
 				startActivity(new Intent(this, LaunchActivity.class).setAction("voip"));
@@ -58,6 +63,8 @@ public class VoIPPermissionActivity extends Activity {
 				if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
 					if (VoIPService.getSharedInstance() != null) {
 						VoIPService.getSharedInstance().declineIncomingCall();
+					} else {
+						VoIPPreNotificationService.decline(this, VoIPService.DISCARD_REASON_HANGUP);
 					}
 					VoIPHelper.permissionDenied(this, this::finish, requestCode);
 				} else {

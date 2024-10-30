@@ -32,6 +32,8 @@ import java.util.Objects;
 
 public class UItem extends AdapterWithDiffUtils.Item {
 
+    public static final int MAX_SPAN_COUNT = -1;
+
     public View view;
     public int id;
     public boolean checked;
@@ -44,6 +46,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public CharSequence animatedText;
     public String[] texts;
     public boolean accent, red, transparent, locked;
+    public int spanCount = MAX_SPAN_COUNT;
 
     public boolean include;
     public long dialogId;
@@ -51,6 +54,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public int flags;
 
     public int intValue;
+    public float floatValue;
     public long longValue;
     public Utilities.Callback<Integer> intCallback;
 
@@ -505,6 +509,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return this;
     }
 
+    public UItem setSpanCount(int spanCount) {
+        this.spanCount = spanCount;
+        return this;
+    }
+
     public <F extends UItemFactory<?>> boolean instanceOf(Class<F> factoryClass) {
         if (viewType < factoryViewTypeStartsWith) return false;
         if (factoryInstances == null) return false;
@@ -575,6 +584,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             TextUtils.equals(textValue, item.textValue) &&
             view == item.view &&
             intValue == item.intValue &&
+            Math.abs(floatValue - item.floatValue) < 0.01f &&
             longValue == item.longValue &&
             Objects.equals(object, item.object) &&
             Objects.equals(object2, item.object2)
@@ -588,6 +598,16 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static int factoryViewTypeStartsWith = 10_000;
     private static int factoryViewType = 10_000;
     public static abstract class UItemFactory<V extends View> {
+        public static void setup(UItemFactory factory) {
+            if (factoryInstances == null) factoryInstances = new HashMap<>();
+            if (factories == null) factories = new LongSparseArray<>();
+            final Class factoryClass = factory.getClass();
+            if (!factoryInstances.containsKey(factoryClass)) {
+                factoryInstances.put(factoryClass, factory);
+                factories.put(factory.viewType, factory);
+            }
+        };
+
         public final int viewType;
 
         private ArrayList<V> cache;
@@ -656,15 +676,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
         if (factoryInstances == null) factoryInstances = new HashMap<>();
         if (factories == null) factories = new LongSparseArray<>();
         UItemFactory<?> factory = factoryInstances.get(factoryClass);
-        if (factory == null) {
-            try {
-                factoryInstances.put(factoryClass, factory = factoryClass.getDeclaredConstructor().newInstance());
-                factories.put(factory.viewType, factory);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }
-        if (factory == null) throw new RuntimeException("couldnt create factory of " + factoryClass);
+        if (factory == null) throw new RuntimeException("UItemFactory was not setuped: " + factoryClass);
         return factory;
     }
 }

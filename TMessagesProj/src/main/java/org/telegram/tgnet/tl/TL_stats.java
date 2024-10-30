@@ -784,7 +784,7 @@ public class TL_stats {
 
         public StatsGraph top_hours_graph;
         public StatsGraph revenue_graph;
-        public TLRPC.TL_broadcastRevenueBalances balances;
+        public TLRPC.BroadcastRevenueBalances balances;
         public double usd_rate;
 
         public static TL_broadcastRevenueStats TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -805,7 +805,7 @@ public class TL_stats {
         public void readParams(AbstractSerializedData stream, boolean exception) {
             top_hours_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
             revenue_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
-            balances = TLRPC.TL_broadcastRevenueBalances.TLdeserialize(stream, stream.readInt32(exception), exception);
+            balances = TLRPC.BroadcastRevenueBalances.TLdeserialize(stream, stream.readInt32(exception), exception);
             usd_rate = stream.readDouble(exception);
         }
 

@@ -129,7 +129,7 @@ public class CodeHighlighting {
         }
     }
 
-    // setting 100-300 spans is hard
+    // setting 100-300 spans is slow
     // fast way to fix this is to do it on another thread, and not give access to data until it's finished processing
     public static class LockedSpannableString extends SpannableString {
         public LockedSpannableString(CharSequence text) {
@@ -447,19 +447,24 @@ public class CodeHighlighting {
     }
 
     private static Match matchPattern(TokenPattern pattern, int pos, String text) {
-        Matcher matcher = pattern.pattern.getPattern().matcher(text);
-        matcher.region(pos, text.length());
-        if (!matcher.find()) {
+        try {
+            Matcher matcher = pattern.pattern.getPattern().matcher(text);
+            matcher.region(pos, text.length());
+            if (!matcher.find()) {
+                return null;
+            }
+            Match match = new Match();
+            match.index = matcher.start();
+            if (pattern.lookbehind && matcher.groupCount() >= 1) {
+                match.index += matcher.end(1) - matcher.start(1);
+            }
+            match.length = matcher.end() - match.index;
+            match.string = text.substring(match.index, match.index + match.length);
+            return match;
+        } catch (Exception e) {
+            FileLog.e(e);
             return null;
         }
-        Match match = new Match();
-        match.index = matcher.start();
-        if (pattern.lookbehind && matcher.groupCount() >= 1) {
-            match.index += matcher.end(1) - matcher.start(1);
-        }
-        match.length = matcher.end() - match.index;
-        match.string = text.substring(match.index, match.index + match.length);
-        return match;
     }
 
     private static class RematchOptions {

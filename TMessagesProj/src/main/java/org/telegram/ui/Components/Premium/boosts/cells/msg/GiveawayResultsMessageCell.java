@@ -30,6 +30,7 @@ import android.view.SoundEffectConstants;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -76,6 +77,7 @@ public class GiveawayResultsMessageCell {
     private int topHeight;
     private int bottomHeight;
     private int countriesHeight;
+    private Drawable counterIcon;
     private String counterStr;
     private int diffTextWidth;
 
@@ -85,6 +87,7 @@ public class GiveawayResultsMessageCell {
     private StaticLayout countriesLayout;
 
     private TextPaint counterTextPaint;
+    private TextPaint counterStarsTextPaint;
     private TextPaint chatTextPaint;
     private TextPaint textPaint;
     private TextPaint textDividerPaint;
@@ -103,6 +106,7 @@ public class GiveawayResultsMessageCell {
     private int selectorColor;
     private Drawable selectorDrawable;
     private MessageObject messageObject;
+    private boolean isStars;
     private int pressedPos = -1;
     private boolean isButtonPressed = false;
     private boolean isContainerPressed = false;
@@ -120,6 +124,7 @@ public class GiveawayResultsMessageCell {
             return;
         }
         counterTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        counterStarsTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         chatTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textDividerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -149,6 +154,10 @@ public class GiveawayResultsMessageCell {
         counterTextPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         counterTextPaint.setTextSize(dp(12));
         counterTextPaint.setTextAlign(Paint.Align.CENTER);
+        counterStarsTextPaint.setTypeface(AndroidUtilities.bold());
+        counterStarsTextPaint.setTextSize(dp(12));
+        counterStarsTextPaint.setTextAlign(Paint.Align.CENTER);
+        counterStarsTextPaint.setColor(0xFFFFFFFF);
         chatTextPaint.setTypeface(AndroidUtilities.bold());
         chatTextPaint.setTextSize(dp(13));
         countriesTextPaint.setTextSize(dp(13));
@@ -282,6 +291,7 @@ public class GiveawayResultsMessageCell {
         countriesLayout = null;
         measuredHeight = 0;
         measuredWidth = 0;
+        isStars = false;
         if (!messageObject.isGiveawayResults()) {
             return;
         }
@@ -330,7 +340,12 @@ public class GiveawayResultsMessageCell {
             bottomStringBuilder.setSpan(new RelativeSizeSpan(1.05f), 0, bottomStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             bottomStringBuilder.append("\n");
         }
-        bottomStringBuilder.append(LocaleController.getString("BoostingGiveawayResultsMsgAllWinnersReceivedLinks", R.string.BoostingGiveawayResultsMsgAllWinnersReceivedLinks));
+        isStars = (giveaway.flags & 32) != 0;
+        if (isStars) {
+            bottomStringBuilder.append(LocaleController.formatPluralStringSpaced("BoostingStarsGiveawayResultsMsgAllWinnersReceivedLinks", (int) giveaway.stars));
+        } else {
+            bottomStringBuilder.append(LocaleController.getString(R.string.BoostingGiveawayResultsMsgAllWinnersReceivedLinks));
+        }
 
         titleLayout = StaticLayoutEx.createStaticLayout(titleStringBuilder, textPaint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, AndroidUtilities.dp(2), false, TextUtils.TruncateAt.END, maxWidth, 10);
         topLayout = StaticLayoutEx.createStaticLayout(topStringBuilder, textPaint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, AndroidUtilities.dp(2), false, TextUtils.TruncateAt.END, maxWidth, 10);
@@ -353,8 +368,19 @@ public class GiveawayResultsMessageCell {
         measuredHeight += dp(32 + 96); //gift
         measuredWidth = maxWidth;
 
-        counterStr = "x" + giveaway.winners_count;
+        if (isStars) {
+            if (counterIcon == null) {
+                counterIcon = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.filled_giveaway_stars).mutate();
+            }
+            counterStr = LocaleController.formatNumber((int) giveaway.stars, ',');
+        } else {
+            counterIcon = null;
+            counterStr = "x" + giveaway.winners_count;
+        }
         counterTextPaint.getTextBounds(counterStr, 0, counterStr.length(), counterTextBounds);
+        if (isStars) {
+            counterTextBounds.right += dp(20);
+        }
 
         Arrays.fill(avatarVisible, false);
 
@@ -448,6 +474,10 @@ public class GiveawayResultsMessageCell {
             chatBgPaint.setColor(Theme.getColor(Theme.key_chat_inReplyLine, resourcesProvider));
         }
 
+        if (isStars) {
+            counterBgPaint.setColor(Theme.getColor(Theme.key_starsGradient1, resourcesProvider));
+        }
+
         int x = 0, y = 0;
         canvas.save();
         x = marginLeft - dp(4);
@@ -476,7 +506,12 @@ public class GiveawayResultsMessageCell {
                 centerY + ((textHeight) / 2f)
         );
         canvas.drawRoundRect(countRect, dp(10), dp(10), counterBgPaint);
-        canvas.drawText(counterStr, countRect.centerX(), countRect.centerY() + dp(4), counterTextPaint);
+        if (counterIcon != null) {
+            final float s = .58f;
+            counterIcon.setBounds((int) countRect.left + dp(5), (int) countRect.centerY() - dp(12 * s), (int) countRect.left + dp(5 + 28 * s), (int) countRect.centerY() + dp(12 * s));
+            counterIcon.draw(canvas);
+        }
+        canvas.drawText(counterStr, countRect.centerX() + dp(isStars ? 8 : 0), countRect.centerY() + dp(4), isStars ? counterStarsTextPaint : counterTextPaint);
         canvas.restore();
 
         canvas.translate(0, dp(32 + 96));

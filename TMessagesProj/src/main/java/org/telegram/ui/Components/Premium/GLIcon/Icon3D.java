@@ -45,6 +45,7 @@ public class Icon3D {
     private int alphaHandle;
     private int mTextureDataHandle;
     private int whiteHandle;
+    private int goldenHandle;
     float xOffset;
 
     int[] trianglesCount;
@@ -137,12 +138,10 @@ public class Icon3D {
 
         vertexShader = GLIconRenderer.loadShader(GLES20.GL_VERTEX_SHADER, loadFromAsset(context, "shaders/vertex2.glsl"));
         String fragmentShaderSource;
-        if (type == TYPE_STAR) {
-            fragmentShaderSource = "shaders/fragment2.glsl";
-        } else if (type == TYPE_COIN) {
-            fragmentShaderSource = "shaders/fragment3.glsl";
-        } else {
+        if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             fragmentShaderSource = "shaders/fragment4.glsl";
+        } else {
+            fragmentShaderSource = "shaders/fragment3.glsl";
         }
         fragmentShader = GLIconRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, loadFromAsset(context, fragmentShaderSource));
 
@@ -174,6 +173,7 @@ public class Icon3D {
         mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgramObject, "uMVPMatrix");
         mWorldMatrixHandle = GLES20.glGetUniformLocation(mProgramObject, "world");
         whiteHandle = GLES20.glGetUniformLocation(mProgramObject, "white");
+        goldenHandle = GLES20.glGetUniformLocation(mProgramObject, "golden");
 
         specHandleTop = GLES20.glGetUniformLocation(mProgramObject, "spec1");
         specHandleBottom = GLES20.glGetUniformLocation(mProgramObject, "spec2");
@@ -243,12 +243,12 @@ public class Icon3D {
 
         if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             Bitmap bitmap;
-            if (type == TYPE_GOLDEN_STAR) {
+//            if (type == TYPE_GOLDEN_STAR) {
                 bitmap = SvgHelper.getBitmap(R.raw.start_texture, 240, 240, Color.WHITE);
-            } else {
-                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
-                Utilities.stackBlurBitmap(bitmap, 3);
-            }
+//            } else {
+//                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
+//                Utilities.stackBlurBitmap(bitmap, 3);
+//            }
 
             final int[] texture = new int[1];
             GLES20.glGenTextures(1, texture, 0);
@@ -314,7 +314,7 @@ public class Icon3D {
 
     private float time = 0f;
 
-    public void draw(float[] mvpMatrix, float[] worldMatrix, int width, int height, float gradientStartX, float gradientScaleX, float gradientStartY, float gradientScaleY, float white, float dt) {
+    public void draw(float[] mvpMatrix, float[] worldMatrix, int width, int height, float gradientStartX, float gradientScaleX, float gradientStartY, float gradientScaleY, float white, float golden, float dt) {
         if (backgroundBitmap != null) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, backgroundBitmap, 0);
@@ -324,6 +324,7 @@ public class Icon3D {
         GLES20.glUniform1f(xOffsetHandle, xOffset);
         GLES20.glUniform1f(alphaHandle, enterAlpha);
         GLES20.glUniform1f(whiteHandle, white);
+        GLES20.glUniform1f(goldenHandle, golden);
         GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
         GLES20.glUniformMatrix4fv(mWorldMatrixHandle, 1, false, worldMatrix, 0);
 

@@ -50,6 +50,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
@@ -101,6 +102,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     private boolean[] shadowVisibility = new boolean[2];
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private int customViewOffset = 12;
+    private boolean withCancelDialog;
 
     private int dialogButtonColorKey = Theme.key_dialogButton;
 
@@ -289,6 +291,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
             shadowDrawable.getPadding(backgroundPaddings);
         }
+        withCancelDialog = progressViewStyle == ALERT_TYPE_SPINNER;
 
         progressViewStyle = progressStyle;
     }
@@ -312,6 +315,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         shownAt = System.currentTimeMillis();
     }
 
+    public void setCancelDialog(boolean enable) {
+        withCancelDialog = enable;
+    }
+
     public class AlertDialogView extends LinearLayout {
         public AlertDialogView(Context context) {
             super(context);
@@ -321,7 +328,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            if (progressViewStyle == ALERT_TYPE_SPINNER) {
+            if (withCancelDialog) {
                 showCancelAlert();
                 return false;
             }
@@ -330,7 +337,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         @Override
         public boolean onInterceptTouchEvent(MotionEvent ev) {
-            if (progressViewStyle == ALERT_TYPE_SPINNER) {
+            if (withCancelDialog) {
                 showCancelAlert();
                 return false;
             }
@@ -1217,15 +1224,15 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
     }
 
-    private void showCancelAlert() {
+    public void showCancelAlert() {
         if (!canCacnel || cancelDialog != null) {
             return;
         }
         Builder builder = new Builder(getContext(), resourcesProvider);
-        builder.setTitle(LocaleController.getString("StopLoadingTitle", R.string.StopLoadingTitle));
-        builder.setMessage(LocaleController.getString("StopLoading", R.string.StopLoading));
-        builder.setPositiveButton(LocaleController.getString("WaitMore", R.string.WaitMore), null);
-        builder.setNegativeButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
+        builder.setTitle(LocaleController.getString(R.string.StopLoadingTitle));
+        builder.setMessage(LocaleController.getString(R.string.StopLoading));
+        builder.setPositiveButton(LocaleController.getString(R.string.WaitMore), null);
+        builder.setNegativeButton(LocaleController.getString(R.string.Stop), (dialogInterface, i) -> {
             if (onCancelListener != null) {
                 onCancelListener.onCancel(AlertDialog.this);
             }
@@ -1608,6 +1615,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             return this;
         }
 
+        @Keep
         public Builder setTopImage(int resId, int backgroundColor) {
             alertDialog.topResId = resId;
             alertDialog.topBackgroundColor = backgroundColor;

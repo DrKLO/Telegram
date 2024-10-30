@@ -26,7 +26,6 @@ import android.util.Pair;
 import android.view.View;
 
 import androidx.core.content.FileProvider;
-import androidx.exifinterface.media.ExifInterface;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -248,34 +247,34 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         } else if (type == TYPE_SUGGEST_PHOTO_FOR_USER) {
             builder.setTitle(LocaleController.formatString("SuggestPhotoFor", R.string.SuggestPhotoFor, user.first_name), true);
         } else {
-            builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto), true);
+            builder.setTitle(LocaleController.getString(R.string.ChoosePhoto), true);
         }
 
         ArrayList<CharSequence> items = new ArrayList<>();
         ArrayList<Integer> icons = new ArrayList<>();
         ArrayList<Integer> ids = new ArrayList<>();
 
-        items.add(LocaleController.getString("ChooseTakePhoto", R.string.ChooseTakePhoto));
+        items.add(LocaleController.getString(R.string.ChooseTakePhoto));
         icons.add(R.drawable.msg_camera);
         ids.add(ID_TAKE_PHOTO);
 
         if (canSelectVideo) {
-            items.add(LocaleController.getString("ChooseRecordVideo", R.string.ChooseRecordVideo));
+            items.add(LocaleController.getString(R.string.ChooseRecordVideo));
             icons.add(R.drawable.msg_video);
             ids.add(ID_RECORD_VIDEO);
         }
 
-        items.add(LocaleController.getString("ChooseFromGallery", R.string.ChooseFromGallery));
+        items.add(LocaleController.getString(R.string.ChooseFromGallery));
         icons.add(R.drawable.msg_photos);
         ids.add(ID_UPLOAD_FROM_GALLERY);
 
         if (searchAvailable) {
-            items.add(LocaleController.getString("ChooseFromSearch", R.string.ChooseFromSearch));
+            items.add(LocaleController.getString(R.string.ChooseFromSearch));
             icons.add(R.drawable.msg_search);
             ids.add(ID_SEARCH_WEB);
         }
         if (hasAvatar) {
-            items.add(LocaleController.getString("DeletePhoto", R.string.DeletePhoto));
+            items.add(LocaleController.getString(R.string.DeletePhoto));
             icons.add(R.drawable.msg_delete);
             ids.add(ID_REMOVE_PHOTO);
         }
@@ -849,7 +848,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.filePreparingStarted);
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.filePreparingFailed);
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileNewChunkAvailable);
-                    MediaController.getInstance().scheduleVideoConvert(avatarObject, true, true);
+                    MediaController.getInstance().scheduleVideoConvert(avatarObject, true, true, false);
                     uploadingImage = null;
                     if (delegate != null) {
                         delegate.didStartUpload(true);

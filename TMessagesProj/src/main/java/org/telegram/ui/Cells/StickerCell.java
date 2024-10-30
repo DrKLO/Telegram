@@ -202,9 +202,9 @@ public class StickerCell extends FrameLayout {
             }
         }
         if (emoji != null)
-            info.setText(emoji + " " + LocaleController.getString("AttachSticker", R.string.AttachSticker));
+            info.setText(emoji + " " + LocaleController.getString(R.string.AttachSticker));
         else
-            info.setText(LocaleController.getString("AttachSticker", R.string.AttachSticker));
+            info.setText(LocaleController.getString(R.string.AttachSticker));
         info.setEnabled(true);
     }
 

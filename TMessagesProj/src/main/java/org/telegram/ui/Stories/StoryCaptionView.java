@@ -909,7 +909,7 @@ public class StoryCaptionView extends NestedScrollView {
                 if (shouldCollapse) {
                     float collapsedY = fullLayout.getLineTop(2) + fullLayout.getTopPadding();
                     if (this == state[0]) {
-                        String showMoreText = LocaleController.getString("ShowMore", R.string.ShowMore);
+                        String showMoreText = LocaleController.getString(R.string.ShowMore);
                         showMore = makeTextLayout(showMorePaint, showMoreText, width);
 
                         showMoreY = verticalPadding + replyOffset + collapsedY - AndroidUtilities.dpf2(0.3f);
@@ -1109,7 +1109,7 @@ public class StoryCaptionView extends NestedScrollView {
 
             private void drawLayout(StaticLayout staticLayout, Canvas canvas, List<SpoilerEffect> spoilers) {
                 if (!spoilers.isEmpty()) {
-                    SpoilerEffect.renderWithRipple(StoryCaptionTextView.this, false, Color.WHITE, 0, patchedLayout, staticLayout, spoilers, canvas, false);
+                    SpoilerEffect.renderWithRipple(StoryCaptionTextView.this, false, Color.WHITE, 0, patchedLayout, 0, staticLayout, spoilers, canvas, false);
                 } else {
                     staticLayout.draw(canvas);
                 }

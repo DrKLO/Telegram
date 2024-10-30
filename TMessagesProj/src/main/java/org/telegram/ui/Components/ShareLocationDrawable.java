@@ -39,14 +39,6 @@ public class ShareLocationDrawable extends Drawable {
             drawable = context.getResources().getDrawable(R.drawable.filled_stop_location).mutate();
             drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft).mutate();
             drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright).mutate();
-        } else if (type == 3) {
-            drawable = context.getResources().getDrawable(R.drawable.nearby_l).mutate();
-            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft).mutate();
-            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright).mutate();
-        } else if (type == 2) {
-            drawable = context.getResources().getDrawable(R.drawable.nearby_m).mutate();
-            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft).mutate();
-            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright).mutate();
         } else if (type == 1) {
             drawable = context.getResources().getDrawable(R.drawable.smallanimationpin).mutate();
             drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft).mutate();

@@ -414,20 +414,20 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             if (TextUtils.isEmpty(fileName) && document.mime_type != null) {
                 if (document.mime_type.startsWith("video")) {
                     if (MessageObject.isGifDocument(document)) {
-                        fileName = LocaleController.getString("AttachGif", R.string.AttachGif);
+                        fileName = LocaleController.getString(R.string.AttachGif);
                     } else {
-                        fileName = LocaleController.getString("AttachVideo", R.string.AttachVideo);
+                        fileName = LocaleController.getString(R.string.AttachVideo);
                     }
                 } else if (document.mime_type.startsWith("image")) {
                     if (MessageObject.isGifDocument(document)) {
-                        fileName = LocaleController.getString("AttachGif", R.string.AttachGif);
+                        fileName = LocaleController.getString(R.string.AttachGif);
                     } else {
-                        fileName = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+                        fileName = LocaleController.getString(R.string.AttachPhoto);
                     }
                 } else if (document.mime_type.startsWith("audio")) {
-                    fileName = LocaleController.getString("AttachAudio", R.string.AttachAudio);
+                    fileName = LocaleController.getString(R.string.AttachAudio);
                 } else {
-                    fileName = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                    fileName = LocaleController.getString(R.string.AttachDocument);
                 }
             }
             if (name == null) {

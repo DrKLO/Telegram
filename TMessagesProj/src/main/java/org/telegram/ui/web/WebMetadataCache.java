@@ -32,7 +32,6 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.LaunchActivity;
 
 import java.io.ByteArrayInputStream;
@@ -411,7 +410,7 @@ public class WebMetadataCache {
             }
         });
         Runnable putJS = () -> {
-            final String js = RLottieDrawable.readRes(null, R.raw.webview_ext).replace("$DEBUG$", "" + BuildVars.DEBUG_VERSION);
+            final String js = AndroidUtilities.readRes(R.raw.webview_ext).replace("$DEBUG$", "" + BuildVars.DEBUG_VERSION);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 webView.evaluateJavascript(js, value -> {});
             } else {

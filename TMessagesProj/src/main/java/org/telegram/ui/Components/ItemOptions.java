@@ -441,6 +441,9 @@ public class ItemOptions {
 
     public ItemOptions setGravity(int gravity) {
         this.gravity = gravity;
+        if (gravity == Gravity.RIGHT && swipeback && layout instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
+            ((ActionBarPopupWindow.ActionBarPopupWindowLayout) layout).swipeBackGravityRight = true;
+        }
         return this;
     }
 

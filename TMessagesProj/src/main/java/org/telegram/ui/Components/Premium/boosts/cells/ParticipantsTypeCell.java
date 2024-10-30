@@ -46,7 +46,7 @@ public class ParticipantsTypeCell extends BaseCell {
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
 
         if (countries.size() == 0) {
-            setSubtitle(withArrow(LocaleController.getString("BoostingFromAllCountries", R.string.BoostingFromAllCountries)));
+            setSubtitle(withArrow(LocaleController.getString(R.string.BoostingFromAllCountries)));
         } else if (countries.size() <= 3) {
             if (countries.size() == 1) {
                 setSubtitle(withArrow(LocaleController.formatString("BoostingFromAllCountries1", R.string.BoostingFromAllCountries1, countries.get(0).default_name)));

@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -154,11 +156,11 @@ public class JoinGroupAlert extends BottomSheet {
         textView.setEllipsize(TextUtils.TruncateAt.END);
 
         if (chatInvite != null && origination == ORIGINATION_SPONSORED_CHAT) {
-            textView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase());
+            textView.setText(getString(R.string.ChannelPublic).toLowerCase());
         } else {
             textView.setText(isChannel
-                    ? LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase()
-                    : LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase()
+                    ? getString(R.string.ChannelPrivate).toLowerCase()
+                    : getString(R.string.MegaPrivate).toLowerCase()
             );
         }
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 0, 10, hasAbout ? 0 : 20));
@@ -187,7 +189,7 @@ public class JoinGroupAlert extends BottomSheet {
             requestTextView.setEllipsize(TextUtils.TruncateAt.END);
             requestTextView.setGravity(Gravity.CENTER);
             requestTextView.setSingleLine(true);
-            requestTextView.setText(isChannel ? LocaleController.getString("RequestToJoinChannel", R.string.RequestToJoinChannel) : LocaleController.getString("RequestToJoinGroup", R.string.RequestToJoinGroup));
+            requestTextView.setText(getString(isChannel ? R.string.RequestToJoinChannel : R.string.RequestToJoinGroup));
             requestTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             requestTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             requestTextView.setTypeface(AndroidUtilities.bold());
@@ -240,7 +242,7 @@ public class JoinGroupAlert extends BottomSheet {
             TextView descriptionTextView = new TextView(getContext());
             descriptionTextView.setGravity(Gravity.CENTER);
             descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            descriptionTextView.setText(isChannel ? LocaleController.getString("RequestToJoinChannelDescription", R.string.RequestToJoinChannelDescription) : LocaleController.getString("RequestToJoinGroupDescription", R.string.RequestToJoinGroupDescription));
+            descriptionTextView.setText(getString(isChannel ? R.string.RequestToJoinChannelDescription : R.string.RequestToJoinGroupDescription));
             descriptionTextView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
             linearLayout.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 17, 24, 15));
         } else if (chatInvite != null) {
@@ -302,7 +304,7 @@ public class JoinGroupAlert extends BottomSheet {
             joinTextView.setEllipsize(TextUtils.TruncateAt.END);
             joinTextView.setGravity(Gravity.CENTER);
             joinTextView.setSingleLine(true);
-            joinTextView.setText(isJoinToChannel ? LocaleController.getString("ProfileJoinChannel", R.string.ProfileJoinChannel) : LocaleController.getString("ProfileJoinGroup", R.string.ProfileJoinGroup));
+            joinTextView.setText(getString(isJoinToChannel ? R.string.ProfileJoinChannel : R.string.ProfileJoinGroup));
             joinTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             joinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             joinTextView.setTypeface(AndroidUtilities.bold());
@@ -361,10 +363,10 @@ public class JoinGroupAlert extends BottomSheet {
         }
         Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(context, fragment.getResourceProvider());
         layout.imageView.setAnimation(R.raw.timer_3, 28, 28);
-        layout.titleTextView.setText(LocaleController.getString("RequestToJoinSent", R.string.RequestToJoinSent));
+        layout.titleTextView.setText(getString(R.string.RequestToJoinSent));
         String subTitle = isChannel
-                ? LocaleController.getString("RequestToJoinChannelSentDescription", R.string.RequestToJoinChannelSentDescription)
-                : LocaleController.getString("RequestToJoinGroupSentDescription", R.string.RequestToJoinGroupSentDescription);
+                ? getString(R.string.RequestToJoinChannelSentDescription)
+                : getString(R.string.RequestToJoinGroupSentDescription);
         layout.subtitleTextView.setText(subTitle);
         Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();
     }

@@ -6,6 +6,7 @@ import android.graphics.drawable.ShapeDrawable;
 import android.util.Property;
 import android.view.animation.OvershootInterpolator;
 
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.PhotoViewer;
 
@@ -62,6 +63,18 @@ public class AnimationProperties {
         @Override
         public Integer get(Paint object) {
             return object.getColor();
+        }
+    };
+
+    public static final Property<ImageReceiver, Float> IMAGE_RECEIVER_ALPHA = new FloatProperty<ImageReceiver>("currentAlpha") {
+        @Override
+        public void setValue(ImageReceiver object, float value) {
+            object.setCurrentAlpha(value);
+        }
+
+        @Override
+        public Float get(ImageReceiver object) {
+            return object.getCurrentAlpha();
         }
     };
 

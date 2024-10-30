@@ -81,11 +81,11 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     public RemoteViews getViewAt(int position) {
         if (deleted) {
             RemoteViews rv = new RemoteViews(mContext.getPackageName(), R.layout.widget_deleted);
-            rv.setTextViewText(R.id.widget_deleted_text, LocaleController.getString("WidgetLoggedOff", R.string.WidgetLoggedOff));
+            rv.setTextViewText(R.id.widget_deleted_text, LocaleController.getString(R.string.WidgetLoggedOff));
             return rv;
         } else if (position >= dids.size()) {
             RemoteViews rv = new RemoteViews(mContext.getPackageName(), R.layout.widget_edititem);
-            rv.setTextViewText(R.id.widget_edititem_text, LocaleController.getString("TapToEditWidget", R.string.TapToEditWidget));
+            rv.setTextViewText(R.id.widget_edititem_text, LocaleController.getString(R.string.TapToEditWidget));
             Bundle extras = new Bundle();
             extras.putInt("appWidgetId", appWidgetId);
             extras.putInt("appWidgetType", EditWidgetActivity.TYPE_CHATS);
@@ -105,11 +105,11 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
             user = accountInstance.getMessagesController().getUser(id);
             if (user != null) {
                 if (UserObject.isUserSelf(user)) {
-                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                    name = LocaleController.getString(R.string.SavedMessages);
                 } else if (UserObject.isReplyUser(user)) {
-                    name = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                    name = LocaleController.getString(R.string.RepliesTitle);
                 } else if (UserObject.isDeleted(user)) {
-                    name = LocaleController.getString("HiddenName", R.string.HiddenName);
+                    name = LocaleController.getString(R.string.HiddenName);
                 } else {
                     name = ContactsController.formatName(user.first_name, user.last_name);
                 }
@@ -201,7 +201,7 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
                 boolean needEmoji = true;
                 if (chat != null && fromChat == null && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat))) {
                     if (message.isOutOwner()) {
-                        messageNameString = LocaleController.getString("FromYou", R.string.FromYou);
+                        messageNameString = LocaleController.getString(R.string.FromYou);
                     } else if (fromUser != null) {
                         messageNameString = UserObject.getFirstName(fromUser).replace("\n", "");
                     } else {
@@ -277,9 +277,9 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
                     messageString = stringBuilder;
                 } else {
                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
-                        messageString = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
+                        messageString = LocaleController.getString(R.string.AttachPhotoExpired);
                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaDocument && message.messageOwner.media.document instanceof TLRPC.TL_documentEmpty && message.messageOwner.media.ttl_seconds != 0) {
-                        messageString = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+                        messageString = LocaleController.getString(R.string.AttachVideoExpired);
                     } else if (message.caption != null) {
                         String emoji;
                         if (message.isVideo()) {

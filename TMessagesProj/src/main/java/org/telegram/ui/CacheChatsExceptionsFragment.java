@@ -89,7 +89,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
                     activity.finishFragment();
                     CacheByChatsController.KeepMediaException newException = null;
                     for (int i = 0; i < dids.size(); i++) {
@@ -146,9 +146,9 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                 });
             } else if (items.get(position).viewType == VIEW_TYPE_DELETE_ALL) {
                 AlertDialog alertDialog = AlertsCreator.createSimpleAlert(getContext(),
-                        LocaleController.getString("NotificationsDeleteAllExceptionTitle", R.string.NotificationsDeleteAllExceptionTitle),
-                        LocaleController.getString("NotificationsDeleteAllExceptionAlert", R.string.NotificationsDeleteAllExceptionAlert),
-                        LocaleController.getString("Delete", R.string.Delete),
+                        LocaleController.getString(R.string.NotificationsDeleteAllExceptionTitle),
+                        LocaleController.getString(R.string.NotificationsDeleteAllExceptionAlert),
+                        LocaleController.getString(R.string.Delete),
                         () -> {
                             exceptionsDialogs.clear();
                             getMessagesController().getCacheByChatsController().saveKeepMediaExceptions(currentType, exceptionsDialogs);
@@ -244,7 +244,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                     break;
                 case VIEW_TYPE_ADD_EXCEPTION:
                     TextCell textCell = new TextCell(parent.getContext());
-                    textCell.setTextAndIcon(LocaleController.getString("NotificationsAddAnException", R.string.NotificationsAddAnException), R.drawable.msg_contact_add, true);
+                    textCell.setTextAndIcon(LocaleController.getString(R.string.NotificationsAddAnException), R.drawable.msg_contact_add, true);
                     textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                     view = textCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -254,7 +254,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                     break;
                 case VIEW_TYPE_DELETE_ALL:
                     textCell = new TextCell(parent.getContext());
-                    textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
+                    textCell.setText(LocaleController.getString(R.string.NotificationsDeleteAllException), false);
                     textCell.setColors(-1, Theme.key_text_RedRegular);
                     view = textCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -274,7 +274,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
                     if (user.self) {
-                        title = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                        title = LocaleController.getString(R.string.SavedMessages);
                     } else {
                         title = ContactsController.formatName(user.first_name, user.last_name);
                     }

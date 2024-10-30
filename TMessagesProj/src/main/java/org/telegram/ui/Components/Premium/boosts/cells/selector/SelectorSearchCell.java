@@ -115,8 +115,8 @@ public class SelectorSearchCell extends ScrollView {
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         spansContainer.addView(editText);
-        editText.setHintText(LocaleController.getString("Search", R.string.Search));
-        hintTextWidth = (int) editText.getPaint().measureText(LocaleController.getString("Search", R.string.Search));
+        editText.setHintText(LocaleController.getString(R.string.Search));
+        hintTextWidth = (int) editText.getPaint().measureText(LocaleController.getString(R.string.Search));
         editText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {

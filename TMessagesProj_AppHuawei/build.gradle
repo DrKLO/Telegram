@@ -30,8 +30,8 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion '33.0.0'
+    compileSdkVersion 34
+    buildToolsVersion '34.0.0'
 
     defaultConfig.applicationId = APP_PACKAGE
 
@@ -78,7 +78,7 @@ android {
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
         release {
@@ -138,7 +138,7 @@ android {
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionName APP_VERSION_NAME
         ndkVersion "21.4.7075529"
 
@@ -149,7 +149,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
             }
         }
     }
@@ -157,6 +157,7 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    namespace 'org.telegram.messenger.huawei'
 
     lintOptions {
         checkReleaseBuilds false

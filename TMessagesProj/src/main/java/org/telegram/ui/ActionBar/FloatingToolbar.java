@@ -784,7 +784,7 @@ public final class FloatingToolbar {
                 mOverflowPanel.setAlpha(1);
                 mOverflowPanel.setVisibility(View.VISIBLE);
                 mOverflowButtonIcon.setImageDrawable(mArrow);
-                mOverflowButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+                mOverflowButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
 
                 if (isInRTLMode()) {
                     mContentContainer.setX(mMarginHorizontal);
@@ -816,7 +816,7 @@ public final class FloatingToolbar {
                 mOverflowPanel.setAlpha(0);
                 mOverflowPanel.setVisibility(View.INVISIBLE);
                 mOverflowButtonIcon.setImageDrawable(mOverflow);
-                mOverflowButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+                mOverflowButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
                 if (hasOverflow()) {
                     if (isInRTLMode()) {
                         mContentContainer.setX(mMarginHorizontal);

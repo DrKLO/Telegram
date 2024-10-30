@@ -260,7 +260,7 @@ public class BotHelpCell extends View {
                         ClickableSpan span = pressedLink.getSpan();
                         if (span instanceof URLSpanNoUnderline) {
                             String url = ((URLSpanNoUnderline) span).getURL();
-                            if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
+                            if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/") || url.startsWith("$")) {
                                 if (delegate != null) {
                                     delegate.didPressUrl(url);
                                 }

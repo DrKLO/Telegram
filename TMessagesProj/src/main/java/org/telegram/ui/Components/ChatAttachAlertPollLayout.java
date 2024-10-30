@@ -419,7 +419,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         });
 
         hintView = new HintView(context, 4);
-        hintView.setText(LocaleController.getString("PollTapToSelect", R.string.PollTapToSelect));
+        hintView.setText(LocaleController.getString(R.string.PollTapToSelect));
         hintView.setAlpha(0.0f);
         hintView.setVisibility(View.INVISIBLE);
         addView(hintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
@@ -778,9 +778,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             parentAlert.actionBar.getTitleTextView().setBuildFullLayout(true);
         } catch (Exception ignore) {}
         if (quizOnly == 1) {
-            parentAlert.actionBar.setTitle(LocaleController.getString("NewQuiz", R.string.NewQuiz));
+            parentAlert.actionBar.setTitle(LocaleController.getString(R.string.NewQuiz));
         } else {
-            parentAlert.actionBar.setTitle(LocaleController.getString("NewPoll", R.string.NewPoll));
+            parentAlert.actionBar.setTitle(LocaleController.getString(R.string.NewPoll));
         }
         parentAlert.doneItem.setVisibility(VISIBLE);
         layoutManager.scrollToPositionWithOffset(0, 0);
@@ -827,10 +827,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         if (!allowDiscard) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentAlert.baseFragment.getParentActivity());
-            builder.setTitle(LocaleController.getString("CancelPollAlertTitle", R.string.CancelPollAlertTitle));
-            builder.setMessage(LocaleController.getString("CancelPollAlertText", R.string.CancelPollAlertText));
-            builder.setPositiveButton(LocaleController.getString("PassportDiscard", R.string.PassportDiscard), (dialogInterface, i) -> parentAlert.dismiss());
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.setTitle(LocaleController.getString(R.string.CancelPollAlertTitle));
+            builder.setMessage(LocaleController.getString(R.string.CancelPollAlertText));
+            builder.setPositiveButton(LocaleController.getString(R.string.PassportDiscard), (dialogInterface, i) -> parentAlert.dismiss());
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
             builder.show();
         }
         return allowDiscard;
@@ -1283,10 +1283,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             @Override
             public void onClearEmojiRecent() {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-                builder.setTitle(LocaleController.getString("ClearRecentEmojiTitle", R.string.ClearRecentEmojiTitle));
-                builder.setMessage(LocaleController.getString("ClearRecentEmojiText", R.string.ClearRecentEmojiText));
-                builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.ClearRecentEmojiTitle));
+                builder.setMessage(LocaleController.getString(R.string.ClearRecentEmojiText));
+                builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder.show();
             }
 
@@ -1342,17 +1342,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == questionHeaderRow) {
                         cell.getTextView().setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-                        cell.setText(LocaleController.getString("PollQuestion", R.string.PollQuestion));
+                        cell.setText(LocaleController.getString(R.string.PollQuestion));
                     } else {
                         cell.getTextView().setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
                         if (position == answerHeaderRow) {
                             if (quizOnly == 1) {
-                                cell.setText(LocaleController.getString("QuizAnswers", R.string.QuizAnswers));
+                                cell.setText(LocaleController.getString(R.string.QuizAnswers));
                             } else {
-                                cell.setText(LocaleController.getString("AnswerOptions", R.string.AnswerOptions));
+                                cell.setText(LocaleController.getString(R.string.AnswerOptions));
                             }
                         } else if (position == settingsHeaderRow) {
-                            cell.setText(LocaleController.getString("Settings", R.string.Settings));
+                            cell.setText(LocaleController.getString(R.string.Settings));
                         }
                     }
                     break;
@@ -1364,15 +1364,15 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     combinedDrawable.setFullsize(true);
                     cell.setBackgroundDrawable(combinedDrawable);
                     if (position == solutionInfoRow) {
-                        cell.setText(LocaleController.getString("AddAnExplanationInfo", R.string.AddAnExplanationInfo));
+                        cell.setText(LocaleController.getString(R.string.AddAnExplanationInfo));
                     } else if (position == settingsSectionRow) {
                         if (quizOnly != 0) {
                             cell.setText(null);
                         } else {
-                            cell.setText(LocaleController.getString("QuizInfo", R.string.QuizInfo));
+                            cell.setText(LocaleController.getString(R.string.QuizInfo));
                         }
                     } else if (10 - answersCount <= 0) {
-                        cell.setText(LocaleController.getString("AddAnOptionInfoMax", R.string.AddAnOptionInfoMax));
+                        cell.setText(LocaleController.getString(R.string.AddAnOptionInfoMax));
                     } else {
                         cell.setText(LocaleController.formatString("AddAnOptionInfo", R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", 10 - answersCount)));
                     }
@@ -1386,19 +1386,19 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     drawable1.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));
                     drawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
                     CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
-                    textCell.setTextAndIcon(LocaleController.getString("AddAnOption", R.string.AddAnOption), combinedDrawable, false);
+                    textCell.setTextAndIcon(LocaleController.getString(R.string.AddAnOption), combinedDrawable, false);
                     break;
                 }
                 case 6: {
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
                     if (position == anonymousRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("PollAnonymous", R.string.PollAnonymous), anonymousPoll, multipleRow != -1 || quizRow != -1);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollAnonymous), anonymousPoll, multipleRow != -1 || quizRow != -1);
                         checkCell.setEnabled(true, null);
                     } else if (position == multipleRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("PollMultiple", R.string.PollMultiple), multipleChoise, quizRow != -1);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollMultiple), multipleChoise, quizRow != -1);
                         checkCell.setEnabled(true, null);
                     } else if (position == quizRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("PollQuiz", R.string.PollQuiz), quizPoll, false);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollQuiz), quizPoll, false);
                         checkCell.setEnabled(quizOnly == 0, null);
                     }
                 }
@@ -1415,7 +1415,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             if (viewType == 4) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
-                textCell.setTextAndHint(questionString != null ? questionString : "", LocaleController.getString("QuestionHint", R.string.QuestionHint), false);
+                textCell.setTextAndHint(questionString != null ? questionString : "", LocaleController.getString(R.string.QuestionHint), false);
                 textCell.setTag(null);
                 setTextLeft(holder.itemView, holder.getAdapterPosition());
             } else if (viewType == 5) {
@@ -1423,7 +1423,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
                 int index = position - answerStartRow;
-                textCell.setTextAndHint(answers[index], LocaleController.getString("OptionHint", R.string.OptionHint), true);
+                textCell.setTextAndHint(answers[index], LocaleController.getString(R.string.OptionHint), true);
                 textCell.setTag(null);
                 if (requestFieldFocusAtPosition == position) {
                     EditTextBoldCursor editText = textCell.getTextView();
@@ -1435,7 +1435,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             } else if (viewType == 7) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
-                textCell.setTextAndHint(solutionString != null ? solutionString : "", LocaleController.getString("AddAnExplanation", R.string.AddAnExplanation), false);
+                textCell.setTextAndHint(solutionString != null ? solutionString : "", LocaleController.getString(R.string.AddAnExplanation), false);
                 textCell.setTag(null);
                 setTextLeft(holder.itemView, holder.getAdapterPosition());
             }

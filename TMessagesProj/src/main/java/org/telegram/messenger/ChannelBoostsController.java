@@ -52,7 +52,7 @@ public class ChannelBoostsController {
                         builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground), colorsReplacement);
                         builder.setTopAnimationIsNew(true);
                         builder.setTitle(LocaleController.getString(R.string.ChannelPrivate));
-                        builder.setMessage(LocaleController.getString("ChannelCantOpenPrivate2", R.string.ChannelCantOpenPrivate2));
+                        builder.setMessage(LocaleController.getString(R.string.ChannelCantOpenPrivate2));
                         builder.setPositiveButton(LocaleController.getString(R.string.Close), null);
                         builder.show();
                     }

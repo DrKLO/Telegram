@@ -52,7 +52,7 @@ public class RadialProgress2 {
     private int circlePressedColorKey = -1;
     public int iconColorKey = -1;
     private int iconPressedColorKey = -1;
-    private ImageReceiver overlayImageView;
+    public ImageReceiver overlayImageView;
     private int circleRadius;
     private boolean isPressed;
     private boolean isPressedMini;
@@ -134,7 +134,13 @@ public class RadialProgress2 {
     }
 
     public void setImageOverlay(TLRPC.PhotoSize image, TLRPC.Document document, Object parentObject) {
+        final String filter = String.format(Locale.US, "%d_%d", circleRadius * 2, circleRadius * 2);
         overlayImageView.setImage(ImageLocation.getForDocument(image, document), String.format(Locale.US, "%d_%d", circleRadius * 2, circleRadius * 2), null, null, parentObject, 1);
+    }
+
+    public void setImageOverlay(TLRPC.PhotoSize image, TLRPC.PhotoSize thumb, TLRPC.Document document, Object parentObject) {
+        final String filter = String.format(Locale.US, "%d_%d", circleRadius * 2, circleRadius * 2);
+        overlayImageView.setImage(image == null ? null : ImageLocation.getForDocument(image, document), filter, thumb == null ? null : ImageLocation.getForDocument(thumb, document), filter, null, 0, null, parentObject, 1);
     }
 
     public void setImageOverlay(String url) {

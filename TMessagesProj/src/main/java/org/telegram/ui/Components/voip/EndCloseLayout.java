@@ -186,7 +186,7 @@ public class EndCloseLayout extends FrameLayout {
             textPaint.setColor(Color.BLACK);
             setLayerType(View.LAYER_TYPE_HARDWARE, null);
             setClickable(true);
-            closeText = LocaleController.getString("Close", R.string.Close);
+            closeText = LocaleController.getString(R.string.Close);
         }
 
         @Override

@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
@@ -92,7 +91,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
         DialogsActivity dialogFragment = new DialogsActivity(args);
-        dialogFragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
+        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
             long did = 0;
             for (int a = 0; a < dids.size(); a++) {
                 did = dids.get(a).dialogId;

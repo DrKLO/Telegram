@@ -37,10 +37,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -52,6 +50,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -62,7 +61,6 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LinkEditActivity;
 import org.telegram.ui.ManageLinksActivity;
@@ -396,15 +394,15 @@ public class InviteLinkBottomSheet extends BottomSheet {
         titleTextView.setTypeface(AndroidUtilities.bold());
         if (!permanent) {
             if (invite.expired) {
-                titleTextView.setText(LocaleController.getString("ExpiredLink", R.string.ExpiredLink));
+                titleTextView.setText(LocaleController.getString(R.string.ExpiredLink));
             } else if (invite.revoked) {
-                titleTextView.setText(LocaleController.getString("RevokedLink", R.string.RevokedLink));
+                titleTextView.setText(LocaleController.getString(R.string.RevokedLink));
             } else {
-                titleTextView.setText(LocaleController.getString("InviteLink", R.string.InviteLink));
+                titleTextView.setText(LocaleController.getString(R.string.InviteLink));
             }
             titleVisible = true;
         } else {
-            titleTextView.setText(LocaleController.getString("InviteLink", R.string.InviteLink));
+            titleTextView.setText(LocaleController.getString(R.string.InviteLink));
             titleVisible = false;
             titleTextView.setVisibility(View.INVISIBLE);
             titleTextView.setAlpha(0f);
@@ -868,18 +866,18 @@ public class InviteLinkBottomSheet extends BottomSheet {
                                 role = channelParticipant.rank;
                             } else {
                                 if (channelParticipant instanceof TLRPC.TL_channelParticipantCreator) {
-                                    role = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
+                                    role = LocaleController.getString(R.string.ChannelCreator);
                                 } else if (channelParticipant instanceof TLRPC.TL_channelParticipantAdmin) {
-                                    role = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
+                                    role = LocaleController.getString(R.string.ChannelAdmin);
                                 } else {
                                     role = null;
                                 }
                             }
                         } else {
                             if (part instanceof TLRPC.TL_chatParticipantCreator) {
-                                role = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
+                                role = LocaleController.getString(R.string.ChannelCreator);
                             } else if (part instanceof TLRPC.TL_chatParticipantAdmin) {
-                                role = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
+                                role = LocaleController.getString(R.string.ChannelAdmin);
                             } else {
                                 role = null;
                             }
@@ -907,12 +905,12 @@ public class InviteLinkBottomSheet extends BottomSheet {
                     privacyCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
                     privacyCell.setFixedSize(0);
                     if (invite.revoked) {
-                        privacyCell.setText(LocaleController.getString("LinkIsNoActive", R.string.LinkIsNoActive));
+                        privacyCell.setText(LocaleController.getString(R.string.LinkIsNoActive));
                     } else if (invite.expired) {
                         if (invite.usage_limit > 0 && invite.usage_limit == invite.usage) {
-                            privacyCell.setText(LocaleController.getString("LinkIsExpiredLimitReached", R.string.LinkIsExpiredLimitReached));
+                            privacyCell.setText(LocaleController.getString(R.string.LinkIsExpiredLimitReached));
                         } else {
-                            privacyCell.setText(LocaleController.getString("LinkIsExpired", R.string.LinkIsExpired));
+                            privacyCell.setText(LocaleController.getString(R.string.LinkIsExpired));
                             privacyCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         }
                     } else if (invite.expire_date > 0) {
@@ -1206,7 +1204,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
             addView(layout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 18, 0, 18, 0));
         }
 
-        public void setRevenue(TLRPC.TL_starsSubscriptionPricing pricing, int joined_date) {
+        public void setRevenue(TL_stars.TL_starsSubscriptionPricing pricing, int joined_date) {
             if (pricing == null) {
                 priceView.setText(null);
                 periodView.setText(null);
@@ -1262,7 +1260,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
             );
         }
 
-        public void set(TLRPC.TL_starsSubscriptionPricing pricing, int count) {
+        public void set(TL_stars.TL_starsSubscriptionPricing pricing, int count) {
             if (pricing == null) return;
             if (pricing.period == StarsController.PERIOD_MONTHLY) {
                 titleView.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(R.string.LinkRevenuePrice, pricing.amount) + (count > 0 ? " x " + count : ""), .8f));
@@ -1280,7 +1278,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
         Context context,
         int currentAccount,
         long dialogId,
-        TLRPC.TL_starsSubscriptionPricing pricing,
+        TL_stars.TL_starsSubscriptionPricing pricing,
         TLRPC.TL_chatInviteImporter importer,
         TLRPC.ChannelParticipant participant,
         Theme.ResourcesProvider resourcesProvider

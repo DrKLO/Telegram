@@ -928,6 +928,7 @@ public class PipVideoOverlay {
             protected void onConfigurationChanged(Configuration newConfig) {
                 AndroidUtilities.checkDisplaySize(getContext(), newConfig);
                 pipConfig = null;
+                AndroidUtilities.setPreferredMaxRefreshRate(windowManager, contentView, windowLayoutParams);
 
                 if (pipWidth != getSuggestedWidth() * scaleFactor || pipHeight != getSuggestedHeight() * scaleFactor) {
                     windowLayoutParams.width = pipWidth = (int) (getSuggestedWidth() * scaleFactor);
@@ -1127,6 +1128,7 @@ public class PipVideoOverlay {
         windowLayoutParams.dimAmount = 0f;
         windowLayoutParams.flags = FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
 
+        AndroidUtilities.setPreferredMaxRefreshRate(windowManager, contentView, windowLayoutParams);
         // Animate is a flag for PhotoViewer transition, not ours
         if (animate) {
             windowManager.addView(contentView, windowLayoutParams);

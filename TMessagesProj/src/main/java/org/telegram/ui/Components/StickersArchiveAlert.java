@@ -47,10 +47,10 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         TLRPC.StickerSetCovered set = sets.get(0);
         if (set.set.masks) {
             currentType = MediaDataController.TYPE_MASK;
-            setTitle(LocaleController.getString("ArchivedMasksAlertTitle", R.string.ArchivedMasksAlertTitle));
+            setTitle(LocaleController.getString(R.string.ArchivedMasksAlertTitle));
         } else {
             currentType = MediaDataController.TYPE_IMAGE;
-            setTitle(LocaleController.getString("ArchivedStickersAlertTitle", R.string.ArchivedStickersAlertTitle));
+            setTitle(LocaleController.getString(R.string.ArchivedStickersAlertTitle));
         }
         stickerSets = new ArrayList<>(sets);
         parentFragment = baseFragment;
@@ -65,9 +65,9 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setPadding(AndroidUtilities.dp(23), AndroidUtilities.dp(10), AndroidUtilities.dp(23), 0);
         if (set.set.masks) {
-            textView.setText(LocaleController.getString("ArchivedMasksAlertInfo", R.string.ArchivedMasksAlertInfo));
+            textView.setText(LocaleController.getString(R.string.ArchivedMasksAlertInfo));
         } else {
-            textView.setText(LocaleController.getString("ArchivedStickersAlertInfo", R.string.ArchivedStickersAlertInfo));
+            textView.setText(LocaleController.getString(R.string.ArchivedStickersAlertInfo));
         }
         container.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
@@ -79,9 +79,9 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         listView.setGlowColor(0xfff5f6f7);
         container.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
 
-        setNegativeButton(LocaleController.getString("Close", R.string.Close), (dialog, which) -> dialog.dismiss());
+        setNegativeButton(LocaleController.getString(R.string.Close), (dialog, which) -> dialog.dismiss());
         if (parentFragment != null) {
-            setPositiveButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
+            setPositiveButton(LocaleController.getString(R.string.Settings), (dialog, which) -> {
                 parentFragment.presentFragment(new StickersActivity(currentType, null));
                 dialog.dismiss();
             });

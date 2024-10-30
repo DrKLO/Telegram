@@ -66,6 +66,7 @@ import org.telegram.ui.Components.Premium.boosts.cells.statistics.GiftedUserCell
 import org.telegram.ui.Components.Premium.boosts.cells.statistics.GiveawayCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,8 +104,8 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
     private ChannelBoostsController.CanApplyBoost canApplyBoost;
     private ScrollSlidingTextTabStrip boostsTabs;
 
-    private final ArrayList<TL_stories.TL_boost> boosters = new ArrayList<>();
-    private final ArrayList<TL_stories.TL_boost> gifts = new ArrayList<>();
+    private final ArrayList<TL_stories.Boost> boosters = new ArrayList<>();
+    private final ArrayList<TL_stories.Boost> gifts = new ArrayList<>();
     private boolean hasBoostsNext;
     private int nextBoostRemaining;
     private boolean hasGiftsNext;
@@ -267,18 +268,18 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 }
             } else if (holder.getItemViewType() == OVERVIEW_TYPE) {
                 StatisticActivity.OverviewCell overviewCell = (StatisticActivity.OverviewCell) holder.itemView;
-                overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString("BoostsLevel2", R.string.BoostsLevel2));
+                overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString(R.string.BoostsLevel2));
                 if (boostsStatus.premium_audience != null && boostsStatus.premium_audience.total != 0) {
                     float percent = (((float) boostsStatus.premium_audience.part / (float) boostsStatus.premium_audience.total) * 100f);
                     overviewCell.setData(1, "≈" + (int) boostsStatus.premium_audience.part, String.format(Locale.US, "%.1f", percent) + "%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 } else {
                     overviewCell.setData(1, "~0", "0%", LocaleController.getString(isChannel() ? R.string.PremiumSubscribers : R.string.PremiumMembers));
                 }
-                overviewCell.setData(2, String.valueOf(boostsStatus.boosts), null, LocaleController.getString("BoostsExisting", R.string.BoostsExisting));
-                overviewCell.setData(3, String.valueOf(Math.max(0, boostsStatus.next_level_boosts - boostsStatus.boosts)), null, LocaleController.getString("BoostsToLevel", R.string.BoostsToLevel));
+                overviewCell.setData(2, String.valueOf(boostsStatus.boosts), null, LocaleController.getString(R.string.BoostsExisting));
+                overviewCell.setData(3, String.valueOf(Math.max(0, boostsStatus.next_level_boosts - boostsStatus.boosts)), null, LocaleController.getString(R.string.BoostsToLevel));
                 overviewCell.setPadding(dp(23), overviewCell.getPaddingTop(), dp(23), overviewCell.getPaddingBottom());
             } else if (holder.getItemViewType() == USER_VIEW_TYPE) {
-                TL_stories.TL_boost booster = items.get(position).booster;
+                TL_stories.Boost booster = items.get(position).booster;
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(booster.user_id);
                 GiftedUserCell userCell = (GiftedUserCell) holder.itemView;
                 String str = booster.multiplier > 1
@@ -308,11 +309,18 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 linkActionView.setLink(items.get(position).title);
             } else if (holder.getItemViewType() == SHOW_PREPARED_GIVE_AWAY) {
                 ItemInternal item = items.get(position);
-                TL_stories.TL_prepaidGiveaway prepaidGiveaway = item.prepaidGiveaway;
+                TL_stories.PrepaidGiveaway prepaidGiveaway = item.prepaidGiveaway;
                 GiveawayCell giveawayCell = (GiveawayCell) holder.itemView;
-                String name = LocaleController.formatPluralString("BoostingTelegramPremiumCountPlural", prepaidGiveaway.quantity);
-                String info = LocaleController.formatPluralString("BoostingSubscriptionsCountPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("PrepaidGiveawayMonths", prepaidGiveaway.months));
-                giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
+                if (prepaidGiveaway instanceof TL_stories.TL_prepaidGiveaway) {
+                    String name = LocaleController.formatPluralString("BoostingTelegramPremiumCountPlural", prepaidGiveaway.quantity);
+                    String info = LocaleController.formatPluralString("BoostingSubscriptionsCountPlural", prepaidGiveaway.quantity, LocaleController.formatPluralString("PrepaidGiveawayMonths", ((TL_stories.TL_prepaidGiveaway) prepaidGiveaway).months));
+                    giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
+                } else if (prepaidGiveaway instanceof TL_stories.TL_prepaidStarsGiveaway) {
+                    TL_stories.TL_prepaidStarsGiveaway starsGiveaway = (TL_stories.TL_prepaidStarsGiveaway) prepaidGiveaway;
+                    String name = LocaleController.formatPluralStringComma("BoostingStarsCountPlural", (int) starsGiveaway.stars);
+                    String info = LocaleController.formatPluralString("AmongWinners", starsGiveaway.quantity);
+                    giveawayCell.setData(prepaidGiveaway, name, info, 0, !item.isLast);
+                }
                 giveawayCell.setImage(prepaidGiveaway);
                 giveawayCell.setAvatarPadding(5);
             } else if (holder.getItemViewType() == HEADER_VIEW_TYPE_TABS) {
@@ -354,20 +362,20 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
         items.clear();
         items.add(new ItemInternal(HEADER_PADDING, false));
         if (boostsStatus != null) {
-            items.add(new ItemInternal(HEADER_VIEW_TYPE_OVERVIEW, LocaleController.getString("StatisticOverview", R.string.StatisticOverview)));
+            items.add(new ItemInternal(HEADER_VIEW_TYPE_OVERVIEW, LocaleController.getString(R.string.StatisticOverview)));
             items.add(new ItemInternal(OVERVIEW_TYPE, false));
             items.add(new ItemInternal(DIVIDER_VIEW_TYPE, false));
 
             if (boostsStatus.prepaid_giveaways.size() > 0) {
-                items.add(new ItemInternal(HEADER_VIEW_TYPE_SMALL, LocaleController.getString("BoostingPreparedGiveaways", R.string.BoostingPreparedGiveaways)));
+                items.add(new ItemInternal(HEADER_VIEW_TYPE_SMALL, LocaleController.getString(R.string.BoostingPreparedGiveaways)));
                 for (int i = 0; i < boostsStatus.prepaid_giveaways.size(); i++) {
-                    TL_stories.TL_prepaidGiveaway prepaidGiveaway = boostsStatus.prepaid_giveaways.get(i);
+                    TL_stories.PrepaidGiveaway prepaidGiveaway = boostsStatus.prepaid_giveaways.get(i);
                     items.add(new ItemInternal(SHOW_PREPARED_GIVE_AWAY, prepaidGiveaway, i == boostsStatus.prepaid_giveaways.size() - 1));
                 }
-                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString("BoostingSelectPaidGiveaway", R.string.BoostingSelectPaidGiveaway)));
+                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(R.string.BoostingSelectPaidGiveaway)));
             }
 
-            items.add(new ItemInternal(HEADER_VIEW_TYPE_TABS, LocaleController.getString("Boosters", R.string.Boosters)));
+            items.add(new ItemInternal(HEADER_VIEW_TYPE_TABS, LocaleController.getString(R.string.Boosters)));
             if (selectedTab == TAB_BOOSTS) {
                 if (boosters.isEmpty()) {
                     items.add(new ItemInternal(NO_USERS_HINT, false));
@@ -400,12 +408,12 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 }
             }
 
-            items.add(new ItemInternal(HEADER_VIEW_TYPE, LocaleController.getString("LinkForBoosting", R.string.LinkForBoosting)));
+            items.add(new ItemInternal(HEADER_VIEW_TYPE, LocaleController.getString(R.string.LinkForBoosting)));
             items.add(new ItemInternal(LINK_VIEW_TYPE, boostsStatus.boost_url));
             if (MessagesController.getInstance(currentAccount).giveawayGiftsPurchaseAvailable && ChatObject.hasAdminRights(currentChat)) {
                 items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostingShareThisLink : R.string.BoostingShareThisLinkGroup)));
                 items.add(new ItemInternal(SHOW_BOOST_BY_GIFTS, true));
-                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostingGetMoreBoosts : R.string.BoostingGetMoreBoostsGroup)));
+                items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, LocaleController.getString(isChannel() ? R.string.BoostingGetMoreBoosts2 : R.string.BoostingGetMoreBoostsGroup)));
             } else {
                 items.add(new ItemInternal(DIVIDER_TEXT_VIEW_TYPE, ""));
             }
@@ -510,7 +518,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 lastBoostsOffset = list.next_offset;
                 boosters.addAll(list.boosts);
                 int shownBoosts = 0;
-                for (TL_stories.TL_boost booster : boosters) {
+                for (TL_stories.Boost booster : boosters) {
                     shownBoosts += booster.multiplier > 0 ? booster.multiplier : 1;
                 }
                 nextBoostRemaining = Math.max(0, list.count - shownBoosts);
@@ -541,7 +549,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 lastGiftsOffset = list.next_offset;
                 gifts.addAll(list.boosts);
                 int shownGifts = 0;
-                for (TL_stories.TL_boost booster : gifts) {
+                for (TL_stories.Boost booster : gifts) {
                     shownGifts += booster.multiplier > 0 ? booster.multiplier : 1;
                 }
                 nextGiftsRemaining = Math.max(0, list.count - shownGifts);
@@ -609,8 +617,8 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
     private class ItemInternal extends AdapterWithDiffUtils.Item {
 
         String title;
-        TL_stories.TL_boost booster;
-        TL_stories.TL_prepaidGiveaway prepaidGiveaway;
+        TL_stories.Boost booster;
+        TL_stories.PrepaidGiveaway prepaidGiveaway;
         boolean isLast;
         int tab;
 
@@ -619,14 +627,14 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
             this.title = title;
         }
 
-        public ItemInternal(int viewType, TL_stories.TL_boost booster, boolean isLast, int tab) {
+        public ItemInternal(int viewType, TL_stories.Boost booster, boolean isLast, int tab) {
             super(viewType, true);
             this.booster = booster;
             this.isLast = isLast;
             this.tab = tab;
         }
 
-        public ItemInternal(int viewType, TL_stories.TL_prepaidGiveaway prepaidGiveaway, boolean isLast) {
+        public ItemInternal(int viewType, TL_stories.PrepaidGiveaway prepaidGiveaway, boolean isLast) {
             super(viewType, true);
             this.prepaidGiveaway = prepaidGiveaway;
             this.isLast = isLast;
@@ -804,8 +812,10 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
         listView.setOnItemClickListener((view, position) -> {
             if (view instanceof GiftedUserCell) {
                 GiftedUserCell cell = (GiftedUserCell) view;
-                TL_stories.TL_boost boost = cell.getBoost();
-                if (((boost.gift || boost.giveaway) && boost.user_id >= 0) || boost.unclaimed) {
+                TL_stories.Boost boost = cell.getBoost();
+                if (boost.giveaway && boost.stars > 0) {
+                    StarsIntroActivity.showBoostsSheet(context, currentAccount, dialogId, boost, getResourceProvider());
+                } else if (((boost.gift || boost.giveaway) && boost.user_id >= 0) || boost.unclaimed) {
                     TLRPC.TL_payments_checkedGiftCode giftCode = new TLRPC.TL_payments_checkedGiftCode();
                     giftCode.giveaway_msg_id = boost.giveaway_msg_id;
                     giftCode.to_id = boost.user_id;
@@ -823,7 +833,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 } else if (boost.giveaway && boost.user_id == NO_USER_ID) {
                     final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getParentActivity(), getResourceProvider());
                     layout.setAnimation(R.raw.chats_infotip, 36, 36);
-                    layout.textView.setText(LocaleController.getString("BoostingRecipientWillBeSelected", R.string.BoostingRecipientWillBeSelected));
+                    layout.textView.setText(LocaleController.getString(R.string.BoostingRecipientWillBeSelected));
                     layout.textView.setSingleLine(false);
                     layout.textView.setMaxLines(2);
                     Bulletin.make(this, layout, Bulletin.DURATION_LONG).show();

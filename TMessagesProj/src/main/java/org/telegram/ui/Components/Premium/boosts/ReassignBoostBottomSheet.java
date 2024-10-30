@@ -212,9 +212,9 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
     private void updateActionButton(boolean animated) {
         actionButton.setShowZero(false);
         if (selectedBoosts.size() > 1) {
-            actionButton.setText(LocaleController.getString("BoostingReassignBoosts", R.string.BoostingReassignBoosts), animated);
+            actionButton.setText(LocaleController.getString(R.string.BoostingReassignBoosts), animated);
         } else {
-            actionButton.setText(LocaleController.getString("BoostingReassignBoost", R.string.BoostingReassignBoost), animated);
+            actionButton.setText(LocaleController.getString(R.string.BoostingReassignBoost), animated);
         }
         actionButton.setCount(selectedBoosts.size(), animated);
         actionButton.setEnabled(selectedBoosts.size() > 0);
@@ -222,7 +222,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     protected CharSequence getTitle() {
-        return LocaleController.getString("BoostingReassignBoost", R.string.BoostingReassignBoost);
+        return LocaleController.getString(R.string.BoostingReassignBoost);
     }
 
     @Override
@@ -272,7 +272,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     cell.setTextSize(15);
                     cell.setPadding(0, 0, 0, AndroidUtilities.dp(2));
-                    cell.setText(LocaleController.getString("BoostingRemoveBoostFrom", R.string.BoostingRemoveBoostFrom));
+                    cell.setText(LocaleController.getString(R.string.BoostingRemoveBoostFrom));
                 } else if (holder.getItemViewType() == HOLDER_TYPE_HEADER) {
                     topCell = (TopCell) holder.itemView;
                     topCell.setData(currentChat, ReassignBoostBottomSheet.this);
@@ -331,7 +331,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
 
             TextView title = new TextView(context);
             title.setTypeface(AndroidUtilities.bold());
-            title.setText(LocaleController.getString("BoostingReassignBoost", R.string.BoostingReassignBoost));
+            title.setText(LocaleController.getString(R.string.BoostingReassignBoost));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 15, 0, 7));

@@ -68,6 +68,7 @@ import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.WrappedResourceProvider;
 
 import java.net.IDN;
@@ -596,6 +597,7 @@ public class AddressBarList extends FrameLayout {
         }
 
         public static class Factory extends UItem.UItemFactory<Address2View> {
+            static { setup(new Factory()); }
             @Override
             public Address2View createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new Address2View(context);
@@ -900,6 +902,7 @@ public class AddressBarList extends FrameLayout {
         }
 
         public static class Factory extends UItem.UItemFactory<BookmarkView> {
+            static { setup(new Factory()); }
             @Override
             public BookmarkView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new BookmarkView(context, resourcesProvider);

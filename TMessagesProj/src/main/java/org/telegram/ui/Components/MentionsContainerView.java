@@ -103,9 +103,11 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
 
             @Override
             protected Size getSizeForItem(int i) {
+                size.full = false;
                 if (i == 0) {
                     size.width = getWidth();
                     size.height = paddedAdapter.getPadding();
+                    size.full = true;
                     return size;
                 } else {
                     i--;
@@ -162,9 +164,9 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
             @Override
             protected int getFlowItemCount() {
                 if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
-                    return getItemCount() - 2;
+                    return getItemCount() - 1;
                 }
-                return super.getFlowItemCount() - 1;
+                return super.getFlowItemCount();
             }
         };
         gridLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -181,6 +183,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                 } else if (object instanceof TLRPC.Document) {
                     return 20;
                 } else {
+                    position++;
                     if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                         position--;
                     }
@@ -723,7 +726,6 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                         if (position == 0) {
                             return;
                         }
-                        position--;
                         if (adapter.isStickers()) {
                             return;
                         } else if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {

@@ -30,6 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.math.MathUtils;
 
@@ -118,7 +119,7 @@ public class LimitPreviewView extends LinearLayout {
 
         defaultText = new TextView(context);
         defaultText.setTypeface(AndroidUtilities.bold());
-        defaultText.setText(LocaleController.getString("LimitFree", R.string.LimitFree));
+        defaultText.setText(LocaleController.getString(R.string.LimitFree));
         defaultText.setGravity(Gravity.CENTER_VERTICAL);
         defaultText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
 
@@ -140,7 +141,7 @@ public class LimitPreviewView extends LinearLayout {
 
         premiumText = new TextView(context);
         premiumText.setTypeface(AndroidUtilities.bold());
-        premiumText.setText(LocaleController.getString("LimitPremium", R.string.LimitPremium));
+        premiumText.setText(LocaleController.getString(R.string.LimitPremium));
         premiumText.setGravity(Gravity.CENTER_VERTICAL);
         premiumText.setTextColor(Color.WHITE);
 
@@ -550,6 +551,7 @@ public class LimitPreviewView extends LinearLayout {
         isBoostsStyle = true;
     }
 
+    @Keep
     public void setStatus(int currentLevel, int maxLevel, boolean animated) {
         if (currentValue == currentLevel) {
             animated = false;

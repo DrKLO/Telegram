@@ -417,7 +417,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             }
         });
         searchItem.setVisibility(View.GONE);
-        searchItem.setSearchFieldHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+        searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchImagesTitle));
 
         searchListView.setOnItemClickListener((view, position) -> {
             if (searchItem != null) {
@@ -454,7 +454,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         selectedPhotos = getPhotoEntries(selectedAlbum);
         updateContainsDrafts();
         if (selectedAlbum == MediaController.allMediaAlbumEntry) {
-            dropDown.setText(LocaleController.getString("ChatGallery", R.string.ChatGallery));
+            dropDown.setText(LocaleController.getString(R.string.ChatGallery));
         } else if (selectedAlbum == draftsAlbum) {
             dropDown.setText(LocaleController.getString("StoryDraftsAlbum"));
         } else {
@@ -632,7 +632,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         selectedPhotos = getPhotoEntries(selectedAlbum);
         updateContainsDrafts();
         if (selectedAlbum == MediaController.allMediaAlbumEntry) {
-            dropDown.setText(LocaleController.getString("ChatGallery", R.string.ChatGallery));
+            dropDown.setText(LocaleController.getString(R.string.ChatGallery));
         } else if (selectedAlbum == draftsAlbum) {
             dropDown.setText(LocaleController.getString("StoryDraftsAlbum"));
         } else {

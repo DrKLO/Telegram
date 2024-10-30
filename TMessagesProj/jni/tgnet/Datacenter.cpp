@@ -1447,14 +1447,14 @@ void Datacenter::exportAuthorization() {
     auto request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
     if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         if (error == nullptr) {
             auto res = (TL_auth_exportedAuthorization *) response;
             auto request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
             if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
-            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime, int64_t msgId) {
+            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);

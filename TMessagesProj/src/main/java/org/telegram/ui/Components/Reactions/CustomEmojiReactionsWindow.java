@@ -205,12 +205,12 @@ public class CustomEmojiReactionsWindow {
 
             @Override
             protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, Integer until) {
-                if (baseFragment != null && reactionsContainerLayout.getWindowType() != SelectAnimatedEmojiDialog.TYPE_STICKER_SET_EMOJI && !UserConfig.getInstance(baseFragment.getCurrentAccount()).isPremium()) {
+                if (baseFragment != null && !reactionsContainerLayout.channelReactions && reactionsContainerLayout.getWindowType() != SelectAnimatedEmojiDialog.TYPE_STICKER_SET_EMOJI && !UserConfig.getInstance(baseFragment.getCurrentAccount()).isPremium()) {
                     windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     BulletinFactory.of(windowView, null).createEmojiBulletin(
                             document,
-                            AndroidUtilities.replaceTags(LocaleController.getString("UnlockPremiumEmojiReaction", R.string.UnlockPremiumEmojiReaction)),
-                            LocaleController.getString("PremiumMore", R.string.PremiumMore),
+                            AndroidUtilities.replaceTags(LocaleController.getString(R.string.UnlockPremiumEmojiReaction)),
+                            LocaleController.getString(R.string.PremiumMore),
                             () -> showUnlockPremiumAlert()
                     ).show();
                     return;
@@ -291,6 +291,7 @@ public class CustomEmojiReactionsWindow {
         } else {
             WindowManager.LayoutParams lp = createLayoutParams(false);
             windowManager = AndroidUtilities.findActivity(context).getWindowManager();
+            AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, lp);
             windowManager.addView(windowView, lp);
         }
 

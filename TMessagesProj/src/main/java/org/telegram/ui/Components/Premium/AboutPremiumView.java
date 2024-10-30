@@ -24,19 +24,19 @@ public class AboutPremiumView extends LinearLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTypeface(AndroidUtilities.bold());
-        textView.setText(LocaleController.getString("AboutPremiumTitle", R.string.AboutPremiumTitle));
+        textView.setText(LocaleController.getString(R.string.AboutPremiumTitle));
         addView(textView);
 
         TextView description = new TextView(context);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        description.setText(AndroidUtilities.replaceTags(LocaleController.getString("AboutPremiumDescription", R.string.AboutPremiumDescription)));
+        description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.AboutPremiumDescription)));
         addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0, 0));
 
         TextView description2 = new TextView(context);
         description2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        description2.setText(AndroidUtilities.replaceTags(LocaleController.getString("AboutPremiumDescription2", R.string.AboutPremiumDescription2)));
+        description2.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.AboutPremiumDescription2)));
         addView(description2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 24, 0, 0));
     }
 }

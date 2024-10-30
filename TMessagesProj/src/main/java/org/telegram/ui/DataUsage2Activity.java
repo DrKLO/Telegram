@@ -77,7 +77,7 @@ public class DataUsage2Activity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString("NetworkUsage", R.string.NetworkUsage));
+        actionBar.setTitle(LocaleController.getString(R.string.NetworkUsage));
         actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefault));
         actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
@@ -147,10 +147,10 @@ public class DataUsage2Activity extends BaseFragment {
         @Override
         public String getItemTitle(int position) {
             switch (position) {
-                case ListView.TYPE_ALL:     return LocaleController.getString("NetworkUsageAllTab", R.string.NetworkUsageAllTab);
-                case ListView.TYPE_MOBILE:  return LocaleController.getString("NetworkUsageMobileTab", R.string.NetworkUsageMobileTab);
-                case ListView.TYPE_WIFI:    return LocaleController.getString("NetworkUsageWiFiTab", R.string.NetworkUsageWiFiTab);
-                case ListView.TYPE_ROAMING: return LocaleController.getString("NetworkUsageRoamingTab", R.string.NetworkUsageRoamingTab);
+                case ListView.TYPE_ALL:     return LocaleController.getString(R.string.NetworkUsageAllTab);
+                case ListView.TYPE_MOBILE:  return LocaleController.getString(R.string.NetworkUsageMobileTab);
+                case ListView.TYPE_WIFI:    return LocaleController.getString(R.string.NetworkUsageWiFiTab);
+                case ListView.TYPE_ROAMING: return LocaleController.getString(R.string.NetworkUsageRoamingTab);
                 default: return "";
             }
         }
@@ -228,9 +228,9 @@ public class DataUsage2Activity extends BaseFragment {
                     }
                 } else if (view instanceof TextCell) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("ResetStatisticsAlertTitle", R.string.ResetStatisticsAlertTitle));
-                    builder.setMessage(LocaleController.getString("ResetStatisticsAlert", R.string.ResetStatisticsAlert));
-                    builder.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialogInterface, j) -> {
+                    builder.setTitle(LocaleController.getString(R.string.ResetStatisticsAlertTitle));
+                    builder.setMessage(LocaleController.getString(R.string.ResetStatisticsAlert));
+                    builder.setPositiveButton(LocaleController.getString(R.string.Reset), (dialogInterface, j) -> {
                         removedSegments.clear();
                         for (int i = 0; i < segments.length; ++i) {
                             long size = segments[i].size;
@@ -247,7 +247,7 @@ public class DataUsage2Activity extends BaseFragment {
                         setup();
                         updateRows(true);
                     });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     AlertDialog dialog = builder.create();
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
@@ -425,14 +425,14 @@ public class DataUsage2Activity extends BaseFragment {
                             if (size.outSize > 0 || size.outCount > 0) {
                                 sections.add(++i, ItemInner.asCell(
                                         -1, 0, 0,
-                                        TextUtils.concat(sentIcon, " ", LocaleController.getString("BytesSent", R.string.BytesSent)),
+                                        TextUtils.concat(sentIcon, " ", LocaleController.getString(R.string.BytesSent)),
                                         AndroidUtilities.formatFileSize(size.outSize)
                                 ));
                             }
                             if (size.inSize > 0 || size.inCount > 0) {
                                 sections.add(++i, ItemInner.asCell(
                                         -1, 0, 0,
-                                        TextUtils.concat(receivedIcon, " ", LocaleController.getString("BytesReceived", R.string.BytesReceived)),
+                                        TextUtils.concat(receivedIcon, " ", LocaleController.getString(R.string.BytesReceived)),
                                         AndroidUtilities.formatFileSize(size.inSize)
                                 ));
                             }
@@ -443,24 +443,24 @@ public class DataUsage2Activity extends BaseFragment {
                 itemInners.addAll(sections);
 //                itemInners.add(new ItemInner(VIEW_TYPE_END));
                 if (!empty) {
-                    itemInners.add(ItemInner.asSeparator(LocaleController.getString("DataUsageSectionsInfo", R.string.DataUsageSectionsInfo)));
+                    itemInners.add(ItemInner.asSeparator(LocaleController.getString(R.string.DataUsageSectionsInfo)));
                 }
             }
 
             if (!empty) {
-                itemInners.add(ItemInner.asHeader(LocaleController.getString("TotalNetworkUsage", R.string.TotalNetworkUsage)));
+                itemInners.add(ItemInner.asHeader(LocaleController.getString(R.string.TotalNetworkUsage)));
                 itemInners.add(ItemInner.asCell(
                         -1,
                         R.drawable.msg_filled_data_sent,
                         getThemedColor(Theme.key_statisticChartLine_lightblue),
-                        LocaleController.getString("BytesSent", R.string.BytesSent),
+                        LocaleController.getString(R.string.BytesSent),
                         AndroidUtilities.formatFileSize(totalSizeOut)
                 ));
                 itemInners.add(ItemInner.asCell(
                         -1,
                         R.drawable.msg_filled_data_received,
                         getThemedColor(Theme.key_statisticChartLine_green),
-                        LocaleController.getString("BytesReceived", R.string.BytesReceived),
+                        LocaleController.getString(R.string.BytesReceived),
                         AndroidUtilities.formatFileSize(totalSizeIn)
                 ));
             }
@@ -477,27 +477,27 @@ public class DataUsage2Activity extends BaseFragment {
                         -2,
                         R.drawable.msg_download_settings,
                         getThemedColor(Theme.key_statisticChartLine_lightblue),
-                        LocaleController.getString("AutomaticDownloadSettings", R.string.AutomaticDownloadSettings),
+                        LocaleController.getString(R.string.AutomaticDownloadSettings),
                         null
                 ));
                 String info;
                 switch (currentType) {
                     case TYPE_MOBILE:
-                        info = LocaleController.getString("AutomaticDownloadSettingsInfoMobile", R.string.AutomaticDownloadSettingsInfoMobile);
+                        info = LocaleController.getString(R.string.AutomaticDownloadSettingsInfoMobile);
                         break;
                     case TYPE_ROAMING:
-                        info = LocaleController.getString("AutomaticDownloadSettingsInfoRoaming", R.string.AutomaticDownloadSettingsInfoRoaming);
+                        info = LocaleController.getString(R.string.AutomaticDownloadSettingsInfoRoaming);
                         break;
                     default:
                     case TYPE_WIFI:
-                        info = LocaleController.getString("AutomaticDownloadSettingsInfoWiFi", R.string.AutomaticDownloadSettingsInfoWiFi);
+                        info = LocaleController.getString(R.string.AutomaticDownloadSettingsInfoWiFi);
                         break;
                 }
                 itemInners.add(ItemInner.asSeparator(info));
             }
 
             if (!sections.isEmpty()) {
-                itemInners.add(new ItemInner(VIEW_TYPE_RESET_BUTTON, LocaleController.getString("ResetStatistics", R.string.ResetStatistics)));
+                itemInners.add(new ItemInner(VIEW_TYPE_RESET_BUTTON, LocaleController.getString(R.string.ResetStatistics)));
             }
             itemInners.add(ItemInner.asSeparator());
 

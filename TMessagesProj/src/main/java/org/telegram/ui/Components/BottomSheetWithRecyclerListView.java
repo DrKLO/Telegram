@@ -7,6 +7,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -91,6 +94,11 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         this(context, fragment, needFocus, hasFixedSize, useNested, false, actionBarType, resourcesProvider);
     }
 
+    EditTextEmoji editTextEmoji;
+    public void setEditTextEmoji(EditTextEmoji editTextEmoji) {
+        this.editTextEmoji = editTextEmoji;
+    }
+
     @SuppressLint("AppCompatCustomView")
     public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, boolean stackFromEnd, ActionBarType actionBarType, Theme.ResourcesProvider resourcesProvider) {
         super(context, needFocus, resourcesProvider);
@@ -98,7 +106,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         this.hasFixedSize = hasFixedSize;
         this.stackFromEnd = stackFromEnd;
         headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
-        FrameLayout containerView;
+        SizeNotifierFrameLayout containerView;
         if (useNested) {
             containerView = nestedSizeNotifierLayout = new NestedSizeNotifierLayout(context) {
 
@@ -140,44 +148,177 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 }
             };
         } else {
-             containerView = new FrameLayout(context) {
+             containerView = new SizeNotifierFrameLayout(context) {
+                 private boolean ignoreLayout = false;
 
-                @Override
-                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    contentHeight = MeasureSpec.getSize(heightMeasureSpec);
-                    onPreMeasure(widthMeasureSpec, heightMeasureSpec);
-                    if (stackFromEnd) {
-                        heightMeasureSpec = MeasureSpec.makeMeasureSpec(contentHeight, MeasureSpec.EXACTLY);
-                    }
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                }
+                 @Override
+                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                     contentHeight = MeasureSpec.getSize(heightMeasureSpec);
+                     onPreMeasure(widthMeasureSpec, heightMeasureSpec);
+                     if (stackFromEnd) {
+                         heightMeasureSpec = MeasureSpec.makeMeasureSpec(contentHeight, MeasureSpec.EXACTLY);
+                     }
+                     if (editTextEmoji != null) {
+                         onMeasureInternal(widthMeasureSpec, heightMeasureSpec);
+                     } else {
+                         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                     }
+                 }
 
-                @Override
-                protected void dispatchDraw(Canvas canvas) {
-                    preDrawInternal(canvas, this);
-                    super.dispatchDraw(canvas);
-                    postDrawInternal(canvas, this);
-                }
+                 private void onMeasureInternal(int widthMeasureSpec, int heightMeasureSpec) {
+                     int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+                     int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-                @Override
-                protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                    if (!hasFixedSize && clipToActionBar && child == recyclerListView) {
-                        canvas.save();
-                        canvas.clipRect(0, actionBar.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
-                        super.drawChild(canvas, child, drawingTime);
-                        canvas.restore();
-                        return true;
-                    }
-                    return super.drawChild(canvas, child, drawingTime);
-                }
+                     setMeasuredDimension(widthSize, heightSize);
+//                     widthSize -= backgroundPaddingLeft * 2;
 
-                @Override
-                public boolean dispatchTouchEvent(MotionEvent event) {
-                    if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < shadowDrawable.getBounds().top) {
-                        dismiss();
-                    }
-                    return super.dispatchTouchEvent(event);
-                }
+                     int keyboardSize = 0;
+                     if (editTextEmoji != null && !editTextEmoji.isWaitingForKeyboardOpen() && keyboardSize <= AndroidUtilities.dp(20) && !editTextEmoji.isPopupShowing() && !editTextEmoji.isAnimatePopupClosing()) {
+                         ignoreLayout = true;
+                         editTextEmoji.hideEmojiView();
+                         ignoreLayout = false;
+                     }
+
+                     if (keyboardSize <= AndroidUtilities.dp(20)) {
+                         int paddingBottom = 0;
+                         if (!keyboardVisible) {
+                             if (editTextEmoji != null) {
+                                 paddingBottom = editTextEmoji.getEmojiPadding();
+                             }
+                         }
+                         if (!AndroidUtilities.isInMultiwindow) {
+                             heightSize -= paddingBottom;
+                             heightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
+                         }
+                     }
+
+                     int childCount = getChildCount();
+                     for (int i = 0; i < childCount; i++) {
+                         View child = getChildAt(i);
+                         if (child == null || child.getVisibility() == GONE) {
+                             continue;
+                         }
+                         if (editTextEmoji != null && editTextEmoji.isPopupView(child)) {
+//                             if (inBubbleMode) {
+//                                 child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize + getPaddingTop(), MeasureSpec.EXACTLY));
+//                             } else
+                             if (AndroidUtilities.isInMultiwindow || AndroidUtilities.isTablet()) {
+                                 if (AndroidUtilities.isTablet()) {
+                                     child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(AndroidUtilities.isTablet() ? 200 : 320), heightSize - AndroidUtilities.statusBarHeight + getPaddingTop()), MeasureSpec.EXACTLY));
+                                 } else {
+                                     child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize - AndroidUtilities.statusBarHeight + getPaddingTop(), MeasureSpec.EXACTLY));
+                                 }
+                             } else {
+                                 child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(child.getLayoutParams().height, MeasureSpec.EXACTLY));
+                             }
+                         } else {
+                             measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                         }
+                     }
+                 }
+
+                 @Override
+                 protected void dispatchDraw(Canvas canvas) {
+                     preDrawInternal(canvas, this);
+                     super.dispatchDraw(canvas);
+                     postDrawInternal(canvas, this);
+                 }
+
+                 @Override
+                 protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                     if (!hasFixedSize && clipToActionBar && child == recyclerListView) {
+                         canvas.save();
+                         canvas.clipRect(0, actionBar.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
+                         super.drawChild(canvas, child, drawingTime);
+                         canvas.restore();
+                         return true;
+                     }
+                     return super.drawChild(canvas, child, drawingTime);
+                 }
+
+                 @Override
+                 public boolean dispatchTouchEvent(MotionEvent event) {
+                     if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < shadowDrawable.getBounds().top) {
+                          dismiss();
+                     }
+                     return super.dispatchTouchEvent(event);
+                 }
+
+                 @Override
+                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                     if (editTextEmoji == null) {
+                         super.onLayout(changed, l, t, r, b);
+                         return;
+                     }
+                     final int count = getChildCount();
+                     int keyboardSize = measureKeyboardHeight();
+                     int paddingBottom = getPaddingBottom();
+                     if (!keyboardVisible && editTextEmoji != null) {
+                         if (keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet()) {
+                             paddingBottom += editTextEmoji.getEmojiPadding();
+                         }
+                     }
+                     setBottomClip(paddingBottom);
+
+                     for (int i = 0; i < count; i++) {
+                         final View child = getChildAt(i);
+                         if (child.getVisibility() == GONE) {
+                             continue;
+                         }
+                         final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+                         final int width = child.getMeasuredWidth();
+                         final int height = child.getMeasuredHeight();
+
+                         int childLeft;
+                         int childTop;
+
+                         int gravity = lp.gravity;
+                         if (gravity == -1) {
+                             gravity = Gravity.TOP | Gravity.LEFT;
+                         }
+
+                         final int absoluteGravity = gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+                         final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+                         switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                             case Gravity.CENTER_HORIZONTAL:
+                                 childLeft = (r - l - width) / 2 + lp.leftMargin - lp.rightMargin;
+                                 break;
+                             case Gravity.RIGHT:
+                                 childLeft = (r - l) - width - lp.rightMargin - getPaddingRight() - backgroundPaddingLeft;
+                                 break;
+                             case Gravity.LEFT:
+                             default:
+                                 childLeft = lp.leftMargin + getPaddingLeft();
+                         }
+
+                         switch (verticalGravity) {
+                             case Gravity.TOP:
+                                 childTop = lp.topMargin + getPaddingTop();
+                                 break;
+                             case Gravity.CENTER_VERTICAL:
+                                 childTop = ((b - paddingBottom) - t - height) / 2 + lp.topMargin - lp.bottomMargin;
+                                 break;
+                             case Gravity.BOTTOM:
+                                 childTop = ((b - paddingBottom) - t) - height - lp.bottomMargin;
+                                 break;
+                             default:
+                                 childTop = lp.topMargin;
+                         }
+
+                         if (child instanceof EmojiView) {
+                             if (AndroidUtilities.isTablet()) {
+                                 childTop = getMeasuredHeight() - child.getMeasuredHeight();
+                             } else {
+                                 childTop = getMeasuredHeight() + keyboardSize - child.getMeasuredHeight();
+                             }
+                         }
+                         child.layout(childLeft, childTop, childLeft + width, childTop + height);
+                     }
+
+                     notifyHeightChanged();
+                 }
             };
         }
         recyclerListView = new RecyclerListView(context, resourcesProvider) {
@@ -282,6 +423,8 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         recyclerListView.setClipToPadding(true);
     }
 
+    public boolean reverseLayout;
+
     protected void resetAdapter(Context context) {
         RecyclerListView.SelectionAdapter adapter = createAdapter(recyclerListView);
         RecyclerListView.SelectionAdapter wrapperAdapter = new RecyclerListView.SelectionAdapter() {
@@ -324,17 +467,17 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (position != 0) {
-                    adapter.onBindViewHolder(holder, position - 1);
+                if (position != (reverseLayout ? getItemCount() - 1 : 0)) {
+                    adapter.onBindViewHolder(holder, position - (reverseLayout ? 0 : 1));
                 }
             }
 
             @Override
             public int getItemViewType(int position) {
-                if (position == 0) {
+                if (position == (reverseLayout ? getItemCount() - 1 : 0)) {
                     return -1000;
                 }
-                return adapter.getItemViewType(position - 1);
+                return adapter.getItemViewType(position - (reverseLayout ? 0 : 1));
             }
 
             @Override
@@ -352,27 +495,27 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
                     @Override
                     public void onItemRangeChanged(int positionStart, int itemCount) {
-                        observer.onItemRangeChanged(positionStart + 1, itemCount);
+                        observer.onItemRangeChanged(positionStart + (reverseLayout ? 0 : 1), itemCount);
                     }
 
                     @Override
                     public void onItemRangeChanged(int positionStart, int itemCount, @Nullable Object payload) {
-                        observer.onItemRangeChanged(positionStart + 1, itemCount, payload);
+                        observer.onItemRangeChanged(positionStart + (reverseLayout ? 0 : 1), itemCount, payload);
                     }
 
                     @Override
                     public void onItemRangeInserted(int positionStart, int itemCount) {
-                        observer.onItemRangeInserted(positionStart + 1, itemCount);
+                        observer.onItemRangeInserted(positionStart + (reverseLayout ? 0 : 1), itemCount);
                     }
 
                     @Override
                     public void onItemRangeRemoved(int positionStart, int itemCount) {
-                        observer.onItemRangeRemoved(positionStart + 1, itemCount);
+                        observer.onItemRangeRemoved(positionStart + (reverseLayout ? 0 : 1), itemCount);
                     }
 
                     @Override
                     public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
-                        observer.onItemRangeMoved(fromPosition + 1, toPosition + 1, itemCount);
+                        observer.onItemRangeMoved(fromPosition + (reverseLayout ? 0 : 1), toPosition + (reverseLayout ? 0 : 1), itemCount);
                     }
                 });
             }
@@ -406,19 +549,38 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 headerShadowDrawable.draw(canvas);
             }
         }
+        if (restore) {
+            canvas.restore();
+            restore = false;
+        }
     }
 
+    private boolean restore;
     private void preDrawInternal(Canvas canvas, View parent) {
+        restore = false;
         if (!hasFixedSize) {
-            RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
-            int top = -AndroidUtilities.dp(16);
-            if (holder != null) {
-                top = holder.itemView.getBottom() - AndroidUtilities.dp(16);
-                if (takeTranslationIntoAccount) {
-                    top += (int) holder.itemView.getTranslationY();
+            int top;
+            if (reverseLayout) {
+                top = recyclerListView.getHeight();
+                for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+                    View child = recyclerListView.getChildAt(i);
+                    int pos = recyclerListView.getChildAdapterPosition(child);
+                    if (pos != RecyclerView.NO_POSITION && pos != recyclerListView.getAdapter().getItemCount() - 1) {
+                        top = Math.min(top, child.getTop() + (takeTranslationIntoAccount ? (int) child.getTranslationY() : 0));
+                    }
+                }
+                top -= AndroidUtilities.dp(16);
+            } else {
+                RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
+                top = -AndroidUtilities.dp(16);
+                if (holder != null) {
+                    top = holder.itemView.getBottom() - AndroidUtilities.dp(16);
+                    if (takeTranslationIntoAccount) {
+                        top += (int) holder.itemView.getTranslationY();
+                    }
                 }
             }
-            top = top - headerHeight - headerPaddingTop - headerPaddingBottom;
+            top -= headerHeight + headerPaddingTop + headerPaddingBottom;
             if (showHandle && handleOffset) {
                 top -= dp(actionBarType == ActionBarType.SLIDING ? 8 : 16);
             }
@@ -434,6 +596,12 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             } else if (actionBarType == ActionBarType.SLIDING) {
                 float actionBarY = Math.max(top + dp(8) + headerPaddingTop - AndroidUtilities.statusBarHeight, 0.0f);
                 float t = actionBarSlideProgress.set(actionBarY == 0.0f ? 1.0f : 0.0f);
+
+                if (t != 0 && t != 1) {
+                    canvas.save();
+                    canvas.clipRect(0, actionBarY, containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
+                    restore = true;
+                }
                 progressToFullView = t;
                 shadowAlpha = t;
                 handleAlpha = AndroidUtilities.lerp(1.0f, 0.5f, t);
@@ -593,14 +761,16 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     public void applyScrolledPosition(boolean ignorePaddingView) {
-        if (recyclerListView != null && layoutManager != null && savedScrollPosition >= 0) {
+        if (recyclerListView != null && recyclerListView.getLayoutManager() != null && savedScrollPosition >= 0) {
             int offset = savedScrollOffset - containerView.getTop() - recyclerListView.getPaddingTop();
             RecyclerView.ViewHolder paddingViewHolder = recyclerListView.findViewHolderForAdapterPosition(0);
             if (ignorePaddingView && paddingViewHolder != null) {
                 View view = paddingViewHolder.itemView;
                 offset -= Math.max(view.getBottom() - recyclerListView.getPaddingTop(), 0);
             }
-            layoutManager.scrollToPositionWithOffset(savedScrollPosition, offset);
+            if (recyclerListView.getLayoutManager() instanceof LinearLayoutManager) {
+                ((LinearLayoutManager) recyclerListView.getLayoutManager()).scrollToPositionWithOffset(savedScrollPosition, offset);
+            }
             savedScrollPosition = -1;
         }
     }
