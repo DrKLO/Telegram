@@ -523,13 +523,17 @@ public class Browser {
         try {
             if (isTonsite(url) || isInternalUrl(url, null)) return false;
             Uri uri = Uri.parse(url);
-            url = Browser.replace(
-                uri,
-                uri.getScheme() == null ? "https" : uri.getScheme(),
-                    null, uri.getHost() != null ? uri.getHost().toLowerCase() : uri.getHost(),
-                TextUtils.isEmpty(uri.getPath()) ? "/" : uri.getPath()
-            );
-            uri = Uri.parse(url);
+            if (isAppLinkStyle(uri)) {
+              url = uri.toString();
+            } else {
+                url = Browser.replace(
+                    uri,
+                    uri.getScheme() == null ? "https" : uri.getScheme(),
+                        null, uri.getHost() != null ? uri.getHost().toLowerCase() : uri.getHost(),
+                    TextUtils.isEmpty(uri.getPath()) ? "/" : uri.getPath()
+                );
+                uri = Uri.parse(url);
+            }
             final boolean isIntentScheme = url.startsWith("intent://") || uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("intent");
             if (isIntentScheme && !allowIntent) return false;
             final Intent intent = isIntentScheme ?
@@ -830,4 +834,17 @@ public class Browser {
         return modifiedUriBuilder.toString();
     }
 
+    private static boolean isAppLinkStyle(Uri uri) {
+        if (uri == null || uri.getScheme() == null) {
+            return false;
+        }
+
+        // App links typically have:
+        // 1. A scheme
+        // 2. No authority/host
+        // 3. Scheme-specific part directly after colon
+        return uri.getHost() == null &&
+              uri.getSchemeSpecificPart() != null &&
+              !uri.getSchemeSpecificPart().startsWith("//");
+    }
 }
