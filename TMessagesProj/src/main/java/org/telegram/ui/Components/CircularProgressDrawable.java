@@ -32,7 +32,7 @@ public class CircularProgressDrawable extends Drawable {
     }
 
     private long start = -1;
-    private static final FastOutSlowInInterpolator interpolator = new FastOutSlowInInterpolator();
+    public static final FastOutSlowInInterpolator interpolator = new FastOutSlowInInterpolator();
     private float[] segment = new float[2];
     private void updateSegment() {
         final long now = SystemClock.elapsedRealtime();

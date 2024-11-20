@@ -93,8 +93,8 @@ public class Text {
         paint.setColor(color);
     }
 
-    private int ellipsizeWidth = -1;
-    public Text ellipsize(int width) {
+    private float ellipsizeWidth = -1;
+    public Text ellipsize(float width) {
         ellipsizeWidth = width;
         return this;
     }

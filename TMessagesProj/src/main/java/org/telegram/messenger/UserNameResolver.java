@@ -27,13 +27,13 @@ public class UserNameResolver {
     LruCache<String, CachedPeer> resolvedCache = new LruCache<>(100);
     HashMap<String, ArrayList<Consumer<Long>>> resolvingConsumers = new HashMap<>();
 
-    public void resolve(String username, Consumer<Long> resolveConsumer) {
+    public int resolve(String username, Consumer<Long> resolveConsumer) {
         CachedPeer cachedPeer = resolvedCache.get(username);
         if (cachedPeer != null) {
             if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
                 resolveConsumer.accept(cachedPeer.peerId);
                 FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
-                return;
+                return -1;
             } else {
                 resolvedCache.remove(username);
             }
@@ -42,7 +42,7 @@ public class UserNameResolver {
         ArrayList<Consumer<Long>> consumers = resolvingConsumers.get(username);
         if (consumers != null) {
             consumers.add(resolveConsumer);
-            return;
+            return -1;
         }
         consumers = new ArrayList<>();
         consumers.add(resolveConsumer);
@@ -59,7 +59,7 @@ public class UserNameResolver {
             resolveUsername.username = username;
             req = resolveUsername;
         }
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             ArrayList<Consumer<Long>> finalConsumers = resolvingConsumers.remove(username);
             if (finalConsumers == null) {
                 return;

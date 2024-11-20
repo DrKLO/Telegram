@@ -77,6 +77,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return 0;
     }
 
+    protected int processColor(int color) {
+        return color;
+    }
+
     public ProfileGiftsContainer(Context context, int currentAccount, long userId, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
@@ -218,7 +222,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     private int visibleHeight = AndroidUtilities.displaySize.y;
     public void setVisibleHeight(int height) {
         visibleHeight = height;
-        buttonContainer.setTranslationY(-buttonContainer.getTop() + height - dp(48 + 10 + 10 + 1f / AndroidUtilities.density));
+//        buttonContainer.setTranslationY(-buttonContainer.getTop() + height - dp(48 + 10 + 10 + 1f / AndroidUtilities.density));
     }
 
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
@@ -308,6 +312,12 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             item.pad = padding;
             item.checked = bold;
             return item;
+        }
+    }
+
+    public void updateColors() {
+        if (button != null) {
+            button.setBackground(Theme.createRoundRectDrawable(dp(8), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
         }
     }
 

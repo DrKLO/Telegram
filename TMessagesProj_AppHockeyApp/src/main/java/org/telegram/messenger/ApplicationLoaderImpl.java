@@ -61,7 +61,13 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
                 props.set("hardware", Build.HARDWARE);
                 props.set("user", Build.USER);
                 AppCenter.setCustomProperties(props);
-                AppCenter.setUserId("uid=" + UserConfig.getInstance(UserConfig.selectedAccount).clientUserId);
+                String userId = "uid=" + UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
+                if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser() != null) {
+                    final String username = UserObject.getPublicUsername(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
+                    if (!TextUtils.isEmpty(username))
+                        userId += " @" + username;
+                }
+                AppCenter.setUserId(userId);
             }
         } catch (Throwable e) {
             FileLog.e(e);

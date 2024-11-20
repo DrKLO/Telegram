@@ -316,7 +316,7 @@ public class GiveawayResultsMessageCell {
                 Theme.key_chat_messageLinkIn, 0,
                 () -> AndroidUtilities.runOnUIThread(() -> {
                     if (messageObject.getDialogId() == -giveaway.channel_id) {
-                        parentView.getDelegate().didPressReplyMessage(parentView, giveaway.launch_msg_id);
+                        parentView.getDelegate().didPressReplyMessage(parentView, giveaway.launch_msg_id, 0, 0, false);
                     } else {
                         Bundle bundle = new Bundle();
                         bundle.putLong("chat_id", giveaway.channel_id);

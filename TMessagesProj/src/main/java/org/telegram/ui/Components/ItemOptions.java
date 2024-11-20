@@ -42,6 +42,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -88,6 +89,7 @@ public class ItemOptions {
 
     private float translateX, translateY;
     private int dimAlpha;
+    private boolean drawScrim = true;
 
     private View dimView;
     private ViewTreeObserver.OnPreDrawListener preDrawListener;
@@ -256,6 +258,35 @@ public class ItemOptions {
         return this;
     }
 
+    public ItemOptions add(CharSequence text, CharSequence subtext, Runnable onClickListener) {
+        if (context == null) {
+            return this;
+        }
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+        subItem.setText(text);
+        subItem.setSubtext(subtext);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            dismiss();
+        });
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
     public ItemOptions makeMultiline(boolean changeSize) {
         if (context == null || lastLayout.getItemsCount() <= 0) {
             return this;
@@ -354,6 +385,23 @@ public class ItemOptions {
         }
         view.setTag(R.id.fit_width_tag, 1);
         addView(view, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        return this;
+    }
+
+    public ItemOptions addFrom(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, ActionBar.ActionBarMenuOnItemClick clickListener) {
+        for (int i = 0; i < popupLayout.getItemsCount(); ++i) {
+            View child = popupLayout.getItemAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            if (child instanceof ActionBarMenuSubItem) {
+                ActionBarMenuSubItem item = (ActionBarMenuSubItem) child;
+                final int id = (Integer) item.getTag();
+                add(item.getIconResId(), item.getTextView().getText(), () -> {
+                    if (clickListener != null) {
+                        clickListener.onItemClick(id);
+                    }
+                });
+            }
+        }
         return this;
     }
 
@@ -465,9 +513,20 @@ public class ItemOptions {
         return this;
     }
 
+    public ItemOptions setDrawScrim(boolean draw) {
+        this.drawScrim = draw;
+        return this;
+    }
+
     private boolean forceTop;
     public ItemOptions forceTop(boolean force) {
         forceTop = force;
+        return this;
+    }
+
+    private boolean forceBottom;
+    public ItemOptions forceBottom(boolean force) {
+        forceBottom = force;
         return this;
     }
 
@@ -518,6 +577,8 @@ public class ItemOptions {
     }
 
     public int getItemsCount() {
+        if (lastLayout == null && layout == null)
+            return 0;
         if (lastLayout == layout) {
             return lastLayout.getItemsCount();
         } else {
@@ -657,7 +718,9 @@ public class ItemOptions {
             X = (container.getWidth() - layout.getMeasuredWidth()) / 2; // at the center
         }
         int Y;
-        if (scrimView != null) {
+        if (forceBottom) {
+            Y = (int) (Math.min(y + scrimView.getMeasuredHeight(), AndroidUtilities.displaySize.y) - layout.getMeasuredHeight() + container.getY());
+        } else if (scrimView != null) {
             if (forceTop || y + layout.getMeasuredHeight() + dp(16) > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight) {
                 // put above scrimView
                 y -= scrimView.getMeasuredHeight();
@@ -856,7 +919,7 @@ public class ItemOptions {
             }
             dim = ColorUtils.setAlphaComponent(0x00000000, dimAlpha);
 
-            if (scrimView instanceof UserCell && fragment instanceof ProfileActivity) {
+            if (drawScrim && scrimView instanceof UserCell && fragment instanceof ProfileActivity) {
                 cachedBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
                 cachedBitmap = Bitmap.createBitmap(scrimView.getWidth() + viewAdditionalOffsets.width(), scrimView.getHeight() + viewAdditionalOffsets.height(), Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(cachedBitmap);
@@ -873,7 +936,8 @@ public class ItemOptions {
             super.onDraw(canvas);
             canvas.drawColor(dim);
 
-            if (cachedBitmap != null && scrimView.getParent() instanceof View) {
+            if (!drawScrim) {
+            } else if (cachedBitmap != null && scrimView.getParent() instanceof View) {
                 canvas.save();
                 if (clipTop < 1) {
                     canvas.clipRect(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top + point[1] - clipTop + 1, getMeasuredWidth() + viewAdditionalOffsets.right, getMeasuredHeight() + viewAdditionalOffsets.bottom);

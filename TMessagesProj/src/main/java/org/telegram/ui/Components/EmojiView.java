@@ -5240,7 +5240,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             final TLRPC.StickerSetCovered installingStickerSet = primaryInstallingStickerSets[i];
             if (installingStickerSet != null) {
                 final TLRPC.TL_messages_stickerSet pack = mediaDataController.getStickerSetById(installingStickerSet.set.id);
-                if (pack != null && !pack.set.archived) {
+                if (pack != null && pack.set != null && !pack.set.archived) {
                     primaryInstallingStickerSets[i] = null;
                 } else {
                     final TLRPC.TL_messages_stickerSet set = new TLRPC.TL_messages_stickerSet();
@@ -5259,7 +5259,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         packs = MessagesController.getInstance(currentAccount).filterPremiumStickers(packs);
         for (int a = 0; a < packs.size(); a++) {
             TLRPC.TL_messages_stickerSet pack = packs.get(a);
-            if (pack.set.archived || pack.documents == null || pack.documents.isEmpty()) {
+            if (pack.set != null && pack.set.archived || pack.documents == null || pack.documents.isEmpty()) {
                 continue;
             }
             stickerSets.add(pack);
@@ -6772,6 +6772,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         public int index;
         public TLRPC.StickerSet set;
         public ArrayList<TLRPC.Document> documents = new ArrayList<>();
+        public TLRPC.InputStickerSet needLoadSet;
         public boolean free;
         public boolean installed;
         public boolean featured;
@@ -7069,6 +7070,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     EmojiPack pack2 = emojipacksProcessed.get(a);
                     EmojiPack before = a - 1 >= 0 ? emojipacksProcessed.get(a - 1) : null;
                     boolean divider = pack2 != null && pack2.featured && !(before != null && !before.free && before.installed && !UserConfig.getInstance(currentAccount).isPremium());
+                    if (pack2 != null && pack2.needLoadSet != null) {
+                        MediaDataController.getInstance(currentAccount).getStickerSet(pack2.needLoadSet, false);
+                        pack2.needLoadSet = null;
+                    }
                     header.setStickerSet(pack2, divider);
                     break;
             }
@@ -7204,15 +7209,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 //                    continue;
 //                }
                 EmojiPack pack = new EmojiPack();
-
                 pack.installed = mediaDataController.isStickerPackInstalled(set.set.id);
                 pack.set = set.set;
                 if (set instanceof TLRPC.TL_stickerSetFullCovered) {
                     pack.documents = ((TLRPC.TL_stickerSetFullCovered) set).documents;
                 } else if (set instanceof TLRPC.TL_stickerSetNoCovered) {
-                    TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set.set), set.set.hash, false);
+                    TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set.set), set.set.hash, true);
                     if (stickerSet != null) {
                         pack.documents = stickerSet.documents;
+                    } else {
+                        pack.needLoadSet = MediaDataController.getInputStickerSet(set.set);
                     }
                 } else {
                     pack.documents = set.covers;

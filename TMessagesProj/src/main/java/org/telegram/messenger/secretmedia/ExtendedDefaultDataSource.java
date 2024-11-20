@@ -23,17 +23,24 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.RawResourceDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.upstream.cache.Cache;
+import com.google.android.exoplayer2.upstream.cache.CacheSpan;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadata;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadataMutations;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 import org.telegram.messenger.FileStreamLoadOperation;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
 
 public final class ExtendedDefaultDataSource implements DataSource {
 
@@ -314,4 +321,103 @@ public final class ExtendedDefaultDataSource implements DataSource {
             dataSource.addTransferListener(listener);
         }
     }
+
+
+    private final Cache cache = new Cache() {
+        @Override
+        public long getUid() {
+            return 0;
+        }
+
+        @Override
+        public void release() {
+
+        }
+
+        @Override
+        public NavigableSet<CacheSpan> addListener(String key, Listener listener) {
+            return null;
+        }
+
+        @Override
+        public void removeListener(String key, Listener listener) {
+
+        }
+
+        @Override
+        public NavigableSet<CacheSpan> getCachedSpans(String key) {
+            return null;
+        }
+
+        @Override
+        public Set<String> getKeys() {
+            return null;
+        }
+
+        @Override
+        public long getCacheSpace() {
+            return 0;
+        }
+
+        @Override
+        public CacheSpan startReadWrite(String key, long position, long length) throws InterruptedException, CacheException {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public CacheSpan startReadWriteNonBlocking(String key, long position, long length) throws CacheException {
+            return null;
+        }
+
+        @Override
+        public File startFile(String key, long position, long length) throws CacheException {
+            return null;
+        }
+
+        @Override
+        public void commitFile(File file, long length) throws CacheException {
+
+        }
+
+        @Override
+        public void releaseHoleSpan(CacheSpan holeSpan) {
+
+        }
+
+        @Override
+        public void removeResource(String key) {
+
+        }
+
+        @Override
+        public void removeSpan(CacheSpan span) {
+
+        }
+
+        @Override
+        public boolean isCached(String key, long position, long length) {
+            return false;
+        }
+
+        @Override
+        public long getCachedLength(String key, long position, long length) {
+            return 0;
+        }
+
+        @Override
+        public long getCachedBytes(String key, long position, long length) {
+            return 0;
+        }
+
+        @Override
+        public void applyContentMetadataMutations(String key, ContentMetadataMutations mutations) throws CacheException {
+
+        }
+
+        @Override
+        public ContentMetadata getContentMetadata(String key) {
+            return null;
+        }
+    };
 }

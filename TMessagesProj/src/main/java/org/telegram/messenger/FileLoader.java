@@ -623,6 +623,28 @@ public class FileLoader extends BaseController {
         }
     }
 
+    public void cancel(FileLoadOperation operation) {
+        if (operation == null) return;
+        final String fileName = operation.getFileName();
+        LoadOperationUIObject uiObject = loadOperationPathsUI.remove(fileName);
+        Runnable runnable = uiObject != null ? uiObject.loadInternalRunnable : null;
+        boolean removed = uiObject != null;
+        if (runnable != null) {
+            fileLoaderQueue.cancelRunnable(runnable);
+        }
+        fileLoaderQueue.postRunnable(() -> {
+            FileLoadOperation operation2 = loadOperationPaths.remove(fileName);
+            if (operation2 != null) {
+                operation2.getQueue().cancel(operation2);
+            }
+        });
+        if (removed) {
+            AndroidUtilities.runOnUIThread(() -> {
+                getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            });
+        }
+    }
+
     public void changePriority(int priority, final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, final TLRPC.FileLocation location, final String locationExt, String name) {
         if (location == null && document == null && webDocument == null && secureDocument == null && TextUtils.isEmpty(name)) {
             return;

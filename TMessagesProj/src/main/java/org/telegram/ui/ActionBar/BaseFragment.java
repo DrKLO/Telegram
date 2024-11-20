@@ -157,12 +157,30 @@ public abstract class BaseFragment {
         return false;
     }
 
+    public boolean hasShownFullyVisibleSheet() {
+        if (!hasSheet()) return false;
+        for (int i = sheetsStack.size() - 1; i >= 0; --i) {
+            if (sheetsStack.get(i).isShown() && sheetsStack.get(i).isFullyVisible()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean hasSheets(BaseFragment fragment) {
         if (fragment == null) return false;
         if (fragment.hasShownSheet()) return true;
         if (!(fragment.getParentLayout() instanceof ActionBarLayout)) return false;
         final BaseFragment sheetFragment = ((ActionBarLayout) fragment.getParentLayout()).getSheetFragment(false);
         return sheetFragment != null && sheetFragment.hasShownSheet();
+    }
+
+    public static boolean hasFullyVisibleSheets(BaseFragment fragment) {
+        if (fragment == null) return false;
+        if (fragment.hasShownFullyVisibleSheet()) return true;
+        if (!(fragment.getParentLayout() instanceof ActionBarLayout)) return false;
+        final BaseFragment sheetFragment = ((ActionBarLayout) fragment.getParentLayout()).getSheetFragment(false);
+        return sheetFragment != null && sheetFragment.hasShownFullyVisibleSheet();
     }
 
     public void clearSheets() {
@@ -1295,13 +1313,6 @@ public abstract class BaseFragment {
         addSheet(articleViewer.sheet);
         BottomSheetTabDialog.checkSheet(articleViewer.sheet);
         return articleViewer;
-    }
-
-    public BotWebViewAttachedSheet createBotViewer() {
-        BotWebViewAttachedSheet botViewer = new BotWebViewAttachedSheet(this);
-        addSheet(botViewer);
-        BottomSheetTabDialog.checkSheet(botViewer);
-        return botViewer;
     }
 
     public void onBottomSheetCreated() {

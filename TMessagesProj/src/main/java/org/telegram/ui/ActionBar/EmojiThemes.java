@@ -315,23 +315,28 @@ public class EmojiThemes {
         }
 
         SparseIntArray fallbackKeys = Theme.getFallbackKeys();
-        items.get(index).currentPreviewColors = new SparseIntArray();
-        for (int i = 0; i < previewColorKeys.length; i++) {
-            int key = previewColorKeys[i];
-            int colorIndex = currentColors.indexOfKey(key);
-            if (colorIndex >= 0) {
-                items.get(index).currentPreviewColors.put(key, currentColors.valueAt(colorIndex));
-            } else {
-                int fallbackKey = fallbackKeys.get(key, -1);
-                if (fallbackKey >= 0) {
-                    int fallbackIndex = currentColors.indexOfKey(fallbackKey);
-                    if (fallbackIndex >= 0) {
-                        items.get(index).currentPreviewColors.put(key, currentColors.valueAt(fallbackIndex));
+        SparseIntArray array = new SparseIntArray();
+        items.get(index).currentPreviewColors = array;
+        try {
+            for (int i = 0; i < previewColorKeys.length; i++) {
+                int key = previewColorKeys[i];
+                int colorIndex = currentColors.indexOfKey(key);
+                if (colorIndex >= 0) {
+                    array.put(key, currentColors.valueAt(colorIndex));
+                } else {
+                    int fallbackKey = fallbackKeys.get(key, -1);
+                    if (fallbackKey >= 0) {
+                        int fallbackIndex = currentColors.indexOfKey(fallbackKey);
+                        if (fallbackIndex >= 0) {
+                            array.put(key, currentColors.valueAt(fallbackIndex));
+                        }
                     }
                 }
             }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
-        return items.get(index).currentPreviewColors;
+        return array;
     }
 
     public SparseIntArray createColors(int currentAccount, int index) {
@@ -591,9 +596,13 @@ public class EmojiThemes {
 
     private int getOrDefault(SparseIntArray colorsMap, int key) {
         if (colorsMap == null) return Theme.getDefaultColor(key);
-        int index = colorsMap.indexOfKey(key);
-        if (index >= 0) {
-            return colorsMap.valueAt(index);
+        try {
+            int index = colorsMap.indexOfKey(key);
+            if (index >= 0) {
+                return colorsMap.valueAt(index);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         return Theme.getDefaultColor(key);
     }

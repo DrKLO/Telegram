@@ -159,6 +159,7 @@ public class AdjustPanLayoutHelper {
         }
     }
 
+    public boolean showingKeyboard;
     public void startTransition(int previousHeight, int contentHeight, boolean isKeyboardVisible) {
         if (animator != null) {
             animator.cancel();
@@ -177,7 +178,7 @@ public class AdjustPanLayoutHelper {
         if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null) {
             bottomTabsHeight += LaunchActivity.instance.getBottomSheetTabs().getExpandedHeight();
         }
-        setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight + bottomTabsHeight));
+        if (applyTranslation()) setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight + bottomTabsHeight));
         resizableView.requestLayout();
 
         onTransitionStart(isKeyboardVisible, previousHeight, contentHeight);
@@ -186,15 +187,16 @@ public class AdjustPanLayoutHelper {
         keyboardSize = Math.abs(dy);
 
         animationInProgress = true;
+        showingKeyboard = contentHeight <= previousHeight;
         if (contentHeight > previousHeight) {
             dy -= startOffset;
-            parent.setTranslationY(-dy);
+            if (applyTranslation()) parent.setTranslationY(-dy);
             onPanTranslationUpdate(dy, 1f, isKeyboardVisible);
             from = -dy;
             to = -bottomTabsHeight;
             inverse = true;
         } else {
-            parent.setTranslationY(previousStartOffset);
+            if (applyTranslation()) parent.setTranslationY(previousStartOffset);
             onPanTranslationUpdate(-previousStartOffset, 0f, isKeyboardVisible);
             to = -previousStartOffset;
             from = dy;
@@ -209,7 +211,7 @@ public class AdjustPanLayoutHelper {
             t = 1f - t;
         }
         float y = (int) (from * t + to * (1f - t));
-        parent.setTranslationY(y);
+        if (applyTranslation()) parent.setTranslationY(y);
         onPanTranslationUpdate(-y, t, isKeyboardVisible);
     }
 
@@ -225,7 +227,7 @@ public class AdjustPanLayoutHelper {
         viewsToHeightSet.clear();
         resizableView.requestLayout();
         onPanTranslationUpdate(0, isKeyboardVisible ? 1f : 0f, isKeyboardVisible);
-        parent.setTranslationY(0);
+        if (applyTranslation()) parent.setTranslationY(0);
         onTransitionEnd();
     }
     public void stopTransition(float t, boolean isKeyboardVisible) {
@@ -239,7 +241,7 @@ public class AdjustPanLayoutHelper {
         viewsToHeightSet.clear();
         resizableView.requestLayout();
         onPanTranslationUpdate(0, t, this.isKeyboardVisible = isKeyboardVisible);
-        parent.setTranslationY(0);
+        if (applyTranslation()) parent.setTranslationY(0);
         onTransitionEnd();
     }
 
@@ -349,6 +351,9 @@ public class AdjustPanLayoutHelper {
     }
 
     protected boolean heightAnimationEnabled() {
+        return true;
+    }
+    protected boolean applyTranslation() {
         return true;
     }
 

@@ -458,7 +458,7 @@ public class TextCell extends FrameLayout {
         }
     }
 
-    public void setValue(String value, boolean animated) {
+    public void setValue(CharSequence value, boolean animated) {
         valueTextView.setText(value == null ? "" : TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
     }
 
@@ -477,6 +477,31 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
+    }
+
+    public void setTextAndCheckAndColorfulIcon(CharSequence text, boolean checked, int resId, int color, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = getOffsetFromImage(false);
+        textView.setText(text);
+        textView.setRightDrawable(null);
+        valueTextView.setVisibility(GONE);
+        valueSpoilersTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+        setColorfulIcon(color, resId);
+        if (checkBox == null) {
+            checkBox = new Switch(getContext(), resourcesProvider);
+            checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+            addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+        }
+        if (checkBox != null) {
+            checkBox.setVisibility(VISIBLE);
+            checkBox.setChecked(checked, false);
+        }
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
         if (emojiDrawable != null) {
             emojiDrawable.set((Drawable) null, false);
         }

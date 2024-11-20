@@ -460,7 +460,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         } else {
             stickersAlertDelegate = null;
         }
-        final StickersAlert stickersAlert = new StickersAlert(getContext(), parentFragment, inputStickerSet, null, stickersAlertDelegate, resourcesProvider);
+        final StickersAlert stickersAlert = new StickersAlert(getContext(), parentFragment, inputStickerSet, null, stickersAlertDelegate, resourcesProvider, false);
         stickersAlert.setShowTooltipWhenToggle(false);
         stickersAlert.setInstallDelegate(new StickersAlert.StickersAlertInstallDelegate() {
             @Override

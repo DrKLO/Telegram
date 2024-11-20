@@ -285,6 +285,15 @@ public class BirthdayController {
         }
     }
 
+    public boolean isToday(long userId) {
+        if (state != null && state.contains(userId))
+            return true;
+        final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(userId);
+        if (userFull != null && isToday(userFull.birthday))
+            return true;
+        return false;
+    }
+
     public static boolean isToday(TLRPC.UserFull userFull) {
         if (userFull == null) return false;
         return isToday(userFull.birthday);

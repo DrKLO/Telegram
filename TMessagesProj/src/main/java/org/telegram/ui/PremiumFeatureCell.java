@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.getMyLayerVersion;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -24,6 +25,8 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 public class PremiumFeatureCell extends FrameLayout {
 
@@ -148,5 +151,25 @@ public class PremiumFeatureCell extends FrameLayout {
             imageDrawable.detach();
         }
         super.onDetachedFromWindow();
+    }
+
+    public static class Factory extends UItem.UItemFactory<PremiumFeatureCell> {
+        static { setup(new Factory()); }
+
+        @Override
+        public PremiumFeatureCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new PremiumFeatureCell(context, resourcesProvider);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider) {
+            ((PremiumFeatureCell) view).setData((PremiumPreviewFragment.PremiumFeatureData) item.object, divider);
+        }
+
+        public static UItem of(PremiumPreviewFragment.PremiumFeatureData data) {
+            UItem item = UItem.ofFactory(Factory.class);
+            item.object = data;
+            return item;
+        }
     }
 }

@@ -262,7 +262,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             inputStickerSetShortName.short_name = stickerSet.set.short_name;
             inputStickerSet = inputStickerSetShortName;
         }
-        StickersAlert stickersAlert = new StickersAlert(getParentActivity(), GroupStickersActivity.this, inputStickerSet, !remote ? stickerSet : null, null);
+        StickersAlert stickersAlert = new StickersAlert(getParentActivity(), GroupStickersActivity.this, inputStickerSet, !remote ? stickerSet : null, null, false);
         stickersAlert.setCustomButtonDelegate(new StickersAlert.StickersAlertCustomButtonDelegate() {
             @Override
             public int getCustomButtonTextColorKey() {

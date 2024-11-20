@@ -2968,7 +2968,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
         } else if (videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED) {
-            if (playingMessageObject.isVideo() && !destroyAtEnd && (playCount == null || playCount[0] < 4)) {
+            if (playingMessageObject != null && playingMessageObject.isVideo() && !destroyAtEnd && (playCount == null || playCount[0] < 4)) {
                 videoPlayer.seekTo(0);
                 if (playCount != null) {
                     playCount[0]++;

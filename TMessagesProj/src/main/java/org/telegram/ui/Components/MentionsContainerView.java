@@ -241,7 +241,7 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                 MentionsContainerView.this.onContextClick(result);
             }
 
-        }, resourcesProvider);
+        }, resourcesProvider, isStories());
         paddedAdapter = new PaddedListAdapter(adapter);
         listView.setAdapter(paddedAdapter);
 
@@ -611,6 +611,17 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
             Object object = getAdapter().getItem(position);
             int start = getAdapter().getResultStartPosition();
             int len = getAdapter().getResultLength();
+            if (getAdapter().isLocalHashtagHint(position)) {
+                TLRPC.Chat currentChat = getAdapter().chat;
+                if (currentChat == null && getAdapter().parentFragment != null) {
+                    currentChat = getAdapter().parentFragment.getCurrentChat();
+                }
+                delegate.replaceText(start, len, getAdapter().getHashtagHint() + (currentChat != null ? "@" + ChatObject.getPublicUsername(currentChat) : "") + " ", false);
+                return;
+            } else if (getAdapter().isGlobalHashtagHint(position)) {
+                delegate.replaceText(start, len, getAdapter().getHashtagHint() + " ", false);
+                return;
+            }
             if (object instanceof TLRPC.TL_document) {
                 MessageObject.SendAnimationData sendAnimationData = null;
                 if (view instanceof StickerCell) {
@@ -896,6 +907,10 @@ public class MentionsContainerView extends BlurredFrameLayout implements Notific
                 }
             });
         }
+    }
+
+    protected boolean isStories() {
+        return false;
     }
 
 }

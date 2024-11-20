@@ -152,7 +152,6 @@ public class PushListenerController {
                     buffer.readBytes(strBytes, true);
                     jsonString = new String(strBytes);
                     JSONObject json = new JSONObject(jsonString);
-//                    FileLog.d("FCM DATA: " + jsonString);
 
                     if (ApplicationLoader.applicationLoaderInstance != null && ApplicationLoader.applicationLoaderInstance.consumePush(currentAccount, json)) {
                         countDownLatch.countDown();

@@ -273,6 +273,12 @@ public class ViewPagerFixed extends FrameLayout {
             }
 
             @Override
+            public boolean needsTab(int page) {
+                if (adapter == null) return true;
+                return adapter.needsTab(page);
+            }
+
+            @Override
             public void onPageScrolled(float progress) {
                 if (progress == 1f) {
                     if (viewPages[1] != null) {
@@ -400,7 +406,8 @@ public class ViewPagerFixed extends FrameLayout {
         if (adapter != null && tabsView != null) {
             tabsView.removeTabs();
             for (int i = 0; i < adapter.getItemCount(); i++) {
-                tabsView.addTab(adapter.getItemId(i), adapter.getItemTitle(i));
+                if (adapter.needsTab(i))
+                    tabsView.addTab(adapter.getItemId(i), adapter.getItemTitle(i));
             }
             addMoreTabs();
             if (animated) {
@@ -422,6 +429,9 @@ public class ViewPagerFixed extends FrameLayout {
             return false;
         }
         if (forward && !canScrollForward(ev)) {
+            return false;
+        }
+        if (adapter != null && !adapter.canScrollTo(currentPosition + (forward ? +1 : -1))) {
             return false;
         }
 
@@ -970,6 +980,14 @@ public class ViewPagerFixed extends FrameLayout {
         public boolean hasStableId() {
             return false;
         }
+
+        public boolean needsTab(int position) {
+            return true;
+        }
+
+        public boolean canScrollTo(int position) {
+            return true;
+        }
     }
 
     @Override
@@ -1007,6 +1025,7 @@ public class ViewPagerFixed extends FrameLayout {
             default void onSamePageSelected() {};
             default void invalidateBlur() {};
             default boolean canPerformActions() { return true; };
+            default boolean needsTab(int page) { return true; }
         }
 
         private static class Tab {
@@ -1467,8 +1486,11 @@ public class ViewPagerFixed extends FrameLayout {
             scrollingToChild = -1;
             previousPosition = currentPosition;
             previousId = selectedTabId;
-            currentPosition = position;
-            selectedTabId = id;
+            final boolean moveTab = delegate == null || delegate.needsTab(position);
+            if (moveTab) {
+                currentPosition = position;
+                selectedTabId = id;
+            }
 
             if (tabsAnimator != null) {
                 tabsAnimator.cancel();
@@ -1486,7 +1508,7 @@ public class ViewPagerFixed extends FrameLayout {
             if (delegate != null) {
                 delegate.onPageSelected(position, scrollingForward);
             }
-            scrollToChild(position);
+            scrollToChild(currentPosition);
             tabsAnimator = ValueAnimator.ofFloat(0,1f);
             tabsAnimator.addUpdateListener(anm -> {
                 float progress = (float) anm.getAnimatedValue();
@@ -1746,7 +1768,11 @@ public class ViewPagerFixed extends FrameLayout {
             selectedTabId = positionToId.get(currentPosition);
 
             if (progress > 0) {
-                manualScrollingToPosition = nextPosition;
+                if (delegate == null || delegate.needsTab(nextPosition)) {
+                    manualScrollingToPosition = nextPosition;
+                } else {
+                    manualScrollingToPosition = currentPosition;
+                }
                 manualScrollingToId = positionToId.get(nextPosition);
             } else {
                 manualScrollingToPosition = -1;

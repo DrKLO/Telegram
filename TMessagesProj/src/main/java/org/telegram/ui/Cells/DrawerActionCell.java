@@ -22,11 +22,14 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -49,6 +52,7 @@ public class DrawerActionCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
+        imageView.getImageReceiver().setFileLoadingPriority(FileLoader.PRIORITY_HIGH);
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
@@ -157,7 +161,14 @@ public class DrawerActionCell extends FrameLayout {
             }
             TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
             if (botIcon != null) {
-                imageView.setImage(ImageLocation.getForDocument(botIcon.icon), "24_24", (Drawable) null, bot);
+                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(botIcon.icon.thumbs, 24 * 3);
+                SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(botIcon.icon.thumbs,  Theme.key_emptyListPlaceholder, 0.2f);
+                imageView.setImage(
+                    ImageLocation.getForDocument(botIcon.icon), "24_24",
+                    ImageLocation.getForDocument(photoSize, botIcon.icon), "24_24",
+                    svgThumb != null ? svgThumb : getContext().getResources().getDrawable(R.drawable.msg_bot).mutate(),
+                    bot
+                );
             } else {
                 imageView.setImageResource(R.drawable.msg_bot);
             }

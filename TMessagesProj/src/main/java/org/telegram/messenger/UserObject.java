@@ -41,6 +41,10 @@ public class UserObject {
         return user != null && user.id == ANONYMOUS;
     }
 
+    public static boolean isBot(TLRPC.User user) {
+        return user != null && user.bot;
+    }
+
     public static boolean isReplyUser(long did) {
         return did == 708513 || did == REPLY_BOT;
     }

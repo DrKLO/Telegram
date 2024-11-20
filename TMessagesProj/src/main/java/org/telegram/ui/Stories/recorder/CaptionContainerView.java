@@ -89,6 +89,7 @@ public class CaptionContainerView extends FrameLayout {
     public FrameLayout limitTextContainer;
     public AnimatedTextView limitTextView;
     private int codePointCount;
+    private long dialogId;
 
     private final Paint fadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final LinearGradient fadeGradient = new LinearGradient(0, 0, 0, AndroidUtilities.dp(10), new int[] { 0xffff0000, 0x00000000 }, new float[] { 0.05f, 1 }, Shader.TileMode.CLAMP);
@@ -265,7 +266,7 @@ public class CaptionContainerView extends FrameLayout {
                     createMentionsContainer();
                 }
                 if (mentionContainer.getAdapter() != null) {
-//                    mentionContainer.getAdapter().setUserOrChat(UserConfig.getInstance(currentAccount).getCurrentUser(), null);
+                    mentionContainer.getAdapter().setUserOrChat(MessagesController.getInstance(currentAccount).getUser(dialogId), MessagesController.getInstance(currentAccount).getChat(-dialogId));
                     mentionContainer.getAdapter().searchUsernameOrHashtag(text, editText.getEditText().getSelectionStart(), null, false, false);
                 }
             }
@@ -341,6 +342,10 @@ public class CaptionContainerView extends FrameLayout {
 
         fadePaint.setShader(fadeGradient);
         fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+    }
+
+    public void setDialogId(long dialogId) {
+        this.dialogId = dialogId;
     }
 
     public int additionalRightMargin() {
@@ -457,16 +462,18 @@ public class CaptionContainerView extends FrameLayout {
                     }
                 }
             }
+            @Override
+            protected boolean isStories() {
+                return true;
+            }
         };
         mentionBackgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, mentionContainer, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND);
         setupMentionContainer();
         mentionContainer.withDelegate(new MentionsContainerView.Delegate() {
-
             @Override
             public void replaceText(int start, int len, CharSequence replacingString, boolean allowShort) {
                 replaceWithText(start, len, replacingString, allowShort);
             }
-
             @Override
             public Paint.FontMetricsInt getFontMetrics() {
                 return editText.getEditText().getPaint().getFontMetricsInt();

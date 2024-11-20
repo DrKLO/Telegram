@@ -2042,15 +2042,20 @@ public class FilterCreateActivity extends BaseFragment {
 
         private boolean outline;
         private int color;
+        private int fontSize;
 
         public NewSpan(boolean outline) {
+            this(outline, -1);
+        }
+        public NewSpan(boolean outline, int fontSize) {
             this.outline = outline;
+            this.fontSize = fontSize;
 
             textPaint.setTypeface(AndroidUtilities.bold());
             if (outline) {
                 bgPaint.setStyle(Paint.Style.STROKE);
                 bgPaint.setStrokeWidth(dpf2(1.33f));
-                textPaint.setTextSize(dp(10));
+                textPaint.setTextSize(dp(fontSize < 0 ? 10 : fontSize));
                 textPaint.setStyle(Paint.Style.FILL_AND_STROKE);
                 textPaint.setStrokeWidth(dpf2(0.2f));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -2058,7 +2063,7 @@ public class FilterCreateActivity extends BaseFragment {
                 }
             } else {
                 bgPaint.setStyle(Paint.Style.FILL);
-                textPaint.setTextSize(dp(12));
+                textPaint.setTextSize(dp(fontSize < 0 ? 12 : fontSize));
             }
         }
 
@@ -2114,7 +2119,7 @@ public class FilterCreateActivity extends BaseFragment {
                 AndroidUtilities.rectTmp.bottom += dp(1.33f);
             } else {
                 r = dp(4.4f);
-                AndroidUtilities.rectTmp.inset(dp(-4), dp(-2.33f));
+                AndroidUtilities.rectTmp.inset(dp(-4), dp(fontSize == 8 ? -3.66f : -2.33f));
             }
             canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, bgPaint);
 

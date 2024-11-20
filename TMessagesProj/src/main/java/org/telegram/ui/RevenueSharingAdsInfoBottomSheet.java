@@ -24,44 +24,81 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
 
-public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
+import java.util.ArrayList;
+
+public class RevenueSharingAdsInfoBottomSheet extends BottomSheetWithRecyclerListView {
+
     private static final int ITEM_HORIZONTAL_PADDING = 27;
     private static final int ICON_SIZE = 24;
     private static final int ITEM_TEXT_PADDING = 68;
 
     private final Paint topIconBgPaint;
+    private final LinearLayout customView;
 
     @SuppressLint("UseCompatLoadingForDrawables")
-    public RevenueSharingAdsInfoBottomSheet(BaseFragment baseFragment, Context context, Theme.ResourcesProvider resourcesProvider) {
-        super(context, false, resourcesProvider);
+    public RevenueSharingAdsInfoBottomSheet(Context context, boolean bot, Theme.ResourcesProvider resourcesProvider, Utilities.Callback<ItemOptions> options) {
+        super(context, null, false, false, false, resourcesProvider);
         fixNavigationBar();
+
+        topPadding = .2f;
 
         topIconBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         topIconBgPaint.setStyle(Paint.Style.FILL);
         topIconBgPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
 
-        LinearLayout linearLayout = new LinearLayout(context);
+        LinearLayout linearLayout = customView = new LinearLayout(context);
+        linearLayout.setPadding(backgroundPaddingLeft + dp(6), 0, backgroundPaddingLeft + dp(6), 0);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
+        FrameLayout topView = new FrameLayout(context);
         RLottieImageView imageView = new RLottieImageView(getContext());
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setImageResource(R.drawable.large_ads_info);
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         imageView.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-        linearLayout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 28, 0, 0));
+        topView.addView(imageView, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
+
+        if (options != null) {
+            ImageView optionsView = new ImageView(context);
+            optionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
+            optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            optionsView.setScaleType(ImageView.ScaleType.CENTER);
+            optionsView.setColorFilter(Theme.getColor(Theme.key_dialogTextGray3));
+            optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+            optionsView.setOnClickListener(v -> {
+                options.run(
+                    ItemOptions.makeOptions(container, resourcesProvider, optionsView, true)
+                        .setGravity(Gravity.RIGHT)
+                        .setDrawScrim(false)
+                        .translate(dp(12), dp(-32))
+                );
+            });
+            topView.addView(optionsView, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 12, 14, 14, 12));
+        }
+
+        linearLayout.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 100, 0, 0, 0, 0));
 
         TextView topTitle = new TextView(context);
         topTitle.setText(LocaleController.getString(R.string.AboutRevenueSharingAds));
@@ -78,16 +115,18 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         topSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(topSubtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 8, 22, 0));
 
-        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString(R.string.RevenueSharingAdsInfo1Title), LocaleController.getString(R.string.RevenueSharingAdsInfo1Subtitle));
+        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo1TitleBot : R.string.RevenueSharingAdsInfo1Title), LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo1SubtitleBot : R.string.RevenueSharingAdsInfo1Subtitle));
         linearLayout.addView(info1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 20, 0, 0));
 
-        FrameLayout info2 = new FeatureCell(context, R.drawable.menu_feature_split, LocaleController.getString(R.string.RevenueSharingAdsInfo2Title), LocaleController.getString(R.string.RevenueSharingAdsInfo2Subtitle));
+        FrameLayout info2 = new FeatureCell(context, R.drawable.menu_feature_split, LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo2TitleBot : R.string.RevenueSharingAdsInfo2Title), LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo2SubtitleBot : R.string.RevenueSharingAdsInfo2Subtitle));
         linearLayout.addView(info2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16, 0, 0));
 
-        String info3DescriptionString = LocaleController.formatString("RevenueSharingAdsInfo3Subtitle", R.string.RevenueSharingAdsInfo3Subtitle, MessagesController.getInstance(baseFragment.getCurrentAccount()).channelRestrictSponsoredLevelMin);
+        String info3DescriptionString = LocaleController.formatString(bot ? R.string.RevenueSharingAdsInfo3SubtitleBot : R.string.RevenueSharingAdsInfo3Subtitle, MessagesController.getInstance(UserConfig.selectedAccount).channelRestrictSponsoredLevelMin);
         SpannableStringBuilder info3Description = AndroidUtilities.replaceSingleTag(info3DescriptionString, Theme.key_chat_messageLinkIn, 0, () -> {
+            BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+            if (lastFragment == null) return;
             BaseFragment premiumFragment = new PremiumPreviewFragment(PremiumPreviewFragment.featureTypeToServerString(PremiumPreviewFragment.PREMIUM_FEATURE_ADS));
-            baseFragment.presentFragment(premiumFragment);
+            lastFragment.presentFragment(premiumFragment);
             dismiss();
         });
 
@@ -101,16 +140,20 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         linearLayout.addView(divider, dividerLayoutParams);
 
         TextView textViewDescription4 = new TextView(context);
-        textViewDescription4.setText(LocaleController.getString(R.string.RevenueSharingAdsInfo4Title));
+        textViewDescription4.setText(LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo4TitleBot : R.string.RevenueSharingAdsInfo4Title));
         textViewDescription4.setTypeface(AndroidUtilities.bold());
         textViewDescription4.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textViewDescription4.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textViewDescription4.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
+        textViewDescription4.setGravity(Gravity.CENTER);
         linearLayout.addView(textViewDescription4, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 0, 22, 0));
 
-        SpannableStringBuilder bottomSubtitle1 = AndroidUtilities.replaceTags(LocaleController.getString(R.string.RevenueSharingAdsInfo4Subtitle2));
+        SpannableStringBuilder bottomSubtitle1 = AndroidUtilities.replaceTags(LocaleController.getString(bot ? R.string.RevenueSharingAdsInfo4Subtitle2Bot : R.string.RevenueSharingAdsInfo4Subtitle2));
         String bottomSubtitle2 = getString(R.string.RevenueSharingAdsInfo4SubtitleLearnMore);
-        SpannableStringBuilder stringBuilder2 = AndroidUtilities.replaceSingleTag(bottomSubtitle2, Theme.key_chat_messageLinkIn, 0, () -> Browser.openUrl(getContext(), LocaleController.getString(R.string.PromoteUrl)));
+        SpannableStringBuilder stringBuilder2 = AndroidUtilities.replaceSingleTag(bottomSubtitle2, Theme.key_chat_messageLinkIn, 0, () -> {
+            dismiss();
+            Browser.openUrl(getContext(), LocaleController.getString(R.string.PromoteUrl));
+        });
         SpannableString arrowStr = new SpannableString(">");
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.attach_arrow_right);
         span.setOverrideColor(Theme.getColor(Theme.key_chat_messageLinkIn));
@@ -140,13 +183,19 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
         buttonTextView.setOnClickListener(e -> dismiss());
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 14, 22, 14, 14));
 
-        ScrollView scrollView = new ScrollView(getContext());
-        scrollView.addView(linearLayout);
-        setCustomView(scrollView);
+//        ScrollView scrollView = new ScrollView(getContext());
+//        scrollView.addView(linearLayout);
+//        setCustomView(scrollView);
+
+        adapter.update(false);
     }
 
-    public static RevenueSharingAdsInfoBottomSheet showAlert(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider) {
-        RevenueSharingAdsInfoBottomSheet alert = new RevenueSharingAdsInfoBottomSheet(fragment, context, resourcesProvider);
+    public static RevenueSharingAdsInfoBottomSheet showAlert(Context context, BaseFragment fragment, boolean bot, Theme.ResourcesProvider resourcesProvider) {
+        return showAlert(context, fragment, bot, resourcesProvider, null);
+    }
+
+    public static RevenueSharingAdsInfoBottomSheet showAlert(Context context, BaseFragment fragment, boolean bot, Theme.ResourcesProvider resourcesProvider, Utilities.Callback<ItemOptions> options) {
+        RevenueSharingAdsInfoBottomSheet alert = new RevenueSharingAdsInfoBottomSheet(context, bot, resourcesProvider, options);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
                 fragment.showDialog(alert);
@@ -183,4 +232,21 @@ public class RevenueSharingAdsInfoBottomSheet extends BottomSheet {
             addView(tvSubtitle, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, isRtl ? Gravity.RIGHT : Gravity.LEFT, isRtl ? ITEM_HORIZONTAL_PADDING : ITEM_TEXT_PADDING, 18, isRtl ? ITEM_TEXT_PADDING : ITEM_HORIZONTAL_PADDING, 0));
         }
     }
+
+    @Override
+    protected CharSequence getTitle() {
+        return LocaleController.getString(R.string.AboutRevenueSharingAds);
+    }
+
+    private UniversalAdapter adapter;
+
+    @Override
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
+        return adapter = new UniversalAdapter(listView, getContext(), currentAccount, 0, true, this::fillItems, resourcesProvider);
+    }
+
+    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        items.add(UItem.asCustom(customView));
+    }
+
 }

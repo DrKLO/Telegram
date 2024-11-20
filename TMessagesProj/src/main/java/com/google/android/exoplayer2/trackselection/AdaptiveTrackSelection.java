@@ -37,8 +37,11 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 
 /**
  * A bandwidth based adaptive {@link ExoTrackSelection}, whose selected track is updated to be the
@@ -442,7 +445,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
     // Make initial selection
     if (reason == C.SELECTION_REASON_UNKNOWN) {
       reason = C.SELECTION_REASON_INITIAL;
-      selectedIndex = determineIdealSelectedIndex(nowMs, chunkDurationUs);
+      selectedIndex = determineIdealSelectedIndex(0, nowMs, chunkDurationUs);
       return;
     }
 
@@ -454,7 +457,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
       previousSelectedIndex = formatIndexOfPreviousChunk;
       previousReason = Iterables.getLast(queue).trackSelectionReason;
     }
-    int newSelectedIndex = determineIdealSelectedIndex(nowMs, chunkDurationUs);
+    int newSelectedIndex = determineIdealSelectedIndex(1, nowMs, chunkDurationUs);
     if (!isBlacklisted(previousSelectedIndex, nowMs)) {
       // Revert back to the previous selection if conditions are not suitable for switching.
       Format currentFormat = getFormat(previousSelectedIndex);
@@ -469,7 +472,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
       } else if (selectedFormat.bitrate < currentFormat.bitrate
           && bufferedDurationUs >= maxDurationForQualityDecreaseUs) {
         // The selected track is a lower quality, but we have sufficient buffer to defer switching
-        // down for now.
+        // down for now. maxDurationForQualityDecreaseUs+ ")");
         newSelectedIndex = previousSelectedIndex;
       }
     }
@@ -516,7 +519,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
     if (playoutBufferedDurationBeforeLastChunkUs < minDurationToRetainAfterDiscardUs) {
       return queueSize;
     }
-    int idealSelectedIndex = determineIdealSelectedIndex(nowMs, getLastChunkDurationUs(queue));
+    int idealSelectedIndex = determineIdealSelectedIndex(-1, nowMs, getLastChunkDurationUs(queue));
     Format idealFormat = getFormat(idealSelectedIndex);
     // If chunks contain video, discard from the first chunk after minDurationToRetainAfterDiscardUs
     // whose resolution and bitrate are both lower than the ideal track, and whose width and height
@@ -551,7 +554,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
    */
   @SuppressWarnings("unused")
   protected boolean canSelectFormat(Format format, int trackBitrate, long effectiveBitrate) {
-    return trackBitrate <= effectiveBitrate;
+    return format.cached || trackBitrate <= effectiveBitrate;
   }
 
   /**
@@ -586,19 +589,62 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
    * @param chunkDurationUs The duration of a media chunk in microseconds, or {@link C#TIME_UNSET}
    *     if unknown.
    */
-  private int determineIdealSelectedIndex(long nowMs, long chunkDurationUs) {
-    long effectiveBitrate = getAllocatedBandwidth(chunkDurationUs);
-    int lowestBitrateAllowedIndex = 0;
+  private int determineIdealSelectedIndex(int type, long nowMs, long chunkDurationUs) {
+    final long effectiveBitrate = getAllocatedBandwidth(chunkDurationUs);
+    FileLog.d("debug_loading_player: determineIdealSelectedIndex: type="+type+" effectiveBitrate=" + effectiveBitrate);
+    final HashMap<Integer, Integer> formatsByResolution = new HashMap<>();
+    final ArrayList<Integer> formatIndices = new ArrayList<>();
     for (int i = 0; i < length; i++) {
-      if (nowMs == Long.MIN_VALUE || !isBlacklisted(i, nowMs)) {
-        Format format = getFormat(i);
-        if (canSelectFormat(format, format.bitrate, effectiveBitrate)) {
-          return i;
-        } else {
-          lowestBitrateAllowedIndex = i;
+      if (nowMs != Long.MIN_VALUE && isBlacklisted(i, nowMs)) continue;
+      final Format format = getFormat(i);
+      final int resolution = Math.max(format.width, format.height);
+      if (!formatsByResolution.containsKey(resolution)) {
+        formatsByResolution.put(resolution, i);
+        formatIndices.add(i);
+      } else {
+        final int existingFormatIndex = formatsByResolution.get(resolution);
+        final Format existingFormat = getFormat(existingFormatIndex);
+        if (existingFormat.cached && !format.cached) continue;
+        if (
+          !existingFormat.cached && format.cached ||
+          format.bitrate < existingFormat.bitrate
+        ) {
+          formatsByResolution.put(resolution, i);
+          formatIndices.remove((Integer) existingFormatIndex);
+          formatIndices.add(i);
         }
       }
     }
+    if (type == 0) {
+      for (int i : formatIndices) {
+        Format format = getFormat(i);
+        if (format.cached) {
+          FileLog.d("debug_loading_player: determineIdealSelectedIndex: initial setup, choose cached format#" + i);
+          return i;
+        }
+      }
+    }
+    int lowestBitrateAllowedIndex = 0;
+    for (int i : formatIndices) {
+      Format format = getFormat(i);
+      FileLog.d("debug_loading_player: determineIdealSelectedIndex: format#" + i + " bitrate=" + format.bitrate + " " + format.width + "x" + format.height + " codecs="+format.codecs+" (cached=" + format.cached + ")");
+      if (canSelectFormat(format, format.bitrate, effectiveBitrate)) {
+//        if (!format.cached && type == 0) {
+//          for (int j = i + 1; j < formatIndices.size(); ++j) {
+//            int i2 = formatIndices.get(j);
+//            if (getFormat(i2).cached) {
+//              FileLog.d("debug_loading_player: determineIdealSelectedIndex: chose to start with lower but cached format#" + i);
+//              return i2;
+//            }
+//          }
+//        }
+        FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + i);
+        return i;
+      } else {
+        lowestBitrateAllowedIndex = i;
+      }
+    }
+    FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + lowestBitrateAllowedIndex + " (lowest, nothing is fit)");
     return lowestBitrateAllowedIndex;
   }
 

@@ -31,6 +31,8 @@ if (!window.__tg__webview_set) {
         document.addEventListener('touchstart', e => {
             whiletouchstart = false;
         }, false);
+        const atLeft = e => !e || e == document || e.scrollLeft <= 0 && atLeft(e.parentNode);
+        const atTop = e => !e || e == document || e.scrollTop <= 0 && atTop(e.parentNode);
         document.addEventListener('touchmove', e => {
             whiletouchstart = false;
             whiletouchmove = true;
@@ -38,10 +40,10 @@ if (!window.__tg__webview_set) {
                 setTimeout(() => {
                     if (awaitingResponse) {
                         if (window.TelegramWebviewProxy) {
-                            const allowScrollX = !prevented && (!window.visualViewport || window.visualViewport.offsetLeft == 0) && !mutatedWhileTouch;
-                            const allowScrollY = !prevented && (!window.visualViewport || window.visualViewport.offsetTop == 0)  && !mutatedWhileTouch;
+                            const allowScrollX = !prevented && atLeft(e.target) && (!window.visualViewport || window.visualViewport.offsetLeft == 0) && !mutatedWhileTouch;
+                            const allowScrollY = !prevented && atTop(e.target)  && (!window.visualViewport || window.visualViewport.offsetTop == 0)  && !mutatedWhileTouch;
                             if (DEBUG) {
-                                console.log('tgbrowser allowScroll sent after "touchmove": x=' + allowScrollX + ' y=' + allowScrollY, { prevented, mutatedWhileTouch });
+                                console.log('tgbrowser allowScroll sent after "touchmove": x=' + allowScrollX + ' y=' + allowScrollY, { e, prevented, mutatedWhileTouch });
                             }
                             window.TelegramWebviewProxy.postEvent('web_app_allow_scroll', JSON.stringify([ allowScrollX, allowScrollY ]));
                         }
@@ -65,7 +67,7 @@ if (!window.__tg__webview_set) {
             if (awaitingResponse) {
                 if (window.TelegramWebviewProxy) {
                     if (DEBUG) {
-                        console.log('tgbrowser allowScroll sent after "scroll": x=' + allowScrollX + ' y=' + allowScrollY, { prevented, mutatedWhileTouch, scrollLeft: e.target.scrollLeft, scrollTop: e.target.scrollTop });
+                        console.log('tgbrowser allowScroll sent after "scroll": x=' + allowScrollX + ' y=' + allowScrollY, { e, prevented, mutatedWhileTouch, scrollLeft: e.target.scrollLeft, scrollTop: e.target.scrollTop });
                     }
                     window.TelegramWebviewProxy.postEvent('web_app_allow_scroll', JSON.stringify([allowScrollX, allowScrollY]));
                 }

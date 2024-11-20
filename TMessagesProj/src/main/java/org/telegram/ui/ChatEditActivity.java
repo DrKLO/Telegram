@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.ChannelMonetizationLayout.replaceTON;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -67,7 +68,6 @@ import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -77,7 +77,6 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.RadioButtonCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -101,10 +100,14 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Stars.BotStarsActivity;
 import org.telegram.ui.Stars.BotStarsController;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 
 public class ChatEditActivity extends BaseFragment implements ImageUpdater.ImageUpdaterDelegate, NotificationCenter.NotificationCenterDelegate {
@@ -145,6 +148,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private TextInfoPrivacyCell stickersInfoCell;
 
     private LinearLayout infoContainer;
+    private LinearLayout balanceContainer;
     private TextCell membersCell;
     private TextCell memberRequestsCell;
     private TextCell inviteLinksCell;
@@ -160,7 +164,8 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private ShadowSectionCell deleteInfoCell;
 
     private TextCell publicLinkCell;
-    private TextCell balanceCell;
+    private TextCell tonBalanceCell;
+    private TextCell starsBalanceCell;
     private TextCell editIntroCell;
     private TextCell editCommandsCell;
     private TextCell changeBotSettingsCell;
@@ -1166,31 +1171,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 presentFragment(new ChangeUsernameActivity(args));
             });
 
-            if (currentUser.bot && currentUser.bot_can_edit) {
-                balanceCell = new TextCell(context);
-                balanceCell.setBackground(Theme.getSelectorDrawable(false));
-                balanceCell.setPrioritizeTitleOverValue(true);
-                infoContainer.addView(balanceCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                BotStarsController c = BotStarsController.getInstance(currentAccount);
-                balanceCell.setOnClickListener(v -> {
-                    if (!c.isBalanceAvailable(userId))
-                        return;
-                    presentFragment(new BotStarsActivity(userId));
-                });
-                if (!c.isBalanceAvailable(userId)) {
-                    SpannableStringBuilder loadingStr = new SpannableStringBuilder("x");
-                    loadingStr.setSpan(new LoadingSpan(balanceCell.valueTextView, dp(30)), 0, loadingStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    balanceCell.setTextAndValueAndIcon(getString(R.string.BotBalance), loadingStr, R.drawable.menu_premium_main, false);
-                } else {
-                    balanceCell.setTextAndValueAndIcon(getString(R.string.BotBalance), LocaleController.formatNumber(c.getBalance(userId), ' '), R.drawable.menu_premium_main, false);
-                }
-                balanceCell.setVisibility(c.hasStars(userId) ? View.VISIBLE : View.GONE);
-            }
             updatePublicLinksCount();
-
-            ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, getResourceProvider(), Theme.key_windowBackgroundGray);
-            gap.setTag(R.id.fit_width_tag, 1);
-            infoContainer.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
             editIntroCell = new TextCell(context);
             editIntroCell.setBackground(Theme.getSelectorDrawable(false));
@@ -1221,7 +1202,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 infoSectionCell = new ShadowSectionCell(context);
                 linearLayout1.addView(infoSectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             }
-        } else {
+        } else if (currentUser != null) {
             botInfoCell = new TextInfoPrivacyCell(context);
             String str = getString(R.string.BotManageInfo);
             SpannableString span = SpannableString.valueOf(str);
@@ -1243,9 +1224,78 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             botInfoCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             botInfoCell.setText(span);
             linearLayout1.addView(botInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            if (currentUser.bot && currentUser.bot_can_edit) {
+
+                balanceContainer = new LinearLayout(context);
+                balanceContainer.setOrientation(LinearLayout.VERTICAL);
+                balanceContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                linearLayout1.addView(balanceContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                HeaderCell headerCell = new HeaderCell(context);
+                headerCell.setText(getString(R.string.BotBalance));
+                balanceContainer.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                tonBalanceCell = new TextCell(context);
+                tonBalanceCell.setBackground(Theme.getSelectorDrawable(false));
+                tonBalanceCell.setPrioritizeTitleOverValue(true);
+                balanceContainer.addView(tonBalanceCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                BotStarsController c = BotStarsController.getInstance(currentAccount);
+                tonBalanceCell.setOnClickListener(v -> {
+                    if (!c.isStarsBalanceAvailable(userId))
+                        return;
+                    presentFragment(new BotStarsActivity(BotStarsActivity.TYPE_TON, userId));
+                });
+                if (!c.isTONBalanceAvailable(userId)) {
+                    SpannableStringBuilder loadingStr = new SpannableStringBuilder("x");
+                    loadingStr.setSpan(new LoadingSpan(tonBalanceCell.valueTextView, dp(30)), 0, loadingStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    tonBalanceCell.setTextAndValueAndIcon(getString(R.string.BotBalanceTON), loadingStr, R.drawable.msg_ton, false);
+                } else {
+                    long ton_balance = c.getTONBalance(userId);
+                    SpannableStringBuilder ssb = new SpannableStringBuilder();
+                    if (ton_balance > 0) {
+                        if (ton_balance / 1_000_000_000.0 > 1000.0) {
+                            ssb.append("TON ").append(AndroidUtilities.formatWholeNumber((int) (ton_balance / 1_000_000_000.0), 0));
+                        } else {
+                            DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                            symbols.setDecimalSeparator('.');
+                            DecimalFormat formatterTON = new DecimalFormat("#.##", symbols);
+                            formatterTON.setMinimumFractionDigits(2);
+                            formatterTON.setMaximumFractionDigits(3);
+                            formatterTON.setGroupingUsed(false);
+                            ssb.append("TON ").append(formatterTON.format(ton_balance / 1_000_000_000.0));
+                        }
+                    }
+                    tonBalanceCell.setTextAndValueAndIcon(getString(R.string.BotBalanceTON), ssb, R.drawable.msg_ton, true);
+                }
+                tonBalanceCell.setVisibility(c.botHasTON(userId) ? View.VISIBLE : View.GONE);
+
+                starsBalanceCell = new TextCell(context);
+                starsBalanceCell.setBackground(Theme.getSelectorDrawable(false));
+                starsBalanceCell.setPrioritizeTitleOverValue(true);
+                balanceContainer.addView(starsBalanceCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                starsBalanceCell.setOnClickListener(v -> {
+                    if (!c.isStarsBalanceAvailable(userId))
+                        return;
+                    presentFragment(new BotStarsActivity(BotStarsActivity.TYPE_STARS, userId));
+                });
+                if (!c.isStarsBalanceAvailable(userId)) {
+                    SpannableStringBuilder loadingStr = new SpannableStringBuilder("x");
+                    loadingStr.setSpan(new LoadingSpan(starsBalanceCell.valueTextView, dp(30)), 0, loadingStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    starsBalanceCell.setTextAndValueAndIcon(getString(R.string.BotBalanceStars), loadingStr, R.drawable.menu_premium_main, false);
+                } else {
+                    starsBalanceCell.setTextAndValueAndIcon(getString(R.string.BotBalanceStars), c.getBotStarsBalance(userId)<=0?"":StarsIntroActivity.replaceStarsWithPlain("XTR" + LocaleController.formatNumber(c.getBotStarsBalance(userId), ' '), .85f), R.drawable.menu_premium_main, false);
+                }
+                starsBalanceCell.setVisibility(c.botHasStars(userId) ? View.VISIBLE : View.GONE);
+
+                TextInfoPrivacyCell gap = new TextInfoPrivacyCell(context, getResourceProvider());
+                gap.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                gap.setTag(R.id.fit_width_tag, 1);
+                linearLayout1.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+            }
         }
 
-        if (currentUser == null && currentChat.creator) {
+        if (currentChat != null && currentChat.creator) {
             deleteContainer = new FrameLayout(context);
             deleteContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             linearLayout1.addView(deleteContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -1261,15 +1311,17 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 deleteCell.setText(getString("DeleteAndExitButton", R.string.DeleteAndExitButton), false);
             }
             deleteContainer.addView(deleteCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            deleteCell.setOnClickListener(v -> AlertsCreator.createClearOrDeleteDialogAlert(ChatEditActivity.this, false, true, false, currentChat, null, false, true, false, (param) -> {
-                if (AndroidUtilities.isTablet()) {
-                    getNotificationCenter().postNotificationName(NotificationCenter.closeChats, -chatId);
-                } else {
-                    getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
-                }
-                finishFragment();
-                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, -currentChat.id, null, currentChat, param);
-            }, null));
+            deleteCell.setOnClickListener(v -> {
+                AlertsCreator.createClearOrDeleteDialogAlert(ChatEditActivity.this, false, true, false, currentChat, null, false, true, false, (param) -> {
+                    if (AndroidUtilities.isTablet()) {
+                        getNotificationCenter().postNotificationName(NotificationCenter.closeChats, -chatId);
+                    } else {
+                        getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+                    }
+                    finishFragment();
+                    getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, -currentChat.id, null, currentChat, param);
+                }, null);
+            });
 
             deleteInfoCell = new ShadowSectionCell(context);
             deleteInfoCell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -1312,9 +1364,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 }
             }
 
-            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLinks), LocaleController.formatString(R.string.BotPublicLinksCount, usernamesActive, currentUser.usernames.size()), R.drawable.msg_link2, balanceCell != null && balanceCell.getVisibility() == View.VISIBLE);
+            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLinks), LocaleController.formatString(R.string.BotPublicLinksCount, usernamesActive, currentUser.usernames.size()), R.drawable.msg_link2, true);
         } else {
-            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), "t.me/" + currentUser.username, R.drawable.msg_link2, balanceCell != null && balanceCell.getVisibility() == View.VISIBLE);
+            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), "t.me/" + currentUser.username, R.drawable.msg_link2, true);
         }
     }
 
@@ -1420,12 +1472,35 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             }
         } else if (id == NotificationCenter.botStarsUpdated) {
             if ((long) args[0] == userId) {
-                if (balanceCell != null) {
+                if (starsBalanceCell != null) {
                     BotStarsController c = BotStarsController.getInstance(currentAccount);
-                    balanceCell.setVisibility(c.hasStars(userId) ? View.VISIBLE : View.GONE);
-                    balanceCell.setValue(LocaleController.formatNumber(c.getBalance(userId), ' '), true);
+                    starsBalanceCell.setVisibility(c.botHasStars(userId) ? View.VISIBLE : View.GONE);
+                    starsBalanceCell.setValue(StarsIntroActivity.replaceStarsWithPlain("XTR" + LocaleController.formatNumber(c.getBotStarsBalance(userId), ' '), .85f), true);
                     if (publicLinkCell != null) {
-                        publicLinkCell.setNeedDivider(c.hasStars(userId));
+                        publicLinkCell.setNeedDivider(c.botHasStars(userId) || c.botHasTON(userId));
+                    }
+                }
+                if (tonBalanceCell != null) {
+                    BotStarsController c = BotStarsController.getInstance(currentAccount);
+                    tonBalanceCell.setVisibility(c.botHasTON(userId) ? View.VISIBLE : View.GONE);
+                    long ton_balance = c.getTONBalance(userId);
+                    SpannableStringBuilder ssb = new SpannableStringBuilder();
+                    if (ton_balance > 0) {
+                        if (ton_balance / 1_000_000_000.0 > 1000.0) {
+                            ssb.append("TON ").append(AndroidUtilities.formatWholeNumber((int) (ton_balance / 1_000_000_000.0), 0));
+                        } else {
+                            DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                            symbols.setDecimalSeparator('.');
+                            DecimalFormat formatterTON = new DecimalFormat("#.##", symbols);
+                            formatterTON.setMinimumFractionDigits(2);
+                            formatterTON.setMaximumFractionDigits(3);
+                            formatterTON.setGroupingUsed(false);
+                            ssb.append("TON ").append(formatterTON.format(ton_balance / 1_000_000_000.0));
+                        }
+                    }
+                    tonBalanceCell.setValue(ssb, true);
+                    if (publicLinkCell != null) {
+                        publicLinkCell.setNeedDivider(c.botHasStars(userId) || c.botHasTON(userId));
                     }
                 }
             }

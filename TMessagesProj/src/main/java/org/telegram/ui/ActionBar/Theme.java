@@ -4072,8 +4072,10 @@ public class Theme {
 
     public static final int key_sheet_scrollUp = colorsCount++;
     public static final int key_sheet_other = colorsCount++;
+    public static final int key_bot_loadingIcon = colorsCount++;
+    public static final int key_gift_ribbon = colorsCount++;
+    public static final int key_gift_ribbon_soldout = colorsCount++;
 
-    //ununsed
     public static final int key_player_actionBarSelector = colorsCount++;
     public static final int key_player_actionBarTitle = colorsCount++;
     public static final int key_player_actionBarSubtitle = colorsCount++;
@@ -4262,6 +4264,8 @@ public class Theme {
         fallbackKeys.put(key_iv_background, key_windowBackgroundWhite);
         fallbackKeys.put(key_iv_backgroundGray, key_windowBackgroundGray);
         fallbackKeys.put(key_iv_navigationBackground, key_windowBackgroundGray);
+        fallbackKeys.put(key_bot_loadingIcon, key_groupcreate_spanBackground);
+        fallbackKeys.put(key_gift_ribbon_soldout, key_text_RedBold);
         fallbackKeys.put(key_iv_ab_progress, key_featuredStickers_addButton);
         fallbackKeys.put(key_dialogGiftsBackground, key_windowBackgroundGray);
         fallbackKeys.put(key_dialogGiftsTabText, key_windowBackgroundWhiteGrayText2);

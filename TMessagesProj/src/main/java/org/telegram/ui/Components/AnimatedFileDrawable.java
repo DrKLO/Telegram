@@ -56,21 +56,21 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private final boolean USE_BITMAP_SHADER = Build.VERSION.SDK_INT < 29;
     private boolean PRERENDER_FRAME = true;
 
-    private static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback, boolean preview);
+    public static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback, boolean preview);
 
-    private static native void destroyDecoder(long ptr);
+    public static native void destroyDecoder(long ptr);
 
-    private static native void stopDecoder(long ptr);
+    public static native void stopDecoder(long ptr);
 
-    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview, float startTimeSeconds, float endTimeSeconds, boolean loop);
+    public static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview, float startTimeSeconds, float endTimeSeconds, boolean loop);
 
-    private static native void seekToMs(long ptr, long ms, boolean precise);
+    public static native void seekToMs(long ptr, long ms, int[] params, boolean precise);
 
-    private static native int getFrameAtTime(long ptr, long ms, Bitmap bitmap, int[] data, int stride);
+    public static native int getFrameAtTime(long ptr, long ms, Bitmap bitmap, int[] data, int stride);
 
-    private static native void prepareToSeek(long ptr);
+    public static native void prepareToSeek(long ptr);
 
-    private static native void getVideoInfo(int sdkVersion, String src, int[] params);
+    public static native void getVideoInfo(int sdkVersion, String src, int[] params);
 
     public final static int PARAM_NUM_SUPPORTED_VIDEO_CODEC = 0;
     public final static int PARAM_NUM_WIDTH = 1;
@@ -183,6 +183,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         public void run() {
             chekDestroyDecoder();
             loadFrameTask = null;
+            if (pendingSeekToUI >= 0 && pendingSeekTo == -1) {
+                pendingSeekToUI = -1;
+                invalidateAfter = 0;
+            }
             scheduleNextGetFrame();
             invalidateInternal();
         }
@@ -268,7 +272,16 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             }
             loadFrameTask = null;
 
-            if (!PRERENDER_FRAME) {
+            if (pendingSeekToUI >= 0) {
+                nextRenderingBitmap = backgroundBitmap;
+                nextRenderingBitmapTime = backgroundBitmapTime;
+                nextRenderingBitmap2 = null;
+                nextRenderingBitmapTime2 = 0;
+                for (int i = 0; i < backgroundShader.length; i++) {
+                    nextRenderingShader[i] = backgroundShader[i];
+                    nextRenderingShader2[i] = null;
+                }
+            } else if (!PRERENDER_FRAME) {
                 nextRenderingBitmap = backgroundBitmap;
                 nextRenderingBitmapTime = backgroundBitmapTime;
                 for (int i = 0; i < backgroundShader.length; i++) {
@@ -429,7 +442,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                             if (stream != null) {
                                 stream.reset();
                             }
-                            seekToMs(nativePtr, seekTo, true);
+                            seekToMs(nativePtr, seekTo, metaData,true);
                         }
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
@@ -549,7 +562,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             stream.reset();
         }
         if (!precise) {
-            seekToMs(nativePtr, ms, precise);
+            seekToMs(nativePtr, ms, metaData, precise);
         }
         Bitmap backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         int result;
@@ -1260,7 +1273,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (isRunning) {
             if (renderingBitmap == null && nextRenderingBitmap == null) {
                 scheduleNextGetFrame();
-            } else if (nextRenderingBitmap != null && (renderingBitmap == null || (Math.abs(now - lastFrameTime) >= invalidateAfter && !skipFrameUpdate))) {
+            } else if (nextRenderingBitmap != null && (renderingBitmap == null || (Math.abs(now - lastFrameTime) >= invalidateAfter && !skipFrameUpdate && pendingSeekToUI < 0))) {
                 unusedBitmaps.add(renderingBitmap);
                 renderingBitmap = nextRenderingBitmap;
                 renderingBitmapTime = nextRenderingBitmapTime;

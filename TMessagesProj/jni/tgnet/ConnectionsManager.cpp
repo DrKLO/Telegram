@@ -576,6 +576,10 @@ int32_t ConnectionsManager::getCurrentTime() {
     return (int32_t) (getCurrentTimeMillis() / 1000) + timeDifference;
 }
 
+int32_t ConnectionsManager::getCurrentPingTime() {
+    return (int32_t) currentPingTimeLive;
+}
+
 uint32_t ConnectionsManager::getCurrentDatacenterId() {
     Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
     return datacenter != nullptr ? datacenter->getDatacenterId() : INT_MAX;
@@ -1159,6 +1163,8 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             if (!registeredForInternalPush) {
                 registerForInternalPushUpdates();
             }
+            int32_t diff = getCurrentTimeMonotonicMillis() - sendingPushPingTime;
+            currentPingTimeLive = (diff + currentPingTimeLive) / 2;
             if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received push ping", connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType());
             sendingPushPing = false;
         } else {
@@ -1191,7 +1197,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                 }
             } else if (response->ping_id == lastPingId) {
                 int32_t diff = (int32_t) (getCurrentTimeMonotonicMillis() / 1000) - pingTime;
-
+                currentPingTimeLive = ((getCurrentTimeMonotonicMillis() - pingTimeMs) + currentPingTimeLive) / 2;
                 if (abs(diff) < 10) {
                     currentPingTime = (diff + currentPingTime) / 2;
                     if (messageId != 0) {
@@ -1755,9 +1761,11 @@ void ConnectionsManager::sendPing(Datacenter *datacenter, bool usePushConnection
     request->ping_id = ++lastPingId;
     if (usePushConnection) {
         request->disconnect_delay = 60 * 7;
+        sendingPushPingTime = getCurrentTimeMonotonicMillis();
     } else {
         request->disconnect_delay = testBackend ? 10 : 35;
-        pingTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000);
+        pingTimeMs = getCurrentTimeMonotonicMillis();
+        pingTime = (int32_t) (pingTimeMs / 1000);
     }
 
     auto networkMessage = new NetworkMessage();
@@ -2533,12 +2541,12 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         )) && !request->awaitingIntegrityCheck) {
             if (!forceThisRequest && request->connectionToken > 0) {
                 if ((request->connectionType & ConnectionTypeGeneric || request->connectionType & ConnectionTypeTemp) && request->connectionToken == connection->getConnectionToken()) {
-                    if (LOGS_ENABLED) DEBUG_D("request token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
+//                    if (LOGS_ENABLED) DEBUG_D("request token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
                     iter++;
                     continue;
                 } else {
                     if (connection->getConnectionToken() != 0 && request->connectionToken == connection->getConnectionToken()) {
-                        if (LOGS_ENABLED) DEBUG_D("request download token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
+//                        if (LOGS_ENABLED) DEBUG_D("request download token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);
                         iter++;
                         continue;
                     }

@@ -210,7 +210,7 @@ apply plugin: 'com.google.gms.google-services'
 task checkVisibility {
     doFirst {
         def isPrivateBuild = project.gradle.startParameter.taskNames.find {
-            it.contains("HA_private") || it.contains("Debug") || it.contains("Release")
+            it.contains("HA_private") || it.contains("HA_hardcore") || it.contains("Debug") || it.contains("Release")
         }
         def isPublicAllowed = !project.hasProperty("IS_PRIVATE") || !project.property("IS_PRIVATE").toBoolean()
         if (!isPrivateBuild && !isPublicAllowed) {

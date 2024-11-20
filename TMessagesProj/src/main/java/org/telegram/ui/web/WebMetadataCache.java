@@ -19,6 +19,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Keep;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -293,6 +295,7 @@ public class WebMetadataCache {
         public SitenameProxy(Utilities.Callback<String> whenReceived) {
             this.whenReceived = whenReceived;
         }
+        @Keep
         @JavascriptInterface
         public void post(String type, String data) {
             AndroidUtilities.runOnUIThread(() -> {

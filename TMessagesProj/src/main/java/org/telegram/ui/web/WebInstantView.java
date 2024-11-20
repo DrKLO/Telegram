@@ -25,6 +25,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Keep;
+
 import com.google.common.collect.Lists;
 
 import org.json.JSONArray;
@@ -434,6 +436,7 @@ public class WebInstantView {
         webViewContainer.addView(webView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         final boolean[] done = new boolean[] { false };
         webView.addJavascriptInterface(new Object() {
+            @Keep
             @JavascriptInterface
             public void done(String json) {
                 AndroidUtilities.runOnUIThread(() -> {

@@ -16,6 +16,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
 
+import androidx.annotation.Keep;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -103,10 +105,12 @@ public class RadialProgress2 {
         this.resourcesProvider = resourcesProvider;
     }
 
+    @Keep
     public void setAsMini() {
         mediaActionDrawable.setMini(true);
     }
 
+    @Keep
     public void setCircleRadius(int value) {
         circleRadius = value;
         overlayImageView.setRoundRadius(circleRadius);
@@ -128,6 +132,7 @@ public class RadialProgress2 {
         miniMediaActionDrawable.setBackgroundDrawable(drawable);
     }
 
+    @Keep
     public void setBackgroundGradientDrawable(LinearGradient drawable) {
         mediaActionDrawable.setBackgroundGradientDrawable(drawable);
         miniMediaActionDrawable.setBackgroundGradientDrawable(drawable);
@@ -162,6 +167,7 @@ public class RadialProgress2 {
         iconPressedColorKey = iconPressed;
     }
 
+    @Keep
     public void setColors(int circle, int circlePressed, int icon, int iconPressed) {
         circleColor = circle;
         circlePressedColor = circlePressed;
@@ -232,6 +238,7 @@ public class RadialProgress2 {
         return miniMediaActionDrawable.getCurrentIcon();
     }
 
+    @Keep
     public void setIcon(int icon, boolean ifSame, boolean animated) {
         if (ifSame && icon == mediaActionDrawable.getCurrentIcon()) {
             return;
@@ -302,6 +309,7 @@ public class RadialProgress2 {
         return overrideAlpha;
     }
 
+    @Keep
     public void draw(Canvas canvas) {
         if (mediaActionDrawable.getCurrentIcon() == MediaActionDrawable.ICON_NONE && mediaActionDrawable.getTransitionProgress() >= 1.0f || progressRect.isEmpty()) {
             return;

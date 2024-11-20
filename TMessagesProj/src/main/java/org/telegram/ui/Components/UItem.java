@@ -432,6 +432,13 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public static UItem asSearchMessage(int id, MessageObject messageObject) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SEARCH_MESSAGE, false);
+        item.id = id;
+        item.object = messageObject;
+        return item;
+    }
+
     public static UItem asFlicker(int type) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_FLICKER, false);
         item.intValue = type;

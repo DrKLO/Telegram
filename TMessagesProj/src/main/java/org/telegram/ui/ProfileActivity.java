@@ -270,7 +270,10 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.DualCameraView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.bots.BotBiometry;
+import org.telegram.ui.bots.BotDownloads;
+import org.telegram.ui.bots.BotLocation;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
+import org.telegram.ui.bots.SetupEmojiStatusSheet;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -468,6 +471,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private Paint whitePaint = new Paint();
 
     private boolean isBot;
+    private BotLocation botLocation;
+    private BotBiometry botBiometry;
 
     private TLRPC.ChatFull chatInfo;
     private TLRPC.UserFull userInfo;
@@ -601,6 +606,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int premiumGiftingRow;
     private int premiumSectionsRow;
     private int botAppRow;
+    private int botPermissionsHeader;
+    @Keep
+    private int botPermissionLocation;
+    @Keep
+    private int botPermissionEmojiStatus;
+    private int botPermissionEmojiStatusReqId;
+    @Keep
+    private int botPermissionBiometry;
+    private int botPermissionsDivider;
 
     private int settingsTimerRow;
     private int settingsKeyRow;
@@ -614,7 +628,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int subscribersRequestsRow;
     private int administratorsRow;
     private int settingsRow;
-    private int balanceRow;
+    private int botStarsBalanceRow;
+    private int botTonBalanceRow;
+    private int channelBalanceRow;
     private int balanceDividerRow;
     private int blockedUsersRow;
     private int membersSectionRow;
@@ -1073,11 +1089,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (previousTransitionFragment != null) {
                     ActionBar actionBar = previousTransitionFragment.getActionBar();
                     ActionBarMenu menu = actionBar.menu;
-                    int restoreCount = canvas.save();
-                    canvas.translate(actionBar.getX() + menu.getX(), actionBar.getY() + menu.getY());
-                    canvas.saveLayerAlpha(0, 0, menu.getMeasuredWidth(), menu.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)), Canvas.ALL_SAVE_FLAG);
-                    menu.draw(canvas);
-                    canvas.restoreToCount(restoreCount);
+                    if (actionBar != null && menu != null) {
+                        int restoreCount = canvas.save();
+                        canvas.translate(actionBar.getX() + menu.getX(), actionBar.getY() + menu.getY());
+                        canvas.saveLayerAlpha(0, 0, menu.getMeasuredWidth(), menu.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)), Canvas.ALL_SAVE_FLAG);
+                        menu.draw(canvas);
+                        canvas.restoreToCount(restoreCount);
+                    }
                 }
             }
             if (y1 != v) {
@@ -3975,15 +3993,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(fragment);
             } else if (position == settingsRow) {
                 editItem.performClick();
-            } else if (position == balanceRow) {
+            } else if (position == botStarsBalanceRow) {
+                presentFragment(new BotStarsActivity(BotStarsActivity.TYPE_STARS, userId));
+            } else if (position == botTonBalanceRow) {
+                presentFragment(new BotStarsActivity(BotStarsActivity.TYPE_TON, userId));
+            } else if (position == channelBalanceRow) {
                 Bundle args = new Bundle();
-                if (userInfo != null) {
-                    presentFragment(new BotStarsActivity(userId));
-                } else {
-                    args.putLong("chat_id", chatId);
-                    args.putBoolean("start_from_monetization", true);
-                    presentFragment(new StatisticActivity(args));
-                }
+                args.putLong("chat_id", chatId);
+                args.putBoolean("start_from_monetization", true);
+                presentFragment(new StatisticActivity(args));
             } else if (position == blockedUsersRow) {
                 Bundle args = new Bundle();
                 args.putLong("chat_id", chatId);
@@ -4052,6 +4070,37 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
             } else if (position == premiumGiftingRow) {
                 UserSelectorBottomSheet.open(0, BirthdayController.getInstance(currentAccount).getState());
+            } else if (position == botPermissionLocation) {
+                if (botLocation != null) {
+                    botLocation.setGranted(!botLocation.granted(), () -> {
+                        ((TextCell) view).setChecked(botLocation.granted());
+                    });
+                }
+            } else if (position == botPermissionBiometry) {
+                if (botBiometry != null) {
+                    botBiometry.setGranted(!botBiometry.granted());
+                    ((TextCell) view).setChecked(botBiometry.granted());
+                }
+            } else if (position == botPermissionEmojiStatus) {
+                ((TextCell) view).setChecked(!((TextCell) view).isChecked());
+                if (botPermissionEmojiStatusReqId > 0) {
+                    getConnectionsManager().cancelRequest(botPermissionEmojiStatusReqId, true);
+                }
+                TL_bots.toggleUserEmojiStatusPermission req = new TL_bots.toggleUserEmojiStatusPermission();
+                req.bot = getMessagesController().getInputUser(userId);
+                req.enabled = ((TextCell) view).isChecked();
+                if (userInfo != null) {
+                    userInfo.bot_can_manage_emoji_status = req.enabled;
+                }
+                final int[] reqId = new int[1];
+                reqId[0] = botPermissionEmojiStatusReqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (!(res instanceof TLRPC.TL_boolTrue)) {
+                        BulletinFactory.of(ProfileActivity.this).showForError(err);
+                    }
+                    if (botPermissionEmojiStatusReqId == reqId[0]) {
+                        botPermissionEmojiStatusReqId = 0;
+                    }
+                }));
             } else if (position == bizHoursRow) {
                 hoursExpanded = !hoursExpanded;
                 saveScrollPosition();
@@ -4125,7 +4174,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 !SharedConfig.payByInvoice ? "Enable Invoice Payment" : "Disable Invoice Payment",
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Update Attach Bots" : null,
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? (!SharedConfig.isUsingCamera2(currentAccount) ? "Use Camera 2 API" : "Use old Camera 1 API") : null,
-                                BuildVars.DEBUG_VERSION ? "Clear bot biometry data" : null,
+                                BuildVars.DEBUG_VERSION ? "Clear Mini Apps Permissions and Files" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clear all login tokens" : null,
                                 SharedConfig.canBlurChat() && Build.VERSION.SDK_INT >= 31 ? (SharedConfig.useNewBlur ? "back to cpu blur" : "use new gpu blur") : null,
                                 SharedConfig.adaptableColorInBrowser ? "Disabled adaptive browser colors" : "Enable adaptive browser colors",
@@ -4168,7 +4217,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 getMessagesStorage().clearSentMedia();
                                 SharedConfig.setNoSoundHintShowed(false);
                                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("groupEmojiPackHintShown").remove("newppsms").remove("monetizationadshint").apply();
+                                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("groupEmojiPackHintShown").remove("newppsms").remove("monetizationadshint").remove("seekSpeedHintShowed").remove("unsupport_video/av01").apply();
                                 MessagesController.getEmojiSettings(currentAccount).edit().remove("featured_hidden").remove("emoji_featured_hidden").commit();
                                 SharedConfig.textSelectionHintShows = 0;
                                 SharedConfig.lockRecordAudioVideoHint = 0;
@@ -4402,6 +4451,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 SharedConfig.toggleUseCamera2(currentAccount);
                             } else if (which == 29) {
                                 BotBiometry.clear();
+                                BotLocation.clear();
+                                BotDownloads.clear();
+                                SetupEmojiStatusSheet.clear();
                             } else if (which == 30) {
                                 AuthTokensHelper.clearLogInTokens();
                             } else if (which == 31) {
@@ -7788,10 +7840,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 avatarImage.setHasStories(needInsetForStories());
                 updateAvatarRoundRadius();
             }
-            if (userInfo != null) {
-                storyView.setStories(userInfo.stories);
-            } else if (chatInfo != null) {
-                storyView.setStories(chatInfo.stories);
+            if (storyView != null) {
+                if (userInfo != null) {
+                    storyView.setStories(userInfo.stories);
+                } else if (chatInfo != null) {
+                    storyView.setStories(chatInfo.stories);
+                }
             }
         } else if (id == NotificationCenter.userIsPremiumBlockedUpadted) {
             if (otherItem != null) {
@@ -8676,6 +8730,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         switchBackendRow = -1;
         versionRow = -1;
         botAppRow = -1;
+        botPermissionsHeader = -1;
+        botPermissionBiometry = -1;
+        botPermissionEmojiStatus = -1;
+        botPermissionLocation = -1;
+        botPermissionsDivider = -1;
 
         sendMessageRow = -1;
         reportRow = -1;
@@ -8715,7 +8774,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         sharedMediaRow = -1;
         notificationsSimpleRow = -1;
         settingsRow = -1;
-        balanceRow = -1;
+        botStarsBalanceRow = -1;
+        botTonBalanceRow = -1;
+        channelBalanceRow = -1;
         balanceDividerRow = -1;
 
         unblockRow = -1;
@@ -8879,6 +8940,28 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 infoEndRow = rowCount - 1;
                 infoSectionRow = rowCount++;
 
+                if (isBot) {
+                    if (botLocation == null && getContext() != null) botLocation = BotLocation.get(getContext(), currentAccount, userId);
+                    if (botBiometry == null && getContext() != null) botBiometry = BotBiometry.get(getContext(), currentAccount, userId);
+                    final boolean containsPermissionLocation = botLocation != null && botLocation.asked();
+                    final boolean containsPermissionBiometry = botBiometry != null && botBiometry.asked();
+                    final boolean containsPermissionEmojiStatus = userInfo != null && userInfo.bot_can_manage_emoji_status || SetupEmojiStatusSheet.getAccessRequested(getContext(), currentAccount, userId);
+
+                    if (containsPermissionEmojiStatus || containsPermissionLocation || containsPermissionBiometry) {
+                        botPermissionsHeader = rowCount++;
+                        if (containsPermissionEmojiStatus) {
+                            botPermissionEmojiStatus = rowCount++;
+                        }
+                        if (containsPermissionLocation) {
+                            botPermissionLocation = rowCount++;
+                        }
+                        if (containsPermissionBiometry) {
+                            botPermissionBiometry = rowCount++;
+                        }
+                        botPermissionsDivider = rowCount++;
+                    }
+                }
+
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                     settingsTimerRow = rowCount++;
                     settingsKeyRow = rowCount++;
@@ -8895,15 +8978,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 boolean divider = false;
                 if (user != null && user.bot) {
-                    if (BotStarsController.getInstance(currentAccount).getBalance(userId) > 0 || BotStarsController.getInstance(currentAccount).hasTransactions(userId)) {
-                        balanceRow = rowCount++;
+                    if (userInfo != null && userInfo.can_view_revenue && BotStarsController.getInstance(currentAccount).getTONBalance(userId) > 0) {
+                        botTonBalanceRow = rowCount++;
+                    }
+                    if (BotStarsController.getInstance(currentAccount).getBotStarsBalance(userId) > 0 || BotStarsController.getInstance(currentAccount).hasTransactions(userId)) {
+                        botStarsBalanceRow = rowCount++;
                     }
                 }
 
                 if (user != null && isBot && !user.bot_nochats) {
                     addToGroupButtonRow = rowCount++;
                     addToGroupInfoRow = rowCount++;
-                } else if (balanceRow >= 0) {
+                } else if (botStarsBalanceRow >= 0) {
                     divider = true;
                 }
 
@@ -8960,28 +9046,28 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-                if (chatInfo != null && (currentChat.creator || chatInfo.can_view_participants)) {
+                if (chatInfo != null && (currentChat.creator || chatInfo.can_view_participants) || BuildVars.DEBUG_PRIVATE_VERSION) {
                     membersHeaderRow = rowCount++;
                     subscribersRow = rowCount++;
-                    if (chatInfo.requests_pending > 0) {
+                    if (chatInfo != null && chatInfo.requests_pending > 0) {
                         subscribersRequestsRow = rowCount++;
                     }
                     administratorsRow = rowCount++;
-                    if (chatInfo.banned_count != 0 || chatInfo.kicked_count != 0) {
+                    if (chatInfo != null && (chatInfo.banned_count != 0 || chatInfo.kicked_count != 0)) {
                         blockedUsersRow = rowCount++;
                     }
                     long did = chatId != 0 ? -chatId : userId;
                     if (
                         chatInfo != null &&
                         chatInfo.can_view_stars_revenue && (
-                            BotStarsController.getInstance(currentAccount).getBalance(did) > 0 ||
+                            BotStarsController.getInstance(currentAccount).getBotStarsBalance(did) > 0 ||
                             BotStarsController.getInstance(currentAccount).hasTransactions(did)
                         ) ||
                         chatInfo != null &&
                         chatInfo.can_view_revenue &&
-                        BotStarsController.getInstance(currentAccount).getChannelBalance(did) > 0
+                        BotStarsController.getInstance(currentAccount).getTONBalance(did) > 0
                     ) {
-                        balanceRow = rowCount++;
+                        channelBalanceRow = rowCount++;
                     }
                     settingsRow = rowCount++;
                     membersSectionRow = rowCount++;
@@ -9339,8 +9425,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 onlineTextView[a].setRightDrawableInside(true);
                 onlineTextView[a].setRightDrawable(a == 1 && hiddenStatusButton ? getShowStatusButton() : null);
                 onlineTextView[a].setRightDrawableOnClick(a == 1 && hiddenStatusButton ? v -> {
-                    MessagePrivateSeenView.showSheet(getContext(), currentAccount, dialogId, true, null, () -> {
-                        getMessagesController().reloadUser(dialogId);
+                    MessagePrivateSeenView.showSheet(getContext(), currentAccount, getDialogId(), true, null, () -> {
+                        getMessagesController().reloadUser(getDialogId());
                     }, resourcesProvider);
                 } : null);
                 Drawable leftIcon = currentEncryptedChat != null ? getLockIconDrawable() : null;
@@ -9808,6 +9894,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (sharedMediaLayout != null && sharedMediaLayout.scrollSlidingTextTabStrip != null) {
             sharedMediaLayout.scrollSlidingTextTabStrip.updateColors();
         }
+        if (sharedMediaLayout != null && sharedMediaLayout.giftsContainer != null) {
+            sharedMediaLayout.giftsContainer.updateColors();
+        }
         writeButtonSetBackground();
         updateEmojiStatusDrawableColor();
     }
@@ -9945,7 +10034,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !getMessagesController().premiumFeaturesBlocked()) {
+                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
+                        StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGift));
                     }
                     otherItem.addSubItem(start_secret_chat, R.drawable.msg_secret, LocaleController.getString(R.string.StartEncryptedChat));
@@ -11093,6 +11183,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         headerCell.setText(LocaleController.getString(R.string.SettingsHelp));
                     } else if (position == debugHeaderRow) {
                         headerCell.setText(LocaleController.getString(R.string.SettingsDebug));
+                    } else if (position == botPermissionsHeader) {
+                        headerCell.setText(LocaleController.getString(R.string.BotProfilePermissions));
                     }
                     headerCell.setTextColor(applyPeerColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader), false));
                     break;
@@ -11325,9 +11417,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == subscribersRow) {
                         if (chatInfo != null) {
                             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-                                textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelSubscribers), String.format("%d", chatInfo.participants_count), R.drawable.msg_groups, position != membersSectionRow - 1);
+                                textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelSubscribers), LocaleController.formatNumber(chatInfo.participants_count, ','), R.drawable.msg_groups, position != membersSectionRow - 1);
                             } else {
-                                textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelMembers), String.format("%d", chatInfo.participants_count), R.drawable.msg_groups, position != membersSectionRow - 1);
+                                textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelMembers), LocaleController.formatNumber(chatInfo.participants_count, ','), R.drawable.msg_groups, position != membersSectionRow - 1);
                             }
                         } else {
                             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -11348,10 +11440,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     } else if (position == settingsRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.ChannelAdminSettings), R.drawable.msg_customize, position != membersSectionRow - 1);
-                    } else if (position == balanceRow) {
-                        long did = chatId != 0 ? -chatId : userId;
-                        long stars_balance = BotStarsController.getInstance(currentAccount).getBalance(did);
-                        long ton_balance = BotStarsController.getInstance(currentAccount).getChannelBalance(did);
+                    } else if (position == channelBalanceRow) {
+                        long stars_balance = BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId);
+                        long ton_balance = BotStarsController.getInstance(currentAccount).getTONBalance(-chatId);
                         SpannableStringBuilder ssb = new SpannableStringBuilder();
                         if (ton_balance > 0) {
                             if (ton_balance / 1_000_000_000.0 > 1000.0) {
@@ -11370,7 +11461,31 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             if (ssb.length() > 0) ssb.append(" ");
                             ssb.append("XTR ").append(AndroidUtilities.formatWholeNumber((int) stars_balance, 0));
                         }
-                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelStars), ChannelMonetizationLayout.replaceTON(StarsIntroActivity.replaceStarsWithPlain(ssb, .7f), textCell.getTextView().getPaint()), R.drawable.menu_feature_paid, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.ChannelStars), ChannelMonetizationLayout.replaceTON(StarsIntroActivity.replaceStarsWithPlain(ssb, .7f), textCell.getTextView().getPaint()), R.drawable.menu_feature_paid, true);
+                    } else if (position == botStarsBalanceRow) {
+                        long stars_balance = BotStarsController.getInstance(currentAccount).getBotStarsBalance(userId);
+                        SpannableStringBuilder ssb = new SpannableStringBuilder();
+                        if (stars_balance > 0) {
+                            ssb.append("XTR ").append(AndroidUtilities.formatWholeNumber((int) stars_balance, 0));
+                        }
+                        textCell.setTextAndValueAndIcon(getString(R.string.BotBalanceStars), ChannelMonetizationLayout.replaceTON(StarsIntroActivity.replaceStarsWithPlain(ssb, .7f), textCell.getTextView().getPaint()), R.drawable.menu_premium_main, true);
+                    } else if (position == botTonBalanceRow) {
+                        long ton_balance = BotStarsController.getInstance(currentAccount).getTONBalance(userId);
+                        SpannableStringBuilder ssb = new SpannableStringBuilder();
+                        if (ton_balance > 0) {
+                            if (ton_balance / 1_000_000_000.0 > 1000.0) {
+                                ssb.append("TON ").append(AndroidUtilities.formatWholeNumber((int) (ton_balance / 1_000_000_000.0), 0));
+                            } else {
+                                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                                symbols.setDecimalSeparator('.');
+                                DecimalFormat formatterTON = new DecimalFormat("#.##", symbols);
+                                formatterTON.setMinimumFractionDigits(2);
+                                formatterTON.setMaximumFractionDigits(3);
+                                formatterTON.setGroupingUsed(false);
+                                ssb.append("TON ").append(formatterTON.format(ton_balance / 1_000_000_000.0));
+                            }
+                        }
+                        textCell.setTextAndValueAndIcon(getString(R.string.BotBalanceTON), ChannelMonetizationLayout.replaceTON(StarsIntroActivity.replaceStarsWithPlain(ssb, .7f), textCell.getTextView().getPaint()), R.drawable.msg_ton, true);
                     } else if (position == blockedUsersRow) {
                         if (chatInfo != null) {
                             textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ChannelBlacklist), String.format("%d", Math.max(chatInfo.banned_count, chatInfo.kicked_count)), R.drawable.msg_user_remove, position != membersSectionRow - 1);
@@ -11457,6 +11572,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == premiumGiftingRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.SendAGift), R.drawable.menu_gift, false);
                         textCell.setImageLeft(23);
+                    } else if (position == botPermissionLocation) {
+                        textCell.setTextAndCheckAndColorfulIcon(LocaleController.getString(R.string.BotProfilePermissionLocation), botLocation != null && botLocation.granted(), R.drawable.filled_access_location, getThemedColor(Theme.key_color_green), botPermissionBiometry != -1);
+                    } else if (position == botPermissionBiometry) {
+                        textCell.setTextAndCheckAndColorfulIcon(LocaleController.getString(R.string.BotProfilePermissionBiometry), botBiometry != null && botBiometry.granted(), R.drawable.filled_access_fingerprint, getThemedColor(Theme.key_color_orange), false);
+                    } else if (position == botPermissionEmojiStatus) {
+                        textCell.setTextAndCheckAndColorfulIcon(LocaleController.getString(R.string.BotProfilePermissionEmojiStatus), userInfo != null && userInfo.bot_can_manage_emoji_status, R.drawable.filled_access_sleeping, getThemedColor(Theme.key_color_lightblue), botPermissionLocation != -1 || botPermissionBiometry != -1);
                     }
                     textCell.valueTextView.setTextColor(applyPeerColor(getThemedColor(Theme.key_windowBackgroundWhiteValueText), false));
                     break;
@@ -11787,7 +11908,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         @Override
         public int getItemViewType(int position) {
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
-                    position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow) {
+                    position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
             } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
@@ -11803,7 +11924,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
                     position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                     position == clearLogsRow || position == switchBackendRow || position == setAvatarRow || position == addToGroupButtonRow ||
-                    position == addToContactsRow || position == liteModeRow || position == premiumGiftingRow || position == businessRow || position == balanceRow) {
+                    position == addToContactsRow || position == liteModeRow || position == premiumGiftingRow || position == businessRow || position == botStarsBalanceRow || position == botTonBalanceRow || position == channelBalanceRow || position == botPermissionLocation || position == botPermissionBiometry || position == botPermissionEmojiStatus) {
                 return VIEW_TYPE_TEXT;
             } else if (position == notificationsDividerRow) {
                 return VIEW_TYPE_DIVIDER;
@@ -11815,7 +11936,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == secretSettingsSectionRow || position == settingsSectionRow || position == devicesSectionRow ||
                     position == helpSectionCell || position == setAvatarSectionRow || position == passwordSuggestionSectionRow ||
                     position == phoneSuggestionSectionRow || position == premiumSectionsRow || position == reportDividerRow ||
-                    position == channelDividerRow || position == graceSuggestionSectionRow || position == balanceDividerRow
+                    position == channelDividerRow || position == graceSuggestionSectionRow || position == balanceDividerRow ||
+                    position == botPermissionsDivider
             ) {
                 return VIEW_TYPE_SHADOW;
             } else if (position >= membersStartRow && position < membersEndRow) {
@@ -13135,9 +13257,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, bizLocationRow, sparseIntArray);
             put(++pointer, birthdayRow, sparseIntArray);
             put(++pointer, channelRow, sparseIntArray);
-            put(++pointer, balanceRow, sparseIntArray);
+            put(++pointer, botStarsBalanceRow, sparseIntArray);
+            put(++pointer, botTonBalanceRow, sparseIntArray);
+            put(++pointer, channelBalanceRow, sparseIntArray);
             put(++pointer, balanceDividerRow, sparseIntArray);
             put(++pointer, botAppRow, sparseIntArray);
+            put(++pointer, botPermissionsHeader, sparseIntArray);
+            put(++pointer, botPermissionLocation, sparseIntArray);
+            put(++pointer, botPermissionEmojiStatus, sparseIntArray);
+            put(++pointer, botPermissionBiometry, sparseIntArray);
+            put(++pointer, botPermissionsDivider, sparseIntArray);
         }
 
         private void put(int id, int position, SparseIntArray sparseIntArray) {
@@ -13538,7 +13667,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             fragment.setResourceProvider(resourcesProvider);
             TLRPC.TL_message message = new TLRPC.TL_message();
             message.local_id = -1;
-            message.peer_id = getMessagesController().getPeer(dialogId);
+            message.peer_id = getMessagesController().getPeer(getDialogId());
             TLRPC.TL_messageMediaGeo media = new TLRPC.TL_messageMediaGeo();
             media.geo = userInfo.business_location.geo_point;
             media.address = userInfo.business_location.address;

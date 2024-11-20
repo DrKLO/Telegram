@@ -1666,7 +1666,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     stickerSet = action.prev_stickerset;
                 }
                 if (stickerSet != null) {
-                    showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, stickerSet, null, null));
+                    showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, stickerSet, null, null, false));
                     return true;
                 }
             } else if (selectedObject.currentEvent != null && selectedObject.currentEvent.action instanceof TLRPC.TL_channelAdminLogEventActionChangeEmojiStickerSet) {
@@ -2209,7 +2209,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 break;
             }
             case OPTION_SAVE_STICKER: {
-                showDialog(new StickersAlert(getParentActivity(), this, selectedObject.getInputStickerSet(), null, null));
+                showDialog(new StickersAlert(getParentActivity(), this, selectedObject.getInputStickerSet(), null, null, false));
                 break;
             }
             case OPTION_SAVE_TO_DOWNLOADS_OR_MUSIC: {
@@ -3081,7 +3081,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressReplyMessage(ChatMessageCell cell, int id) {
+                    public void didPressReplyMessage(ChatMessageCell cell, int id, float x, float y, boolean longpress) {
                         MessageObject messageObject = cell.getMessageObject();
                         MessageObject reply = messageObject.replyMessageObject;
                         if (reply.getDialogId() == -currentChat.id) {
@@ -3108,7 +3108,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     public void didPressImage(ChatMessageCell cell, float x, float y) {
                         MessageObject message = cell.getMessageObject();
                         if (message.getInputStickerSet() != null) {
-                            showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null));
+                            showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null, false));
                         } else if (message.isVideo() || message.type == MessageObject.TYPE_PHOTO || message.type == MessageObject.TYPE_TEXT && !message.isWebpageDocument() || message.isGif()) {
                             PhotoViewer.getInstance().setParentActivity(ChannelAdminLogActivity.this);
                             PhotoViewer.getInstance().openPhoto(message, null, 0, 0, 0, provider);

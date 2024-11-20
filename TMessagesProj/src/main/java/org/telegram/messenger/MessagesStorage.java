@@ -44,6 +44,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 
@@ -11927,12 +11928,20 @@ public class MessagesStorage extends BaseController {
                     }
                     data.reuse();
 
-                    if (downloadMask != 0 && (message.peer_id.channel_id == 0 || message.post) && message.date >= getConnectionsManager().getCurrentTime() - 60 * 60 && getDownloadController().canDownloadMedia(message) == 1) {
-                        if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument || message.media instanceof TLRPC.TL_messageMediaWebPage) {
+                    if (downloadMask != 0 && (message.peer_id.channel_id == 0 || message.post) && message.date >= getConnectionsManager().getCurrentTime() - 15 * 60 && getDownloadController().canDownloadMedia(message) == 1) {
+                        final long dialogId = MessageObject.getDialogId(message);
+                        if (getDialogFolderIdInternal(dialogId) != 1 && (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument || message.media instanceof TLRPC.TL_messageMediaWebPage)) {
                             int type = 0;
                             long id = 0;
                             TLRPC.MessageMedia object = null;
                             TLRPC.Document document = MessageObject.getDocument(message);
+                            ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(currentAccount, message.media);
+                            if (qualities != null) {
+                                VideoPlayer.VideoUri v = VideoPlayer.getQualityForThumb(qualities);
+                                if (v != null) {
+                                    document = v.document;
+                                }
+                            }
                             TLRPC.Photo photo = MessageObject.getPhoto(message);
                             if (MessageObject.isVoiceMessage(message)) {
                                 id = document.id;
@@ -16095,6 +16104,32 @@ public class MessagesStorage extends BaseController {
                 state_tasks.dispose();
             }
         }
+    }
+
+    private int getDialogFolderIdInternal(long dialogId) {
+        SQLiteCursor cursor = null;
+        try {
+            int folderId;
+            if (unknownDialogsIds.get(dialogId) != null) {
+                folderId = -1;
+            } else {
+                cursor = database.queryFinalized("SELECT folder_id FROM dialogs WHERE did = ?", dialogId);
+                if (cursor.next()) {
+                    folderId = cursor.intValue(0);
+                } else {
+                    folderId = -1;
+                }
+                cursor.dispose();
+            }
+            return folderId;
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return 0;
     }
 
     public void getDialogFolderId(long dialogId, IntCallback callback) {

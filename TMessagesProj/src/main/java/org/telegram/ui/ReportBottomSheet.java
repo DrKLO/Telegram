@@ -254,8 +254,8 @@ public class ReportBottomSheet extends BottomSheet {
     private void submitOption(final CharSequence optionText, final byte[] option, final String comment) {
         TLObject request;
         if (sponsored) {
-            TLRPC.TL_channels_reportSponsoredMessage req = new TLRPC.TL_channels_reportSponsoredMessage();
-            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(-dialogId);
+            TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.random_id = sponsoredId;
             req.option = option;
             request = req;
@@ -937,8 +937,8 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        TLRPC.TL_channels_reportSponsoredMessage req = new TLRPC.TL_channels_reportSponsoredMessage();
-        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(-dialogId);
+        TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         final byte[] sponsoredId = req.random_id = message.sponsoredId;
         req.option = new byte[]{};
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {

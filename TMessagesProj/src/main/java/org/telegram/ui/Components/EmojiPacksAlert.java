@@ -1902,7 +1902,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 });
                 if (data.length == 1 && stickerSet != null && stickerSet.set != null && !stickerSet.set.emojis) {
                     AndroidUtilities.runOnUIThread(() -> EmojiPacksAlert.this.dismiss());
-                    StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider);
+                    StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider, false);
                     alert.show();
                     return;
                 }
@@ -1920,7 +1920,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(this.inputStickerSets.get(i), true);
                         if (stickerSets.size() == 1 && stickerSet != null && stickerSet.set != null && !stickerSet.set.emojis) {
                             EmojiPacksAlert.this.dismiss();
-                            StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider);
+                            StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider, false);
                             alert.show();
                             return;
                         }
