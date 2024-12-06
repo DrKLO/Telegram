@@ -217,7 +217,7 @@ public class SelectorUserCell extends BaseCell {
         }
     }
 
-    private String buildCountDownTime(long diff) {
+    public static String buildCountDownTime(long diff) {
         long oneHourMs = 3600 * 1000;
         long oneMinuteMs = 60 * 1000;
         long oneSecondMs = 1000;

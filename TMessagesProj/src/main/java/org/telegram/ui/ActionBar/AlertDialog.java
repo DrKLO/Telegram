@@ -280,6 +280,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
 
+        progressViewStyle = progressStyle;
         backgroundColor = getThemedColor(Theme.key_dialogBackground);
         final boolean isDark = AndroidUtilities.computePerceivedBrightness(backgroundColor) < 0.721f;
         blurredNativeBackground = supportsNativeBlur() && progressViewStyle == ALERT_TYPE_MESSAGE;
@@ -293,8 +294,6 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             shadowDrawable.getPadding(backgroundPaddings);
         }
         withCancelDialog = progressViewStyle == ALERT_TYPE_SPINNER;
-
-        progressViewStyle = progressStyle;
     }
 
     private long shownAt;

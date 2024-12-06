@@ -14134,7 +14134,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             canvas.save();
 //            canvas.translate(button.x * widthForButtons + addX + AndroidUtilities.dp(5), y + (AndroidUtilities.dp(44) - button.title.getLineBottom(button.title.getLineCount() - 1)) / 2);
-            button.title.ellipsize(Math.max(1, (int) (button.width * widthForButtons) - dp(10))).draw(canvas, button.x * widthForButtons + addX + (button.width * widthForButtons - button.title.getWidth()) / 2f, y + dp(44) / 2f);
+            button.title.ellipsize(Math.max(1, (int) (button.width * widthForButtons) - dp(15)));
+            button.title.draw(canvas, button.x * widthForButtons + addX + (button.width * widthForButtons - button.title.getWidth()) / 2f, y + dp(44) / 2f);
             canvas.restore();
             if (button.button instanceof TLRPC.TL_keyboardButtonWebView) {
                 Drawable drawable = getThemedDrawable(Theme.key_drawable_botWebView);

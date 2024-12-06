@@ -101,7 +101,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
     private boolean drawCount;
     private int lastUnreadCount;
-    private int countTop = AndroidUtilities.dp(19);
+    private int countTop = dp(19);
     private int countLeft;
     private int countWidth;
     private StaticLayout countLayout;
@@ -134,7 +134,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         this.resourcesProvider = resourcesProvider;
 
         avatarImage = new ImageReceiver(this);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(23));
+        avatarImage.setRoundRadius(dp(23));
         avatarDrawable = new AvatarDrawable();
 
         checkBox = new CheckBox2(context, 21, resourcesProvider);
@@ -143,7 +143,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         checkBox.setDrawBackgroundAsArc(3);
         addView(checkBox);
 
-        statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(20));
+        statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(20));
         statusDrawable.setCallback(this);
     }
 
@@ -319,9 +319,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (checkBox != null) {
-            checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
+            checkBox.measure(MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY));
         }
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(60) + (useSeparator ? 1 : 0));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(60) + (useSeparator ? 1 : 0));
     }
 
     @Override
@@ -330,8 +330,8 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             return;
         }
         if (checkBox != null) {
-            int x = LocaleController.isRTL ? (right - left) - AndroidUtilities.dp(42) : AndroidUtilities.dp(42);
-            int y = AndroidUtilities.dp(36);
+            int x = LocaleController.isRTL ? (right - left) - dp(42) : dp(42);
+            int y = dp(36);
             checkBox.layout(x, y, x + checkBox.getMeasuredWidth(), y + checkBox.getMeasuredHeight());
         }
         if (changed) {
@@ -364,40 +364,40 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             drawNameLock = true;
             dialog_id = DialogObject.makeEncryptedDialogId(encryptedChat.id);
             if (!LocaleController.isRTL) {
-                nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
+                nameLockLeft = dp(AndroidUtilities.leftBaseline);
+                nameLeft = dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
             } else {
-                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - Theme.dialogs_lockDrawable.getIntrinsicWidth();
-                nameLeft = AndroidUtilities.dp(11);
+                nameLockLeft = getMeasuredWidth() - dp(AndroidUtilities.leftBaseline + 2) - Theme.dialogs_lockDrawable.getIntrinsicWidth();
+                nameLeft = dp(11);
             }
-            nameLockTop = AndroidUtilities.dp(22.0f);
+            nameLockTop = dp(22.0f);
             updateStatus(false, null, null, false);
         } else if (chat != null) {
             dialog_id = -chat.id;
             drawCheck = chat.verified;
             if (!LocaleController.isRTL) {
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                nameLeft = dp(AndroidUtilities.leftBaseline);
             } else {
-                nameLeft = AndroidUtilities.dp(11);
+                nameLeft = dp(11);
             }
             updateStatus(drawCheck, null, chat, false);
         } else if (user != null) {
             dialog_id = user.id;
             if (!LocaleController.isRTL) {
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                nameLeft = dp(AndroidUtilities.leftBaseline);
             } else {
-                nameLeft = AndroidUtilities.dp(11);
+                nameLeft = dp(11);
             }
-            nameLockTop = AndroidUtilities.dp(21);
+            nameLockTop = dp(21);
             drawCheck = user.verified;
             drawPremium = !savedMessages && MessagesController.getInstance(currentAccount).isPremiumUser(user);
             updateStatus(drawCheck, user, null, false);
         } else if (contact != null) {
             dialog_id = 0;
             if (!LocaleController.isRTL) {
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                nameLeft = dp(AndroidUtilities.leftBaseline);
             } else {
-                nameLeft = AndroidUtilities.dp(11);
+                nameLeft = dp(11);
             }
             if (actionButton == null) {
                 actionButton = new CanvasButton(this);
@@ -412,9 +412,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             }
         }
         if (!LocaleController.isRTL) {
-            statusLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            statusLeft = dp(AndroidUtilities.leftBaseline);
         } else {
-            statusLeft = AndroidUtilities.dp(11);
+            statusLeft = dp(11);
         }
 
         if (currentName != null) {
@@ -440,7 +440,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 namePaint.setTypeface(AndroidUtilities.bold());
             }
-            namePaint.setTextSize(AndroidUtilities.dp(16));
+            namePaint.setTextSize(dp(16));
             if (encryptedChat != null) {
                 namePaint.setColor(Theme.getColor(Theme.key_chats_secretName, resourcesProvider));
             } else {
@@ -455,25 +455,25 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
         int statusWidth;
         if (!LocaleController.isRTL) {
-            statusWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(14);
+            statusWidth = nameWidth = getMeasuredWidth() - nameLeft - dp(14);
         } else {
-            statusWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            statusWidth = nameWidth = getMeasuredWidth() - nameLeft - dp(AndroidUtilities.leftBaseline);
         }
         if (drawNameLock) {
-            nameWidth -= AndroidUtilities.dp(6) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
+            nameWidth -= dp(6) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
         }
         if (contact != null) {
             int w = (int) (Theme.dialogs_countTextPaint.measureText(LocaleController.getString(R.string.Invite)) + 1);
 
             actionLayout = new StaticLayout(LocaleController.getString(R.string.Invite), Theme.dialogs_countTextPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!LocaleController.isRTL) {
-                actionLeft = getMeasuredWidth() - w - AndroidUtilities.dp(19) - AndroidUtilities.dp(16);
+                actionLeft = getMeasuredWidth() - w - dp(19) - dp(16);
             } else {
-                actionLeft = AndroidUtilities.dp(19) + AndroidUtilities.dp(16);
+                actionLeft = dp(19) + dp(16);
                 nameLeft += w;
                 statusLeft += w;
             }
-            nameWidth -= AndroidUtilities.dp(32) + w;
+            nameWidth -= dp(32) + w;
         }
 
         nameWidth -= getPaddingLeft() + getPaddingRight();
@@ -485,15 +485,15 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             if (unreadCount != 0) {
                 lastUnreadCount = unreadCount;
                 String countString = String.format(Locale.US, "%d", unreadCount);
-                countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(countString)));
+                countWidth = Math.max(dp(12), (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(countString)));
                 countLayout = new StaticLayout(countString, Theme.dialogs_countTextPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                int w = countWidth + AndroidUtilities.dp(18);
+                int w = countWidth + dp(18);
                 nameWidth -= w;
                 statusWidth -= w;
                 if (!LocaleController.isRTL) {
-                    countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(19);
+                    countLeft = getMeasuredWidth() - countWidth - dp(19);
                 } else {
-                    countLeft = AndroidUtilities.dp(19);
+                    countLeft = dp(19);
                     nameLeft += w;
                     statusLeft += w;
                 }
@@ -509,9 +509,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (nameWidth < 0) {
             nameWidth = 0;
         }
-        CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - dp(12), TextUtils.TruncateAt.END);
         if (nameStringFinal != null) {
-            nameStringFinal = Emoji.replaceEmoji(nameStringFinal, currentNamePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+            nameStringFinal = Emoji.replaceEmoji(nameStringFinal, currentNamePaint.getFontMetricsInt(), dp(20), false);
         }
         nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
@@ -548,7 +548,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             }
             if (savedMessages || UserObject.isReplyUser(user)) {
                 statusString = null;
-                nameTop = AndroidUtilities.dp(20);
+                nameTop = dp(20);
             }
         } else {
             if (ChatObject.isChannel(chat) && !chat.megagroup) {
@@ -574,13 +574,13 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                     }
                 }
             }
-            nameTop = AndroidUtilities.dp(19);
+            nameTop = dp(19);
         }
         if (customPaints) {
             if (statusPaint == null) {
                 statusPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             }
-            statusPaint.setTextSize(AndroidUtilities.dp(15));
+            statusPaint.setTextSize(dp(15));
             if (currentStatusPaint == Theme.dialogs_offlinePaint) {
                 statusPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
             } else if (currentStatusPaint == Theme.dialogs_onlinePaint) {
@@ -590,22 +590,22 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         }
 
         if (!TextUtils.isEmpty(statusString)) {
-            CharSequence statusStringFinal = TextUtils.ellipsize(statusString, currentStatusPaint, statusWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+            CharSequence statusStringFinal = TextUtils.ellipsize(statusString, currentStatusPaint, statusWidth - dp(12), TextUtils.TruncateAt.END);
             statusLayout = new StaticLayout(statusStringFinal, currentStatusPaint, statusWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            nameTop = AndroidUtilities.dp(9);
-            nameLockTop -= AndroidUtilities.dp(10);
+            nameTop = dp(9);
+            nameLockTop -= dp(10);
         } else {
-            nameTop = AndroidUtilities.dp(20);
+            nameTop = dp(20);
             statusLayout = null;
         }
 
         int avatarLeft;
         if (LocaleController.isRTL) {
-            avatarLeft = getMeasuredWidth() - AndroidUtilities.dp(57) - getPaddingRight();
+            avatarLeft = getMeasuredWidth() - dp(57) - getPaddingRight();
         } else {
-            avatarLeft = AndroidUtilities.dp(11) + getPaddingLeft();
+            avatarLeft = dp(rectangularAvatar ? 15 : 11) + getPaddingLeft();
         }
-        avatarStoryParams.originalAvatarRect.set(avatarLeft, AndroidUtilities.dp(7), avatarLeft + AndroidUtilities.dp(46), AndroidUtilities.dp(7) + AndroidUtilities.dp(46));
+        avatarStoryParams.originalAvatarRect.set(avatarLeft, dp(7), avatarLeft + dp(rectangularAvatar ? 42 : 46), dp(7) + dp(46));
 
         double widthpx;
         float left;
@@ -674,6 +674,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         }
     }
 
+    private boolean rectangularAvatar;
+    public void setRectangularAvatar(boolean value) {
+        rectangularAvatar = value;
+    }
+
     public void update(int mask) {
         TLRPC.FileLocation photo = null;
         if (user != null) {
@@ -712,7 +717,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
         }
 
-        avatarImage.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(23));
+        avatarImage.setRoundRadius(rectangularAvatar ? dp(10) : chat != null && chat.forum ? dp(16) : dp(23));
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 && user != null || (mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 && chat != null) {
@@ -794,9 +799,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 dividerPaint = Theme.dividerPaint;
             }
             if (LocaleController.isRTL) {
-                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, dividerPaint);
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, dividerPaint);
             } else {
-                canvas.drawLine(AndroidUtilities.dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerPaint);
+                canvas.drawLine(dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerPaint);
             }
         }
 
@@ -814,13 +819,13 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             int x;
             if (LocaleController.isRTL) {
                 if (nameLayout.getLineLeft(0) == 0) {
-                    x = nameLeft - AndroidUtilities.dp(3) - statusDrawable.getIntrinsicWidth();
+                    x = nameLeft - dp(3) - statusDrawable.getIntrinsicWidth();
                 } else {
                     float w = nameLayout.getLineWidth(0);
-                    x = (int) (nameLeft + nameWidth - Math.ceil(w) - AndroidUtilities.dp(3) - statusDrawable.getIntrinsicWidth());
+                    x = (int) (nameLeft + nameWidth - Math.ceil(w) - dp(3) - statusDrawable.getIntrinsicWidth());
                 }
             } else {
-                x = (int) (nameLeft + nameLayout.getLineRight(0) + AndroidUtilities.dp(6));
+                x = (int) (nameLeft + nameLayout.getLineRight(0) + dp(6));
             }
             setDrawableBounds(statusDrawable, x, nameTop + (nameLayout.getHeight() - statusDrawable.getIntrinsicHeight()) / 2f);
             statusDrawable.draw(canvas);
@@ -828,31 +833,31 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
         if (statusLayout != null) {
             canvas.save();
-            canvas.translate(statusLeft + sublabelOffsetX, AndroidUtilities.dp(33) + sublabelOffsetY);
+            canvas.translate(statusLeft + sublabelOffsetX, dp(33) + sublabelOffsetY);
             statusLayout.draw(canvas);
             canvas.restore();
         }
 
         if (countLayout != null) {
-            int x = countLeft - AndroidUtilities.dp(5.5f);
-            rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+            int x = countLeft - dp(5.5f);
+            rect.set(x, countTop, x + countWidth + dp(11), countTop + dp(23));
             canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id, 0) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
             canvas.save();
-            canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
+            canvas.translate(countLeft, countTop + dp(4));
             countLayout.draw(canvas);
             canvas.restore();
         }
 
         if (actionLayout != null) {
             actionButton.setColor(Theme.getColor(Theme.key_chats_unreadCounter), Theme.getColor(Theme.key_chats_unreadCounterText));
-            AndroidUtilities.rectTmp.set(actionLeft, countTop, actionLeft + actionLayout.getWidth(), countTop + AndroidUtilities.dp(23));
-            AndroidUtilities.rectTmp.inset(-AndroidUtilities.dp(16), -AndroidUtilities.dp(4));
+            AndroidUtilities.rectTmp.set(actionLeft, countTop, actionLeft + actionLayout.getWidth(), countTop + dp(23));
+            AndroidUtilities.rectTmp.inset(-dp(16), -dp(4));
             actionButton.setRect(AndroidUtilities.rectTmp);
             actionButton.setRounded(true);
             actionButton.draw(canvas);
 
             canvas.save();
-            canvas.translate(actionLeft, countTop + AndroidUtilities.dp(4));
+            canvas.translate(actionLeft, countTop + dp(4));
             actionLayout.draw(canvas);
             canvas.restore();
         }

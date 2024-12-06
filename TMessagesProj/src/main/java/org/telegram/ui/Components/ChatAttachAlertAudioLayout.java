@@ -467,7 +467,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             sendPressed = true;
             ArrayList<MessageObject> audios = new ArrayList<>();
             audios.add(audioEntry.messageObject);
-            delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), false, 0, 0, false);
+            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, false);
             add = true;
         } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
@@ -502,7 +502,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         for (int a = 0; a < selectedAudiosOrder.size(); a++) {
             audios.add(selectedAudiosOrder.get(a).messageObject);
         }
-        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), notify, scheduleDate, effectId, invertMedia);
+        delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, effectId, invertMedia);
     }
 
     public ArrayList<MessageObject> getSelected() {

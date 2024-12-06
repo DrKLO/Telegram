@@ -176,7 +176,7 @@ int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContex
 
         dec = avcodec_find_decoder(st->codecpar->codec_id);
         if (!dec) {
-            LOGE("failed to find %s codec", av_get_media_type_string(type));
+            LOGE("failed to find %d codec", st->codecpar->codec_id);
             return AVERROR(EINVAL);
         }
 
@@ -857,7 +857,7 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time, jboolean loop) {
-    if (ptr == NULL || bitmap == nullptr) {
+    if (ptr == NULL) {
         return 0;
     }
     //int64_t time = ConnectionsManager::getInstance(0).getCurrentTimeMonotonicMillis();
@@ -946,10 +946,11 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
         }
         if (got_frame) {
             //LOGD("decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
-            if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P || info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUVA420P) {
+            if (bitmap != nullptr && (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P || info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUVA420P)) {
                 writeFrameToBitmap(env, info, data, bitmap, stride);
             }
             info->has_decoded_frames = true;
+            push_time(env, info, data);
             av_frame_unref(info->frame);
             return 1;
         }

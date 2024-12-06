@@ -2271,13 +2271,13 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear && useToday) {
-                return LocaleController.formatString("TodayAtFormattedWithToday", R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
             } else if (dateDay + 1 == day && year == dateYear && useToday) {
-                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getChatDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getChatFullDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatFullDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);

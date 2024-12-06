@@ -292,7 +292,7 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
   private @C.NetworkType int networkType;
   private long totalElapsedTimeMs;
   private long totalBytesTransferred;
-  private long bitrateEstimate;
+  private volatile long bitrateEstimate;
   private long lastReportedBitrateEstimate;
 
   private boolean networkTypeOverrideSet;
@@ -420,7 +420,7 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
     streamCount--;
   }
 
-  public void onTransfer(long bytes, long duration) {
+  public synchronized void onTransfer(long bytes, long duration) {
     long nowMs = clock.elapsedRealtime();
     int sampleElapsedTimeMs = (int) (nowMs - sampleStartTimeMs);
     totalElapsedTimeMs += sampleElapsedTimeMs;

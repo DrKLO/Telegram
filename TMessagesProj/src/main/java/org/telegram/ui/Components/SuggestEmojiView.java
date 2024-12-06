@@ -40,6 +40,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -48,6 +49,7 @@ import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 
 public class SuggestEmojiView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -488,6 +490,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
         return lastLang;
     }
 
+    private MediaDataController.SearchStickersKey loadingKey;
     private void searchKeywords(String query) {
         if (query == null) {
             return;
@@ -501,6 +504,10 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
             return;
         }
         final int id = ++lastQueryId;
+        if (loadingKey != null) {
+            MediaDataController.getInstance(currentAccount).cancelSearchStickers(loadingKey);
+            loadingKey = null;
+        }
 
         String[] lang = detectKeyboardLangThrottleFirstWithDelay();
         if (lastLang == null || !Arrays.equals(lang, lastLang)) {
@@ -513,11 +520,22 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
             searchRunnable = null;
         }
         searchRunnable = () -> {
-            MediaDataController.getInstance(currentAccount).getEmojiSuggestions(lang, query, true, (param, alias) -> {
-                if (id == lastQueryId) {
+            final HashSet<String> addedToResult = new HashSet<>();
+            final ArrayList<MediaDataController.KeywordResult> result = new ArrayList<>();
+//            Runnable localSearch = () -> {
+                MediaDataController.getInstance(currentAccount).getEmojiSuggestions(lang, query, true, (param, alias) -> {
+                    if (id != lastQueryId) return;
                     lastQueryType = 1;
                     lastQuery = query;
-                    if (param != null && !param.isEmpty()) {
+                    if (param != null) {
+                        for (MediaDataController.KeywordResult r : param) {
+                            if (!addedToResult.contains(r.emoji)) {
+                                addedToResult.add(r.emoji);
+                                result.add(r);
+                            }
+                        }
+                    }
+                    if (!result.isEmpty()) {
                         clear = false;
                         forceClose = false;
                         createListView();
@@ -539,8 +557,29 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                         clear = true;
                         forceClose();
                     }
-                }
-            }, SharedConfig.suggestAnimatedEmoji && UserConfig.getInstance(currentAccount).isPremium());
+                }, SharedConfig.suggestAnimatedEmoji && UserConfig.getInstance(currentAccount).isPremium());
+//            };
+//            Runnable serverSearch = () -> {
+//                if (ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
+//                    localSearch.run();
+//                    return;
+//                }
+//                loadingKey = MediaDataController.getInstance(currentAccount).searchStickers(true, query, lang == null ? "" : lang[0], emojis -> {
+//                    if (id != lastQueryId) return;
+//                    AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocuments(emojis);
+//                    for (TLRPC.Document doc : emojis) {
+//                        final String emoji = "animated_" + doc.id;
+//                        if (!addedToResult.contains(emoji)) {
+//                            MediaDataController.KeywordResult keywordResult = new MediaDataController.KeywordResult();
+//                            keywordResult.emoji = emoji;
+//                            addedToResult.add(emoji);
+//                            result.add(keywordResult);
+//                        }
+//                    }
+//                    localSearch.run();
+//                });
+//            };
+//            serverSearch.run();
         };
         if (keywordResults == null || keywordResults.isEmpty()) {
             AndroidUtilities.runOnUIThread(searchRunnable, 600);

@@ -133,6 +133,15 @@ public class Bulletin {
         return null;
     }
 
+    public Bulletin setImageScale(float scale) {
+        if (layout instanceof Bulletin.TwoLineLottieLayout) {
+            View imageView = ((TwoLineLottieLayout) layout).imageView;
+            imageView.setScaleX(scale);
+            imageView.setScaleY(scale);
+        }
+        return this;
+    }
+
     public static void hide(@NonNull FrameLayout containerLayout) {
         hide(containerLayout, true);
     }

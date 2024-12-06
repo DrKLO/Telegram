@@ -28,14 +28,20 @@ public class UserNameResolver {
     HashMap<String, ArrayList<Consumer<Long>>> resolvingConsumers = new HashMap<>();
 
     public int resolve(String username, Consumer<Long> resolveConsumer) {
-        CachedPeer cachedPeer = resolvedCache.get(username);
-        if (cachedPeer != null) {
-            if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
-                resolveConsumer.accept(cachedPeer.peerId);
-                FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
-                return -1;
-            } else {
-                resolvedCache.remove(username);
+        return resolve(username, null, resolveConsumer);
+    }
+
+    public int resolve(String username, String referrer, Consumer<Long> resolveConsumer) {
+        if (TextUtils.isEmpty(referrer)) {
+            CachedPeer cachedPeer = resolvedCache.get(username);
+            if (cachedPeer != null) {
+                if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
+                    resolveConsumer.accept(cachedPeer.peerId);
+                    FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
+                    return -1;
+                } else {
+                    resolvedCache.remove(username);
+                }
             }
         }
 
@@ -57,6 +63,10 @@ public class UserNameResolver {
         } else {
             TLRPC.TL_contacts_resolveUsername resolveUsername = new TLRPC.TL_contacts_resolveUsername();
             resolveUsername.username = username;
+            if (!TextUtils.isEmpty(referrer)) {
+                resolveUsername.flags |= 1;
+                resolveUsername.referer = referrer;
+            }
             req = resolveUsername;
         }
         return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -65,6 +75,12 @@ public class UserNameResolver {
                 return;
             }
             if (error != null) {
+                if (error != null && error.text != null && "STARREF_EXPIRED".equals(error.text)) {
+                    for (int i = 0; i < finalConsumers.size(); i++) {
+                        finalConsumers.get(i).accept(Long.MAX_VALUE);
+                    }
+                    return;
+                }
                 for (int i = 0; i < finalConsumers.size(); i++) {
                     finalConsumers.get(i).accept(null);
                 }

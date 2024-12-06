@@ -251,6 +251,8 @@ public class SliderView extends View {
     private int w, h;
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
+    public int fixWidth;
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (currentType == TYPE_DIMMING) {
@@ -260,7 +262,10 @@ public class SliderView extends View {
         }
         textPaint.setTextSize(dp(16));
         text.setTextSize(dp(15));
-        if (currentType == TYPE_VOLUME) {
+        if (fixWidth > 0) {
+            w = fixWidth;
+            h = dp(48);
+        } else if (currentType == TYPE_VOLUME) {
             // TODO: fix this nonsense
             w = (int) Math.min(textPaint.measureText(LocaleController.getString(R.string.StoryAudioRemove)) + dp(88), MeasureSpec.getSize(widthMeasureSpec));
             h = dp(48);

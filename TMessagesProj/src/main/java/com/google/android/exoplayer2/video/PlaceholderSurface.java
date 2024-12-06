@@ -21,6 +21,7 @@ import static com.google.android.exoplayer2.util.EGLSurfaceTexture.SECURE_MODE_S
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.opengl.EGLContext;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -43,6 +44,7 @@ public final class PlaceholderSurface extends Surface {
 
   /** Whether the surface is secure. */
   public final boolean secure;
+  public final EGLContext parentContext;
 
   private static @SecureMode int secureMode;
   private static boolean secureModeInitialized;
@@ -76,17 +78,18 @@ public final class PlaceholderSurface extends Surface {
    * @throws IllegalStateException If a secure surface is requested on a device for which {@link
    *     #isSecureSupported(Context)} returns {@code false}.
    */
-  public static PlaceholderSurface newInstanceV17(Context context, boolean secure) {
+  public static PlaceholderSurface newInstanceV17(Context context, boolean secure, EGLContext parentContext) {
     Assertions.checkState(!secure || isSecureSupported(context));
     PlaceholderSurfaceThread thread = new PlaceholderSurfaceThread();
-    return thread.init(secure ? secureMode : SECURE_MODE_NONE);
+    return thread.init(secure ? secureMode : SECURE_MODE_NONE, parentContext);
   }
 
   private PlaceholderSurface(
-      PlaceholderSurfaceThread thread, SurfaceTexture surfaceTexture, boolean secure) {
+      PlaceholderSurfaceThread thread, SurfaceTexture surfaceTexture, boolean secure, EGLContext parentContext) {
     super(surfaceTexture);
     this.thread = thread;
     this.secure = secure;
+    this.parentContext = parentContext;
   }
 
   @Override
@@ -135,13 +138,13 @@ public final class PlaceholderSurface extends Surface {
       super("ExoPlayer:PlaceholderSurface");
     }
 
-    public PlaceholderSurface init(@SecureMode int secureMode) {
+    public PlaceholderSurface init(@SecureMode int secureMode, EGLContext parentContext) {
       start();
       handler = new Handler(getLooper(), /* callback= */ this);
       eglSurfaceTexture = new EGLSurfaceTexture(handler);
       boolean wasInterrupted = false;
       synchronized (this) {
-        handler.obtainMessage(MSG_INIT, secureMode, 0).sendToTarget();
+        handler.obtainMessage(MSG_INIT, secureMode, 0, parentContext).sendToTarget();
         while (surface == null && initException == null && initError == null) {
           try {
             wait();
@@ -173,7 +176,7 @@ public final class PlaceholderSurface extends Surface {
       switch (msg.what) {
         case MSG_INIT:
           try {
-            initInternal(/* secureMode= */ msg.arg1);
+            initInternal(/* secureMode= */ msg.arg1, msg.obj == null ? null : (EGLContext) msg.obj);
           } catch (RuntimeException e) {
             Log.e(TAG, "Failed to initialize placeholder surface", e);
             initException = e;
@@ -203,12 +206,12 @@ public final class PlaceholderSurface extends Surface {
       }
     }
 
-    private void initInternal(@SecureMode int secureMode) throws GlUtil.GlException {
+    private void initInternal(@SecureMode int secureMode, EGLContext parentContext) throws GlUtil.GlException {
       Assertions.checkNotNull(eglSurfaceTexture);
-      eglSurfaceTexture.init(secureMode);
+      eglSurfaceTexture.init(secureMode, parentContext);
       this.surface =
           new PlaceholderSurface(
-              this, eglSurfaceTexture.getSurfaceTexture(), secureMode != SECURE_MODE_NONE);
+              this, eglSurfaceTexture.getSurfaceTexture(), secureMode != SECURE_MODE_NONE, parentContext);
     }
 
     private void releaseInternal() {

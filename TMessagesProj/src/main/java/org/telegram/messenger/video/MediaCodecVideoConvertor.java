@@ -7,6 +7,9 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -21,6 +24,7 @@ import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.video.audio_input.AudioInput;
 import org.telegram.messenger.video.audio_input.BlankAudioInput;
 import org.telegram.messenger.video.audio_input.GeneralAudioInput;
+import org.telegram.ui.Stories.recorder.CollageLayout;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
@@ -48,12 +52,12 @@ public class MediaCodecVideoConvertor {
     private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
     private String outputMimeType;
 
-    public boolean convertVideo(ConvertVideoParams convertVideoParams) {
+    public boolean convertVideo(ConvertVideoParams convertVideoParams, Handler handler) {
         if (convertVideoParams.isSticker) {
             return WebmEncoder.convert(convertVideoParams, 0);
         }
         this.callback = convertVideoParams.callback;
-        return convertVideoInternal(convertVideoParams, false, 0);
+        return convertVideoInternal(convertVideoParams, false, 0, handler);
     }
 
     public long getLastFrameTimestamp() {
@@ -61,9 +65,12 @@ public class MediaCodecVideoConvertor {
     }
 
     @TargetApi(18)
-    private boolean convertVideoInternal(ConvertVideoParams convertVideoParams,
-                                         boolean increaseTimeout,
-                                         int triesCount) {
+    private boolean convertVideoInternal(
+        ConvertVideoParams convertVideoParams,
+        boolean increaseTimeout,
+        int triesCount,
+        Handler handler
+    ) {
         String videoPath = convertVideoParams.videoPath;
         File cacheFile = convertVideoParams.cacheFile;
         int rotationValue = convertVideoParams.rotationValue;
@@ -178,7 +185,7 @@ public class MediaCodecVideoConvertor {
                     inputSurface.makeCurrent();
                     encoder.start();
 
-                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, convertVideoParams);
+                    outputSurface = new OutputSurface(inputSurface.getContext(), savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, convertVideoParams, handler);
 
                     ByteBuffer[] encoderOutputBuffers = null;
                     ByteBuffer[] encoderInputBuffers = null;
@@ -511,7 +518,7 @@ public class MediaCodecVideoConvertor {
                                 }
                             }
 
-                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
+                            outputSurface = new OutputSurface(inputSurface.getContext(), savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams, handler);
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0) {
                                 outputSurface.changeFragmentShader(
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
@@ -956,18 +963,17 @@ public class MediaCodecVideoConvertor {
         }
 
         if (repeatWithIncreasedTimeout) {
-            return convertVideoInternal(convertVideoParams, true, triesCount + 1);
+            return convertVideoInternal(convertVideoParams, true, triesCount + 1, handler);
         }
 
         if (error && canBeBrokenEncoder && triesCount < 3) {
-            return convertVideoInternal(convertVideoParams, increaseTimeout, triesCount + 1);
+            return convertVideoInternal(convertVideoParams, increaseTimeout, triesCount + 1, handler);
         }
 
         long timeLeft = System.currentTimeMillis() - time;
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate + " file size=" + AndroidUtilities.formatFileSize(cacheFile.length()) + " encoder_name=" + selectedEncoderName);
         }
-
         return error;
     }
 
@@ -975,7 +981,13 @@ public class MediaCodecVideoConvertor {
         if (soundInfos == null) return;
         for (int i = 0; i < soundInfos.size(); i++) {
             MixedSoundInfo soundInfo = soundInfos.get(i);
-            GeneralAudioInput secondAudio = new GeneralAudioInput(soundInfo.audioFile);
+            GeneralAudioInput secondAudio;
+            try {
+                secondAudio = new GeneralAudioInput(soundInfo.audioFile);
+            } catch (Exception e) {
+                FileLog.e(e);
+                continue;
+            }
             secondAudio.setVolume(soundInfo.volume);
             long startTimeLocal = 0;
             if (soundInfo.startTime > 0) {
@@ -1444,6 +1456,8 @@ public class MediaCodecVideoConvertor {
         boolean isDark;
         long wallpaperPeerId;
         boolean isSticker;
+        CollageLayout collage;
+        ArrayList<VideoEditedInfo.Part> collageParts;
 
         private ConvertVideoParams() {
 
@@ -1496,6 +1510,8 @@ public class MediaCodecVideoConvertor {
             params.messageVideoMaskPath = info.messageVideoMaskPath;
             params.backgroundPath = info.backgroundPath;
             params.isSticker = info.isSticker;
+            params.collage = info.collage;
+            params.collageParts = info.collageParts;
             return params;
         }
     }

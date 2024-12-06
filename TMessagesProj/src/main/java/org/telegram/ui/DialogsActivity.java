@@ -4422,6 +4422,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 protected void onArchiveSettingsClick() {
                     presentFragment(new ArchiveSettingsActivity());
                 }
+
+                @Override
+                protected boolean showOpenBotButton() {
+                    return initialDialogsType == DIALOGS_TYPE_DEFAULT;
+                }
+                @Override
+                protected void onOpenBot(TLRPC.User bot) {
+                    MessagesController.getInstance(currentAccount).openApp(bot, 0);
+                }
             };
             viewPage.dialogsAdapter.setRecyclerListView(viewPage.listView);
             viewPage.dialogsAdapter.setForceShowEmptyCell(afterSignup);
@@ -5490,7 +5499,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     c.loadInsufficientSubscriptions();
                     return false;
                 } else {
-                    long starsNeeded = -c.balance;
+                    long starsNeeded = -c.balance.amount;
                     for (int i = 0; i < c.insufficientSubscriptions.size(); ++i) {
                         final TL_stars.StarsSubscription sub = c.insufficientSubscriptions.get(i);
                         final long did = DialogObject.getPeerDialogId(sub.peer);
@@ -5820,7 +5829,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     updateDialogsHint();
                 }).show();
             });
-            dialogsHintCell.setText(StarsIntroActivity.replaceStarsWithPlain(formatPluralStringComma("StarsSubscriptionExpiredHintTitle2", (int) (starsNeeded - c.balance <= 0 ? starsNeeded : starsNeeded - c.balance), starsNeededName), .72f), LocaleController.getString(R.string.StarsSubscriptionExpiredHintText));
+            dialogsHintCell.setText(StarsIntroActivity.replaceStarsWithPlain(formatPluralStringComma("StarsSubscriptionExpiredHintTitle2", (int) (starsNeeded - c.balance.amount <= 0 ? starsNeeded : starsNeeded - c.balance.amount), starsNeededName), .72f), LocaleController.getString(R.string.StarsSubscriptionExpiredHintText));
             dialogsHintCell.setOnCloseListener(v -> {
                 MessagesController.getInstance(currentAccount).removeSuggestion(0, "STARS_SUBSCRIPTION_LOW_BALANCE");
                 ChangeBounds transition = new ChangeBounds();
@@ -8618,19 +8627,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             previewMenu[0].addView(muteItem);
         }
 
-        if (dialogId != UserObject.VERIFY) {
-            ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
-            deleteItem.setIconColor(getThemedColor(Theme.key_text_RedRegular));
-            deleteItem.setTextColor(getThemedColor(Theme.key_text_RedBold));
-            deleteItem.setSelectorColor(Theme.multAlpha(getThemedColor(Theme.key_text_RedBold), .12f));
-            deleteItem.setTextAndIcon(LocaleController.getString(R.string.Delete), R.drawable.msg_delete);
-            deleteItem.setMinimumWidth(160);
-            deleteItem.setOnClickListener(e -> {
-                performSelectedDialogsAction(dialogIdArray, delete, false, false);
-                finishPreviewFragment();
-            });
-            previewMenu[0].addView(deleteItem);
-        }
+        ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
+        deleteItem.setIconColor(getThemedColor(Theme.key_text_RedRegular));
+        deleteItem.setTextColor(getThemedColor(Theme.key_text_RedBold));
+        deleteItem.setSelectorColor(Theme.multAlpha(getThemedColor(Theme.key_text_RedBold), .12f));
+        deleteItem.setTextAndIcon(LocaleController.getString(R.string.Delete), R.drawable.msg_delete);
+        deleteItem.setMinimumWidth(160);
+        deleteItem.setOnClickListener(e -> {
+            performSelectedDialogsAction(dialogIdArray, delete, false, false);
+            finishPreviewFragment();
+        });
+        previewMenu[0].addView(deleteItem);
 
         if (getMessagesController().checkCanOpenChat(args, DialogsActivity.this)) {
             if (searchString != null) {
@@ -9612,9 +9619,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     canPinCount++;
                 }
                 canClearHistoryCount++;
-                if (dialog.id != UserObject.VERIFY) {
-                    canDeleteCount++;
-                }
+                canDeleteCount++;
             }
         }
         if (deleteItem != null) {

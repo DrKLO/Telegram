@@ -160,8 +160,8 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     private PaintDoneView doneButton;
     private float offsetTranslationY;
 
-    private final Bitmap bitmapToEdit;
-    private final Bitmap blurBitmapToEdit;
+    private Bitmap bitmapToEdit;
+    private Bitmap blurBitmapToEdit;
     private Bitmap facesBitmap;
     private UndoStore undoStore;
 
@@ -841,7 +841,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         bottomLayout.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int [] {0x00000000, 0x80000000} ));
         addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44 + 60, Gravity.BOTTOM));
 
-        paintToolsView = new PaintToolsView(context, entry != null && !entry.isRepostMessage && blurManager != null);
+        paintToolsView = new PaintToolsView(context, entry != null && !entry.isCollage() && !entry.isRepostMessage && blurManager != null);
         paintToolsView.setPadding(dp(16), 0, dp(16), 0);
         paintToolsView.setDelegate(this);
 //        paintToolsView.setSelectedIndex(MathUtils.clamp(palette.getCurrentBrush(), 0, Brush.BRUSHES_LIST.size()) + 1);
@@ -1143,6 +1143,18 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         previewViewTranslationAnimator.setDuration(350);
         previewViewTranslationAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         previewViewTranslationAnimator.start();
+    }
+
+    public void destroy() {
+        AndroidUtilities.removeFromParent(renderView);
+        if (bitmapToEdit != null) {
+            bitmapToEdit.recycle();
+            bitmapToEdit = null;
+        }
+        if (blurBitmapToEdit != null) {
+            blurBitmapToEdit.recycle();
+            blurBitmapToEdit = null;
+        }
     }
 
     @Override
@@ -1571,28 +1583,42 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     return true;
                 }
 
+                private final Path clipPath = new Path();
+
                 @Override
                 public void drawRoundRect(Canvas canvas, RectF rect, float radius, float offsetX, float offsetY, int alpha, boolean isWindow) {
-                    Paint paint;
-                    if (isWindow) {
-                        if (windowBackgroundBlur == null) {
-                            windowBackgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, reactionLayout.getReactionsWindow().windowView, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND);
-                        }
-                        windowBackgroundBlur.setBounds(-offsetX, -offsetY,
-                                -offsetX + getMeasuredWidth(),
-                                -offsetY + getMeasuredHeight());
-                        paint = windowBackgroundBlur.paint;
+                    if (!isWindow && blurManager != null && blurManager.hasRenderNode()) {
+                        final BlurringShader.StoryBlurDrawer drawer = isWindow ? windowBackgroundBlur : reactionBackgroundBlur;
+                        clipPath.rewind();
+                        clipPath.addRoundRect(rect, radius, radius, Path.Direction.CW);
+                        canvas.save();
+                        canvas.clipPath(clipPath);
+                        drawer.drawRect(canvas);
+                        backgroundPaint.setAlpha((int) (0.4f * alpha));
+                        canvas.drawPaint(backgroundPaint);
+                        canvas.restore();
                     } else {
-                        reactionBackgroundBlur.setBounds(-offsetX, -offsetY,
-                                -offsetX + getMeasuredWidth(),
-                                -offsetY + getMeasuredHeight());
-                        paint = reactionBackgroundBlur.paint;
+                        Paint paint;
+                        if (isWindow) {
+                            if (windowBackgroundBlur == null) {
+                                windowBackgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, reactionLayout.getReactionsWindow().windowView, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND);
+                            }
+                            windowBackgroundBlur.setBounds(-offsetX, -offsetY,
+                                    -offsetX + getMeasuredWidth(),
+                                    -offsetY + getMeasuredHeight());
+                            paint = windowBackgroundBlur.paint;
+                        } else {
+                            reactionBackgroundBlur.setBounds(-offsetX, -offsetY,
+                                    -offsetX + getMeasuredWidth(),
+                                    -offsetY + getMeasuredHeight());
+                            paint = reactionBackgroundBlur.paint;
+                        }
+                        paint.setAlpha(alpha);
+                        backgroundPaint.setAlpha((int) (0.4f * alpha));
+                        canvas.drawRoundRect(rect, radius, radius, paint);
+                        canvas.drawRoundRect(rect, radius, radius, backgroundPaint);
+                        //ReactionsContainerLayout.ReactionsContainerDelegate.super.drawRoundRect(canvas, rect, radius, offsetX, offsetY);
                     }
-                    paint.setAlpha(alpha);
-                    backgroundPaint.setAlpha((int) (0.4f * alpha));
-                    canvas.drawRoundRect(rect, radius, radius, paint);
-                    canvas.drawRoundRect(rect, radius, radius, backgroundPaint);
-                    //ReactionsContainerLayout.ReactionsContainerDelegate.super.drawRoundRect(canvas, rect, radius, offsetX, offsetY);
                 }
 
                 @Override

@@ -137,6 +137,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
     private boolean allowScreenshots = true;
     private boolean keepOnMyPage = false;
+    private boolean allowCover = true;
     private boolean canChangePeer = true;
 
     private HashSet<Long> mergeUsers(ArrayList<Long> users, HashMap<Long, ArrayList<Long>> usersByGroup) {
@@ -1105,7 +1106,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     items.add(ItemInner.asShadow(LocaleController.formatPluralString(containsPrivacy ? "StoryKeepInfo" : (isChannel ? "StoryKeepChannelInfo" : "StoryKeepGroupInfo"), (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
                     pad.subtractHeight += dp(80);
                 }
-                if (keepOnMyPage && whenCoverClicked != null) {
+                if (keepOnMyPage && allowCover && whenCoverClicked != null) {
                     items.add(ItemInner.asButton(getString(R.string.StoryEditCover), coverDrawable));
                     pad.subtractHeight += dp(50);
                     items.add(ItemInner.asShadow(getString(R.string.StoryEditCoverInfo)));
@@ -2310,6 +2311,19 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     }
     public StoryPrivacyBottomSheet whenSelectedPeer(Utilities.Callback<TLRPC.InputPeer> onSelectedPeer) {
         this.onSelectedPeer = onSelectedPeer;
+        return this;
+    }
+    public StoryPrivacyBottomSheet allowCover(boolean allowCover) {
+        this.allowCover = allowCover;
+        if (viewPager != null) {
+            View[] viewPages = viewPager.getViewPages();
+            for (int i = 0; i < viewPages.length; ++i) {
+                View view = viewPages[i];
+                if (view instanceof Page) {
+                    ((Page) view).updateButton(false);
+                }
+            }
+        }
         return this;
     }
     public StoryPrivacyBottomSheet enableSharing(boolean enable) {

@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
@@ -2067,6 +2068,10 @@ public class FilterCreateActivity extends BaseFragment {
             }
         }
 
+        public void setTypeface(Typeface typeface) {
+            textPaint.setTypeface(typeface);
+        }
+
         public NewSpan(float textSize) {
             this.outline = false;
             textPaint.setTypeface(AndroidUtilities.bold());
@@ -2078,9 +2083,18 @@ public class FilterCreateActivity extends BaseFragment {
             this.color = color;
         }
 
+        private CharSequence text = "NEW";
+        public void setText(CharSequence text) {
+            this.text = text;
+            if (layout != null) {
+                layout = null;
+                makeLayout();
+            }
+        }
+
         public StaticLayout makeLayout() {
             if (layout == null) {
-                layout = new StaticLayout("NEW"/*LocaleController.getString(R.string.New)*/, textPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
+                layout = new StaticLayout(text, textPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
                 width = layout.getLineWidth(0);
                 height = layout.getHeight();
             }

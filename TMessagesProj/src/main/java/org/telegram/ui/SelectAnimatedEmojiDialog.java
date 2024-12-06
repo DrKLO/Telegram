@@ -1900,6 +1900,20 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                             next.run();
                         });
                     };
+                    final Utilities.Callback<Runnable> serverSearch = next -> {
+                        if (ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
+                            next.run();
+                            return;
+                        }
+                        final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                        MediaDataController.getInstance(currentAccount).searchStickers(true, lang_code, query, documents -> {
+                            AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocuments(documents);
+                            for (TLRPC.Document doc : documents) {
+                                documentIds.add(doc.id);
+                            }
+                            next.run();
+                        });
+                    };
                     final Utilities.Callback<Runnable> searchEmojiSuggestions = next -> {
                         if (queryFullyConsistsOfEmojis) {
                             ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJIPACKS);
@@ -2059,7 +2073,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         next.run();
                     };
 
-                    Utilities.doCallbacks(searchCategories, searchByKeywords, searchEmojiSuggestions, searchAvatarConstructor, searchFromSets, applySearch);
+                    Utilities.doCallbacks(searchCategories, searchByKeywords, serverSearch, searchEmojiSuggestions, searchAvatarConstructor, searchFromSets, applySearch);
                 }
             }, delay ? 425 : 0);
             if (searchBox != null) {

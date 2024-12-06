@@ -1130,7 +1130,50 @@ public class TL_bots {
             stream.writeString(file_name);
             stream.writeString(url);
         }
+    }
 
+    public static class updateStarRefProgram extends TLObject {
+        public static final int constructor = 0x778b5ab3;
+
+        public int flags;
+        public TLRPC.InputUser bot;
+        public int commission_permille;
+        public int duration_months;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TL_payments.starRefProgram.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            bot.serializeToStream(stream);
+            stream.writeInt32(commission_permille);
+            if ((flags & 1) != 0) {
+                stream.writeInt32(duration_months);
+            }
+        }
+    }
+
+    public static class getAdminedBots extends TLObject {
+        public static final int constructor = 0xb0711d83;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            TLRPC.Vector vector = new TLRPC.Vector();
+            int size = stream.readInt32(exception);
+            for (int a = 0; a < size; a++) {
+                vector.objects.add(TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception));
+            }
+            return vector;
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
     }
 
 }

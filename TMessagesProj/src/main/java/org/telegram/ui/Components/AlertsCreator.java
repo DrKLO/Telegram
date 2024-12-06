@@ -1805,10 +1805,10 @@ public class AlertsCreator {
             lastMessageIsJoined = true;
         }
 
-        if (user != null && user.bot) {
+        if (user != null && user.bot && user.id != UserObject.VERIFY) {
             cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            cell[0].setText(LocaleController.getString(R.string.BlockBot), "", false, false);
+            cell[0].setText(getString(R.string.BlockBot), "", false, false);
             cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
             cell[0].setChecked(deleteForAll[0] = true, false);
             frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
@@ -1822,14 +1822,14 @@ public class AlertsCreator {
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (deleteChatForAll) {
                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                    cell[0].setText(LocaleController.getString(R.string.DeleteChannelForAll), "", false, false);
+                    cell[0].setText(getString(R.string.DeleteChannelForAll), "", false, false);
                 } else {
-                    cell[0].setText(LocaleController.getString(R.string.DeleteGroupForAll), "", false, false);
+                    cell[0].setText(getString(R.string.DeleteGroupForAll), "", false, false);
                 }
             } else if (clear) {
-                cell[0].setText(LocaleController.formatString("ClearHistoryOptionAlso", R.string.ClearHistoryOptionAlso, UserObject.getFirstName(user)), "", false, false);
+                cell[0].setText(LocaleController.formatString(R.string.ClearHistoryOptionAlso, UserObject.getFirstName(user)), "", false, false);
             } else {
-                cell[0].setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
+                cell[0].setText(LocaleController.formatString(R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
             }
             cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
             frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));

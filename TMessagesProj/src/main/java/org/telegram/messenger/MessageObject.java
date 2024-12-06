@@ -3533,16 +3533,11 @@ public class MessageObject {
         return !(replyMessageObject == null || replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty || replyMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear || replyMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionTopicCreate);
     }
 
-    public void generatePaymentSentMessageText(TLRPC.User fromUser) {
+    public void generatePaymentSentMessageText(TLRPC.User fromUser, boolean me) {
         if (fromUser == null) {
             fromUser = MessagesController.getInstance(currentAccount).getUser(getDialogId());
         }
-        String name;
-        if (fromUser != null) {
-            name = UserObject.getFirstName(fromUser);
-        } else {
-            name = "";
-        }
+        final String name = fromUser != null ? UserObject.getFirstName(fromUser) : "";
         String currency;
         try {
             if (StarsController.currency.equals(messageOwner.action.currency)) {
@@ -3555,16 +3550,28 @@ public class MessageObject {
             FileLog.e(e);
         }
         if (replyMessageObject != null && getMedia(replyMessageObject) instanceof TLRPC.TL_messageMediaInvoice) {
-            if (messageOwner.action.recurring_init) {
+            if (messageOwner.action.subscription_until_date != 0) {
+                if (me) {
+                    messageText = formatString(R.string.PaymentSuccessfullyPaidMeSubscription, name, currency, getMedia(replyMessageObject).title, LocaleController.formatDateTime(messageOwner.action.subscription_until_date, false));
+                } else {
+                    messageText = formatString(R.string.PaymentSuccessfullyPaidSubscription, currency, name, getMedia(replyMessageObject).title, LocaleController.formatDateTime(messageOwner.action.subscription_until_date, false));
+                }
+            } else if (messageOwner.action.recurring_init && !me) {
                 messageText = formatString(R.string.PaymentSuccessfullyPaidRecurrent, currency, name, getMedia(replyMessageObject).title);
             } else {
-                messageText = formatString("PaymentSuccessfullyPaid", R.string.PaymentSuccessfullyPaid, currency, name, getMedia(replyMessageObject).title);
+                messageText = formatString(R.string.PaymentSuccessfullyPaid, currency, name, getMedia(replyMessageObject).title);
             }
         } else {
-            if (messageOwner.action.recurring_init) {
+            if (messageOwner.action.subscription_until_date != 0) {
+                if (me) {
+                    messageText = formatString(R.string.PaymentSuccessfullyPaidMeNoItemSubscription, name, currency, LocaleController.formatDateTime(messageOwner.action.subscription_until_date, false));
+                } else {
+                    messageText = formatString(R.string.PaymentSuccessfullyPaidSubscriptionNoItem, currency, name, LocaleController.formatDateTime(messageOwner.action.subscription_until_date, false));
+                }
+            } else if (messageOwner.action.recurring_init && !me) {
                 messageText = formatString(R.string.PaymentSuccessfullyPaidNoItemRecurrent, currency, name);
             } else {
-                messageText = formatString("PaymentSuccessfullyPaidNoItem", R.string.PaymentSuccessfullyPaidNoItem, currency, name);
+                messageText = formatString(R.string.PaymentSuccessfullyPaidNoItem, currency, name);
             }
         }
         messageText = StarsIntroActivity.replaceStars(messageText);
@@ -4414,17 +4421,31 @@ public class MessageObject {
                     messageText = replaceWithLink(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("ActionStarGiveawayPrize", (int) action.stars)), "un1", chat);
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                     TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageOwner.action;
+                    int stars = 0;
+                    if (action.gift != null) {
+                        stars = (int) action.gift.stars;
+                    }
                     if (fromObject instanceof TLRPC.User && ((TLRPC.User) fromObject).self && !action.forceIn) {
                         TLRPC.User user = getUser(users, sUsers, messageOwner.peer_id.user_id);
                         messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftOutbound)), "un1", user);
+                        if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
+                            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(action.message.text);
+                            addEntitiesToText(stringBuilder, action.message.entities, isOutOwner(), false, false, false);
+                            messageTextShort = stringBuilder;
+                        } else {
+                            messageTextShort = getString(R.string.ActionStarGift);
+                        }
                     } else if (fromObject instanceof TLRPC.User && UserObject.isService(((TLRPC.User) fromObject).id)) {
                         messageText = TextUtils.replace(AndroidUtilities.replaceTags(getString(R.string.ActionGiftInbound)), new String[] {"un1"}, new CharSequence[]{ getString(R.string.StarsTransactionUnknown) });
                     } else {
                         messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftInbound)), "un1", fromObject);
-                    }
-                    int stars = 0;
-                    if (action.gift != null) {
-                        stars = (int) action.gift.stars;
+                        if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
+                            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(action.message.text);
+                            addEntitiesToText(stringBuilder, action.message.entities, isOutOwner(), false, false, false);
+                            messageTextShort = stringBuilder;
+                        } else {
+                            messageTextShort = getString(R.string.ActionStarGift);
+                        }
                     }
                     int i = messageText.toString().indexOf("un2");
                     if (i != -1) {
@@ -4840,8 +4861,11 @@ public class MessageObject {
                         }
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                    TLRPC.User user = getUser(users, sUsers, getDialogId());
-                    generatePaymentSentMessageText(user);
+                    final TLRPC.User user = getUser(users, sUsers, getDialogId());
+                    generatePaymentSentMessageText(user, false);
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                    final TLRPC.User user = getUser(users, sUsers, getDialogId());
+                    generatePaymentSentMessageText(user, true);
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionBotAllowed) {
                     String domain = ((TLRPC.TL_messageActionBotAllowed) messageOwner.action).domain;
                     TLRPC.BotApp botApp = ((TLRPC.TL_messageActionBotAllowed) messageOwner.action).app;

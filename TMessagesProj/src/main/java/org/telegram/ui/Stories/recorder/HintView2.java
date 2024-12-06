@@ -517,6 +517,11 @@ public class HintView2 extends View {
 
     private final Runnable hideRunnable = this::hide;
 
+    public void show(boolean show) {
+        if (show) show();
+        else hide();
+    }
+
     public HintView2 show() {
         prepareBlur();
         if (shown) {

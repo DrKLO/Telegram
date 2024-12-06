@@ -94,7 +94,10 @@ public class SlideIntChooseView extends FrameLayout {
                 if (options == null || whenChanged == null) {
                     return;
                 }
-                final int newValue = (int) Math.round(options.min + stepsCount * progress);
+                int newValue = (int) Math.round(options.min + stepsCount * progress);
+                if (minValueAllowed != Integer.MIN_VALUE) {
+                    newValue = Math.max(newValue, minValueAllowed);
+                }
                 if (value != newValue) {
                     value = newValue;
                     AndroidUtilities.vibrateCursor(seekBarView);
@@ -114,6 +117,7 @@ public class SlideIntChooseView extends FrameLayout {
     }
 
     private int value;
+    private int minValueAllowed = Integer.MIN_VALUE;
     private Utilities.Callback<Integer> whenChanged;
     private Options options;
 
@@ -132,28 +136,23 @@ public class SlideIntChooseView extends FrameLayout {
         updateTexts(value, false);
     }
 
+    public void setMinValueAllowed(int value) {
+        minValueAllowed = value;
+        if (this.value < minValueAllowed) {
+            this.value = minValueAllowed;
+        }
+        seekBarView.setMinProgress(Utilities.clamp01((float) (value - options.min) / stepsCount));
+        updateTexts(this.value, false);
+        invalidate();
+    }
+
     public void updateTexts(int value, boolean animated) {
         minText.cancelAnimation();
         maxText.cancelAnimation();
-        if (!TextUtils.isEmpty(options.resId)) {
-            valueText.cancelAnimation();
-            valueText.setText(LocaleController.formatPluralString(options.resId, value), animated);
-            minText.setText("" + options.min, animated);
-            maxText.setText("" + options.max, animated);
-        } else {
-            int valueResId;
-            if (value <= options.min) {
-                valueResId = options.valueMinStringResId;
-            } else if (value < options.max) {
-                valueResId = options.valueStringResId;
-            } else {
-                valueResId = options.valueMaxStringResId;
-            }
-            valueText.cancelAnimation();
-            valueText.setText(processText(valueResId, value), animated);
-            minText.setText(processText(options.minStringResId, options.min), animated);
-            maxText.setText(processText(options.maxStringResId, options.max), animated);
-        }
+        valueText.cancelAnimation();
+        valueText.setText(options.toString.run(0, value), animated);
+        minText.setText(options.toString.run(-1, options.min), animated);
+        maxText.setText(options.toString.run(+1, options.max), animated);
         maxText.setTextColor(Theme.getColor(value >= options.max ? Theme.key_windowBackgroundWhiteValueText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), animated);
         setMaxTextEmojiSaturation(value >= options.max ? 1f : 0f, animated);
     }
@@ -203,14 +202,6 @@ public class SlideIntChooseView extends FrameLayout {
         }
     }
 
-    private CharSequence processText(int resId, int value) {
-        String string = getString(resId);
-        string = string.replace("%d", "" + value);
-        CharSequence cs = AndroidUtilities.replaceTags(string);
-        cs = ChannelMonetizationLayout.replaceTON(cs, valueText.getPaint());
-        return cs;
-    }
-
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
@@ -232,27 +223,18 @@ public class SlideIntChooseView extends FrameLayout {
         public int min;
         public int max;
 
-        public String resId;
-
-        public int minStringResId;
-        public int valueMinStringResId, valueStringResId, valueMaxStringResId;
-        public int maxStringResId;
+        public Utilities.Callback2Return<Integer, Integer, String> toString;
 
         public static Options make(
             int style,
-            int min, int minStringResId,
-            int valueMinStringResId, int valueStringResId, int valueMaxStringResId,
-            int max, int maxStringResId
+            int min, int max,
+            Utilities.CallbackReturn<Integer, String> toString
         ) {
             Options o = new Options();
             o.style = style;
             o.min = min;
-            o.minStringResId = minStringResId;
-            o.valueMinStringResId = valueMinStringResId;
-            o.valueStringResId = valueStringResId;
-            o.valueMaxStringResId = valueMaxStringResId;
             o.max = max;
-            o.maxStringResId = maxStringResId;
+            o.toString = (type, val) -> toString.run(val);
             return o;
         }
 
@@ -263,8 +245,8 @@ public class SlideIntChooseView extends FrameLayout {
             Options o = new Options();
             o.style = style;
             o.min = min;
-            o.resId = resId;
             o.max = max;
+            o.toString = (type, val) -> type == 0 ? LocaleController.formatPluralString(resId, val) : "" + val;
             return o;
         }
     }

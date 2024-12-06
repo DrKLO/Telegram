@@ -639,6 +639,11 @@ public class MessagesController extends BaseController implements NotificationCe
     public float starsUsdSellRate1000;
     public float starsUsdWithdrawRate1000;
     public boolean sponsoredLinksInappAllow;
+    public Set<String> starrefStartParamPrefixes = new HashSet<>();
+    public boolean starrefProgramAllowed;
+    public boolean starrefConnectAllowed;
+    public int starrefMinCommissionPermille;
+    public int starrefMaxCommissionPermille;
 
     public long paidReactionsAnonymousTime;
     public Boolean paidReactionsAnonymous;
@@ -1605,6 +1610,11 @@ public class MessagesController extends BaseController implements NotificationCe
         starsUsdSellRate1000 = mainPreferences.getFloat("starsUsdSellRate1000", 2000);
         starsUsdWithdrawRate1000 = mainPreferences.getFloat("starsUsdWithdrawRate1000", 1200);
         sponsoredLinksInappAllow = mainPreferences.getBoolean("sponsoredLinksInappAllow", false);
+        starrefProgramAllowed = mainPreferences.getBoolean("starrefProgramAllowed", false);
+        starrefConnectAllowed = mainPreferences.getBoolean("starrefConnectAllowed", false);
+        starrefStartParamPrefixes = mainPreferences.getStringSet("starrefStartParamPrefixes", new HashSet<>(Arrays.asList("_tgr_")));
+        starrefMinCommissionPermille = mainPreferences.getInt("starrefMinCommissionPermille", 1);
+        starrefMaxCommissionPermille = mainPreferences.getInt("starrefMaxCommissionPermille", 400);
         paidReactionsAnonymousTime = mainPreferences.getLong("paidReactionsAnonymousTime", 0);
         paidReactionsAnonymous = mainPreferences.contains("paidReactionsAnonymous") && (System.currentTimeMillis() - paidReactionsAnonymousTime) < 1000 * 60 * 60 * 2 ? mainPreferences.getBoolean("paidReactionsAnonymous", false) : null;
         scheduleTranscriptionUpdate();
@@ -4288,6 +4298,25 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     break;
                 }
+                case "starref_start_param_prefixes": {
+                    HashSet<String> newPrefixes = new HashSet<>();
+                    if (value.value instanceof TLRPC.TL_jsonArray) {
+                        TLRPC.TL_jsonArray array = (TLRPC.TL_jsonArray) value.value;
+                        for (int b = 0, N2 = array.value.size(); b < N2; b++) {
+                            TLRPC.JSONValue val = array.value.get(b);
+                            if (val instanceof TLRPC.TL_jsonString) {
+                                TLRPC.TL_jsonString string = (TLRPC.TL_jsonString) val;
+                                newPrefixes.add(string.value.toLowerCase());
+                            }
+                        }
+                    }
+                    if (!starrefStartParamPrefixes.equals(newPrefixes)) {
+                        starrefStartParamPrefixes = newPrefixes;
+                        editor.putStringSet("starrefStartParamPrefixes", starrefStartParamPrefixes);
+                        changed = true;
+                    }
+                    break;
+                }
                 case "weather_search_username": {
                     if (value.value instanceof TLRPC.TL_jsonString) {
                         TLRPC.TL_jsonString str = (TLRPC.TL_jsonString) value.value;
@@ -4403,6 +4432,50 @@ public class MessagesController extends BaseController implements NotificationCe
                         ignoreRestrictionReasons = newReasons;
                         editor.putStringSet("ignoreRestrictionReasons", ignoreRestrictionReasons);
                         changed = true;
+                    }
+                    break;
+                }
+                case "starref_program_allowed": {
+                    if (value.value instanceof TLRPC.TL_jsonBool) {
+                        TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                        if (bool.value != starrefProgramAllowed) {
+                            starrefProgramAllowed = bool.value;
+                            editor.putBoolean("starrefProgramAllowed", starrefProgramAllowed);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "starref_connect_allowed": {
+                    if (value.value instanceof TLRPC.TL_jsonBool) {
+                        TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                        if (bool.value != starrefConnectAllowed) {
+                            starrefConnectAllowed = bool.value;
+                            editor.putBoolean("starrefConnectAllowed", starrefConnectAllowed);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "starref_min_commission_permille": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (num.value != starrefMinCommissionPermille) {
+                            starrefMinCommissionPermille = (int) num.value;
+                            editor.putInt("starrefMinCommissionPermille", starrefMinCommissionPermille);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "starref_max_commission_permille": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (num.value != starrefMaxCommissionPermille) {
+                            starrefMaxCommissionPermille = (int) num.value;
+                            editor.putInt("starrefMaxCommissionPermille", starrefMaxCommissionPermille);
+                            changed = true;
+                        }
                     }
                     break;
                 }
@@ -10765,7 +10838,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             } else if (msg.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                                 msg.generateGameMessageText(null);
                             } else if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                                msg.generatePaymentSentMessageText(null);
+                                msg.generatePaymentSentMessageText(null, false);
+                            } else if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                                msg.generatePaymentSentMessageText(null, true);
                             }
                             break;
                         }
@@ -22126,6 +22201,14 @@ public class MessagesController extends BaseController implements NotificationCe
             getConnectionsManager().sendRequest(new TLRPC.TL_messages_getPaidReactionPrivacy(), null);
         }
         return paidReactionsAnonymous;
+    }
+
+    public boolean shouldShowMoveCaptionHint() {
+        return getMainSettings().getInt("movecaptionhint", 0) < 24 || BuildVars.DEBUG_PRIVATE_VERSION;
+    }
+
+    public void incrementMoveCaptionHint() {
+        getMainSettings().edit().putInt("movecaptionhint", getMainSettings().getInt("movecaptionhint", 0) + 1).apply();
     }
 
 }

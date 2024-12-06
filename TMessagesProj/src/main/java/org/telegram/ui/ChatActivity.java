@@ -12796,7 +12796,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         chatAttachAlert.enableDefaultMode();
         chatAttachAlert.init();
-        chatAttachAlert.getCommentTextView().setText(chatActivityEnterView.getFieldText());
+        chatAttachAlert.getCommentView().setText(chatActivityEnterView.getFieldText());
         chatAttachAlert.parentThemeDelegate = themeDelegate;
         showDialog(chatAttachAlert);
     }
@@ -23462,7 +23462,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                     messageObject.generateGameMessageText(null);
                 } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                    messageObject.generatePaymentSentMessageText(null);
+                    messageObject.generatePaymentSentMessageText(null, false);
+                }else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                    messageObject.generatePaymentSentMessageText(null, true);
                 }
             }
 
@@ -24498,7 +24500,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                         messageObject.generateGameMessageText(null);
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                        messageObject.generatePaymentSentMessageText(null);
+                        messageObject.generatePaymentSentMessageText(null, false);
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                        messageObject.generatePaymentSentMessageText(null, true);
                     }
                 }
                 if (old.isWebpage() && messageObject.isWebpage()) {
@@ -37153,23 +37157,46 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (getMessagesController().premiumFeaturesBlocked() || span == null || span.standard) {
                 return false;
             }
-            long documentId = span.getDocumentId();
-            TLRPC.Document document = span.document == null ? AnimatedEmojiDrawable.findDocument(currentAccount, documentId) : span.document;
-            if (document == null) {
-                return false;
-            }
-            Bulletin bulletin = BulletinFactory.of(ChatActivity.this).createContainsEmojiBulletin(document, BulletinFactory.CONTAINS_EMOJI_IN_MESSAGE, set -> {
-                ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);
-                inputSets.add(set);
-                EmojiPacksAlert alert = new EmojiPacksAlert(ChatActivity.this, getParentActivity(), themeDelegate, inputSets);
-                alert.setCalcMandatoryInsets(isKeyboardVisible());
-                showDialog(alert);
-            });
-            if (bulletin != null) {
-                bulletin.show();
-                return true;
-            }
-            return false;
+            final long documentId = span.getDocumentId();
+            final TLRPC.Document document = span.document == null ? AnimatedEmojiDrawable.findDocument(currentAccount, documentId) : span.document;
+            if (document == null) return false;
+            final TLRPC.InputStickerSet inputStickerSet = MessageObject.getInputStickerSet(document);
+            if (inputStickerSet == null) return false;
+            final TLRPC.TL_messages_stickerSet cachedSet = MediaDataController.getInstance(UserConfig.selectedAccount).getStickerSet(inputStickerSet, true);
+//            if (cachedSet == null || cachedSet.set == null) {
+//                final boolean[] cancelled = new boolean[1];
+//                final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+//                progressDialog.showDelayed(200);
+//                progressDialog.setCanCancel(true);
+//                progressDialog.setOnCancelListener(d -> cancelled[0] = true);
+//                MediaDataController.getInstance(UserConfig.selectedAccount).getStickerSet(inputStickerSet, null, false, set -> {
+//                    if (cancelled[0]) return;
+//                    ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);
+//                    inputSets.add(inputStickerSet);
+//                    EmojiPacksAlert alert = new EmojiPacksAlert(ChatActivity.this, getParentActivity(), themeDelegate, inputSets);
+//                    alert.setCalcMandatoryInsets(isKeyboardVisible());
+//                    showDialog(alert);
+//                });
+//            } else {
+            final ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);
+            inputSets.add(inputStickerSet);
+            final EmojiPacksAlert alert = new EmojiPacksAlert(ChatActivity.this, getParentActivity(), themeDelegate, inputSets);
+            alert.setPreviewEmoji(document);
+            alert.setCalcMandatoryInsets(isKeyboardVisible());
+            showDialog(alert);
+//            }
+//            Bulletin bulletin = BulletinFactory.of(ChatActivity.this).createContainsEmojiBulletin(document, BulletinFactory.CONTAINS_EMOJI_IN_MESSAGE, set -> {
+//                ArrayList<TLRPC.InputStickerSet> inputSets = new ArrayList<>(1);
+//                inputSets.add(set);
+//                EmojiPacksAlert alert = new EmojiPacksAlert(ChatActivity.this, getParentActivity(), themeDelegate, inputSets);
+//                alert.setCalcMandatoryInsets(isKeyboardVisible());
+//                showDialog(alert);
+//            });
+//            if (bulletin != null) {
+//                bulletin.show();
+//                return true;
+//            }
+            return true;
         }
 
         @Override

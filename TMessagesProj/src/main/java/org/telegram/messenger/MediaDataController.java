@@ -6220,7 +6220,9 @@ public class MediaDataController extends BaseController {
                             } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                                 messageObject.generateGameMessageText(null);
                             } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                                messageObject.generatePaymentSentMessageText(null);
+                                messageObject.generatePaymentSentMessageText(null, false);
+                            } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                                messageObject.generatePaymentSentMessageText(null, true);
                             }
                             break;
                         }
@@ -6690,7 +6692,9 @@ public class MediaDataController extends BaseController {
                         } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                             m.generateGameMessageText(null);
                         } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
-                            m.generatePaymentSentMessageText(null);
+                            m.generatePaymentSentMessageText(null, false);
+                        } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
+                            m.generatePaymentSentMessageText(null, true);
                         }
                     }
                     changed = true;
@@ -9646,6 +9650,94 @@ public class MediaDataController extends BaseController {
                 FileLog.e(e);
                 return null;
             }
+        }
+    }
+
+    public static class SearchStickersKey {
+        public final boolean emojis;
+        public final String lang_code;
+        public final String q;
+
+        public SearchStickersKey(boolean emojis, String lang_code, String q) {
+            this.emojis = emojis;
+            this.lang_code = lang_code;
+            this.q = q;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SearchStickersKey that = (SearchStickersKey) o;
+            return emojis == that.emojis && Objects.equals(lang_code, that.lang_code) && Objects.equals(q, that.q);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(emojis, lang_code, q);
+        }
+    }
+
+    private static class SearchStickersResult {
+        public final ArrayList<TLRPC.Document> documents = new ArrayList<>();
+        public Integer next_offset;
+        public void apply(TLRPC.TL_messages_foundStickers r) {
+            documents.addAll(r.stickers);
+            next_offset = (r.flags & 1) != 0 ? r.next_offset : null;
+        }
+    }
+
+    private final HashMap<SearchStickersKey, Integer> loadingSearchStickersKeys = new HashMap<>();
+    private final android.util.LruCache<SearchStickersKey, SearchStickersResult> searchStickerResults = new android.util.LruCache<>(25);
+    public SearchStickersKey searchStickers(boolean emojis, String lang_code, String q, Utilities.Callback<ArrayList<TLRPC.Document>> whenDone) {
+        return searchStickers(emojis, lang_code, q, whenDone, false);
+    }
+    public SearchStickersKey searchStickers(boolean emojis, String lang_code, String q, Utilities.Callback<ArrayList<TLRPC.Document>> whenDone, boolean next) {
+        if (whenDone == null) return null;
+        final SearchStickersKey key = new SearchStickersKey(emojis, lang_code, q);
+        SearchStickersResult cached = searchStickerResults.get(key);
+        if ((cached == null || cached.next_offset != null && next) && !loadingSearchStickersKeys.containsKey(key)) {
+            loadingSearchStickersKeys.put(key, 0);
+            MediaDataController.getInstance(currentAccount).getEmojiSuggestions(new String[]{lang_code}, q, true, (result, a) -> {
+                if (!loadingSearchStickersKeys.containsKey(key)) return;
+                StringBuilder s = new StringBuilder();
+                for (KeywordResult r : result) {
+                    if (!TextUtils.isEmpty(r.emoji) && !r.emoji.startsWith("animated_")) {
+                        s.append(r.emoji);
+                    }
+                }
+                TLRPC.TL_messages_searchStickers req = new TLRPC.TL_messages_searchStickers();
+                req.emojis = key.emojis;
+                if (!TextUtils.isEmpty(key.lang_code)) {
+                    req.lang_code.add(key.lang_code);
+                }
+                req.emoticon = s.toString();
+                req.q = key.q;
+                req.limit = 50;
+                req.offset = cached == null ? 0 : cached.next_offset;
+                final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    loadingSearchStickersKeys.remove(key);
+                    SearchStickersResult finalResult = cached != null ? cached : new SearchStickersResult();
+                    if (res instanceof TLRPC.TL_messages_foundStickers) {
+                        finalResult.apply((TLRPC.TL_messages_foundStickers) res);
+                    }
+                    searchStickerResults.put(key, finalResult);
+                    whenDone.run(finalResult.documents);
+                }));
+                loadingSearchStickersKeys.put(key, reqId);
+            }, false);
+        } else if (cached != null) {
+            whenDone.run(cached.documents);
+        } else {
+            whenDone.run(new ArrayList<>());
+        }
+        return key;
+    }
+    public void cancelSearchStickers(SearchStickersKey key) {
+        if (key == null) return;
+        final Integer reqId = loadingSearchStickersKeys.remove(key);
+        if (reqId != null && reqId != 0) {
+            getConnectionsManager().cancelRequest(reqId, true);
         }
     }
 }

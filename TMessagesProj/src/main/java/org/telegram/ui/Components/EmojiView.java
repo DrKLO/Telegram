@@ -7741,6 +7741,26 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                                 }, null, SharedConfig.suggestAnimatedEmoji || UserConfig.getInstance(currentAccount).isPremium(), false, true, 25);
                             },
                             next -> {
+                                if (ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
+                                    next.run();
+                                    return;
+                                }
+                                final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                                MediaDataController.getInstance(currentAccount).searchStickers(true, lang_code, query, emojis -> {
+                                    if (!query.equals(lastSearchEmojiString)) {
+                                        return;
+                                    }
+                                    AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocuments(emojis);
+                                    for (TLRPC.Document emoji : emojis) {
+                                        MediaDataController.KeywordResult keywordResult = new MediaDataController.KeywordResult();
+                                        keywordResult.emoji = "animated_" + emoji.id;
+                                        keywordResult.keyword = null;
+                                        searchResult.add(keywordResult);
+                                    }
+                                    next.run();
+                                });
+                            },
+                            next -> {
                                 if (SharedConfig.suggestAnimatedEmoji || UserConfig.getInstance(currentAccount).isPremium()) {
                                     final String q = translitSafe((query + "").toLowerCase());
                                     final ArrayList<TLRPC.TL_messages_stickerSet> sets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJIPACKS);
@@ -8714,20 +8734,34 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             }
 
             private void searchStickerSets(Runnable finished) {
-                final TLRPC.TL_messages_searchStickerSets req = new TLRPC.TL_messages_searchStickerSets();
-                req.q = query;
-                reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                final String[] newLanguage = AndroidUtilities.getCurrentKeyboardLanguage();
+                final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                MediaDataController.getInstance(currentAccount).searchStickers(false, lang_code, query, stickers -> {
                     if (emojiSearchId != lastId) {
                         return;
                     }
-
-                    if (response instanceof TLRPC.TL_messages_foundStickerSets) {
-                        reqId = 0;
-                        TLRPC.TL_messages_foundStickerSets res = (TLRPC.TL_messages_foundStickerSets) response;
-                        serverPacks.addAll(res.sets);
+                    emojiStickersArray.addAll(stickers);
+                    for (TLRPC.Document sticker : stickers) {
+                        emojiStickersMap.put(sticker.id, sticker);
                     }
+                    emojiStickers.put(emojiStickersArray, searchQuery);
+                    emojiArrays.add(emojiStickersArray);
                     finished.run();
-                }));
+                });
+//                final TLRPC.TL_messages_searchStickerSets req = new TLRPC.TL_messages_searchStickerSets();
+//                req.q = query;
+//                reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+//                    if (emojiSearchId != lastId) {
+//                        return;
+//                    }
+//
+//                    if (response instanceof TLRPC.TL_messages_foundStickerSets) {
+//                        reqId = 0;
+//                        TLRPC.TL_messages_foundStickerSets res = (TLRPC.TL_messages_foundStickerSets) response;
+//                        serverPacks.addAll(res.sets);
+//                    }
+//                    finished.run();
+//                }));
             }
 
             private void searchStickers(Runnable finished) {

@@ -166,7 +166,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     final TLRPC.User user = popular.bots.get(i);
                     if (uids.contains(user.id)) continue;
                     uids.add(user.id);
-                    items.add(UItem.asProfileCell(user).accent());
+                    items.add(UItem.asProfileCell(user).accent().red());
                     hasAdded = true;
                 }
                 if (popular.loading) {

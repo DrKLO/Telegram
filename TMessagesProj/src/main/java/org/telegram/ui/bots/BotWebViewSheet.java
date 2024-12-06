@@ -50,7 +50,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
@@ -1115,13 +1117,16 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 final WindowInsetsCompat insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets, v);
                 final androidx.core.graphics.Insets navInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.navigationBars());
                 this.navInsets.set(navInsets.left, navInsets.top, navInsets.right, navInsets.bottom);
-                final androidx.core.graphics.Insets cutoutInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.navigationBars());
+                final androidx.core.graphics.Insets cutoutInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
                 this.insets.set(
                     Math.max(cutoutInsets.left,   insets.getStableInsetLeft()),
                     Math.max(cutoutInsets.top,    insets.getStableInsetTop()),
                     Math.max(cutoutInsets.right,  insets.getStableInsetRight()),
                     Math.max(cutoutInsets.bottom, insets.getStableInsetBottom())
                 );
+                if (Build.VERSION.SDK_INT <= 28) {
+                    this.insets.top = Math.max(this.insets.top, AndroidUtilities.getStatusBarHeight(getContext()));
+                }
                 final androidx.core.graphics.Insets keyboardInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.ime());
                 final int keyboardHeight = keyboardInsets.bottom;
                 if (keyboardHeight > this.insets.bottom && keyboardHeight > dp(20)) {
@@ -1192,10 +1197,16 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             Window window = getWindow();
             if (window == null) return;
             WindowManager.LayoutParams params = window.getAttributes();
-            if (fullscreen) {
-                params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            final int flags;
+            if (Build.VERSION.SDK_INT <= 28) {
+                flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
             } else {
-                params.flags &= ~WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+                flags = WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            }
+            if (fullscreen) {
+                params.flags |= flags;
+            } else {
+                params.flags &= ~flags;
             }
             if (fullscreen && !(botButtons != null && botButtons.getTotalHeight() > 0) && !windowView.drawingFromOverlay) {
                 windowView.setSystemUiVisibility(windowView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);

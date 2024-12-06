@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.ChannelMonetizationLayout.replaceTON;
+import static org.telegram.ui.ChatEditActivity.applyNewSpan;
 
 import android.app.Activity;
 import android.content.Context;
@@ -75,6 +76,8 @@ import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.TwoStepVerificationActivity;
 import org.telegram.ui.TwoStepVerificationSetupActivity;
+import org.telegram.ui.bots.AffiliateProgramFragment;
+import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -439,6 +442,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     }
 
     private final int BALANCE = 1;
+    private final int BUTTON_AFFILIATE = 2;
 
     private CharSequence titleInfo;
     private CharSequence proceedsInfo;
@@ -455,15 +459,24 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asBlackHeader(getString(R.string.BotStarsOverview)));
             TLRPC.TL_payments_starsRevenueStats stats = s.getStarsRevenueStats(bot_id);
             if (stats != null && stats.status != null) {
-                availableValue.crypto_amount = stats.status.available_balance;
+                availableValue.contains1 = false;
+                availableValue.contains2 = true;
+                availableValue.crypto_amount2 = stats.status.available_balance;
+                availableValue.crypto_currency2 = "XTR";
                 availableValue.currency = "USD";
-                availableValue.amount = (long) (stats.status.available_balance * rate * 100.0);
-                totalValue.crypto_amount = stats.status.current_balance;
+                availableValue.amount2 = (long) (stats.status.available_balance.amount * rate * 100.0);
+                totalValue.contains1 = false;
+                totalValue.contains2 = true;
+                totalValue.crypto_amount2 = stats.status.current_balance;
+                totalValue.crypto_currency2 = "XTR";
+                totalValue.amount2 = (long) (stats.status.current_balance.amount * rate * 100.0);
                 totalValue.currency = "USD";
-                totalValue.amount = (long) (stats.status.current_balance * rate * 100.0);
-                totalProceedsValue.crypto_amount = stats.status.overall_revenue;
+                totalProceedsValue.contains1 = false;
+                totalProceedsValue.contains2 = true;
+                totalProceedsValue.crypto_amount2 = stats.status.overall_revenue;
+                totalProceedsValue.crypto_currency2 = "XTR";
+                totalProceedsValue.amount2 = (long) (stats.status.overall_revenue.amount * rate * 100.0);
                 totalProceedsValue.currency = "USD";
-                totalProceedsValue.amount = (long) (stats.status.overall_revenue * rate * 100.0);
                 setStarsBalance(stats.status.available_balance, stats.status.next_withdrawal_at);
 
                 balanceButtonsLayout.setVisibility(stats.status.withdrawal_enabled ? View.VISIBLE : View.GONE);
@@ -475,6 +488,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asBlackHeader(getString(R.string.BotStarsAvailableBalance)));
             items.add(UItem.asCustom(BALANCE, balanceLayout));
             items.add(UItem.asShadow(-3, withdrawInfo));
+            if (getMessagesController().starrefConnectAllowed) {
+                items.add(AffiliateProgramFragment.ColorfulTextCell.Factory.as(BUTTON_AFFILIATE, Theme.getColor(Theme.key_color_green, resourceProvider), R.drawable.filled_earn_stars, applyNewSpan(getString(R.string.BotAffiliateProgramRowTitle)), getString(R.string.BotAffiliateProgramRowText)));
+                items.add(UItem.asShadow(-4, null));
+            }
             items.add(UItem.asFullscreenCustom(transactionsLayout, 0));
         } else if (type == TYPE_TON) {
             TL_stats.TL_broadcastRevenueStats stats = s.getTONRevenueStats(bot_id, true);
@@ -600,14 +617,16 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             StarsIntroActivity.showTransactionSheet(getContext(), true, bot_id, currentAccount, t, getResourceProvider());
         } else if (item.object instanceof TL_stats.BroadcastRevenueTransaction) {
             ChannelMonetizationLayout.showTransactionSheet(getContext(), currentAccount, (TL_stats.BroadcastRevenueTransaction) item.object, bot_id, resourceProvider);
+        } else if (item.id == BUTTON_AFFILIATE) {
+            presentFragment(new ChannelAffiliateProgramsFragment(bot_id));
         }
     }
 
-    private void setStarsBalance(long crypto_amount, int blockedUntil) {
+    private void setStarsBalance(TL_stars.StarsAmount crypto_amount, int blockedUntil) {
         if (balanceTitle == null || balanceSubtitle == null)
             return;
-        long amount = (long) (rate * crypto_amount * 100.0);
-        SpannableStringBuilder ssb = new SpannableStringBuilder(StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(crypto_amount, ' '), 1f));
+        long amount = (long) (rate * crypto_amount.amount * 100.0);
+        SpannableStringBuilder ssb = new SpannableStringBuilder(StarsIntroActivity.replaceStarsWithPlain(TextUtils.concat("XTR ", StarsIntroActivity.formatStarsAmount(crypto_amount, 0.8f, ' ')), 1f));
         int index = TextUtils.indexOf(ssb, ".");
         if (index >= 0) {
             ssb.setSpan(balanceTitleSizeSpan, index, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -617,7 +636,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         balanceEditTextContainer.setVisibility(amount > 0 ? View.VISIBLE : View.GONE);
         if (balanceEditTextAll) {
             balanceEditTextIgnore = true;
-            balanceEditText.setText(Long.toString(balanceEditTextValue = crypto_amount));
+            balanceEditText.setText(Long.toString(balanceEditTextValue = crypto_amount.amount));
             balanceEditText.setSelection(balanceEditText.getText().length());
             balanceEditTextIgnore = false;
 

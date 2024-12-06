@@ -2579,7 +2579,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
     private void updateSubtitle() {
         TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chatId);
-        if (this.chatFull != null && this.chatFull.participants != null) {
+        if (chatFull != null && this.chatFull != null && this.chatFull.participants != null) {
             chatFull.participants = this.chatFull.participants;
         }
         this.chatFull = chatFull;

@@ -2991,7 +2991,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         chatAttachAlert.setMaxSelectedPhotos(-1, true);
         chatAttachAlert.setDialogId(dialogId);
         chatAttachAlert.init();
-        chatAttachAlert.getCommentTextView().setText(chatActivityEnterView.getFieldText());
+        chatAttachAlert.getCommentView().setText(chatActivityEnterView.getFieldText());
         delegate.showDialog(chatAttachAlert);
     }
 
@@ -3135,7 +3135,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     }
                 }
             });
-            chatAttachAlert.getCommentTextView().setText(chatActivityEnterView.getFieldText());
+            chatAttachAlert.getCommentView().setText(chatActivityEnterView.getFieldText());
         }
     }
 

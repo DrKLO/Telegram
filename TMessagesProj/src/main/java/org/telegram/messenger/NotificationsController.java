@@ -1802,7 +1802,7 @@ public class NotificationsController extends BaseController {
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                         String date = LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterYear().format(((long) messageObject.messageOwner.date) * 1000), LocaleController.getInstance().getFormatterDay().format(((long) messageObject.messageOwner.date) * 1000));
                         return LocaleController.formatString(R.string.NotificationUnrecognizedDevice, getUserConfig().getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
-                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
                         return messageObject.messageText.toString();
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftPremium) {
                         return messageObject.messageText.toString();
@@ -2431,7 +2431,7 @@ public class NotificationsController extends BaseController {
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
                             String date = LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterYear().format(((long) messageObject.messageOwner.date) * 1000), LocaleController.getInstance().getFormatterDay().format(((long) messageObject.messageOwner.date) * 1000));
                             msg = LocaleController.formatString(R.string.NotificationUnrecognizedDevice, getUserConfig().getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
-                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftPremium) {
                             msg = messageObject.messageText.toString();

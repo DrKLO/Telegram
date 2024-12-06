@@ -5244,6 +5244,41 @@ public class Theme {
         return defaultDrawable;
     }
 
+    public static Drawable createOutlineCircleDrawable(int size, int color, int strokeWidth) {
+        return new Drawable() {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG); {
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(strokeWidth);
+                paint.setColor(color);
+            }
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                final Rect b = getBounds();
+                canvas.drawCircle(b.centerX(), b.centerY(), size / 2.0f, paint);
+            }
+            @Override
+            public void setAlpha(int alpha) {
+                paint.setAlpha(alpha);
+            }
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {
+                paint.setColorFilter(colorFilter);
+            }
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+            @Override
+            public int getIntrinsicWidth() {
+                return size + strokeWidth;
+            }
+            @Override
+            public int getIntrinsicHeight() {
+                return size + strokeWidth;
+            }
+        };
+    }
+
     public static ShapeDrawable createCircleDrawable(int size, int colorTop, int colorBottom) {
         OvalShape ovalShape = new OvalShape();
         ovalShape.resize(size, size);

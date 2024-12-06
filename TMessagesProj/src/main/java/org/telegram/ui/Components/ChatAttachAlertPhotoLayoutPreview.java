@@ -1842,7 +1842,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                         ArrayList<Object> objectArrayList = new ArrayList<>(arrayList);
                         PhotoViewer.getInstance().openPhotoForSelect(objectArrayList, position, type, false, photoViewerProvider, chatActivity);
                         if (photoLayout.captionForAllMedia()) {
-                            PhotoViewer.getInstance().setCaption(parentAlert.getCommentTextView().getText());
+                            PhotoViewer.getInstance().setCaption(parentAlert.getCommentView().getText());
                         }
                     }
                     tapMediaCell = null;

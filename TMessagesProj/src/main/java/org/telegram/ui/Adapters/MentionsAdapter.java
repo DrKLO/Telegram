@@ -442,6 +442,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         stickers = null;
         stickersMap = null;
         notifyDataSetChanged();
+        visibleByStickersSearch = false;
         if (lastReqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(lastReqId, true);
             lastReqId = 0;
@@ -618,6 +619,60 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             searchForContextBotResults(true, foundContextBot, searchingContextQuery, "");
         }
     }
+
+//    private String lastSearchForStickersQuery;
+//    private Runnable searchForStickersRunnable;
+//    private MediaDataController.SearchStickersKey loadingSearchKey;
+//    public void loadMoreStickers() {
+//        searchForStickers(lastSearchForStickersQuery, true);
+//    }
+//    private void searchForStickers(final String q, boolean allowNext) {
+//        if (TextUtils.isEmpty(q)) {
+//            if (loadingSearchKey != null) {
+//                MediaDataController.getInstance(currentAccount).cancelSearchStickers(loadingSearchKey);
+//                loadingSearchKey = null;
+//            }
+//            if (searchForStickersRunnable != null) {
+//                AndroidUtilities.cancelRunOnUIThread(searchForStickersRunnable);
+//                searchForStickersRunnable = null;
+//            }
+//            return;
+//        }
+//        if (TextUtils.equals(lastSearchForStickersQuery, q) && (!allowNext || loadingSearchKey == null && (stickers == null || stickers.isEmpty()))) {
+//            return;
+//        }
+//        lastSearchForStickersQuery = q;
+//        AndroidUtilities.runOnUIThread(searchForStickersRunnable = () -> {
+//            if (!TextUtils.equals(lastSearchForStickersQuery, q)) {
+//                return;
+//            }
+//            final String[] newLanguage = AndroidUtilities.getCurrentKeyboardLanguage();
+//            final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+//            if (loadingSearchKey != null) {
+//                MediaDataController.getInstance(currentAccount).cancelSearchStickers(loadingSearchKey);
+//                loadingSearchKey = null;
+//            }
+//            loadingSearchKey = MediaDataController.getInstance(currentAccount).searchStickers(false, lang_code, q, stickers -> {
+//                if (!TextUtils.equals(lastSearchForStickersQuery, q)) {
+//                    return;
+//                }
+//                loadingSearchKey = null;
+//                int oldCount = stickers != null ? stickers.size() : 0;
+//                if (!stickers.isEmpty()) {
+//                    addStickersToResult(stickers, null);
+//                }
+//                int newCount = stickers != null ? stickers.size() : 0;
+//                if (!visibleByStickersSearch && stickers != null && !stickers.isEmpty()) {
+//                    checkStickerFilesExistAndDownload();
+//                    delegate.needChangePanelVisibility(getItemCountInternal() > 0);
+//                    visibleByStickersSearch = true;
+//                }
+//                if (oldCount != newCount) {
+//                    notifyDataSetChanged();
+//                }
+//            }, allowNext);
+//        }, 600);
+//    }
 
     private void searchForContextBot(final String username, final String query) {
         if (foundContextBot != null && foundContextBot.username != null && foundContextBot.username.equals(username) && searchingContextQuery != null && searchingContextQuery.equals(query)) {
@@ -835,6 +890,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 searchResultSuggestions = null;
                 searchResultCommandsHelp = null;
                 searchResultCommandsUsers = null;
+                visibleByStickersSearch = false;
                 delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null);
                 if (added) {
                     boolean hasTop = searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null;
@@ -1075,8 +1131,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             } else {
                 username = "";
             }
+//            searchForStickers(null, false);
             searchForContextBot(username, query);
+        } else if (allowStickers && parentFragment != null && parentFragment.getCurrentEncryptedChat() == null && (currentChat == null || ChatObject.canSendStickers(currentChat)) && text.trim().length() >= 2 && text.trim().indexOf(' ') < 0) {
+//            searchForStickers(text.trim(), false);
+            searchForContextBot(null, null);
         } else {
+//            searchForStickers(null, false);
             searchForContextBot(null, null);
         }
         if (foundContextBot != null) {

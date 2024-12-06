@@ -111,6 +111,10 @@ public class InputSurface {
         }
     }
 
+    public EGLContext getContext() {
+        return mEGLContext;
+    }
+
     public boolean swapBuffers() {
         return EGL14.eglSwapBuffers(mEGLDisplay, mEGLSurface);
     }

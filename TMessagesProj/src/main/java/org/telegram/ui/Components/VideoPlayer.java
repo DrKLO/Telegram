@@ -20,6 +20,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.net.Uri;
+import android.opengl.EGLContext;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -214,6 +215,16 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         }
     }
 
+    private Looper looper;
+    public void setLooper(Looper looper) {
+        this.looper = looper;
+    }
+
+    private EGLContext eglParentContext;
+    public void setEGLContext(EGLContext ctx) {
+        eglParentContext = ctx;
+    }
+
     private void ensurePlayerCreated() {
         DefaultLoadControl loadControl;
         if (isStory) {
@@ -247,9 +258,16 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
             }
             factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
-            player = new ExoPlayer.Builder(ApplicationLoader.applicationContext).setRenderersFactory(factory)
+            ExoPlayer.Builder builder = new ExoPlayer.Builder(ApplicationLoader.applicationContext).setRenderersFactory(factory)
                     .setTrackSelector(trackSelector)
-                    .setLoadControl(loadControl).build();
+                    .setLoadControl(loadControl);
+            if (looper != null) {
+                builder.setLooper(looper);
+            }
+            if (eglParentContext != null) {
+                builder.eglContext = eglParentContext;
+            }
+            player = builder.build();
 
             player.addAnalyticsListener(this);
             player.addListener(this);
