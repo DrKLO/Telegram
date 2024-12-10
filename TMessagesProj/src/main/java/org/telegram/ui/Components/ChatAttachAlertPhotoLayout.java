@@ -2636,28 +2636,27 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             invalidate();
         }
-//        cameraView.setVisibility(View.GONE);
-//        cameraIcon.setVisibility(View.GONE);
+        cameraView.setVisibility(View.GONE);
+        cameraIcon.setVisibility(View.GONE);
         if (zoomControlView != null) {
             zoomControlView.setZoom(0.0f, false);
             cameraZoom = 0.0f;
         }
         if (mediaRecorderView == null) {
-            mediaRecorderView = new MediaRecorderView(getContext(), new MediaRecorderView.Params(true), true) {
+            mediaRecorderView = new MediaRecorderView(getContext(), new MediaRecorderView.Params(true), true, resourcesProvider) {
 
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
                     if (AndroidUtilities.makingGlobalBlurBitmap) {
                         return;
                     }
-                    if (false) {
+                    if (Build.VERSION.SDK_INT >= 21) {
                         super.dispatchDraw(canvas);
                     } else {
                         int maxY = (int) Math.min(parentAlert.getCommentTextViewTop() - (parentAlert.mentionContainer != null ? parentAlert.mentionContainer.clipBottom() + AndroidUtilities.dp(8) : 0) + currentPanTranslationY + parentAlert.getContainerView().getTranslationY() - getTranslationY(), getMeasuredHeight());
 
                         canvas.save();
                         if (mediaRecorderView.isShrink() || mediaRecorderView.isShrinking()) {
-                            log("cameraViewOffsetY: " + cameraViewOffsetY);
                             canvas.clipRect(
                                     cameraViewOffsetX,
                                     AndroidUtilities.lerp(0, cameraViewOffsetY, mediaRecorderView.isAnimating() ? mediaRecorderView.getAnimationProgress() : 1F),

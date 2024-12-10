@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.NotificationCenter;
@@ -49,8 +50,9 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
 
     public static final long STATE_SWITCH_DURATION_MS = 350L;
     private static final float DISMISS_RATIO = 0.10F; // translation of 10% of view height makes recorder shrink
+    private static final float CAMERA_ICON_ANIMATION_RATIO = 4;
 
-    protected final Theme.ResourcesProvider resourcesProvider = new DarkThemeResourceProvider();
+    protected final Theme.ResourcesProvider resourcesProvider;
 
     protected final Context context;
     private final Params params;
@@ -113,15 +115,20 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
     private float scale = 1F;
     private float dismissProgress = 0F;
 
+    private final ImageView cameraIcon;
+    private final Drawable cameraDrawable;
+
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
     }
 
-    public MediaRecorderView(Context context, Params params, boolean isPreviewMode) {
+    public MediaRecorderView(Context context, Params params, boolean isShrinkMode, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         this.context = context;
         this.params = params;
+
+        this.resourcesProvider = resourcesProvider;
 
         setFocusable(true);
 
@@ -132,14 +139,16 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
 
         setBackgroundColor(Color.argb(150, 255, 0, 0));
 
-        this.state = isPreviewMode ? SHRINK_STATE : EXPANDED_STATE;
+        this.state = isShrinkMode ? SHRINK_STATE : EXPANDED_STATE;
 
-//        if (isPreviewMode) {
-//            ImageView cameraIcon = new ImageView(this.context);
-//            cameraIcon.setScaleType(ImageView.ScaleType.CENTER);
-//            cameraIcon.setBackgroundColor(context.getResources().getColor(android.R.color.holo_blue_light));
-//            addView(cameraIcon, LayoutHelper.createFrame(80, 80));
-//        }
+        cameraDrawable = ContextCompat.getDrawable(context, R.drawable.instant_camera).mutate();
+        cameraIcon = new ImageView(this.context);
+        cameraIcon.setScaleType(ImageView.ScaleType.CENTER);
+        cameraIcon.setImageDrawable(cameraDrawable);
+
+        if (this.state == SHRINK_STATE) {
+            addView(cameraIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        }
     }
 
     public boolean processTouchEvent(MotionEvent event) {
@@ -153,6 +162,10 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
             dismissProgress = 0F;
         }
         return true;
+    }
+
+    public void updateColors() {
+        Theme.setDrawableColor(cameraDrawable, Theme.getColor(Theme.key_dialogCameraIcon, resourcesProvider));
     }
 
     public void shrinkView() {
@@ -177,6 +190,8 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
         openCloseAnimator.setDuration(200);
         openCloseAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
 
+        addView(cameraIcon);
+
         animationProgress = 0F;
         openCloseAnimator.addUpdateListener(animation -> {
             float animatedValue = (float) animation.getAnimatedValue();
@@ -194,6 +209,8 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
             ViewGroup.LayoutParams lp = getLayoutParams();
             lp.width = (int) AndroidUtilities.lerp(startWidth, shrinkWidth, animatedValue);
             lp.height = (int) AndroidUtilities.lerp(startHeight, shrinkHeight, animatedValue);
+
+            cameraIcon.setAlpha(Utilities.clamp(animatedValue * CAMERA_ICON_ANIMATION_RATIO, 1F, 0F));
 
             requestLayout();
         });
@@ -253,6 +270,8 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
                 state = EXPANDED_STATE;
                 onOpened.run();
 
+                removeView(cameraIcon);
+
                 if (Build.VERSION.SDK_INT >= 21 && params.isFullScreen) {
                     setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
                 }
@@ -273,6 +292,8 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
 
             setY(AndroidUtilities.lerp(fromY, targetY, animatedValue));
             setX(AndroidUtilities.lerp(fromX, targetX, animatedValue));
+
+            cameraIcon.setAlpha(Utilities.clamp(1F - animatedValue * CAMERA_ICON_ANIMATION_RATIO, 1F, 0F));
 
             ViewGroup.LayoutParams lp = getLayoutParams();
             lp.width = (int) AndroidUtilities.lerp(startWidth, targetWidth, animatedValue);
@@ -339,7 +360,7 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
 
         private boolean scrollingY = false;
 
-        private float ty, sty;
+        private float sty;
 
         @Override
         public boolean onDown(@NonNull MotionEvent e) {
@@ -390,7 +411,7 @@ public class MediaRecorderView extends FrameLayout implements NotificationCenter
         }
 
         private boolean handleYScroll(float distanceY) {
-            ty = getTranslationY() - distanceY;
+            float ty = getTranslationY() - distanceY;
 
             if (ty >= 0) {
                 dismissProgress = Utilities.clamp(ty / getMeasuredHeight(), 1, 0);
