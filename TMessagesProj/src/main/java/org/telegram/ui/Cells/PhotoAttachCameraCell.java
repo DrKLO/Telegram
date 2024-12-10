@@ -45,7 +45,7 @@ public class PhotoAttachCameraCell extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setImageResource(R.drawable.instant_camera);
+        //imageView.setImageResource(R.drawable.instant_camera);
         addView(imageView, LayoutHelper.createFrame(80, 80));
         setFocusable(true);
 
@@ -86,9 +86,9 @@ public class PhotoAttachCameraCell extends FrameLayout {
 
         }
         if (bitmap != null) {
-            backgroundView.setImageBitmap(bitmap);
+            //backgroundView.setImageBitmap(bitmap);
         } else {
-            backgroundView.setImageResource(R.drawable.icplaceholder);
+            //backgroundView.setImageResource(R.drawable.icplaceholder);
         }
     }
 

@@ -6030,7 +6030,6 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         cameraView.getCameraSession().setCurrentFlashMode(mode);
     }
 
-
     private Drawable getCameraThumb() {
         Bitmap bitmap = null;
         try {
