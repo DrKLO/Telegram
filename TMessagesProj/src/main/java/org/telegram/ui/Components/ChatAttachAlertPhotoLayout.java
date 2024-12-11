@@ -32,7 +32,6 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.media.MediaMetadataRetriever;
@@ -103,7 +102,7 @@ import org.telegram.ui.Cells.PhotoAttachPermissionCell;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.MediaRecorder.MediaRecorderView;
+import org.telegram.ui.MediaRecorder.ChatMediaRecorderView;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.AlbumButton;
@@ -151,7 +150,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private int animateToPadding;
 
     // New camera
-    protected MediaRecorderView mediaRecorderView;
+    protected ChatMediaRecorderView mediaRecorderView;
 
     private AnimatorSet cameraInitAnimation;
     protected CameraView cameraView;
@@ -2643,7 +2642,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             cameraZoom = 0.0f;
         }
         if (mediaRecorderView == null) {
-            mediaRecorderView = new MediaRecorderView(getContext(), new MediaRecorderView.Params(true), true, resourcesProvider) {
+            mediaRecorderView = new ChatMediaRecorderView(getContext(), new ChatMediaRecorderView.Params(true), true, resourcesProvider) {
 
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
