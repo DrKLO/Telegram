@@ -30,6 +30,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Stories.recorder.MediaRecorderView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.nio.ByteBuffer;
@@ -200,7 +201,7 @@ public class StoryWaveEffectView extends TextureView implements TextureView.Surf
         canvas.drawRect(0, bitmap.getHeight() - AndroidUtilities.navigationBarHeight, bitmap.getWidth(), bitmap.getHeight(), navBarPaint);
         for (int i = 0; i < views.size(); ++i) {
             View view = views.get(i);
-            if (view != null && !(view instanceof StoryWaveEffectView) && !(view instanceof StoryRecorder.WindowView)) {
+            if (view != null && !(view instanceof StoryWaveEffectView) && !(view instanceof MediaRecorderView)) {
                 canvas.save();
                 canvas.translate(view.getX(), view.getY());
                 view.draw(canvas);

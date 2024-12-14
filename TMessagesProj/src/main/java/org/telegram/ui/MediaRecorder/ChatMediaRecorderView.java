@@ -29,10 +29,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GestureDetectorFixDoubleTap;
 
-import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.Arrays;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.touchSlop;
@@ -381,7 +379,7 @@ public class ChatMediaRecorderView extends FrameLayout implements NotificationCe
 
         @Override
         public boolean onScroll(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
-            if (state == SHRINKING_STATE) {
+            if (isAnimating()) {
                 return false;
             }
 

@@ -147,6 +147,8 @@ public class StoryEntry {
     public StoryPrivacyBottomSheet.StoryPrivacy privacy;
     public final ArrayList<TLRPC.InputPrivacyRule> privacyRules = new ArrayList<>();
 
+    public CharSequence updatedCaption;
+
     public boolean pinned = true;
     public boolean allowScreenshots;
 

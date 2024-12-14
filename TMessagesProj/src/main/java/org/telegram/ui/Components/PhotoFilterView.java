@@ -53,6 +53,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.PhotoEditRadioCell;
 import org.telegram.ui.Cells.PhotoEditToolCell;
+import org.telegram.ui.Stories.recorder.MediaRecorderView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.nio.ByteBuffer;
@@ -60,7 +61,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 @SuppressLint("NewApi")
-public class PhotoFilterView extends FrameLayout implements FilterShaders.FilterShadersDelegate, StoryRecorder.Touchable {
+public class PhotoFilterView extends FrameLayout implements FilterShaders.FilterShadersDelegate, MediaRecorderView.Touchable {
 
     private final static int curveGranularity = 100;
     private final static int curveDataStep = 2;
