@@ -1,10 +1,13 @@
 package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.Stories.recorder.MediaRecorderView.CHAT_ATTACH;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.EDIT_MODE_NONE;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.PAGE_CAMERA;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.PAGE_COVER;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.PAGE_PREVIEW;
+import static org.telegram.ui.Stories.recorder.MediaRecorderView.STORY;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -21,6 +24,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
@@ -32,6 +36,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
@@ -52,7 +57,9 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.Cells.ShareDialogCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
@@ -467,8 +474,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     public void openBot(long botId, String lang_code, SourceView sourceView) {
         this.botId = botId;
         this.botLang = lang_code;
-        mediaRecorderView.setParams(new MediaRecorderView.Params(false));
-        open(sourceView, true);
+        open(sourceView, true, true);
     }
 
     public void openBotEntry(long botId, String lang_code, StoryEntry entry, SourceView sourceView) {
@@ -497,8 +503,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         mediaRecorderView.setSourceViewRect(fromRounding, fromRect);
-        mediaRecorderView.setupState(entry, false, openType);
-        mediaRecorderView.setParams(new MediaRecorderView.Params(false));
+        mediaRecorderView.setupState(entry, false, new MediaRecorderView.Params(false, openType));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -510,10 +515,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void open(SourceView sourceView) {
-        open(sourceView, true);
+        open(sourceView, true, false);
     }
 
-    public void open(SourceView sourceView, boolean animated) {
+    public void open(SourceView sourceView, boolean animated, boolean isBot) {
         if (isShown || mediaRecorderView == null) {
             return;
         }
@@ -543,7 +548,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         mediaRecorderView.setSourceViewRect(fromRounding, fromRect);
-        mediaRecorderView.setupState(null, false, openType);
+        mediaRecorderView.setupState(null, false, new MediaRecorderView.Params(!isBot, openType));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -578,7 +583,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         mediaRecorderView.setSourceViewRect(fromRounding, fromRect);
-        mediaRecorderView.setupState(entry, false, openType);
+        mediaRecorderView.setupState(entry, false, new MediaRecorderView.Params(true, openType));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -616,7 +621,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         mediaRecorderView.setSourceViewRect(fromRounding, fromRect);
-        mediaRecorderView.setupState(entry, false, openType);
+        mediaRecorderView.setupState(entry, false, new MediaRecorderView.Params(true, openType));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -661,7 +666,8 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         mediaRecorderView.setSourceViewRect(fromRounding, fromRect);
-        mediaRecorderView.setupState(entry, false, openType);
+        boolean isVideo = entry != null && entry.isRepostMessage && entry.isVideo;
+        mediaRecorderView.setupState(entry, isVideo, new MediaRecorderView.Params(true, openType));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -819,7 +825,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     }
 
     private void initViews() {
-        mediaRecorderView = new MediaRecorderView(activity, windowManager, windowLayoutParams, resourcesProvider, currentAccount) {
+        mediaRecorderView = new MediaRecorderView(activity, windowManager, windowLayoutParams, resourcesProvider, currentAccount, CHAT_ATTACH) {
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -1008,6 +1014,48 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         @Override
         public void openPremium() {
             StoryRecorder.this.openPremium();
+        }
+
+        @Override
+        public void setTitle(StoryEntry outputEntry, int page, SimpleTextView view) {
+            if (page == PAGE_COVER) {
+                view.setText(getString(R.string.RecorderEditCover));
+            } else if (page == PAGE_PREVIEW){
+                if (outputEntry != null && botId != 0) {
+                    view.setText("");
+                } else if (outputEntry != null && outputEntry.isEdit) {
+                    view.setText(getString(R.string.RecorderEditStory));
+                } else if (outputEntry != null && outputEntry.isRepostMessage) {
+                    view.setText(getString(R.string.RecorderRepost));
+                } else if (outputEntry != null && outputEntry.isRepost) {
+                    SpannableStringBuilder title = new SpannableStringBuilder();
+                    AvatarSpan span = new AvatarSpan(view, currentAccount, 32);
+                    view.setTranslationX(-dp(6));
+                    SpannableString avatar = new SpannableString("a");
+                    avatar.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (outputEntry.repostPeer instanceof TLRPC.TL_peerUser) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(outputEntry.repostPeer.user_id);
+                        span.setUser(user);
+                        title.append(avatar).append("  ");
+                        title.append(UserObject.getUserName(user));
+                    } else {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-DialogObject.getPeerDialogId(outputEntry.repostPeer));
+                        span.setChat(chat);
+                        title.append(avatar).append("  ");
+                        title.append(chat != null ? chat.title : "");
+                    }
+                    view.setText(title);
+                } else {
+                    view.setText(getString(R.string.RecorderNewStory));
+                }
+            } else {
+                view.setText(getString(R.string.RecorderNewStory));
+            }
+        }
+
+        @Override
+        public void onEntryCreated(StoryEntry entry) {
+            StoryPrivacySelector.applySaved(currentAccount, entry);
         }
 
         @Override

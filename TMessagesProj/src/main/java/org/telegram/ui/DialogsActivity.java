@@ -4584,7 +4584,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 return StoryRecorder.SourceView.fromStoryCell(dialogStoriesCell != null ? dialogStoriesCell.findStoryCell(dialogId) : null);
                             }
                         })
-                        .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
+                        .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true, false);
             }
         });
 

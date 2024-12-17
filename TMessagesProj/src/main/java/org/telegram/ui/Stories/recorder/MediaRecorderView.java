@@ -70,6 +70,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
@@ -102,7 +103,6 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BlurringShader;
@@ -136,6 +136,8 @@ import org.telegram.ui.LaunchActivity;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -152,17 +154,24 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
         void onCoverEdited(StoryEntry outputEntry);
 
+        void setTitle(StoryEntry outputEntry, int page, SimpleTextView view);
+
+        void onEntryCreated(StoryEntry entry);
+
     }
 
     public static class Params {
 
-        private boolean isCaptionAllowed = true;
+        private final boolean isCaptionAllowed;
 
-        public Params(boolean isCaptionAllowed) {
+        private final int openType;
+
+        public Params(boolean isCaptionAllowed, int openType) {
             this.isCaptionAllowed = isCaptionAllowed;
+            this.openType = openType;
         }
 
-        private static Params defaultParams = new Params(true);
+        private static final Params defaultParams = new Params(true, 0);
 
     }
 
@@ -179,15 +188,22 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         this.delegate = delegate;
     }
 
-    public void setParams(Params params) {
-        this.params = params;
-    }
-
     // Accounts details
     private final int currentAccount;
     private long selectedDialogId;
 
     private final Theme.ResourcesProvider resourcesProvider;
+
+    public static final int STORY = 0;
+    public static final int CHAT_ATTACH = 1;
+
+    @IntDef({STORY, CHAT_ATTACH})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Type {
+    }
+
+    @Type
+    private final int recorderType;
 
     // Views
     private ContainerView containerView;
@@ -206,7 +222,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             WindowManager windowManager,
             WindowManager.LayoutParams windowLayoutParams,
             Theme.ResourcesProvider resourcesProvider,
-            int currentAccount
+            int currentAccount,
+            @Type int recorderType
     ) {
         super(activity);
         this.activity = activity;
@@ -214,6 +231,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         this.resourcesProvider = resourcesProvider;
         this.windowManager = windowManager;
         this.windowLayoutParams = windowLayoutParams;
+        this.recorderType = recorderType;
 
         gestureDetector = new GestureDetectorFixDoubleTap(activity, new GestureListener());
         scaleGestureDetector = new ScaleGestureDetector(activity, new ScaleListener());
@@ -227,7 +245,6 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     // Opening params
     private float openProgress;
-    private int openType;
 
     public void setOpenProgress(float openProgress) {
         this.openProgress = openProgress;
@@ -255,7 +272,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     private final Path clipPath = new Path();
 
     public void applyOpenProgress() {
-        if (openType != 1) {
+        if (params.openType != 1) {
             return;
         }
         fullRectF.set(previewContainer.getLeft(), previewContainer.getTop(), previewContainer.getMeasuredWidth(),
@@ -294,10 +311,10 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         this.sourceRect = rect;
     }
 
-    public void setupState(StoryEntry entry, boolean videoTextureActive, int openType) {
+    public void setupState(StoryEntry entry, boolean isVideo, Params params) {
         this.outputEntry = entry;
-        videoTextureHolder.active = videoTextureActive;
-        this.openType = openType;
+        videoTextureHolder.active = isVideo;
+        this.params = params;
 
         containerView.setTranslationX(0);
         containerView.setTranslationY(0);
@@ -311,47 +328,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     public void updateBackground() {
         containerView.updateBackground();
-        previewContainer.setBackgroundColor(openType == 1 || openType == 0 ? 0 : 0xff1f1f1f);
-    }
-
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        float dismiss = frozenDismissProgress != null ? frozenDismissProgress : dismissProgress;
-        final float r = AndroidUtilities.lerp(sourceRoundRadius, 0, openProgress);
-        boolean restore = false;
-        if (openType == 0) {
-            canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * openProgress * (1f - dismiss))));
-        }
-        if (openProgress != 1) {
-            if (openType == 0) {
-                fullRectF.set(0, 0, getWidth(), getHeight());
-                fullRectF.offset(containerView.getTranslationX(), containerView.getTranslationY());
-                AndroidUtilities.lerp(sourceRect, fullRectF, openProgress, rectF);
-
-                canvas.save();
-                clipPath.rewind();
-                clipPath.addRoundRect(rectF, r, r, Path.Direction.CW);
-                canvas.clipPath(clipPath);
-
-                final float alpha = Utilities.clamp(openProgress * 3, 1, 0);
-                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
-                canvas.translate(rectF.left, rectF.top - containerView.getTranslationY() * openProgress);
-                final float s = Math.max(rectF.width() / getWidth(), rectF.height() / getHeight());
-                canvas.scale(s, s);
-                restore = true;
-            } else if (openType == 1) {
-                applyOpenProgress();
-            }
-        }
-
-        if (paintView != null) {
-            paintView.onParentPreDraw();
-        }
-        super.dispatchDraw(canvas);
-        if (restore) {
-            canvas.restore();
-            canvas.restore();
-        }
+        previewContainer.setBackgroundColor(params.openType == 1 || params.openType == 0 ? 0 : 0xff1f1f1f);
     }
 
     // region User input handling
@@ -413,7 +390,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     private final class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
-        public boolean onScale(ScaleGestureDetector detector) {
+        public boolean onScale(@NonNull ScaleGestureDetector detector) {
             if (!scaling || cameraView == null || currentPage != PAGE_CAMERA || cameraView.isDualTouch()
                     || collageLayoutView.getFilledProgress() >= 1) {
                 return false;
@@ -447,7 +424,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         }
     }
 
-    private float ty, sty, stx;
+    private float sty;
+    private float stx;
 
     private final class GestureListener extends GestureDetectorFixDoubleTap.OnGestureListener {
         @Override
@@ -500,6 +478,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             if (scrollingY) {
                 int galleryMax = getMeasuredHeight() - (int) (AndroidUtilities.displaySize.y * 0.35f) - (AndroidUtilities.statusBarHeight
                         + ActionBar.getCurrentActionBarHeight());
+                float ty;
                 if (galleryListView == null || galleryListView.getTranslationY() >= galleryMax) {
                     ty = containerView.getTranslationY1();
                 } else {
@@ -605,7 +584,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         }
 
         @Override
-        public boolean onDoubleTapEvent(MotionEvent e) {
+        public boolean onDoubleTapEvent(@NonNull MotionEvent e) {
             if (cameraView != null) {
                 cameraView.clearTapFocus();
             }
@@ -620,7 +599,48 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     }
     // endregion
 
+    // region Layout
     private boolean ignoreLayout;
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        float dismiss = frozenDismissProgress != null ? frozenDismissProgress : dismissProgress;
+        final float r = AndroidUtilities.lerp(sourceRoundRadius, 0, openProgress);
+        boolean restore = false;
+        if (params.openType == 0) {
+            canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * openProgress * (1f - dismiss))));
+        }
+        if (openProgress != 1) {
+            if (params.openType == 0) {
+                fullRectF.set(0, 0, getWidth(), getHeight());
+                fullRectF.offset(containerView.getTranslationX(), containerView.getTranslationY());
+                AndroidUtilities.lerp(sourceRect, fullRectF, openProgress, rectF);
+
+                canvas.save();
+                clipPath.rewind();
+                clipPath.addRoundRect(rectF, r, r, Path.Direction.CW);
+                canvas.clipPath(clipPath);
+
+                final float alpha = Utilities.clamp(openProgress * 3, 1, 0);
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+                canvas.translate(rectF.left, rectF.top - containerView.getTranslationY() * openProgress);
+                final float s = Math.max(rectF.width() / getWidth(), rectF.height() / getHeight());
+                canvas.scale(s, s);
+                restore = true;
+            } else if (params.openType == 1) {
+                applyOpenProgress();
+            }
+        }
+
+        if (paintView != null) {
+            paintView.onParentPreDraw();
+        }
+        super.dispatchDraw(canvas);
+        if (restore) {
+            canvas.restore();
+            canvas.restore();
+        }
+    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -752,7 +772,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             b = T + previewH + underControls;
         } else {
             t = T + ((H - T - insetBottom) - previewH - underControls) / 2;
-            if (openType == 1 && sourceRect.top + previewH + underControls < H - insetBottom) {
+            if (params.openType == 1 && sourceRect.top + previewH + underControls < H - insetBottom) {
                 t = (int) sourceRect.top;
             } else if (t - T < dp(40)) {
                 t = T;
@@ -860,13 +880,15 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         canvas.restore();
     }
 
+    // endregion
+
     private class ContainerView extends FrameLayout {
         public ContainerView(Context context) {
             super(context);
         }
 
         public void updateBackground() {
-            if (openType == 0) {
+            if (params.openType == 0) {
                 setBackground(Theme.createRoundRectDrawable(dp(12), 0xff000000));
             } else {
                 setBackground(null);
@@ -987,7 +1009,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         private LinearGradient topGradient;
 
         @Override
-        protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
             boolean r = super.drawChild(canvas, child, drawingTime);
             if (child == previewContainer) {
                 final float top = underStatusBar ? AndroidUtilities.statusBarHeight : 0;
@@ -1144,7 +1166,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     public void onOpened() {
         wasSend = false;
-        if (openType == 1) {
+        if (params.openType == 1) {
             previewContainer.setAlpha(1f);
             previewContainer.setTranslationX(0);
             previewContainer.setTranslationY(0);
@@ -1398,7 +1420,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         cameraViewThumb.setClickable(true);
         previewContainer.addView(cameraViewThumb, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        previewContainer.setBackgroundColor(openType == 1 || openType == 0 ? 0 : 0xff1f1f1f);
+        previewContainer.setBackgroundColor(params.openType == 1 || params.openType == 0 ? 0 : 0xff1f1f1f);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             previewContainer.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
@@ -1782,13 +1804,15 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 visibleBulletin.updatePosition();
             }
         });
-        captionEdit.setOnPeriodUpdate(period -> {
-            if (outputEntry != null) {
-                outputEntry.period = period;
-                MessagesController.getGlobalMainSettings().edit().putInt("story_period", period).apply();
+        if (recorderType == STORY) {
+            captionEdit.setOnPeriodUpdate(period -> {
+                if (outputEntry != null) {
+                    outputEntry.period = period;
+                    MessagesController.getGlobalMainSettings().edit().putInt("story_period", period).apply();
 //                privacySelector.setStoryPeriod(period);
-            }
-        });
+                }
+            });
+        }
         if (selectedDialogId != 0) {
             captionEdit.setDialogId(selectedDialogId);
         }
@@ -1826,6 +1850,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         previewView.setVideoTimelineView(timelineView);
         timelineView.setVisibility(View.GONE);
         timelineView.setAlpha(0f);
+        timelineView.setIsDurationLimited(recorderType == STORY);
         videoTimelineContainerView = new FrameLayout(context);
         videoTimelineContainerView.addView(timelineView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TimelineView.heightDp(), Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 0));
@@ -1847,6 +1872,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         coverTimelineView.setCover();
         coverTimelineView.setVisibility(View.GONE);
         coverTimelineView.setAlpha(0f);
+        coverTimelineView.setIsDurationLimited(recorderType == STORY);
         captionContainer.addView(coverTimelineView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TimelineView.heightDp(), Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 6));
 
@@ -1870,7 +1896,6 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         titleTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
         titleTextView.setTextColor(0xffffffff);
         titleTextView.setTypeface(AndroidUtilities.bold());
-        titleTextView.setText(getString(R.string.RecorderNewStory));
         titleTextView.getPaint().setShadowLayer(dpf2(1), 0, 1, 0x40000000);
         titleTextView.setAlpha(0f);
         titleTextView.setVisibility(View.GONE);
@@ -2129,15 +2154,18 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         controlContainer.addView(recordControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         flashViews.add(recordControl);
         recordControl.setCollageProgress(collageLayoutView.hasLayout() ? collageLayoutView.getFilledProgress() : 0.0f, true);
+        recordControl.setIsDurationLimited(recorderType == STORY);
 
-        cameraHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM)
-                .setMultilineText(true)
-                .setText(getString(R.string.StoryCameraHint2))
-                .setMaxWidth(320)
-                .setDuration(5000L)
-                .setTextAlign(Layout.Alignment.ALIGN_CENTER);
-        controlContainer.addView(cameraHint,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM, 0, 0, 0, 100));
+        if (recorderType == STORY) {
+            cameraHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM)
+                    .setMultilineText(true)
+                    .setText(getString(R.string.StoryCameraHint2))
+                    .setMaxWidth(320)
+                    .setDuration(5000L)
+                    .setTextAlign(Layout.Alignment.ALIGN_CENTER);
+            controlContainer.addView(cameraHint,
+                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM, 0, 0, 0, 100));
+        }
 
         zoomControlView = new ZoomControlView(context);
         zoomControlView.enabledTouch = false;
@@ -2460,7 +2488,10 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             if (takingPhoto || awaitingPlayer || currentPage != PAGE_CAMERA || cameraView == null || !cameraView.isInited()) {
                 return;
             }
-            cameraHint.hide();
+            if (cameraHint != null) {
+                cameraHint.hide();
+            }
+
             if (outputFile != null) {
                 try {
                     outputFile.delete();
@@ -2494,7 +2525,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             if (modeSwitcherView != null) {
                 modeSwitcherView.switchMode(isVideo);
             }
-            StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+            if (delegate != null) {
+                delegate.onEntryCreated(outputEntry);
+            }
             navigateTo(PAGE_PREVIEW, true);
         }
 
@@ -2553,7 +2586,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                         outputFile = null;
                         if (collageLayoutView.push(entry)) {
                             outputEntry = StoryEntry.asCollage(collageLayoutView.getLayout(), collageLayoutView.getContent());
-                            StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                            if (delegate != null) {
+                                delegate.onEntryCreated(outputEntry);
+                            }
                             fromGallery = false;
 
                             if (done != null) {
@@ -2570,7 +2605,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                         updateActionBarButtons(true);
                     } else {
                         outputEntry = entry;
-                        StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                        if (delegate != null) {
+                            delegate.onEntryCreated(outputEntry);
+                        }
                         fromGallery = false;
 
                         if (done != null) {
@@ -2588,7 +2625,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                     outputFile = null;
                     if (collageLayoutView.push(entry)) {
                         outputEntry = StoryEntry.asCollage(collageLayoutView.getLayout(), collageLayoutView.getContent());
-                        StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                        if (delegate != null) {
+                            delegate.onEntryCreated(outputEntry);
+                        }
                         fromGallery = false;
                         if (done != null) {
                             done.run(null);
@@ -2604,7 +2643,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                     updateActionBarButtons(true);
                 } else {
                     outputEntry = entry;
-                    StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                    if (delegate != null) {
+                        delegate.onEntryCreated(outputEntry);
+                    }
                     fromGallery = false;
 
                     if (done != null) {
@@ -2628,7 +2669,10 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             if (savedDualHint != null) {
                 savedDualHint.hide();
             }
-            cameraHint.hide();
+            if (cameraHint != null) {
+                cameraHint.hide();
+            }
+
             takingVideo = true;
             if (outputFile != null) {
                 try {
@@ -2693,7 +2737,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
                 showVideoTimer(false, true);
 
-                StoryEntry entry = StoryEntry.fromVideoShoot(outputFile, thumbPath, duration);
+                StoryEntry entry = StoryEntry.fromVideoShoot(outputFile, thumbPath, duration, recorderType == STORY);
                 animateRecording(false, true);
                 setAwakeLock(false);
                 videoTimerView.setRecording(false, true);
@@ -2705,7 +2749,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                     entry.videoVolume = 1.0f;
                     if (collageLayoutView.push(entry)) {
                         outputEntry = StoryEntry.asCollage(collageLayoutView.getLayout(), collageLayoutView.getContent());
-                        StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                        if (delegate != null) {
+                            delegate.onEntryCreated(outputEntry);
+                        }
                         fromGallery = false;
                         int width = cameraView.getVideoWidth(), height = cameraView.getVideoHeight();
                         if (width > 0 && height > 0) {
@@ -2717,7 +2763,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                     updateActionBarButtons(true);
                 } else {
                     outputEntry = entry;
-                    StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                    if (delegate != null) {
+                        delegate.onEntryCreated(outputEntry);
+                    }
                     fromGallery = false;
                     int width = cameraView.getVideoWidth(), height = cameraView.getVideoHeight();
                     if (width > 0 && height > 0) {
@@ -3284,6 +3332,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         themeSheet.open(outputEntry);
     }
 
+    // region Gallery
     private Parcelable lastGalleryScrollPosition;
     private MediaController.AlbumEntry lastGallerySelectedAlbum;
 
@@ -3388,7 +3437,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 if (entry instanceof MediaController.PhotoEntry) {
                     MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
                     isVideo = photoEntry.isVideo;
-                    storyEntry = StoryEntry.fromPhotoEntry(photoEntry);
+                    storyEntry = StoryEntry.fromPhotoEntry(photoEntry, recorderType == STORY);
                     storyEntry.blurredVideoThumb = blurredBitmap;
                     storyEntry.setupMatrix();
                     fromGallery = true;
@@ -3398,14 +3447,16 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                         storyEntry.videoVolume = 1.0f;
                         if (collageLayoutView.push(storyEntry)) {
                             outputEntry = StoryEntry.asCollage(collageLayoutView.getLayout(), collageLayoutView.getContent());
-//                            StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                            if (delegate != null) {
+                                delegate.onEntryCreated(outputEntry);
+                            }
 //                            navigateTo(PAGE_PREVIEW, true);
                         }
                         updateActionBarButtons(true);
                     } else {
                         outputEntry = storyEntry;
-                        if (entry instanceof MediaController.PhotoEntry) {
-                            StoryPrivacySelector.applySaved(currentAccount, outputEntry);
+                        if (delegate != null) {
+                            delegate.onEntryCreated(outputEntry);
                         }
                         navigateTo(PAGE_PREVIEW, true);
                     }
@@ -3423,9 +3474,6 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
                     collageLayoutView.set(storyEntry, true);
                     outputEntry = storyEntry;
-                    if (entry instanceof MediaController.PhotoEntry) {
-                        StoryPrivacySelector.applySaved(currentAccount, outputEntry);
-                    }
                     navigateTo(PAGE_PREVIEW, true);
                 } else {
                     return;
@@ -3551,6 +3599,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         }
     }
 
+    // endregion
+
     private void onNavigateStart(int fromPage, int toPage) {
         if (toPage == PAGE_CAMERA) {
             requestCameraPermission(false);
@@ -3578,7 +3628,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             if (draftSavedHint != null) {
                 draftSavedHint.setVisibility(View.GONE);
             }
-            cameraHint.hide();
+            if (cameraHint != null) {
+                cameraHint.hide();
+            }
             if (dualHint != null) {
                 dualHint.hide();
             }
@@ -3628,14 +3680,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         if (toPage == PAGE_COVER || fromPage == PAGE_COVER) {
             titleTextView.setVisibility(View.VISIBLE);
             coverTimelineView.setVisibility(View.VISIBLE);
-            if (outputEntry != null && outputEntry.isEditingCover) {
-                titleTextView.setText(getString(R.string.RecorderEditCover));
-            }
+            delegate.setTitle(outputEntry, toPage, titleTextView);
             captionContainer.setVisibility(View.VISIBLE);
             coverButton.setVisibility(View.VISIBLE);
-        }
-        if (toPage == PAGE_COVER) {
-            titleTextView.setText(getString(R.string.RecorderEditCover));
         }
         if (toPage == PAGE_PREVIEW) {
             videoError = false;
@@ -3692,33 +3739,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             timelineView.setVisibility(View.VISIBLE);
             titleTextView.setVisibility(View.VISIBLE);
             titleTextView.setTranslationX(0);
-            if (outputEntry != null && outputEntry.botId != 0) {
-                titleTextView.setText("");
-            } else if (outputEntry != null && outputEntry.isEdit) {
-                titleTextView.setText(getString(R.string.RecorderEditStory));
-            } else if (outputEntry != null && outputEntry.isRepostMessage) {
-                titleTextView.setText(getString(R.string.RecorderRepost));
-            } else if (outputEntry != null && outputEntry.isRepost) {
-                SpannableStringBuilder title = new SpannableStringBuilder();
-                AvatarSpan span = new AvatarSpan(titleTextView, currentAccount, 32);
-                titleTextView.setTranslationX(-dp(6));
-                SpannableString avatar = new SpannableString("a");
-                avatar.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                if (outputEntry.repostPeer instanceof TLRPC.TL_peerUser) {
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(outputEntry.repostPeer.user_id);
-                    span.setUser(user);
-                    title.append(avatar).append("  ");
-                    title.append(UserObject.getUserName(user));
-                } else {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-DialogObject.getPeerDialogId(outputEntry.repostPeer));
-                    span.setChat(chat);
-                    title.append(avatar).append("  ");
-                    title.append(chat != null ? chat.title : "");
-                }
-                titleTextView.setText(title);
-            } else {
-                titleTextView.setText(getString(R.string.RecorderNewStory));
-            }
+            delegate.setTitle(outputEntry, toPage, titleTextView);
 
 //            MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_EMOJIPACKS);
 //            MediaDataController.getInstance(currentAccount).checkFeaturedEmoji();
@@ -5170,7 +5191,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 //        collageLayoutView.getLast().addView(cameraView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity
 //        .FILL));
         collageLayoutView.setCameraView(cameraView);
-        if (MessagesController.getGlobalMainSettings().getInt("storyhint2", 0) < 1) {
+        if (MessagesController.getGlobalMainSettings().getInt("storyhint2", 0) < 1 && recorderType == STORY && cameraHint != null) {
             cameraHint.show();
             MessagesController.getGlobalMainSettings().edit()
                     .putInt("storyhint2", MessagesController.getGlobalMainSettings().getInt("storyhint2", 0) + 1).apply();
@@ -5418,6 +5439,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         }
 
         if (!noCameraPermission) {
+            cameraViewThumb.setImageDrawable(null);
             if (CameraController.getInstance().isCameraInitied()) {
                 createCameraView();
             } else {

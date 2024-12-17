@@ -3414,7 +3414,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             return StoryRecorder.SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
                         }
                     })
-                    .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
+                    .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true, false);
             }
         };
         sharedMediaLayout.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
@@ -5397,7 +5397,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             return StoryRecorder.SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
                         }
                     });
-            recorder.open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
+            recorder.open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true, false);
         });
 
         floatingButton = new RLottieImageView(context);

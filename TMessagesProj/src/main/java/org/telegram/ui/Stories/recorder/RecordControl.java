@@ -117,9 +117,15 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private boolean dual;
     private final AnimatedFloat dualT = new AnimatedFloat(this, 0, 330, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private static final long MAX_DURATION = 60 * 1000L;
     private long recordingStart;
     private long lastDuration;
+
+    private static final long MAX_DURATION = 60 * 1000L;
+    private boolean isDurationLimited;
+
+    public void setIsDurationLimited(boolean isLimited) {
+        isDurationLimited = isLimited;
+    }
 
     private final Path checkPath = new Path();
     private final Point check1 = new Point(-dpf2(29/3.0f), dpf2(7/3.0f));
@@ -441,9 +447,9 @@ public class RecordControl extends View implements FlashViews.Invertable {
         outlineFilledPaint.setStrokeWidth(strokeWidth);
         outlineFilledPaint.setAlpha((int) (0xFF * Math.max(.7f * recordingLoading, 1f - recordEndT)));
 
-        if (recordingLoading <= 0) {
+        if (recordingLoading <= 0 && isDurationLimited) {
             canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
-        } else {
+        } else if (recordingLoading > 0) {
             final long now = SystemClock.elapsedRealtime();
             CircularProgressDrawable.getSegments((now - recordingLoadingStart) % 5400, loadingSegments);
             invalidate();
@@ -466,7 +472,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (duration >= MAX_DURATION && isDurationLimited) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;

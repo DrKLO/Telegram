@@ -55,6 +55,8 @@ import java.util.List;
 
 public class StoryEntry {
 
+    public static final float DEFAULT_DURATION_LIMIT = 59_500F;
+
     public final int currentAccount = UserConfig.selectedAccount;
 
     public long draftId;
@@ -108,7 +110,8 @@ public class StoryEntry {
     public long videoOffset;
 
     public boolean muted;
-    public float left, right = 1;
+    public float left = 0, right = 1;
+    public boolean isDurationLimited = true;
 
     public boolean isEditingCover;
     public TLRPC.Document editingCoverDocument;
@@ -792,7 +795,7 @@ public class StoryEntry {
                     entry.fileDeletable = false;
                     entry.duration = (long) (messageObject.getDuration() * 1000);
                     entry.left = 0;
-                    entry.right = Math.min(1, 59_500f / entry.duration);
+                    entry.right = Math.min(1, DEFAULT_DURATION_LIMIT / entry.duration);
                 } else {
                     entry.file = null;
                 }
@@ -865,6 +868,10 @@ public class StoryEntry {
     }
 
     public static StoryEntry fromPhotoEntry(MediaController.PhotoEntry photoEntry) {
+        return fromPhotoEntry(photoEntry, true);
+    }
+
+    public static StoryEntry fromPhotoEntry(MediaController.PhotoEntry photoEntry, boolean isDurationLimited) {
         StoryEntry entry = new StoryEntry();
         entry.file = new File(photoEntry.path);
         entry.orientation = photoEntry.orientation;
@@ -873,7 +880,8 @@ public class StoryEntry {
         entry.thumbPath = photoEntry.thumbPath;
         entry.duration = photoEntry.duration * 1000L;
         entry.left = 0;
-        entry.right = Math.min(1, 59_500f / entry.duration);
+        entry.right = isDurationLimited ? Math.min(1, 59_500f / entry.duration) : 1;
+        entry.isDurationLimited = isDurationLimited;
         if (entry.isVideo && entry.thumbPath == null) {
             entry.thumbPath = "vthumb://" + photoEntry.imageId;
         }
@@ -1048,6 +1056,10 @@ public class StoryEntry {
     }
 
     public static StoryEntry fromVideoShoot(File file, String thumbPath, long duration) {
+        return fromVideoShoot(file, thumbPath, duration, true);
+    }
+
+    public static StoryEntry fromVideoShoot(File file, String thumbPath, long duration, boolean isDurationLimited) {
         StoryEntry entry = new StoryEntry();
         entry.fromCamera = true;
         entry.file = file;
@@ -1058,7 +1070,8 @@ public class StoryEntry {
         entry.duration = duration;
         entry.thumbPath = thumbPath;
         entry.left = 0;
-        entry.right = Math.min(1, 59_500f / entry.duration);
+        entry.right = isDurationLimited ? Math.min(1, DEFAULT_DURATION_LIMIT / entry.duration) : 1;
+        entry.isDurationLimited = isDurationLimited;
         return entry;
     }
 
