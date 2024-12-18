@@ -2,7 +2,6 @@ package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.Stories.recorder.MediaRecorderView.CHAT_ATTACH;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.EDIT_MODE_NONE;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.PAGE_CAMERA;
 import static org.telegram.ui.Stories.recorder.MediaRecorderView.PAGE_COVER;
@@ -36,7 +35,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
@@ -270,6 +268,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         Drawable iconDrawable;
         int iconSize;
         View view;
+        boolean isVisible;
 
         protected void show(boolean sent) {
         }
@@ -292,11 +291,13 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 protected void show(boolean sent) {
                     avatarImage.drawAvatar = true;
                     avatarImage.invalidate();
+                    avatarImage.post(() -> isVisible = true);
                 }
 
                 @Override
                 protected void hide() {
                     avatarImage.drawAvatar = false;
+                    avatarImage.post(() -> isVisible = false);
                     avatarImage.invalidate();
                 }
             };
@@ -328,6 +329,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                         view.setTranslationX(0);
                         view.setTranslationY(0);
                     }
+                    isVisible = true;
                 }
 
                 @Override
@@ -336,6 +338,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     if (peerView != null) {
                         peerView.animateOut(true);
                     }
+                    isVisible = false;
                 }
             };
             if (!storyViewer.getStoryRect(src.screenRect)) {
@@ -358,11 +361,15 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 @Override
                 protected void show(boolean sent) {
                     floatingButton.setVisibility(View.VISIBLE);
+                    floatingButton.post(() -> isVisible = true);
                 }
 
                 @Override
                 protected void hide() {
-                    floatingButton.post(() -> floatingButton.setVisibility(View.GONE));
+                    floatingButton.post(() -> {
+                        floatingButton.setVisibility(View.GONE);
+                        isVisible = false;
+                    });
                 }
             };
             int[] loc = new int[2];
@@ -387,12 +394,14 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 @Override
                 protected void show(boolean sent) {
                     imageView.setVisibility(View.VISIBLE);
+                    isVisible = false;
                 }
 
                 @Override
                 protected void hide() {
                     imageView.post(() -> {
                         imageView.setVisibility(View.GONE);
+                        isVisible = true;
                     });
                 }
             };
@@ -425,6 +434,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                         storyCell.getLocationInWindow(loc);
                         LaunchActivity.makeRipple(loc[0] + storyCell.getWidth() / 2f, loc[1] + storyCell.getHeight() / 2f, 1f);
                     }
+                    storyCell.post(() -> isVisible = true);
                 }
 
                 @Override
@@ -432,6 +442,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     storyCell.post(() -> {
                         storyCell.drawAvatar = false;
                         storyCell.invalidate();
+                        storyCell.post(() -> isVisible = false);
                     });
                 }
 
@@ -808,7 +819,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             fromSourceView.show(false);
         }
 
-        mediaRecorderView.onClosed();
+        mediaRecorderView.onClosed(true);
 
         if (instance != null) {
             instance.close(false);
@@ -825,7 +836,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     }
 
     private void initViews() {
-        mediaRecorderView = new MediaRecorderView(activity, windowManager, windowLayoutParams, resourcesProvider, currentAccount, CHAT_ATTACH) {
+        mediaRecorderView = new MediaRecorderView(activity, windowManager, windowLayoutParams, resourcesProvider, currentAccount, STORY) {
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -841,52 +852,50 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
 
-                if (openProgress != 0 && openType == 0) {
+                if (fromSourceView != null && !fromSourceView.isVisible && openType == 0) {
                     final float r = AndroidUtilities.lerp(fromRounding, 0, openProgress);
 
-                    if (fromSourceView != null) {
-                        final float alpha = Utilities.clamp(1f - openProgress * 1.5f, 1, 0);
-                        final float bcx = rectF.centerX(),
-                                bcy = rectF.centerY(),
-                                br = Math.min(rectF.width(), rectF.height()) / 2f;
-                        if (fromSourceView.backgroundImageReceiver != null) {
-                            fromSourceView.backgroundImageReceiver.setImageCoords(rectF);
-                            int prevRoundRadius = fromSourceView.backgroundImageReceiver.getRoundRadius()[0];
-                            fromSourceView.backgroundImageReceiver.setRoundRadius((int) r);
-                            fromSourceView.backgroundImageReceiver.setAlpha(alpha);
-                            fromSourceView.backgroundImageReceiver.draw(canvas);
-                            fromSourceView.backgroundImageReceiver.setRoundRadius(prevRoundRadius);
-                        } else if (fromSourceView.backgroundDrawable != null) {
-                            fromSourceView.backgroundDrawable.setBounds((int) rectF.left, (int) rectF.top, (int) rectF.right, (int) rectF.bottom);
-                            fromSourceView.backgroundDrawable.setAlpha((int) (0xFF * alpha * alpha * alpha));
-                            fromSourceView.backgroundDrawable.draw(canvas);
-                        } else if (fromSourceView.backgroundPaint != null) {
-                            if (fromSourceView.hasShadow) {
-                                fromSourceView.backgroundPaint.setShadowLayer(dp(2), 0, dp(3), Theme.multAlpha(0x33000000, alpha));
-                            }
-                            fromSourceView.backgroundPaint.setAlpha((int) (0xFF * alpha));
-                            canvas.drawRoundRect(rectF, r, r, fromSourceView.backgroundPaint);
+                    final float alpha = Utilities.clamp(1f - openProgress * 1.5f, 1, 0);
+                    final float bcx = rectF.centerX(),
+                            bcy = rectF.centerY(),
+                            br = Math.min(rectF.width(), rectF.height()) / 2f;
+                    if (fromSourceView.backgroundImageReceiver != null) {
+                        fromSourceView.backgroundImageReceiver.setImageCoords(rectF);
+                        int prevRoundRadius = fromSourceView.backgroundImageReceiver.getRoundRadius()[0];
+                        fromSourceView.backgroundImageReceiver.setRoundRadius((int) r);
+                        fromSourceView.backgroundImageReceiver.setAlpha(alpha);
+                        fromSourceView.backgroundImageReceiver.draw(canvas);
+                        fromSourceView.backgroundImageReceiver.setRoundRadius(prevRoundRadius);
+                    } else if (fromSourceView.backgroundDrawable != null) {
+                        fromSourceView.backgroundDrawable.setBounds((int) rectF.left, (int) rectF.top, (int) rectF.right, (int) rectF.bottom);
+                        fromSourceView.backgroundDrawable.setAlpha((int) (0xFF * alpha * alpha * alpha));
+                        fromSourceView.backgroundDrawable.draw(canvas);
+                    } else if (fromSourceView.backgroundPaint != null) {
+                        if (fromSourceView.hasShadow) {
+                            fromSourceView.backgroundPaint.setShadowLayer(dp(2), 0, dp(3), Theme.multAlpha(0x33000000, alpha));
                         }
-                        if (fromSourceView.iconDrawable != null) {
-                            rect.set(fromSourceView.iconDrawable.getBounds());
-                            fromSourceView.iconDrawable.setBounds(
-                                    (int) (bcx - fromSourceView.iconSize / 2F),
-                                    (int) (bcy - fromSourceView.iconSize / 2F),
-                                    (int) (bcx + fromSourceView.iconSize / 2F),
-                                    (int) (bcy + fromSourceView.iconSize / 2F)
-                            );
-                            int wasAlpha = fromSourceView.iconDrawable.getAlpha();
-                            fromSourceView.iconDrawable.setAlpha((int) (wasAlpha * alpha));
-                            fromSourceView.iconDrawable.draw(canvas);
-                            fromSourceView.iconDrawable.setBounds(rect);
-                            fromSourceView.iconDrawable.setAlpha(wasAlpha);
-                        }
-
-                        canvas.save();
-                        canvas.translate(fromRect.left, fromRect.top);
-                        fromSourceView.drawAbove(canvas, alpha);
-                        canvas.restore();
+                        fromSourceView.backgroundPaint.setAlpha((int) (0xFF * alpha));
+                        canvas.drawRoundRect(rectF, r, r, fromSourceView.backgroundPaint);
                     }
+                    if (fromSourceView.iconDrawable != null) {
+                        rect.set(fromSourceView.iconDrawable.getBounds());
+                        fromSourceView.iconDrawable.setBounds(
+                                (int) (bcx - fromSourceView.iconSize / 2F),
+                                (int) (bcy - fromSourceView.iconSize / 2F),
+                                (int) (bcx + fromSourceView.iconSize / 2F),
+                                (int) (bcy + fromSourceView.iconSize / 2F)
+                        );
+                        int wasAlpha = fromSourceView.iconDrawable.getAlpha();
+                        fromSourceView.iconDrawable.setAlpha((int) (wasAlpha * alpha));
+                        fromSourceView.iconDrawable.draw(canvas);
+                        fromSourceView.iconDrawable.setBounds(rect);
+                        fromSourceView.iconDrawable.setAlpha(wasAlpha);
+                    }
+
+                    canvas.save();
+                    canvas.translate(fromRect.left, fromRect.top);
+                    fromSourceView.drawAbove(canvas, alpha);
+                    canvas.restore();
                 }
             }
         };

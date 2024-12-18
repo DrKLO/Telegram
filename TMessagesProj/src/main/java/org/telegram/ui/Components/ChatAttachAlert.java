@@ -849,6 +849,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     protected float cornerRadius = 1.0f;
 
+    public float getCornerRadius() {
+        return cornerRadius;
+    }
+
     public ActionBar actionBar;
     private View actionBarShadow;
     private AnimatorSet actionBarAnimation;

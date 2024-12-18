@@ -73,6 +73,7 @@ import android.widget.TextView;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
@@ -219,6 +220,15 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     public MediaRecorderView(
             Activity activity,
+            int currentAccount,
+            Theme.ResourcesProvider resourceProvider,
+            @Type int recorderType
+    ) {
+        this(activity, activity.getWindowManager(), null, resourceProvider, currentAccount, recorderType);
+    }
+
+    public MediaRecorderView(
+            Activity activity,
             WindowManager windowManager,
             WindowManager.LayoutParams windowLayoutParams,
             Theme.ResourcesProvider resourcesProvider,
@@ -248,6 +258,13 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     public void setOpenProgress(float openProgress) {
         this.openProgress = openProgress;
+    }
+
+    // Expanding params
+    private float expandProgress = 1f;
+
+    public void setExpandProgress(float expandProgress) {
+        this.expandProgress = expandProgress;
     }
 
     private int previewW, previewH;
@@ -337,6 +354,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (currentPage == PAGE_EMBEDDED_CAMERA || pageAnimator != null && pageAnimator.isRunning() || expandProgress != 1f) {
+            return false;
+        }
         flingDetected = false;
         if (collageListView != null && collageListView.isVisible()) {
             final float y = containerView.getY() + actionBarContainer.getY() + collageListView.getY();
@@ -574,7 +594,10 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             }
             cameraView.switchCamera();
             recordControl.rotateFlip(180);
-            saveCameraFace(cameraView.isFrontface());
+            if (recorderType == STORY) {
+                saveCameraFace(cameraView.isFrontface());
+            }
+
             if (useDisplayFlashlight()) {
                 flashViews.flashIn(null);
             } else {
@@ -605,16 +628,19 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     @Override
     protected void dispatchDraw(Canvas canvas) {
         float dismiss = frozenDismissProgress != null ? frozenDismissProgress : dismissProgress;
-        final float r = AndroidUtilities.lerp(sourceRoundRadius, 0, openProgress);
+
+        float progress = openProgress * expandProgress;
+        final float r = AndroidUtilities.lerp(sourceRoundRadius, 0, progress);
         boolean restore = false;
         if (params.openType == 0) {
-            canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * openProgress * (1f - dismiss))));
+            canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * progress * (1f - dismiss))));
         }
-        if (openProgress != 1) {
+
+        if (progress != 1) {
             if (params.openType == 0) {
                 fullRectF.set(0, 0, getWidth(), getHeight());
                 fullRectF.offset(containerView.getTranslationX(), containerView.getTranslationY());
-                AndroidUtilities.lerp(sourceRect, fullRectF, openProgress, rectF);
+                AndroidUtilities.lerp(sourceRect, fullRectF, progress, rectF);
 
                 canvas.save();
                 clipPath.rewind();
@@ -678,8 +704,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         setSystemUiVisibility(flags);
 
         containerView.measure(
-                MeasureSpec.makeMeasureSpec(previewW, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(previewH + underControls, MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(currentPage == PAGE_EMBEDDED_CAMERA ? W : previewW, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(currentPage == PAGE_EMBEDDED_CAMERA ? H : previewH + underControls, MeasureSpec.EXACTLY)
         );
         flashViews.backgroundView.measure(
                 MeasureSpec.makeMeasureSpec(W, MeasureSpec.EXACTLY),
@@ -780,7 +806,11 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             b = t + previewH + underControls;
         }
 
-        containerView.layout(l, t, r, b);
+        if (currentPage == PAGE_EMBEDDED_CAMERA) {
+            containerView.layout(0, 0, W, H);
+        } else {
+            containerView.layout(l, t, r, b);
+        }
         flashViews.backgroundView.layout(0, 0, W, H);
         if (thanosEffect != null) {
             thanosEffect.layout(0, 0, W, H);
@@ -889,7 +919,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
         public void updateBackground() {
             if (params.openType == 0) {
-                setBackground(Theme.createRoundRectDrawable(dp(12), 0xff000000));
+                //setBackground(Theme.createRoundRectDrawable(dp(12), 0xff000000));
             } else {
                 setBackground(null);
             }
@@ -930,7 +960,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             final int w = right - left;
             final int h = bottom - top;
 
-            previewContainer.layout(0, 0, previewW, previewH);
+            previewContainer.layout(0, 0, currentPage == PAGE_EMBEDDED_CAMERA ? w : previewW, currentPage == PAGE_EMBEDDED_CAMERA ? h : previewH);
             previewContainer.setPivotX(previewW * .5f);
             actionBarContainer.layout(0, t, previewW, t + actionBarContainer.getMeasuredHeight());
             controlContainer.layout(0, previewH - controlContainer.getMeasuredHeight(), previewW, previewH);
@@ -969,7 +999,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             final int W = MeasureSpec.getSize(widthMeasureSpec);
             final int H = MeasureSpec.getSize(heightMeasureSpec);
 
-            measureChildExactly(previewContainer, previewW, previewH);
+            measureChildExactly(previewContainer, currentPage == PAGE_EMBEDDED_CAMERA ? W : previewW, currentPage == PAGE_EMBEDDED_CAMERA ? H : previewH);
+
             applyFilterMatrix();
             measureChildExactly(actionBarContainer, previewW, dp(56 + 56 + 38));
             measureChildExactly(controlContainer, previewW, dp(220));
@@ -1011,7 +1042,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         @Override
         protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
             boolean r = super.drawChild(canvas, child, drawingTime);
-            if (child == previewContainer) {
+            if (child == previewContainer && currentPage != PAGE_EMBEDDED_CAMERA) {
                 final float top = underStatusBar ? AndroidUtilities.statusBarHeight : 0;
                 if (topGradient == null) {
                     topGradient = new LinearGradient(0, top, 0, top + dp(72), new int[]{0x40000000, 0x00000000}, new float[]{top / (top + dp(72)), 1},
@@ -1020,6 +1051,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 }
                 topGradientPaint.setAlpha(0xFF);
                 AndroidUtilities.rectTmp.set(0, 0, getWidth(), dp(72 + 12) + top);
+
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), topGradientPaint);
             }
             return r;
@@ -1029,6 +1061,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     public static final int PAGE_CAMERA = 0;
     public static final int PAGE_PREVIEW = 1;
     public static final int PAGE_COVER = 2;
+    public static final int PAGE_EMBEDDED_CAMERA = 3;
     private int currentPage = PAGE_CAMERA;
 
     public static final int EDIT_MODE_NONE = -1;
@@ -1055,6 +1088,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     /* PAGE_CAMERA */
     private CollageLayoutView2 collageLayoutView;
     private ImageView cameraViewThumb;
+    private ImageView cameraIcon;
     private DualCameraView cameraView;
 
     private int flashButtonResId;
@@ -1199,12 +1233,14 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         addNotificationObservers();
     }
 
-    public void onClosed() {
+    public void onClosed(boolean destroyCamera) {
         if (cameraView != null) {
             if (takingVideo) {
                 CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
             }
-            destroyCameraView(false);
+            if (destroyCamera) {
+                destroyCameraView(false);
+            }
         }
         if (previewView != null) {
             previewView.set(null);
@@ -1225,7 +1261,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         if (captionContainer != null) {
             Bulletin.removeDelegate(captionContainer);
         }
-        if (collageLayoutView != null) {
+        if (collageLayoutView != null && destroyCamera) {
             collageLayoutView.clear(true);
         }
 
@@ -1411,6 +1447,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         previewContainer.addView(collageLayoutView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         cameraViewThumb = new ImageView(context);
+        cameraViewThumb.setImageDrawable(getCameraThumb());
         cameraViewThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
         cameraViewThumb.setOnClickListener(v -> {
             if (noCameraPermission) {
@@ -1420,12 +1457,22 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         cameraViewThumb.setClickable(true);
         previewContainer.addView(cameraViewThumb, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
+        cameraIcon = new ImageView(activity);
+        cameraIcon.setScaleType(ImageView.ScaleType.CENTER);
+        cameraIcon.setImageDrawable(ContextCompat.getDrawable(activity, R.drawable.instant_camera));
+        cameraIcon.setVisibility(View.GONE);
+        previewContainer.addView(cameraIcon, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         previewContainer.setBackgroundColor(params.openType == 1 || params.openType == 0 ? 0 : 0xff1f1f1f);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             previewContainer.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), dp(12));
+                    if (currentPage == PAGE_EMBEDDED_CAMERA) {
+                        outline.setRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+                    } else {
+                        outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), dp(12));
+                    }
                 }
             });
             previewContainer.setClipToOutline(true);
@@ -2855,7 +2902,10 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 sharedPreferences.edit().putString("flashMode", mode).commit();
             }
             cameraView.switchCamera();
-            saveCameraFace(cameraView.isFrontface());
+            if (recorderType == STORY) {
+                saveCameraFace(cameraView.isFrontface());
+            }
+
             if (useDisplayFlashlight()) {
                 flashViews.flashIn(null);
             } else {
@@ -2878,6 +2928,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     };
 
     private void setAwakeLock(boolean lock) {
+        if (windowLayoutParams == null || windowManager == null) return;
+
         if (lock) {
             windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         } else {
@@ -3072,7 +3124,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         } else if (currentEditMode > EDIT_MODE_NONE) {
             switchToEditMode(EDIT_MODE_NONE, true);
             return false;
-        } else if (currentPage == PAGE_CAMERA && collageLayoutView.hasContent()) {
+        } else if ((currentPage == PAGE_CAMERA || currentPage == PAGE_EMBEDDED_CAMERA) && collageLayoutView.hasContent()) {
             collageLayoutView.clear(true);
             updateActionBarButtons(true);
             return false;
@@ -3188,7 +3240,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         if (page != PAGE_PREVIEW) {
             videoTimeView.show(false, animated);
         }
-        setActionBarButtonVisible(backButton, !collageListView.isVisible(), animated);
+        setActionBarButtonVisible(backButton, !collageListView.isVisible() && page != PAGE_EMBEDDED_CAMERA, animated);
         setActionBarButtonVisible(flashButton, page == PAGE_CAMERA && !collageListView.isVisible() && flashButtonMode != null && !inCheck(),
                 animated);
         setActionBarButtonVisible(dualButton, page == PAGE_CAMERA && cameraView != null && cameraView.dualAvailable() && !collageListView.isVisible()
@@ -3201,14 +3253,14 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             ArrayList<Animator> animators = new ArrayList<>();
 
             if (cameraView != null) {
-                animators.add(ObjectAnimator.ofFloat(cameraView, View.ALPHA, page == PAGE_CAMERA ? 1 : 0));
+                animators.add(ObjectAnimator.ofFloat(cameraView, View.ALPHA, page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA ? 1 : 0));
             }
-            cameraViewThumb.setVisibility(View.VISIBLE);
-            animators.add(ObjectAnimator.ofFloat(cameraViewThumb, View.ALPHA, page == PAGE_CAMERA ? 1 : 0));
+            animators.add(ObjectAnimator.ofFloat(actionBarContainer, View.ALPHA, page != PAGE_EMBEDDED_CAMERA ? 1 : 0));
+            animators.add(ObjectAnimator.ofFloat(cameraViewThumb, View.ALPHA, page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA ? 1 : 0));
             animators.add(ObjectAnimator.ofFloat(previewView, View.ALPHA,
                     page == PAGE_PREVIEW && !collageLayoutView.hasLayout() || page == PAGE_COVER ? 1 : 0));
             animators.add(ObjectAnimator.ofFloat(collageLayoutView, View.ALPHA,
-                    page == PAGE_CAMERA || page == PAGE_PREVIEW && collageLayoutView.hasLayout() ? 1 : 0));
+                    page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA || page == PAGE_PREVIEW && collageLayoutView.hasLayout() ? 1 : 0));
 
             animators.add(ObjectAnimator.ofFloat(recordControl, View.ALPHA, page == PAGE_CAMERA ? 1 : 0));
 //            animators.add(ObjectAnimator.ofFloat(flashButton, View.ALPHA, page == PAGE_CAMERA ? 1 : 0));
@@ -3243,6 +3295,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 //            animators.add(ObjectAnimator.ofFloat(privacySelector, View.ALPHA, page == PAGE_PREVIEW ? 1f : 0));
 
             animators.add(ObjectAnimator.ofFloat(zoomControlView, View.ALPHA, 0));
+            animators.add(ObjectAnimator.ofFloat(cameraIcon, View.ALPHA, page == PAGE_EMBEDDED_CAMERA ? 1F : 0));
 
             pageAnimator.playTogether(animators);
             pageAnimator.addListener(new AnimatorListenerAdapter() {
@@ -3256,12 +3309,13 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             pageAnimator.start();
         } else {
             if (cameraView != null) {
-                cameraView.setAlpha(page == PAGE_CAMERA ? 1 : 0);
+                cameraView.setAlpha(page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA ? 1 : 0);
             }
-            cameraViewThumb.setAlpha(page == PAGE_CAMERA ? 1f : 0);
-            cameraViewThumb.setVisibility(page == PAGE_CAMERA ? View.VISIBLE : View.GONE);
+            cameraViewThumb.setAlpha(page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA ? 1f : 0);
+            cameraViewThumb.setVisibility(page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA ? View.VISIBLE : View.GONE);
+            cameraIcon.setAlpha(page == PAGE_EMBEDDED_CAMERA ? 1F : 0F);
             previewView.setAlpha(page == PAGE_PREVIEW && !collageLayoutView.hasLayout() || page == PAGE_COVER ? 1f : 0);
-            collageLayoutView.setAlpha(page == PAGE_CAMERA || page == PAGE_PREVIEW && collageLayoutView.hasLayout() ? 1 : 0);
+            collageLayoutView.setAlpha(page == PAGE_CAMERA || page == PAGE_EMBEDDED_CAMERA || page == PAGE_PREVIEW && collageLayoutView.hasLayout() ? 1 : 0);
             recordControl.setAlpha(page == PAGE_CAMERA ? 1f : 0);
             recordControl.setTranslationY(page == PAGE_CAMERA ? 0 : dp(16));
             modeSwitcherView.setAlpha(page == PAGE_CAMERA && !inCheck() ? 1f : 0);
@@ -3282,6 +3336,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             coverTimelineView.setAlpha(page == PAGE_COVER ? 1f : 0f);
             titleTextView.setAlpha(page == PAGE_PREVIEW || page == PAGE_COVER ? 1f : 0f);
             coverButton.setAlpha(page == PAGE_COVER ? 1f : 0f);
+            actionBarContainer.setAlpha(page != PAGE_EMBEDDED_CAMERA ? 1f : 0f);
             onNavigateEnd(oldPage, page);
         }
     }
@@ -3593,8 +3648,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
             lastGalleryScrollPosition = null;
         }
 
-        if (!open && currentPage == PAGE_CAMERA && !noCameraPermission) {
-            cameraViewThumb.setImageDrawable(null);
+        if (!open && (currentPage == PAGE_CAMERA || currentPage == PAGE_EMBEDDED_CAMERA) && !noCameraPermission) {
             createCameraView();
         }
     }
@@ -3602,6 +3656,18 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     // endregion
 
     private void onNavigateStart(int fromPage, int toPage) {
+        if (toPage == PAGE_EMBEDDED_CAMERA) {
+            requestCameraPermission(false);
+            if (recordControl != null) {
+                recordControl.stopRecordingLoading(false);
+            }
+            if (collageLayoutView != null) {
+                collageLayoutView.clear(true);
+            }
+            if (cameraIcon != null) {
+                cameraIcon.setVisibility(View.VISIBLE);
+            }
+        }
         if (toPage == PAGE_CAMERA) {
             requestCameraPermission(false);
             recordControl.setVisibility(View.VISIBLE);
@@ -3617,6 +3683,8 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 outputEntry.destroy(false);
                 outputEntry = null;
             }
+        }
+        if (toPage == PAGE_CAMERA && fromPage != PAGE_EMBEDDED_CAMERA) {
             if (collageLayoutView != null) {
                 collageLayoutView.clear(true);
                 recordControl.setCollageProgress(0.0f, false);
@@ -3810,8 +3878,9 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
     }
 
     private void onNavigateEnd(int fromPage, int toPage) {
-        if (fromPage == PAGE_CAMERA) {
+        if (fromPage == PAGE_CAMERA && toPage != PAGE_EMBEDDED_CAMERA) {
             destroyCameraView(false);
+        } else if (fromPage == PAGE_CAMERA) {
             recordControl.setVisibility(View.GONE);
             zoomControlView.setVisibility(View.GONE);
             modeSwitcherView.setVisibility(View.GONE);
@@ -5121,7 +5190,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         if (cameraView != null || getContext() == null) {
             return;
         }
-        cameraView = new DualCameraView(getContext(), getCameraFace(), false) {
+        cameraView = new DualCameraView(getContext(), recorderType == STORY && getCameraFace(), false) {
             @Override
             public void onEntityDraggedTop(boolean value) {
                 previewHighlight.show(true, value, actionBarContainer);
@@ -5185,6 +5254,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 zoomControlView.setZoom(cameraZoom = 0, false);
             }
             updateActionBarButtons(true);
+            cameraViewThumb.setVisibility(View.GONE);
         });
         setActionBarButtonVisible(dualButton, cameraView.dualAvailable() && currentPage == PAGE_CAMERA, true);
         collageButton.setTranslationX(cameraView.dualAvailable() ? 0 : dp(46));
@@ -5439,7 +5509,6 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         }
 
         if (!noCameraPermission) {
-            cameraViewThumb.setImageDrawable(null);
             if (CameraController.getInstance().isCameraInitied()) {
                 createCameraView();
             } else {
@@ -5527,8 +5596,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
         final boolean granted = grantResults != null && grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
         if (requestCode == 111) {
             noCameraPermission = !granted;
-            if (granted && currentPage == PAGE_CAMERA) {
-                cameraViewThumb.setImageDrawable(null);
+            if (granted && (currentPage == PAGE_CAMERA || currentPage == PAGE_EMBEDDED_CAMERA)) {
                 if (CameraController.getInstance().isCameraInitied()) {
                     createCameraView();
                 } else {
@@ -5657,7 +5725,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 
     public void checkBackgroundVisibility(boolean forceBackgroundVisible) {
         this.forceBackgroundVisible = forceBackgroundVisible;
-        boolean shouldBeVisible = dismissProgress != 0 || openProgress < 1 || forceBackgroundVisible;
+        boolean shouldBeVisible = dismissProgress != 0 || openProgress < 1 || expandProgress < 1 || forceBackgroundVisible;
         if (shouldBeVisible == isBackgroundVisible) {
             return;
         }

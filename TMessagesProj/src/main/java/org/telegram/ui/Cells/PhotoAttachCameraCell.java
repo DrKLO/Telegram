@@ -86,9 +86,9 @@ public class PhotoAttachCameraCell extends FrameLayout {
 
         }
         if (bitmap != null) {
-            //backgroundView.setImageBitmap(bitmap);
+            backgroundView.setImageBitmap(bitmap);
         } else {
-            //backgroundView.setImageResource(R.drawable.icplaceholder);
+            backgroundView.setImageResource(R.drawable.icplaceholder);
         }
     }
 
