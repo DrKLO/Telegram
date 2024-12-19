@@ -20,7 +20,13 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Bulletin;
@@ -30,6 +36,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Stories.recorder.MediaRecorderView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
+import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -45,6 +52,18 @@ public class ChatMediaRecorder {
     private final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     protected final Theme.ResourcesProvider resourcesProvider;
     protected final Activity activity;
+
+    private Delegate delegate;
+
+    public interface Delegate {
+
+        void send(MediaController.PhotoEntry entry);
+
+    }
+
+    public void setDelegate(Delegate delegate) {
+        this.delegate = delegate;
+    }
 
     @IntDef({SHRINK_STATE, EXPANDED_STATE, SHRINKING_STATE, EXPANDING_STATE})
     @Retention(RetentionPolicy.SOURCE)
@@ -204,6 +223,14 @@ public class ChatMediaRecorder {
         this.state = isShrinkMode ? SHRINK_STATE : EXPANDED_STATE;
     }
 
+    public void onResume() {
+        mediaRecorderView.onResume(openCloseAnimator != null && openCloseAnimator.isRunning());
+    }
+
+    public void onPause() {
+        mediaRecorderView.onPause();
+    }
+
     public boolean processTouchEvent(MotionEvent event) {
         if (openCloseAnimator != null && !openCloseAnimator.isRunning() && mediaRecorderView != null) {
             mediaRecorderView.onTouchEvent(event);
@@ -212,8 +239,12 @@ public class ChatMediaRecorder {
         return true;
     }
 
+    public boolean processBackPressed() {
+        return !mediaRecorderView.onBackPressed();
+    }
+
     public void showCamera() {
-        mediaRecorderView.setupState(null, false, new MediaRecorderView.Params(false, 0));
+        mediaRecorderView.setupState(null, false, new MediaRecorderView.Params(true, 0));
 
         AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -238,62 +269,84 @@ public class ChatMediaRecorder {
             openCloseAnimator = null;
         }
 
-        openCloseAnimator = ObjectAnimator.ofFloat(0F, 1F);
-        openCloseAnimator.setDuration(STATE_SWITCH_DURATION_MS);
-        openCloseAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-        openCloseAnimator.addListener(new AnimatorListenerAdapter() {
+        if (animated) {
+            openCloseAnimator = ObjectAnimator.ofFloat(0F, 1F);
+            openCloseAnimator.setDuration(STATE_SWITCH_DURATION_MS);
+            openCloseAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            openCloseAnimator.addListener(new AnimatorListenerAdapter() {
 
-            @Override
-            public void onAnimationStart(Animator animation) {
-                state = EXPANDING_STATE;
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    state = EXPANDING_STATE;
 
+                    mediaRecorderView.setExpandProgress(0);
+                    ViewGroup.LayoutParams lp = mediaRecorderView.getLayoutParams();
+                    lp.width = (int) targetRect.width();
+                    lp.height = (int) targetRect.height();
+                    mediaRecorderView.setY(targetRect.top);
+                    mediaRecorderView.setX(targetRect.left);
+
+                    mediaRecorderView.requestLayout();
+
+                    mediaRecorderView.navigateTo(PAGE_CAMERA, true);
+                    AndroidUtilities.lockOrientation(activity);
+                    notificationsLocker.lock();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    state = EXPANDED_STATE;
+                    onOpened.run();
+
+                    if (mediaRecorderView != null) {
+                        mediaRecorderView.onOpened();
+                        mediaRecorderView.checkBackgroundVisibility(true);
+                    }
+
+                    AndroidUtilities.unlockOrientation(activity);
+                    notificationsLocker.unlock();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
+                    NotificationCenter.getGlobalInstance().runDelayedNotifications();
+                }
+            });
+
+            animationProgress = 0F;
+            openCloseAnimator.addUpdateListener(animation -> {
+                animationProgress = (float) animation.getAnimatedValue();
+
+                mediaRecorderView.setExpandProgress(animationProgress);
+                mediaRecorderView.checkBackgroundVisibility();
+
+                mediaRecorderView.invalidate();
+            });
+            openCloseAnimator.start();
+        } else {
+            state = EXPANDED_STATE;
+            onOpened.run();
+
+            if (mediaRecorderView != null) {
                 mediaRecorderView.setExpandProgress(0);
                 ViewGroup.LayoutParams lp = mediaRecorderView.getLayoutParams();
                 lp.width = (int) targetRect.width();
                 lp.height = (int) targetRect.height();
                 mediaRecorderView.setY(targetRect.top);
                 mediaRecorderView.setX(targetRect.left);
+                mediaRecorderView.navigateTo(PAGE_CAMERA, false);
 
                 mediaRecorderView.requestLayout();
 
-                mediaRecorderView.navigateTo(PAGE_CAMERA, true);
-                AndroidUtilities.lockOrientation(activity);
-                notificationsLocker.lock();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
+                mediaRecorderView.onOpened();
+                mediaRecorderView.checkBackgroundVisibility(true);
             }
+        }
 
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                state = EXPANDED_STATE;
-                onOpened.run();
-
-                if (mediaRecorderView != null) {
-                    mediaRecorderView.onOpened();
-                    mediaRecorderView.checkBackgroundVisibility(true);
-                }
-
-                AndroidUtilities.unlockOrientation(activity);
-                notificationsLocker.unlock();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-                NotificationCenter.getGlobalInstance().runDelayedNotifications();
-            }
-        });
-
-        animationProgress = 0F;
-        openCloseAnimator.addUpdateListener(animation -> {
-            animationProgress = (float) animation.getAnimatedValue();
-
-            mediaRecorderView.setExpandProgress(animationProgress);
-            mediaRecorderView.checkBackgroundVisibility();
-
-            mediaRecorderView.invalidate();
-        });
-        openCloseAnimator.start();
-
-        mediaRecorderView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        if (mediaRecorderView != null) {
+            mediaRecorderView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
     }
 
-    public void shrinkView() {
+    public void shrinkView(boolean animated) {
         if (state != EXPANDED_STATE) {
             return;
         }
@@ -303,56 +356,77 @@ public class ChatMediaRecorder {
             openCloseAnimator = null;
         }
 
-        openCloseAnimator = ObjectAnimator.ofFloat(0F, 1F);
-        openCloseAnimator.setDuration(STATE_SWITCH_DURATION_MS);
-        openCloseAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        if (animated) {
+            openCloseAnimator = ObjectAnimator.ofFloat(0F, 1F);
+            openCloseAnimator.setDuration(STATE_SWITCH_DURATION_MS);
+            openCloseAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
 
-        animationProgress = 0F;
-        openCloseAnimator.addUpdateListener(animation -> {
-            float animatedValue = (float) animation.getAnimatedValue();
-            animationProgress = animatedValue;
+            animationProgress = 0F;
+            openCloseAnimator.addUpdateListener(animation -> {
+                float animatedValue = (float) animation.getAnimatedValue();
+                animationProgress = animatedValue;
 
-            mediaRecorderView.setExpandProgress(1f - animatedValue);
+                mediaRecorderView.setExpandProgress(1f - animatedValue);
 
-            mediaRecorderView.invalidate();
-        });
-        openCloseAnimator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                state = SHRINKING_STATE;
+                mediaRecorderView.invalidate();
+            });
+            openCloseAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    state = SHRINKING_STATE;
 
-                mediaRecorderView.navigateTo(PAGE_EMBEDDED_CAMERA, true);
-                AndroidUtilities.lockOrientation(activity);
-                notificationsLocker.lock();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                state = SHRINK_STATE;
-
-                if (mediaRecorderView != null) {
-                    Bulletin.removeDelegate(mediaRecorderView);
-
-                    mediaRecorderView.setExpandProgress(1f);
-                    ViewGroup.LayoutParams lp = mediaRecorderView.getLayoutParams();
-                    lp.width = (int) shrinkedRect.width();
-                    lp.height = (int) shrinkedRect.height();
-                    mediaRecorderView.setTranslationY(shrinkedRect.top);
-                    mediaRecorderView.setTranslationX(shrinkedRect.left);
-
-                    mediaRecorderView.requestLayout();
+                    mediaRecorderView.navigateTo(PAGE_EMBEDDED_CAMERA, true);
+                    AndroidUtilities.lockOrientation(activity);
+                    notificationsLocker.lock();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
                 }
 
-                shrinkedRect.setEmpty();
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    state = SHRINK_STATE;
 
-                AndroidUtilities.unlockOrientation(activity);
-                notificationsLocker.unlock();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-                NotificationCenter.getGlobalInstance().runDelayedNotifications();
+                    if (mediaRecorderView != null) {
+                        Bulletin.removeDelegate(mediaRecorderView);
+
+                        mediaRecorderView.setExpandProgress(1f);
+                        ViewGroup.LayoutParams lp = mediaRecorderView.getLayoutParams();
+                        lp.width = (int) shrinkedRect.width();
+                        lp.height = (int) shrinkedRect.height();
+                        mediaRecorderView.setTranslationY(shrinkedRect.top);
+                        mediaRecorderView.setTranslationX(shrinkedRect.left);
+
+                        mediaRecorderView.requestLayout();
+                    }
+
+                    shrinkedRect.setEmpty();
+
+                    AndroidUtilities.unlockOrientation(activity);
+                    notificationsLocker.unlock();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
+                    NotificationCenter.getGlobalInstance().runDelayedNotifications();
+                }
+            });
+            openCloseAnimator.start();
+        } else {
+            state = SHRINK_STATE;
+
+            if (mediaRecorderView != null) {
+                Bulletin.removeDelegate(mediaRecorderView);
+
+                mediaRecorderView.navigateTo(PAGE_EMBEDDED_CAMERA, false);
+                mediaRecorderView.setExpandProgress(1f);
+                ViewGroup.LayoutParams lp = mediaRecorderView.getLayoutParams();
+                lp.width = (int) shrinkedRect.width();
+                lp.height = (int) shrinkedRect.height();
+                mediaRecorderView.setTranslationY(shrinkedRect.top);
+                mediaRecorderView.setTranslationX(shrinkedRect.left);
+
+                mediaRecorderView.requestLayout();
             }
-        });
-        openCloseAnimator.start();
+
+            shrinkedRect.setEmpty();
+        }
+
 
         mediaRecorderView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
     }
@@ -370,12 +444,19 @@ public class ChatMediaRecorder {
         }
     }
 
-    private class MediaRecorderDelegateImpl implements MediaRecorderView.MediaRecorderDelegate {
+    public boolean isInited() {
+        return mediaRecorderView.isInited();
+    }
 
+    public void saveLastCameraBitmap(Runnable onDone) {
+        mediaRecorderView.saveLastCameraBitmap(onDone);
+    }
+
+    private class MediaRecorderDelegateImpl implements MediaRecorderView.MediaRecorderDelegate {
 
         @Override
         public void close(boolean animated) {
-            ChatMediaRecorder.this.shrinkView();
+            ChatMediaRecorder.this.shrinkView(animated);
         }
 
         @Override
@@ -385,7 +466,62 @@ public class ChatMediaRecorder {
 
         @Override
         public void processDone(StoryEntry outputEntry) {
-            // TODO handle message send
+            if (outputEntry.wouldBeVideo()) {
+                if (outputEntry.isCollage()) {
+                    return; // TODO later
+                }
+                Utilities.themeQueue.postRunnable(() -> {
+                    mediaRecorderView.applyPaint();
+                    mediaRecorderView.applyFilter(() -> {
+                        MediaController.PhotoEntry entry = new MediaController.PhotoEntry(
+                                0,
+                                0,
+                                0,
+                                outputEntry.file.getPath(),
+                                outputEntry.orientation,
+                                (int) outputEntry.duration,
+                                outputEntry.isVideo,
+                                outputEntry.width,
+                                outputEntry.height,
+                                0
+                        );
+                        TLRPC.TL_message message = new TLRPC.TL_message();
+                        message.id = 1;
+                        String path = message.attachPath = StoryEntry.makeCacheFile(currentAccount, true).getAbsolutePath();
+                        MessageObject messageObject = new MessageObject(currentAccount, message, (MessageObject) null, false, false);
+                        outputEntry.getVideoEditedInfo(info -> {
+                            messageObject.videoEditedInfo = info;
+                            if (messageObject.videoEditedInfo.needConvert()) {
+                                messageObject.videoEditedInfo.alreadyScheduledConverting = true;
+                                MediaController.getInstance().scheduleVideoConvert(messageObject, false, false, true);
+                            }
+
+                            AndroidUtilities.runOnUIThread(() -> delegate.send(entry));
+                        });
+                    });
+                });
+            } else {
+                Utilities.themeQueue.postRunnable(() -> {
+                    mediaRecorderView.applyPaint();
+                    mediaRecorderView.applyFilter(() -> {
+                        final File destFile = StoryEntry.makeCacheFile(currentAccount, false);
+                        outputEntry.buildPhoto(destFile);
+                        MediaController.PhotoEntry entry = new MediaController.PhotoEntry(
+                                0,
+                                0,
+                                0,
+                                destFile.getPath(),
+                                outputEntry.orientation,
+                                (int) outputEntry.duration,
+                                outputEntry.isVideo,
+                                outputEntry.width,
+                                outputEntry.height,
+                                0
+                        );
+                        AndroidUtilities.runOnUIThread(() -> delegate.send(entry));
+                    });
+                });
+            }
         }
 
         @Override
