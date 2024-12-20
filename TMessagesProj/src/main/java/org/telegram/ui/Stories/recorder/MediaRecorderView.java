@@ -1855,15 +1855,13 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
                 visibleBulletin.updatePosition();
             }
         });
-        if (recorderType == STORY) {
-            captionEdit.setOnPeriodUpdate(period -> {
-                if (outputEntry != null) {
-                    outputEntry.period = period;
-                    MessagesController.getGlobalMainSettings().edit().putInt("story_period", period).apply();
+        captionEdit.setOnPeriodUpdate(period -> {
+            if (outputEntry != null) {
+                outputEntry.period = period;
+                MessagesController.getGlobalMainSettings().edit().putInt("story_period", period).apply();
 //                privacySelector.setStoryPeriod(period);
-                }
-            });
-        }
+            }
+        });
         if (selectedDialogId != 0) {
             captionEdit.setDialogId(selectedDialogId);
         }
@@ -3746,7 +3744,7 @@ public class MediaRecorderView extends SizeNotifierFrameLayout implements Notifi
 //            privacySelector.setStoryPeriod(outputEntry == null || !UserConfig.getInstance(currentAccount).isPremium() ? 86400 : outputEntry.period);
             captionEdit.setPeriod(outputEntry == null ? 86400 : outputEntry.period, false);
             captionEdit.setPeriodVisible(
-                    !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (outputEntry == null || !outputEntry.isEdit));
+                    !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (outputEntry == null || !outputEntry.isEdit) && recorderType == STORY);
             captionEdit.setHasRoundVideo(outputEntry != null && outputEntry.round != null);
             setReply();
             timelineView.setOpen(outputEntry == null || !outputEntry.isCollage() || !outputEntry.hasVideo(), false);

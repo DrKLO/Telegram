@@ -490,11 +490,7 @@ public class ChatMediaRecorder {
                         String path = message.attachPath = StoryEntry.makeCacheFile(currentAccount, true).getAbsolutePath();
                         MessageObject messageObject = new MessageObject(currentAccount, message, (MessageObject) null, false, false);
                         outputEntry.getVideoEditedInfo(info -> {
-                            messageObject.videoEditedInfo = info;
-                            if (messageObject.videoEditedInfo.needConvert()) {
-                                messageObject.videoEditedInfo.alreadyScheduledConverting = true;
-                                MediaController.getInstance().scheduleVideoConvert(messageObject, false, false, true);
-                            }
+                            MediaController.getInstance().scheduleVideoConvert(messageObject, false, false, true);
 
                             AndroidUtilities.runOnUIThread(() -> delegate.send(entry));
                         });
