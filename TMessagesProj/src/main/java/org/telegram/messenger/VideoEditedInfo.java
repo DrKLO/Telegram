@@ -740,6 +740,19 @@ public class VideoEditedInfo {
             height = entry.height;
             duration = entry.duration;
         }
+        public Part(MediaController.PhotoEntry entry) {
+            isVideo = entry.isVideo;
+            muted = entry.muted;
+            path = entry.file.getAbsolutePath();
+            volume = entry.videoVolume;
+            loop = entry.videoLoop;
+            offset = entry.videoOffset;
+            left = entry.videoLeft;
+            right = entry.videoRight;
+            width = entry.width;
+            height = entry.height;
+            duration = entry.duration;
+        }
 
         public static ArrayList<Part> toParts(StoryEntry collageEntry) {
             if (collageEntry == null || collageEntry.collageContent == null)
@@ -747,6 +760,19 @@ public class VideoEditedInfo {
             final ArrayList<Part> parts = new ArrayList<>();
             for (int i = 0; i < collageEntry.collageContent.size(); ++i) {
                 final StoryEntry entry = collageEntry.collageContent.get(i);
+                Part part = new Part(entry);
+                part.part = collageEntry.collage.parts.get(i);
+                parts.add(part);
+            }
+            return parts;
+        }
+
+        public static ArrayList<Part> toParts(MediaController.PhotoEntry collageEntry) {
+            if (collageEntry == null || collageEntry.collageContent == null)
+                return null;
+            final ArrayList<Part> parts = new ArrayList<>();
+            for (int i = 0; i < collageEntry.collageContent.size(); ++i) {
+                final MediaController.PhotoEntry entry = collageEntry.collageContent.get(i);
                 Part part = new Part(entry);
                 part.part = collageEntry.collage.parts.get(i);
                 parts.add(part);

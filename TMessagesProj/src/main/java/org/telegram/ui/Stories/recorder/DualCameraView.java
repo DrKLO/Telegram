@@ -258,7 +258,7 @@ public class DualCameraView extends CameraView {
         tapTime = -1;
     }
 
-    private boolean touchEvent(MotionEvent ev) {
+    public boolean touchEvent(MotionEvent ev) {
         boolean r = false;
         r = checkTap(ev) || r;
         if (isDual()) {

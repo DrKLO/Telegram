@@ -117,7 +117,9 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private boolean dual;
     private final AnimatedFloat dualT = new AnimatedFloat(this, 0, 330, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private static final long MAX_DURATION = 60 * 1000L;
+    private long maxDuration = 60 * 1000L; // default 1 minute
+    private boolean isUnlimited = false;
+
     private long recordingStart;
     private long lastDuration;
 
@@ -126,7 +128,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private final Point check2 = new Point(-dpf2(8.5f/3.0f), dpf2(26/3.0f));
     private final Point check3 = new Point(dpf2(29/3.0f), dpf2(-11/3.0f));
 
-    public RecordControl(Context context) {
+    public RecordControl(Context context, boolean story) {
         super(context);
 
         setWillNotDraw(false);
@@ -180,16 +182,31 @@ public class RecordControl extends View implements FlashViews.Invertable {
         pauseDrawable = context.getResources().getDrawable(R.drawable.msg_round_pause_m).mutate();
         pauseDrawable.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
 
-        updateGalleryImage();
+        updateGalleryImage(story);
     }
 
-    public void updateGalleryImage() {
+    public void setMaxDuration(long duration) {
+        this.maxDuration = duration;
+        this.isUnlimited = false;
+    }
+
+    public void setUnlimitedDuration() {
+        this.isUnlimited = true;
+    }
+
+    public boolean isUnlimited() {
+        return isUnlimited;
+    }
+
+    public void updateGalleryImage(boolean story) {
         final String filter = "80_80";
-        ArrayList<StoryEntry> drafts = MessagesController.getInstance(galleryImage.getCurrentAccount()).getStoriesController().getDraftsController().drafts;
-        galleryImage.setOrientation(0, 0, true);
-        if (drafts != null && !drafts.isEmpty() && drafts.get(0).draftThumbFile != null) {
-            galleryImage.setImage(ImageLocation.getForPath(drafts.get(0).draftThumbFile.getAbsolutePath()), filter, null, null, noGalleryDrawable, 0, null, null, 0);
-            return;
+        if (story) {
+            ArrayList<StoryEntry> drafts = MessagesController.getInstance(galleryImage.getCurrentAccount()).getStoriesController().getDraftsController().drafts;
+            galleryImage.setOrientation(0, 0, true);
+            if (drafts != null && !drafts.isEmpty() && drafts.get(0).draftThumbFile != null) {
+                galleryImage.setImage(ImageLocation.getForPath(drafts.get(0).draftThumbFile.getAbsolutePath()), filter, null, null, noGalleryDrawable, 0, null, null, 0);
+                return;
+            }
         }
         MediaController.AlbumEntry albumEntry = MediaController.allMediaAlbumEntry;
         MediaController.PhotoEntry photoEntry = null;
@@ -246,27 +263,36 @@ public class RecordControl extends View implements FlashViews.Invertable {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
-        final int height = dp(100);
+        final int height = MeasureSpec.getSize(heightMeasureSpec);
+        final boolean isPortrait = width > height;
 
-        cx = width / 2f;
-        cy = height / 2f;
+        final int viewWidth = isPortrait ? width : dp(100);
+        final int viewHeight = isPortrait ? dp(100) : height;
 
-        final float dist = Math.min(dp(135), width * .35f);
-        leftCx = cx - dist;
-        rightCx = cx + dist;
+        cx = viewWidth / 2f;
+        cy = viewHeight / 2f;
 
-        setDrawableBounds(flipDrawableWhite, rightCx, cy, dp(14));
-        setDrawableBounds(flipDrawableBlack, rightCx, cy, dp(14));
-        setDrawableBounds(unlockDrawable, leftCx, cy);
-        setDrawableBounds(lockDrawable, leftCx, cy);
-        setDrawableBounds(pauseDrawable, leftCx, cy);
-        galleryImage.setImageCoords(leftCx - dp(20), cy - dp(20), dp(40), dp(40));
+        final float dist = Math.min(dp(135), (isPortrait ? viewWidth : viewHeight) * .35f);
+        leftCx = isPortrait ? cx - dist : cy - dist;
+        rightCx = isPortrait ? cx + dist : cy + dist;
+
+        final float flipButtonCx = isPortrait ? rightCx : cx;
+        final float flipButtonCy = isPortrait ? cy : rightCx;
+        final float otherButtonCx = isPortrait ? leftCx : cx;
+        final float otherButtonCy = isPortrait ? cy : leftCx;
+
+        setDrawableBounds(flipDrawableWhite, flipButtonCx, flipButtonCy, dp(14));
+        setDrawableBounds(flipDrawableBlack, flipButtonCx, flipButtonCy, dp(14));
+        setDrawableBounds(unlockDrawable, otherButtonCx, otherButtonCy);
+        setDrawableBounds(lockDrawable, otherButtonCx, otherButtonCy);
+        setDrawableBounds(pauseDrawable, otherButtonCx, otherButtonCy);
+        galleryImage.setImageCoords(otherButtonCx - dp(20), otherButtonCy - dp(20), dp(40), dp(40));
 
         redMatrix.reset();
         redMatrix.postTranslate(cx, cy);
         redGradient.setLocalMatrix(redMatrix);
 
-        setMeasuredDimension(width, height);
+        setMeasuredDimension(viewWidth, viewHeight);
     }
 
     private static void setDrawableBounds(Drawable drawable, float cx, float cy) {
@@ -368,7 +394,13 @@ public class RecordControl extends View implements FlashViews.Invertable {
         final float touchIsCenter2T = touchT * this.touchIsCenter2T.set(Math.abs(touchX - cx) < dp(64) ? 1 : 0);
         final float touchCenterT16 = clamp((touchX - cx) / dp(16), 1, -1);
         final float touchCenterT96 = clamp((touchX - cx) / dp(64), 1, -1);
-        final float touchIsButtonT = touchT * this.touchIsButtonT.set(Math.min(Math.abs(touchX - rightCx), Math.abs(touchX - leftCx)) < dp(16) ? 1 : 0);
+
+        final boolean isPortrait = getMeasuredWidth() > getMeasuredHeight();
+        final float flipButtonCx = isPortrait ? rightCx : cx;
+        final float flipButtonCy = isPortrait ? cy : rightCx;
+        final float otherButtonCx = isPortrait ? leftCx : cx;
+        final float otherButtonCy = isPortrait ? cy : leftCx;
+        final float touchIsButtonT = touchT * this.touchIsButtonT.set(Math.min(Math.abs(touchX - flipButtonCx), Math.abs(touchX - otherButtonCx)) < dp(16) ? 1 : 0);
 
         final float collage = this.collage.set(collageProgress > 0) * (1.0f - recordingT);
         final float collageProgress = this.collageProgressAnimated.set(this.collageProgress);
@@ -380,11 +412,11 @@ public class RecordControl extends View implements FlashViews.Invertable {
             hintLinePaintWhite.setStrokeWidth(dp(2));
             hintLinePaintBlack.setStrokeWidth(dp(2));
 
-            canvas.drawLine(rcx, cy, lerp(rcx, rightCx - dp(22 + 8), hintLineT), cy, hintLinePaintBlack);
-            canvas.drawLine(rcx, cy, lerp(rcx, rightCx - dp(22 + 8), hintLineT), cy, hintLinePaintWhite);
+            canvas.drawLine(rcx, cy, lerp(rcx, flipButtonCx - dp(22 + 8), hintLineT), cy, hintLinePaintBlack);
+            canvas.drawLine(rcx, cy, lerp(rcx, flipButtonCx - dp(22 + 8), hintLineT), cy, hintLinePaintWhite);
 
-            canvas.drawLine(lcx, cy, lerp(lcx, leftCx + dp(22 + 8), hintLineT), cy, hintLinePaintBlack);
-            canvas.drawLine(lcx, cy, lerp(lcx, leftCx + dp(22 + 8), hintLineT), cy, hintLinePaintWhite);
+            canvas.drawLine(lcx, cy, lerp(lcx, otherButtonCx + dp(22 + 8), hintLineT), cy, hintLinePaintBlack);
+            canvas.drawLine(lcx, cy, lerp(lcx, otherButtonCx + dp(22 + 8), hintLineT), cy, hintLinePaintWhite);
         }
 
         float acx = lerp(cx, recordCx.set(cx + dp(4) * touchCenterT16), touchIsCenterT);
@@ -434,7 +466,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
         long duration = System.currentTimeMillis() - recordingStart;
         float recordEndT = recording ? 0 : 1f - recordingLongT;
-        float sweepAngle = duration / (float) MAX_DURATION * 360;
+        float sweepAngle = isUnlimited ? 0 : duration / (float) maxDuration * 360;
 
         float recordingLoading = this.recordingLoadingT.set(this.recordingLoading);
 
@@ -466,7 +498,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (!isUnlimited && duration >= maxDuration) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;
@@ -488,10 +520,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
             scale = lockButton.getScale(.2f) * recordingT;
             if (scale > 0) {
                 canvas.save();
-                canvas.scale(scale, scale, leftCx, cy);
-                canvas.drawCircle(leftCx, cy, dp(22), buttonPaint);
+                canvas.scale(scale, scale, otherButtonCx, otherButtonCy);
+                canvas.drawCircle(otherButtonCx, otherButtonCy, dp(22), buttonPaint);
                 unlockDrawable.draw(canvas);
-                canvas.restore();
+               canvas.restore();
             }
         }
 
@@ -507,18 +539,18 @@ public class RecordControl extends View implements FlashViews.Invertable {
         if (dualT > 0) {
             canvas.save();
             scale = flipButton.getScale(.2f) * dualT * (1.0f - check);
-            canvas.scale(scale, scale, rightCx, cy);
-            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), rightCx, cy);
-            canvas.drawCircle(rightCx, cy, dp(22), buttonPaintWhite);
+            canvas.scale(scale, scale, flipButtonCx, flipButtonCy);
+            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), flipButtonCx, flipButtonCy);
+            canvas.drawCircle(flipButtonCx, flipButtonCy, dp(22), buttonPaintWhite);
             flipDrawableBlack.draw(canvas);
             canvas.restore();
         }
         if (dualT < 1) {
             canvas.save();
             scale = flipButton.getScale(.2f) * (1f - dualT) * (1.0f - check);
-            canvas.scale(scale, scale, rightCx, cy);
-            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), rightCx, cy);
-            canvas.drawCircle(rightCx, cy, dp(22), buttonPaint);
+            canvas.scale(scale, scale, flipButtonCx, flipButtonCy);
+            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), flipButtonCx, flipButtonCy);
+            canvas.drawCircle(flipButtonCx, flipButtonCy, dp(22), buttonPaint);
             flipDrawableWhite.draw(canvas);
             canvas.restore();
         }
@@ -614,23 +646,23 @@ public class RecordControl extends View implements FlashViews.Invertable {
                 circlePath.addCircle(touchX, cy, tr, Path.Direction.CW);
             }
             if (locked > 0 && showLock) {
-                circlePath.addCircle(leftCx, cy, locked * dp(22) * scale, Path.Direction.CW);
+                circlePath.addCircle(otherButtonCx, otherButtonCy, locked * dp(22) * scale, Path.Direction.CW);
             }
             canvas.clipPath(circlePath);
 
             if (showLock) {
                 canvas.save();
-                canvas.scale(scale, scale, leftCx, cy);
-                canvas.drawCircle(leftCx, cy, dp(22), buttonPaintWhite);
+                canvas.scale(scale, scale, otherButtonCx, otherButtonCy);
+                canvas.drawCircle(otherButtonCx, otherButtonCy, dp(22), buttonPaintWhite);
                 lockDrawable.draw(canvas);
                 canvas.restore();
             }
 
             scale = flipButton.getScale(.2f) * (1.0f - check);
             canvas.save();
-            canvas.scale(scale, scale, rightCx, cy);
-            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), rightCx, cy);
-            canvas.drawCircle(rightCx, cy, dp(22), buttonPaintWhite);
+            canvas.scale(scale, scale, flipButtonCx, flipButtonCy);
+            canvas.rotate(flipDrawableRotateT.set(flipDrawableRotate), flipButtonCx, flipButtonCy);
+            canvas.drawCircle(flipButtonCx, flipButtonCy, dp(22), buttonPaintWhite);
             flipDrawableBlack.draw(canvas);
             canvas.restore();
 
@@ -686,17 +718,23 @@ public class RecordControl extends View implements FlashViews.Invertable {
         float ox = 0, oy = 0;
         final int action = event.getAction();
 
-        final float x = clamp(event.getX() + ox, rightCx, leftCx), y = event.getY() + oy;
+        final boolean isPortrait = getMeasuredWidth() > getMeasuredHeight();
+        final float flipButtonCx = isPortrait ? rightCx : cx;
+        final float flipButtonCy = isPortrait ? cy : rightCx;
+        final float otherButtonCx = isPortrait ? leftCx : cx;
+        final float otherButtonCy = isPortrait ? cy : leftCx;
 
-        final boolean innerFlipButton = isPressed(x, y, rightCx, cy, dp(7), true);
+        final float x = event.getX() + ox;
+        final float y = event.getY() + oy;
+        final boolean innerFlipButton = isPressed(x, y, flipButtonCx, flipButtonCy, dp(7), true);
         if (recordingLoading) {
             recordButton.setPressed(false);
             flipButton.setPressed(false);
             lockButton.setPressed(false);
         } else if (action == MotionEvent.ACTION_DOWN || touch) {
             recordButton.setPressed(isPressed(x, y, cx, cy, dp(60), false));
-            flipButton.setPressed(isPressed(x, y, rightCx, cy, dp(30), true) && !hasCheck());
-            lockButton.setPressed(isPressed(x, y, leftCx, cy, dp(30), false) && !hasCheck());
+            flipButton.setPressed(isPressed(x, y, flipButtonCx, flipButtonCy, dp(30), true) && !hasCheck());
+            lockButton.setPressed(isPressed(x, y, otherButtonCx, otherButtonCy, dp(30), false) && !hasCheck());
         }
 
         boolean r = false;
@@ -704,7 +742,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             touch = true;
             discardParentTouch = recordButton.isPressed() || flipButton.isPressed();
             touchStart = System.currentTimeMillis();
-            touchX = x;
+            touchX = clamp(x, flipButtonCx, otherButtonCx);
             touchY = y;
 
             if (Math.abs(touchX - cx) < dp(50)) {
@@ -720,7 +758,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (!touch) {
                 return false;
             }
-            touchX = clamp(x, rightCx, leftCx);
+            touchX = clamp(x, flipButtonCx, otherButtonCx);
             touchY = y;
             invalidate();
 
